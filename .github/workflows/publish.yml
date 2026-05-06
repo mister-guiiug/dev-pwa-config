@@ -1,3 +1,6 @@
+# Publish dev-wpa-config sur GitHub Packages.
+# Note : workflow standalone (ne s'appuie pas sur le reusable npm-publish.yml du
+# même repo pour éviter le problème de bootstrap au tag initial v1).
 name: Publish to GitHub Packages
 
 on:
@@ -8,6 +11,7 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write # requis pour npm --provenance
 
 jobs:
   publish:
@@ -31,7 +35,7 @@ jobs:
           fi
           echo "✅ Version cohérente : $TAG_VERSION"
 
-      - name: Publish
-        run: npm publish
+      - name: Publish (avec provenance sigstore)
+        run: npm publish --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

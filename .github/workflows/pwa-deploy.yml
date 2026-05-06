@@ -1,0 +1,87 @@
+# Reusable workflow de déploiement GitHub Pages pour les PWA.
+# Usage côté consumer (.github/workflows/deploy.yml) :
+#
+# name: Deploy
+# on:
+#   push:
+#     branches: [main]
+#   workflow_dispatch:
+# jobs:
+#   deploy:
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v1
+#     secrets: inherit
+#     with:
+#       use-base-path: true
+#
+# Pour les variables d'env du build (VITE_*), les passer dans le job appelant
+# via une étape pré-build, OU créer un workflow custom inspiré de celui-ci.
+name: Reusable PWA Deploy
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        required: false
+        default: '22'
+      use-base-path:
+        description: 'Définir VITE_BASE_PATH=/<repo-name>/'
+        type: boolean
+        required: false
+        default: true
+      build-dir:
+        description: 'Répertoire de sortie à publier'
+        type: string
+        required: false
+        default: 'dist'
+      pre-build-script:
+        description: 'Script npm à lancer avant le build (ex. "migrate:db"), vide pour aucun'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  packages: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pre-build
+        if: ${{ inputs.pre-build-script != '' }}
+        run: npm run ${{ inputs.pre-build-script }}
+
+      - name: Build
+        env:
+          VITE_BASE_PATH: ${{ inputs.use-base-path && format('/{0}/', github.event.repository.name) || '/' }}
+          VITE_PUBLIC_SITE_ORIGIN: https://${{ github.repository_owner }}.github.io
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ inputs.build-dir }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
