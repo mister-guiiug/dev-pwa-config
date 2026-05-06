@@ -1,0 +1,65 @@
+{
+  "name": "@misterguiiug/dev-wpa-config",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Configurations partagées (ESLint, Prettier, TypeScript, Vitest) pour les projets miss-* et mister-*.",
+  "license": "MIT",
+  "author": "GuiiuG",
+  "homepage": "https://github.com/mister-guiiug/dev-wpa-config#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mister-guiiug/dev-wpa-config.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mister-guiiug/dev-wpa-config/issues"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "type": "module",
+  "exports": {
+    "./eslint-base": "./eslint-base.js",
+    "./eslint-react": "./eslint-react.js",
+    "./prettier": "./prettier-base.js",
+    "./tsconfig-app": "./tsconfig-app.json",
+    "./tsconfig-app-react": "./tsconfig-app-react.json",
+    "./tsconfig-node": "./tsconfig-node.json",
+    "./vitest-base": {
+      "types": "./vitest-base.d.ts",
+      "default": "./vitest-base.js"
+    }
+  },
+  "files": [
+    "eslint-base.js",
+    "eslint-react.js",
+    "prettier-base.js",
+    "tsconfig-app.json",
+    "tsconfig-app-react.json",
+    "tsconfig-node.json",
+    "vitest-base.js",
+    "vitest-base.d.ts"
+  ],
+  "peerDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.58.0",
+    "vitest": "^3.2.4"
+  },
+  "peerDependenciesMeta": {
+    "eslint-plugin-react-hooks": { "optional": true },
+    "eslint-plugin-react-refresh": { "optional": true }
+  },
+  "dependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "typescript-eslint": "^8.58.0"
+  }
+}
