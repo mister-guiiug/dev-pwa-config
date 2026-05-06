@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify ESLint configs are syntactically valid
+        run: |
+          node --input-type=module -e "import('./eslint-base.js').then(m => console.log('eslint-base OK:', m.default.length, 'configs'))"
+          node --input-type=module -e "import('./eslint-react.js').then(m => console.log('eslint-react OK:', m.default.length, 'configs'))"
+
+      - name: Verify Prettier config is valid
+        run: |
+          node --input-type=module -e "import('./prettier-base.js').then(m => console.log('prettier OK:', JSON.stringify(m.default)))"
+
+      - name: Verify TS configs parse
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('./tsconfig-app.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('./tsconfig-app-react.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('./tsconfig-node.json'))"
+          echo "✅ tsconfigs parsent"
+
+      - name: Verify vitest-base parses
+        run: |
+          node --input-type=module -e "import('./vitest-base.js').then(m => console.log('vitest-base OK:', JSON.stringify(m.baseTestOptions)))"
