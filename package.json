@@ -1,6 +1,6 @@
 {
-  "name": "@misterguiiug/dev-wpa-config",
-  "version": "1.0.0",
+  "name": "@mister-guiiug/dev-wpa-config",
+  "version": "1.0.1",
   "private": false,
   "description": "Configurations partagées (ESLint, Prettier, TypeScript, Vitest) pour les projets miss-* et mister-*.",
   "license": "MIT",

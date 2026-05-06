@@ -33,7 +33,7 @@ jobs:
           node-version: '22'
           cache: npm
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@misterguiiug'
+          scope: '@mister-guiiug'
 
       - name: Install
         run: npm ci
@@ -69,7 +69,7 @@ jobs:
           node-version: '22'
           cache: npm
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@misterguiiug'
+          scope: '@mister-guiiug'
       - run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
