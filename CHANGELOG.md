@@ -7,6 +7,31 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-07
+
+### Added
+
+- **Reusable workflows** GitHub Actions :
+  - `.github/workflows/pwa-ci.yml` — CI standard (format · lint · type · test · build, + E2E optionnel)
+  - `.github/workflows/pwa-deploy.yml` — déploiement GitHub Pages
+  - `.github/workflows/npm-publish.yml` — publication npm avec provenance
+- **Composite action** `.github/actions/setup-pwa/action.yml` — checkout + Node 22 + scope `@mister-guiiug` + `npm ci`
+- **Configs partagées** :
+  - `commitlint-base.js` (`@mister-guiiug/dev-wpa-config/commitlint`)
+  - `lint-staged-base.js` (`@mister-guiiug/dev-wpa-config/lint-staged`)
+  - `playwright-base.js` + `.d.ts` (`basePlaywrightOptions`)
+  - `tailwind-preset.js` + `tailwind-preset.css` (design tokens famille)
+- **Templates** :
+  - `templates/husky/{pre-commit,commit-msg}` + README
+  - `templates/changesets/config.json` + README
+  - `templates/.editorconfig` + `templates/.nvmrc`
+- **Script** `scripts/apply-rulesets.mjs` — applique le ruleset "main protection" via `gh api` sur tous les repos
+- **OIDC + provenance** activés dans `publish.yml` (`id-token: write`, `npm publish --provenance`)
+
+### Changed
+
+- `package.json` : exports + files étendus, peerDeps optionnelles ajoutées (commitlint, playwright, tailwindcss).
+
 ## [1.0.1] - 2026-05-07
 
 ### Fixed
@@ -24,6 +49,7 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 - Templates VSCode (extensions, settings, tasks, launch)
 - Templates GitHub Actions (ci, deploy)
 
-[Unreleased]: https://github.com/mister-guiiug/dev-wpa-config/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/mister-guiiug/dev-wpa-config/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/mister-guiiug/dev-wpa-config/releases/tag/v1.1.0
 [1.0.1]: https://github.com/mister-guiiug/dev-wpa-config/releases/tag/v1.0.1
 [1.0.0]: https://github.com/mister-guiiug/dev-wpa-config/releases/tag/v1.0.0

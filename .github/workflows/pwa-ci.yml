@@ -1,0 +1,119 @@
+# Reusable workflow CI standard pour les PWA miss-* / mister-*.
+# Usage côté consumer (.github/workflows/ci.yml) :
+#
+# name: CI
+# on: [pull_request, push]
+# jobs:
+#   ci:
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v1
+#     secrets: inherit
+#     with:
+#       run-e2e: false
+name: Reusable PWA CI
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        required: false
+        default: '22'
+      run-format-check:
+        type: boolean
+        required: false
+        default: true
+      run-lint:
+        type: boolean
+        required: false
+        default: true
+      run-type-check:
+        type: boolean
+        required: false
+        default: true
+      run-tests:
+        type: boolean
+        required: false
+        default: true
+      run-build:
+        type: boolean
+        required: false
+        default: true
+      run-e2e:
+        type: boolean
+        required: false
+        default: false
+      e2e-grep:
+        type: string
+        required: false
+        default: '@critical'
+      e2e-project:
+        type: string
+        required: false
+        default: 'chromium'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  quality:
+    name: Format · Lint · Type · Test · Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Format check
+        if: ${{ inputs.run-format-check }}
+        run: npm run format:check
+
+      - name: Lint
+        if: ${{ inputs.run-lint }}
+        run: npm run lint
+
+      - name: Type check
+        if: ${{ inputs.run-type-check }}
+        run: npm run type-check
+
+      - name: Test
+        if: ${{ inputs.run-tests }}
+        run: npm run test
+
+      - name: Build
+        if: ${{ inputs.run-build }}
+        run: npm run build
+
+  e2e:
+    name: E2E (${{ inputs.e2e-grep }})
+    if: ${{ inputs.run-e2e }}
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Playwright browsers
+        run: npx playwright install ${{ inputs.e2e-project }} --with-deps
+
+      - name: Run E2E
+        run: npx playwright test --grep "${{ inputs.e2e-grep }}" --project=${{ inputs.e2e-project }}
+        env:
+          CI: true
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ inputs.e2e-grep }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

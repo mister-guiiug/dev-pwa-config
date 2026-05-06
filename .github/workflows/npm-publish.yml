@@ -1,0 +1,62 @@
+# Reusable workflow de publication npm (GitHub Packages) avec provenance.
+# Usage côté consumer (.github/workflows/publish.yml) :
+#
+# name: Publish
+# on:
+#   push:
+#     tags: ['v*']
+# jobs:
+#   publish:
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v1
+#     secrets: inherit
+name: Reusable npm publish
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        required: false
+        default: '22'
+      verify-tag:
+        description: 'Vérifier que le tag git correspond à package.json#version'
+        type: boolean
+        required: false
+        default: true
+      provenance:
+        description: 'Publier avec --provenance (signature sigstore)'
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write # requis pour --provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Vérifier la cohérence tag / package.json
+        if: ${{ inputs.verify-tag }}
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "❌ Tag $TAG_VERSION ≠ package.json $PKG_VERSION"
+            exit 1
+          fi
+          echo "✅ Version cohérente : $TAG_VERSION"
+
+      - name: Publish
+        run: npm publish ${{ inputs.provenance && '--provenance' || '' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
