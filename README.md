@@ -1,4 +1,4 @@
-# @misterguiiug/dev-wpa-config
+# @mister-guiiug/dev-wpa-config
 
 Configurations partagées (ESLint, Prettier, TypeScript, Vitest) pour les
 projets PWA de la famille `miss-*` et `mister-*`.
@@ -31,7 +31,7 @@ Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowPa
 ### Étape 1 — `.npmrc` à la racine du projet consommateur
 
 ```ini
-@misterguiiug:registry=https://npm.pkg.github.com
+@mister-guiiug:registry=https://npm.pkg.github.com
 ```
 
 ### Étape 2 — Dépendance dans `package.json`
@@ -39,7 +39,7 @@ Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowPa
 ```jsonc
 {
   "devDependencies": {
-    "@misterguiiug/dev-wpa-config": "^1.0.0"
+    "@mister-guiiug/dev-wpa-config": "^1.0.0"
   }
 }
 ```
@@ -54,7 +54,7 @@ Créer un [Personal Access Token](https://github.com/settings/tokens/new) avec *
 
 ```bash
 # Option 1 : npm login
-npm login --scope=@misterguiiug --auth-type=legacy --registry=https://npm.pkg.github.com
+npm login --scope=@mister-guiiug --auth-type=legacy --registry=https://npm.pkg.github.com
 # Username = votre login GitHub
 # Password = le PAT
 
@@ -72,7 +72,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
     node-version: '22'
     cache: npm
     registry-url: 'https://npm.pkg.github.com'
-    scope: '@misterguiiug'
+    scope: '@mister-guiiug'
 
 - run: npm ci
   env:
@@ -83,13 +83,13 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 
 | Sous-chemin | Type | Description |
 |---|---|---|
-| `@misterguiiug/dev-wpa-config/eslint-base` | `.js` | Config ESLint pour projets vanilla TS / Node (sans React) |
-| `@misterguiiug/dev-wpa-config/eslint-react` | `.js` | Étend la base avec `react-hooks` flat + `react-refresh` (rules React Compiler désactivées) |
-| `@misterguiiug/dev-wpa-config/prettier` | `.js` | Config Prettier 3.6 |
-| `@misterguiiug/dev-wpa-config/tsconfig-app` | `.json` | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]` |
-| `@misterguiiug/dev-wpa-config/tsconfig-app-react` | `.json` | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client` |
-| `@misterguiiug/dev-wpa-config/tsconfig-node` | `.json` | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`) |
-| `@misterguiiug/dev-wpa-config/vitest-base` | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) |
+| `@mister-guiiug/dev-wpa-config/eslint-base` | `.js` | Config ESLint pour projets vanilla TS / Node (sans React) |
+| `@mister-guiiug/dev-wpa-config/eslint-react` | `.js` | Étend la base avec `react-hooks` flat + `react-refresh` (rules React Compiler désactivées) |
+| `@mister-guiiug/dev-wpa-config/prettier` | `.js` | Config Prettier 3.6 |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app` | `.json` | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]` |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app-react` | `.json` | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client` |
+| `@mister-guiiug/dev-wpa-config/tsconfig-node` | `.json` | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`) |
+| `@mister-guiiug/dev-wpa-config/vitest-base` | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) |
 
 ## Templates non-importables (à copier-coller)
 
@@ -110,16 +110,16 @@ Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VS
 
 ```js
 // Projet React
-export { default } from '@misterguiiug/dev-wpa-config/eslint-react';
+export { default } from '@mister-guiiug/dev-wpa-config/eslint-react';
 
 // Projet non-React
-export { default } from '@misterguiiug/dev-wpa-config/eslint-base';
+export { default } from '@mister-guiiug/dev-wpa-config/eslint-base';
 ```
 
 ### `prettier.config.js`
 
 ```js
-export { default } from '@misterguiiug/dev-wpa-config/prettier';
+export { default } from '@mister-guiiug/dev-wpa-config/prettier';
 ```
 
 ### `tsconfig.app.json`
@@ -127,7 +127,7 @@ export { default } from '@misterguiiug/dev-wpa-config/prettier';
 ```jsonc
 // Projet React
 {
-  "extends": "@misterguiiug/dev-wpa-config/tsconfig-app-react",
+  "extends": "@mister-guiiug/dev-wpa-config/tsconfig-app-react",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo"
   },
@@ -136,7 +136,7 @@ export { default } from '@misterguiiug/dev-wpa-config/prettier';
 
 // Projet non-React
 {
-  "extends": "@misterguiiug/dev-wpa-config/tsconfig-app",
+  "extends": "@mister-guiiug/dev-wpa-config/tsconfig-app",
   "include": ["src"]
 }
 ```
@@ -145,7 +145,7 @@ export { default } from '@misterguiiug/dev-wpa-config/prettier';
 
 ```jsonc
 {
-  "extends": "@misterguiiug/dev-wpa-config/tsconfig-node",
+  "extends": "@mister-guiiug/dev-wpa-config/tsconfig-node",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
@@ -158,7 +158,7 @@ export { default } from '@misterguiiug/dev-wpa-config/prettier';
 ```ts
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { baseTestOptions } from '@misterguiiug/dev-wpa-config/vitest-base';
+import { baseTestOptions } from '@mister-guiiug/dev-wpa-config/vitest-base';
 
 export default defineConfig({
   plugins: [react()],
@@ -201,5 +201,5 @@ Toute modification de stack famille (bump majeur React, ESLint, etc.) :
 2. Mettre à jour les fichiers de config concernés.
 3. Bumper la version (`npm version patch|minor|major`) — le tag est créé automatiquement.
 4. `git push --follow-tags` → publication auto sur GitHub Packages.
-5. Dans chaque consumer : bumper la dep (`npm install @misterguiiug/dev-wpa-config@latest`) et tester.
+5. Dans chaque consumer : bumper la dep (`npm install @mister-guiiug/dev-wpa-config@latest`) et tester.
 6. Documenter le changement dans le `CHANGELOG.md`.

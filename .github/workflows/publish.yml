@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@misterguiiug'
+          scope: '@mister-guiiug'
 
       - name: Vérifier que la version du tag correspond à package.json
         run: |

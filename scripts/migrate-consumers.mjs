@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Migre les 4 projets consommateurs depuis l'ancien link `file:../dev-config`
- * (paquet @misterguiiug/dev-config) vers le paquet GitHub Packages
- * @misterguiiug/dev-wpa-config en semver.
+ * (paquet @mister-guiiug/dev-config) vers le paquet GitHub Packages
+ * @mister-guiiug/dev-wpa-config en semver.
  *
  * Modifications appliquées par projet :
  *  - package.json : remplace la dep + renomme la clé
@@ -13,7 +13,7 @@
  *
  * Usage : node scripts/migrate-consumers.mjs [version] [old-name]
  *   version   défaut: ^1.0.0
- *   old-name  défaut: @misterguiiug/dev-config
+ *   old-name  défaut: @mister-guiiug/dev-config
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -23,9 +23,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PARENT_DIR = join(__dirname, '..', '..');
 
 const VERSION = process.argv[2] ?? '^1.0.0';
-const OLD_NAME = process.argv[3] ?? '@misterguiiug/dev-config';
-const NEW_NAME = '@misterguiiug/dev-wpa-config';
-const REGISTRY_LINE = '@misterguiiug:registry=https://npm.pkg.github.com';
+const OLD_NAME = process.argv[3] ?? '@mister-guiiug/dev-config';
+const NEW_NAME = '@mister-guiiug/dev-wpa-config';
+const REGISTRY_LINE = '@mister-guiiug:registry=https://npm.pkg.github.com';
 
 const PROJECTS = ['miss-carbook', 'miss-contraction', 'mister-cim10', 'mister-puzzle'];
 
@@ -66,7 +66,7 @@ function patchTextFile(path) {
 function ensureNpmrc(projectRoot) {
   const path = join(projectRoot, '.npmrc');
   const existing = existsSync(path) ? readFileSync(path, 'utf8') : '';
-  if (existing.includes('@misterguiiug:registry')) return false;
+  if (existing.includes('@mister-guiiug:registry')) return false;
   const next = existing
     ? existing.replace(/\s*$/, '\n') + REGISTRY_LINE + '\n'
     : REGISTRY_LINE + '\n';
