@@ -11,13 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pas de cache npm : pas de lockfile commité (config-only package).
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
 
       - name: Install
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Verify ESLint configs are syntactically valid
         run: |
@@ -35,6 +35,14 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('./tsconfig-node.json'))"
           echo "✅ tsconfigs parsent"
 
-      - name: Verify vitest-base parses
+      - name: Verify vitest configs parse
         run: |
           node --input-type=module -e "import('./vitest-base.js').then(m => console.log('vitest-base OK:', JSON.stringify(m.baseTestOptions)))"
+          node --input-type=module -e "import('./vitest-browser-base.js').then(m => console.log('vitest-browser-base OK:', JSON.stringify(m.baseBrowserTestOptions)))"
+
+      - name: Verify other configs parse
+        run: |
+          node --input-type=module -e "import('./commitlint-base.js').then(m => console.log('commitlint OK'))"
+          node --input-type=module -e "import('./lint-staged-base.js').then(m => console.log('lint-staged OK'))"
+          node --input-type=module -e "import('./playwright-base.js').then(m => console.log('playwright-base OK'))"
+          node --input-type=module -e "import('./tailwind-preset.js').then(m => console.log('tailwind-preset OK'))"

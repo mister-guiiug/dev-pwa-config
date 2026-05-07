@@ -57,6 +57,7 @@ jobs:
           echo "✅ Version cohérente : $TAG_VERSION"
 
       - name: Publish
-        run: npm publish ${{ inputs.provenance && '--provenance' || '' }}
+        # --access public requis avec --provenance pour les nouveaux paquets / paquets restreints.
+        run: npm publish ${{ inputs.provenance && '--provenance --access public' || '' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

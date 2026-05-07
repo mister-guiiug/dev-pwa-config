@@ -26,6 +26,8 @@ jobs:
           scope: '@mister-guiiug'
 
       - name: Vérifier que la version du tag correspond à package.json
+        # Ne pas exécuter pour le tag mobile `v1` (toujours v1.x.y avec x ≥ 0).
+        if: ${{ github.ref != 'refs/tags/v1' }}
         run: |
           TAG_VERSION=${GITHUB_REF#refs/tags/v}
           PKG_VERSION=$(node -p "require('./package.json').version")
@@ -35,7 +37,12 @@ jobs:
           fi
           echo "✅ Version cohérente : $TAG_VERSION"
 
+      - name: Skip publish on rolling major tag (v1)
+        if: ${{ github.ref == 'refs/tags/v1' }}
+        run: echo "Tag v1 (rolling major) — pas de publication npm, GitHub Actions consume directly."
+
       - name: Publish (avec provenance sigstore)
-        run: npm publish --provenance
+        if: ${{ github.ref != 'refs/tags/v1' }}
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
