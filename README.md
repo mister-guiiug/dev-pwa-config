@@ -241,6 +241,8 @@ export { default } from '@mister-guiiug/dev-wpa-config/lint-staged';
 }
 ```
 
+> ⚠️ **Permissions caller obligatoires.** Les reusable workflows héritent des permissions du caller (intersection only — le called ne peut pas en élever). Le bloc `permissions:` doit être déclaré au **niveau du caller**, sinon `pages: write` / `id-token: write` / `packages: read` manqueront et le job échouera en `startup_failure` ou se bloquera sur les actions publish/deploy.
+
 ### Reusable workflow CI {#reusable-workflow-ci}
 
 `<projet>/.github/workflows/ci.yml` :
@@ -251,6 +253,11 @@ on:
   pull_request:
   push:
     branches: [main]
+
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   ci:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v1
@@ -270,6 +277,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  packages: read
+
 jobs:
   deploy:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v1
@@ -296,6 +310,12 @@ name: Publish
 on:
   push:
     tags: ['v*']
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write # requis pour npm --provenance
+
 jobs:
   publish:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v1
