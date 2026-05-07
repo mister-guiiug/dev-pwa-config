@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-wpa-config",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": false,
   "description": "Configurations partagées (ESLint, Prettier, TypeScript, Vitest, Playwright, Tailwind, commitlint, lint-staged) + reusable workflows + composite actions pour les projets miss-* et mister-*.",
   "license": "MIT",
@@ -30,6 +30,10 @@
       "types": "./vitest-base.d.ts",
       "default": "./vitest-base.js"
     },
+    "./vitest-browser-base": {
+      "types": "./vitest-browser-base.d.ts",
+      "default": "./vitest-browser-base.js"
+    },
     "./playwright-base": {
       "types": "./playwright-base.d.ts",
       "default": "./playwright-base.js"
@@ -48,6 +52,8 @@
     "tsconfig-node.json",
     "vitest-base.js",
     "vitest-base.d.ts",
+    "vitest-browser-base.js",
+    "vitest-browser-base.d.ts",
     "playwright-base.js",
     "playwright-base.d.ts",
     "tailwind-preset.js",
@@ -57,22 +63,28 @@
     "@commitlint/config-conventional": "^19.0.0",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.49.0",
+    "@vitest/browser": "^3.2.4",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "playwright": "^1.49.0",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.0.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "zod": "^3.23.8 || ^4.0.0"
   },
   "peerDependenciesMeta": {
     "@commitlint/config-conventional": { "optional": true },
     "@playwright/test": { "optional": true },
+    "@vitest/browser": { "optional": true },
     "eslint-plugin-react-hooks": { "optional": true },
     "eslint-plugin-react-refresh": { "optional": true },
-    "tailwindcss": { "optional": true }
+    "playwright": { "optional": true },
+    "tailwindcss": { "optional": true },
+    "zod": { "optional": true }
   },
   "dependencies": {
     "@eslint/js": "^9.39.4",
