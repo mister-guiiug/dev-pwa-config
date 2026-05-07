@@ -92,6 +92,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-app-react` | `.json` | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client` |
 | `@mister-guiiug/dev-wpa-config/tsconfig-node` | `.json` | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`) |
 | `@mister-guiiug/dev-wpa-config/vitest-base` | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) |
+| `@mister-guiiug/dev-wpa-config/vitest-browser-base` | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`) |
 | `@mister-guiiug/dev-wpa-config/playwright-base` | `.js` + `.d.ts` | `basePlaywrightOptions` (testDir, retries CI, traces, screenshots) |
 | `@mister-guiiug/dev-wpa-config/tailwind-preset` | `.js` | Design tokens famille (fonts, safe-areas, breakpoints) |
 | `@mister-guiiug/dev-wpa-config/tailwind-preset.css` | `.css` | Preset CSS Tailwind 4 (`@theme` + `@layer base`) |
@@ -197,6 +198,31 @@ Le projet doit créer `src/test/setup.ts` (chargé par `setupFiles`). Contenu ty
 ```ts
 import '@testing-library/jest-dom/vitest';
 ```
+
+### `vitest.browser.config.ts` (Browser Mode opt-in)
+
+Alternative à jsdom — exécute les tests dans un vrai navigateur via Playwright. Plus fidèle (vraies API DOM, pas de polyfills) mais plus lourd. Cohabite avec jsdom :
+
+- `*.test.{ts,tsx}` → jsdom (rapide, isolation)
+- `*.browser.test.{ts,tsx}` → vrai Chromium (fidélité visuelle/DOM)
+
+```bash
+npm install -D @vitest/browser playwright
+npx playwright install chromium
+```
+
+```ts
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import { baseBrowserTestOptions } from '@mister-guiiug/dev-wpa-config/vitest-browser-base';
+
+export default defineConfig({
+  plugins: [react()],
+  test: baseBrowserTestOptions,
+});
+```
+
+Lancer : `vitest --config vitest.browser.config.ts`
 
 ### `playwright.config.ts`
 
@@ -329,6 +355,85 @@ Chaque projet peut surcharger des options après extension :
 - **mister-puzzle** ajoute `verbatimModuleSyntax` + `erasableSyntaxOnly` (TS plus strict sur le code legacy converti).
 - **mister-cim10** override `allowJs: true` + `strict: false` temporairement (le code legacy ICD-10 utilise encore quelques `any` dans des manipulations DOM ; à durcir progressivement).
 - **mister-puzzle** étend `vitest-base.include` pour ajouter `server/**/*.test.ts`.
+
+## Migration guide
+
+### React Compiler (rules en `warn` depuis v1.2.0)
+
+Les 6 règles compiler de `eslint-plugin-react-hooks` (incluses dans `flat.recommended`) sont actives en `warn` famille — visibles en lint sans bloquer la CI. Pour adopter le compiler :
+
+1. **Adapter le code progressivement** : viser 0 warning sur les fichiers touchés.
+2. **Activer le compiler côté Vite** :
+   ```bash
+   npm install -D babel-plugin-react-compiler
+   ```
+   ```ts
+   // vite.config.ts
+   import react from '@vitejs/plugin-react';
+   export default defineConfig({
+     plugins: [
+       react({
+         babel: { plugins: [['babel-plugin-react-compiler', {}]] },
+       }),
+     ],
+   });
+   ```
+3. **Forcer le mode strict ESLint** localement (override sur le projet pilote) :
+   ```js
+   // eslint.config.js
+   import base from '@mister-guiiug/dev-wpa-config/eslint-react';
+   export default [...base, {
+     files: ['**/*.{ts,tsx}'],
+     rules: {
+       'react-hooks/set-state-in-effect': 'error',
+       'react-hooks/purity': 'error',
+       'react-hooks/immutability': 'error',
+       'react-hooks/preserve-manual-memoization': 'error',
+       'react-hooks/refs': 'error',
+       'react-hooks/static-components': 'error',
+     },
+   }];
+   ```
+
+### Zod 3 → 4 (breaking, perfs ~+50%)
+
+Breaking changes notables :
+- `.parse()` strict par défaut (rejette les clés inconnues — utiliser `.passthrough()` pour l'ancien comportement).
+- `result.errors[]` → `result.error.issues[]`.
+- `.format()` retourne maintenant un `$ZodError` flatten.
+- Coercion (`z.coerce.*`) plus strictes.
+
+Procédure :
+```bash
+npm install zod@^4
+npm run type-check
+# → repérer les usages cassés, adapter
+npm run test
+```
+
+Voir : <https://zod.dev/v4/migration>
+
+Concerne dans la famille : `miss-carbook`, `miss-contraction`, `mister-puzzle` (les 3 utilisent Zod 3).
+
+### Vitest Browser Mode (opt-in)
+
+Recommandé pour :
+- Tests de composants utilisant beaucoup d'API DOM/CSS réelles.
+- Tests visuels / responsive.
+- Tests qui nécessitent vrai layout (mesures, focus management complexe).
+
+À garder en jsdom :
+- Tests purement logiques (utils, hooks sans DOM).
+- Tests de stores Zustand.
+- Tests rapides de smoke / régression.
+
+Cohabitation recommandée : 2 fichiers de config (`vitest.config.ts` + `vitest.browser.config.ts`), 2 scripts npm (`test` + `test:browser`).
+
+### TypeScript / Tailwind / Vitest
+
+- **TypeScript ~6.0.2** : déjà cible famille — rien à faire.
+- **Tailwind 4.2.x** : déjà la dernière — rien à faire.
+- **Vitest 3.2.x** : stable. Vitest 4 attendu courant 2026 (suivre ; pas de migration prévue avant LTS).
 
 ## Publication
 

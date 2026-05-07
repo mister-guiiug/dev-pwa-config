@@ -1,7 +1,22 @@
 /**
- * Config ESLint pour projets React.
+ * Config ESLint pour projets React 19+.
  * Étend `./eslint-base` avec les plugins react-hooks et react-refresh,
- * et désactive les règles "React Compiler" trop strictes pour les patterns actuels.
+ * et active les règles React Compiler en mode `warn` (passage en `error`
+ * recommandé une fois les patterns adaptés au compiler).
+ *
+ * Pour passer en mode strict (toutes les règles compiler en `error`) :
+ *   import { default as base } from '@mister-guiiug/dev-wpa-config/eslint-react';
+ *   export default [...base, {
+ *     files: ['**\/*.{ts,tsx}'],
+ *     rules: {
+ *       'react-hooks/set-state-in-effect': 'error',
+ *       'react-hooks/purity': 'error',
+ *       'react-hooks/immutability': 'error',
+ *       'react-hooks/preserve-manual-memoization': 'error',
+ *       'react-hooks/refs': 'error',
+ *       'react-hooks/static-components': 'error',
+ *     },
+ *   }];
  */
 import js from '@eslint/js';
 import globals from 'globals';
@@ -25,15 +40,20 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // React Compiler rules désactivées : trop strictes pour les patterns actuels.
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/purity': 'off',
-      'react-hooks/immutability': 'off',
-      'react-hooks/preserve-manual-memoization': 'off',
-      'react-hooks/refs': 'off',
-      'react-hooks/static-components': 'off',
+      // React Compiler rules : `warn` famille (vs off avant).
+      // Permet d'identifier les patterns à adapter sans bloquer la CI.
+      // Passer en `error` localement pour forcer la conformité.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/static-components': 'warn',
       // Hooks et fichiers utilitaires co-localisés sont autorisés (warn only).
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
     },
   },
 ]);
