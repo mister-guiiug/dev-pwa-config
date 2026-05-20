@@ -319,6 +319,8 @@ jobs:
       pre-build-script: '' # ex: 'migrate:db' pour Supabase
 ```
 
+> ⚠️ **Ne PAS déclarer `concurrency: pages` au niveau du caller.** Le reusable `pwa-deploy.yml` déclare déjà `concurrency: { group: pages, cancel-in-progress: true }`. Le répéter côté caller provoque le message `Canceling since a deadlock was detected for concurrency group: 'pages' between a top level workflow and 'deploy'` et le job ne démarre jamais. Cette règle vaut pour toutes les paires caller / reusable qui partagent un groupe de concurrence (`pages`, `publish`, etc.).
+
 > **Cas avancé** (besoin de migrations Supabase / Firebase rules / variables d'env complexes) : ne pas utiliser le reusable. Reprendre le template `templates/github-workflows/deploy.yml` et personnaliser, en gardant la composite action `setup-pwa` :
 >
 > ```yaml
@@ -352,9 +354,10 @@ jobs:
 
 Chaque projet peut surcharger des options après extension :
 
-- **mister-puzzle** ajoute `verbatimModuleSyntax` + `erasableSyntaxOnly` (TS plus strict sur le code legacy converti).
-- **mister-cim10** override `allowJs: true` + `strict: false` temporairement (le code legacy ICD-10 utilise encore quelques `any` dans des manipulations DOM ; à durcir progressivement).
+- **mister-puzzle** ajoute `verbatimModuleSyntax` + `erasableSyntaxOnly` (TS plus strict sur le code legacy converti) sur **`tsconfig.app` ET `tsconfig.node`**. Le `tsconfig.node` ajoute aussi les options de linting que la base node ne porte pas (`allowImportingTsExtensions`, `moduleDetection: force`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`) pour aligner la strictness avec `tsconfig.app`.
+- **mister-cim10** override `allowJs: true` + `checkJs: false` (le code legacy ICD-10 utilise du JS dans des manipulations DOM ; à durcir progressivement).
 - **mister-puzzle** étend `vitest-base.include` pour ajouter `server/**/*.test.ts`.
+- **miss-contraction** étend `vitest-base` avec un `exclude: ['**/node_modules/**', '**/e2e/**']` pour éviter que Vitest pioche dans les specs Playwright.
 
 ## Migration guide
 
