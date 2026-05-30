@@ -54,6 +54,16 @@ export default defineConfig([
         'warn',
         { allowConstantExport: true },
       ],
+      // Le préfixe `_` marque un binding intentionnellement inutilisé
+      // (aligné sur TypeScript noUnusedLocals/noUnusedParameters).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
     },
   },
   // Specs E2E : `any` et variables inutilisées tolérés (fixtures, page objects,

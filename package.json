@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-wpa-config",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "private": false,
   "description": "Configurations partagées (ESLint, Prettier, TypeScript, Vitest, Playwright, Tailwind, commitlint, lint-staged) + reusable workflows + composite actions pour les projets miss-* et mister-*.",
   "license": "MIT",
