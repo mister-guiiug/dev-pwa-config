@@ -93,9 +93,16 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-node` | `.json` | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`) |
 | `@mister-guiiug/dev-wpa-config/vitest-base` | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) |
 | `@mister-guiiug/dev-wpa-config/vitest-browser-base` | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`) |
-| `@mister-guiiug/dev-wpa-config/playwright-base` | `.js` + `.d.ts` | `basePlaywrightOptions` (testDir, retries CI, traces, screenshots) |
+| `@mister-guiiug/dev-wpa-config/playwright-base` | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy) |
+| `@mister-guiiug/dev-wpa-config/vite-pwa-base` | `.js` + `.d.ts` | `pwaSeoPlugin()` (injection GTM/GA4 + sitemap.xml/robots.txt) + helpers analytics |
 | `@mister-guiiug/dev-wpa-config/tailwind-preset` | `.js` | Design tokens famille (fonts, safe-areas, breakpoints) |
-| `@mister-guiiug/dev-wpa-config/tailwind-preset.css` | `.css` | Preset CSS Tailwind 4 (`@theme` + `@layer base`) |
+| `@mister-guiiug/dev-wpa-config/tailwind-preset.css` | `.css` | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target` |
+
+## Bin
+
+| Commande | Rôle |
+|---|---|
+| `pwa-icons` | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable` |
 
 ## Reusable workflows GitHub Actions
 
@@ -106,12 +113,15 @@ Hébergés dans [`.github/workflows/`](.github/workflows/) — utilisables par t
 | `pwa-ci.yml` | Format · Lint · Type · Test · Build (+ E2E optionnel) | voir [Utilisation](#reusable-workflow-ci) |
 | `pwa-deploy.yml` | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto) | voir [Utilisation](#reusable-workflow-deploy) |
 | `npm-publish.yml` | Publication npm sur GitHub Packages avec `--provenance` | voir [Utilisation](#reusable-workflow-publish) |
+| `pwa-lighthouse.yml` | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR | `uses: …/pwa-lighthouse.yml@v1` (requiert `.lighthouserc.json`, cf. template) |
 
-## Composite action
+## Composite actions
 
 | Action | Rôle |
 |---|---|
 | `mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1` | Setup Node 22 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages) |
+| `mister-guiiug/dev-wpa-config/.github/actions/supabase-migrate@v1` | Setup CLI Supabase + `link` + `db push` (déploiements custom) |
+| `mister-guiiug/dev-wpa-config/.github/actions/firebase-deploy@v1` | `firebase deploy` ciblé (rules database/firestore, indexes) |
 
 ## Templates non-importables (à copier-coller)
 
@@ -129,6 +139,7 @@ Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VS
 | [`templates/husky/commit-msg`](./templates/husky/commit-msg) | `<projet>/.husky/commit-msg` | Aucune |
 | [`templates/.editorconfig`](./templates/.editorconfig) | `<projet>/.editorconfig` | Aucune |
 | [`templates/.nvmrc`](./templates/.nvmrc) | `<projet>/.nvmrc` | Aucune |
+| [`templates/.lighthouserc.json`](./templates/.lighthouserc.json) | `<projet>/.lighthouserc.json` | Ajuster les seuils (`minScore`) par catégorie |
 | [`templates/changesets/config.json`](./templates/changesets/config.json) | `<projet>/.changeset/config.json` | Adapter `access` (restricted vs public) |
 
 ## Utilisation
@@ -226,6 +237,26 @@ Lancer : `vitest --config vitest.browser.config.ts`
 
 ### `playwright.config.ts`
 
+Recommandé — la factory (matrice 5 navigateurs, reporters multi-format,
+snapshots par plateforme, `reducedMotion`, `webServer` déjà inclus) :
+
+```ts
+import { defineConfig, devices } from '@playwright/test';
+import { definePwaPlaywrightConfig } from '@mister-guiiug/dev-wpa-config/playwright-base';
+
+// devices est passé à la factory (le paquet n'importe pas @playwright/test).
+export default defineConfig(
+  definePwaPlaywrightConfig({
+    devices,
+    port: 5173, // optionnel
+    // testMatch: /.*\.spec\.ts$/,    // si convention .spec
+    // extraProjects: [...],          // navigateurs additionnels
+  })
+);
+```
+
+Cas simple / legacy — spread de `basePlaywrightOptions` :
+
 ```ts
 import { defineConfig, devices } from '@playwright/test';
 import { basePlaywrightOptions } from '@mister-guiiug/dev-wpa-config/playwright-base';
@@ -237,10 +268,48 @@ export default defineConfig({
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
+```
+
+### `vitest.config.ts` (coverage)
+
+```ts
+import { baseTestOptions, coveragePreset } from '@mister-guiiug/dev-wpa-config/vitest-base';
+
+test: {
+  ...baseTestOptions,
+  coverage: {
+    ...coveragePreset,
+    include: ['src/domain/**'],        // scope au domaine critique
+    thresholds: { statements: 65, branches: 80, functions: 70, lines: 65 },
+  },
+}
+```
+
+### `vite.config.ts` (SEO + analytics)
+
+```ts
+import { pwaSeoPlugin } from '@mister-guiiug/dev-wpa-config/vite-pwa-base';
+
+export default defineConfig({
+  plugins: [react(), pwaSeoPlugin({ siteName: 'Mister Puzzle' })],
+});
+```
+
+Placeholders à mettre dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
+`__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`. Variables d'env de
+build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`, `VITE_PUBLIC_SITE_ORIGIN`,
+`VITE_BASE_PATH`.
+
+### `package.json` (icônes PWA)
+
+```jsonc
+{
+  "scripts": {
+    "icons": "pwa-icons --source public/favicon.svg --out public --maskable"
+  }
+}
 ```
 
 ### `commitlint.config.js`
