@@ -7,6 +7,15 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Template `.lighthouserc.json`** : passage à des assertions **catégorielles
+  uniquement** (perf/a11y/bp/seo) au lieu du preset `lighthouse:recommended`.
+  Ce dernier assertait chaque audit individuel (dont des insights binaires et
+  flaky comme `forced-reflow-insight`), provoquant des faux négatifs en CI.
+  Seuls les scores de catégories restent des gates. (Templates non publiés npm —
+  pas de bump de version ; à recopier côté consommateurs.)
+
 ## [1.3.0] - 2026-05-30
 
 Cette version remonte dans le paquet des patterns qui étaient dupliqués (ou
