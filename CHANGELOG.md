@@ -7,6 +7,63 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-05-30
+
+Cette version remonte dans le paquet des patterns qui étaient dupliqués (ou
+contournés) dans les consommateurs, après audit de la famille `miss-*` / `mister-*`.
+
+### Added
+
+- **Factory Playwright** (`playwright-base`) : `definePwaPlaywrightConfig({ devices })`
+  + helpers `pwaProjects(devices)` / `pwaReporters()`. Centralise la matrice 5
+  navigateurs, les reporters multi-format, le `snapshotPathTemplate`, `reducedMotion`
+  et le `webServer` que les 7 projets réécrivaient à l'identique (~50 lignes chacun).
+  `basePlaywrightOptions` reste exporté (rétro-compat).
+- **Bin `pwa-icons`** : générateur d'icônes PWA partagé (`scripts/generate-pwa-icons.mjs`),
+  remplace les `generate-*-icons.{mjs,ts}` dupliqués. Options `--source`, `--out`,
+  `--sizes`, `--maskable`, `--bg`, `--prefix`. `sharp` ajouté en peerDep optionnelle.
+- **Export `vite-pwa-base`** : `pwaSeoPlugin()` (injection GTM/GA4 + sitemap.xml/robots.txt)
+  et helpers `parseGtmContainerId` / `parseGaMeasurementId` / `buildAnalyticsHtmlFragments` /
+  `resolveSeoPublicUrls`. Généralise `puzzle/vite-plugin-seo.ts` et `carbook` htmlTrackingPlugin.
+- **Preset coverage Vitest** : `coveragePreset` (provider v8 + reporters + exclude) dans
+  `vitest-base`. Thresholds laissés au projet.
+- **Reusable workflow `pwa-lighthouse.yml`** + template `templates/.lighthouserc.json` :
+  Lighthouse CI (build base-path `/` puis LHCI). Remplace les workflows inline dupliqués
+  (badminton, molkky).
+- **Composite actions** pour les déploiements custom récurrents :
+  `.github/actions/supabase-migrate` (link + db push) et `.github/actions/firebase-deploy`
+  (deploy rules/indexes).
+- **Override ESLint `e2e/**`** intégré dans `eslint-base` et `eslint-react`
+  (`no-explicit-any` + `no-unused-vars` off sur les specs) — était dupliqué dans
+  badminton / contraction / molkky.
+- **Tailwind preset** enrichi : typographie/spacing fluides (`--text-fluid-*`,
+  `--spacing-fluid-*`) + utilitaires `*-safe` / `*-safe-3` (safe-areas) + `touch-target`,
+  pour rendre `tailwind-preset.css` réellement adoptable (0 adoption jusqu'ici).
+- **`@commitlint/cli`** ajouté en peerDep optionnelle.
+
+### Changed
+
+- **CI du paquet** : nouveau job `consumer-resolution` qui fait `npm pack` + installe
+  le tarball dans un projet jetable et vérifie que **chaque subpath résout via `exports`**
+  (`tsconfig extends` + imports JS + assets CSS/JSON). Comble le trou qui avait laissé
+  passer la résolution intermittente de `./tsconfig-app-react` en CI (molkky avait dû
+  ré-inliner ses tsconfig/vitest). Le job `validate` ne testait que le parsing in-repo.
+- **Actions GitHub** bumpées `checkout`/`setup-node` `@v4` → `@v5` (runtime Node 24)
+  dans tous les workflows et la composite action. Supprime la nécessité du workaround
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` côté consommateurs (badminton, molkky).
+
+### Migration guide
+
+- **Playwright** : remplacer le bloc `{ ...basePlaywrightOptions, ... }` réécrit par
+  `export default defineConfig(definePwaPlaywrightConfig({ devices }))`.
+- **Icônes** : remplacer le script local par `"icons": "pwa-icons --source <svg> --maskable"`
+  (installer `sharp` en devDep si absent).
+- **Node 24** : retirer `env: { FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true' }` des `ci.yml`
+  une fois le tag `v1` republié.
+- **molkky** : une fois ce paquet publié et le job `consumer-resolution` vert, re-basculer
+  `tsconfig.app.json` / `tsconfig.node.json` / `vitest.config.ts` sur les `extends`/imports
+  partagés et supprimer le contenu inliné.
+
 ## [1.2.0] - 2026-05-07
 
 ### Added

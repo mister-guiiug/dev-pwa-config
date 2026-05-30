@@ -60,7 +60,7 @@ jobs:
     name: Format · Lint · Type · Test · Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
         with:
@@ -93,7 +93,7 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
         with:

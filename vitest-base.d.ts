@@ -12,3 +12,10 @@ export const baseTestOptions: {
   include: string[];
   passWithNoTests: boolean;
 };
+
+/** Preset de couverture (provider v8 + reporters). Thresholds laissés au projet. */
+export const coveragePreset: {
+  provider: string;
+  reporter: string[];
+  exclude: string[];
+};

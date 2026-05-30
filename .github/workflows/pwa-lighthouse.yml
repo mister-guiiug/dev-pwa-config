@@ -1,0 +1,71 @@
+# Reusable workflow Lighthouse CI pour les PWA miss-* / mister-*.
+# Build le projet (base path = / pour servir dist/ à la racine) puis lance
+# Lighthouse CI sur le build statique avec le .lighthouserc.json du projet.
+#
+# Usage côté consumer (.github/workflows/lighthouse.yml) :
+#
+# name: Lighthouse
+# on:
+#   pull_request:
+#   workflow_dispatch:
+# permissions:
+#   contents: read
+#   packages: read
+#   pull-requests: write
+# jobs:
+#   lighthouse:
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-lighthouse.yml@v1
+#     secrets: inherit
+#
+# Prérequis projet : un .lighthouserc.json à la racine (cf. templates/.lighthouserc.json).
+name: Reusable PWA Lighthouse
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        required: false
+        default: '22'
+      base-path:
+        description: 'VITE_BASE_PATH pour le build mesuré (LHCI sert dist/ à la racine)'
+        type: string
+        required: false
+        default: '/'
+      config-path:
+        description: 'Chemin du fichier de config Lighthouse CI'
+        type: string
+        required: false
+        default: './.lighthouserc.json'
+      upload-artifacts:
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+  packages: read
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        env:
+          VITE_BASE_PATH: ${{ inputs.base-path }}
+        run: npm run build
+
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: ${{ inputs.config-path }}
+          uploadArtifacts: ${{ inputs.upload-artifacts }}
+          temporaryPublicStorage: true
