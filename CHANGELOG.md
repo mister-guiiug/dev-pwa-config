@@ -16,6 +16,17 @@ versionnement [SemVer](https://semver.org/lang/fr/).
   Seuls les scores de catégories restent des gates. (Templates non publiés npm —
   pas de bump de version ; à recopier côté consommateurs.)
 
+## [1.3.2] - 2026-05-31
+
+### Changed
+
+- **ESLint `no-unused-vars`** (base + react) : ajout de
+  `argsIgnorePattern` / `varsIgnorePattern` / `caughtErrorsIgnorePattern: '^_'`.
+  Le préfixe `_` marque un binding intentionnellement inutilisé (convention
+  standard, alignée sur TypeScript `noUnusedLocals`/`noUnusedParameters`).
+  Évite les divergences eslint↔tsc rencontrées dans les consommateurs
+  (ex. `_id` dans mister-footcoach, `_tokenId` dans miss-ticket-pwa).
+
 ## [1.3.1] - 2026-05-30
 
 ### Fixed
