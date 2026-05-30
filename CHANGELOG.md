@@ -16,6 +16,15 @@ versionnement [SemVer](https://semver.org/lang/fr/).
   Seuls les scores de catégories restent des gates. (Templates non publiés npm —
   pas de bump de version ; à recopier côté consommateurs.)
 
+## [1.3.1] - 2026-05-30
+
+### Fixed
+
+- **peerDep `sharp`** élargie de `^0.33.0` à `>=0.33.0`. La plage `^0.33.0`
+  refusait `sharp@0.34.x` (présent côté consommateurs, ex. miss-badminton) et
+  provoquait un `ERESOLVE` à l'install, alors que `sharp` n'est qu'un peer
+  optionnel utilisé par le bin `pwa-icons` (API resize/png/composite stable).
+
 ## [1.3.0] - 2026-05-30
 
 Cette version remonte dans le paquet des patterns qui étaient dupliqués (ou
