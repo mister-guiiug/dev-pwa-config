@@ -1,0 +1,25 @@
+name: 'Firebase deploy'
+description: 'Déploie des cibles Firebase (rules database/firestore, indexes) via firebase-tools. Centralise les steps custom dupliquées (puzzle, miss-ticket).'
+inputs:
+  token:
+    description: 'FIREBASE_TOKEN (firebase login:ci). Alternative : utiliser GOOGLE_APPLICATION_CREDENTIALS via un service account.'
+    required: true
+  project-id:
+    description: 'ID du projet Firebase'
+    required: true
+  only:
+    description: "Cibles à déployer (ex. 'database', 'firestore:rules,firestore:indexes')"
+    required: false
+    default: 'database'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Deploy Firebase targets
+      shell: bash
+      run: |
+        npm install -g firebase-tools
+        firebase deploy \
+          --only "${{ inputs.only }}" \
+          --project "${{ inputs.project-id }}" \
+          --token "${{ inputs.token }}"
