@@ -85,8 +85,14 @@ jobs:
       - name: tsconfig `extends` resolves through exports
         working-directory: /tmp/fixture
         run: |
+          # Un fichier source + `include` sont nécessaires, sinon `tsc` sort en
+          # TS18003 ("No inputs were found") — ce qui masquerait le vrai test
+          # (la résolution du subpath dans `extends`). --showConfig ne charge
+          # pas les paquets de `types`, donc l'absence de vite/node types ici
+          # n'est pas un problème : on ne valide QUE la résolution du extends.
+          mkdir -p src && echo 'export {};' > src/x.ts
           for cfg in tsconfig-app tsconfig-app-react tsconfig-node; do
-            echo "{\"extends\":\"@mister-guiiug/dev-wpa-config/$cfg\"}" > tsconfig.json
+            echo "{\"extends\":\"@mister-guiiug/dev-wpa-config/$cfg\",\"include\":[\"src\"]}" > tsconfig.json
             npx tsc --showConfig >/dev/null && echo "✅ extends $cfg"
           done
 
