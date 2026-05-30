@@ -56,4 +56,14 @@ export default defineConfig([
       ],
     },
   },
+  // Specs E2E : `any` et variables inutilisées tolérés (fixtures, page objects,
+  // helpers de test). Override historiquement dupliqué dans badminton /
+  // contraction / molkky — centralisé ici.
+  {
+    files: ['e2e/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
 ]);

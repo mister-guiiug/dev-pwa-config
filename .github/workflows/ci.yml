@@ -7,12 +7,13 @@ on:
 
 jobs:
   validate:
+    name: In-repo config parse
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Pas de cache npm : pas de lockfile commité (config-only package).
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
 
@@ -46,3 +47,64 @@ jobs:
           node --input-type=module -e "import('./lint-staged-base.js').then(m => console.log('lint-staged OK'))"
           node --input-type=module -e "import('./playwright-base.js').then(m => console.log('playwright-base OK'))"
           node --input-type=module -e "import('./tailwind-preset.js').then(m => console.log('tailwind-preset OK'))"
+          node --input-type=module -e "import('./vite-pwa-base.js').then(m => console.log('vite-pwa-base OK'))"
+
+  # ── Smoke test « consommateur réel » ────────────────────────────────────────
+  # Le job `validate` ci-dessus ne teste que le parsing des fichiers DANS le repo.
+  # Il ne prouve PAS que le paquet, une fois `npm pack` + installé, résout ses
+  # subpath via la table `exports`. C'est exactement ce trou qui a laissé passer
+  # le bug de résolution intermittente du subpath `./tsconfig-app-react` en CI
+  # (mister-molkky a dû ré-inliner ses tsconfig/vitest pour le contourner).
+  # Ce job reproduit le mode de défaillance réel : extends/import depuis le
+  # tarball INSTALLÉ, pas depuis le repo.
+  consumer-resolution:
+    name: Consumer subpath resolution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install + pack
+        run: |
+          npm install --no-audit --no-fund
+          npm pack                       # produit mister-guiiug-dev-wpa-config-*.tgz
+
+      - name: Scaffold a throwaway consumer
+        run: |
+          mkdir -p /tmp/fixture
+          cd /tmp/fixture
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund \
+            "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz \
+            typescript prettier eslint @eslint/js typescript-eslint globals \
+            eslint-plugin-react-hooks eslint-plugin-react-refresh
+
+      - name: tsconfig `extends` resolves through exports
+        working-directory: /tmp/fixture
+        run: |
+          for cfg in tsconfig-app tsconfig-app-react tsconfig-node; do
+            echo "{\"extends\":\"@mister-guiiug/dev-wpa-config/$cfg\"}" > tsconfig.json
+            npx tsc --showConfig >/dev/null && echo "✅ extends $cfg"
+          done
+
+      - name: Every JS subpath import resolves
+        working-directory: /tmp/fixture
+        run: |
+          node --input-type=module -e "
+            const subs = ['eslint-base','eslint-react','prettier','commitlint',
+              'lint-staged','vitest-base','vitest-browser-base','playwright-base',
+              'tailwind-preset','vite-pwa-base'];
+            for (const s of subs) {
+              await import('@mister-guiiug/dev-wpa-config/' + s);
+              console.log('✅ import ' + s);
+            }
+          "
+
+      - name: CSS + JSON assets are shipped in the tarball
+        working-directory: /tmp/fixture
+        run: |
+          node -e "require.resolve('@mister-guiiug/dev-wpa-config/tailwind-preset.css'); console.log('✅ tailwind-preset.css present')"
+          node -e "require.resolve('@mister-guiiug/dev-wpa-config/tsconfig-app'); console.log('✅ tsconfig-app json present')"

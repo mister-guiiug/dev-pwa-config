@@ -1,0 +1,36 @@
+name: 'Supabase migrate'
+description: 'Setup Supabase CLI + link projet + db push (migrations). Centralise le job custom dupliqué (carbook, molkky).'
+inputs:
+  access-token:
+    description: 'SUPABASE_ACCESS_TOKEN (https://supabase.com/dashboard/account/tokens)'
+    required: true
+  project-id:
+    description: 'Ref du projet Supabase (slug dans l’URL du dashboard)'
+    required: true
+  db-password:
+    description: 'Mot de passe de la base (défini à la création du projet)'
+    required: true
+  cli-version:
+    description: 'Version du CLI Supabase'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: supabase/setup-cli@v1
+      with:
+        version: ${{ inputs.cli-version }}
+
+    - name: Link project
+      shell: bash
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ inputs.access-token }}
+      run: supabase link --project-ref ${{ inputs.project-id }}
+
+    - name: Apply migrations
+      shell: bash
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ inputs.access-token }}
+        SUPABASE_DB_PASSWORD: ${{ inputs.db-password }}
+      run: supabase db push
