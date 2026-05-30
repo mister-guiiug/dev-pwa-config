@@ -16,6 +16,19 @@ export default defineConfig([
       ecmaVersion: 2025,
       globals: globals.browser,
     },
+    rules: {
+      // Le préfixe `_` marque une variable / un paramètre / une erreur capturée
+      // intentionnellement inutilisé(e) — convention standard, alignée sur le
+      // comportement de TypeScript (`noUnusedLocals`/`noUnusedParameters`).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
   },
   // Specs E2E : `any` et variables inutilisées tolérés (fixtures, page objects,
   // helpers de test). Override historiquement dupliqué dans badminton /
