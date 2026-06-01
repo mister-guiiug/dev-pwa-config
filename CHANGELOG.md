@@ -7,6 +7,8 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-02
+
 ### Added
 
 - **`lucide-react`** comme **bibliothèque d'icônes standard** de la famille
@@ -14,6 +16,13 @@ versionnement [SemVer](https://semver.org/lang/fr/).
   README (« Icônes — `lucide-react` »). Iconographie fonctionnelle (nav, boutons,
   tendances) en SVG tree-shakés ; emoji réservé au contenu utilisateur et aux
   illustrations mascotte. Premier consommateur : `miss-genius`.
+- **Règle « Liens app — code source + sponsor »** : chaque app expose un lien
+  vers son **code source** (GitHub) et un lien **sponsor** (Buy Me a Coffee,
+  handle famille `mister.guiiug`). Documentée dans le README (pattern
+  `src/links.ts` + footer, `target="_blank" rel="noopener noreferrer"`, marque
+  GitHub en SVG inline car lucide 1.x n'a plus d'icônes de marque). Template
+  `templates/FUNDING.yml` ajouté pour le bouton « Sponsor » du dépôt. Premier
+  consommateur : `miss-genius`.
 
 ### Changed
 
