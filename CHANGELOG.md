@@ -7,6 +7,14 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+### Added
+
+- **`lucide-react`** comme **bibliothèque d'icônes standard** de la famille
+  React : ajout en `peerDependencies` (optionnelle) + règle documentée dans le
+  README (« Icônes — `lucide-react` »). Iconographie fonctionnelle (nav, boutons,
+  tendances) en SVG tree-shakés ; emoji réservé au contenu utilisateur et aux
+  illustrations mascotte. Premier consommateur : `miss-genius`.
+
 ### Changed
 
 - **Template `.lighthouserc.json`** : passage à des assertions **catégorielles

@@ -13,6 +13,7 @@ projets PWA de la famille `miss-*` et `mister-*`.
 | [`miss-contraction`](../miss-contraction/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base |
 | [`mister-cim10`](../mister-cim10/) | React | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base |
 | [`mister-puzzle`](../mister-puzzle/) | React + Firebase | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base |
+| [`miss-genius`](../miss-genius/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, vite-pwa-base, `lucide-react` |
 
 ## Stack cible (mai 2026)
 
@@ -24,7 +25,39 @@ ESLint 9 (flat config) + typescript-eslint 8.58
 eslint-plugin-react-hooks 7.0 (configs.flat.recommended) + eslint-plugin-react-refresh 0.5
 Vitest 3 (jsdom + globals + setupFiles)
 Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowParens 'avoid')
+Tailwind 4 (@tailwindcss/vite) + lucide-react (icônes — standard famille)
 ```
+
+### Icônes — `lucide-react` (règle famille)
+
+Les projets React de la famille **utilisent `lucide-react`** comme bibliothèque
+d'icônes d'interface (navigation, boutons d'action, tendances, en-têtes). C'est
+le standard partagé : cohérence visuelle entre `miss-*` / `mister-*`, icônes
+SVG tree-shakées (on n'embarque que celles importées), `strokeWidth`/`size`
+ajustables, et `currentColor` qui suit les tokens du thème.
+
+```bash
+npm install lucide-react
+```
+
+```tsx
+import { Plus, Trash2 } from 'lucide-react';
+
+// Icône décorative -> aria-hidden ; le libellé accessible vit sur le bouton.
+<button aria-label="Supprimer">
+  <Trash2 size={18} aria-hidden="true" />
+</button>
+```
+
+Conventions :
+
+- **Décoratives** : `aria-hidden="true"` + un libellé porté par le parent
+  (`aria-label`, texte visible…). Ne jamais s'appuyer sur la seule icône.
+- **Tailles** : `size={18}` (boutons/inline), `size={22}` (nav), `size={13}`
+  (pastilles). Couleur via `className` (`text-primary`, `currentColor`).
+- **Emoji autorisé uniquement** pour le contenu utilisateur (ex. icône de
+  matière choisie) et les illustrations « mascotte » (états vides, onboarding),
+  **pas** pour l'iconographie fonctionnelle.
 
 ## Installation (GitHub Packages)
 
