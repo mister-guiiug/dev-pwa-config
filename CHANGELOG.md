@@ -7,6 +7,8 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-02
+
 ### Added
 
 - **`lucide-react`** comme **bibliothèque d'icônes standard** de la famille
