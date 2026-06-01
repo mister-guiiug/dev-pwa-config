@@ -59,6 +59,45 @@ Conventions :
   matière choisie) et les illustrations « mascotte » (états vides, onboarding),
   **pas** pour l'iconographie fonctionnelle.
 
+### Liens app — code source + sponsor (règle famille)
+
+Chaque application de la famille **expose deux liens** : son **code source**
+(dépôt GitHub) et un lien **sponsor** (Buy Me a Coffee). C'est à la fois une
+question de transparence (apps gratuites, locales, open source) et de soutien.
+
+Deux niveaux, à mettre en place ensemble :
+
+1. **Dans l'app** — un `src/links.ts` centralise les URL, consommé par un footer
+   ou un écran « À propos » / « Réglages » :
+
+   ```ts
+   // src/links.ts
+   export const REPO_URL = 'https://github.com/mister-guiiug/<projet>';
+   export const SPONSOR_URL = 'https://buymeacoffee.com/mister.guiiug';
+   ```
+
+   ```tsx
+   // Footer : lien source + sponsor (cibles externes sécurisées).
+   <a href={REPO_URL} target="_blank" rel="noopener noreferrer">Code source</a>
+   <a href={SPONSOR_URL} target="_blank" rel="noopener noreferrer">
+     <Coffee size={16} aria-hidden="true" /> M'offrir un café
+   </a>
+   ```
+
+2. **Sur le dépôt** — `.github/FUNDING.yml` active le bouton « Sponsor » de
+   GitHub. Template prêt à copier : [`templates/FUNDING.yml`](./templates/FUNDING.yml).
+
+   ```yaml
+   buy_me_a_coffee: mister.guiiug
+   ```
+
+Conventions :
+
+- **Liens externes** : toujours `target="_blank"` + `rel="noopener noreferrer"`.
+- **Marque GitHub** : `lucide-react` 1.x ne fournit plus d'icônes de marque —
+  utiliser un **SVG inline** pour le logo GitHub ; `Coffee` (lucide) pour le
+  sponsor. Handle sponsor unique de la famille : **`mister.guiiug`**.
+
 ## Installation (GitHub Packages)
 
 ### Étape 1 — `.npmrc` à la racine du projet consommateur
@@ -172,6 +211,7 @@ Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VS
 | [`templates/husky/commit-msg`](./templates/husky/commit-msg) | `<projet>/.husky/commit-msg` | Aucune |
 | [`templates/.editorconfig`](./templates/.editorconfig) | `<projet>/.editorconfig` | Aucune |
 | [`templates/.nvmrc`](./templates/.nvmrc) | `<projet>/.nvmrc` | Aucune |
+| [`templates/FUNDING.yml`](./templates/FUNDING.yml) | `<projet>/.github/FUNDING.yml` | Aucune (handle sponsor famille `mister.guiiug`) |
 | [`templates/.lighthouserc.json`](./templates/.lighthouserc.json) | `<projet>/.lighthouserc.json` | Ajuster les seuils (`minScore`) par catégorie |
 | [`templates/changesets/config.json`](./templates/changesets/config.json) | `<projet>/.changeset/config.json` | Adapter `access` (restricted vs public) |
 
