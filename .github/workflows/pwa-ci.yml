@@ -50,6 +50,21 @@ on:
         type: string
         required: false
         default: 'chromium'
+      build-env:
+        description: >-
+          Variables d'environnement injectées avant le build/test, une par ligne
+          au format KEY=VALUE (ex. des VITE_* factices pour les apps Firebase /
+          Supabase dont le build exige des clés). Vide par défaut.
+        type: string
+        required: false
+        default: ''
+      server-dir:
+        description: >-
+          Dossier d'un backend annexe (ex. "server") à installer et type-checker
+          (npm ci + tsc --noEmit). Vide = pas de job serveur.
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -66,6 +81,10 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Inject build env
+        if: ${{ inputs.build-env != '' }}
+        run: printf '%s\n' "${{ inputs.build-env }}" >> "$GITHUB_ENV"
 
       - name: Format check
         if: ${{ inputs.run-format-check }}
@@ -86,6 +105,13 @@ jobs:
       - name: Build
         if: ${{ inputs.run-build }}
         run: npm run build
+
+      - name: Server — install & type-check
+        if: ${{ inputs.server-dir != '' }}
+        working-directory: ${{ inputs.server-dir }}
+        run: |
+          npm ci
+          npx tsc --noEmit
 
   e2e:
     name: E2E (${{ inputs.e2e-grep }})

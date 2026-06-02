@@ -7,18 +7,18 @@ projets PWA de la famille `miss-*` et `mister-*`.
 
 ## Projets consommateurs
 
-| Projet | Type | Configs utilisées |
-|---|---|---|
-| [`miss-badminton`](../miss-badminton/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (icônes : SVG inline, pas de `lucide-react`) |
-| [`miss-carbook`](../miss-carbook/) | React + Supabase | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base |
-| [`miss-contraction`](../miss-contraction/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base |
-| [`miss-dice`](../miss-dice/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base |
-| [`miss-genius`](../miss-genius/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, vite-pwa-base, `lucide-react` |
-| [`miss-ticket-pwa`](../miss-ticket-pwa/) | React + Firebase | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react` |
-| [`mister-cim10`](../mister-cim10/) | React | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base |
-| [`mister-footcoach`](../mister-footcoach/) | React + Supabase | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react` |
-| [`mister-molkky`](../mister-molkky/) | React + localStorage (sync Supabase opt-in) | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react` |
-| [`mister-puzzle`](../mister-puzzle/) | React + Firebase | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base, `lucide-react` |
+| Projet                                     | Type                                        | Configs utilisées                                                                                                                                           |
+| ------------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`miss-badminton`](../miss-badminton/)     | React + localStorage                        | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (icônes : SVG inline, pas de `lucide-react`)                                         |
+| [`miss-carbook`](../miss-carbook/)         | React + Supabase                            | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
+| [`miss-contraction`](../miss-contraction/) | React + localStorage                        | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
+| [`miss-dice`](../miss-dice/)               | React + localStorage                        | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
+| [`miss-genius`](../miss-genius/)           | React + localStorage                        | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, vite-pwa-base, `lucide-react`                                                       |
+| [`miss-ticket-pwa`](../miss-ticket-pwa/)   | React + Firebase                            | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
+| [`mister-cim10`](../mister-cim10/)         | React                                       | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base                                           |
+| [`mister-footcoach`](../mister-footcoach/) | React + Supabase                            | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
+| [`mister-molkky`](../mister-molkky/)       | React + localStorage (sync Supabase opt-in) | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
+| [`mister-puzzle`](../mister-puzzle/)       | React + Firebase                            | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base, `lucide-react` |
 
 ## Stack cible (mai 2026)
 
@@ -51,7 +51,7 @@ import { Plus, Trash2 } from 'lucide-react';
 // Icône décorative -> aria-hidden ; le libellé accessible vit sur le bouton.
 <button aria-label="Supprimer">
   <Trash2 size={18} aria-hidden="true" />
-</button>
+</button>;
 ```
 
 Conventions :
@@ -123,8 +123,8 @@ Conventions :
 ```jsonc
 {
   "devDependencies": {
-    "@mister-guiiug/dev-wpa-config": "^1.4.0"
-  }
+    "@mister-guiiug/dev-wpa-config": "^1.4.0",
+  },
 }
 ```
 
@@ -165,67 +165,85 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 
 ## Exports npm
 
-| Sous-chemin | Type | Description |
-|---|---|---|
-| `@mister-guiiug/dev-wpa-config/eslint-base` | `.js` | Config ESLint pour projets vanilla TS / Node (sans React) |
-| `@mister-guiiug/dev-wpa-config/eslint-react` | `.js` | Étend la base avec `react-hooks` flat + `react-refresh` (rules React Compiler désactivées) |
-| `@mister-guiiug/dev-wpa-config/prettier` | `.js` | Config Prettier 3.6 |
-| `@mister-guiiug/dev-wpa-config/commitlint` | `.js` | Config commitlint (Conventional Commits) |
-| `@mister-guiiug/dev-wpa-config/lint-staged` | `.js` | Config lint-staged (eslint --fix + prettier --write) |
-| `@mister-guiiug/dev-wpa-config/tsconfig-app` | `.json` | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]` |
-| `@mister-guiiug/dev-wpa-config/tsconfig-app-react` | `.json` | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client` |
-| `@mister-guiiug/dev-wpa-config/tsconfig-node` | `.json` | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`) |
-| `@mister-guiiug/dev-wpa-config/vitest-base` | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) |
-| `@mister-guiiug/dev-wpa-config/vitest-browser-base` | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`) |
-| `@mister-guiiug/dev-wpa-config/playwright-base` | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy) |
-| `@mister-guiiug/dev-wpa-config/vite-pwa-base` | `.js` + `.d.ts` | `pwaSeoPlugin()` (injection GTM/GA4 + sitemap.xml/robots.txt) + helpers analytics |
-| `@mister-guiiug/dev-wpa-config/tailwind-preset` | `.js` | Design tokens famille (fonts, safe-areas, breakpoints) |
-| `@mister-guiiug/dev-wpa-config/tailwind-preset.css` | `.css` | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target` |
+| Sous-chemin                                         | Type            | Description                                                                                                                                                                                           |
+| --------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@mister-guiiug/dev-wpa-config/eslint-base`         | `.js`           | Config ESLint pour projets vanilla TS / Node (sans React)                                                                                                                                             |
+| `@mister-guiiug/dev-wpa-config/eslint-react`        | `.js`           | Étend la base avec `react-hooks` flat + `react-refresh` (rules React Compiler désactivées)                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/prettier`            | `.js`           | Config Prettier 3.6                                                                                                                                                                                   |
+| `@mister-guiiug/dev-wpa-config/commitlint`          | `.js`           | Config commitlint (Conventional Commits)                                                                                                                                                              |
+| `@mister-guiiug/dev-wpa-config/lint-staged`         | `.js`           | Config lint-staged (eslint --fix + prettier --write)                                                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app`        | `.json`         | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]`                                                                                       |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app-react`  | `.json`         | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client`                                                                                                        |
+| `@mister-guiiug/dev-wpa-config/tsconfig-node`       | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                               |
+| `@mister-guiiug/dev-wpa-config/vitest-base`         | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests)                                                                                                                                    |
+| `@mister-guiiug/dev-wpa-config/vitest-browser-base` | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                     |
+| `@mister-guiiug/dev-wpa-config/playwright-base`     | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy) |
+| `@mister-guiiug/dev-wpa-config/vite-pwa-base`       | `.js` + `.d.ts` | `pwaSeoPlugin()` (injection GTM/GA4 + sitemap.xml/robots.txt) + helpers analytics                                                                                                                     |
+| `@mister-guiiug/dev-wpa-config/tailwind-preset`     | `.js`           | Design tokens famille (fonts, safe-areas, breakpoints)                                                                                                                                                |
+| `@mister-guiiug/dev-wpa-config/tailwind-preset.css` | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                       |
 
 ## Bin
 
-| Commande | Rôle |
-|---|---|
+| Commande    | Rôle                                                                                                                                      |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `pwa-icons` | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable` |
 
 ## Reusable workflows GitHub Actions
 
 Hébergés dans [`.github/workflows/`](.github/workflows/) — utilisables par tous les repos de la famille.
 
-| Workflow | Rôle | Exemple d'appel |
-|---|---|---|
-| `pwa-ci.yml` | Format · Lint · Type · Test · Build (+ E2E optionnel) | voir [Utilisation](#reusable-workflow-ci) |
-| `pwa-deploy.yml` | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto) | voir [Utilisation](#reusable-workflow-deploy) |
-| `npm-publish.yml` | Publication npm sur GitHub Packages avec `--provenance` | voir [Utilisation](#reusable-workflow-publish) |
-| `pwa-lighthouse.yml` | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR | `uses: …/pwa-lighthouse.yml@v1` (requiert `.lighthouserc.json`, cf. template) |
+| Workflow             | Rôle                                                          | Exemple d'appel                                                               |
+| -------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `pwa-ci.yml`         | Format · Lint · Type · Test · Build (+ E2E optionnel)         | voir [Utilisation](#reusable-workflow-ci)                                     |
+| `pwa-deploy.yml`     | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto) | voir [Utilisation](#reusable-workflow-deploy)                                 |
+| `npm-publish.yml`    | Publication npm sur GitHub Packages avec `--provenance`       | voir [Utilisation](#reusable-workflow-publish)                                |
+| `pwa-lighthouse.yml` | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR               | `uses: …/pwa-lighthouse.yml@v1` (requiert `.lighthouserc.json`, cf. template) |
 
 ## Composite actions
 
-| Action | Rôle |
-|---|---|
-| `mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1` | Setup Node 22 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages) |
-| `mister-guiiug/dev-wpa-config/.github/actions/supabase-migrate@v1` | Setup CLI Supabase + `link` + `db push` (déploiements custom) |
-| `mister-guiiug/dev-wpa-config/.github/actions/firebase-deploy@v1` | `firebase deploy` ciblé (rules database/firestore, indexes) |
+| Action                                                             | Rôle                                                                     |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1`        | Setup Node 22 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages) |
+| `mister-guiiug/dev-wpa-config/.github/actions/supabase-migrate@v1` | Setup CLI Supabase + `link` + `db push` (déploiements custom)            |
+| `mister-guiiug/dev-wpa-config/.github/actions/firebase-deploy@v1`  | `firebase deploy` ciblé (rules database/firestore, indexes)              |
 
 ## Templates non-importables (à copier-coller)
 
 Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VSCode, husky, etc.) ne savent pas importer depuis un paquet npm. Ils servent de **référence** au démarrage d'un nouveau projet — copier dans le projet puis ajuster.
 
-| Template | Cible projet | Personnalisation typique |
-|---|---|---|
-| [`templates/vscode/extensions.json`](./templates/vscode/extensions.json) | `<projet>/.vscode/extensions.json` | Aucune (à dupliquer tel quel) |
-| [`templates/vscode/settings.json`](./templates/vscode/settings.json) | `<projet>/.vscode/settings.json` | Aucune |
-| [`templates/vscode/tasks.json`](./templates/vscode/tasks.json) | `<projet>/.vscode/tasks.json` | Ajouter les tasks `test:e2e:critical`, `test:e2e:a11y` etc. selon les scripts du projet |
-| [`templates/vscode/launch.json`](./templates/vscode/launch.json) | `<projet>/.vscode/launch.json` | Adapter `url` au base path (`/mister-puzzle/`, etc.) et `sourceMapPathOverrides` |
-| [`templates/github-workflows/ci.yml`](./templates/github-workflows/ci.yml) | `<projet>/.github/workflows/ci.yml` | **Préférer le reusable `pwa-ci.yml`** (template déprécié, conservé pour cas hors-stack) |
+| Template                                                                           | Cible projet                            | Personnalisation typique                                                                    |
+| ---------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [`templates/vscode/extensions.json`](./templates/vscode/extensions.json)           | `<projet>/.vscode/extensions.json`      | Aucune (à dupliquer tel quel)                                                               |
+| [`templates/vscode/settings.json`](./templates/vscode/settings.json)               | `<projet>/.vscode/settings.json`        | Aucune                                                                                      |
+| [`templates/vscode/tasks.json`](./templates/vscode/tasks.json)                     | `<projet>/.vscode/tasks.json`           | Ajouter les tasks `test:e2e:critical`, `test:e2e:a11y` etc. selon les scripts du projet     |
+| [`templates/vscode/launch.json`](./templates/vscode/launch.json)                   | `<projet>/.vscode/launch.json`          | Adapter `url` au base path (`/mister-puzzle/`, etc.) et `sourceMapPathOverrides`            |
+| [`templates/github-workflows/ci.yml`](./templates/github-workflows/ci.yml)         | `<projet>/.github/workflows/ci.yml`     | **Préférer le reusable `pwa-ci.yml`** (template déprécié, conservé pour cas hors-stack)     |
 | [`templates/github-workflows/deploy.yml`](./templates/github-workflows/deploy.yml) | `<projet>/.github/workflows/deploy.yml` | **Préférer le reusable `pwa-deploy.yml`** (template déprécié, conservé pour cas hors-stack) |
-| [`templates/husky/pre-commit`](./templates/husky/pre-commit) | `<projet>/.husky/pre-commit` | Aucune |
-| [`templates/husky/commit-msg`](./templates/husky/commit-msg) | `<projet>/.husky/commit-msg` | Aucune |
-| [`templates/.editorconfig`](./templates/.editorconfig) | `<projet>/.editorconfig` | Aucune |
-| [`templates/.nvmrc`](./templates/.nvmrc) | `<projet>/.nvmrc` | Aucune |
-| [`templates/FUNDING.yml`](./templates/FUNDING.yml) | `<projet>/.github/FUNDING.yml` | Aucune (handle sponsor famille `mister.guiiug`) |
-| [`templates/.lighthouserc.json`](./templates/.lighthouserc.json) | `<projet>/.lighthouserc.json` | Ajuster les seuils (`minScore`) par catégorie |
-| [`templates/changesets/config.json`](./templates/changesets/config.json) | `<projet>/.changeset/config.json` | Adapter `access` (restricted vs public) |
+| [`templates/husky/pre-commit`](./templates/husky/pre-commit)                       | `<projet>/.husky/pre-commit`            | Aucune                                                                                      |
+| [`templates/husky/commit-msg`](./templates/husky/commit-msg)                       | `<projet>/.husky/commit-msg`            | Aucune                                                                                      |
+| [`templates/.editorconfig`](./templates/.editorconfig)                             | `<projet>/.editorconfig`                | Aucune                                                                                      |
+| [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | Aucune                                                                                      |
+| [`templates/FUNDING.yml`](./templates/FUNDING.yml)                                 | `<projet>/.github/FUNDING.yml`          | Aucune (handle sponsor famille `mister.guiiug`)                                             |
+| [`templates/.lighthouserc.json`](./templates/.lighthouserc.json)                   | `<projet>/.lighthouserc.json`           | Ajuster les seuils (`minScore`) par catégorie                                               |
+| [`templates/changesets/config.json`](./templates/changesets/config.json)           | `<projet>/.changeset/config.json`       | Adapter `access` (restricted vs public)                                                     |
+
+## Nettoyage de l'historique Actions
+
+[`templates/github-workflows/cleanup-runs.yml`](./templates/github-workflows/cleanup-runs.yml) —
+workflow **manuel** (`workflow_dispatch`) qui ne conserve que les **N runs les
+plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
+`<projet>/.github/workflows/cleanup-runs.yml` ; requiert `permissions: actions: write`.
+
+## Inputs récents des reusables (v1.5.0)
+
+- **`pwa-ci.yml`** — `build-env` (variables `KEY=VALUE`, une par ligne, injectées
+  avant build/test pour les apps Firebase/Supabase) ; `server-dir` (install +
+  `tsc --noEmit` d'un backend annexe).
+- **`pwa-lighthouse.yml`** — `build-env` (même usage) → Lighthouse activable sur
+  les apps à secrets.
+- **`pwa-deploy.yml`** — `build-env` ; déploiement **Firebase optionnel**
+  (`firebase-project`, `firebase-only`, secret `FIREBASE_SERVICE_ACCOUNT_KEY`)
+  avec auth intégrée.
 
 ## Utilisation
 
@@ -270,9 +288,9 @@ export { default } from '@mister-guiiug/dev-wpa-config/prettier';
 {
   "extends": "@mister-guiiug/dev-wpa-config/tsconfig-node",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "scripts/**/*.mjs"]
+  "include": ["vite.config.ts", "vitest.config.ts", "scripts/**/*.mjs"],
 }
 ```
 
@@ -392,8 +410,8 @@ build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`, `VITE_PUBLIC_SITE_ORI
 ```jsonc
 {
   "scripts": {
-    "icons": "pwa-icons --source public/favicon.svg --out public --maskable"
-  }
+    "icons": "pwa-icons --source public/favicon.svg --out public --maskable",
+  },
 }
 ```
 
@@ -539,28 +557,33 @@ Les 6 règles compiler de `eslint-plugin-react-hooks` (incluses dans `flat.recom
    ```js
    // eslint.config.js
    import base from '@mister-guiiug/dev-wpa-config/eslint-react';
-   export default [...base, {
-     files: ['**/*.{ts,tsx}'],
-     rules: {
-       'react-hooks/set-state-in-effect': 'error',
-       'react-hooks/purity': 'error',
-       'react-hooks/immutability': 'error',
-       'react-hooks/preserve-manual-memoization': 'error',
-       'react-hooks/refs': 'error',
-       'react-hooks/static-components': 'error',
+   export default [
+     ...base,
+     {
+       files: ['**/*.{ts,tsx}'],
+       rules: {
+         'react-hooks/set-state-in-effect': 'error',
+         'react-hooks/purity': 'error',
+         'react-hooks/immutability': 'error',
+         'react-hooks/preserve-manual-memoization': 'error',
+         'react-hooks/refs': 'error',
+         'react-hooks/static-components': 'error',
+       },
      },
-   }];
+   ];
    ```
 
 ### Zod 3 → 4 (breaking, perfs ~+50%)
 
 Breaking changes notables :
+
 - `.parse()` strict par défaut (rejette les clés inconnues — utiliser `.passthrough()` pour l'ancien comportement).
 - `result.errors[]` → `result.error.issues[]`.
 - `.format()` retourne maintenant un `$ZodError` flatten.
 - Coercion (`z.coerce.*`) plus strictes.
 
 Procédure :
+
 ```bash
 npm install zod@^4
 npm run type-check
@@ -575,11 +598,13 @@ Concerne dans la famille : `miss-carbook`, `miss-contraction`, `mister-puzzle` (
 ### Vitest Browser Mode (opt-in)
 
 Recommandé pour :
+
 - Tests de composants utilisant beaucoup d'API DOM/CSS réelles.
 - Tests visuels / responsive.
 - Tests qui nécessitent vrai layout (mesures, focus management complexe).
 
 À garder en jsdom :
+
 - Tests purement logiques (utils, hooks sans DOM).
 - Tests de stores Zustand.
 - Tests rapides de smoke / régression.

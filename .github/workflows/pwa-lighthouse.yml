@@ -41,6 +41,13 @@ on:
         type: boolean
         required: false
         default: true
+      build-env:
+        description: >-
+          Variables d'env injectées avant le build mesuré, une par ligne au
+          format KEY=VALUE (VITE_* factices pour les apps Firebase / Supabase).
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -57,6 +64,10 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Inject build env
+        if: ${{ inputs.build-env != '' }}
+        run: printf '%s\n' "${{ inputs.build-env }}" >> "$GITHUB_ENV"
 
       - name: Build
         env:

@@ -20,6 +20,12 @@ jobs:
       - name: Install
         run: npm install --no-audit --no-fund
 
+      - name: Format check (dogfood prettier-base)
+        run: npm run format:check
+
+      - name: Unit tests (exports/files/parité/chargement)
+        run: npm test
+
       - name: Verify ESLint configs are syntactically valid
         run: |
           node --input-type=module -e "import('./eslint-base.js').then(m => console.log('eslint-base OK:', m.default.length, 'configs'))"

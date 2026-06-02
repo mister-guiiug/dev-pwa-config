@@ -39,6 +39,29 @@ on:
         type: string
         required: false
         default: ''
+      build-env:
+        description: >-
+          Variables d'env injectées avant le build, une par ligne au format
+          KEY=VALUE (VITE_* applicatives : Firebase, Supabase, etc.).
+        type: string
+        required: false
+        default: ''
+      firebase-project:
+        description: >-
+          ID du projet Firebase. Si non vide, déploie aussi les règles Firebase
+          (cf. firebase-only) après le build, avec auth service account.
+        type: string
+        required: false
+        default: ''
+      firebase-only:
+        description: 'Cibles firebase deploy (ex. firestore:rules,firestore:indexes)'
+        type: string
+        required: false
+        default: 'firestore:rules,firestore:indexes'
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT_KEY:
+        description: 'JSON du service account Firebase (requis si firebase-project est défini)'
+        required: false
 
 permissions:
   contents: read
@@ -60,6 +83,10 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Inject build env
+        if: ${{ inputs.build-env != '' }}
+        run: printf '%s\n' "${{ inputs.build-env }}" >> "$GITHUB_ENV"
 
       - name: Pre-build
         if: ${{ inputs.pre-build-script != '' }}
@@ -85,3 +112,36 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Déploiement optionnel des règles Firebase (Firestore/Realtime DB), avec auth
+  # par service account. Activé seulement si `firebase-project` est fourni.
+  # Évite à chaque app Firebase de réécrire (et mal authentifier) ce job.
+  deploy-firebase:
+    needs: build
+    if: ${{ inputs.firebase-project != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Write service account key
+        run: |
+          if [ -z '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' ]; then
+            echo "❌ firebase-project défini mais secret FIREBASE_SERVICE_ACCOUNT_KEY absent." >&2
+            exit 1
+          fi
+          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > "$RUNNER_TEMP/firebase-sa.json"
+
+      - name: Deploy Firebase rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: >-
+          npx --yes firebase-tools deploy
+          --only "${{ inputs.firebase-only }}"
+          --project "${{ inputs.firebase-project }}"
+          --non-interactive

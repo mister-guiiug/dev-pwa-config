@@ -36,8 +36,8 @@ Ajouter dans `package.json` :
 ```jsonc
 {
   "scripts": {
-    "prepare": "husky"
-  }
+    "prepare": "husky",
+  },
 }
 ```
 

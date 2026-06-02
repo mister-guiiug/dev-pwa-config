@@ -83,7 +83,9 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  const lines = readFileSync(new URL(import.meta.url)).toString().split('\n');
+  const lines = readFileSync(new URL(import.meta.url))
+    .toString()
+    .split('\n');
   const start = lines.findIndex(l => l.startsWith('/**')) + 1;
   const end = lines.findIndex((l, i) => i > start && l.trim() === '*/');
   console.log(
@@ -100,7 +102,7 @@ async function loadSharp() {
     return mod.default ?? mod;
   } catch {
     console.error(
-      "❌ `sharp` est requis pour générer les icônes.\n" +
+      '❌ `sharp` est requis pour générer les icônes.\n' +
         '   Installez-le côté projet : npm install -D sharp'
     );
     process.exit(1);
@@ -130,7 +132,10 @@ async function main() {
     const safe = Math.round(size * 0.875); // zone de sécurité Android maskable
     const pad = Math.round((size - safe) / 2);
     const inner = await sharp(svgBuffer)
-      .resize(safe, safe, { fit: 'contain', background: { ...args.bg, alpha: 0 } })
+      .resize(safe, safe, {
+        fit: 'contain',
+        background: { ...args.bg, alpha: 0 },
+      })
       .png()
       .toBuffer();
     await sharp({

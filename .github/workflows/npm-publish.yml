@@ -1,4 +1,11 @@
 # Reusable workflow de publication npm (GitHub Packages) avec provenance.
+#
+# ⚠️ Périmètre : réservé aux dépôts qui PUBLIENT un paquet npm. Les apps PWA
+# (miss-* / mister-*) ne publient rien → elles n'utilisent PAS ce workflow.
+# `dev-wpa-config` se publie lui-même via `publish.yml` (standalone, bootstrap-safe
+# au tag initial, + avancement du tag majeur mobile). Conservé pour un éventuel
+# futur paquet de la famille.
+#
 # Usage côté consumer (.github/workflows/publish.yml) :
 #
 # name: Publish

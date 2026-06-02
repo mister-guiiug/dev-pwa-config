@@ -118,9 +118,7 @@ export function definePwaPlaywrightConfig({
       trace: 'on-first-retry',
       screenshot: 'only-on-failure',
       video: 'retain-on-failure',
-      ...(reducedMotion
-        ? { contextOptions: { reducedMotion: 'reduce' } }
-        : {}),
+      ...(reducedMotion ? { contextOptions: { reducedMotion: 'reduce' } } : {}),
     },
     expect: { timeout: expectTimeout },
     timeout: 30_000,

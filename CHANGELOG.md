@@ -7,6 +7,49 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-03
+
+### Added
+
+- **Workflow `cleanup-runs`** : nettoyage manuel (`workflow_dispatch`) de
+  l'historique GitHub Actions — ne conserve que les **N runs les plus récents
+  par workflow** (défaut 3), option `dry-run`. Disponible en
+  [template](./templates/github-workflows/cleanup-runs.yml) **et** actif dans ce
+  dépôt (dogfood).
+- **`pwa-ci.yml`** : input **`build-env`** (variables `KEY=VALUE` injectées avant
+  build/test, pour les apps dont le build exige des `VITE_*` — Firebase/Supabase)
+  et input **`server-dir`** (install + `tsc --noEmit` d'un backend annexe). Permet
+  enfin à `mister-puzzle` & co. d'utiliser la CI réutilisable au lieu d'une CI
+  custom.
+- **`pwa-lighthouse.yml`** : input **`build-env`** (idem) → Lighthouse activable
+  sur les apps à secrets.
+- **`pwa-deploy.yml`** : input **`build-env`** + **déploiement Firebase optionnel**
+  (`firebase-project`, `firebase-only`, secret `FIREBASE_SERVICE_ACCOUNT_KEY`)
+  avec auth correcte — évite à chaque app Firebase de réécrire (et mal
+  authentifier) son job de déploiement.
+- **Auto-tests du paquet** : scripts `test` (node:test — exports/files/parité
+  `.d.ts`↔`.js`/chargement), `format:check`/`format` (dogfood `prettier-base`),
+  `validate` ; champ `engines.node >= 20` ; jobs `format:check` + `test` ajoutés
+  à `ci.yml`.
+- **Changesets** câblé (`.changeset/config.json` + scripts `changeset` /
+  `version-packages`) pour automatiser bump + CHANGELOG.
+
+### Changed
+
+- **`publish.yml`** fait désormais **avancer automatiquement le tag majeur mobile
+  `v1`** vers chaque release stable. Corrige le fait que `v1` était figé sur la
+  v1.3.2 : tous les consommateurs en `...@v1` recevaient des workflows périmés.
+- **`scripts/migrate-consumers.mjs`** réécrit en **codemod générique** :
+  auto-découverte des consommateurs (plus de liste codée en dur), bump vers une
+  version cible **et alignement des peers déclarés** (lucide-react, vitest…),
+  modes `--write` / `--install`.
+- Dépôt **formaté avec sa propre config Prettier** (dogfood).
+
+### Docs
+
+- `npm-publish.yml` : périmètre clarifié (paquets publiables uniquement, pas les
+  apps).
+
 ## [1.4.0] - 2026-06-02
 
 ### Added

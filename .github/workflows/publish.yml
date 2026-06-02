@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # requis pour faire avancer le tag majeur mobile (v1)
   packages: write
   id-token: write # requis pour npm --provenance
 
@@ -46,3 +46,16 @@ jobs:
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Fait pointer le tag majeur mobile (v1) sur cette release stable, afin que
+      # tous les consommateurs référençant `...@v1` reçoivent les derniers
+      # workflows/actions réutilisables sans intervention manuelle.
+      # Ignoré pour les pré-releases (v1.5.0-beta.1) et pour le tag v1 lui-même.
+      - name: Advance rolling major tag
+        if: ${{ github.ref != 'refs/tags/v1' && !contains(github.ref, '-') }}
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          MAJOR=${TAG%%.*}            # v1.5.0 -> v1
+          git tag -f "$MAJOR" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$MAJOR"
+          echo "✅ $MAJOR → $TAG ($GITHUB_SHA)"
