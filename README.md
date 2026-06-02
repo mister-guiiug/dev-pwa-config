@@ -9,11 +9,16 @@ projets PWA de la famille `miss-*` et `mister-*`.
 
 | Projet | Type | Configs utilisées |
 |---|---|---|
+| [`miss-badminton`](../miss-badminton/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (icônes : SVG inline, pas de `lucide-react`) |
 | [`miss-carbook`](../miss-carbook/) | React + Supabase | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base |
 | [`miss-contraction`](../miss-contraction/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base |
-| [`mister-cim10`](../mister-cim10/) | React | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base |
-| [`mister-puzzle`](../mister-puzzle/) | React + Firebase | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base |
+| [`miss-dice`](../miss-dice/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base |
 | [`miss-genius`](../miss-genius/) | React + localStorage | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, vite-pwa-base, `lucide-react` |
+| [`miss-ticket-pwa`](../miss-ticket-pwa/) | React + Firebase | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react` |
+| [`mister-cim10`](../mister-cim10/) | React | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base |
+| [`mister-footcoach`](../mister-footcoach/) | React + Supabase | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react` |
+| [`mister-molkky`](../mister-molkky/) | React + localStorage (sync Supabase opt-in) | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react` |
+| [`mister-puzzle`](../mister-puzzle/) | React + Firebase | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base, `lucide-react` |
 
 ## Stack cible (mai 2026)
 
@@ -58,6 +63,13 @@ Conventions :
 - **Emoji autorisé uniquement** pour le contenu utilisateur (ex. icône de
   matière choisie) et les illustrations « mascotte » (états vides, onboarding),
   **pas** pour l'iconographie fonctionnelle.
+
+> **Alternative SVG inline (assumée).** `lucide-react` est le **standard** quand
+> une app a des icônes fonctionnelles, mais il n'est **pas obligatoire** : une app
+> peut inliner ses SVG (cf. `miss-badminton`, `src/react/components/icons.tsx`)
+> pour garder un bundle minimal. Dans ce cas, **ne pas** déclarer `lucide-react`
+> dans `package.json`. La règle ferme reste : pas d'icône de marque via `lucide`
+> (la 1.x ne les fournit plus) → logo GitHub en SVG inline, `Coffee` pour le sponsor.
 
 ### Liens app — code source + sponsor (règle famille)
 
@@ -111,7 +123,7 @@ Conventions :
 ```jsonc
 {
   "devDependencies": {
-    "@mister-guiiug/dev-wpa-config": "^1.0.0"
+    "@mister-guiiug/dev-wpa-config": "^1.4.0"
   }
 }
 ```
