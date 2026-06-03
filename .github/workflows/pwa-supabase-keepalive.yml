@@ -1,0 +1,64 @@
+# Reusable workflow — anti-pause Supabase Free.
+#
+# Fait une vraie requête DB (SELECT REST sur une petite table `keep_alive`) avec
+# l'anon key → réinitialise le compteur d'inactivité (pause Free à 7 j). À
+# appeler via un caller planifié (cron ~tous les 3 jours), un par PROJET Supabase.
+#
+# Usage côté consumer (.github/workflows/supabase-keepalive.yml) :
+#
+# name: Supabase keep-alive
+# on:
+#   schedule: [{ cron: '17 4 */3 * *' }]
+#   workflow_dispatch:
+# jobs:
+#   keepalive:
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-keepalive.yml@v1
+#     secrets: inherit
+#
+# Prérequis : secrets VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY dans le dépôt,
+# et la table `keep_alive` appliquée au projet (cf. templates/supabase/keep-alive.sql).
+name: Reusable Supabase keep-alive
+
+on:
+  workflow_call:
+    inputs:
+      table:
+        description: 'Table à interroger (anon SELECT). Défaut: keep_alive'
+        type: string
+        required: false
+        default: 'keep_alive'
+    secrets:
+      VITE_SUPABASE_URL:
+        description: 'URL du projet Supabase (https://<ref>.supabase.co)'
+        required: true
+      VITE_SUPABASE_ANON_KEY:
+        description: 'anon key (publique, protégée par RLS) — jamais la service_role'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping (SELECT REST) → réveille la base
+        env:
+          URL: ${{ secrets.VITE_SUPABASE_URL }}
+          KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          TABLE: ${{ inputs.table }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "::error::VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY manquants."
+            exit 1
+          fi
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "${URL%/}/rest/v1/${TABLE}?select=id&limit=1" \
+            -H "apikey: ${KEY}" \
+            -H "Authorization: Bearer ${KEY}")
+          echo "HTTP ${code}"
+          if [ "$code" != "200" ]; then
+            echo "::error::keep-alive a échoué (HTTP ${code}). Vérifier la table '${TABLE}' et sa policy anon."
+            exit 1
+          fi
+          echo "::notice::Supabase keep-alive OK (SELECT ${TABLE} → 200)."

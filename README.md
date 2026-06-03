@@ -245,6 +245,27 @@ plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
   (`firebase-project`, `firebase-only`, secret `FIREBASE_SERVICE_ACCOUNT_KEY`)
   avec auth intégrée.
 
+## Supabase keep-alive (anti-pause Free)
+
+Le plan **Free** de Supabase met un projet en **pause après 7 jours sans vraie
+requête DB**. Le reusable
+[`pwa-supabase-keepalive.yml`](.github/workflows/pwa-supabase-keepalive.yml) fait
+un `SELECT` REST (anon key) sur une petite table `keep_alive` → requête réelle →
+compteur d'inactivité réinitialisé.
+
+Mise en place (**un caller par projet Supabase**) :
+
+1. Appliquer [`templates/supabase/keep-alive.sql`](./templates/supabase/keep-alive.sql)
+   au projet (SQL editor ou migration) — crée `public.keep_alive` + policy `anon`.
+2. Copier
+   [`templates/github-workflows/supabase-keepalive.yml`](./templates/github-workflows/supabase-keepalive.yml)
+   dans `<projet>/.github/workflows/` (décaler le `cron` entre dépôts).
+3. Secrets requis : `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (anon =
+   publique, jamais la `service_role`).
+
+Note : un cron GitHub est désactivé après 60 j sans commit sur le dépôt (les
+commits Renovate suffisent ; sinon relancer via `workflow_dispatch`).
+
 ## Utilisation
 
 ### `eslint.config.js`

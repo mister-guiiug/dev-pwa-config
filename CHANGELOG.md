@@ -7,6 +7,18 @@ versionnement [SemVer](https://semver.org/lang/fr/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-06-04
+
+### Added
+
+- **Anti-pause Supabase Free** :
+  - Reusable `pwa-supabase-keepalive.yml` — `SELECT` REST (anon key) sur une table
+    `keep_alive` tous les ~3 j → empêche la pause des projets Free (inactivité 7 j).
+  - Template SQL `templates/supabase/keep-alive.sql` (table + policy anon).
+  - Template caller `templates/github-workflows/supabase-keepalive.yml`
+    (cron planifié, `secrets: inherit`).
+  - Section README dédiée (mise en place par projet).
+
 ## [1.5.0] - 2026-06-03
 
 ### Added
