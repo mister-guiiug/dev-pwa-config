@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0
+
+### Major Changes
+
+- Passe les peer-dependencies de la toolchain sur les nouvelles majeures (breaking) :
+  - `vite` ajouté en peer optionnel `^8.0.0`
+  - `vitest` et `@vitest/browser` → `^4.0.0` (fin du support Vitest 3)
+  - `typescript` → `~6.0.3`
+  - `zod` → `^4.0.0` (fin du support Zod 3)
+
+  Les bases Vitest/Vite n'utilisent aucune option supprimée par ces majeures ; les `vite.config.ts`
+  existants (forme fonction de `manualChunks`, `build.rollupOptions`) restent fonctionnels sous
+  Rolldown. Voir la section migration du README pour les détails Vite 8 / Vitest 4 / Zod 4.
+
 Historique des versions de `@mister-guiiug/dev-wpa-config`.
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
@@ -116,10 +130,10 @@ contournés) dans les consommateurs, après audit de la famille `miss-*` / `mist
 ### Added
 
 - **Factory Playwright** (`playwright-base`) : `definePwaPlaywrightConfig({ devices })`
-  + helpers `pwaProjects(devices)` / `pwaReporters()`. Centralise la matrice 5
-  navigateurs, les reporters multi-format, le `snapshotPathTemplate`, `reducedMotion`
-  et le `webServer` que les 7 projets réécrivaient à l'identique (~50 lignes chacun).
-  `basePlaywrightOptions` reste exporté (rétro-compat).
+  - helpers `pwaProjects(devices)` / `pwaReporters()`. Centralise la matrice 5
+    navigateurs, les reporters multi-format, le `snapshotPathTemplate`, `reducedMotion`
+    et le `webServer` que les 7 projets réécrivaient à l'identique (~50 lignes chacun).
+    `basePlaywrightOptions` reste exporté (rétro-compat).
 - **Bin `pwa-icons`** : générateur d'icônes PWA partagé (`scripts/generate-pwa-icons.mjs`),
   remplace les `generate-*-icons.{mjs,ts}` dupliqués. Options `--source`, `--out`,
   `--sizes`, `--maskable`, `--bg`, `--prefix`. `sharp` ajouté en peerDep optionnelle.
@@ -134,8 +148,8 @@ contournés) dans les consommateurs, après audit de la famille `miss-*` / `mist
 - **Composite actions** pour les déploiements custom récurrents :
   `.github/actions/supabase-migrate` (link + db push) et `.github/actions/firebase-deploy`
   (deploy rules/indexes).
-- **Override ESLint `e2e/**`** intégré dans `eslint-base` et `eslint-react`
-  (`no-explicit-any` + `no-unused-vars` off sur les specs) — était dupliqué dans
+- **Override ESLint `e2e/**`** intégré dans `eslint-base`et`eslint-react`
+(`no-explicit-any`+`no-unused-vars` off sur les specs) — était dupliqué dans
   badminton / contraction / molkky.
 - **Tailwind preset** enrichi : typographie/spacing fluides (`--text-fluid-*`,
   `--spacing-fluid-*`) + utilitaires `*-safe` / `*-safe-3` (safe-areas) + `touch-target`,

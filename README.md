@@ -20,18 +20,22 @@ projets PWA de la famille `miss-*` et `mister-*`.
 | [`mister-molkky`](../mister-molkky/)       | React + localStorage (sync Supabase opt-in) | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
 | [`mister-puzzle`](../mister-puzzle/)       | React + Firebase                            | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base, `lucide-react` |
 
-## Stack cible (mai 2026)
+## Stack cible (juin 2026)
 
 Les configs imposent / supposent les versions suivantes côté projet consommateur :
 
 ```
-TypeScript ~6.0.2 strict, cible ES2025 + lib ES2025
+TypeScript ~6.0.3 strict, cible ES2025 + lib ES2025
 ESLint 9 (flat config) + typescript-eslint 8.58
 eslint-plugin-react-hooks 7.0 (configs.flat.recommended) + eslint-plugin-react-refresh 0.5
-Vitest 3 (jsdom + globals + setupFiles)
+Vite 8 (Rolldown) + Vitest 4 (jsdom + globals + setupFiles)
+Zod 4 (peer)
 Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowParens 'avoid')
 Tailwind 4 (@tailwindcss/vite) + lucide-react (icônes — standard famille)
 ```
+
+> **2.0.0 (breaking)** — les peer-dependencies passent en **Vite 8 / Vitest 4 / TypeScript ~6.0.3 / Zod 4**
+> (plus de support Vitest 3 ni Zod 3). Voir la [migration](#zod-3--4-breaking-perfs-50) ci-dessous.
 
 ### Icônes — `lucide-react` (règle famille)
 
@@ -614,7 +618,10 @@ npm run test
 
 Voir : <https://zod.dev/v4/migration>
 
-Concerne dans la famille : `miss-carbook`, `miss-contraction`, `mister-puzzle` (les 3 utilisent Zod 3).
+Concerne dans la famille : `miss-uwh`, `miss-genius`, `miss-badminton`, `mister-molkky`,
+`miss-carbook`, `miss-contraction`, `mister-puzzle`. En pratique l'usage est déjà compatible v4
+(`z.record(key, val)` en 2-args partout) ; les API restantes (`error.errors`, `.flatten()`,
+`z.string().uuid()/.url()`) sont **dépréciées mais fonctionnelles**.
 
 ### Vitest Browser Mode (opt-in)
 
@@ -632,11 +639,26 @@ Recommandé pour :
 
 Cohabitation recommandée : 2 fichiers de config (`vitest.config.ts` + `vitest.browser.config.ts`), 2 scripts npm (`test` + `test:browser`).
 
-### TypeScript / Tailwind / Vitest
+### Vite 7 → 8 (Rolldown)
 
-- **TypeScript ~6.0.2** : déjà cible famille — rien à faire.
-- **Tailwind 4.2.x** : déjà la dernière — rien à faire.
-- **Vitest 3.2.x** : stable. Vitest 4 attendu courant 2026 (suivre ; pas de migration prévue avant LTS).
+- Vite 8 utilise **Rolldown + Oxc** au lieu de Rollup/esbuild.
+- `build.rollupOptions` et `output.manualChunks` (forme fonction) restent **fonctionnels (dépréciés)** :
+  les `vite.config.ts` existants tournent sans réécriture.
+- `@vitejs/plugin-react@6` requiert Vite 8 ; `vite-plugin-pwa@1.3`, `@tailwindcss/vite@4.3` et
+  `rollup-plugin-visualizer@7` (peer `rolldown`) sont compatibles.
+- `@sentry/vite-plugin` : passer en `^5` pour la compat Rolldown.
+- Repli CJS interop si besoin : `legacy.inconsistentCjsInterop: true`.
+
+### Vitest 3 → 4
+
+- Couverture **V8 désormais AST-aware** (chiffres recalibrés, proche d'Istanbul) ; `coverage.include`
+  doit être explicite. Recalibrer les `thresholds` si une app casse.
+- Aucune option supprimée n'est utilisée par les bases (`workspace`/`poolOptions`/`deps.inline`/`coverage.all`).
+
+### TypeScript / Tailwind
+
+- **TypeScript ~6.0.3** : cible famille — `npm i -D typescript@~6.0.3`.
+- **Tailwind 4.3.x** : `@tailwindcss/vite@^4.3.0`.
 
 ## Publication
 
