@@ -38,8 +38,18 @@ export function parseGaMeasurementId(raw) {
   return /^G-[A-Z0-9]+$/.test(id) ? id : null;
 }
 
-/** Origin + URL d'accueil, dérivés des variables d'env. */
-export function resolveSeoPublicUrls(basePath) {
+/**
+ * Origin + URL d'accueil (+ URL logo) dérivés des variables d'env.
+ *
+ * Rétro-compatible : accepte soit une string `basePath` (ancienne signature),
+ * soit un objet `{ basePath, logoPath, iconQuery }`. `logoUrl` n'est calculé
+ * que si `logoPath` est fourni.
+ *
+ * @param {string | { basePath?: string, logoPath?: string, iconQuery?: string }} [arg]
+ */
+export function resolveSeoPublicUrls(arg) {
+  const opts = typeof arg === 'string' ? { basePath: arg } : (arg ?? {});
+  const { basePath, logoPath, iconQuery = '' } = opts;
   const origin = (
     process.env.VITE_PUBLIC_SITE_ORIGIN || DEFAULT_ORIGIN
   ).replace(/\/$/, '');
@@ -47,7 +57,11 @@ export function resolveSeoPublicUrls(basePath) {
     /\/?$/,
     '/'
   );
-  return { origin, homeUrl: `${origin}${base === '/' ? '/' : base}` };
+  const homeUrl = `${origin}${base === '/' ? '/' : base}`;
+  const logoUrl = logoPath
+    ? `${homeUrl}${logoPath.replace(/^\//, '')}${iconQuery}`
+    : undefined;
+  return { origin, homeUrl, logoUrl };
 }
 
 /**
@@ -55,9 +69,13 @@ export function resolveSeoPublicUrls(basePath) {
  * Si GTM ET GA4 sont définis : seul GTM est chargé (configurez GA4 dans GTM
  * pour éviter le double comptage).
  */
-export function buildAnalyticsHtmlFragments() {
-  const gtm = parseGtmContainerId(process.env.VITE_GTM_CONTAINER_ID);
-  const ga = parseGaMeasurementId(process.env.VITE_GA_MEASUREMENT_ID);
+export function buildAnalyticsHtmlFragments(overrides = {}) {
+  const gtm = parseGtmContainerId(
+    overrides.gtmContainerId ?? process.env.VITE_GTM_CONTAINER_ID
+  );
+  const ga = parseGaMeasurementId(
+    overrides.gaMeasurementId ?? process.env.VITE_GA_MEASUREMENT_ID
+  );
 
   const gtmHead = id => `<!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -99,31 +117,63 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
  *   __ANALYTICS_HEAD__   snippet analytics <head>
  *   __ANALYTICS_BODY__   snippet analytics <body> (noscript GTM)
  *
+ * Placeholders supplémentaires (si `logoPath`/`iconQuery` fournis) :
+ *   __SEO_LOGO_URL__     URL absolue du logo (Open Graph / Twitter / JSON-LD)
+ *   __PWA_ICON_QS__      query-string de cache-busting des icônes
+ *
  * @param {object} [opts]
- * @param {string} [opts.siteName]        Nom du site (commentaire sitemap).
- * @param {boolean} [opts.sitemap=true]   Générer sitemap.xml + robots.txt.
- * @param {string} [opts.outDir='dist']   Dossier de sortie du build.
- * @param {string} [opts.changefreq='weekly']
+ * @param {string}  [opts.siteName]        Nom du site (commentaire sitemap).
+ * @param {boolean} [opts.sitemap=true]    Générer sitemap.xml.
+ * @param {boolean} [opts.robots=true]     Générer robots.txt.
+ * @param {string}  [opts.outDir='dist']   Dossier de sortie du build.
+ * @param {string}  [opts.changefreq='weekly']
+ * @param {string}  [opts.basePath]        Force le base path (sinon VITE_BASE_PATH).
+ * @param {string}  [opts.logoPath]        Chemin du logo (ex. '/logo.svg') → __SEO_LOGO_URL__.
+ * @param {string}  [opts.iconQuery='']    Query de cache-busting (ex. '?v=1.0.1') → __PWA_ICON_QS__.
+ * @param {string}  [opts.llms]            Contenu d'un `llms.txt` à écrire (omis = pas de fichier).
+ * @param {Record<string,string>} [opts.extraReplacements={}] Placeholders custom → valeurs.
  */
 export function pwaSeoPlugin(opts = {}) {
-  const { sitemap = true, outDir = 'dist', changefreq = 'weekly' } = opts;
+  const {
+    sitemap = true,
+    robots = true,
+    outDir = 'dist',
+    changefreq = 'weekly',
+    basePath,
+    logoPath,
+    iconQuery = '',
+    llms,
+    gtmContainerId,
+    gaMeasurementId,
+    extraReplacements = {},
+  } = opts;
+  const urlOpts = { basePath, logoPath, iconQuery };
   return {
     name: 'mister-guiiug:pwa-seo',
     transformIndexHtml(html) {
-      const { homeUrl } = resolveSeoPublicUrls();
-      const { head, body } = buildAnalyticsHtmlFragments();
-      return html
+      const { homeUrl, logoUrl } = resolveSeoPublicUrls(urlOpts);
+      const { head, body } = buildAnalyticsHtmlFragments({
+        gtmContainerId,
+        gaMeasurementId,
+      });
+      let out = html
         .replaceAll('__SEO_HOME_URL__', homeUrl)
+        .replaceAll('__SEO_LOGO_URL__', logoUrl ?? homeUrl)
+        .replaceAll('__PWA_ICON_QS__', iconQuery)
         .replaceAll('__ANALYTICS_HEAD__', head)
         .replaceAll('__ANALYTICS_BODY__', body);
+      for (const [marker, value] of Object.entries(extraReplacements)) {
+        out = out.replaceAll(marker, value);
+      }
+      return out;
     },
     async closeBundle() {
-      if (!sitemap) return;
       const fs = await import('node:fs');
       const path = await import('node:path');
-      const { homeUrl } = resolveSeoPublicUrls();
+      const { homeUrl } = resolveSeoPublicUrls(urlOpts);
       const dist = path.resolve(process.cwd(), outDir);
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+      if (sitemap) {
+        const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${homeUrl}</loc>
@@ -132,13 +182,19 @@ export function pwaSeoPlugin(opts = {}) {
   </url>
 </urlset>
 `;
-      const robots = `User-agent: *
+        fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml, 'utf8');
+      }
+      if (robots) {
+        const txt = `User-agent: *
 Allow: /
 
 Sitemap: ${homeUrl}sitemap.xml
 `;
-      fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml, 'utf8');
-      fs.writeFileSync(path.join(dist, 'robots.txt'), robots, 'utf8');
+        fs.writeFileSync(path.join(dist, 'robots.txt'), txt, 'utf8');
+      }
+      if (llms) {
+        fs.writeFileSync(path.join(dist, 'llms.txt'), llms, 'utf8');
+      }
     },
   };
 }

@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+  Template index.html famille miss-* / mister-*.
+  À copier dans <projet>/index.html puis personnaliser les __PLACEHOLDERS__.
+
+  Cible : <projet>/index.html
+  Personnalisation :
+   - lang, <title>, meta description, theme-color, apple-mobile-web-app-title
+   - liens icônes (générées par `pwa-icons`)
+   - clé localStorage du thème (défaut `dwc_theme`, alignée sur useTheme)
+   - CSP : voir le commentaire dédié (offline-first vs Supabase/Firebase)
+   - placeholders SEO/analytics __ANALYTICS_*__ / __SEO_HOME_URL__ :
+     remplis à la build par pwaSeoPlugin() — À SUPPRIMER si l'app n'utilise
+     pas vite-pwa-base (sinon les marqueurs restent en clair dans le HTML).
+-->
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Content-Security-Policy en défense en profondeur.
+
+      'unsafe-inline' est nécessaire pour :
+        - script-src : le script anti-FOUC inline ci-dessous ;
+        - style-src  : Tailwind 4 (styles JIT inline) + réinjection vite-plugin-pwa.
+
+      connect-src 'self' = app 100 % offline-first (données en localStorage/IDB).
+      Si l'app appelle un backend, ÉLARGIR connect-src :
+        - Supabase : connect-src 'self' https://*.supabase.co wss://*.supabase.co
+        - Firebase : connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com
+        - GA4/GTM  : ajouter https://www.googletagmanager.com https://*.google-analytics.com
+                     et autoriser script-src https://www.googletagmanager.com
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    />
+
+    <!-- Script anti-FOUC : applique le thème avant tout rendu (clé alignée useTheme). -->
+    <script>
+      (function () {
+        try {
+          var v = localStorage.getItem('dwc_theme');
+          var eff =
+            v === 'light' || v === 'dark'
+              ? v
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', eff);
+          document.documentElement.style.colorScheme = eff;
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+
+    <!-- Analytics (GTM/GA4) injecté par pwaSeoPlugin() — supprimer si non utilisé. -->
+    __ANALYTICS_HEAD__
+
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="icons/icon-192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="icons/icon-512.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="icons/apple-touch-icon.png"
+    />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="__APP_NAME__" />
+
+    <meta name="description" content="__APP_DESCRIPTION__" />
+    <link rel="canonical" href="__SEO_HOME_URL__" />
+    <title>__APP_NAME__</title>
+  </head>
+  <body>
+    <!-- Analytics body (noscript GTM) injecté par pwaSeoPlugin() — supprimer si non utilisé. -->
+    __ANALYTICS_BODY__
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

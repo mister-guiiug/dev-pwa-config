@@ -28,7 +28,9 @@ export const baseTestOptions = {
  */
 export const coveragePreset = {
   provider: 'v8',
-  reporter: ['text', 'html'],
+  // `lcov` + `json-summary` permettent l'upload Codecov / le badge de couverture
+  // en CI sans config supplémentaire côté projet.
+  reporter: ['text', 'html', 'lcov', 'json-summary'],
   exclude: [
     '**/node_modules/**',
     '**/e2e/**',
@@ -36,4 +38,18 @@ export const coveragePreset = {
     '**/src/test/**',
     '**/*.d.ts',
   ],
+};
+
+/**
+ * Planchers de couverture **recommandés** pour le domaine critique. Ce ne sont
+ * pas des valeurs imposées : à monter au fil des tests, jamais à baisser pour
+ * faire passer le rouge au vert. Les apps les surchargent selon leur maturité.
+ *
+ *   coverage: { ...coveragePreset, thresholds: recommendedThresholds }
+ */
+export const recommendedThresholds = {
+  statements: 60,
+  branches: 75,
+  functions: 65,
+  lines: 60,
 };
