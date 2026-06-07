@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.2.0
+
+### Minor Changes
+
+- Catalogue famille + composant `FamilyApps` (cross-promotion entre apps).
+  - Nouveau sous-export `@mister-guiiug/dev-wpa-config/apps-catalog` (données pures,
+    sans React) : `FAMILY_APPS` (id, nom, description, `repoUrl`, `appUrl`,
+    `iconUrl`, **`maturity`** obligatoire parmi `alpha | beta | stable`), helpers
+    `otherApps`, `repoUrl`, `pagesUrl`, et constantes `GITHUB_OWNER` / `SPONSOR_URL`.
+    Source unique de la liste des apps de la famille.
+  - Nouveau composant `FamilyApps` (export `/react`, non stylé, attributs
+    `[data-dwc="…"]`) : met en avant le code source (GitHub), le sponsor (Buy Me a
+    Coffee) et la grille des autres applications de la famille avec leur badge de
+    maturité (l'app courante est exclue). Props `currentAppId`, `apps`, `repoUrl`,
+    `sponsorUrl`, `showSource`, `showSponsor`, `labels` (i18n), `className`.
+  - Refactor interne : icônes SVG (GitHub, café, lien externe) extraites dans
+    `react/icons.js`, réutilisées par `AppFooter` et `FamilyApps` (rendu d'`AppFooter`
+    inchangé).
+
 ## 2.1.2
 
 ### Patch Changes

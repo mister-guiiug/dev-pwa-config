@@ -107,6 +107,13 @@ Deux niveaux, à mettre en place ensemble :
    buy_me_a_coffee: mister.guiiug
    ```
 
+3. **Entre apps (cross-promotion)** — le sous-export `apps-catalog` est la
+   **source unique** de la famille (id, nom, description, URL, maturité), et le
+   composant `FamilyApps` (`/react`) met en avant, depuis n'importe quelle app,
+   son code source + sponsor **et la grille des autres applications avec leur
+   badge de maturité** (l'app courante est exclue). Cf. [Catalogue famille &
+   `FamilyApps`](#catalogue-famille--familyapps).
+
 Conventions :
 
 - **Liens externes** : toujours `target="_blank"` + `rel="noopener noreferrer"`.
@@ -181,7 +188,8 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-node`           | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                               |
 | `@mister-guiiug/dev-wpa-config/vitest-base`             | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                     |
 | `@mister-guiiug/dev-wpa-config/vitest-setup`            | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                            |
-| `@mister-guiiug/dev-wpa-config/react`                   | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `PwaInstallPrompt`, `AppFooter` (peer `react`)                                                                            |
+| `@mister-guiiug/dev-wpa-config/apps-catalog`            | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                                              |
+| `@mister-guiiug/dev-wpa-config/react`                   | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                                              |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt` | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + snooze) — couplé à vite-plugin-pwa, hors barrel                                                                                                               |
 | `@mister-guiiug/dev-wpa-config/react/rive`              | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                       |
 | `@mister-guiiug/dev-wpa-config/vitest-browser-base`     | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                     |
@@ -546,6 +554,41 @@ if (visible)
 
 > En test (jsdom), importer `@mister-guiiug/dev-wpa-config/vitest-setup` depuis
 > `src/test/setup.ts` fournit les mocks `virtual:pwa-register` + `matchMedia`.
+
+### Catalogue famille & `FamilyApps`
+
+`apps-catalog` est la **source unique** des applications de la famille (id, nom,
+description, `repoUrl`, `appUrl`, `iconUrl`, **`maturity`** saisie à la main parmi
+`alpha | beta | stable`). C'est de la **donnée pure** : importable depuis une app,
+un script ou un test Node, sans dépendre de React.
+
+```ts
+import {
+  FAMILY_APPS,
+  otherApps,
+  SPONSOR_URL,
+} from '@mister-guiiug/dev-wpa-config/apps-catalog';
+```
+
+Le composant `FamilyApps` (non stylé, attributs `[data-dwc="…"]`) met en avant,
+depuis une app, son **code source** (GitHub), le **sponsor** (Buy Me a Coffee) et
+la **grille des autres applications** avec leur badge de maturité (l'app courante
+est automatiquement exclue) :
+
+```tsx
+import { FamilyApps } from '@mister-guiiug/dev-wpa-config/react';
+import { REPO_URL } from './links';
+
+// Carte source + sponsor + grille des autres apps :
+<FamilyApps currentAppId="miss-dice" repoUrl={REPO_URL} />;
+
+// Grille seule (si la page affiche déjà source/sponsor par ailleurs) :
+<FamilyApps currentAppId="miss-dice" showSource={false} showSponsor={false} />;
+```
+
+Sélecteurs CSS à styliser côté app : `[data-dwc="family-apps"]`, `family-links`,
+`family-source`, `family-sponsor`, `family-app-list`, `family-app`, et le badge
+`[data-dwc="maturity"][data-maturity="alpha|beta|stable"]` (3 couleurs).
 
 ### Animations Rive (`@mister-guiiug/dev-wpa-config/react/rive`)
 
