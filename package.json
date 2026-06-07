@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-wpa-config",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": false,
   "engines": {
     "node": ">=20"
@@ -41,7 +41,10 @@
       "types": "./vitest-base.d.ts",
       "default": "./vitest-base.js"
     },
-    "./vitest-setup": "./vitest-setup.js",
+    "./vitest-setup": {
+      "types": "./vitest-setup.d.ts",
+      "default": "./vitest-setup.js"
+    },
     "./react": {
       "types": "./react/index.d.ts",
       "default": "./react/index.js"
@@ -88,6 +91,7 @@
     "vitest-base.js",
     "vitest-base.d.ts",
     "vitest-setup.js",
+    "vitest-setup.d.ts",
     "react",
     "vitest-browser-base.js",
     "vitest-browser-base.d.ts",
