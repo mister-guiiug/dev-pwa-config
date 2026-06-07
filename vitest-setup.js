@@ -7,6 +7,9 @@
  *
  * Fournit :
  *  - les matchers jest-dom,
+ *  - un `localStorage`/`sessionStorage` en mémoire si l'environnement n'en
+ *    fournit pas de fonctionnel (sous Vitest 4 + jsdom, `localStorage` peut
+ *    exister sans `getItem`/`setItem` opérationnels → tests de persistance KO),
  *  - un stub `window.matchMedia` (absent de jsdom — casse `useTheme`,
  *    `prefers-reduced-motion`, les media queries…),
  *  - des mocks des modules virtuels `virtual:pwa-register` de vite-plugin-pwa
@@ -14,6 +17,49 @@
  */
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
+
+// Storage en mémoire — installé UNIQUEMENT si l'env n'expose pas de Storage
+// fonctionnel (no-op quand jsdom en fournit déjà un correct).
+function ensureStorage(name) {
+  const existing = globalThis[name];
+  if (existing && typeof existing.getItem === 'function') return;
+  const store = new Map();
+  const storage = {
+    get length() {
+      return store.size;
+    },
+    key: i => Array.from(store.keys())[i] ?? null,
+    getItem: k => (store.has(String(k)) ? store.get(String(k)) : null),
+    setItem: (k, v) => {
+      store.set(String(k), String(v));
+    },
+    removeItem: k => {
+      store.delete(String(k));
+    },
+    clear: () => {
+      store.clear();
+    },
+  };
+  Object.defineProperty(globalThis, name, {
+    value: storage,
+    writable: true,
+    configurable: true,
+  });
+  if (typeof window !== 'undefined') {
+    try {
+      Object.defineProperty(window, name, {
+        value: storage,
+        writable: true,
+        configurable: true,
+      });
+    } catch {
+      /* window[name] non redéfinissable : globalThis suffit */
+    }
+  }
+}
+
+ensureStorage('localStorage');
+ensureStorage('sessionStorage');
 
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = query => ({

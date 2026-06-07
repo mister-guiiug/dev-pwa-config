@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.2
+
+### Patch Changes
+
+- `vitest-setup` : polyfill `localStorage`/`sessionStorage` en mémoire installé
+  seulement si l'environnement n'expose pas de Storage fonctionnel. Sous Vitest 4
+  - jsdom, `localStorage` peut exister sans `getItem`/`setItem` opérationnels, ce
+    qui casse les tests de persistance (`localStorage.getItem is not a function`).
+    No-op quand jsdom fournit déjà un Storage correct. Corrige les suites de
+    persistance des apps (ex. miss-uwh syncQueue/sync, miss-carbook assistantStorage).
+
 ## 2.1.1
 
 ### Patch Changes
