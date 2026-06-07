@@ -19,3 +19,11 @@ export const coveragePreset: {
   reporter: string[];
   exclude: string[];
 };
+
+/** Planchers de couverture recommandés (domaine critique) — à monter, jamais baisser. */
+export const recommendedThresholds: {
+  statements: number;
+  branches: number;
+  functions: number;
+  lines: number;
+};

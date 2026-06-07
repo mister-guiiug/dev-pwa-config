@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-wpa-config",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": false,
   "engines": {
     "node": ">=20"
@@ -41,6 +41,19 @@
       "types": "./vitest-base.d.ts",
       "default": "./vitest-base.js"
     },
+    "./vitest-setup": "./vitest-setup.js",
+    "./react": {
+      "types": "./react/index.d.ts",
+      "default": "./react/index.js"
+    },
+    "./react/use-update-prompt": {
+      "types": "./react/use-update-prompt.d.ts",
+      "default": "./react/use-update-prompt.js"
+    },
+    "./react/rive": {
+      "types": "./react/rive.d.ts",
+      "default": "./react/rive.js"
+    },
     "./vitest-browser-base": {
       "types": "./vitest-browser-base.d.ts",
       "default": "./vitest-browser-base.js"
@@ -48,6 +61,10 @@
     "./playwright-base": {
       "types": "./playwright-base.d.ts",
       "default": "./playwright-base.js"
+    },
+    "./playwright-a11y": {
+      "types": "./playwright-a11y.d.ts",
+      "default": "./playwright-a11y.js"
     },
     "./vite-pwa-base": {
       "types": "./vite-pwa-base.d.ts",
@@ -70,10 +87,14 @@
     "tsconfig-node.json",
     "vitest-base.js",
     "vitest-base.d.ts",
+    "vitest-setup.js",
+    "react",
     "vitest-browser-base.js",
     "vitest-browser-base.d.ts",
     "playwright-base.js",
     "playwright-base.d.ts",
+    "playwright-a11y.js",
+    "playwright-a11y.d.ts",
     "vite-pwa-base.js",
     "vite-pwa-base.d.ts",
     "tailwind-preset.js",
@@ -83,8 +104,11 @@
   "peerDependencies": {
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
+    "@axe-core/playwright": "^4.8.0",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.49.0",
+    "@rive-app/react-canvas": "^4.0.0",
+    "@testing-library/jest-dom": "^6.0.0",
     "@vitest/browser": "^4.0.0",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
@@ -93,6 +117,7 @@
     "lucide-react": "^1.0.0",
     "playwright": "^1.49.0",
     "prettier": "^3.6.2",
+    "react": "^19.0.0",
     "sharp": ">=0.33.0",
     "tailwindcss": "^4.0.0",
     "typescript": "~6.0.3",
@@ -108,7 +133,16 @@
     "@commitlint/config-conventional": {
       "optional": true
     },
+    "@axe-core/playwright": {
+      "optional": true
+    },
     "@playwright/test": {
+      "optional": true
+    },
+    "@rive-app/react-canvas": {
+      "optional": true
+    },
+    "@testing-library/jest-dom": {
       "optional": true
     },
     "@vitest/browser": {
@@ -124,6 +158,9 @@
       "optional": true
     },
     "playwright": {
+      "optional": true
+    },
+    "react": {
       "optional": true
     },
     "sharp": {

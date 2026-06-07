@@ -169,22 +169,27 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 
 ## Exports npm
 
-| Sous-chemin                                         | Type            | Description                                                                                                                                                                                           |
-| --------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@mister-guiiug/dev-wpa-config/eslint-base`         | `.js`           | Config ESLint pour projets vanilla TS / Node (sans React)                                                                                                                                             |
-| `@mister-guiiug/dev-wpa-config/eslint-react`        | `.js`           | Étend la base avec `react-hooks` flat + `react-refresh` (rules React Compiler désactivées)                                                                                                            |
-| `@mister-guiiug/dev-wpa-config/prettier`            | `.js`           | Config Prettier 3.6                                                                                                                                                                                   |
-| `@mister-guiiug/dev-wpa-config/commitlint`          | `.js`           | Config commitlint (Conventional Commits)                                                                                                                                                              |
-| `@mister-guiiug/dev-wpa-config/lint-staged`         | `.js`           | Config lint-staged (eslint --fix + prettier --write)                                                                                                                                                  |
-| `@mister-guiiug/dev-wpa-config/tsconfig-app`        | `.json`         | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]`                                                                                       |
-| `@mister-guiiug/dev-wpa-config/tsconfig-app-react`  | `.json`         | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client`                                                                                                        |
-| `@mister-guiiug/dev-wpa-config/tsconfig-node`       | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                               |
-| `@mister-guiiug/dev-wpa-config/vitest-base`         | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests)                                                                                                                                    |
-| `@mister-guiiug/dev-wpa-config/vitest-browser-base` | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                     |
-| `@mister-guiiug/dev-wpa-config/playwright-base`     | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy) |
-| `@mister-guiiug/dev-wpa-config/vite-pwa-base`       | `.js` + `.d.ts` | `pwaSeoPlugin()` (injection GTM/GA4 + sitemap.xml/robots.txt) + helpers analytics                                                                                                                     |
-| `@mister-guiiug/dev-wpa-config/tailwind-preset`     | `.js`           | Design tokens famille (fonts, safe-areas, breakpoints)                                                                                                                                                |
-| `@mister-guiiug/dev-wpa-config/tailwind-preset.css` | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                       |
+| Sous-chemin                                             | Type            | Description                                                                                                                                                                                           |
+| ------------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@mister-guiiug/dev-wpa-config/eslint-base`             | `.js`           | Config ESLint pour projets vanilla TS / Node (sans React)                                                                                                                                             |
+| `@mister-guiiug/dev-wpa-config/eslint-react`            | `.js`           | Étend la base avec `react-hooks` flat + `react-refresh` (rules React Compiler désactivées)                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/prettier`                | `.js`           | Config Prettier 3.6                                                                                                                                                                                   |
+| `@mister-guiiug/dev-wpa-config/commitlint`              | `.js`           | Config commitlint (Conventional Commits)                                                                                                                                                              |
+| `@mister-guiiug/dev-wpa-config/lint-staged`             | `.js`           | Config lint-staged (eslint --fix + prettier --write)                                                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app`            | `.json`         | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]`                                                                                       |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app-react`      | `.json`         | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client`                                                                                                        |
+| `@mister-guiiug/dev-wpa-config/tsconfig-node`           | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                               |
+| `@mister-guiiug/dev-wpa-config/vitest-base`             | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                     |
+| `@mister-guiiug/dev-wpa-config/vitest-setup`            | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                            |
+| `@mister-guiiug/dev-wpa-config/react`                   | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `PwaInstallPrompt`, `AppFooter` (peer `react`)                                                                            |
+| `@mister-guiiug/dev-wpa-config/react/use-update-prompt` | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + snooze) — couplé à vite-plugin-pwa, hors barrel                                                                                                               |
+| `@mister-guiiug/dev-wpa-config/react/rive`              | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                       |
+| `@mister-guiiug/dev-wpa-config/vitest-browser-base`     | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                     |
+| `@mister-guiiug/dev-wpa-config/playwright-base`         | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy) |
+| `@mister-guiiug/dev-wpa-config/playwright-a11y`         | `.js` + `.d.ts` | `expectNoA11yViolations` / `analyzeA11y` / `formatViolations` (axe-core via `AxeBuilder` injecté ; peer optionnelle `@axe-core/playwright`)                                                           |
+| `@mister-guiiug/dev-wpa-config/vite-pwa-base`           | `.js` + `.d.ts` | `pwaSeoPlugin()` (injection GTM/GA4 + sitemap.xml/robots.txt) + helpers analytics                                                                                                                     |
+| `@mister-guiiug/dev-wpa-config/tailwind-preset`         | `.js`           | Design tokens famille (fonts, safe-areas, breakpoints)                                                                                                                                                |
+| `@mister-guiiug/dev-wpa-config/tailwind-preset.css`     | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                       |
 
 ## Bin
 
@@ -226,9 +231,11 @@ Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VS
 | [`templates/husky/pre-commit`](./templates/husky/pre-commit)                       | `<projet>/.husky/pre-commit`            | Aucune                                                                                      |
 | [`templates/husky/commit-msg`](./templates/husky/commit-msg)                       | `<projet>/.husky/commit-msg`            | Aucune                                                                                      |
 | [`templates/.editorconfig`](./templates/.editorconfig)                             | `<projet>/.editorconfig`                | Aucune                                                                                      |
+| [`templates/index.html`](./templates/index.html)                                   | `<projet>/index.html`                   | CSP (offline-first vs Supabase/Firebase/GA4), titre/desc/theme-color, placeholders SEO      |
 | [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | Aucune                                                                                      |
 | [`templates/FUNDING.yml`](./templates/FUNDING.yml)                                 | `<projet>/.github/FUNDING.yml`          | Aucune (handle sponsor famille `mister.guiiug`)                                             |
 | [`templates/.lighthouserc.json`](./templates/.lighthouserc.json)                   | `<projet>/.lighthouserc.json`           | Ajuster les seuils (`minScore`) par catégorie                                               |
+| [`templates/e2e/a11y.spec.ts`](./templates/e2e/a11y.spec.ts)                       | `<projet>/e2e/a11y.spec.ts`             | Adapter les routes/zones ; `npm i -D @axe-core/playwright`                                  |
 | [`templates/changesets/config.json`](./templates/changesets/config.json)           | `<projet>/.changeset/config.json`       | Adapter `access` (restricted vs public)                                                     |
 
 ## Nettoyage de l'historique Actions
@@ -421,14 +428,41 @@ test: {
 import { pwaSeoPlugin } from '@mister-guiiug/dev-wpa-config/vite-pwa-base';
 
 export default defineConfig({
-  plugins: [react(), pwaSeoPlugin({ siteName: 'Mister Puzzle' })],
+  plugins: [
+    react(),
+    pwaSeoPlugin({
+      siteName: 'Mister Puzzle',
+      basePath: '/mister-puzzle/', // sinon VITE_BASE_PATH
+      logoPath: '/logo.svg', // → __SEO_LOGO_URL__ (OG/Twitter/JSON-LD)
+      iconQuery: '?v=1.0.1', // → __PWA_ICON_QS__ (cache-busting)
+      gtmContainerId: 'GTM-XXXXXXX', // ID explicite (sinon VITE_GTM_CONTAINER_ID)
+      llms: '# Mon app\n…', // génère dist/llms.txt
+    }),
+  ],
 });
 ```
 
-Placeholders à mettre dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
-`__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`. Variables d'env de
-build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`, `VITE_PUBLIC_SITE_ORIGIN`,
-`VITE_BASE_PATH`.
+Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
+`__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
+`__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt` (+ `llms.txt` si `llms`).
+Variables d'env de build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`,
+`VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
+anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
+`htmlTrackingPlugin()`), désormais factorisés ici.
+
+### Tests a11y (axe-core) — `playwright-a11y`
+
+```ts
+// e2e/a11y.spec.ts  (cf. templates/e2e/a11y.spec.ts ; npm i -D @axe-core/playwright)
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import { expectNoA11yViolations } from '@mister-guiiug/dev-wpa-config/playwright-a11y';
+
+test('@a11y accueil sans violation WCAG A/AA', async ({ page }) => {
+  await page.goto('/');
+  await expectNoA11yViolations(page, AxeBuilder, expect);
+});
+```
 
 ### `package.json` (icônes PWA)
 
@@ -462,6 +496,91 @@ export { default } from '@mister-guiiug/dev-wpa-config/lint-staged';
 @theme {
   --color-brand: oklch(...);
 }
+```
+
+### Helpers React (`@mister-guiiug/dev-wpa-config/react`)
+
+Hooks et composants PWA partagés (auparavant recopiés app par app). Livrés en
+**JS + `.d.ts` sans build** (composants en `createElement`) : consommables tels
+quels par Vite. Les composants sont **non stylés** — cibler les attributs
+`[data-dwc="…"]` dans le CSS du projet.
+
+```tsx
+import {
+  useLocalStorage,
+  useInstallPrompt,
+  useTheme,
+  PwaInstallPrompt,
+  AppFooter,
+} from '@mister-guiiug/dev-wpa-config/react';
+import { REPO_URL, SPONSOR_URL } from './links';
+
+function Settings() {
+  const { theme, setTheme, toggle } = useTheme(); // light | dark | system
+  const [name, setName] = useLocalStorage('player', '');
+  return (
+    <>
+      <button onClick={toggle}>Thème : {theme}</button>
+      <PwaInstallPrompt className="install-banner" />
+      <AppFooter repoUrl={REPO_URL} sponsorUrl={SPONSOR_URL} />
+    </>
+  );
+}
+```
+
+`useUpdatePrompt` est **hors barrel** (il importe `virtual:pwa-register/react` de
+vite-plugin-pwa) — l'importer par son sous-chemin :
+
+```tsx
+import { useUpdatePrompt } from '@mister-guiiug/dev-wpa-config/react/use-update-prompt';
+
+const { visible, update, snooze } = useUpdatePrompt({ snoozeHours: 24 });
+if (visible)
+  return (
+    <div role="status">
+      Mise à jour disponible. <button onClick={update}>Recharger</button>
+      <button onClick={snooze}>Plus tard</button>
+    </div>
+  );
+```
+
+> En test (jsdom), importer `@mister-guiiug/dev-wpa-config/vitest-setup` depuis
+> `src/test/setup.ts` fournit les mocks `virtual:pwa-register` + `matchMedia`.
+
+### Animations Rive (`@mister-guiiug/dev-wpa-config/react/rive`)
+
+Wrapper [Rive](https://rive.app) **lazy** (le runtime ~100 ko + WASM reste hors
+du bundle initial), respectant `prefers-reduced-motion` et l'accessibilité.
+Standardise les animations interactives de la famille (états vides, mascottes,
+micro-interactions) tout en gardant les budgets perf/a11y/Lighthouse.
+
+```bash
+npm install @rive-app/react-canvas   # peer OPTIONNELLE
+```
+
+```tsx
+import { RiveAnimation } from '@mister-guiiug/dev-wpa-config/react/rive';
+
+// Décorative (aria-hidden auto) + repli statique si mouvement réduit.
+<RiveAnimation
+  src="/animations/empty-state.riv"
+  stateMachines="State Machine 1"
+  fallback={<img src="/animations/empty-state.svg" alt="" />}
+/>;
+
+// Significative : fournir `ariaLabel` (rend role="img" + libellé).
+<RiveAnimation src="/animations/trophy.riv" ariaLabel="Victoire !" />;
+```
+
+Conventions : `.riv` dans `public/animations/`, toujours prévoir un `fallback`
+statique (mouvement réduit + temps de chargement), `ariaLabel` uniquement si
+l'animation porte du sens (sinon décorative).
+
+### `src/test/setup.ts` (setup partagé)
+
+```ts
+import '@mister-guiiug/dev-wpa-config/vitest-setup';
+// puis les mocks spécifiques au projet si besoin…
 ```
 
 > ⚠️ **Permissions caller obligatoires.** Les reusable workflows héritent des permissions du caller (intersection only — le called ne peut pas en élever). Le bloc `permissions:` doit être déclaré au **niveau du caller**, sinon `pages: write` / `id-token: write` / `packages: read` manqueront et le job échouera en `startup_failure` ou se bloquera sur les actions publish/deploy.
@@ -551,7 +670,7 @@ jobs:
 
 Chaque projet peut surcharger des options après extension :
 
-- **mister-puzzle** ajoute `verbatimModuleSyntax` + `erasableSyntaxOnly` (TS plus strict sur le code legacy converti) sur **`tsconfig.app` ET `tsconfig.node`**. Le `tsconfig.node` ajoute aussi les options de linting que la base node ne porte pas (`allowImportingTsExtensions`, `moduleDetection: force`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`) pour aligner la strictness avec `tsconfig.app`.
+- **mister-puzzle** ajoute `verbatimModuleSyntax` + `erasableSyntaxOnly` (TS plus strict sur le code legacy converti) sur **`tsconfig.app` ET `tsconfig.node`**. Depuis le durcissement de `tsconfig-node` (v2.1), les options de linting (`allowImportingTsExtensions`, `moduleDetection: force`, `isolatedModules`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`) sont **portées par la base** — l'override projet peut être réduit aux seules `verbatimModuleSyntax`/`erasableSyntaxOnly`.
 - **mister-cim10** override `allowJs: true` + `checkJs: false` (le code legacy ICD-10 utilise du JS dans des manipulations DOM ; à durcir progressivement).
 - **mister-puzzle** étend `vitest-base.include` pour ajouter `server/**/*.test.ts`.
 - **miss-contraction** étend `vitest-base` avec un `exclude: ['**/node_modules/**', '**/e2e/**']` pour éviter que Vitest pioche dans les specs Playwright.

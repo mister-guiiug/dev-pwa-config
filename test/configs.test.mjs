@@ -67,6 +67,12 @@ test('toutes les configs JS se chargent et ont la bonne forme', async () => {
   await import('../commitlint-base.js');
   await import('../lint-staged-base.js');
   await import('../playwright-base.js');
+  const a11y = await import('../playwright-a11y.js');
+  assert.equal(
+    typeof a11y.expectNoA11yViolations,
+    'function',
+    'playwright-a11y.expectNoA11yViolations'
+  );
   await import('../vite-pwa-base.js');
   await import('../tailwind-preset.js');
 });

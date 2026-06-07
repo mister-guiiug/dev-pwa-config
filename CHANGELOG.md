@@ -1,5 +1,55 @@
 # Changelog
 
+## 2.1.0
+
+### Minor Changes
+
+- Helpers React partagés, durcissement des configs et outillage sécurité/SEO/Rive.
+
+  **Nouveau sous-export `@mister-guiiug/dev-wpa-config/react`** (hooks + composants
+  PWA, sans étape de build) :
+  - `useLocalStorage` — état persistant typé, sync inter-onglets, tolérant au mode privé.
+  - `useInstallPrompt` — capture `beforeinstallprompt`, détection standalone.
+  - `useTheme` — thème `light|dark|system`, persistant, suit le système.
+  - `PwaInstallPrompt` — bandeau d'installation A2HS (non stylé, cibler `[data-dwc]`).
+  - `AppFooter` — lien code source (GitHub SVG inline) + sponsor (café), liens externes sécurisés.
+  - `useUpdatePrompt` (sous-chemin dédié `…/react/use-update-prompt`, couplé vite-plugin-pwa) — MAJ du service worker, variante snooze.
+  - `RiveAnimation` (sous-chemin `…/react/rive`) — wrapper Rive **lazy**, a11y et `prefers-reduced-motion`. Peer optionnelle `@rive-app/react-canvas`.
+
+  **Setup Vitest partagé** `@mister-guiiug/dev-wpa-config/vitest-setup` — jest-dom +
+  stub `matchMedia` + mocks `virtual:pwa-register` (à importer depuis `src/test/setup.ts`).
+
+  **Durcissement des configs** (impacte toutes les apps, sans changement applicatif) :
+  - `tsconfig-node` aligné sur `tsconfig-app` (`noUnusedLocals`, `noUnusedParameters`,
+    `noFallthroughCasesInSwitch`, `moduleDetection: force`, `allowImportingTsExtensions`,
+    `isolatedModules`) — mister-puzzle n'a plus besoin de les redéclarer.
+  - `vitest-base` : reporters de couverture `lcov` + `json-summary` (upload Codecov en CI) ;
+    nouvel export `recommendedThresholds`.
+  - `lint-staged` : type-check pré-commit `tsc -b --noEmit`.
+
+  **SEO — `pwaSeoPlugin()` étendu en sur-ensemble** (remplace les plugins maison
+  de mister-puzzle `vite-plugin-seo.ts` et miss-carbook `htmlTrackingPlugin()`) :
+  nouvelles options `robots`, `basePath`, `logoPath`/`iconQuery` (→ `__SEO_LOGO_URL__`
+  / `__PWA_ICON_QS__`), `llms` (génère `llms.txt`), `gtmContainerId`/`gaMeasurementId`
+  (IDs explicites, fallback env), `extraReplacements`. `resolveSeoPublicUrls` accepte
+  désormais un objet `{ basePath, logoPath, iconQuery }` (rétro-compatible string).
+
+  **Accessibilité — `@mister-guiiug/dev-wpa-config/playwright-a11y`** : helpers
+  `analyzeA11y` / `expectNoA11yViolations` / `formatViolations` (axe-core via
+  `AxeBuilder` injecté, peer optionnelle `@axe-core/playwright`) +
+  `templates/e2e/a11y.spec.ts`.
+
+  **Sécurité** :
+  - `pwa-ci.yml` : inputs `run-npm-audit` (opt-in) + `npm-audit-level`.
+  - `templates/index.html` : template avec CSP de référence (offline-first +
+    variantes Supabase/Firebase/GA4), script anti-FOUC aligné `useTheme`, et
+    placeholders SEO/analytics de `pwaSeoPlugin()`.
+
+  Nouvelle peer-dependency **optionnelle** : `@axe-core/playwright`.
+
+  Nouvelles peer-dependencies **optionnelles** : `react`, `@testing-library/jest-dom`,
+  `@rive-app/react-canvas`.
+
 ## 2.0.0
 
 ### Major Changes
