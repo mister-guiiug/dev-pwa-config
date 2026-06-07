@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.1
+
+### Patch Changes
+
+- `vitest-setup` : ajout d'un `vitest-setup.d.ts` qui réexporte l'augmentation de
+  types jest-dom (`declare module 'vitest'`). Sans lui, les apps qui importent
+  `@mister-guiiug/dev-wpa-config/vitest-setup` depuis `src/test/setup.ts` perdaient
+  les matchers typés (`toBeInTheDocument`, `toHaveTextContent`, …) au `tsc` (le
+  `.js` sans types n'était pas suivi). Requiert `@testing-library/jest-dom` côté
+  consommateur (déjà peer optionnelle).
+
 ## 2.1.0
 
 ### Minor Changes
