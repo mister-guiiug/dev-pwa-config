@@ -9,3 +9,4 @@ export { useInstallPrompt } from './use-install-prompt.js';
 export { useTheme } from './use-theme.js';
 export { PwaInstallPrompt } from './pwa-install-prompt.js';
 export { AppFooter } from './app-footer.js';
+export { FamilyApps } from './family-apps.js';
