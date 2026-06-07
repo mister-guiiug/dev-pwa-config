@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "//": "Durcissement TS avancé OPT-IN. Étend la base React et ajoute des flags stricts supplémentaires. Adoption par app : remplacer `extends: .../tsconfig-app-react` par `extends: .../tsconfig-strict-plus` dans tsconfig.app.json, puis résorber les erreurs (souvent index access + optionnels).",
+  "extends": "./tsconfig-app-react.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true
+  }
+}

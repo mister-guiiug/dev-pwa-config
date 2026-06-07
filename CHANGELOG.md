@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.3.0
+
+### Minor Changes
+
+- Platform layer partagé (anti écran-blanc, observabilité, résilience réseau) + variante TS strict-plus.
+
+  **Nouveaux exports `/react`** (JS + `.d.ts`, sans build) :
+  - `ErrorBoundary` — anti écran-blanc, `fallback` render-prop, `onError` (reporting), `onReset`, `onDownloadBackup` (sauvegarde locale).
+  - `useOnline`, `retryableQuery` (`/react/net`, backoff exponentiel), `useOfflineMutationQueue` (file persistante rejouée au retour online), `SyncStatusBadge`.
+  - `EmptyState` (état vide + CTA), `ErrorBanner` (erreur récupérable + Réessayer).
+  - `@mister-guiiug/dev-wpa-config/react/observability` — `installErrorReporter` (ring-buffer localStorage + `setForwarder`), `recordError`, `initSentry({ dsn })` no-op si pas de dsn (lazy `@sentry/react`).
+  - `@mister-guiiug/dev-wpa-config/react/update-prompt-banner` — `UpdatePromptBanner` prêt à l'emploi (hors barrel, couplé vite-plugin-pwa).
+
+  **Nouveau `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`** (opt-in) : `noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`, `noImplicitOverride`, `exactOptionalPropertyTypes`.
+
+  Tests : `test/platform.test.mjs` (helpers purs + smoke-render des composants).
+
 ## 2.2.0
 
 ### Minor Changes
