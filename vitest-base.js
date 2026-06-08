@@ -2,10 +2,24 @@
  * Helpers Vitest partagés. Les projets utilisent leur propre `vitest.config.ts`
  * mais peuvent réutiliser cette base de `test` options.
  */
+
+/**
+ * Chemin du fichier de setup par défaut. Exporté pour permettre d'AJOUTER un
+ * setup projet sans écraser celui de la base (les tableaux ne se mergent pas
+ * lors d'un spread) :
+ *
+ *   import { baseTestOptions, DEFAULT_SETUP_FILE } from '.../vitest-base';
+ *   test: {
+ *     ...baseTestOptions,
+ *     setupFiles: [DEFAULT_SETUP_FILE, './src/test/extra-setup.ts'],
+ *   }
+ */
+export const DEFAULT_SETUP_FILE = './src/test/setup.ts';
+
 export const baseTestOptions = {
   environment: 'jsdom',
   globals: true,
-  setupFiles: ['./src/test/setup.ts'],
+  setupFiles: [DEFAULT_SETUP_FILE],
   include: ['src/**/*.{test,spec}.{ts,tsx}'],
   passWithNoTests: true,
 };

@@ -59,6 +59,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
         with:
@@ -67,7 +69,18 @@ jobs:
 
       - name: Inject build env
         if: ${{ inputs.build-env != '' }}
-        run: printf '%s\n' "${{ inputs.build-env }}" >> "$GITHUB_ENV"
+        env:
+          # Passé via env: (jamais interpolé dans le corps du script) pour éviter
+          # toute injection shell. Chaque ligne doit être au format KEY=VALUE.
+          BUILD_ENV: ${{ inputs.build-env }}
+        run: |
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            case "$line" in
+              [A-Za-z_]*=*) printf '%s\n' "$line" >> "$GITHUB_ENV" ;;
+              *) echo "❌ build-env: ligne invalide (attendu KEY=VALUE): $line" >&2; exit 1 ;;
+            esac
+          done <<< "$BUILD_ENV"
 
       - name: Build
         env:
@@ -75,7 +88,8 @@ jobs:
         run: npm run build
 
       - name: Lighthouse CI
-        uses: treosh/lighthouse-ci-action@v12
+        # Action tierce épinglée au SHA (supply-chain) ; Renovate met à jour le pin.
+        uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
         with:
           configPath: ${{ inputs.config-path }}
           uploadArtifacts: ${{ inputs.upload-artifacts }}

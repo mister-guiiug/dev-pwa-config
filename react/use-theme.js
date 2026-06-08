@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 
 const DEFAULT_KEY = 'dwc_theme';
+const THEMES = new Set(['light', 'dark', 'system']);
+
+/** Normalise une valeur stockée : toute valeur hors `light|dark|system` → défaut. */
+function sanitizeTheme(value, fallback) {
+  return THEMES.has(value) ? value : fallback;
+}
 
 function systemPrefersDark() {
   return (
@@ -42,7 +48,12 @@ export function useTheme(options = {}) {
   const [theme, setThemeState] = useState(() => {
     if (typeof window === 'undefined') return defaultTheme;
     try {
-      return window.localStorage.getItem(storageKey) || defaultTheme;
+      // Valeur stockée validée : une chaîne corrompue/étrangère ne doit pas
+      // se propager dans `colorScheme`/`data-theme`.
+      return sanitizeTheme(
+        window.localStorage.getItem(storageKey),
+        defaultTheme
+      );
     } catch {
       return defaultTheme;
     }
@@ -73,7 +84,10 @@ export function useTheme(options = {}) {
     return () => mq.removeEventListener?.('change', onChange);
   }, [theme, attribute]);
 
-  const setTheme = useCallback(t => setThemeState(t), []);
+  const setTheme = useCallback(
+    t => setThemeState(sanitizeTheme(t, defaultTheme)),
+    [defaultTheme]
+  );
   const toggle = useCallback(
     () =>
       setThemeState(prev => (resolveTheme(prev) === 'dark' ? 'light' : 'dark')),

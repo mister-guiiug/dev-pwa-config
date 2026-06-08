@@ -17,6 +17,8 @@ export interface DefinePwaPlaywrightConfigOptions {
   /** L'objet `devices` de `@playwright/test`. Obligatoire. */
   devices: Record<string, unknown>;
   port?: number;
+  /** Tester un build de prod (`build` + `preview`) au lieu du dev server. */
+  preview?: boolean;
   command?: string;
   testMatch?: RegExp | string;
   expectTimeout?: number;

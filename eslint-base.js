@@ -14,7 +14,9 @@ export default defineConfig([
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: {
       ecmaVersion: 2025,
-      globals: globals.browser,
+      // Browser + Node : la base sert aussi aux scripts Node (`scripts/*.mjs`,
+      // `vite.config.ts`) où `process`/`Buffer`/… ne doivent pas être flaggés.
+      globals: { ...globals.browser, ...globals.node },
     },
     rules: {
       // Le préfixe `_` marque une variable / un paramètre / une erreur capturée

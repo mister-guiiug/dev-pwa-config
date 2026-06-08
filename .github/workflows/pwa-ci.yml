@@ -38,6 +38,15 @@ on:
         type: boolean
         required: false
         default: true
+      verify-lockfile:
+        description: >-
+          Vérifie en PR que package-lock.json est synchronisé avec package.json.
+          Détecte tôt (message clair) le lockfile désynchronisé qui casse
+          `npm ci` — typiquement les bindings natifs optionnels de Vite 8 /
+          Rolldown / oxc omis du lock quand il est généré hors Linux.
+        type: boolean
+        required: false
+        default: true
       run-npm-audit:
         description: >-
           Lance `npm audit` (SCA) sur les dépendances de production. Opt-in :
@@ -83,11 +92,44 @@ permissions:
   packages: read
 
 jobs:
+  # Détecte un package-lock.json désynchronisé AVANT le `npm ci` cryptique du job
+  # quality. Job indépendant : un message clair sort même si `npm ci` échoue.
+  verify-lockfile:
+    name: Lockfile in sync
+    if: ${{ inputs.verify-lockfile }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+        with:
+          node-version: ${{ inputs.node-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          install: 'false'
+
+      - name: Check package-lock.json is in sync with package.json
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          if ! git diff --quiet -- package-lock.json; then
+            echo "::error::package-lock.json désynchronisé de package.json — lance 'npm install' et committe le lockfile à jour."
+            echo "Cause fréquente : bindings natifs optionnels (Vite 8 / Rolldown / oxc : @emnapi/*, @rolldown/binding-*) omis du lock quand il est généré hors Linux." >&2
+            git --no-pager diff --stat -- package-lock.json >&2 || true
+            exit 1
+          fi
+          echo "✅ package-lock.json synchronisé avec package.json."
+
   quality:
     name: Format · Lint · Type · Test · Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
         with:
@@ -96,7 +138,18 @@ jobs:
 
       - name: Inject build env
         if: ${{ inputs.build-env != '' }}
-        run: printf '%s\n' "${{ inputs.build-env }}" >> "$GITHUB_ENV"
+        env:
+          # Passé via env: (jamais interpolé dans le corps du script) pour éviter
+          # toute injection shell. Chaque ligne doit être au format KEY=VALUE.
+          BUILD_ENV: ${{ inputs.build-env }}
+        run: |
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            case "$line" in
+              [A-Za-z_]*=*) printf '%s\n' "$line" >> "$GITHUB_ENV" ;;
+              *) echo "❌ build-env: ligne invalide (attendu KEY=VALUE): $line" >&2; exit 1 ;;
+            esac
+          done <<< "$BUILD_ENV"
 
       - name: Format check
         if: ${{ inputs.run-format-check }}
@@ -136,6 +189,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
         with:

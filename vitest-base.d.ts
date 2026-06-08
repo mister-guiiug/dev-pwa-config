@@ -5,6 +5,9 @@
  *
  * Le projet consommateur peut spread cet objet dans son propre `defineConfig({ test: ... })`.
  */
+/** Chemin du fichier de setup par défaut (pour composer sans écraser). */
+export const DEFAULT_SETUP_FILE: string;
+
 export const baseTestOptions: {
   environment: string;
   globals: boolean;

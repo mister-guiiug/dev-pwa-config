@@ -18,7 +18,8 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - uses: supabase/setup-cli@v1
+    # Action tierce épinglée au SHA (supply-chain) ; Renovate met à jour le pin.
+    - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
       with:
         version: ${{ inputs.cli-version }}
 
@@ -26,7 +27,9 @@ runs:
       shell: bash
       env:
         SUPABASE_ACCESS_TOKEN: ${{ inputs.access-token }}
-      run: supabase link --project-ref ${{ inputs.project-id }}
+        # Passé via env: (pas d'interpolation dans le script) → pas d'injection.
+        SUPABASE_PROJECT_ID: ${{ inputs.project-id }}
+      run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
     - name: Apply migrations
       shell: bash

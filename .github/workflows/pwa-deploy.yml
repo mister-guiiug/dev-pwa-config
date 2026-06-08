@@ -78,6 +78,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
         with:
@@ -86,11 +88,24 @@ jobs:
 
       - name: Inject build env
         if: ${{ inputs.build-env != '' }}
-        run: printf '%s\n' "${{ inputs.build-env }}" >> "$GITHUB_ENV"
+        env:
+          # Passé via env: (jamais interpolé dans le corps du script) pour éviter
+          # toute injection shell. Chaque ligne doit être au format KEY=VALUE.
+          BUILD_ENV: ${{ inputs.build-env }}
+        run: |
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            case "$line" in
+              [A-Za-z_]*=*) printf '%s\n' "$line" >> "$GITHUB_ENV" ;;
+              *) echo "❌ build-env: ligne invalide (attendu KEY=VALUE): $line" >&2; exit 1 ;;
+            esac
+          done <<< "$BUILD_ENV"
 
       - name: Pre-build
         if: ${{ inputs.pre-build-script != '' }}
-        run: npm run ${{ inputs.pre-build-script }}
+        env:
+          PRE_BUILD_SCRIPT: ${{ inputs.pre-build-script }}
+        run: npm run "$PRE_BUILD_SCRIPT"
 
       - name: Build
         env:
@@ -124,6 +139,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v5
         with:
@@ -138,10 +155,13 @@ jobs:
           printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > "$RUNNER_TEMP/firebase-sa.json"
 
       - name: Deploy Firebase rules
+        # firebase-tools épinglé (reproductibilité). Inputs via env: → pas d'injection.
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+          FB_ONLY: ${{ inputs.firebase-only }}
+          FB_PROJECT: ${{ inputs.firebase-project }}
         run: >-
-          npx --yes firebase-tools deploy
-          --only "${{ inputs.firebase-only }}"
-          --project "${{ inputs.firebase-project }}"
+          npx --yes firebase-tools@15 deploy
+          --only "$FB_ONLY"
+          --project "$FB_PROJECT"
           --non-interactive

@@ -66,11 +66,47 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
     matches: false,
     media: query,
     onchange: null,
+    // `addListener`/`removeListener` (dépréciés) conservés : certaines libs les
+    // appellent encore. Le code famille utilise `addEventListener`.
     addListener: () => {},
     removeListener: () => {},
     addEventListener: () => {},
     removeEventListener: () => {},
     dispatchEvent: () => false,
+  });
+}
+
+// Stubs des API jsdom manquantes les plus fréquentes côté PWA (animations,
+// listes paresseuses, Rive). Installés seulement si absents.
+class NoopObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = NoopObserver;
+}
+if (typeof globalThis.IntersectionObserver === 'undefined') {
+  globalThis.IntersectionObserver = NoopObserver;
+}
+if (typeof window !== 'undefined' && typeof window.scrollTo !== 'function') {
+  window.scrollTo = () => {};
+}
+if (
+  typeof globalThis.crypto === 'undefined' ||
+  typeof globalThis.crypto.randomUUID !== 'function'
+) {
+  const base = globalThis.crypto ?? {};
+  let seed = 0;
+  base.randomUUID = () =>
+    `00000000-0000-4000-8000-${String(++seed).padStart(12, '0')}`;
+  Object.defineProperty(globalThis, 'crypto', {
+    value: base,
+    writable: true,
+    configurable: true,
   });
 }
 

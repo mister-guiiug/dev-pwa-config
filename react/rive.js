@@ -1,28 +1,15 @@
-import { createElement as h, lazy, Suspense, useEffect, useState } from 'react';
+import { createElement as h, lazy, Suspense } from 'react';
+import { useReducedMotion } from './use-media-query.js';
 
 // Chargé à la demande : `@rive-app/react-canvas` (~100 ko + WASM) reste hors du
 // bundle initial des apps qui n'affichent pas d'animation au premier rendu.
 // Peer OPTIONNELLE — installer dans le projet : npm i @rive-app/react-canvas
+// `Rive` est l'export NOMMÉ du paquet ; on le privilégie au `default` (souvent
+// non-composant dans l'espace de noms ESM) avant tout repli.
 const LazyRive = lazy(async () => {
   const mod = await import('@rive-app/react-canvas');
-  return { default: mod.default ?? mod.Rive };
+  return { default: mod.Rive ?? mod.default };
 });
-
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
-  );
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = () => setReduced(mq.matches);
-    mq.addEventListener?.('change', onChange);
-    return () => mq.removeEventListener?.('change', onChange);
-  }, []);
-  return reduced;
-}
 
 /**
  * Wrapper Rive aligné sur les standards famille :
@@ -51,7 +38,7 @@ export function RiveAnimation(props) {
     autoplay = true,
   } = props;
 
-  const reduced = usePrefersReducedMotion();
+  const reduced = useReducedMotion();
   const a11y = ariaLabel
     ? { role: 'img', 'aria-label': ariaLabel }
     : { 'aria-hidden': 'true' };

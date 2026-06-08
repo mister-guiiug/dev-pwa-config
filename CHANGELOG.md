@@ -1,5 +1,82 @@
 # Changelog
 
+## 3.0.0
+
+Release majeure : durcissement TypeScript (breaking côté consumer), sécurité CI,
+corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
+
+### ⚠️ Breaking (lot C — durcissement TypeScript)
+
+- `tsconfig-app` / `tsconfig-node` : ajout de **`verbatimModuleSyntax: true`** et
+  **`noUncheckedIndexedAccess: true`**. Plus sûr (force `import type`, rend les
+  accès indexés `T | undefined`) mais **fait apparaître de nouvelles erreurs**
+  dans les apps au bump.
+  - `verbatimModuleSyntax` : préfixer en `import type` les imports de types.
+    mister-puzzle le déclarait déjà localement → l'override projet peut être
+    retiré.
+  - `noUncheckedIndexedAccess` : garder/valider les accès `arr[i]` / `record[k]`.
+    Migration progressive possible en remettant `"noUncheckedIndexedAccess": false`
+    dans le `tsconfig.app.json` du projet le temps d'adapter.
+- `engines.node` : **`>=20` → `>=22`** (aligné sur `.nvmrc` et la CI ; le paquet
+  n'était jamais testé sous Node 20).
+- `eslint-base` : `languageOptions.globals` inclut désormais **`globals.node`** en
+  plus de `globals.browser` (la base sert aussi aux scripts Node). Additif —
+  supprime des faux positifs `process`/`Buffer`.
+
+### Added (lot B — capacités)
+
+- **`useMediaQuery` / `useReducedMotion` / `usePrefersDark`** (export `/react`) —
+  brique partagée (SSR-safe) ; `rive` la réutilise (dédup).
+- **Playwright `preview`** : `definePwaPlaywrightConfig({ preview: true })` teste
+  un build de prod (`build` + `preview`) au lieu du dev server → service worker,
+  minification et cache réels (le comportement PWA qu'on veut valider).
+- **`vitest-setup` enrichi** : stubs `ResizeObserver`, `IntersectionObserver`,
+  `scrollTo`, `crypto.randomUUID` (installés seulement si absents).
+- **`vitest-base` `DEFAULT_SETUP_FILE`** exporté : composer `setupFiles` sans
+  écraser celui de la base.
+- **`useLocalStorage` sync intra-onglet** : plusieurs instances de la même clé
+  dans le même onglet restent synchronisées (le `storage` event ne notifie que
+  les autres onglets) ; `initialValue` figé en ref (un défaut inline ne réabonne
+  plus les effets).
+- **Anti-désync lockfile** : `templates/.npmrc` documenté + job CI
+  `verify-lockfile` (reusable `pwa-ci.yml`, input `verify-lockfile`, défaut true)
+  qui détecte en PR un `package-lock.json` désynchronisé (ex. bindings natifs
+  optionnels Vite 8 / Rolldown / oxc omis hors Linux) avec un message clair.
+
+### Fixed (lot A — corrections)
+
+- `vite-pwa-base` : `closeBundle` n'écrit `sitemap.xml`/`robots.txt`/`llms.txt`
+  qu'en **mode build**, **crée le dossier de sortie** (`mkdirSync` — évite ENOENT)
+  et respecte un **`build.outDir` personnalisé** (lu via `configResolved`).
+- `playwright-base` : `snapshotPathTemplate` inclut **`{projectName}`** — sans lui,
+  les 5 navigateurs écrasaient le même snapshot (diffs visuels faux).
+- `react/use-theme` : la valeur stockée est **validée** (`light|dark|system`) —
+  une valeur corrompue ne se propage plus dans `colorScheme`/`data-theme`.
+- `react/use-install-prompt` : garde SSR sur l'effet, `promptInstall` ne propage
+  plus de rejet non géré (respecte `Promise<… | null>`), et suit le passage en
+  mode standalone (`display-mode`) en plus de `appinstalled`.
+- `react/rive` : résolution de l'export lazy en **`mod.Rive ?? mod.default`**
+  (`Rive` est l'export nommé du paquet).
+- `react/pwa-install-prompt` : `role="dialog"` → **`role="region"`** (bannière
+  passive non modale — ne promet plus à tort un piège de focus).
+- `eslint-react` **étend `eslint-base`** au lieu de dupliquer ignores /
+  `no-unused-vars` / override e2e (plus de risque de dérive).
+
+### Security (lot A — CI/CD)
+
+- Reusables `pwa-ci` / `pwa-deploy` / `pwa-lighthouse` : l'input `build-env`
+  (et `pre-build-script`) est passé via `env:` (plus jamais interpolé dans le
+  corps du script) — supprime un vecteur d'**injection shell** ; `build-env` est
+  validé ligne par ligne (`KEY=VALUE`).
+- **`persist-credentials: false`** sur tous les `checkout` sauf le push de tag de
+  `publish.yml` (le token n'est plus persisté sur disque pendant les builds).
+- Actions tierces **épinglées au SHA** : `treosh/lighthouse-ci-action` (v12),
+  `supabase/setup-cli` (v1.7.1) — Renovate met à jour les pins.
+- Action `firebase-deploy` : **service account** (`service-account-key`) en plus
+  du `token` (déprécié par Google), et **firebase-tools épinglé** via `npx`
+  (plus d'install globale non reproductible). `project-id`/inputs passés via env:.
+- `prettier` épinglé côté devDependency + formatage normalisé (reproductibilité).
+
 ## 2.2.0
 
 ### Minor Changes
