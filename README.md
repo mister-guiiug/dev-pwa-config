@@ -25,7 +25,8 @@ projets PWA de la famille `miss-*` et `mister-*`.
 Les configs imposent / supposent les versions suivantes côté projet consommateur :
 
 ```
-TypeScript ~6.0.3 strict, cible ES2025 + lib ES2025
+Node ≥22 (engines + .nvmrc + CI)
+TypeScript ~6.0.3 strict + verbatimModuleSyntax + noUncheckedIndexedAccess, cible ES2025 + lib ES2025
 ESLint 9 (flat config) + typescript-eslint 8.58
 eslint-plugin-react-hooks 7.0 (configs.flat.recommended) + eslint-plugin-react-refresh 0.5
 Vite 8 (Rolldown) + Vitest 4 (jsdom + globals + setupFiles)
@@ -33,6 +34,11 @@ Zod 4 (peer)
 Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowParens 'avoid')
 Tailwind 4 (@tailwindcss/vite) + lucide-react (icônes — standard famille)
 ```
+
+> **3.0.0 (breaking)** — `tsconfig-app`/`tsconfig-node` activent
+> **`verbatimModuleSyntax`** et **`noUncheckedIndexedAccess`** (de nouvelles
+> erreurs TS peuvent apparaître au bump — cf. [migration 3.0.0](#tsconfig-30-verbatimmodulesyntax--nouncheckedindexedaccess)),
+> et `engines.node` passe à **`>=22`**.
 
 > **2.0.0 (breaking)** — les peer-dependencies passent en **Vite 8 / Vitest 4 / TypeScript ~6.0.3 / Zod 4**
 > (plus de support Vitest 3 ni Zod 3). Voir la [migration](#zod-3--4-breaking-perfs-50) ci-dessous.
@@ -134,7 +140,7 @@ Conventions :
 ```jsonc
 {
   "devDependencies": {
-    "@mister-guiiug/dev-wpa-config": "^1.4.0",
+    "@mister-guiiug/dev-wpa-config": "^3.0.0",
   },
 }
 ```
@@ -189,7 +195,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/vitest-base`             | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                     |
 | `@mister-guiiug/dev-wpa-config/vitest-setup`            | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                            |
 | `@mister-guiiug/dev-wpa-config/apps-catalog`            | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                                              |
-| `@mister-guiiug/dev-wpa-config/react`                   | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                                              |
+| `@mister-guiiug/dev-wpa-config/react`                   | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)         |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt` | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + snooze) — couplé à vite-plugin-pwa, hors barrel                                                                                                               |
 | `@mister-guiiug/dev-wpa-config/react/rive`              | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                       |
 | `@mister-guiiug/dev-wpa-config/vitest-browser-base`     | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                     |
@@ -218,11 +224,11 @@ Hébergés dans [`.github/workflows/`](.github/workflows/) — utilisables par t
 
 ## Composite actions
 
-| Action                                                             | Rôle                                                                     |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| `mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1`        | Setup Node 22 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages) |
-| `mister-guiiug/dev-wpa-config/.github/actions/supabase-migrate@v1` | Setup CLI Supabase + `link` + `db push` (déploiements custom)            |
-| `mister-guiiug/dev-wpa-config/.github/actions/firebase-deploy@v1`  | `firebase deploy` ciblé (rules database/firestore, indexes)              |
+| Action                                                             | Rôle                                                                                                                                                        |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1`        | Setup Node 22 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages)                                                                                    |
+| `mister-guiiug/dev-wpa-config/.github/actions/supabase-migrate@v1` | Setup CLI Supabase + `link` + `db push` (déploiements custom)                                                                                               |
+| `mister-guiiug/dev-wpa-config/.github/actions/firebase-deploy@v1`  | `firebase deploy` ciblé (rules database/firestore, indexes) — auth `service-account-key` (recommandé) ou `token` (déprécié), firebase-tools épinglé via npx |
 
 ## Templates non-importables (à copier-coller)
 
@@ -241,6 +247,7 @@ Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VS
 | [`templates/.editorconfig`](./templates/.editorconfig)                             | `<projet>/.editorconfig`                | Aucune                                                                                      |
 | [`templates/index.html`](./templates/index.html)                                   | `<projet>/index.html`                   | CSP (offline-first vs Supabase/Firebase/GA4), titre/desc/theme-color, placeholders SEO      |
 | [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | Aucune                                                                                      |
+| [`templates/.npmrc`](./templates/.npmrc)                                           | `<projet>/.npmrc`                       | Aucune (registre scope + `include=optional` — bindings natifs Vite 8)                       |
 | [`templates/FUNDING.yml`](./templates/FUNDING.yml)                                 | `<projet>/.github/FUNDING.yml`          | Aucune (handle sponsor famille `mister.guiiug`)                                             |
 | [`templates/.lighthouserc.json`](./templates/.lighthouserc.json)                   | `<projet>/.lighthouserc.json`           | Ajuster les seuils (`minScore`) par catégorie                                               |
 | [`templates/e2e/a11y.spec.ts`](./templates/e2e/a11y.spec.ts)                       | `<projet>/e2e/a11y.spec.ts`             | Adapter les routes/zones ; `npm i -D @axe-core/playwright`                                  |
@@ -392,6 +399,8 @@ export default defineConfig(
   definePwaPlaywrightConfig({
     devices,
     port: 5173, // optionnel
+    // preview: true,                 // teste un BUILD de prod (build + preview)
+    //                                // → service worker, minification, cache réels
     // testMatch: /.*\.spec\.ts$/,    // si convention .spec
     // extraProjects: [...],          // navigateurs additionnels
   })
@@ -816,6 +825,42 @@ Cohabitation recommandée : 2 fichiers de config (`vitest.config.ts` + `vitest.b
 - Couverture **V8 désormais AST-aware** (chiffres recalibrés, proche d'Istanbul) ; `coverage.include`
   doit être explicite. Recalibrer les `thresholds` si une app casse.
 - Aucune option supprimée n'est utilisée par les bases (`workspace`/`poolOptions`/`deps.inline`/`coverage.all`).
+
+### tsconfig 3.0 (`verbatimModuleSyntax` + `noUncheckedIndexedAccess`)
+
+`tsconfig-app` et `tsconfig-node` activent deux options strictes en 3.0. Au bump,
+`tsc` peut remonter de nouvelles erreurs (aucune au runtime) :
+
+- **`verbatimModuleSyntax`** — préfixer en `import type { Foo }` les imports
+  utilisés uniquement comme types. (mister-puzzle le déclarait déjà → retirer
+  l'override local.)
+- **`noUncheckedIndexedAccess`** — `arr[i]` / `record[k]` deviennent `T | undefined` ;
+  garder/valider avant usage (`const x = arr[i]; if (x) …`).
+
+Adoption progressive possible en remettant l'option à `false` dans le
+`tsconfig.app.json` du projet le temps d'adapter le code :
+
+```jsonc
+{
+  "extends": "@mister-guiiug/dev-wpa-config/tsconfig-app-react",
+  "compilerOptions": { "noUncheckedIndexedAccess": false }, // temporaire
+  "include": ["src"],
+}
+```
+
+### Lockfile & bindings natifs (Vite 8 / Rolldown)
+
+Vite 8 (Rolldown/oxc) tire des **dépendances optionnelles** spécifiques à la
+plateforme (`@emnapi/*`, `@rolldown/binding-*`, `@oxc-*`). Un `package-lock.json`
+**régénéré hors Linux** peut les **omettre** → `npm ci` casse en CI Linux
+(`Missing: @emnapi/runtime from lock file`). Pour éviter / détecter ça :
+
+- Copier [`templates/.npmrc`](./templates/.npmrc) (registre scope + `include=optional`).
+- **Régénérer le lockfile sous Linux/CI** (ou `npm install` puis committer).
+- Vérifier la synchro avant de committer : `npm ci --dry-run`.
+- Le reusable `pwa-ci.yml` ajoute un job **`verify-lockfile`** (input
+  `verify-lockfile`, défaut `true`) qui échoue en PR avec un message clair si le
+  lock est désynchronisé.
 
 ### TypeScript / Tailwind
 

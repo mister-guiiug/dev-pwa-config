@@ -148,8 +148,16 @@ export function pwaSeoPlugin(opts = {}) {
     extraReplacements = {},
   } = opts;
   const urlOpts = { basePath, logoPath, iconQuery };
+  // Résolus depuis la config Vite : on respecte un `build.outDir` personnalisé
+  // et on ne génère les fichiers (sitemap/robots/llms) qu'en mode build.
+  let resolvedOutDir = outDir;
+  let isBuild = false;
   return {
     name: 'mister-guiiug:pwa-seo',
+    configResolved(config) {
+      resolvedOutDir = config?.build?.outDir || outDir;
+      isBuild = config?.command === 'build';
+    },
     transformIndexHtml(html) {
       const { homeUrl, logoUrl } = resolveSeoPublicUrls(urlOpts);
       const { head, body } = buildAnalyticsHtmlFragments({
@@ -168,10 +176,15 @@ export function pwaSeoPlugin(opts = {}) {
       return out;
     },
     async closeBundle() {
+      // Hook de build : ne rien écrire en dev/serve (au cas où l'outil l'appelle).
+      if (!isBuild) return;
       const fs = await import('node:fs');
       const path = await import('node:path');
       const { homeUrl } = resolveSeoPublicUrls(urlOpts);
-      const dist = path.resolve(process.cwd(), outDir);
+      const dist = path.resolve(process.cwd(), resolvedOutDir);
+      // Crée le dossier de sortie si absent (évite ENOENT quand le build
+      // n'a encore rien émis, ou avec un `build.outDir` personnalisé).
+      fs.mkdirSync(dist, { recursive: true });
       if (sitemap) {
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

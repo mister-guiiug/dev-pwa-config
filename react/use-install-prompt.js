@@ -20,6 +20,7 @@ export function useInstallPrompt() {
   const [installed, setInstalled] = useState(isStandalone);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
     const onBeforeInstall = e => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -30,18 +31,33 @@ export function useInstallPrompt() {
     };
     window.addEventListener('beforeinstallprompt', onBeforeInstall);
     window.addEventListener('appinstalled', onInstalled);
+    // Certaines plateformes (iOS, install via menu navigateur) ne déclenchent
+    // pas `appinstalled` : on suit aussi le passage en mode standalone.
+    const mq = window.matchMedia?.('(display-mode: standalone)');
+    const onDisplayMode = () => {
+      if (mq?.matches) setInstalled(true);
+    };
+    mq?.addEventListener?.('change', onDisplayMode);
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
       window.removeEventListener('appinstalled', onInstalled);
+      mq?.removeEventListener?.('change', onDisplayMode);
     };
   }, []);
 
   const promptInstall = useCallback(async () => {
     if (!deferredPrompt) return null;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    return outcome;
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      setDeferredPrompt(null);
+      return outcome;
+    } catch {
+      // `userChoice` peut rejeter (prompt déjà consommé) : on respecte le
+      // contrat `Promise<… | null>` au lieu de propager un rejet non géré.
+      setDeferredPrompt(null);
+      return null;
+    }
   }, [deferredPrompt]);
 
   return {

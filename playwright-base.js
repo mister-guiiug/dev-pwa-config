@@ -77,7 +77,12 @@ export const basePlaywrightOptions = {
  * @param {object} opts
  * @param {Record<string, any>} opts.devices  L'objet `devices` de `@playwright/test`.
  * @param {number}  [opts.port=5173]            Port du dev server.
- * @param {string}  [opts.command='npm run dev'] Commande du webServer.
+ * @param {boolean} [opts.preview=false]        Tester un build de PROD (`build` +
+ *   `preview`) plutôt que `dev` : service worker réel, minification, cache —
+ *   le comportement PWA qu'on veut justement valider. Nécessite un script
+ *   `preview` côté projet. Force `reuseExistingServer: false`.
+ * @param {string}  [opts.command]              Commande du webServer (sinon
+ *   déduite de `preview` : `npm run dev` ou build+preview).
  * @param {RegExp|string} [opts.testMatch]      Filtre de fichiers (défaut Playwright si omis).
  * @param {number}  [opts.expectTimeout=10000]  Timeout des assertions.
  * @param {number}  [opts.localWorkers=4]       Workers en local (toujours 1 en CI).
@@ -89,7 +94,8 @@ export const basePlaywrightOptions = {
 export function definePwaPlaywrightConfig({
   devices,
   port = 5173,
-  command = 'npm run dev',
+  preview = false,
+  command,
   testMatch,
   expectTimeout = 10_000,
   localWorkers = 4,
@@ -105,6 +111,13 @@ export function definePwaPlaywrightConfig({
     );
   }
   const baseURL = `http://localhost:${port}`;
+  // En mode preview : build de prod puis `vite preview` sur le même port (SW,
+  // minification, cache réels). Sinon dev server (HMR, pas de SW).
+  const webServerCommand =
+    command ??
+    (preview
+      ? `npm run build && npm run preview -- --port ${port} --strictPort`
+      : 'npm run dev');
   const config = {
     testDir: './e2e',
     ...(testMatch ? { testMatch } : {}),
@@ -124,14 +137,19 @@ export function definePwaPlaywrightConfig({
     timeout: 30_000,
     projects: [...pwaProjects(devices), ...extraProjects],
     webServer: {
-      command,
+      command: webServerCommand,
       url: baseURL,
-      reuseExistingServer: !process.env.CI,
+      // En preview, ne pas réutiliser un dev server déjà lancé (servirait du
+      // non-buildé) : on veut un build frais.
+      reuseExistingServer: !process.env.CI && !preview,
       timeout: 120_000,
     },
     snapshotDir: 'e2e/__snapshots__',
+    // `{projectName}` est indispensable avec la matrice multi-navigateurs :
+    // sans lui, chromium/firefox/webkit/mobile-* écrasent le même snapshot
+    // (différencié par OS seulement) → diffs visuels faux.
     snapshotPathTemplate:
-      '{snapshotDir}/{testFileDir}/{testFileName}-{platform}{ext}',
+      '{snapshotDir}/{testFileDir}/{testFileName}-{projectName}-{platform}{ext}',
   };
   return { ...config, ...overrides };
 }

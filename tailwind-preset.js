@@ -1,14 +1,14 @@
 /**
- * Preset Tailwind 4 commun aux PWA miss-* / mister-*.
+ * Design tokens famille (miss-* / mister-*) — export INFORMATIONNEL.
  *
- * Tailwind 4 utilise un système de presets via @theme dans CSS, pas via JS.
- * Ce fichier expose les variables design-tokens à inclure dans le CSS principal.
+ * ⚠️ Source de vérité = `tailwind-preset.css` (`@theme`). Tailwind 4 lit les
+ * tokens depuis le CSS, PAS depuis ce JS. Ce module n'est pas consommé par
+ * Tailwind ; il sert de référence programmatique (tests, scripts, génération de
+ * doc, lecture d'un token hors CSS). Garder ces valeurs alignées sur le `.css`.
  *
- * Usage côté consumer (src/index.css) :
+ * Usage Tailwind côté consumer (src/index.css) :
  *   @import 'tailwindcss';
  *   @import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
- *
- * Pour étendre : redéfinir des variables après l'import.
  */
 export const designTokens = {
   fontFamily: {
@@ -20,6 +20,17 @@ export const designTokens = {
     'safe-bottom': 'env(safe-area-inset-bottom)',
     'safe-left': 'env(safe-area-inset-left)',
     'safe-right': 'env(safe-area-inset-right)',
+    'fluid-sm': 'clamp(0.5rem, 1.4vw, 0.75rem)',
+    'fluid-md': 'clamp(0.75rem, 2.4vw, 1.25rem)',
+    'fluid-lg': 'clamp(1rem, 3.2vw, 1.75rem)',
+  },
+  fontSize: {
+    'fluid-xs': 'clamp(0.7rem, 1.6vw, 0.8125rem)',
+    'fluid-sm': 'clamp(0.8125rem, 1.9vw, 0.95rem)',
+    'fluid-base': 'clamp(0.9rem, 2.2vw, 1.05rem)',
+    'fluid-lg': 'clamp(1rem, 2.6vw, 1.25rem)',
+    'fluid-xl': 'clamp(1.15rem, 3vw, 1.5rem)',
+    'fluid-2xl': 'clamp(1.35rem, 4.2vw, 2rem)',
   },
   breakpoints: {
     sm: '640px',

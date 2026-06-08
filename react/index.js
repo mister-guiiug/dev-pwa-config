@@ -7,6 +7,11 @@
 export { useLocalStorage } from './use-local-storage.js';
 export { useInstallPrompt } from './use-install-prompt.js';
 export { useTheme } from './use-theme.js';
+export {
+  useMediaQuery,
+  useReducedMotion,
+  usePrefersDark,
+} from './use-media-query.js';
 export { PwaInstallPrompt } from './pwa-install-prompt.js';
 export { AppFooter } from './app-footer.js';
 export { FamilyApps } from './family-apps.js';

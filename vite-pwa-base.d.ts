@@ -38,6 +38,10 @@ export interface PwaSeoPluginOptions {
 /** Renvoie un objet Plugin Vite (structurel). */
 export function pwaSeoPlugin(opts?: PwaSeoPluginOptions): {
   name: string;
+  configResolved(config: {
+    command?: string;
+    build?: { outDir?: string };
+  }): void;
   transformIndexHtml(html: string): string;
   closeBundle(): Promise<void>;
 };

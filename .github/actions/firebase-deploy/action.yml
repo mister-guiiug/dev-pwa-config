@@ -1,9 +1,6 @@
 name: 'Firebase deploy'
 description: 'Déploie des cibles Firebase (rules database/firestore, indexes) via firebase-tools. Centralise les steps custom dupliquées (puzzle, miss-ticket).'
 inputs:
-  token:
-    description: 'FIREBASE_TOKEN (firebase login:ci). Alternative : utiliser GOOGLE_APPLICATION_CREDENTIALS via un service account.'
-    required: true
   project-id:
     description: 'ID du projet Firebase'
     required: true
@@ -11,15 +8,50 @@ inputs:
     description: "Cibles à déployer (ex. 'database', 'firestore:rules,firestore:indexes')"
     required: false
     default: 'database'
+  service-account-key:
+    description: >-
+      JSON du service account Firebase (auth recommandée). Prioritaire sur
+      `token` s'il est fourni.
+    required: false
+    default: ''
+  token:
+    description: >-
+      FIREBASE_TOKEN (firebase login:ci). DÉPRÉCIÉ par Google — préférer
+      `service-account-key`. Conservé en repli.
+    required: false
+    default: ''
+  firebase-tools-version:
+    description: 'Version (ou range) de firebase-tools — épinglée pour la reproductibilité.'
+    required: false
+    default: '15'
 
 runs:
   using: 'composite'
   steps:
     - name: Deploy Firebase targets
       shell: bash
+      # Inputs passés via env: (jamais interpolés dans le corps du script) →
+      # pas d'injection shell. firebase-tools épinglé + exécuté via npx (pas
+      # d'install globale non reproductible).
+      env:
+        FB_PROJECT: ${{ inputs.project-id }}
+        FB_ONLY: ${{ inputs.only }}
+        FB_SA_KEY: ${{ inputs.service-account-key }}
+        FB_TOKEN: ${{ inputs.token }}
+        FB_VERSION: ${{ inputs.firebase-tools-version }}
       run: |
-        npm install -g firebase-tools
-        firebase deploy \
-          --only "${{ inputs.only }}" \
-          --project "${{ inputs.project-id }}" \
-          --token "${{ inputs.token }}"
+        set -euo pipefail
+        if [ -n "$FB_SA_KEY" ]; then
+          printf '%s' "$FB_SA_KEY" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+        elif [ -n "$FB_TOKEN" ]; then
+          echo "⚠️ Auth via token (firebase login:ci) dépréciée par Google ; préférez service-account-key." >&2
+          export FIREBASE_TOKEN="$FB_TOKEN"
+        else
+          echo "❌ firebase-deploy: fournir service-account-key (recommandé) ou token." >&2
+          exit 1
+        fi
+        npx --yes "firebase-tools@$FB_VERSION" deploy \
+          --only "$FB_ONLY" \
+          --project "$FB_PROJECT" \
+          --non-interactive

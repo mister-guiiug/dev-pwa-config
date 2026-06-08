@@ -49,7 +49,9 @@ export function PwaInstallPrompt(props = {}) {
     'div',
     {
       className,
-      role: 'dialog',
+      // Bannière passive, non modale : `region` (et non `dialog`, qui
+      // promettrait à tort un piège de focus / une gestion d'échappement).
+      role: 'region',
       'aria-label': title,
       'data-dwc': 'pwa-install-prompt',
     },

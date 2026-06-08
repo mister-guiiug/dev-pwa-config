@@ -1,8 +1,8 @@
 /**
  * Config ESLint pour projets React 19+.
- * Étend `./eslint-base` avec les plugins react-hooks et react-refresh,
- * et active les règles React Compiler en mode `warn` (passage en `error`
- * recommandé une fois les patterns adaptés au compiler).
+ * Étend `./eslint-base` (ignores, no-unused-vars, override e2e) avec les plugins
+ * react-hooks et react-refresh, et active les règles React Compiler en mode
+ * `warn` (passage en `error` recommandé une fois les patterns adaptés).
  *
  * Pour passer en mode strict (toutes les règles compiler en `error`) :
  *   import { default as base } from '@mister-guiiug/dev-wpa-config/eslint-react';
@@ -18,27 +18,17 @@
  *     },
  *   }];
  */
-import js from '@eslint/js';
-import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
-import tseslint from 'typescript-eslint';
-import { defineConfig, globalIgnores } from 'eslint/config';
+import { defineConfig } from 'eslint/config';
+import base from './eslint-base.js';
 
 export default defineConfig([
-  globalIgnores(['dist', 'node_modules', 'dev-dist']),
+  // Base partagée : globalIgnores, recommended TS, no-unused-vars (^_), override e2e.
+  ...base,
   {
     files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
-    ],
-    languageOptions: {
-      ecmaVersion: 2025,
-      globals: globals.browser,
-    },
+    extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     rules: {
       // React Compiler rules : `warn` famille (vs off avant).
       // Permet d'identifier les patterns à adapter sans bloquer la CI.
@@ -54,26 +44,14 @@ export default defineConfig([
         'warn',
         { allowConstantExport: true },
       ],
-      // Le préfixe `_` marque un binding intentionnellement inutilisé
-      // (aligné sur TypeScript noUnusedLocals/noUnusedParameters).
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-        },
-      ],
     },
   },
-  // Specs E2E : `any` et variables inutilisées tolérés (fixtures, page objects,
-  // helpers de test). Override historiquement dupliqué dans badminton /
-  // contraction / molkky — centralisé ici.
+  // Re-applique l'assouplissement e2e APRÈS le bloc React (les blocs suivants
+  // l'emportent en flat config) pour que les specs Playwright restent permissives.
   {
     files: ['e2e/**/*.{ts,tsx}'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
+      'react-refresh/only-export-components': 'off',
     },
   },
 ]);
