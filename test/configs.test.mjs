@@ -126,6 +126,7 @@ test('les tsconfig partagés sont du JSON valide et utilisables en extends', () 
     'tsconfig-app.json',
     'tsconfig-app-react.json',
     'tsconfig-node.json',
+    'tsconfig-strict-plus.json',
   ]) {
     const json = JSON.parse(readFileSync(join(root, f), 'utf8'));
     assert.ok(

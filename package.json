@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-wpa-config",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": false,
   "engines": {
     "node": ">=22"
@@ -37,6 +37,7 @@
     "./tsconfig-app": "./tsconfig-app.json",
     "./tsconfig-app-react": "./tsconfig-app-react.json",
     "./tsconfig-node": "./tsconfig-node.json",
+    "./tsconfig-strict-plus": "./tsconfig-strict-plus.json",
     "./vitest-base": {
       "types": "./vitest-base.d.ts",
       "default": "./vitest-base.js"
@@ -60,6 +61,14 @@
     "./react/rive": {
       "types": "./react/rive.d.ts",
       "default": "./react/rive.js"
+    },
+    "./react/observability": {
+      "types": "./react/observability.d.ts",
+      "default": "./react/observability.js"
+    },
+    "./react/update-prompt-banner": {
+      "types": "./react/update-prompt-banner.d.ts",
+      "default": "./react/update-prompt-banner.js"
     },
     "./vitest-browser-base": {
       "types": "./vitest-browser-base.d.ts",
@@ -92,6 +101,7 @@
     "tsconfig-app.json",
     "tsconfig-app-react.json",
     "tsconfig-node.json",
+    "tsconfig-strict-plus.json",
     "vitest-base.js",
     "vitest-base.d.ts",
     "vitest-setup.js",
