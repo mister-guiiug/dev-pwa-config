@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.2.0
+
+### Minor Changes
+
+- `apps-catalog` : ajout de **Miss Supaboss** (alpha) — pilotage multi-comptes
+  Supabase Free (pause/restore, quotas Free Plan, préparation de démo guidée).
+  `FamilyApps` l'affiche automatiquement dans la grille des apps sœurs.
+
 ## 3.1.0
 
 ### Minor Changes
