@@ -113,6 +113,12 @@ export const FAMILY_APPS = [
     'alpha'
   ),
   app(
+    'miss-supaboss',
+    'Miss Supaboss',
+    'Pilotage multi-comptes Supabase Free : pause/restore, quotas, démos.',
+    'alpha'
+  ),
+  app(
     'mister-molkky',
     'Mister Mölkky',
     'Compteur de scores pour parties de Mölkky (multi-appareils).',
