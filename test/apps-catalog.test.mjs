@@ -70,3 +70,32 @@ test('helpers d’URL et constantes famille', () => {
     'https://mister-guiiug.github.io/miss-dice/'
   );
 });
+
+const byId = id => FAMILY_APPS.find(a => a.id === id);
+
+test('iconUrl par défaut = favicon.svg', () => {
+  // Une app sans surcharge d'icône pointe sur favicon.svg (racine Pages).
+  assert.equal(
+    byId('miss-carbook').iconUrl,
+    'https://mister-guiiug.github.io/miss-carbook/favicon.svg'
+  );
+});
+
+test('surcharge `icon` = chemin relatif joint à appUrl', () => {
+  // Apps au nommage d'icône différent (sous-dossier ou logo).
+  assert.equal(
+    byId('miss-genius').iconUrl,
+    'https://mister-guiiug.github.io/miss-genius/icons/icon-192.png'
+  );
+  assert.equal(
+    byId('mister-molkky').iconUrl,
+    'https://mister-guiiug.github.io/mister-molkky/logo.png'
+  );
+});
+
+test('mister-cim10 : Pages servi en minuscules (pas de casse mister-CIM10)', () => {
+  // Régression : l'ancienne surcharge pointait sur /mister-CIM10/ (404).
+  const cim10 = byId('mister-cim10');
+  assert.equal(cim10.appUrl, 'https://mister-guiiug.github.io/mister-cim10/');
+  assert.ok(!/CIM10/.test(cim10.iconUrl), 'iconUrl ne doit pas contenir CIM10');
+});

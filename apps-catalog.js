@@ -22,14 +22,19 @@ export function pagesUrl(id) {
   return `https://${GITHUB_OWNER}.github.io/${id}/`;
 }
 
-// Fabrique une entrée de catalogue. `appUrl` par défaut = GitHub Pages, et
-// `iconUrl` par défaut = `${appUrl}icon-192.png` (icône PWA standard). Tout est
-// surchargeable via `overrides` pour les cas particuliers (casse du repo,
-// hébergement custom, app desktop sans PWA…).
+// Fabrique une entrée de catalogue. `appUrl` par défaut = GitHub Pages.
+// `iconUrl` par défaut = `${appUrl}favicon.svg` (présent à la racine pour la
+// plupart des apps de la famille, SVG net à toute taille). Surcharges :
+//   - `icon: 'chemin/relatif.png'` → joint à `appUrl` (apps au nommage d'icône
+//     différent : `icons/icon-192.png`, `logo.svg`, `icon.svg`, `logo.png`…) ;
+//   - `iconUrl: '<URL absolue>'` ou `iconUrl: null` (app sans icône web) ;
+//   - `appUrl`, `repoUrl`, `themeColor` (hébergement/casse custom).
 function app(id, name, description, maturity, overrides = {}) {
   const appUrl = overrides.appUrl ?? pagesUrl(id);
-  const iconUrl =
-    'iconUrl' in overrides ? overrides.iconUrl : `${appUrl}icon-192.png`;
+  let iconUrl;
+  if ('iconUrl' in overrides) iconUrl = overrides.iconUrl;
+  else if (overrides.icon) iconUrl = `${appUrl}${overrides.icon}`;
+  else iconUrl = `${appUrl}favicon.svg`;
   return {
     id,
     name,
@@ -60,33 +65,35 @@ export const FAMILY_APPS = [
     'miss-contraction',
     'Miss Contraction',
     'Chronomètre de contractions et alertes maternité.',
-    'stable'
+    'stable',
+    { icon: 'icon.svg' }
   ),
   app(
     'miss-genius',
     'Miss Genius',
     'Simulateur de moyennes scolaires (notes, scénarios, objectifs).',
-    'stable'
+    'stable',
+    { icon: 'icons/icon-192.png' }
   ),
   app(
     'miss-uwh',
     'Miss UWH',
     'Bilan comptable de saison pour club de hockey subaquatique.',
-    'stable'
+    'stable',
+    { icon: 'icons/icon-192.png' }
   ),
   app(
     'mister-cim10',
     'Mister CIM-10',
     'Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).',
-    'stable',
-    // Le dépôt est `mister-cim10` mais le site Pages est servi en `mister-CIM10`.
-    { appUrl: pagesUrl('mister-CIM10') }
+    'stable'
   ),
   app(
     'mister-footcoach',
     'Mister Footcoach',
     "Gestion d'équipes de foot : compositions, statistiques, entraînements.",
-    'stable'
+    'stable',
+    { icon: 'logo.svg' }
   ),
   app(
     'mister-puzzle',
@@ -122,7 +129,8 @@ export const FAMILY_APPS = [
     'mister-molkky',
     'Mister Mölkky',
     'Compteur de scores pour parties de Mölkky (multi-appareils).',
-    'alpha'
+    'alpha',
+    { icon: 'logo.png' }
   ),
   app(
     'mister-quota',
