@@ -26,6 +26,13 @@ export interface InitSentryOptions {
   release?: string;
   environment?: string;
   tracesSampleRate?: number;
+  /**
+   * Apps avec `@sentry/react` installé : `() => import('@sentry/react')`.
+   * Rend l'import analysable/bundlable côté app ; sans loader, l'import
+   * runtime non analysable ne fonctionne que si le module est résoluble
+   * à l'exécution (cas hors bundler).
+   */
+  loader?: () => Promise<any>;
 }
 
 /** Résout vers le module Sentry initialisé, ou null si dsn absent / échec. */

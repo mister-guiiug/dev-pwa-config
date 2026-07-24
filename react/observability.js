@@ -94,12 +94,21 @@ export function installErrorReporter(options = {}) {
 /**
  * Initialise Sentry SI un dsn est fourni (sinon no-op → @sentry/react jamais
  * importé, bundle prod inchangé). Câble Sentry comme forwarder.
+ *
+ * Apps AVEC @sentry/react : passer `loader: () => import('@sentry/react')`
+ * (import statiquement analysable côté app, donc bundlé normalement).
+ * Sans `loader`, l'import dynamique est volontairement NON analysable
+ * (spécificateur non littéral + @vite-ignore) : Rolldown/Vite 8 échouait
+ * au build de tout consommateur sans la peer optionnelle installée.
  */
 export async function initSentry(options = {}) {
-  const { dsn, release, environment, tracesSampleRate } = options;
+  const { dsn, release, environment, tracesSampleRate, loader } = options;
   if (!dsn) return null;
   try {
-    const Sentry = await import('@sentry/react');
+    const specifier = '@sentry' + '/react';
+    const Sentry = loader
+      ? await loader()
+      : await import(/* @vite-ignore */ specifier);
     Sentry.init({ dsn, release, environment, tracesSampleRate });
     setForwarder((error, context) =>
       Sentry.captureException(error, { extra: context })
