@@ -108,6 +108,12 @@ export const FAMILY_APPS = [
     'stable'
   ),
   app(
+    'mister-doc',
+    'Mister Doc',
+    'Planning de gardes de médecins synchronisé : vue mensuelle, compteurs week-end et heures.',
+    'beta'
+  ),
+  app(
     'miss-badminton',
     'Miss Badminton',
     'Suivi de scores et statistiques de badminton.',
