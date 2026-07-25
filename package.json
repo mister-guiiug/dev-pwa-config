@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-wpa-config",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "private": false,
   "engines": {
     "node": ">=22"
@@ -70,6 +70,10 @@
       "types": "./react/update-prompt-banner.d.ts",
       "default": "./react/update-prompt-banner.js"
     },
+    "./react/i18n": {
+      "types": "./react/i18n.d.ts",
+      "default": "./react/i18n.js"
+    },
     "./vitest-browser-base": {
       "types": "./vitest-browser-base.d.ts",
       "default": "./vitest-browser-base.js"
@@ -85,6 +89,10 @@
     "./vite-pwa-base": {
       "types": "./vite-pwa-base.d.ts",
       "default": "./vite-pwa-base.js"
+    },
+    "./vite-csp": {
+      "types": "./vite-csp.d.ts",
+      "default": "./vite-csp.js"
     },
     "./tailwind-preset": "./tailwind-preset.js",
     "./tailwind-preset.css": "./tailwind-preset.css"
@@ -117,6 +125,8 @@
     "playwright-a11y.d.ts",
     "vite-pwa-base.js",
     "vite-pwa-base.d.ts",
+    "vite-csp.js",
+    "vite-csp.d.ts",
     "tailwind-preset.js",
     "tailwind-preset.css",
     "scripts/generate-pwa-icons.mjs"

@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.4.0
+
+### Minor Changes
+
+- Deux nouveaux exports partagés pour l'alignement famille.
+  - `./vite-csp` — `cspPlugin(options)` : plugin Vite qui injecte la
+    Content-Security-Policy avec `script-src` par hash SHA-256 des scripts inline
+    (plus de `'unsafe-inline'` en production), extrait du motif éprouvé de
+    mister-doc. `connect-src`/`img-src`/`style-src`/directives arbitraires
+    configurables par app ; normalisation CRLF→LF (hash cohérent sur un build
+    Windows) ; remplace un `<meta>` CSP statique existant s'il y en a un. À placer
+    après `pwaSeoPlugin`/analytics pour hasher aussi les scripts injectés au build.
+  - `./react/i18n` — `createI18n({ messages, locales, fallbackLocale, storageKey })` :
+    i18n minimal typé (clés dot-notation dérivées du dictionnaire de messages),
+    zéro dépendance runtime, avec `I18nProvider` + `useI18n` (détection de langue,
+    persistance localStorage, `document.documentElement.lang`, interpolation
+    `{param}`, repli sur la locale de secours). Logique pure exposée via
+    `createTranslator` (testable sans React).
+
 ## 3.3.1
 
 ### Patch Changes
