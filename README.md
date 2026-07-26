@@ -212,7 +212,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | Sous-chemin                                                | Type            | Description                                                                                                                                                                                           |
 | ---------------------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@mister-guiiug/dev-wpa-config/eslint-base`                | `.js`           | Config ESLint pour projets vanilla TS / Node (sans React)                                                                                                                                             |
-| `@mister-guiiug/dev-wpa-config/eslint-react`               | `.js`           | Étend la base avec `react-hooks` flat + `react-refresh` (rules React Compiler désactivées)                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/eslint-react`               | `.js`           | Étend la base avec `react-hooks` + `react-refresh` + `jsx-a11y` (règles React Compiler & a11y en `warn`)                                                                                              |
 | `@mister-guiiug/dev-wpa-config/prettier`                   | `.js`           | Config Prettier 3.6                                                                                                                                                                                   |
 | `@mister-guiiug/dev-wpa-config/commitlint`                 | `.js`           | Config commitlint (Conventional Commits)                                                                                                                                                              |
 | `@mister-guiiug/dev-wpa-config/lint-staged`                | `.js`           | Config lint-staged (eslint --fix + prettier --write)                                                                                                                                                  |
@@ -800,6 +800,30 @@ Les 6 règles compiler de `eslint-plugin-react-hooks` (incluses dans `flat.recom
      },
    ];
    ```
+
+### Accessibilité (`jsx-a11y` en `warn` depuis 3.5.0)
+
+`eslint-react` inclut `eslint-plugin-jsx-a11y` (config `recommended`) avec **toutes
+les règles ramenées à `warn`** : les violations d'accessibilité sont visibles au
+lint sans bloquer la CI, en complément du filet e2e axe-core. Trajectoire
+d'adoption identique aux règles React Compiler — passer en `error` par app une fois
+les warnings résorbés :
+
+```js
+// eslint.config.js
+import base from '@mister-guiiug/dev-wpa-config/eslint-react';
+export default [
+  ...base,
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'jsx-a11y/alt-text': 'error',
+      'jsx-a11y/anchor-has-content': 'error',
+      // …ou remonter tout le bloc jsx-a11y/* selon la maturité du projet.
+    },
+  },
+];
+```
 
 ### Zod 3 → 4 (breaking, perfs ~+50%)
 
