@@ -8,7 +8,7 @@
 #   workflow_dispatch:
 # jobs:
 #   deploy:
-#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v1
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
 #     secrets: inherit
 #     with:
 #       use-base-path: true
@@ -81,7 +81,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v3
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -114,7 +114,7 @@ jobs:
         run: npm run build
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ${{ inputs.build-dir }}
 
@@ -126,7 +126,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # Déploiement optionnel des règles Firebase (Firestore/Realtime DB), avec auth
   # par service account. Activé seulement si `firebase-project` est fourni.
@@ -147,12 +147,17 @@ jobs:
           node-version: ${{ inputs.node-version }}
 
       - name: Write service account key
+        # Secret passé via env: (jamais interpolé dans le corps du script) : un JSON
+        # contenant une apostrophe casserait sinon le shell, et l'interpolation
+        # inline expose la valeur dans la trace de commande.
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: |
-          if [ -z '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' ]; then
+          if [ -z "$FIREBASE_SA" ]; then
             echo "❌ firebase-project défini mais secret FIREBASE_SERVICE_ACCOUNT_KEY absent." >&2
             exit 1
           fi
-          printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > "$RUNNER_TEMP/firebase-sa.json"
+          printf '%s' "$FIREBASE_SA" > "$RUNNER_TEMP/firebase-sa.json"
 
       - name: Deploy Firebase rules
         # firebase-tools épinglé (reproductibilité). Inputs via env: → pas d'injection.

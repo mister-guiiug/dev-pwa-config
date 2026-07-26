@@ -14,7 +14,7 @@
 #     tags: ['v*']
 # jobs:
 #   publish:
-#     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v1
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v3
 #     secrets: inherit
 name: Reusable npm publish
 
@@ -49,7 +49,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v3
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
