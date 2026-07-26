@@ -12,5 +12,5 @@ on:
 
 jobs:
   keepalive:
-    uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-keepalive.yml@v1
+    uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-keepalive.yml@v3
     secrets: inherit

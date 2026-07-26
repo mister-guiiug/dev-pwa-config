@@ -1,4 +1,25 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>mister-guiiug/.github//renovate/default.json"]
+  "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
+  "timezone": "Europe/Paris",
+  "schedule": ["before 7am on saturday"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Mineur + patch npm groupés en une PR (moins de bruit).",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm (mineur & patch)"
+    },
+    {
+      "description": "Peers = stack cible famille : élargir le range, PR séparées, majors revus à la main.",
+      "matchDepTypes": ["peerDependencies"],
+      "rangeStrategy": "widen"
+    },
+    {
+      "description": "Actions GitHub groupées ; le pin SHA (lighthouse-ci-action) est maintenu à jour.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    }
+  ]
 }

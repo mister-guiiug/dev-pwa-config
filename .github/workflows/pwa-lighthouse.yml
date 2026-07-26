@@ -14,7 +14,7 @@
 #   pull-requests: write
 # jobs:
 #   lighthouse:
-#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-lighthouse.yml@v1
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-lighthouse.yml@v3
 #     secrets: inherit
 #
 # Prérequis projet : un .lighthouserc.json à la racine (cf. templates/.lighthouserc.json).
@@ -62,7 +62,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v1
+      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v3
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

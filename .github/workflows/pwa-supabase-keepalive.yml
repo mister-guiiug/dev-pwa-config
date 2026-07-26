@@ -12,7 +12,7 @@
 #   workflow_dispatch:
 # jobs:
 #   keepalive:
-#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-keepalive.yml@v1
+#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-keepalive.yml@v3
 #     secrets: inherit
 #
 # Prérequis : secrets VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY dans le dépôt,
