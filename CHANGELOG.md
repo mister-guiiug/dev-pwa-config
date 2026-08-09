@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.5.2
+
+### Patch Changes
+
+- `eslint-react` : les règles jsx-a11y que `recommended` désactive restent désactivées.
+
+  Le passage « toutes les règles a11y en `warn` » de la 3.5.0 mappait **toutes** les
+  clés de `jsxA11y.flatConfigs.recommended.rules` vers `warn`, y compris les deux que
+  le plugin met délibérément à `off` : `label-has-for` (déprécié au profit de
+  `label-has-associated-control`) et `anchor-ambiguous-text`.
+
+  Conséquence chez les consommateurs : `label-has-for` exige `nesting` **ET** `id`, donc
+  tout `<label>` enveloppant son champ — motif pourtant parfaitement accessible et
+  recommandé — remontait en warning. 12 faux positifs sur mister-qowa à lui seul.
+
+  Les niveaux `off` de `recommended` sont désormais préservés ; les autres règles
+  restent en `warn` comme prévu.
+
 ## 3.5.1
 
 ### Patch Changes
