@@ -33,10 +33,10 @@ export const designTokens = {
     'fluid-2xl': 'clamp(1.35rem, 4.2vw, 2rem)',
   },
   breakpoints: {
-    sm: '640px',
-    md: '768px',
-    lg: '1024px',
-    xl: '1280px',
+    sm: '40rem',
+    md: '48rem',
+    lg: '64rem',
+    xl: '80rem',
   },
 };
 
