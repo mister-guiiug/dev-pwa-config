@@ -29,8 +29,17 @@ import base from './eslint-base.js';
 // sans bloquer la CI (même trajectoire famille que les règles React Compiler
 // ci-dessous ; le filet e2e axe reste en aval). Passer en `error` par app une
 // fois les warnings résorbés.
+//
+// Les entrées que `recommended` met à `off` le restent : ce sont les règles que
+// le plugin désactive volontairement (`label-has-for`, déprécié au profit de
+// `label-has-associated-control`, et `anchor-ambiguous-text`). Les forcer à
+// `warn` réactivait `label-has-for`, qui exige `nesting` ET `id` et signalait
+// donc les `<label>` enveloppant leur champ — un motif parfaitement accessible.
 const a11yRecommendedAsWarn = Object.fromEntries(
-  Object.keys(jsxA11y.flatConfigs.recommended.rules).map(name => [name, 'warn'])
+  Object.entries(jsxA11y.flatConfigs.recommended.rules).map(([name, level]) => [
+    name,
+    level === 'off' || level === 0 ? 'off' : 'warn',
+  ])
 );
 
 export default defineConfig([
