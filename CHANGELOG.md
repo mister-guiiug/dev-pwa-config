@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.5.1
+
+### Patch Changes
+
+- `tailwind-preset` : breakpoints repassés en **rem** (`40/48/64/80rem`) au lieu de px.
+
+  Les valeurs px (`640/768/1024/1280`) écrasaient les défauts rem de Tailwind 4 : une
+  fois le preset importé, `sm:` / `md:` / `lg:` / `xl:` compilaient en
+  `@media (width>=640px)` au lieu de `@media (width>=40rem)`, et ne suivaient donc plus
+  la taille de police par défaut du navigateur (régression d'accessibilité pour qui
+  agrandit sa police). Les nouvelles valeurs sont strictement équivalentes aux
+  anciennes quand la racine vaut 16 px — aucun changement visuel dans le cas nominal.
+
+  `tailwind-preset.js` (export informationnel) est réaligné sur le `.css`.
+
 ## 3.5.0
 
 ### Minor Changes
