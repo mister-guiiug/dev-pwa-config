@@ -16,6 +16,7 @@ const PRESET = stripComments(read('tailwind-preset.css'));
 const MIRROR = stripComments(read('showroom/preset.css'));
 const SHOWROOM_CSS = stripComments(read('showroom/showroom.css'));
 const INDEX_HTML = read('showroom/index.html');
+const SHOWROOM_JS = read('showroom/showroom.js');
 
 /* ── Micro-analyseur CSS (suffisant pour ces deux fichiers) ─────────────── */
 
@@ -277,6 +278,46 @@ test('themes.js expose des palettes complètes et bien formées', async () => {
 });
 
 /* ── Page ───────────────────────────────────────────────────────────────── */
+
+test('chaque région de la page porte un nom accessible', () => {
+  // Une page qui documente l'accessibilité ne peut pas laisser ses propres
+  // landmarks anonymes : un lecteur d'écran annoncerait neuf « region » sans
+  // libellé, ce qui rend la navigation par régions inutilisable.
+  const sections = [...INDEX_HTML.matchAll(/<section\b([^>]*)>/g)].map(
+    m => m[1]
+  );
+  const anonymes = sections.filter(
+    attrs => !/aria-labelledby=|aria-label=/.test(attrs)
+  );
+  assert.equal(anonymes.length, 0, 'section(s) sans nom accessible');
+
+  // Et le nom doit pointer sur un titre qui existe vraiment.
+  for (const attrs of sections) {
+    const ref = /aria-labelledby="([^"]+)"/.exec(attrs);
+    if (!ref) continue;
+    assert.match(
+      INDEX_HTML,
+      new RegExp(`id="${ref[1]}"`),
+      `aria-labelledby="${ref[1]}" ne désigne aucun élément`
+    );
+  }
+});
+
+test('l’état du showroom est partageable par URL', () => {
+  // Sans ça, impossible d'envoyer « regarde en Qowa sombre » — sur une page
+  // dont le sujet est justement la comparaison de thèmes.
+  for (const param of ['app', 'scheme', 'lang']) {
+    assert.match(
+      SHOWROOM_JS,
+      new RegExp(`searchParams\\.set\\('${param}'`),
+      `le paramètre ?${param}= n'est pas écrit dans l'URL`
+    );
+  }
+  // `replaceState`, pas `pushState` : chaque bascule polluerait sinon le
+  // bouton « précédent » du navigateur.
+  assert.match(SHOWROOM_JS, /history\.replaceState/);
+  assert.doesNotMatch(SHOWROOM_JS, /history\.pushState/);
+});
 
 test('index.html charge les ressources du showroom', () => {
   for (const asset of [

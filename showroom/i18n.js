@@ -26,6 +26,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.scheme.dark': 'Dark',
     'ui.scheme.system': 'System',
     'ui.lang.label': 'Language',
+    'ui.settings': 'Settings',
 
     /* ── Intro ────────────────────────────────────────────────────────── */
     'intro.title': 'The miss-* / mister-* family design system',

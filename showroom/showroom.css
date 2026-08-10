@@ -192,6 +192,49 @@ pre code {
   min-width: 0;
 }
 
+/* ── Réglages : repliés sous `sm`, toujours visibles au-delà ─────────────── *
+ * Mesuré avant : la barre occupait 243 px sur un écran de 812, soit 30 % du
+ * premier écran avant le moindre contenu.
+ * ────────────────────────────────────────────────────────────────────────── */
+.sr-settings-toggle {
+  font: inherit;
+  font-size: var(--text-fluid-xs);
+  min-height: 2.75rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius) * 0.7);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  cursor: pointer;
+}
+
+.sr-settings-toggle[aria-expanded='true'] {
+  border-color: var(--ds-primary);
+  background: var(--ds-primary-soft);
+}
+
+.sr-settings {
+  display: none;
+  padding-top: 0.6rem;
+}
+
+.sr-settings[data-open] {
+  display: flex;
+}
+
+@media (min-width: 40rem) {
+  /* Au-delà de `sm`, la place ne manque pas : les réglages reprennent leur
+     ligne et le bouton n'a plus de raison d'exister. */
+  .sr-settings-toggle {
+    display: none;
+  }
+
+  .sr-settings {
+    display: flex;
+    padding-top: 0;
+  }
+}
+
 .sr-brand strong {
   font-family: var(--ds-font-display);
   font-size: var(--text-fluid-lg);
@@ -264,7 +307,11 @@ pre code {
   cursor: not-allowed;
 }
 
+/* Sortie de mesure : sa place est près de la liste des points de rupture,
+   pas dans la barre de navigation. */
 .sr-bp-badge {
+  display: inline-block;
+  margin-bottom: var(--spacing-fluid-sm);
   font-family: var(--font-mono);
   font-size: var(--text-fluid-xs);
   border: 1px dashed var(--ds-border);
