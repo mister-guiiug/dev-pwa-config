@@ -41,7 +41,7 @@
   </head>
 
   <body>
-    <a class="sr-skip" href="#contenu">Aller au contenu</a>
+    <a class="sr-skip" href="#contenu" data-i18n="ui.skip">Aller au contenu</a>
 
     <header class="sr-topbar">
       <div class="sr-topbar-inner">
@@ -51,19 +51,21 @@
         </div>
 
         <p class="sr-control">
-          <label for="theme-app">Thème</label>
+          <label for="theme-app" data-i18n="topbar.themeLabel">Thème</label>
           <select id="theme-app">
             <option value="generic">Générique — preset seul</option>
           </select>
         </p>
 
         <fieldset class="sr-control" style="border: 0; margin: 0; padding: 0">
-          <legend class="sr-visually-hidden">Schéma de couleurs</legend>
+          <legend class="sr-visually-hidden" data-i18n="ui.scheme.legend">
+            Schéma de couleurs
+          </legend>
           <div class="sr-segmented">
             <input type="radio" name="scheme" id="scheme-light" value="light" />
-            <label for="scheme-light">Clair</label>
+            <label for="scheme-light" data-i18n="ui.scheme.light">Clair</label>
             <input type="radio" name="scheme" id="scheme-dark" value="dark" />
-            <label for="scheme-dark">Sombre</label>
+            <label for="scheme-dark" data-i18n="ui.scheme.dark">Sombre</label>
             <input
               type="radio"
               name="scheme"
@@ -71,9 +73,19 @@
               value="system"
               checked
             />
-            <label for="scheme-system">Système</label>
+            <label for="scheme-system" data-i18n="ui.scheme.system"
+              >Système</label
+            >
           </div>
         </fieldset>
+
+        <p class="sr-control">
+          <label for="lang" data-i18n="ui.lang.label">Langue</label>
+          <select id="lang">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </p>
 
         <output class="sr-bp-badge" id="bp-badge" aria-live="polite"
           >breakpoint : —</output
@@ -83,9 +95,11 @@
 
     <main class="sr-main" id="contenu">
       <!-- ── Intro ─────────────────────────────────────────────────────── -->
-      <section class="sr-section sr-hero">
-        <h1>Le design system de la famille miss-* / mister-*</h1>
-        <p class="sr-lede">
+      <section class="sr-section sr-hero" id="intro">
+        <h1 data-i18n="intro.title">
+          Le design system de la famille miss-* / mister-*
+        </h1>
+        <p class="sr-lede" data-i18n="intro.lede">
           Ce paquet partage une <strong>structure</strong>, pas une identité :
           échelles fluides, points de rupture, safe-areas iOS, cible tactile, et
           des composants React livrés <strong>non stylés</strong>. La couleur,
@@ -100,21 +114,36 @@
           >
         </p>
         <ul class="sr-toc">
-          <li><a href="#fondations">Fondations</a></li>
-          <li><a href="#couleurs">Couleurs</a></li>
-          <li><a href="#primitives">Primitives</a></li>
           <li>
-            <a href="#composants">Composants applicatifs</a>
+            <a href="#fondations" data-i18n="ui.toc.fondations">Fondations</a>
           </li>
-          <li><a href="#a11y">Contrôles d’accessibilité</a></li>
-          <li><a href="#integration">Intégration</a></li>
+          <li><a href="#couleurs" data-i18n="ui.toc.couleurs">Couleurs</a></li>
+          <li>
+            <a href="#primitives" data-i18n="ui.toc.primitives">Primitives</a>
+          </li>
+          <li>
+            <a href="#composants" data-i18n="ui.toc.composants"
+              >Composants applicatifs</a
+            >
+          </li>
+          <li>
+            <a href="#a11y" data-i18n="ui.toc.a11y"
+              >Contrôles d’accessibilité</a
+            >
+          </li>
+          <li><a href="#stack" data-i18n="ui.toc.stack">Stack</a></li>
+          <li>
+            <a href="#integration" data-i18n="ui.toc.integration"
+              >Intégration</a
+            >
+          </li>
         </ul>
       </section>
 
       <!-- ── Fondations ────────────────────────────────────────────────── -->
       <section class="sr-section" id="fondations">
-        <h2>Fondations</h2>
-        <p>
+        <h2 data-i18n="fondations.h21">Fondations</h2>
+        <p data-i18n="fondations.p1">
           Tous les tokens ci-dessous viennent de
           <code>tailwind-preset.css</code> et sont donc identiques dans toutes
           les applications de la famille. Les valeurs affichées sont
@@ -122,7 +151,9 @@
           voir jouer les <code>clamp()</code>.
         </p>
 
-        <h3 class="sr-subtitle">Typographie fluide</h3>
+        <h3 class="sr-subtitle" data-i18n="fondations.h31">
+          Typographie fluide
+        </h3>
         <div class="sr-table-wrap">
           <table class="sr-table">
             <thead>
@@ -173,13 +204,15 @@
             </tbody>
           </table>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="fondations.p2">
           Côté Tailwind : <code>text-fluid-sm</code>,
           <code>text-fluid-2xl</code>… La colonne « Rendu » utilise la police de
           titrage du thème courant.
         </p>
 
-        <h3 class="sr-subtitle">Familles de police</h3>
+        <h3 class="sr-subtitle" data-i18n="fondations.h32">
+          Familles de police
+        </h3>
         <div class="sr-table-wrap">
           <table class="sr-table">
             <thead>
@@ -213,7 +246,7 @@
             </tbody>
           </table>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="fondations.p3">
           Le preset ne fournit que <code>sans</code> et <code>mono</code>
           (piles système, zéro requête réseau). Les polices de titrage (Fredoka,
           Plus Jakarta Sans, DM Sans, Inter…) sont chargées par chaque
@@ -221,7 +254,9 @@
           système si elles ne sont pas installées localement.
         </p>
 
-        <h3 class="sr-subtitle">Espacement fluide</h3>
+        <h3 class="sr-subtitle" data-i18n="fondations.h33">
+          Espacement fluide
+        </h3>
         <div class="sr-table-wrap">
           <table class="sr-table">
             <thead>
@@ -270,7 +305,9 @@
           </table>
         </div>
 
-        <h3 class="sr-subtitle">Points de rupture</h3>
+        <h3 class="sr-subtitle" data-i18n="fondations.h34">
+          Points de rupture
+        </h3>
         <ul class="sr-bp-list" id="bp-list">
           <li data-bp="base" data-min="0">
             <strong>base</strong>
@@ -293,14 +330,14 @@
             <span>--breakpoint-xl : 80rem (≈ 1280 px)</span>
           </li>
         </ul>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="fondations.p4">
           En <code>rem</code> et non en <code>px</code> : les ruptures suivent
           la taille de police du navigateur. Une police par défaut agrandie
           décale donc bien la mise en page — sinon c’est une régression
           d’accessibilité.
         </p>
 
-        <h3 class="sr-subtitle">Safe-areas iOS</h3>
+        <h3 class="sr-subtitle" data-i18n="fondations.h35">Safe-areas iOS</h3>
         <div class="sr-safe-demo py-safe px-safe">
           <div>
             Zone de contenu à l’intérieur des
@@ -338,14 +375,16 @@
             </tbody>
           </table>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="fondations.p5">
           Ces valeurs valent 0 partout sauf sur un appareil à encoche / barre
           d’accueil, et uniquement si le document déclare
           <code>viewport-fit=cover</code>. Les variantes <code>*-safe-3</code>
           ajoutent 0,75 rem à l’inset système.
         </p>
 
-        <h3 class="sr-subtitle">Cible tactile &amp; focus</h3>
+        <h3 class="sr-subtitle" data-i18n="fondations.h36">
+          Cible tactile &amp; focus
+        </h3>
         <div class="sr-target-demo">
           <button type="button" class="sr-btn touch-target">
             <code>touch-target</code> — 44 × 44
@@ -363,7 +402,7 @@
             >Le pointillé rouge matérialise le minimum de 2,75 rem.</span
           >
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="fondations.p6">
           Le preset pose aussi <code>:focus-visible</code> →
           <code>outline: 2px solid currentColor</code> avec
           <code>outline-offset: 2px</code>. Parcourez la page au clavier
@@ -374,8 +413,8 @@
 
       <!-- ── Couleurs ──────────────────────────────────────────────────── -->
       <section class="sr-section" id="couleurs">
-        <h2>Couleurs</h2>
-        <p>
+        <h2 data-i18n="couleurs.h21">Couleurs</h2>
+        <p data-i18n="couleurs.p1">
           <strong>Le preset partagé n’expose aucune couleur.</strong> C’est
           volontaire : chaque application définit sa palette dans son propre
           <code>@theme</code>. Le showroom mappe ces palettes sur un jeu de
@@ -390,15 +429,15 @@
             </div>
           </li>
         </ul>
-        <p class="sr-note" id="palette-source">
+        <p class="sr-note" id="palette-source" data-i18n="couleurs.p2">
           Palette du thème courant, lue via <code>getComputedStyle</code>.
         </p>
       </section>
 
       <!-- ── Primitives ────────────────────────────────────────────────── -->
       <section class="sr-section" id="primitives">
-        <h2>Primitives d’interface</h2>
-        <p>
+        <h2 data-i18n="primitives.h21">Primitives d’interface</h2>
+        <p data-i18n="primitives.p1">
           Ces six composants n’ont pas été inventés : ils ont été
           <strong>extraits</strong> de ce que plusieurs apps avaient déjà
           réécrit chacune de leur côté. Les matrices ci-dessous montrent les
@@ -406,37 +445,41 @@
           l’instance isolée.
         </p>
 
-        <h3 class="sr-subtitle">
+        <h3 class="sr-subtitle" data-i18n="primitives.h31">
           Button — variantes × tailles × états
           <span class="sr-computed">(4 apps avaient la même API)</span>
         </h3>
         <div class="sr-table-wrap">
           <table class="sr-table" id="button-matrix">
-            <caption class="sr-visually-hidden">
+            <caption class="sr-visually-hidden" data-i18n="primitives.caption1">
               Matrice des variantes de bouton par taille et par état
             </caption>
           </table>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="primitives.p2">
           <code>loading</code> pose <code>aria-busy</code>
           <strong>et</strong> désactive le bouton : afficher un indicateur sans
           bloquer laissait passer le double-clic dans deux apps.
         </p>
 
-        <h3 class="sr-subtitle">Badge — tons sémantiques × variantes</h3>
+        <h3 class="sr-subtitle" data-i18n="primitives.h32">
+          Badge — tons sémantiques × variantes
+        </h3>
         <div class="sr-table-wrap">
           <table class="sr-table" id="badge-matrix">
-            <caption class="sr-visually-hidden">
+            <caption class="sr-visually-hidden" data-i18n="primitives.caption2">
               Matrice des tons de pastille par variante
             </caption>
           </table>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="primitives.p3">
           Le <code>tone</code> dit une <em>intention</em>, pas une couleur — la
           teinte réelle vient du thème de l’app.
         </p>
 
-        <h3 class="sr-subtitle">Field — états de validation</h3>
+        <h3 class="sr-subtitle" data-i18n="primitives.h33">
+          Field — états de validation
+        </h3>
         <div class="sr-row">
           <div data-dwc="field" style="flex: 1 1 16rem">
             <label data-dwc="field-label" for="f-1">Nom de la saison</label>
@@ -451,7 +494,7 @@
               value="tresorier@club"
               aria-describedby="f-2-hint"
             />
-            <p data-dwc="field-hint" id="f-2-hint">
+            <p data-dwc="field-hint" id="f-2-hint" data-i18n="primitives.p4">
               Sert aux relances de cotisation.
             </p>
           </div>
@@ -464,19 +507,28 @@
               aria-invalid="true"
               aria-describedby="f-3-hint f-3-error"
             />
-            <p data-dwc="field-hint" id="f-3-hint">En euros, deux décimales.</p>
-            <p data-dwc="field-error" id="f-3-error" role="alert">
+            <p data-dwc="field-hint" id="f-3-hint" data-i18n="primitives.p5">
+              En euros, deux décimales.
+            </p>
+            <p
+              data-dwc="field-error"
+              id="f-3-error"
+              role="alert"
+              data-i18n="primitives.p6"
+            >
               Le montant doit être positif.
             </p>
           </div>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="primitives.p7">
           En erreur, <code>aria-describedby</code> référence l’aide
           <strong>et</strong> le message — les copies locales remplaçaient l’une
           par l’autre, faisant disparaître la consigne au pire moment.
         </p>
 
-        <h3 class="sr-subtitle">Stat — chiffres-clés</h3>
+        <h3 class="sr-subtitle" data-i18n="primitives.h34">
+          Stat — chiffres-clés
+        </h3>
         <div class="sr-row">
           <dl data-dwc="stat" style="flex: 1 1 12rem">
             <div data-dwc="stat-head">
@@ -511,13 +563,15 @@
             <dd data-dwc="stat-value">96</dd>
           </dl>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="primitives.p8">
           La tendance porte une flèche <strong>et</strong> un libellé lu par les
           lecteurs d’écran : la couleur ne suffit pas à distinguer une hausse
           d’une baisse.
         </p>
 
-        <h3 class="sr-subtitle">Skeleton — chargement</h3>
+        <h3 class="sr-subtitle" data-i18n="primitives.h35">
+          Skeleton — chargement
+        </h3>
         <div
           data-dwc="skeleton-group"
           role="status"
@@ -544,23 +598,26 @@
             style="width: 60%; height: 1rem"
           ></span>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="primitives.p9">
           Les barres sont <code>aria-hidden</code> ; seul le conteneur est
           annoncé (<code>role="status"</code>). Sinon un lecteur d’écran énumère
           « chargement » une fois par barre.
         </p>
 
-        <h3 class="sr-subtitle">Sheet — feuille modale</h3>
+        <h3 class="sr-subtitle" data-i18n="primitives.h36">
+          Sheet — feuille modale
+        </h3>
         <button
           type="button"
           data-dwc="button"
           data-variant="primary"
           data-size="md"
           id="sheet-open"
+          data-i18n="ui.sheet.open"
         >
           Ouvrir la feuille
         </button>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="primitives.p10">
           Essayez au clavier : <kbd>Tab</kbd> boucle dans le panneau,
           <kbd>Échap</kbd> ferme, et le focus revient sur le bouton d’origine —
           les trois comportements qu’aucune copie locale n’avait au complet.
@@ -569,8 +626,8 @@
 
       <!-- ── Composants ────────────────────────────────────────────────── -->
       <section class="sr-section" id="composants">
-        <h2>Composants applicatifs</h2>
-        <p>
+        <h2 data-i18n="composants.h21">Composants applicatifs</h2>
+        <p data-i18n="composants.p1">
           Les composants du paquet ne posent que des attributs
           <code>data-dwc</code> : aucune classe, aucun style imposé. Chaque app
           les habille avec sa propre CSS. Ci-dessous, le DOM exact produit par
@@ -579,8 +636,8 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>EmptyState</h4>
-            <p>État vide avec action suivante.</p>
+            <h4 data-i18n="composants.h41">EmptyState</h4>
+            <p data-i18n="composants.p2">État vide avec action suivante.</p>
           </div>
           <div class="sr-demo-stage">
             <div data-dwc="empty-state" role="note">
@@ -599,8 +656,10 @@
                   <path d="M3 7l9 4 9-4M12 11v10" />
                 </svg>
               </div>
-              <p data-dwc="empty-state-title">Aucune donnée pour l’instant</p>
-              <p data-dwc="empty-state-desc">
+              <p data-dwc="empty-state-title" data-i18n="composants.p3">
+                Aucune donnée pour l’instant
+              </p>
+              <p data-dwc="empty-state-desc" data-i18n="composants.p4">
                 Créez une première entrée pour voir apparaître vos statistiques.
               </p>
               <div data-dwc="empty-state-action">
@@ -609,7 +668,7 @@
             </div>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary1">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="empty-state"]</code> — conteneur</li>
@@ -624,8 +683,8 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>ErrorBanner</h4>
-            <p>
+            <h4 data-i18n="composants.h42">ErrorBanner</h4>
+            <p data-i18n="composants.p5">
               Erreur récupérable. <code>severity</code> distingue le temporaire
               du permanent ; <code>role</code> passe de <code>alert</code> à
               <code>status</code>.
@@ -662,7 +721,7 @@
             </div>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary2">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li>
@@ -680,8 +739,8 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>SyncStatusBadge</h4>
-            <p>
+            <h4 data-i18n="composants.h43">SyncStatusBadge</h4>
+            <p data-i18n="composants.p6">
               État de synchronisation. Le compteur n’apparaît que sur
               <code>pending</code>.
             </p>
@@ -703,7 +762,7 @@
             </div>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary3">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li>
@@ -718,8 +777,8 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>ErrorBoundary</h4>
-            <p>
+            <h4 data-i18n="composants.h44">ErrorBoundary</h4>
+            <p data-i18n="composants.p7">
               UI de repli par défaut (évite l’écran blanc). Le bouton «
               sauvegarde » n’apparaît que si <code>onDownloadBackup</code> est
               fourni.
@@ -727,7 +786,9 @@
           </div>
           <div class="sr-demo-stage">
             <div data-dwc="error-boundary" role="alert">
-              <p data-dwc="error-boundary-title">Une erreur est survenue.</p>
+              <p data-dwc="error-boundary-title" data-i18n="composants.p8">
+                Une erreur est survenue.
+              </p>
               <button type="button" data-dwc="error-boundary-reset">
                 Réessayer
               </button>
@@ -737,7 +798,7 @@
             </div>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary4">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="error-boundary"]</code></li>
@@ -751,8 +812,8 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>PwaInstallPrompt</h4>
-            <p>
+            <h4 data-i18n="composants.h45">PwaInstallPrompt</h4>
+            <p data-i18n="composants.p9">
               Bannière passive (<code>role="region"</code>, pas
               <code>dialog</code> : elle ne piège pas le focus).
             </p>
@@ -763,8 +824,10 @@
               role="region"
               aria-label="Installer l’application"
             >
-              <p data-dwc="pwa-install-title">Installer l’application</p>
-              <p data-dwc="pwa-install-desc">
+              <p data-dwc="pwa-install-title" data-i18n="composants.p10">
+                Installer l’application
+              </p>
+              <p data-dwc="pwa-install-desc" data-i18n="composants.p11">
                 Ajoutez cette application à votre écran d’accueil : accès
                 rapide, hors-ligne.
               </p>
@@ -775,7 +838,7 @@
             </div>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary5">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="pwa-install-prompt"]</code></li>
@@ -789,8 +852,8 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>UpdatePromptBanner</h4>
-            <p>
+            <h4 data-i18n="composants.h46">UpdatePromptBanner</h4>
+            <p data-i18n="composants.p12">
               Import par sous-chemin dédié (couplé à
               <code>virtual:pwa-register/react</code>, hors barrel).
             </p>
@@ -807,7 +870,7 @@
             </div>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary6">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="update-banner"]</code></li>
@@ -821,8 +884,10 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>AppFooter</h4>
-            <p>Lien code source + lien sponsor, ouverture sécurisée.</p>
+            <h4 data-i18n="composants.h47">AppFooter</h4>
+            <p data-i18n="composants.p13">
+              Lien code source + lien sponsor, ouverture sécurisée.
+            </p>
           </div>
           <div class="sr-demo-stage">
             <footer data-dwc="app-footer">
@@ -873,7 +938,7 @@
             </footer>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary7">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="app-footer"]</code></li>
@@ -886,8 +951,8 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4>FamilyApps</h4>
-            <p>
+            <h4 data-i18n="composants.h48">FamilyApps</h4>
+            <p data-i18n="composants.p14">
               Grille « nos autres applications », alimentée par
               <code>apps-catalog.js</code>, avec badge de maturité.
             </p>
@@ -918,12 +983,14 @@
                   <span>Code source</span>
                 </a>
               </div>
-              <h3 data-dwc="family-apps-title">Nos autres applications</h3>
+              <h3 data-dwc="family-apps-title" data-i18n="composants.h31">
+                Nos autres applications
+              </h3>
               <ul data-dwc="family-app-list" id="family-app-list"></ul>
             </section>
           </div>
           <details>
-            <summary>Sélecteurs CSS</summary>
+            <summary data-i18n="composants.summary8">Sélecteurs CSS</summary>
             <div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="family-apps"]</code></li>
@@ -947,7 +1014,7 @@
                   <code>[data-dwc="maturity"][data-maturity="…"]</code>
                 </li>
               </ul>
-              <p class="sr-note">
+              <p class="sr-note" data-i18n="composants.p15">
                 Les icônes réelles sont chargées depuis les GitHub Pages de
                 chaque app. Ce showroom reste hors ligne : il exerce le chemin
                 de repli (initiale du nom) du composant.
@@ -959,8 +1026,8 @@
 
       <!-- ── Contrôles a11y ────────────────────────────────────────────── -->
       <section class="sr-section" id="a11y">
-        <h2>Contrôles d’accessibilité</h2>
-        <p>
+        <h2 data-i18n="a11y.h21">Contrôles d’accessibilité</h2>
+        <p data-i18n="a11y.p1">
           Mesurés <strong>sur cette page</strong>, dans le thème courant, à
           chaque changement de thème ou de taille de fenêtre. Ce ne sont pas des
           valeurs recopiées : elles sortent de
@@ -968,39 +1035,215 @@
           <code>getComputedStyle</code>.
         </p>
 
-        <h3 class="sr-subtitle">Cible tactile</h3>
+        <h3 class="sr-subtitle" data-i18n="a11y.h31">Cible tactile</h3>
         <div class="sr-table-wrap">
           <table class="sr-table" id="a11y-target">
-            <caption class="sr-visually-hidden">
+            <caption class="sr-visually-hidden" data-i18n="a11y.caption1">
               Hauteur mesurée des commandes interactives
             </caption>
           </table>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="a11y.p2">
           Seuil de 2,75 rem (≈ 44 px), recommandation WCAG 2.5.5 / iOS. Le
           <code>Button</code> partagé le tient même en taille <code>sm</code> —
           les variantes locales des apps descendaient à 32 px.
         </p>
 
-        <h3 class="sr-subtitle">Contraste du texte</h3>
+        <h3 class="sr-subtitle" data-i18n="a11y.h32">Contraste du texte</h3>
         <div class="sr-table-wrap">
           <table class="sr-table" id="a11y-contrast">
-            <caption class="sr-visually-hidden">
+            <caption class="sr-visually-hidden" data-i18n="a11y.caption2">
               Ratios de contraste calculés par paire premier plan / arrière-plan
             </caption>
           </table>
         </div>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="a11y.p3">
           Seuil AA : 4,5:1 pour le texte courant, 3:1 pour le grand texte et les
           éléments d’interface. Un thème d’app qui échoue ici échoue aussi dans
           l’app.
         </p>
       </section>
 
+      <!-- ── Stack ─────────────────────────────────────────────────────── -->
+      <section class="sr-section" id="stack">
+        <h2 data-i18n="stack.title">Stack de la famille</h2>
+        <p data-i18n="stack.intro">
+          Relevé dans le <code>package.json</code> et le code source des
+          applications, pas dans une note d’intention. Ce qui suit décrit ce qui
+          est <strong>réellement installé et appelé</strong>.
+        </p>
+
+        <h3 class="sr-subtitle" data-i18n="stack.db.title">Bases de données</h3>
+        <p data-i18n="stack.db.intro">
+          Trois familles de persistance coexistent, et c’est délibéré : une app
+          qui n’a pas besoin de compte utilisateur n’embarque pas de backend.
+        </p>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="stack.db.th.backend">Persistance</th>
+                <th scope="col" data-i18n="stack.db.th.apps">Applications</th>
+                <th scope="col" data-i18n="stack.db.th.features">
+                  Fonctionnalités utilisées
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Supabase</th>
+                <td>
+                  <span data-i18n="stack.db.supabase.apps"
+                    >6 apps — carbook, lookhouse, uwh, doc, footcoach,
+                    mölkky</span
+                  >
+                </td>
+                <td data-i18n="stack.db.supabase.features">
+                  Postgres + <strong>RLS</strong> (deny-by-default), Auth,
+                  Realtime (<code>.channel()</code>), fonctions SQL
+                  (<code>.rpc()</code>), Storage, Edge Functions
+                  (<code>functions.invoke</code>), migrations versionnées — de 3
+                  (footcoach) à 26 (doc).
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Firebase</th>
+                <td>
+                  <span data-i18n="stack.db.firebase.apps"
+                    >3 apps — miss-ticket, puzzle, qowa</span
+                  >
+                </td>
+                <td data-i18n="stack.db.firebase.features">
+                  Realtime Database pour le temps réel à faible latence (puzzle,
+                  qowa), Firestore pour les données structurées (miss-ticket,
+                  qowa), Auth, Storage, Cloud Functions.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="stack.db.local.name">Local-first</th>
+                <td>
+                  <span data-i18n="stack.db.local.apps"
+                    >5 apps — badminton, contraction, dice, genius, cim10</span
+                  >
+                </td>
+                <td data-i18n="stack.db.local.features">
+                  <code>localStorage</code> / IndexedDB seuls. Aucun compte,
+                  aucune donnée qui sort du téléphone — souvent le bon choix, et
+                  la meilleure réponse RGPD.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sr-note" data-i18n="stack.db.notes">
+          <strong>miss-supaboss</strong> est à part : elle
+          <em>pilote</em> d’autres comptes Supabase via un backend Node et un
+          jeton personnel, sans client Supabase côté navigateur. Le paquet
+          fournit par ailleurs un <strong>keep-alive</strong> (workflow
+          réutilisable + <code>templates/supabase/keep-alive.sql</code>) contre
+          la mise en pause automatique du plan gratuit.
+        </p>
+
+        <h3 class="sr-subtitle" data-i18n="stack.icons.title">Icônes</h3>
+        <p data-i18n="stack.icons.body">
+          <code>lucide-react</code> est le standard famille :
+          <strong>10 apps sur 15</strong> l’utilisent. Icônes SVG tree-shakées
+          (seules celles importées sont embarquées), <code>strokeWidth</code> et
+          <code>size</code> ajustables, et <code>currentColor</code> qui suit
+          les tokens du thème.
+        </p>
+        <p class="sr-note" data-i18n="stack.icons.note">
+          Deux réserves apprises à l’usage : lucide 1.x a
+          <strong>retiré les icônes de marque</strong> — le logo GitHub des
+          composants partagés est un SVG inline ; et une icône décorative doit
+          porter <code>aria-hidden</code>, le libellé accessible vivant sur le
+          bouton qui la contient. Les 5 apps sans lucide utilisent des SVG
+          inline maison.
+        </p>
+
+        <h3 class="sr-subtitle" data-i18n="stack.maps.title">
+          Cartes et géographie
+        </h3>
+        <p data-i18n="stack.maps.body">
+          Une seule app en a besoin :
+          <strong>miss-lookhouse</strong> (veille immobilière), avec
+          <strong>Leaflet 1.9</strong> — affichage des biens et éditeur de zone
+          par polygone. Tuiles <strong>OpenStreetMap</strong>, avec attribution
+          et <strong>sans clé d’API</strong> : pas de compte tiers, pas de
+          quota, pas de traceur.
+        </p>
+        <p class="sr-note" data-i18n="stack.maps.note">
+          Pas de standard famille imposé ici — un seul cas d’usage ne justifie
+          pas une règle. Si une deuxième app cartographie, Leaflet + OSM est le
+          point de départ à reprendre.
+        </p>
+
+        <h3 class="sr-subtitle" data-i18n="stack.tests.title">
+          Outils de test
+        </h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="stack.tests.th.tool">Outil</th>
+                <th scope="col" data-i18n="stack.tests.th.scope">Portée</th>
+                <th scope="col" data-i18n="stack.tests.th.shared">
+                  Config partagée
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Vitest 4</th>
+                <td data-i18n="stack.tests.vitest">
+                  Unitaire et composants, en jsdom. Présent dans
+                  <strong>les 13 apps</strong>, de 2 à 54 fichiers de test.
+                </td>
+                <td><code>vitest-base</code>, <code>vitest-setup</code></td>
+              </tr>
+              <tr>
+                <th scope="row">Playwright</th>
+                <td data-i18n="stack.tests.playwright">
+                  Parcours critiques de bout en bout, dans un vrai navigateur.
+                  11 apps.
+                </td>
+                <td><code>playwright-base</code></td>
+              </tr>
+              <tr>
+                <th scope="row">axe-core</th>
+                <td data-i18n="stack.tests.axe">
+                  Audit d’accessibilité automatisé, branché sur Playwright. 10
+                  apps.
+                </td>
+                <td>
+                  <code>playwright-a11y</code>,
+                  <code>templates/e2e/a11y.spec.ts</code>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="stack.tests.browser.name">
+                  Vitest Browser Mode
+                </th>
+                <td data-i18n="stack.tests.browser">
+                  Composants dans un navigateur réel plutôt qu’en jsdom.
+                  Disponible, <strong>utilisé par aucune app</strong> à ce jour.
+                </td>
+                <td><code>vitest-browser-base</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sr-note" data-i18n="stack.tests.note">
+          axe-core ne détecte qu’une partie des défauts d’accessibilité —
+          typiquement 30 à 50 %. Il ne remplace ni le parcours au clavier, ni
+          les contrôles de contraste de la section précédente.
+        </p>
+      </section>
+
       <!-- ── Intégration ───────────────────────────────────────────────── -->
       <section class="sr-section" id="integration">
-        <h2>Intégration</h2>
-        <p>
+        <h2 data-i18n="integration.h21">Intégration</h2>
+        <p data-i18n="integration.p1">
           Deux lignes dans le CSS principal de l’app suffisent à hériter de tout
           ce qui précède. La palette, elle, se déclare ensuite dans le
           <code>@theme</code> du projet.
@@ -1016,12 +1259,12 @@
   --font-display: 'Fredoka', system-ui, sans-serif;
   --radius-card: 1.1rem;
 }</code></pre>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="integration.p2">
           Rappel de priorité : un <code>@theme</code> placé
           <strong>après</strong> l’import écrase le preset ; du CSS non «
           layered » l’emporte sur la couche <code>base</code>.
         </p>
-        <p class="sr-note">
+        <p class="sr-note" data-i18n="integration.p3">
           Le schéma clair/sombre est piloté par le hook
           <code>useTheme()</code> (<code>light | dark | system</code>), qui pose
           <code>data-theme</code> sur <code>&lt;html&gt;</code> — ou la classe
@@ -1032,7 +1275,7 @@
     </main>
 
     <footer class="sr-footer">
-      <p>
+      <p data-i18n="footer.text">
         Showroom statique — aucune dépendance, aucun build, aucune requête
         réseau. Les palettes sont relevées dans le CSS de chaque application ;
         la source de vérité des tokens reste
@@ -1055,7 +1298,9 @@
         tabindex="-1"
       >
         <div data-dwc="sheet-head">
-          <h2 data-dwc="sheet-title">Ajouter une dépense</h2>
+          <h2 data-dwc="sheet-title" data-i18n="sheet.title">
+            Ajouter une dépense
+          </h2>
           <button type="button" data-dwc="sheet-close" aria-label="Fermer">
             <svg
               width="18"
@@ -1081,7 +1326,7 @@
               value="Arbitrage"
             />
           </div>
-          <p class="sr-note">
+          <p class="sr-note" data-i18n="sheet.note">
             Le panneau garde le focus : <kbd>Tab</kbd> revient au premier
             élément après le dernier.
           </p>
@@ -1109,6 +1354,7 @@
     </div>
 
     <script src="themes.js"></script>
+    <script src="i18n.js"></script>
     <script src="showroom.js"></script>
   </body>
 </html>

@@ -17,6 +17,44 @@
   var themes = globalThis.SHOWROOM_THEMES || [];
   var APP_KEY = 'dwc_showroom_app';
   var SCHEME_KEY = 'dwc_theme';
+  var LANG_KEY = 'dwc_showroom_lang';
+
+  /* ── Langue ────────────────────────────────────────────────────────── *
+   * Le français n'est pas dans un dictionnaire : c'est le HTML lui-même,
+   * capturé au chargement. On ne maintient donc qu'UNE langue en double, et
+   * la page reste juste sans JavaScript.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  var DICTS = globalThis.SHOWROOM_I18N || {};
+  var LANGS = ['fr'].concat(Object.keys(DICTS));
+  var originalHtml = {};
+  var lang = 'fr';
+
+  document.querySelectorAll('[data-i18n]').forEach(function (el) {
+    originalHtml[el.dataset.i18n] = el.innerHTML;
+  });
+
+  /** Traduit une clé ; `fallback` est le libellé français par défaut. */
+  function t(key, fallback) {
+    if (lang === 'fr') return fallback;
+    var value = (DICTS[lang] || {})[key];
+    return value === undefined ? fallback : value;
+  }
+
+  function applyLang(next) {
+    lang = LANGS.indexOf(next) === -1 ? 'fr' : next;
+    var dict = lang === 'fr' ? originalHtml : DICTS[lang] || {};
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var value = dict[el.dataset.i18n];
+      // Clé absente d'une traduction : on garde le français plutôt que de
+      // vider le bloc — une page trouée est pire qu'une page mixte.
+      if (value === undefined && lang !== 'fr') {
+        value = originalHtml[el.dataset.i18n];
+      }
+      if (value !== undefined) el.innerHTML = value;
+    });
+    root.lang = lang;
+  }
 
   // Rôle sémantique → variable CSS + libellé. `on` désigne la couleur sur
   // laquelle le rôle est censé être posé (calcul du contraste WCAG).
@@ -61,7 +99,10 @@
     ['mister-doc', 'beta'],
     ['miss-badminton', 'alpha'],
   ];
-  var MATURITY_LABELS = { alpha: 'Alpha', beta: 'Bêta', stable: 'Stable' };
+  var MATURITY_FR = { alpha: 'Alpha', beta: 'Bêta', stable: 'Stable' };
+  function maturityLabel(m) {
+    return t('ui.maturity.' + m, MATURITY_FR[m]);
+  }
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -245,25 +286,36 @@
 
     var hints = [];
     if (theme.schemes.indexOf('light') === -1) {
-      hints.push('application dark-only : le schéma clair est désactivé');
+      hints.push(
+        t(
+          'ui.hint.darkOnly',
+          'application dark-only : le schéma clair est désactivé'
+        )
+      );
     }
     if (theme.attribute === 'class') {
-      hints.push('thème piloté par la classe .dark côté app');
+      hints.push(
+        t('ui.hint.classAttr', 'thème piloté par la classe .dark côté app')
+      );
     }
 
     var nameEl = document.getElementById('theme-name');
     var taglineEl = document.getElementById('theme-tagline');
-    if (nameEl) nameEl.textContent = theme.name;
+    if (nameEl)
+      nameEl.textContent = t('theme.' + theme.id + '.name', theme.name);
     if (taglineEl) {
       taglineEl.textContent =
-        theme.tagline + (hints.length ? ' — ' + hints.join(' ; ') + '.' : '');
+        t('theme.' + theme.id + '.tagline', theme.tagline) +
+        (hints.length ? ' — ' + hints.join(' ; ') + '.' : '');
     }
 
     var sample = document.getElementById('font-display-sample');
     if (sample) {
       sample.textContent = theme.fontDisplay
-        ? 'Titrage — ' + theme.fontDisplay.split(',')[0].replace(/'/g, '')
-        : 'Titrage — pile système (aucune police dédiée)';
+        ? t('ui.font.some', 'Titrage —') +
+          ' ' +
+          theme.fontDisplay.split(',')[0].replace(/'/g, '')
+        : t('ui.font.none', 'Titrage — pile système (aucune police dédiée)');
     }
 
     renderSwatches();
@@ -325,7 +377,7 @@
       meta.className = 'sr-swatch-meta';
 
       var name = document.createElement('strong');
-      name.textContent = role[2];
+      name.textContent = t('ui.role.' + role[0], role[2]);
       meta.appendChild(name);
 
       var token = document.createElement('code');
@@ -333,7 +385,7 @@
       meta.appendChild(token);
 
       var desc = document.createElement('span');
-      desc.textContent = role[3];
+      desc.textContent = t('ui.role.' + role[0] + '.desc', role[3]);
       meta.appendChild(desc);
 
       if (role[4]) {
@@ -341,10 +393,15 @@
         if (ratio) {
           var badge = document.createElement('span');
           badge.textContent =
-            'contraste ' +
+            t('ui.contrast', 'contraste') +
+            ' ' +
             ratio.toFixed(2) +
             ':1 — ' +
-            (ratio >= 4.5 ? 'AA ✓' : ratio >= 3 ? 'AA (grand texte)' : '✗');
+            (ratio >= 4.5
+              ? t('ui.contrast.aa', 'AA ✓')
+              : ratio >= 3
+                ? t('ui.contrast.aaLarge', 'AA (grand texte)')
+                : '✗');
           badge.style.color =
             ratio >= 4.5 ? 'var(--ds-success)' : 'var(--ds-danger)';
           meta.appendChild(badge);
@@ -430,20 +487,40 @@
 
   // Colonnes = tailles puis états. Les états sont testés en taille `md`.
   var BUTTON_COLUMNS = [
-    { key: 'sm', head: 'sm', props: { size: 'sm' }, label: 'Petit' },
-    { key: 'md', head: 'md', props: { size: 'md' }, label: 'Moyen' },
-    { key: 'lg', head: 'lg', props: { size: 'lg' }, label: 'Grand' },
+    {
+      key: 'sm',
+      head: 'sm',
+      props: { size: 'sm' },
+      label: 'Petit',
+      i18n: 'ui.button.small',
+    },
+    {
+      key: 'md',
+      head: 'md',
+      props: { size: 'md' },
+      label: 'Moyen',
+      i18n: 'ui.button.medium',
+    },
+    {
+      key: 'lg',
+      head: 'lg',
+      props: { size: 'lg' },
+      label: 'Grand',
+      i18n: 'ui.button.large',
+    },
     {
       key: 'loading',
       head: 'loading',
       props: { size: 'md', loading: true },
       label: 'Envoi…',
+      i18n: 'ui.button.sending',
     },
     {
       key: 'disabled',
       head: 'disabled',
       props: { size: 'md', disabled: true },
       label: 'Inactif',
+      i18n: 'ui.button.inactive',
     },
     {
       key: 'icon',
@@ -472,13 +549,20 @@
     if (column.props.iconOnly) {
       b.dataset.iconOnly = '';
       // Sans libellé visible, le libellé accessible est obligatoire.
-      b.setAttribute('aria-label', 'Ajouter');
+      b.setAttribute('aria-label', t('ui.button.add', 'Ajouter'));
     }
-    b.appendChild(document.createTextNode(column.label));
+    b.appendChild(document.createTextNode(t(column.i18n, column.label)));
     return b;
   }
 
-  function buildMatrix(table, headLabel, rows, columns, cellFactory) {
+  function buildMatrix(
+    table,
+    headLabel,
+    rows,
+    columns,
+    cellFactory,
+    rowKeyPrefix
+  ) {
     if (!table) return;
     table.textContent = '';
 
@@ -498,7 +582,7 @@
       var tr = document.createElement('tr');
       var th = document.createElement('th');
       th.scope = 'row';
-      th.textContent = row[1];
+      th.textContent = t(rowKeyPrefix + row[0], row[1]);
       tr.appendChild(th);
       columns.forEach(function (column) {
         var td = document.createElement('td');
@@ -596,12 +680,28 @@
 
   // Ce qu'on mesure : les commandes réellement tapables, groupées par type.
   var TARGET_GROUPS = [
-    ['Button — toutes tailles', '#button-matrix [data-dwc="button"]'],
-    ['Champs de saisie', '[data-dwc="field-control"]'],
-    ['Fermeture de feuille', '[data-dwc="sheet-close"]'],
-    ['Actions de bannière', '[data-dwc="error-banner-retry"]'],
-    ['Cartes famille', '[data-dwc="family-app"]'],
-    ['Liens de pied de page', '[data-dwc="footer-source"]'],
+    [
+      'Button — toutes tailles',
+      '#button-matrix [data-dwc="button"]',
+      'ui.a11y.group.buttons',
+    ],
+    ['Champs de saisie', '[data-dwc="field-control"]', 'ui.a11y.group.fields'],
+    [
+      'Fermeture de feuille',
+      '[data-dwc="sheet-close"]',
+      'ui.a11y.group.sheetClose',
+    ],
+    [
+      'Actions de bannière',
+      '[data-dwc="error-banner-retry"]',
+      'ui.a11y.group.bannerActions',
+    ],
+    ['Cartes famille', '[data-dwc="family-app"]', 'ui.a11y.group.familyCards'],
+    [
+      'Liens de pied de page',
+      '[data-dwc="footer-source"]',
+      'ui.a11y.group.footerLinks',
+    ],
   ];
 
   function row(cells) {
@@ -639,7 +739,12 @@
     if (!table) return;
     table.textContent = '';
     table.appendChild(
-      headRow(['Commande', 'Mesurées', 'Hauteur min.', 'Verdict'])
+      headRow([
+        t('ui.a11y.control', 'Commande'),
+        t('ui.a11y.measured', 'Mesurées'),
+        t('ui.a11y.minHeight', 'Hauteur min.'),
+        t('ui.a11y.verdict', 'Verdict'),
+      ])
     );
     var tbody = document.createElement('tbody');
 
@@ -657,11 +762,13 @@
       var ok = min >= TARGET_MIN - 0.5;
       tbody.appendChild(
         row([
-          group[0],
+          t(group[2], group[0]),
           String(nodes.length),
           { text: min.toFixed(1) + ' px', className: 'sr-computed' },
           {
-            text: ok ? '✓ ≥ 44 px' : '✗ sous le seuil',
+            text: ok
+              ? t('ui.a11y.pass', '✓ ≥ 44 px')
+              : t('ui.a11y.fail', '✗ sous le seuil'),
             color: ok ? 'var(--ds-success)' : 'var(--ds-danger)',
           },
         ])
@@ -680,7 +787,9 @@
       { text: ratio.toFixed(2) + ':1', className: 'sr-computed' },
       threshold.toFixed(1) + ':1',
       {
-        text: ok ? '✓ conforme' : '✗ insuffisant',
+        text: ok
+          ? t('ui.a11y.ok', '✓ conforme')
+          : t('ui.a11y.ko', '✗ insuffisant'),
         color: ok ? 'var(--ds-success)' : 'var(--ds-danger)',
       },
     ]);
@@ -690,7 +799,14 @@
     var table = document.getElementById('a11y-contrast');
     if (!table) return;
     table.textContent = '';
-    table.appendChild(headRow(['Paire', 'Ratio', 'Seuil AA', 'Verdict']));
+    table.appendChild(
+      headRow([
+        t('ui.a11y.pair', 'Paire'),
+        t('ui.a11y.ratio', 'Ratio'),
+        t('ui.a11y.threshold', 'Seuil AA'),
+        t('ui.a11y.verdict', 'Verdict'),
+      ])
+    );
     var tbody = document.createElement('tbody');
 
     function push(label, el, threshold) {
@@ -727,7 +843,11 @@
       );
     });
 
-    push('Texte atténué sur surface', document.querySelector('.sr-note'), 4.5);
+    push(
+      t('ui.a11y.mutedOnSurface', 'Texte atténué sur surface'),
+      document.querySelector('.sr-note'),
+      4.5
+    );
 
     table.appendChild(tbody);
   }
@@ -768,7 +888,11 @@
       link.dataset.dwc = 'family-app';
       link.setAttribute(
         'aria-label',
-        theme.name + ' (' + MATURITY_LABELS[maturity] + ') — nouvel onglet'
+        theme.name +
+          ' (' +
+          maturityLabel(maturity) +
+          ') — ' +
+          t('ui.newTab', 'nouvel onglet')
       );
 
       // Chemin de repli du composant : initiale du nom quand l'icône distante
@@ -793,7 +917,7 @@
       var badge = document.createElement('span');
       badge.dataset.dwc = 'maturity';
       badge.dataset.maturity = maturity;
-      badge.textContent = MATURITY_LABELS[maturity];
+      badge.textContent = maturityLabel(maturity);
       head.appendChild(badge);
 
       body.appendChild(head);
@@ -832,9 +956,9 @@
   if (select) {
     select.textContent = '';
     var groupGeneric = document.createElement('optgroup');
-    groupGeneric.label = 'Référence';
+    groupGeneric.label = t('ui.groups.reference', 'Référence');
     var groupApps = document.createElement('optgroup');
-    groupApps.label = 'Applications consommatrices';
+    groupApps.label = t('ui.groups.apps', 'Applications consommatrices');
 
     themes.forEach(function (theme) {
       var option = document.createElement('option');
@@ -878,25 +1002,53 @@
 
   // Les matrices doivent exister AVANT la première mesure : les contrôles
   // a11y s'appuient sur les éléments réellement présents dans le document.
-  buildMatrix(
-    document.getElementById('button-matrix'),
-    'Variante',
-    BUTTON_VARIANTS,
-    BUTTON_COLUMNS,
-    makeButton
-  );
-  buildMatrix(
-    document.getElementById('badge-matrix'),
-    'Ton',
-    BADGE_TONES,
-    BADGE_VARIANTS,
-    makeBadge
-  );
+  // Tout ce qui est ENGENDRÉ doit être reconstruit à chaque changement de
+  // langue : les matrices, la grille famille, la palette et les mesures
+  // portent des libellés traduits.
+  function renderGenerated() {
+    buildMatrix(
+      document.getElementById('button-matrix'),
+      t('ui.matrix.variant', 'Variante'),
+      BUTTON_VARIANTS,
+      BUTTON_COLUMNS,
+      makeButton,
+      'ui.button.'
+    );
+    buildMatrix(
+      document.getElementById('badge-matrix'),
+      t('ui.matrix.tone', 'Ton'),
+      BADGE_TONES,
+      BADGE_VARIANTS,
+      makeBadge,
+      'ui.tone.'
+    );
+    renderFamilyApps();
+    applyTheme(currentTheme);
+    measure();
+  }
+
   setupSheet();
+
+  // Langue : préférence stockée, sinon celle du navigateur, sinon français.
+  var langSelect = document.getElementById('lang');
+  var storedLang = read(LANG_KEY, '');
+  var initialLang =
+    storedLang ||
+    (LANGS.indexOf((navigator.language || 'fr').slice(0, 2)) !== -1
+      ? navigator.language.slice(0, 2)
+      : 'fr');
+
+  if (langSelect) {
+    langSelect.value = initialLang;
+    langSelect.addEventListener('change', function () {
+      write(LANG_KEY, langSelect.value);
+      applyLang(langSelect.value);
+      renderGenerated();
+    });
+  }
 
   applyScheme(currentScheme, currentTheme);
   syncSchemeInputs(currentScheme, currentTheme);
-  applyTheme(currentTheme);
-  renderFamilyApps();
-  measure();
+  applyLang(initialLang);
+  renderGenerated();
 })();
