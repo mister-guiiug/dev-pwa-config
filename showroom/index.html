@@ -131,6 +131,7 @@
               >Contrôles d’accessibilité</a
             >
           </li>
+          <li><a href="#demo" data-i18n="ui.toc.demo">Démo</a></li>
           <li><a href="#stack" data-i18n="ui.toc.stack">Stack</a></li>
           <li>
             <a href="#integration" data-i18n="ui.toc.integration"
@@ -1035,6 +1036,92 @@
           <code>getComputedStyle</code>.
         </p>
 
+        <h3 class="sr-subtitle" data-i18n="a11y.toolsTitle">
+          La chaîne d’outils
+        </h3>
+        <p data-i18n="a11y.toolsIntro">
+          Quatre filets successifs, du clavier du développeur au navigateur de
+          l’utilisateur. Aucun ne suffit seul, et c’est pour ça qu’ils sont
+          quatre.
+        </p>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="a11y.tools.th.tool">Outil</th>
+                <th scope="col" data-i18n="a11y.tools.th.when">Quand</th>
+                <th scope="col" data-i18n="a11y.tools.th.scope">
+                  Ce qu’il attrape
+                </th>
+                <th scope="col" data-i18n="a11y.tools.th.shared">
+                  Réglage partagé
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row"><code>eslint-plugin-jsx-a11y</code></th>
+                <td data-i18n="a11y.tools.lint.when">À l’écriture</td>
+                <td data-i18n="a11y.tools.lint.scope">
+                  Les fautes visibles dans le JSX : image sans alt, gestionnaire
+                  de clic sur un <code>&lt;div&gt;</code>, label orphelin.
+                  Règles <code>recommended</code> en <code>warn</code>.
+                </td>
+                <td><code>eslint-react</code></td>
+              </tr>
+              <tr>
+                <th scope="row">axe-core + Playwright</th>
+                <td data-i18n="a11y.tools.axe.when">En CI, navigateur réel</td>
+                <td data-i18n="a11y.tools.axe.scope">
+                  Violations WCAG sur le DOM rendu, tags
+                  <code>wcag2a</code>, <code>wcag2aa</code>,
+                  <code>wcag21a</code>, <code>wcag21aa</code>. Suite présente
+                  dans <strong>11 apps</strong>.
+                </td>
+                <td>
+                  <code>playwright-a11y</code>,
+                  <code>templates/e2e/a11y.spec.ts</code>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Lighthouse CI</th>
+                <td data-i18n="a11y.tools.lh.when">En CI, sur le build</td>
+                <td data-i18n="a11y.tools.lh.scope">
+                  Score d’accessibilité global, en
+                  <strong><code>error</code></strong> sous
+                  <strong>0,9</strong> — la PR est bloquée. Configuré dans
+                  <strong>12 apps</strong>.
+                </td>
+                <td><code>pwa-lighthouse</code> (workflow)</td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="a11y.tools.ds.name">
+                  Le design system
+                </th>
+                <td data-i18n="a11y.tools.ds.when">À l’exécution</td>
+                <td data-i18n="a11y.tools.ds.scope">
+                  Ce qu’un audit ne rattrape pas parce que ça se décide à la
+                  conception : cible tactile de 2,75 rem imposée,
+                  <code>:focus-visible</code> qui suit la couleur du texte,
+                  breakpoints en <code>rem</code>,
+                  <code>prefers-reduced-motion</code>, sévérités jamais portées
+                  par la seule couleur.
+                </td>
+                <td>
+                  <code>tailwind-preset.css</code>, <code>components.css</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sr-note" data-i18n="a11y.tools.note">
+          <strong>axe-core ne détecte que 30 à 50 % des défauts</strong>, et
+          Lighthouse encore moins. Un score de 100 ne dit pas qu’une appli est
+          utilisable au clavier ni qu’un lecteur d’écran l’annonce correctement
+          — d’où les deux dernières lignes du tableau, et les mesures
+          ci-dessous.
+        </p>
+
         <h3 class="sr-subtitle" data-i18n="a11y.h31">Cible tactile</h3>
         <div class="sr-table-wrap">
           <table class="sr-table" id="a11y-target">
@@ -1061,6 +1148,33 @@
           Seuil AA : 4,5:1 pour le texte courant, 3:1 pour le grand texte et les
           éléments d’interface. Un thème d’app qui échoue ici échoue aussi dans
           l’app.
+        </p>
+      </section>
+
+      <!-- ── Démo ──────────────────────────────────────────────────────── -->
+      <section class="sr-section" id="demo">
+        <h2 data-i18n="demo.title">Démo par application</h2>
+        <p data-i18n="demo.intro">
+          Choisissez une application : le showroom entier bascule dans son
+          univers, et l’aperçu ci-dessous montre les composants partagés
+          habillés de ses couleurs. C’est la même page, le même CSS — seules les
+          treize variables du contrat changent.
+        </p>
+
+        <nav id="demo-menu" aria-label="Applications de la famille"></nav>
+
+        <div id="demo-stage" class="sr-demo-stage-app"></div>
+
+        <p class="sr-note" data-i18n="demo.note">
+          <strong
+            >Ce sont des aperçus générés, pas des captures d’écran.</strong
+          >
+          Ils sont peints en direct avec la palette réelle de chaque app et les
+          composants réels du paquet — ils montrent donc fidèlement le design
+          system dans chaque univers, mais pas les écrans des applications. Une
+          vraie capture déposée dans <code>showroom/screenshots/</code> et
+          déclarée dans <code>screenshots.js</code> prend automatiquement la
+          place de l’aperçu.
         </p>
       </section>
 
@@ -1357,6 +1471,7 @@
     </div>
 
     <script src="themes.js"></script>
+    <script src="screenshots.js"></script>
     <script src="i18n.js"></script>
     <script src="showroom.js"></script>
   </body>

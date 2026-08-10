@@ -155,6 +155,46 @@ globalThis.SHOWROOM_I18N = {
     'a11y.p3':
       'AA thresholds: 4.5:1 for body text, 3:1 for large text and user-interface elements. An app theme that fails here fails inside the app too.',
 
+    /* ── Accessibility tooling ────────────────────────────────────────── */
+    'a11y.toolsTitle': 'The tool chain',
+    'a11y.toolsIntro':
+      'Four successive nets, from the developer’s keyboard to the user’s browser. None is sufficient alone — that is why there are four.',
+    'a11y.tools.th.tool': 'Tool',
+    'a11y.tools.th.when': 'When',
+    'a11y.tools.th.scope': 'What it catches',
+    'a11y.tools.th.shared': 'Shared config',
+    'a11y.tools.lint.when': 'While writing',
+    'a11y.tools.lint.scope':
+      'Mistakes visible in the JSX: image without alt, click handler on a <code>&lt;div&gt;</code>, orphan label. <code>recommended</code> rules as <code>warn</code>.',
+    'a11y.tools.axe.when': 'In CI, real browser',
+    'a11y.tools.axe.scope':
+      'WCAG violations on the rendered DOM, tags <code>wcag2a</code>, <code>wcag2aa</code>, <code>wcag21a</code>, <code>wcag21aa</code>. Suite present in <strong>11 apps</strong>.',
+    'a11y.tools.lh.when': 'In CI, on the build',
+    'a11y.tools.lh.scope':
+      'Overall accessibility score, set to <strong><code>error</code></strong> below <strong>0.9</strong> — the PR is blocked. Configured in <strong>12 apps</strong>.',
+    'a11y.tools.ds.name': 'The design system',
+    'a11y.tools.ds.when': 'At runtime',
+    'a11y.tools.ds.scope':
+      'What an audit cannot catch because it is decided at design time: 2.75 rem touch target enforced, <code>:focus-visible</code> following the text colour, breakpoints in <code>rem</code>, <code>prefers-reduced-motion</code>, severities never carried by colour alone.',
+    'a11y.tools.note':
+      '<strong>axe-core catches only 30 to 50 % of defects</strong>, and Lighthouse fewer still. A score of 100 does not mean an app is usable with a keyboard, nor that a screen reader announces it correctly — hence the last two rows of the table, and the measurements below.',
+
+    /* ── Demo gallery ─────────────────────────────────────────────────── */
+    'demo.title': 'Demo by application',
+    'demo.intro':
+      'Pick an application: the whole showroom switches to its universe, and the preview below shows the shared components dressed in its colours. Same page, same CSS — only the thirteen contract variables change.',
+    'demo.note':
+      '<strong>These are generated previews, not screenshots.</strong> They are painted live with each app’s real palette and the package’s real components — so they show the design system faithfully in each universe, but not the applications’ own screens. A real capture dropped into <code>showroom/screenshots/</code> and declared in <code>screenshots.js</code> automatically takes the preview’s place.',
+    'ui.demo.season': 'Season',
+    'ui.demo.members': 'Members',
+    'ui.demo.paid': 'Paid up',
+    'ui.demo.pending': 'Pending',
+    'ui.demo.search': 'Search',
+    'ui.demo.searchValue': 'Membership fee…',
+    'ui.demo.validate': 'Confirm',
+    'ui.demo.later': 'Later',
+    'ui.toc.demo': 'Demo',
+
     /* ── Stack ────────────────────────────────────────────────────────── */
     'stack.title': 'Family stack',
     'stack.intro':
