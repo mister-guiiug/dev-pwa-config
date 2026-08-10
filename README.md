@@ -338,7 +338,9 @@ plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
   avant build/test pour les apps Firebase/Supabase) ; `server-dir` (install +
   `tsc --noEmit` d'un backend annexe).
 - **`pwa-lighthouse.yml`** — `build-env` (même usage) → Lighthouse activable sur
-  les apps à secrets.
+  les apps à secrets ; `public-report` (défaut `false`) pour publier en plus le
+  rapport sur le stockage public temporaire de Lighthouse CI. Par défaut le
+  rapport n'est **pas** publié : il reste joint en artefact du run.
 - **`pwa-deploy.yml`** — `build-env` ; déploiement **Firebase optionnel**
   (`firebase-project`, `firebase-only`, secret `FIREBASE_SERVICE_ACCOUNT_KEY`)
   avec auth intégrée.

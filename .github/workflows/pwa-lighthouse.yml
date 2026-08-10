@@ -18,6 +18,10 @@
 #     secrets: inherit
 #
 # Prérequis projet : un .lighthouserc.json à la racine (cf. templates/.lighthouserc.json).
+#
+# Le rapport n'est PAS publié sur un stockage public : il est joint en artefact
+# du run (`upload-artifacts`, activé par défaut). Passer `public-report: true`
+# pour obtenir en plus une URL partageable.
 name: Reusable PWA Lighthouse
 
 on:
@@ -48,6 +52,15 @@ on:
         type: string
         required: false
         default: ''
+      public-report:
+        description: >-
+          Publie le rapport sur le stockage public temporaire de Lighthouse CI
+          (bucket GCP, URL non devinable, purge automatique après quelques
+          jours). Désactivé par défaut : le rapport complet reste téléchargeable
+          en artefact du run via `upload-artifacts`.
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -93,4 +106,6 @@ jobs:
         with:
           configPath: ${{ inputs.config-path }}
           uploadArtifacts: ${{ inputs.upload-artifacts }}
-          temporaryPublicStorage: true
+          # Opt-in : l'action compare la chaîne à 'true', donc `false` désactive
+          # bien la publication (`temporaryPublicStorage === 'true' ? … : false`).
+          temporaryPublicStorage: ${{ inputs.public-report }}
