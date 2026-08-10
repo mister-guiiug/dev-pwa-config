@@ -8,6 +8,7 @@
   "scripts": {
     "test": "node --test",
     "showroom": "node scripts/serve-showroom.mjs",
+    "showroom:sync": "node --eval \"require('node:fs').copyFileSync('components.css','showroom/components.css')\"",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate": "npm run format:check && npm run test",
@@ -96,7 +97,8 @@
       "default": "./vite-csp.js"
     },
     "./tailwind-preset": "./tailwind-preset.js",
-    "./tailwind-preset.css": "./tailwind-preset.css"
+    "./tailwind-preset.css": "./tailwind-preset.css",
+    "./components.css": "./components.css"
   },
   "bin": {
     "pwa-icons": "./scripts/generate-pwa-icons.mjs"
@@ -130,6 +132,7 @@
     "vite-csp.d.ts",
     "tailwind-preset.js",
     "tailwind-preset.css",
+    "components.css",
     "scripts/generate-pwa-icons.mjs"
   ],
   "peerDependencies": {

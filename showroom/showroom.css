@@ -33,6 +33,29 @@
   --ds-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px rgb(0 0 0 / 0.06);
   --sr-code-bg: color-mix(in srgb, var(--ds-text) 6%, transparent);
   color-scheme: light;
+
+  /*
+   * Le CONTRAT de `components.css` : l'app branche ses propres couleurs sur les
+   * variables `--dwc-*`, et les composants du paquet suivent. Ici on les mappe
+   * sur les rôles du showroom — c'est pour cette raison que basculer de thème
+   * rhabille aussi les composants, sans une ligne de CSS de plus.
+   *
+   * C'est exactement le bloc de 13 lignes qu'une app consommatrice écrit une
+   * fois, en remplaçant `--ds-*` par ses propres tokens.
+   */
+  --dwc-surface: var(--ds-surface);
+  --dwc-surface-2: var(--ds-surface-2);
+  --dwc-text: var(--ds-text);
+  --dwc-text-soft: var(--ds-text-soft);
+  --dwc-border: var(--ds-border);
+  --dwc-primary: var(--ds-primary);
+  --dwc-primary-contrast: var(--ds-primary-contrast);
+  --dwc-primary-soft: var(--ds-primary-soft);
+  --dwc-success: var(--ds-success);
+  --dwc-warning: var(--ds-warning);
+  --dwc-danger: var(--ds-danger);
+  --dwc-radius: var(--ds-radius);
+  --dwc-shadow: var(--ds-shadow);
 }
 
 /* ── Thème générique : sombre ────────────────────────────────────────────── */
@@ -551,7 +574,9 @@ pre code {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-fluid-sm);
-  align-items: flex-start;
+  /* Les blocs (bannières, état vide, grille famille) occupent la largeur ;
+     les éléments en ligne (badges) sont regroupés dans un `.sr-row`. */
+  align-items: stretch;
 }
 
 .sr-demo details {
@@ -664,320 +689,20 @@ pre code {
   color: var(--ds-text-soft);
 }
 
-/* ── Habillage de référence des composants `/react` ──────────────────────── *
- * Les composants du paquet sont livrés NON STYLÉS : ils ne posent que des
- * attributs `data-dwc`. Ce bloc montre un habillage possible — c'est aussi la
- * documentation vivante des sélecteurs à cibler côté app.
+/* ── Surcharges d'app (démonstration du contrat) ─────────────────────────── *
+ * Les composants ci-dessous sont habillés par `components.css`, servi TEL QUEL
+ * depuis le paquet. Ce bloc ne rajoute que ce qu'une app ferait par-dessus : la
+ * police de titrage, que le paquet ne peut pas connaître. Il prouve au passage
+ * que la couche `components` ne verrouille rien — du CSS non « layered »
+ * l'emporte toujours.
  * ────────────────────────────────────────────────────────────────────────── */
 
-[data-dwc='app-footer'] {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-fluid-md);
-  font-size: var(--text-fluid-sm);
-}
-
-[data-dwc='app-footer'] a,
-[data-dwc='family-source'],
-[data-dwc='family-sponsor'] {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2.75rem;
-  color: var(--ds-text-soft);
-  text-decoration: none;
-}
-
-[data-dwc='app-footer'] a:hover,
-[data-dwc='family-source']:hover,
-[data-dwc='family-sponsor']:hover {
-  color: var(--ds-primary);
-  text-decoration: underline;
-}
-
-[data-dwc='empty-state'] {
-  display: grid;
-  justify-items: center;
-  gap: 0.35rem;
-  text-align: center;
-  width: 100%;
-  padding: var(--spacing-fluid-lg);
-  border: 1px dashed var(--ds-border);
-  border-radius: var(--ds-radius);
-  background: var(--ds-surface-2);
-}
-
-[data-dwc='empty-state-icon'] {
-  color: var(--ds-primary);
-  line-height: 0;
-}
-
-[data-dwc='empty-state-title'] {
-  margin: 0;
-  font-family: var(--ds-font-display);
-  font-size: var(--text-fluid-lg);
-}
-
-[data-dwc='empty-state-desc'] {
-  margin: 0;
-  max-width: 40ch;
-  font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
-}
-
-[data-dwc='empty-state-action'] {
-  margin-top: var(--spacing-fluid-sm);
-}
-
-[data-dwc='error-banner'] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: var(--spacing-fluid-sm) var(--spacing-fluid-md);
-  border: 1px solid;
-  border-radius: calc(var(--ds-radius) * 0.8);
-  font-size: var(--text-fluid-sm);
-}
-
-[data-dwc='error-banner'][data-severity='error'] {
-  border-color: var(--ds-danger);
-  background: color-mix(in srgb, var(--ds-danger) 12%, var(--ds-surface));
-}
-
-[data-dwc='error-banner'][data-severity='warning'] {
-  border-color: var(--ds-warning);
-  background: color-mix(in srgb, var(--ds-warning) 14%, var(--ds-surface));
-}
-
-[data-dwc='error-banner'][data-severity='info'] {
-  border-color: var(--ds-primary);
-  background: var(--ds-primary-soft);
-}
-
-[data-dwc='error-banner-message'] {
-  flex: 1 1 16rem;
-}
-
-[data-dwc='error-banner-retry'],
-[data-dwc='error-boundary-reset'],
-[data-dwc='error-boundary-backup'],
-[data-dwc='update-banner-update'],
-[data-dwc='update-banner-dismiss'],
-[data-dwc='pwa-install-actions'] button {
-  font: inherit;
-  font-size: var(--text-fluid-xs);
-  min-height: 2.75rem;
-  padding: 0.4rem 0.85rem;
-  border-radius: calc(var(--ds-radius) * 0.6);
-  border: 1px solid var(--ds-border);
-  background: var(--ds-surface);
-  color: var(--ds-text);
-  cursor: pointer;
-}
-
-[data-dwc='error-banner-dismiss'] {
-  font: inherit;
-  font-size: 1.1rem;
-  line-height: 1;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-[data-dwc='error-boundary'] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: var(--spacing-fluid-md);
-  border: 1px solid var(--ds-danger);
-  border-radius: var(--ds-radius);
-  background: color-mix(in srgb, var(--ds-danger) 10%, var(--ds-surface));
-}
-
-[data-dwc='error-boundary-title'] {
-  margin: 0;
-  flex: 1 1 100%;
-  font-family: var(--ds-font-display);
-}
-
-[data-dwc='sync-status'] {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid var(--ds-border);
-  background: var(--ds-surface-2);
-  font-size: var(--text-fluid-xs);
-}
-
-[data-dwc='sync-status']::before {
-  content: '';
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--ds-text-soft);
-}
-
-[data-dwc='sync-status'][data-status='synced']::before {
-  background: var(--ds-success);
-}
-[data-dwc='sync-status'][data-status='pending']::before {
-  background: var(--ds-warning);
-}
-[data-dwc='sync-status'][data-status='error']::before {
-  background: var(--ds-danger);
-}
-
-[data-dwc='pwa-install-prompt'],
-[data-dwc='update-banner'] {
-  width: 100%;
-  padding: var(--spacing-fluid-md);
-  border: 1px solid var(--ds-border);
-  border-radius: var(--ds-radius);
-  background: var(--ds-primary-soft);
-}
-
-[data-dwc='pwa-install-title'] {
-  margin: 0;
-  font-family: var(--ds-font-display);
-  font-size: var(--text-fluid-lg);
-}
-
-[data-dwc='pwa-install-desc'] {
-  margin: 0.15rem 0 var(--spacing-fluid-sm);
-  font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
-}
-
-[data-dwc='pwa-install-actions'] {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-[data-dwc='update-banner'] {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-[data-dwc='update-banner-title'] {
-  flex: 1 1 12rem;
-  font-size: var(--text-fluid-sm);
-}
-
-[data-dwc='family-apps'] {
-  width: 100%;
-}
-
-[data-dwc='family-links'] {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-fluid-md);
-}
-
-[data-dwc='family-apps-title'] {
-  margin: var(--spacing-fluid-sm) 0;
-  font-size: var(--text-fluid-lg);
-}
-
-[data-dwc='family-app-list'] {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-}
-
-[data-dwc='family-app'] {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--ds-border);
-  border-radius: calc(var(--ds-radius) * 0.8);
-  background: var(--ds-surface-2);
-  text-decoration: none;
-  min-height: 2.75rem;
-}
-
-[data-dwc='family-app']:hover {
-  border-color: var(--ds-primary);
-}
-
+[data-dwc='empty-state-title'],
+[data-dwc='pwa-install-title'],
+[data-dwc='error-boundary-title'],
+[data-dwc='family-apps-title'],
 span[data-dwc='family-app-icon'] {
-  display: grid;
-  place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  flex: none;
-  border-radius: 0.7rem;
-  background: var(--ds-primary);
-  color: var(--ds-primary-contrast);
   font-family: var(--ds-font-display);
-  font-weight: 700;
-}
-
-[data-dwc='family-app-body'] {
-  display: grid;
-  gap: 0.1rem;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-[data-dwc='family-app-head'] {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-[data-dwc='family-app-name'] {
-  font-weight: 600;
-  font-size: var(--text-fluid-sm);
-}
-
-[data-dwc='family-app-desc'] {
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-[data-dwc='maturity'] {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  border: 1px solid currentColor;
-}
-
-[data-dwc='maturity'][data-maturity='stable'] {
-  color: var(--ds-success);
-}
-[data-dwc='maturity'][data-maturity='beta'] {
-  color: var(--ds-warning);
-}
-[data-dwc='maturity'][data-maturity='alpha'] {
-  color: var(--ds-text-soft);
-}
-
-[data-dwc='family-app-arrow'] {
-  color: var(--ds-text-soft);
-  line-height: 0;
-  flex: none;
 }
 
 /* ── Pied de page du showroom ────────────────────────────────────────────── */
