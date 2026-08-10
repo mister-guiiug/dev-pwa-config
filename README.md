@@ -682,6 +682,57 @@ if (visible)
 > En test (jsdom), importer `@mister-guiiug/dev-wpa-config/vitest-setup` depuis
 > `src/test/setup.ts` fournit les mocks `virtual:pwa-register` + `matchMedia`.
 
+### Primitives d'interface
+
+Ces six composants n'ont pas été inventés : ils ont été **extraits** de ce que
+plusieurs apps avaient déjà réécrit chacune de leur côté. L'API reprend leur
+convergence ; la version partagée referme les trous d'accessibilité que chaque
+copie laissait passer.
+
+| Composant                                     | Réécrit dans                                                      | Ce que la version partagée garantit en plus                                                                                                   |
+| --------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                                      | 4 apps, mêmes variantes `primary \| secondary \| ghost \| danger` | cible tactile 2,75 rem **à toutes les tailles**, `aria-busy` + désactivation pendant `loading` (anti double-clic), `type="button"` par défaut |
+| `TextField` / `SelectField` / `TextAreaField` | 3 apps (deux fichiers identiques à la variable près)              | `aria-describedby` référence l'aide **et** l'erreur, au lieu de faire disparaître l'aide                                                      |
+| `Skeleton` / `SkeletonGroup`                  | 3 apps                                                            | barres `aria-hidden`, `role="status"` + `aria-busy` porté par le conteneur seul                                                               |
+| `Sheet`                                       | 4 apps, ~20 écrans consommateurs                                  | piège de focus, focus **restitué** à la fermeture, scroll de fond restauré, safe-area iOS                                                     |
+| `Stat`                                        | tableaux de bord de 10 apps                                       | `<dl>/<dt>/<dd>` relie le libellé à la valeur ; la tendance a une flèche **et** un libellé lu                                                 |
+| `Badge`                                       | 4 apps, couleurs ad hoc                                           | axe `tone` sémantique (`brand \| success \| warning \| danger \| info \| muted`) × `variant` (`soft \| outline`)                              |
+
+```tsx
+import {
+  Button,
+  TextField,
+  Sheet,
+  Stat,
+  Badge,
+  SkeletonGroup,
+} from '@mister-guiiug/dev-wpa-config/react';
+
+<Button variant="danger" size="sm" loading={saving}>
+  Supprimer
+</Button>;
+<TextField label="Email" hint="nom@domaine" error={errors.email} />;
+<Badge tone="success" variant="soft">
+  Payé
+</Badge>;
+<Stat
+  label="Adhérents"
+  value={128}
+  delta="+12"
+  trend="up"
+  trendLabel="en hausse"
+/>;
+<SkeletonGroup label="Chargement des scores" lines={4} />;
+<Sheet open={open} title="Ajouter une dépense" onClose={close}>
+  …
+</Sheet>;
+```
+
+Non stylés par défaut, comme les autres : importer
+[`components.css`](#habillage-des-composants-componentscss-opt-in) pour une base
+prête à l'emploi, ou cibler `[data-dwc="button"][data-variant][data-size]` &
+consorts.
+
 ### Catalogue famille & `FamilyApps`
 
 `apps-catalog` est la **source unique** des applications de la famille (id, nom,

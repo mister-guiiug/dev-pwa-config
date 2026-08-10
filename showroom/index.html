@@ -102,10 +102,11 @@
         <ul class="sr-toc">
           <li><a href="#fondations">Fondations</a></li>
           <li><a href="#couleurs">Couleurs</a></li>
+          <li><a href="#primitives">Primitives</a></li>
           <li>
-            <a href="#composants">Composants <code>/react</code></a>
+            <a href="#composants">Composants applicatifs</a>
           </li>
-          <li><a href="#recettes">Éléments d’interface</a></li>
+          <li><a href="#a11y">Contrôles d’accessibilité</a></li>
           <li><a href="#integration">Intégration</a></li>
         </ul>
       </section>
@@ -394,9 +395,181 @@
         </p>
       </section>
 
+      <!-- ── Primitives ────────────────────────────────────────────────── -->
+      <section class="sr-section" id="primitives">
+        <h2>Primitives d’interface</h2>
+        <p>
+          Ces six composants n’ont pas été inventés : ils ont été
+          <strong>extraits</strong> de ce que plusieurs apps avaient déjà
+          réécrit chacune de leur côté. Les matrices ci-dessous montrent les
+          combinaisons — c’est là que vivent les régressions, pas dans
+          l’instance isolée.
+        </p>
+
+        <h3 class="sr-subtitle">
+          Button — variantes × tailles × états
+          <span class="sr-computed">(4 apps avaient la même API)</span>
+        </h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table" id="button-matrix">
+            <caption class="sr-visually-hidden">
+              Matrice des variantes de bouton par taille et par état
+            </caption>
+          </table>
+        </div>
+        <p class="sr-note">
+          <code>loading</code> pose <code>aria-busy</code>
+          <strong>et</strong> désactive le bouton : afficher un indicateur sans
+          bloquer laissait passer le double-clic dans deux apps.
+        </p>
+
+        <h3 class="sr-subtitle">Badge — tons sémantiques × variantes</h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table" id="badge-matrix">
+            <caption class="sr-visually-hidden">
+              Matrice des tons de pastille par variante
+            </caption>
+          </table>
+        </div>
+        <p class="sr-note">
+          Le <code>tone</code> dit une <em>intention</em>, pas une couleur — la
+          teinte réelle vient du thème de l’app.
+        </p>
+
+        <h3 class="sr-subtitle">Field — états de validation</h3>
+        <div class="sr-row">
+          <div data-dwc="field" style="flex: 1 1 16rem">
+            <label data-dwc="field-label" for="f-1">Nom de la saison</label>
+            <input data-dwc="field-control" id="f-1" value="2025 – 2026" />
+          </div>
+          <div data-dwc="field" style="flex: 1 1 16rem">
+            <label data-dwc="field-label" for="f-2">Email</label>
+            <input
+              data-dwc="field-control"
+              id="f-2"
+              type="email"
+              value="tresorier@club"
+              aria-describedby="f-2-hint"
+            />
+            <p data-dwc="field-hint" id="f-2-hint">
+              Sert aux relances de cotisation.
+            </p>
+          </div>
+          <div data-dwc="field" data-invalid style="flex: 1 1 16rem">
+            <label data-dwc="field-label" for="f-3">Montant</label>
+            <input
+              data-dwc="field-control"
+              id="f-3"
+              value="-12"
+              aria-invalid="true"
+              aria-describedby="f-3-hint f-3-error"
+            />
+            <p data-dwc="field-hint" id="f-3-hint">En euros, deux décimales.</p>
+            <p data-dwc="field-error" id="f-3-error" role="alert">
+              Le montant doit être positif.
+            </p>
+          </div>
+        </div>
+        <p class="sr-note">
+          En erreur, <code>aria-describedby</code> référence l’aide
+          <strong>et</strong> le message — les copies locales remplaçaient l’une
+          par l’autre, faisant disparaître la consigne au pire moment.
+        </p>
+
+        <h3 class="sr-subtitle">Stat — chiffres-clés</h3>
+        <div class="sr-row">
+          <dl data-dwc="stat" style="flex: 1 1 12rem">
+            <div data-dwc="stat-head">
+              <dt data-dwc="stat-label">Adhérents</dt>
+            </div>
+            <dd data-dwc="stat-value">128</dd>
+            <dd data-dwc="stat-delta" data-trend="up">
+              <span aria-hidden="true">↑ </span>12<span
+                data-dwc="stat-trend-label"
+              >
+                en hausse</span
+              >
+            </dd>
+          </dl>
+          <dl data-dwc="stat" style="flex: 1 1 12rem">
+            <div data-dwc="stat-head">
+              <dt data-dwc="stat-label">Trésorerie</dt>
+            </div>
+            <dd data-dwc="stat-value">4 210 €</dd>
+            <dd data-dwc="stat-delta" data-trend="down">
+              <span aria-hidden="true">↓ </span>320 €<span
+                data-dwc="stat-trend-label"
+              >
+                en baisse</span
+              >
+            </dd>
+          </dl>
+          <dl data-dwc="stat" style="flex: 1 1 12rem">
+            <div data-dwc="stat-head">
+              <dt data-dwc="stat-label">Licences</dt>
+            </div>
+            <dd data-dwc="stat-value">96</dd>
+          </dl>
+        </div>
+        <p class="sr-note">
+          La tendance porte une flèche <strong>et</strong> un libellé lu par les
+          lecteurs d’écran : la couleur ne suffit pas à distinguer une hausse
+          d’une baisse.
+        </p>
+
+        <h3 class="sr-subtitle">Skeleton — chargement</h3>
+        <div
+          data-dwc="skeleton-group"
+          role="status"
+          aria-busy="true"
+          style="max-width: 26rem"
+        >
+          <span data-dwc="skeleton-label">Chargement des écritures</span>
+          <span
+            data-dwc="skeleton"
+            data-radius="md"
+            aria-hidden="true"
+            style="width: 100%; height: 1rem"
+          ></span>
+          <span
+            data-dwc="skeleton"
+            data-radius="md"
+            aria-hidden="true"
+            style="width: 100%; height: 1rem"
+          ></span>
+          <span
+            data-dwc="skeleton"
+            data-radius="md"
+            aria-hidden="true"
+            style="width: 60%; height: 1rem"
+          ></span>
+        </div>
+        <p class="sr-note">
+          Les barres sont <code>aria-hidden</code> ; seul le conteneur est
+          annoncé (<code>role="status"</code>). Sinon un lecteur d’écran énumère
+          « chargement » une fois par barre.
+        </p>
+
+        <h3 class="sr-subtitle">Sheet — feuille modale</h3>
+        <button
+          type="button"
+          data-dwc="button"
+          data-variant="primary"
+          data-size="md"
+          id="sheet-open"
+        >
+          Ouvrir la feuille
+        </button>
+        <p class="sr-note">
+          Essayez au clavier : <kbd>Tab</kbd> boucle dans le panneau,
+          <kbd>Échap</kbd> ferme, et le focus revient sur le bouton d’origine —
+          les trois comportements qu’aucune copie locale n’avait au complet.
+        </p>
+      </section>
+
       <!-- ── Composants ────────────────────────────────────────────────── -->
       <section class="sr-section" id="composants">
-        <h2>Composants <code>/react</code></h2>
+        <h2>Composants applicatifs</h2>
         <p>
           Les composants du paquet ne posent que des attributs
           <code>data-dwc</code> : aucune classe, aucun style imposé. Chaque app
@@ -784,49 +957,44 @@
         </article>
       </section>
 
-      <!-- ── Recettes ──────────────────────────────────────────────────── -->
-      <section class="sr-section" id="recettes">
-        <h2>Éléments d’interface</h2>
+      <!-- ── Contrôles a11y ────────────────────────────────────────────── -->
+      <section class="sr-section" id="a11y">
+        <h2>Contrôles d’accessibilité</h2>
         <p>
-          <strong>Hors preset</strong> — le paquet ne livre ni bouton, ni champ,
-          ni carte. Ces éléments sont là pour montrer comment les rôles
-          sémantiques et les échelles fluides se combinent dans chaque univers.
-          Ne les copiez pas en pensant importer un composant.
+          Mesurés <strong>sur cette page</strong>, dans le thème courant, à
+          chaque changement de thème ou de taille de fenêtre. Ce ne sont pas des
+          valeurs recopiées : elles sortent de
+          <code>getBoundingClientRect</code> et de
+          <code>getComputedStyle</code>.
         </p>
 
-        <h3 class="sr-subtitle">Actions</h3>
-        <div class="sr-row">
-          <button type="button" class="sr-btn">Action principale</button>
-          <button type="button" class="sr-btn sr-btn--soft">Secondaire</button>
-          <button type="button" class="sr-btn sr-btn--ghost">Fantôme</button>
-          <button type="button" class="sr-btn sr-btn--danger">Supprimer</button>
-          <button type="button" class="sr-btn" disabled>Désactivé</button>
+        <h3 class="sr-subtitle">Cible tactile</h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table" id="a11y-target">
+            <caption class="sr-visually-hidden">
+              Hauteur mesurée des commandes interactives
+            </caption>
+          </table>
         </div>
+        <p class="sr-note">
+          Seuil de 2,75 rem (≈ 44 px), recommandation WCAG 2.5.5 / iOS. Le
+          <code>Button</code> partagé le tient même en taille <code>sm</code> —
+          les variantes locales des apps descendaient à 32 px.
+        </p>
 
-        <h3 class="sr-subtitle">Saisie</h3>
-        <div class="sr-row">
-          <p class="sr-field">
-            <label for="demo-input">Nom de la saison</label>
-            <input id="demo-input" type="text" value="2025 – 2026" />
-          </p>
-          <p class="sr-field">
-            <label for="demo-select">Catégorie</label>
-            <select id="demo-select">
-              <option>Cotisations</option>
-              <option>Déplacements</option>
-              <option>Matériel</option>
-            </select>
-          </p>
+        <h3 class="sr-subtitle">Contraste du texte</h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table" id="a11y-contrast">
+            <caption class="sr-visually-hidden">
+              Ratios de contraste calculés par paire premier plan / arrière-plan
+            </caption>
+          </table>
         </div>
-
-        <h3 class="sr-subtitle">Carte</h3>
-        <div class="sr-card">
-          <h4>Bilan de saison</h4>
-          <p>
-            Recettes et dépenses agrégées par catégorie, exportables en CSV.
-          </p>
-          <button type="button" class="sr-btn">Ouvrir</button>
-        </div>
+        <p class="sr-note">
+          Seuil AA : 4,5:1 pour le texte courant, 3:1 pour le grand texte et les
+          éléments d’interface. Un thème d’app qui échoue ici échoue aussi dans
+          l’app.
+        </p>
       </section>
 
       <!-- ── Intégration ───────────────────────────────────────────────── -->
@@ -873,6 +1041,72 @@
         s’installe.
       </p>
     </footer>
+
+    <!-- Feuille modale de démonstration : le composant réel se monte et se
+         démonte, ici on bascule `hidden` — le comportement clavier (piège de
+         focus, Échap, focus restitué) est en revanche celui du composant. -->
+    <div data-dwc="sheet" id="demo-sheet" hidden>
+      <div data-dwc="sheet-backdrop" aria-hidden="true"></div>
+      <div
+        data-dwc="sheet-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ajouter une dépense"
+        tabindex="-1"
+      >
+        <div data-dwc="sheet-head">
+          <h2 data-dwc="sheet-title">Ajouter une dépense</h2>
+          <button type="button" data-dwc="sheet-close" aria-label="Fermer">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div data-dwc="sheet-body">
+          <div data-dwc="field">
+            <label data-dwc="field-label" for="sheet-label">Libellé</label>
+            <input
+              data-dwc="field-control"
+              id="sheet-label"
+              value="Arbitrage"
+            />
+          </div>
+          <p class="sr-note">
+            Le panneau garde le focus : <kbd>Tab</kbd> revient au premier
+            élément après le dernier.
+          </p>
+          <div class="sr-row">
+            <button
+              type="button"
+              data-dwc="button"
+              data-variant="primary"
+              data-size="md"
+            >
+              Enregistrer
+            </button>
+            <button
+              type="button"
+              data-dwc="button"
+              data-variant="ghost"
+              data-size="md"
+              data-sheet-cancel
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="themes.js"></script>
     <script src="showroom.js"></script>

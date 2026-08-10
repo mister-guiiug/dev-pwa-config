@@ -136,9 +136,9 @@
     "scripts/generate-pwa-icons.mjs"
   ],
   "peerDependencies": {
+    "@axe-core/playwright": "^4.8.0",
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
-    "@axe-core/playwright": "^4.8.0",
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.49.0",
     "@rive-app/react-canvas": "^4.0.0",
@@ -225,6 +225,8 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
-    "prettier": "3.6.2"
+    "prettier": "3.6.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }

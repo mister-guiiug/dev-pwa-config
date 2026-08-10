@@ -123,4 +123,5 @@ jobs:
         working-directory: /tmp/fixture
         run: |
           node -e "require.resolve('@mister-guiiug/dev-wpa-config/tailwind-preset.css'); console.log('✅ tailwind-preset.css present')"
+          node -e "require.resolve('@mister-guiiug/dev-wpa-config/components.css'); console.log('✅ components.css present')"
           node -e "require.resolve('@mister-guiiug/dev-wpa-config/tsconfig-app'); console.log('✅ tsconfig-app json present')"
