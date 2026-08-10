@@ -154,6 +154,30 @@ export function pwaSeoPlugin(opts = {}) {
   let isBuild = false;
   return {
     name: 'mister-guiiug:pwa-seo',
+
+    /**
+     * Empêche le pré-bundling de `react/observability`.
+     *
+     * Ce module charge Sentry (peer OPTIONNELLE) par un import dynamique dont
+     * le spécificateur est volontairement non littéral, précisément pour rester
+     * inanalysable. L'optimiseur de dépendances replie malgré tout la
+     * concaténation en littéral — vérifié dans la sortie générée — et
+     * `vite:import-analysis` échoue alors à résoudre `@sentry/react` dans les
+     * apps qui ne l'ont pas installé : **500 sur toute la page en dev**.
+     * Le build de production n'est pas concerné.
+     *
+     * Trois apps avaient déjà écrit cette exclusion à la main, chacune de son
+     * côté. Elle appartient au paquet, pas aux apps : c'est son propre module
+     * qui est en cause.
+     */
+    config() {
+      return {
+        optimizeDeps: {
+          exclude: ['@mister-guiiug/dev-wpa-config/react/observability'],
+        },
+      };
+    },
+
     configResolved(config) {
       resolvedOutDir = config?.build?.outDir || outDir;
       isBuild = config?.command === 'build';
