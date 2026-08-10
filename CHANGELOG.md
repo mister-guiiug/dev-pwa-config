@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.9.0
+
+### Minor Changes
+
+- 361e02d: Lighthouse : ne plus publier le rapport sur un stockage public par défaut.
+
+  Le reusable `pwa-lighthouse.yml` passait `temporaryPublicStorage: true` en dur :
+  chaque run de PR poussait le rapport complet — dont la capture pleine page de
+  l'application — dans un bucket GCP public, sans que le dépôt consommateur ait
+  son mot à dire. Le rapport est désormais joint au run en artefact, et
+  l'exposition publique devient un choix explicite via le nouvel input
+  `public-report` (défaut `false`).
+
+  Le template `.lighthouserc.json` bascule aussi son `upload.target` sur
+  `filesystem` : l'action ignore ce bloc (elle force ses propres cibles), mais
+  `lhci autorun` en local le lit, et publiait donc lui aussi sans prévenir.
+
+  Aucun changement du contenu publié sur npm.
+
 ## 3.8.4
 
 ### Patch Changes
@@ -128,6 +147,7 @@
   convergé (quatre d'entre elles avaient le même jeu de variantes de bouton, deux
   avaient le même fichier `Field` à la variable CSS près). La version partagée
   referme les trous d'accessibilité que chaque copie laissait passer :
+
   - `Button` — cible tactile de 2,75 rem à TOUTES les tailles, `aria-busy` +
     désactivation pendant `loading` (anti double-clic), `type="button"` par défaut ;
   - `Field` — `aria-describedby` référence l'aide ET l'erreur, au lieu de faire
@@ -310,6 +330,7 @@
   `logo.svg`, `icon.svg`, `logo.png`) ou seulement `favicon.svg`. Résultat :
   des `GET … 404` (ex. `miss-carbook/icon-192.png`) et des vignettes en repli
   initiale.
+
   - Défaut d'icône → `favicon.svg` (racine, présent pour la majorité, SVG net).
   - Nouvelle surcharge `icon: 'chemin/relatif'` jointe à `appUrl` pour les apps
     au nommage différent (genius/uwh `icons/icon-192.png`, contraction `icon.svg`,
@@ -336,6 +357,7 @@
 - Platform layer partagé (anti écran-blanc, observabilité, résilience réseau) + variante TS strict-plus.
 
   **Nouveaux exports `/react`** (JS + `.d.ts`, sans build) :
+
   - `ErrorBoundary` — anti écran-blanc, `fallback` render-prop, `onError` (reporting), `onReset`, `onDownloadBackup` (sauvegarde locale).
   - `useOnline`, `retryableQuery` (`/react/net`, backoff exponentiel), `useOfflineMutationQueue` (file persistante rejouée au retour online), `SyncStatusBadge`.
   - `EmptyState` (état vide + CTA), `ErrorBanner` (erreur récupérable + Réessayer).
@@ -472,6 +494,7 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
 
   **Nouveau sous-export `@mister-guiiug/dev-wpa-config/react`** (hooks + composants
   PWA, sans étape de build) :
+
   - `useLocalStorage` — état persistant typé, sync inter-onglets, tolérant au mode privé.
   - `useInstallPrompt` — capture `beforeinstallprompt`, détection standalone.
   - `useTheme` — thème `light|dark|system`, persistant, suit le système.
@@ -484,6 +507,7 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
   stub `matchMedia` + mocks `virtual:pwa-register` (à importer depuis `src/test/setup.ts`).
 
   **Durcissement des configs** (impacte toutes les apps, sans changement applicatif) :
+
   - `tsconfig-node` aligné sur `tsconfig-app` (`noUnusedLocals`, `noUnusedParameters`,
     `noFallthroughCasesInSwitch`, `moduleDetection: force`, `allowImportingTsExtensions`,
     `isolatedModules`) — mister-puzzle n'a plus besoin de les redéclarer.
@@ -504,6 +528,7 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
   `templates/e2e/a11y.spec.ts`.
 
   **Sécurité** :
+
   - `pwa-ci.yml` : inputs `run-npm-audit` (opt-in) + `npm-audit-level`.
   - `templates/index.html` : template avec CSP de référence (offline-first +
     variantes Supabase/Firebase/GA4), script anti-FOUC aligné `useTheme`, et
@@ -519,6 +544,7 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
 ### Major Changes
 
 - Passe les peer-dependencies de la toolchain sur les nouvelles majeures (breaking) :
+
   - `vite` ajouté en peer optionnel `^8.0.0`
   - `vitest` et `@vitest/browser` → `^4.0.0` (fin du support Vitest 3)
   - `typescript` → `~6.0.3`
