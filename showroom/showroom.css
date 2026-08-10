@@ -873,6 +873,229 @@ pre code {
   color: var(--dwc-text-soft);
 }
 
+/* ── Bac à sable ─────────────────────────────────────────────────────────── */
+.sr-playground {
+  display: grid;
+  gap: var(--spacing-fluid-sm);
+  grid-template-columns: minmax(11rem, 15rem) 1fr;
+  align-items: start;
+}
+
+/*
+ * Un enfant de grille vaut `min-width: auto` : sa piste se dimensionne sur son
+ * contenu le plus large. Le `<pre>` de l'extrait avait beau porter
+ * `overflow-x: auto`, il n'atteignait jamais sa limite — c'est la COLONNE qui
+ * s'élargissait, et la page débordait de 63 px en 375 px de large.
+ */
+.sr-playground > * {
+  min-width: 0;
+}
+
+/* Sous `sm`, trois colonnes de 5 rem ne servent personne : on empile. */
+@media (max-width: 47.99rem) {
+  .sr-playground {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sr-pg-controls {
+  display: grid;
+  gap: 0.5rem;
+  padding: var(--spacing-fluid-sm);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface-2);
+}
+
+.sr-pg-controls .sr-control {
+  margin: 0;
+}
+
+.sr-pg-controls .sr-control--bool {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sr-pg-controls .sr-control--bool label {
+  font-family: var(--font-mono);
+  font-size: var(--text-fluid-xs);
+}
+
+.sr-pg-controls input[type='checkbox'] {
+  /* La case elle-même reste petite ; c'est la LIGNE qui doit être tapable. */
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: var(--ds-primary);
+}
+
+.sr-pg-controls .sr-control--bool {
+  min-height: 2.75rem;
+}
+
+.sr-pg-preview {
+  grid-column: 2;
+  padding: var(--spacing-fluid-md);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+}
+
+.sr-pg-code {
+  grid-column: 2;
+}
+
+@media (max-width: 47.99rem) {
+  .sr-pg-preview,
+  .sr-pg-code {
+    grid-column: 1;
+  }
+}
+
+.sr-pg-head {
+  margin: 0 0 0.6rem;
+  font-size: var(--text-fluid-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ds-text-soft);
+}
+
+/* Le bloc doit garder sa hauteur quand on coche `block` ou `lg` : sinon la
+   page saute sous le curseur à chaque réglage. */
+.sr-pg-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 5rem;
+}
+
+.sr-pg-stage > * {
+  max-width: 100%;
+}
+
+.sr-pg-note {
+  margin: 0.4rem 0 0;
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+  border-left: 2px solid var(--ds-primary);
+  padding-left: 0.6rem;
+}
+
+/* ── Contraste forcé ─────────────────────────────────────────────────────── *
+ * Émulation, pas simulation approximative : chaque règle ci-dessous reproduit
+ * une chose PRÉCISE que fait le navigateur en contraste forcé. La palette est
+ * celle du thème « Aquatique » de Windows — y compris son `GrayText` vert vif,
+ * qui surprend et qui est pourtant la vraie valeur.
+ *
+ * Le panneau `data-fix='on'` recopie le bloc `@media (forced-colors: active)`
+ * de `components.css`. Cette duplication est délibérée (on ne peut pas activer
+ * le mode depuis la page) et TENUE par `test/showroom.test.mjs`, qui exige que
+ * les deux listes de composants restent identiques.
+ * ────────────────────────────────────────────────────────────────────────── */
+.sr-fc-state {
+  margin: 0 0 var(--spacing-fluid-sm);
+  padding: 0.5rem 0.75rem;
+  border-radius: calc(var(--ds-radius) * 0.7);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface-2);
+  font-size: var(--text-fluid-xs);
+}
+
+.sr-fc-state[data-active='yes'] {
+  border-color: var(--ds-success);
+}
+
+.sr-fc-pair {
+  display: grid;
+  gap: var(--spacing-fluid-sm);
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.sr-fc-panel {
+  --sr-fc-canvas: #000000;
+  --sr-fc-text: #ffffff;
+  --sr-fc-gray: #3ff23f;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+}
+
+.sr-fc-head {
+  margin: 0;
+  padding: 0.45rem 0.75rem;
+  font-size: var(--text-fluid-xs);
+  font-weight: 700;
+  background: var(--ds-surface-2);
+  border-bottom: 1px solid var(--ds-border);
+}
+
+.sr-fc-demo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: var(--spacing-fluid-sm);
+  background: var(--sr-fc-canvas);
+  color: var(--sr-fc-text);
+}
+
+/* 1 — ce que le navigateur REMPLACE. */
+.sr-fc-demo [data-dwc] {
+  background-color: var(--sr-fc-canvas);
+  color: var(--sr-fc-text);
+  border-color: var(--sr-fc-text);
+  box-shadow: none;
+}
+
+.sr-fc-demo [data-dwc='sync-status']::before {
+  background: var(--sr-fc-canvas);
+}
+
+/* 2 — ce qu'il NE remplace pas : `transparent` traverse le forçage intact.
+   C'est toute la démonstration — le bouton primaire perd son aplat et garde
+   un contour invisible. */
+.sr-fc-demo [data-dwc='button'],
+.sr-fc-demo [data-dwc='badge'] {
+  border-color: transparent;
+}
+
+/* 3 — le panneau modal n'a jamais eu de bordure : il ne tenait que par son
+   ombre, que le forçage supprime. */
+.sr-fc-demo [data-dwc='sheet-panel'] {
+  position: static;
+  max-height: none;
+  border-radius: calc(var(--ds-radius) * 0.7);
+  animation: none;
+}
+
+/* ── Les correctifs livrés, rejoués à l'identique ─────────────────────────── */
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='button'],
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='badge'] {
+  border-color: currentColor;
+}
+
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='button']:disabled {
+  opacity: 1;
+  color: var(--sr-fc-gray);
+  border-color: var(--sr-fc-gray);
+}
+
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='sheet-panel'] {
+  outline: 1px solid var(--sr-fc-text);
+  outline-offset: -1px;
+}
+
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='skeleton'] {
+  outline: 1px solid var(--sr-fc-gray);
+  outline-offset: -1px;
+}
+
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='sync-status']::before {
+  background: var(--sr-fc-text);
+}
+
 /* ── Tableaux en cartes sous `sm` ────────────────────────────────────────── *
  * Sept tableaux sur onze débordaient horizontalement en 375 px. Les tableaux
  * de RÉFÉRENCE deviennent des cartes ; les MATRICES restent des tableaux —
@@ -1063,5 +1286,92 @@ span[data-dwc='family-app-icon'] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ── Impression ──────────────────────────────────────────────────────────── *
+ * Une doc de design system finit sur papier — en revue, en atelier, punaisée.
+ * Deux choses la rendaient inutilisable :
+ *
+ *   1. En thème sombre, les navigateurs SUPPRIMENT les fonds mais gardent la
+ *      couleur du texte. Un texte clair sur un fond noir devenu blanc : page
+ *      vierge. On repasse donc les NEUTRES en clair — et seulement eux, pour
+ *      que les couleurs de marque restent celles du thème choisi.
+ *   2. Les commandes (barre, réglages, boutons de copie, menus) occupaient le
+ *      papier sans rien y apporter.
+ *
+ * `!important` est nécessaire et non négociable : `applyTheme` pose la palette
+ * en style INLINE sur `<html>`, ce qu'aucun sélecteur ne peut surclasser.
+ * ────────────────────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  :root {
+    color-scheme: light !important;
+    --ds-bg: #ffffff !important;
+    --ds-surface: #ffffff !important;
+    --ds-surface-2: #f4f4f5 !important;
+    --ds-text: #101418 !important;
+    --ds-text-soft: #45505f !important;
+    --ds-border: #b4bac2 !important;
+    --ds-bg-image: none !important;
+  }
+
+  /* Ce qui ne sert qu'à piloter la page. */
+  .sr-skip,
+  .sr-topbar,
+  .sr-copy,
+  .sr-pg-controls,
+  #demo-menu {
+    display: none !important;
+  }
+
+  .sr-main,
+  .sr-footer {
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  .sr-section {
+    padding-block: 0.6cm;
+  }
+
+  /* Un titre seul en bas de page, et son contenu à la suivante. */
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  tr,
+  pre,
+  .sr-swatch,
+  .sr-card,
+  .sr-fc-panel,
+  .sr-compare-panel,
+  .sr-phone,
+  .sr-pg-preview {
+    break-inside: avoid;
+  }
+
+  /* Un lien imprimé sans son URL ne mène nulle part. Les ancres internes,
+     elles, n'ont pas d'URL utile — d'où le filtre sur le protocole. */
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    color: var(--ds-text-soft);
+    word-break: break-all;
+  }
+
+  /* Deux exceptions au « pas de fond à l'impression », parce qu'ici la
+     couleur EST le contenu : le nuancier, et l'émulation de contraste forcé
+     qui ne démontre rien en blanc sur blanc. */
+  .sr-swatch-chip,
+  .sr-fc-demo,
+  .sr-fc-demo * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
