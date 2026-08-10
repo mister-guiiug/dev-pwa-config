@@ -1,5 +1,41 @@
 # Changelog
 
+## 3.10.0
+
+### Minor Changes
+
+- 802db6b: `components.css` : contraste forcé et impression.
+
+  Deux rendus que le fichier ne traitait pas, et que personne ne regarde. Ils
+  remplacent les couleurs sans prévenir, alors que tout l'habillage repose sur des
+  variables et des `color-mix()`.
+
+  **Contraste forcé** (`forced-colors: active`). Trois régressions, vérifiées et
+  non déduites. `transparent` n'est pas remplacé par le navigateur : le bouton
+  primaire perdait son aplat et gardait un contour invisible — il devenait un
+  texte flottant. `box-shadow` est supprimée : le panneau modal, seul composant
+  sans bordure, se confondait avec son propre voile devenu opaque. Enfin le
+  squelette de chargement et la pastille de synchro n'existaient que par leur
+  couleur de fond. Le survol passe désormais par `Highlight` / `HighlightText`
+  plutôt que par un `filter: brightness()` — non forcé, il délavait la palette
+  choisie par l'utilisateur — et l'état désactivé par `GrayText` plutôt qu'une
+  opacité, elle non plus pas forcée. Aucun `forced-color-adjust: none` : figer nos
+  teintes reviendrait à passer outre le réglage.
+
+  **Impression**. Les navigateurs suppriment les fonds mais gardent la couleur du
+  texte : un libellé en `--dwc-primary-contrast` s'imprimait blanc sur blanc. Le
+  texte posé sur un aplat repasse en encre système, les bannières d'installation
+  et de mise à jour ne s'impriment plus, et les animations sont figées — un
+  squelette s'imprimait à l'opacité qu'il avait au moment du rendu.
+
+  Deux tests empêchent la récidive plutôt que de constater la présence des blocs :
+  tout contour transparent doit avoir sa contrepartie en contraste forcé, et tout
+  texte posé sur un aplat la sienne à l'impression.
+
+  Showroom : bac à sable de props (aperçu et appel React réécrits ensemble),
+  audit de contraste forcé avec émulation avant / après, feuille d'impression, et
+  section Rive dans la stack.
+
 ## 3.9.0
 
 ### Minor Changes
@@ -147,7 +183,6 @@
   convergé (quatre d'entre elles avaient le même jeu de variantes de bouton, deux
   avaient le même fichier `Field` à la variable CSS près). La version partagée
   referme les trous d'accessibilité que chaque copie laissait passer :
-
   - `Button` — cible tactile de 2,75 rem à TOUTES les tailles, `aria-busy` +
     désactivation pendant `loading` (anti double-clic), `type="button"` par défaut ;
   - `Field` — `aria-describedby` référence l'aide ET l'erreur, au lieu de faire
@@ -330,7 +365,6 @@
   `logo.svg`, `icon.svg`, `logo.png`) ou seulement `favicon.svg`. Résultat :
   des `GET … 404` (ex. `miss-carbook/icon-192.png`) et des vignettes en repli
   initiale.
-
   - Défaut d'icône → `favicon.svg` (racine, présent pour la majorité, SVG net).
   - Nouvelle surcharge `icon: 'chemin/relatif'` jointe à `appUrl` pour les apps
     au nommage différent (genius/uwh `icons/icon-192.png`, contraction `icon.svg`,
@@ -357,7 +391,6 @@
 - Platform layer partagé (anti écran-blanc, observabilité, résilience réseau) + variante TS strict-plus.
 
   **Nouveaux exports `/react`** (JS + `.d.ts`, sans build) :
-
   - `ErrorBoundary` — anti écran-blanc, `fallback` render-prop, `onError` (reporting), `onReset`, `onDownloadBackup` (sauvegarde locale).
   - `useOnline`, `retryableQuery` (`/react/net`, backoff exponentiel), `useOfflineMutationQueue` (file persistante rejouée au retour online), `SyncStatusBadge`.
   - `EmptyState` (état vide + CTA), `ErrorBanner` (erreur récupérable + Réessayer).
@@ -494,7 +527,6 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
 
   **Nouveau sous-export `@mister-guiiug/dev-wpa-config/react`** (hooks + composants
   PWA, sans étape de build) :
-
   - `useLocalStorage` — état persistant typé, sync inter-onglets, tolérant au mode privé.
   - `useInstallPrompt` — capture `beforeinstallprompt`, détection standalone.
   - `useTheme` — thème `light|dark|system`, persistant, suit le système.
@@ -507,7 +539,6 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
   stub `matchMedia` + mocks `virtual:pwa-register` (à importer depuis `src/test/setup.ts`).
 
   **Durcissement des configs** (impacte toutes les apps, sans changement applicatif) :
-
   - `tsconfig-node` aligné sur `tsconfig-app` (`noUnusedLocals`, `noUnusedParameters`,
     `noFallthroughCasesInSwitch`, `moduleDetection: force`, `allowImportingTsExtensions`,
     `isolatedModules`) — mister-puzzle n'a plus besoin de les redéclarer.
@@ -528,7 +559,6 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
   `templates/e2e/a11y.spec.ts`.
 
   **Sécurité** :
-
   - `pwa-ci.yml` : inputs `run-npm-audit` (opt-in) + `npm-audit-level`.
   - `templates/index.html` : template avec CSP de référence (offline-first +
     variantes Supabase/Firebase/GA4), script anti-FOUC aligné `useTheme`, et
@@ -544,7 +574,6 @@ corrections de hooks/plugins et nouvelles capacités. Regroupée par lots.
 ### Major Changes
 
 - Passe les peer-dependencies de la toolchain sur les nouvelles majeures (breaking) :
-
   - `vite` ajouté en peer optionnel `^8.0.0`
   - `vitest` et `@vitest/browser` → `^4.0.0` (fin du support Vitest 3)
   - `typescript` → `~6.0.3`
