@@ -739,6 +739,189 @@ pre code {
   color: var(--ds-text-soft);
 }
 
+/* ── Copie au presse-papier ──────────────────────────────────────────────── */
+.sr-copy {
+  font: inherit;
+  font-size: 0.8em;
+  line-height: 1;
+  margin-left: 0.4rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--ds-text-soft);
+  cursor: pointer;
+  /* Reste discret jusqu'au survol ou au focus : quatorze boutons visibles en
+     permanence encombreraient plus qu'ils n'aideraient. */
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+:is(td, th, p, div, li):hover > .sr-copy,
+.sr-copy:focus-visible,
+.sr-copy[data-state] {
+  opacity: 1;
+}
+
+.sr-copy:hover {
+  border-color: var(--ds-border);
+  color: var(--ds-text);
+}
+
+.sr-copy[data-state='ok'] {
+  color: var(--ds-success);
+}
+
+.sr-copy[data-state='ko'] {
+  color: var(--ds-danger);
+}
+
+/* Sur écran tactile il n'y a pas de survol : les boutons restent visibles. */
+@media (hover: none) {
+  .sr-copy {
+    opacity: 1;
+  }
+}
+
+/* ── Extraits d'usage ────────────────────────────────────────────────────── */
+[data-snippet] {
+  margin: var(--spacing-fluid-sm) 0;
+}
+
+.sr-snippet-head {
+  margin: 0 0 0.35rem;
+  font-size: var(--text-fluid-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ds-text-soft);
+}
+
+/* ── Contrôles a11y : pastilles et lignes localisables ───────────────────── */
+.sr-inline-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+  border-radius: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--ds-text) 25%, transparent);
+}
+
+.sr-fix {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--ds-text-soft);
+}
+
+.sr-row-locatable {
+  cursor: pointer;
+}
+
+.sr-row-locatable:hover,
+.sr-row-locatable:focus-visible {
+  background: var(--ds-surface-2);
+}
+
+/* Mise en évidence temporaire de l'élément mesuré. */
+[data-sr-highlight] {
+  outline: 3px dashed var(--ds-danger);
+  outline-offset: 3px;
+}
+
+/* ── Comparaison clair / sombre ──────────────────────────────────────────── */
+.sr-compare {
+  display: grid;
+  gap: var(--spacing-fluid-sm);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.sr-compare-panel {
+  padding: var(--spacing-fluid-md);
+  border: 1px solid var(--dwc-border);
+  border-radius: var(--ds-radius);
+  /* Peint avec la palette du schéma opposé, posée en style inline par le JS :
+     les deux colonnes montrent donc de vraies couleurs, pas une simulation. */
+  background: var(--dwc-surface);
+  color: var(--dwc-text);
+}
+
+.sr-compare-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--ds-font-display);
+  font-size: var(--text-fluid-sm);
+  font-weight: 700;
+}
+
+.sr-compare-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0;
+  font-size: var(--text-fluid-xs);
+}
+
+.sr-compare-line code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.sr-compare-line .sr-computed {
+  margin-left: auto;
+  color: var(--dwc-text-soft);
+}
+
+/* ── Tableaux en cartes sous `sm` ────────────────────────────────────────── *
+ * Sept tableaux sur onze débordaient horizontalement en 375 px. Les tableaux
+ * de RÉFÉRENCE deviennent des cartes ; les MATRICES restent des tableaux —
+ * les aplatir détruirait le croisement variantes × tailles, qui EST
+ * l'information.
+ * ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 39.99rem) {
+  .sr-table:not(.sr-table--matrix) thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .sr-table:not(.sr-table--matrix) tr {
+    display: block;
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--ds-border);
+    border-radius: calc(var(--ds-radius) * 0.8);
+    background: var(--ds-surface-2);
+    padding: 0.4rem 0.6rem;
+  }
+
+  /* Étiquette AU-DESSUS de la valeur, pas à côté : plusieurs de ces cellules
+     contiennent une phrase entière, qu'une mise en regard ferait déborder. */
+  .sr-table:not(.sr-table--matrix) :is(td, th) {
+    display: block;
+    border: 0;
+    padding: 0.2rem 0;
+    text-align: left;
+  }
+
+  /* L'en-tête de colonne devient l'étiquette de la ligne. */
+  .sr-table:not(.sr-table--matrix) :is(td, th)[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--text-fluid-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ds-text-soft);
+  }
+
+  /* Un `clamp(…)` ou un sélecteur long ne doit pas élargir la carte. */
+  .sr-table:not(.sr-table--matrix) code {
+    overflow-wrap: anywhere;
+  }
+}
+
 /* ── Galerie de démo par application ─────────────────────────────────────── */
 #demo-menu {
   display: flex;

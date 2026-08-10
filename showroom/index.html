@@ -469,6 +469,15 @@
             </div>
           </li>
         </ul>
+        <h3 class="sr-subtitle" data-i18n="couleurs.compareTitle">
+          Clair et sombre, côte à côte
+        </h3>
+        <p data-i18n="couleurs.compareIntro">
+          Valider une palette en alternant les deux schémas est un mauvais
+          outil. Les voici simultanément, pour le thème sélectionné.
+        </p>
+        <div id="compare" class="sr-compare"></div>
+
         <p class="sr-note" id="palette-source" data-i18n="couleurs.p2">
           Palette du thème courant, lue via <code>getComputedStyle</code>.
         </p>
@@ -496,7 +505,7 @@
           <span class="sr-computed">(4 apps avaient la même API)</span>
         </h3>
         <div class="sr-table-wrap">
-          <table class="sr-table" id="button-matrix">
+          <table class="sr-table sr-table--matrix" id="button-matrix">
             <caption class="sr-visually-hidden" data-i18n="primitives.caption1">
               Matrice des variantes de bouton par taille et par état
             </caption>
@@ -507,12 +516,13 @@
           <strong>et</strong> désactive le bouton : afficher un indicateur sans
           bloquer laissait passer le double-clic dans deux apps.
         </p>
+        <div data-snippet="Button"></div>
 
         <h3 class="sr-subtitle" data-i18n="primitives.h32">
           Badge — tons sémantiques × variantes
         </h3>
         <div class="sr-table-wrap">
-          <table class="sr-table" id="badge-matrix">
+          <table class="sr-table sr-table--matrix" id="badge-matrix">
             <caption class="sr-visually-hidden" data-i18n="primitives.caption2">
               Matrice des tons de pastille par variante
             </caption>
@@ -522,6 +532,7 @@
           Le <code>tone</code> dit une <em>intention</em>, pas une couleur — la
           teinte réelle vient du thème de l’app.
         </p>
+        <div data-snippet="Badge"></div>
 
         <h3 class="sr-subtitle" data-i18n="primitives.h33">
           Field — états de validation
@@ -571,6 +582,7 @@
           <strong>et</strong> le message — les copies locales remplaçaient l’une
           par l’autre, faisant disparaître la consigne au pire moment.
         </p>
+        <div data-snippet="Field"></div>
 
         <h3 class="sr-subtitle" data-i18n="primitives.h34">
           Stat — chiffres-clés
@@ -614,6 +626,7 @@
           lecteurs d’écran : la couleur ne suffit pas à distinguer une hausse
           d’une baisse.
         </p>
+        <div data-snippet="Stat"></div>
 
         <h3 class="sr-subtitle" data-i18n="primitives.h35">
           Skeleton — chargement
@@ -649,6 +662,7 @@
           annoncé (<code>role="status"</code>). Sinon un lecteur d’écran énumère
           « chargement » une fois par barre.
         </p>
+        <div data-snippet="Skeleton"></div>
 
         <h3 class="sr-subtitle" data-i18n="primitives.h36">
           Sheet — feuille modale
@@ -668,6 +682,7 @@
           <kbd>Échap</kbd> ferme, et le focus revient sur le bouton d’origine —
           les trois comportements qu’aucune copie locale n’avait au complet.
         </p>
+        <div data-snippet="Sheet"></div>
       </section>
 
       <!-- ── Composants ────────────────────────────────────────────────── -->
@@ -722,6 +737,7 @@
           <details>
             <summary data-i18n="composants.summary1">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="EmptyState"></div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="empty-state"]</code> — conteneur</li>
                 <li><code>[data-dwc="empty-state-icon"]</code></li>
@@ -775,6 +791,7 @@
           <details>
             <summary data-i18n="composants.summary2">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="ErrorBanner"></div>
               <ul class="sr-selectors">
                 <li>
                   <code
@@ -816,6 +833,7 @@
           <details>
             <summary data-i18n="composants.summary3">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="SyncStatusBadge"></div>
               <ul class="sr-selectors">
                 <li>
                   <code
@@ -852,6 +870,7 @@
           <details>
             <summary data-i18n="composants.summary4">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="ErrorBoundary"></div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="error-boundary"]</code></li>
                 <li><code>[data-dwc="error-boundary-title"]</code></li>
@@ -892,6 +911,7 @@
           <details>
             <summary data-i18n="composants.summary5">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="PwaInstallPrompt"></div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="pwa-install-prompt"]</code></li>
                 <li><code>[data-dwc="pwa-install-title"]</code></li>
@@ -924,6 +944,7 @@
           <details>
             <summary data-i18n="composants.summary6">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="UpdatePromptBanner"></div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="update-banner"]</code></li>
                 <li><code>[data-dwc="update-banner-title"]</code></li>
@@ -992,6 +1013,7 @@
           <details>
             <summary data-i18n="composants.summary7">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="AppFooter"></div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="app-footer"]</code></li>
                 <li><code>[data-dwc="footer-source"]</code></li>
@@ -1044,6 +1066,7 @@
           <details>
             <summary data-i18n="composants.summary8">Sélecteurs CSS</summary>
             <div>
+              <div data-snippet="FamilyApps"></div>
               <ul class="sr-selectors">
                 <li><code>[data-dwc="family-apps"]</code></li>
                 <li>
@@ -1526,6 +1549,7 @@
     </div>
 
     <script src="themes.js"></script>
+    <script src="snippets.js"></script>
     <script src="screenshots.js"></script>
     <script src="i18n.js"></script>
     <script src="showroom.js"></script>
