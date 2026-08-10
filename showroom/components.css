@@ -851,4 +851,20 @@
       animation-iteration-count: 1;
     }
   }
+
+  /*
+   * DERNIÈRE RÈGLE DU FICHIER, et c'est délibéré.
+   *
+   * L'attribut `hidden` ne masque que via la feuille de style du navigateur :
+   * la moindre règle d'auteur posant un `display` le neutralise, et l'élément
+   * réapparaît. Presque tous les composants ci-dessus déclarent un `display` —
+   * la feuille modale du showroom s'affichait ainsi par-dessus la page dès le
+   * chargement, alors qu'elle portait bien `hidden`.
+   *
+   * Une seule règle couvre tout le jeu. Placée en dernier, elle l'emporte aussi
+   * sur les sélecteurs de même spécificité (`[data-dwc='x'][data-y]`).
+   */
+  [data-dwc][hidden] {
+    display: none;
+  }
 }

@@ -216,6 +216,8 @@ globalThis.SHOWROOM_I18N = {
 
     /* ── Sheet demo &amp; footer ──────────────────────────────────────── */
     'sheet.title': 'Add an expense',
+    'sheet.save': 'Save',
+    'sheet.cancel': 'Cancel',
     'sheet.note':
       'The panel keeps focus: <kbd>Tab</kbd> returns to the first element after the last one.',
     'footer.text':
