@@ -1,0 +1,63 @@
+# Publication du showroom du design system sur GitHub Pages.
+#
+# Site 100 % statique : `showroom/` est publié TEL QUEL, sans build ni
+# dépendance. Les ressources y sont référencées en chemins relatifs, le site
+# fonctionne donc aussi bien à la racine que sous /dev-wpa-config/.
+#
+# → https://mister-guiiug.github.io/dev-wpa-config/
+name: Deploy showroom
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'showroom/**'
+      - 'tailwind-preset.css'
+      - 'test/showroom.test.mjs'
+      - '.github/workflows/showroom-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule publication à la fois ; on ne coupe pas un déploiement en cours.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Vérifier la parité puis empaqueter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Le showroom rejoue `tailwind-preset.css` en CSS natif : on refuse de
+      # publier une page qui aurait dérivé de la source de vérité. Aucune
+      # dépendance à installer (node:test + modules natifs uniquement).
+      - name: Parité preset ↔ showroom
+        run: node --test test/showroom.test.mjs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: showroom
+
+  deploy:
+    name: Déployer
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

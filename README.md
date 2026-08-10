@@ -28,6 +28,37 @@ projets PWA de la famille `miss-*` et `mister-*`.
 | [`mister-molkky`](../mister-molkky/)       | React + localStorage (sync Supabase opt-in) | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
 | [`mister-puzzle`](../mister-puzzle/)       | React + Firebase                            | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base, `lucide-react` |
 
+## Showroom du design system
+
+`showroom/` est une page **statique** (HTML + CSS + JS, aucune dépendance,
+aucun build, aucune requête réseau) qui présente ce que le paquet partage
+réellement :
+
+- les tokens du preset — typographie et espacements fluides, points de rupture,
+  safe-areas iOS, cible tactile — avec leurs valeurs **calculées en direct**
+  (redimensionner la fenêtre fait jouer les `clamp()`) ;
+- le DOM exact de chaque composant `/react` et les sélecteurs
+  `[data-dwc="…"]` correspondants ;
+- un **sélecteur de thème** qui rhabille toute la page avec l'univers visuel de
+  chaque application consommatrice, plus le contrat clair / sombre / système du
+  hook `useTheme`.
+
+```bash
+npm run showroom
+```
+
+→ <http://127.0.0.1:5220>. Le fichier `showroom/index.html` s'ouvre aussi
+directement dans un navigateur (double-clic), sans serveur.
+
+Le preset n'expose **aucune couleur** : c'est la part variable, propriété de
+chaque app. Le thème « Générique » du showroom est donc volontairement
+monochrome ; les palettes des applications sont relevées dans `showroom/themes.js`.
+
+> Sans compilateur Tailwind, une page statique ne peut pas interpréter `@theme`
+> ni `@utility` : `showroom/preset.css` rejoue donc le preset en CSS natif.
+> `test/showroom.test.mjs` compare les deux fichiers token par token — une
+> modification du preset non répercutée fait échouer la CI, pas le navigateur.
+
 ## Stack cible (juin 2026)
 
 Les configs imposent / supposent les versions suivantes côté projet consommateur :
@@ -546,6 +577,9 @@ export { default } from '@mister-guiiug/dev-wpa-config/lint-staged';
   --color-brand: oklch(...);
 }
 ```
+
+Ce que l'import apporte exactement (et ce qu'il n'apporte pas) est visible dans
+le [showroom](#showroom-du-design-system) : `npm run showroom`.
 
 ### Helpers React (`@mister-guiiug/dev-wpa-config/react`)
 

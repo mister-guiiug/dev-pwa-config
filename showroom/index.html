@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="fr" data-app="generic" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Showroom — @mister-guiiug/dev-wpa-config</title>
+    <meta
+      name="description"
+      content="Showroom statique du design system partagé des PWA miss-* / mister-* : tokens du preset Tailwind, composants React non stylés, et bascule de thème vers l'univers visuel de chaque application."
+    />
+    <link rel="stylesheet" href="preset.css" />
+    <link rel="stylesheet" href="showroom.css" />
+    <script>
+      // Anti-FOUC : restaure thème d'app + schéma avant le premier rendu.
+      // Même contrat que `useTheme` du paquet (light | dark | system →
+      // attribut `data-theme` sur <html>).
+      (function () {
+        try {
+          var root = document.documentElement;
+          var app = localStorage.getItem('dwc_showroom_app');
+          var scheme = localStorage.getItem('dwc_theme') || 'system';
+          if (app) root.setAttribute('data-app', app);
+          var dark =
+            scheme === 'dark' ||
+            (scheme === 'system' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          root.setAttribute('data-theme', dark ? 'dark' : 'light');
+          root.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (e) {
+          /* stockage indisponible : on garde les valeurs du markup */
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a class="sr-skip" href="#contenu">Aller au contenu</a>
+
+    <header class="sr-topbar">
+      <div class="sr-topbar-inner">
+        <div class="sr-brand">
+          <strong>Design system</strong>
+          <span>@mister-guiiug/dev-wpa-config</span>
+        </div>
+
+        <p class="sr-control">
+          <label for="theme-app">Thème</label>
+          <select id="theme-app">
+            <option value="generic">Générique — preset seul</option>
+          </select>
+        </p>
+
+        <fieldset class="sr-control" style="border: 0; margin: 0; padding: 0">
+          <legend class="sr-visually-hidden">Schéma de couleurs</legend>
+          <div class="sr-segmented">
+            <input type="radio" name="scheme" id="scheme-light" value="light" />
+            <label for="scheme-light">Clair</label>
+            <input type="radio" name="scheme" id="scheme-dark" value="dark" />
+            <label for="scheme-dark">Sombre</label>
+            <input
+              type="radio"
+              name="scheme"
+              id="scheme-system"
+              value="system"
+              checked
+            />
+            <label for="scheme-system">Système</label>
+          </div>
+        </fieldset>
+
+        <output class="sr-bp-badge" id="bp-badge" aria-live="polite"
+          >breakpoint : —</output
+        >
+      </div>
+    </header>
+
+    <main class="sr-main" id="contenu">
+      <!-- ── Intro ─────────────────────────────────────────────────────── -->
+      <section class="sr-section sr-hero">
+        <h1>Le design system de la famille miss-* / mister-*</h1>
+        <p class="sr-lede">
+          Ce paquet partage une <strong>structure</strong>, pas une identité :
+          échelles fluides, points de rupture, safe-areas iOS, cible tactile, et
+          des composants React livrés <strong>non stylés</strong>. La couleur,
+          la typographie de titrage et les arrondis appartiennent à chaque
+          application.
+        </p>
+        <p class="sr-theme-note">
+          <strong id="theme-name">Générique — preset seul</strong><br />
+          <span id="theme-tagline"
+            >Ce que le preset fournit réellement : de la structure, pas de
+            couleur. Palette monochrome de référence.</span
+          >
+        </p>
+        <ul class="sr-toc">
+          <li><a href="#fondations">Fondations</a></li>
+          <li><a href="#couleurs">Couleurs</a></li>
+          <li>
+            <a href="#composants">Composants <code>/react</code></a>
+          </li>
+          <li><a href="#recettes">Éléments d’interface</a></li>
+          <li><a href="#integration">Intégration</a></li>
+        </ul>
+      </section>
+
+      <!-- ── Fondations ────────────────────────────────────────────────── -->
+      <section class="sr-section" id="fondations">
+        <h2>Fondations</h2>
+        <p>
+          Tous les tokens ci-dessous viennent de
+          <code>tailwind-preset.css</code> et sont donc identiques dans toutes
+          les applications de la famille. Les valeurs affichées sont
+          <strong>calculées en direct</strong> : redimensionnez la fenêtre pour
+          voir jouer les <code>clamp()</code>.
+        </p>
+
+        <h3 class="sr-subtitle">Typographie fluide</h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col">Token</th>
+                <th scope="col">Valeur</th>
+                <th scope="col">Calculé</th>
+                <th scope="col">Rendu</th>
+              </tr>
+            </thead>
+            <tbody id="type-scale">
+              <tr data-token="--text-fluid-xs">
+                <th scope="row"><code>--text-fluid-xs</code></th>
+                <td><code>clamp(0.7rem, 1.6vw, 0.8125rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td class="sr-sample">Aa — Portez ce vieux whisky</td>
+              </tr>
+              <tr data-token="--text-fluid-sm">
+                <th scope="row"><code>--text-fluid-sm</code></th>
+                <td><code>clamp(0.8125rem, 1.9vw, 0.95rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td class="sr-sample">Aa — Portez ce vieux whisky</td>
+              </tr>
+              <tr data-token="--text-fluid-base">
+                <th scope="row"><code>--text-fluid-base</code></th>
+                <td><code>clamp(0.9rem, 2.2vw, 1.05rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td class="sr-sample">Aa — Portez ce vieux whisky</td>
+              </tr>
+              <tr data-token="--text-fluid-lg">
+                <th scope="row"><code>--text-fluid-lg</code></th>
+                <td><code>clamp(1rem, 2.6vw, 1.25rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td class="sr-sample">Aa — Portez ce vieux whisky</td>
+              </tr>
+              <tr data-token="--text-fluid-xl">
+                <th scope="row"><code>--text-fluid-xl</code></th>
+                <td><code>clamp(1.15rem, 3vw, 1.5rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td class="sr-sample">Aa — Portez ce vieux</td>
+              </tr>
+              <tr data-token="--text-fluid-2xl">
+                <th scope="row"><code>--text-fluid-2xl</code></th>
+                <td><code>clamp(1.35rem, 4.2vw, 2rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td class="sr-sample">Aa — Portez ce vieux</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sr-note">
+          Côté Tailwind : <code>text-fluid-sm</code>,
+          <code>text-fluid-2xl</code>… La colonne « Rendu » utilise la police de
+          titrage du thème courant.
+        </p>
+
+        <h3 class="sr-subtitle">Familles de police</h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col">Token</th>
+                <th scope="col">Rendu</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row"><code>--font-sans</code></th>
+                <td style="font-family: var(--font-sans)">
+                  Interface système — 0123456789
+                </td>
+              </tr>
+              <tr>
+                <th scope="row"><code>--font-mono</code></th>
+                <td style="font-family: var(--font-mono)">
+                  const total = 42; // 0O1lI
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <code>--ds-font-display</code>
+                  <span class="sr-computed">(app)</span>
+                </th>
+                <td class="sr-sample" id="font-display-sample">
+                  Titrage de l’application
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sr-note">
+          Le preset ne fournit que <code>sans</code> et <code>mono</code>
+          (piles système, zéro requête réseau). Les polices de titrage (Fredoka,
+          Plus Jakarta Sans, DM Sans, Inter…) sont chargées par chaque
+          app&nbsp;; ce showroom ne les télécharge pas et retombe sur la pile
+          système si elles ne sont pas installées localement.
+        </p>
+
+        <h3 class="sr-subtitle">Espacement fluide</h3>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col">Token</th>
+                <th scope="col">Valeur</th>
+                <th scope="col">Calculé</th>
+                <th scope="col">Aperçu</th>
+              </tr>
+            </thead>
+            <tbody id="space-scale">
+              <tr data-token="--spacing-fluid-sm">
+                <th scope="row"><code>--spacing-fluid-sm</code></th>
+                <td><code>clamp(0.5rem, 1.4vw, 0.75rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td>
+                  <span
+                    class="sr-bar"
+                    style="width: calc(var(--spacing-fluid-sm) * 8)"
+                  ></span>
+                </td>
+              </tr>
+              <tr data-token="--spacing-fluid-md">
+                <th scope="row"><code>--spacing-fluid-md</code></th>
+                <td><code>clamp(0.75rem, 2.4vw, 1.25rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td>
+                  <span
+                    class="sr-bar"
+                    style="width: calc(var(--spacing-fluid-md) * 8)"
+                  ></span>
+                </td>
+              </tr>
+              <tr data-token="--spacing-fluid-lg">
+                <th scope="row"><code>--spacing-fluid-lg</code></th>
+                <td><code>clamp(1rem, 3.2vw, 1.75rem)</code></td>
+                <td class="sr-computed" data-computed>—</td>
+                <td>
+                  <span
+                    class="sr-bar"
+                    style="width: calc(var(--spacing-fluid-lg) * 8)"
+                  ></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="sr-subtitle">Points de rupture</h3>
+        <ul class="sr-bp-list" id="bp-list">
+          <li data-bp="base" data-min="0">
+            <strong>base</strong>
+            <span>&lt; 40rem — mobile</span>
+          </li>
+          <li data-bp="sm" data-min="40">
+            <strong>sm</strong>
+            <span>--breakpoint-sm : 40rem (≈ 640 px)</span>
+          </li>
+          <li data-bp="md" data-min="48">
+            <strong>md</strong>
+            <span>--breakpoint-md : 48rem (≈ 768 px)</span>
+          </li>
+          <li data-bp="lg" data-min="64">
+            <strong>lg</strong>
+            <span>--breakpoint-lg : 64rem (≈ 1024 px)</span>
+          </li>
+          <li data-bp="xl" data-min="80">
+            <strong>xl</strong>
+            <span>--breakpoint-xl : 80rem (≈ 1280 px)</span>
+          </li>
+        </ul>
+        <p class="sr-note">
+          En <code>rem</code> et non en <code>px</code> : les ruptures suivent
+          la taille de police du navigateur. Une police par défaut agrandie
+          décale donc bien la mise en page — sinon c’est une régression
+          d’accessibilité.
+        </p>
+
+        <h3 class="sr-subtitle">Safe-areas iOS</h3>
+        <div class="sr-safe-demo py-safe px-safe">
+          <div>
+            Zone de contenu à l’intérieur des
+            <code>env(safe-area-inset-*)</code>. Utilitaires :
+            <code>pt-safe</code>, <code>pb-safe</code>, <code>px-safe</code>,
+            <code>py-safe</code>, <code>top-safe</code>,
+            <code>bottom-safe-3</code>…
+          </div>
+        </div>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col">Inset</th>
+                <th scope="col">Valeur mesurée</th>
+              </tr>
+            </thead>
+            <tbody id="safe-areas">
+              <tr data-inset="top">
+                <th scope="row"><code>safe-area-inset-top</code></th>
+                <td class="sr-computed" data-computed>—</td>
+              </tr>
+              <tr data-inset="bottom">
+                <th scope="row"><code>safe-area-inset-bottom</code></th>
+                <td class="sr-computed" data-computed>—</td>
+              </tr>
+              <tr data-inset="left">
+                <th scope="row"><code>safe-area-inset-left</code></th>
+                <td class="sr-computed" data-computed>—</td>
+              </tr>
+              <tr data-inset="right">
+                <th scope="row"><code>safe-area-inset-right</code></th>
+                <td class="sr-computed" data-computed>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sr-note">
+          Ces valeurs valent 0 partout sauf sur un appareil à encoche / barre
+          d’accueil, et uniquement si le document déclare
+          <code>viewport-fit=cover</code>. Les variantes <code>*-safe-3</code>
+          ajoutent 0,75 rem à l’inset système.
+        </p>
+
+        <h3 class="sr-subtitle">Cible tactile &amp; focus</h3>
+        <div class="sr-target-demo">
+          <button type="button" class="sr-btn touch-target">
+            <code>touch-target</code> — 44 × 44
+          </button>
+          <span class="sr-ghost">
+            <button
+              type="button"
+              class="sr-btn sr-btn--ghost"
+              style="min-height: 1.75rem; padding: 0.1rem 0.4rem"
+            >
+              Trop petit
+            </button>
+          </span>
+          <span class="sr-note" style="margin: 0"
+            >Le pointillé rouge matérialise le minimum de 2,75 rem.</span
+          >
+        </div>
+        <p class="sr-note">
+          Le preset pose aussi <code>:focus-visible</code> →
+          <code>outline: 2px solid currentColor</code> avec
+          <code>outline-offset: 2px</code>. Parcourez la page au clavier
+          (<kbd>Tab</kbd>) : l’anneau suit la couleur du texte, donc reste
+          lisible dans tous les thèmes.
+        </p>
+      </section>
+
+      <!-- ── Couleurs ──────────────────────────────────────────────────── -->
+      <section class="sr-section" id="couleurs">
+        <h2>Couleurs</h2>
+        <p>
+          <strong>Le preset partagé n’expose aucune couleur.</strong> C’est
+          volontaire : chaque application définit sa palette dans son propre
+          <code>@theme</code>. Le showroom mappe ces palettes sur un jeu de
+          rôles sémantiques communs — c’est ce jeu que la bascule de thème
+          réécrit.
+        </p>
+        <ul class="sr-swatches" id="swatches">
+          <li class="sr-swatch">
+            <div class="sr-swatch-meta">
+              <strong>Activez JavaScript</strong>
+              <span>La palette est lue en direct sur le thème appliqué.</span>
+            </div>
+          </li>
+        </ul>
+        <p class="sr-note" id="palette-source">
+          Palette du thème courant, lue via <code>getComputedStyle</code>.
+        </p>
+      </section>
+
+      <!-- ── Composants ────────────────────────────────────────────────── -->
+      <section class="sr-section" id="composants">
+        <h2>Composants <code>/react</code></h2>
+        <p>
+          Les composants du paquet ne posent que des attributs
+          <code>data-dwc</code> : aucune classe, aucun style imposé. Chaque app
+          les habille avec sa propre CSS. Ci-dessous, le DOM exact produit par
+          chaque composant, habillé par le thème courant.
+        </p>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>EmptyState</h4>
+            <p>État vide avec action suivante.</p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="empty-state" role="note">
+              <div data-dwc="empty-state-icon" aria-hidden="true">
+                <svg
+                  width="32"
+                  height="32"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 7l9-4 9 4v10l-9 4-9-4V7z" />
+                  <path d="M3 7l9 4 9-4M12 11v10" />
+                </svg>
+              </div>
+              <p data-dwc="empty-state-title">Aucune donnée pour l’instant</p>
+              <p data-dwc="empty-state-desc">
+                Créez une première entrée pour voir apparaître vos statistiques.
+              </p>
+              <div data-dwc="empty-state-action">
+                <button type="button" class="sr-btn">Créer une entrée</button>
+              </div>
+            </div>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="empty-state"]</code> — conteneur</li>
+                <li><code>[data-dwc="empty-state-icon"]</code></li>
+                <li><code>[data-dwc="empty-state-title"]</code></li>
+                <li><code>[data-dwc="empty-state-desc"]</code></li>
+                <li><code>[data-dwc="empty-state-action"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>ErrorBanner</h4>
+            <p>
+              Erreur récupérable. <code>severity</code> distingue le temporaire
+              du permanent ; <code>role</code> passe de <code>alert</code> à
+              <code>status</code>.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="error-banner" data-severity="error" role="alert">
+              <span data-dwc="error-banner-message"
+                >Impossible d’enregistrer la saison.</span
+              >
+              <button type="button" data-dwc="error-banner-retry">
+                Réessayer
+              </button>
+              <button
+                type="button"
+                data-dwc="error-banner-dismiss"
+                aria-label="Fermer"
+              >
+                ×
+              </button>
+            </div>
+            <div data-dwc="error-banner" data-severity="warning" role="status">
+              <span data-dwc="error-banner-message"
+                >Connexion instable : les données peuvent être en retard.</span
+              >
+              <button type="button" data-dwc="error-banner-retry">
+                Réessayer
+              </button>
+            </div>
+            <div data-dwc="error-banner" data-severity="info" role="status">
+              <span data-dwc="error-banner-message"
+                >Sauvegarde locale effectuée.</span
+              >
+            </div>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li>
+                  <code
+                    >[data-dwc="error-banner"][data-severity="error|warning|info"]</code
+                  >
+                </li>
+                <li><code>[data-dwc="error-banner-message"]</code></li>
+                <li><code>[data-dwc="error-banner-retry"]</code></li>
+                <li><code>[data-dwc="error-banner-dismiss"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>SyncStatusBadge</h4>
+            <p>
+              État de synchronisation. Le compteur n’apparaît que sur
+              <code>pending</code>.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div class="sr-row">
+              <span data-dwc="sync-status" data-status="synced" role="status"
+                >Synchronisé</span
+              >
+              <span data-dwc="sync-status" data-status="pending" role="status"
+                >En attente (3)</span
+              >
+              <span data-dwc="sync-status" data-status="offline" role="status"
+                >Hors ligne</span
+              >
+              <span data-dwc="sync-status" data-status="error" role="status"
+                >Erreur</span
+              >
+            </div>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li>
+                  <code
+                    >[data-dwc="sync-status"][data-status="synced|pending|offline|error"]</code
+                  >
+                </li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>ErrorBoundary</h4>
+            <p>
+              UI de repli par défaut (évite l’écran blanc). Le bouton «
+              sauvegarde » n’apparaît que si <code>onDownloadBackup</code> est
+              fourni.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="error-boundary" role="alert">
+              <p data-dwc="error-boundary-title">Une erreur est survenue.</p>
+              <button type="button" data-dwc="error-boundary-reset">
+                Réessayer
+              </button>
+              <button type="button" data-dwc="error-boundary-backup">
+                Télécharger une sauvegarde
+              </button>
+            </div>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="error-boundary"]</code></li>
+                <li><code>[data-dwc="error-boundary-title"]</code></li>
+                <li><code>[data-dwc="error-boundary-reset"]</code></li>
+                <li><code>[data-dwc="error-boundary-backup"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>PwaInstallPrompt</h4>
+            <p>
+              Bannière passive (<code>role="region"</code>, pas
+              <code>dialog</code> : elle ne piège pas le focus).
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div
+              data-dwc="pwa-install-prompt"
+              role="region"
+              aria-label="Installer l’application"
+            >
+              <p data-dwc="pwa-install-title">Installer l’application</p>
+              <p data-dwc="pwa-install-desc">
+                Ajoutez cette application à votre écran d’accueil : accès
+                rapide, hors-ligne.
+              </p>
+              <div data-dwc="pwa-install-actions">
+                <button type="button">Installer</button>
+                <button type="button">Plus tard</button>
+              </div>
+            </div>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="pwa-install-prompt"]</code></li>
+                <li><code>[data-dwc="pwa-install-title"]</code></li>
+                <li><code>[data-dwc="pwa-install-desc"]</code></li>
+                <li><code>[data-dwc="pwa-install-actions"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>UpdatePromptBanner</h4>
+            <p>
+              Import par sous-chemin dédié (couplé à
+              <code>virtual:pwa-register/react</code>, hors barrel).
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="update-banner" role="status">
+              <span data-dwc="update-banner-title">Mise à jour disponible</span>
+              <button type="button" data-dwc="update-banner-update">
+                Recharger
+              </button>
+              <button type="button" data-dwc="update-banner-dismiss">
+                Plus tard
+              </button>
+            </div>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="update-banner"]</code></li>
+                <li><code>[data-dwc="update-banner-title"]</code></li>
+                <li><code>[data-dwc="update-banner-update"]</code></li>
+                <li><code>[data-dwc="update-banner-dismiss"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>AppFooter</h4>
+            <p>Lien code source + lien sponsor, ouverture sécurisée.</p>
+          </div>
+          <div class="sr-demo-stage">
+            <footer data-dwc="app-footer">
+              <a
+                href="https://github.com/mister-guiiug/dev-wpa-config"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-dwc="footer-source"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+                  />
+                </svg>
+                <span>Code source</span>
+              </a>
+              <a
+                href="https://buymeacoffee.com/mister.guiiug"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-dwc="footer-sponsor"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                  <line x1="6" y1="1" x2="6" y2="4" />
+                  <line x1="10" y1="1" x2="10" y2="4" />
+                  <line x1="14" y1="1" x2="14" y2="4" />
+                </svg>
+                <span>M’offrir un café</span>
+              </a>
+            </footer>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="app-footer"]</code></li>
+                <li><code>[data-dwc="footer-source"]</code></li>
+                <li><code>[data-dwc="footer-sponsor"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4>FamilyApps</h4>
+            <p>
+              Grille « nos autres applications », alimentée par
+              <code>apps-catalog.js</code>, avec badge de maturité.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <section
+              data-dwc="family-apps"
+              aria-label="Nos autres applications"
+            >
+              <div data-dwc="family-links">
+                <a
+                  href="https://github.com/mister-guiiug/dev-wpa-config"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-dwc="family-source"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                    fill="currentColor"
+                  >
+                    <path
+                      d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+                    />
+                  </svg>
+                  <span>Code source</span>
+                </a>
+              </div>
+              <h3 data-dwc="family-apps-title">Nos autres applications</h3>
+              <ul data-dwc="family-app-list" id="family-app-list"></ul>
+            </section>
+          </div>
+          <details>
+            <summary>Sélecteurs CSS</summary>
+            <div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="family-apps"]</code></li>
+                <li>
+                  <code>[data-dwc="family-links"]</code>,
+                  <code>[data-dwc="family-source"]</code>,
+                  <code>[data-dwc="family-sponsor"]</code>
+                </li>
+                <li>
+                  <code>[data-dwc="family-app-list"]</code>,
+                  <code>[data-dwc="family-app"]</code>
+                </li>
+                <li>
+                  <code>[data-dwc="family-app-icon"]</code>,
+                  <code>[data-dwc="family-app-body"]</code>,
+                  <code>[data-dwc="family-app-name"]</code>,
+                  <code>[data-dwc="family-app-desc"]</code>,
+                  <code>[data-dwc="family-app-arrow"]</code>
+                </li>
+                <li>
+                  <code>[data-dwc="maturity"][data-maturity="…"]</code>
+                </li>
+              </ul>
+              <p class="sr-note">
+                Les icônes réelles sont chargées depuis les GitHub Pages de
+                chaque app. Ce showroom reste hors ligne : il exerce le chemin
+                de repli (initiale du nom) du composant.
+              </p>
+            </div>
+          </details>
+        </article>
+      </section>
+
+      <!-- ── Recettes ──────────────────────────────────────────────────── -->
+      <section class="sr-section" id="recettes">
+        <h2>Éléments d’interface</h2>
+        <p>
+          <strong>Hors preset</strong> — le paquet ne livre ni bouton, ni champ,
+          ni carte. Ces éléments sont là pour montrer comment les rôles
+          sémantiques et les échelles fluides se combinent dans chaque univers.
+          Ne les copiez pas en pensant importer un composant.
+        </p>
+
+        <h3 class="sr-subtitle">Actions</h3>
+        <div class="sr-row">
+          <button type="button" class="sr-btn">Action principale</button>
+          <button type="button" class="sr-btn sr-btn--soft">Secondaire</button>
+          <button type="button" class="sr-btn sr-btn--ghost">Fantôme</button>
+          <button type="button" class="sr-btn sr-btn--danger">Supprimer</button>
+          <button type="button" class="sr-btn" disabled>Désactivé</button>
+        </div>
+
+        <h3 class="sr-subtitle">Saisie</h3>
+        <div class="sr-row">
+          <p class="sr-field">
+            <label for="demo-input">Nom de la saison</label>
+            <input id="demo-input" type="text" value="2025 – 2026" />
+          </p>
+          <p class="sr-field">
+            <label for="demo-select">Catégorie</label>
+            <select id="demo-select">
+              <option>Cotisations</option>
+              <option>Déplacements</option>
+              <option>Matériel</option>
+            </select>
+          </p>
+        </div>
+
+        <h3 class="sr-subtitle">Carte</h3>
+        <div class="sr-card">
+          <h4>Bilan de saison</h4>
+          <p>
+            Recettes et dépenses agrégées par catégorie, exportables en CSV.
+          </p>
+          <button type="button" class="sr-btn">Ouvrir</button>
+        </div>
+      </section>
+
+      <!-- ── Intégration ───────────────────────────────────────────────── -->
+      <section class="sr-section" id="integration">
+        <h2>Intégration</h2>
+        <p>
+          Deux lignes dans le CSS principal de l’app suffisent à hériter de tout
+          ce qui précède. La palette, elle, se déclare ensuite dans le
+          <code>@theme</code> du projet.
+        </p>
+        <pre><code>/* src/index.css */
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+
+/* Identité PROPRE à l'application — jamais dans le preset partagé. */
+@theme {
+  --color-primary: #1758ba;
+  --color-accent: #edc715;
+  --font-display: 'Fredoka', system-ui, sans-serif;
+  --radius-card: 1.1rem;
+}</code></pre>
+        <p class="sr-note">
+          Rappel de priorité : un <code>@theme</code> placé
+          <strong>après</strong> l’import écrase le preset ; du CSS non «
+          layered » l’emporte sur la couche <code>base</code>.
+        </p>
+        <p class="sr-note">
+          Le schéma clair/sombre est piloté par le hook
+          <code>useTheme()</code> (<code>light | dark | system</code>), qui pose
+          <code>data-theme</code> sur <code>&lt;html&gt;</code> — ou la classe
+          <code>.dark</code> avec l’option <code>attribute: 'class'</code>. Le
+          sélecteur en haut de cette page reproduit exactement ce contrat.
+        </p>
+      </section>
+    </main>
+
+    <footer class="sr-footer">
+      <p>
+        Showroom statique — aucune dépendance, aucun build, aucune requête
+        réseau. Les palettes sont relevées dans le CSS de chaque application ;
+        la source de vérité des tokens reste
+        <code>tailwind-preset.css</code>, et
+        <code>test/showroom.test.mjs</code> vérifie qu’aucune dérive ne
+        s’installe.
+      </p>
+    </footer>
+
+    <script src="themes.js"></script>
+    <script src="showroom.js"></script>
+  </body>
+</html>
