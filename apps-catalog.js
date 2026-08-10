@@ -114,6 +114,12 @@ export const FAMILY_APPS = [
     'beta'
   ),
   app(
+    'miss-lookhouse',
+    'Miss Lookhouse',
+    'Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.',
+    'beta'
+  ),
+  app(
     'miss-badminton',
     'Miss Badminton',
     'Suivi de scores et statistiques de badminton.',
@@ -137,6 +143,15 @@ export const FAMILY_APPS = [
     'Compteur de scores pour parties de Mölkky (multi-appareils).',
     'alpha',
     { icon: 'logo.png' }
+  ),
+  app(
+    'mister-qowa',
+    'Mister Qowa',
+    "Quiz interactif en temps réel : l'animateur pilote, les joueurs répondent.",
+    'alpha',
+    // Pas de `favicon.svg` à la racine (404 vérifié en prod) : l'icône vit
+    // dans `icons/`, et le SVG reste net à toute taille.
+    { icon: 'icons/icon.svg' }
   ),
   app(
     'mister-quota',
