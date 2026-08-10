@@ -16,6 +16,7 @@ on:
       - 'tailwind-preset.css'
       - 'test/showroom.test.mjs'
       - 'test/components-css.test.mjs'
+      - 'test/showroom-i18n.test.mjs'
       - '.github/workflows/showroom-pages.yml'
   workflow_dispatch:
 
@@ -47,7 +48,9 @@ jobs:
       # dérivé de ces sources de vérité. Aucune dépendance à installer
       # (node:test + modules natifs uniquement).
       - name: Parité preset / components ↔ showroom
-        run: node --test test/showroom.test.mjs test/components-css.test.mjs
+        run: >-
+          node --test test/showroom.test.mjs test/components-css.test.mjs
+          test/showroom-i18n.test.mjs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

@@ -41,7 +41,15 @@ réellement :
   `[data-dwc="…"]` correspondants ;
 - un **sélecteur de thème** qui rhabille toute la page avec l'univers visuel de
   chaque application consommatrice, plus le contrat clair / sombre / système du
-  hook `useTheme`.
+  hook `useTheme` ;
+- des **contrôles d'accessibilité calculés sur la page** — cible tactile mesurée
+  et contraste WCAG par paire —, rejoués à chaque bascule de thème ;
+- une section **Stack** relevée dans le code des apps : Supabase / Firebase /
+  local-first et leurs fonctionnalités réellement appelées, icônes, cartes,
+  outillage de test ;
+- une bascule **français / anglais**. Le français est le HTML lui-même, capturé
+  au chargement ; `showroom/i18n.js` ne porte que les autres langues, et
+  `test/showroom-i18n.test.mjs` refuse qu'un bloc reste sans traduction.
 
 ```bash
 npm run showroom
