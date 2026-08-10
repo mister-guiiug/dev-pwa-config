@@ -67,6 +67,9 @@ globalThis.SHOWROOM_I18N = {
       '<strong>The shared preset exposes no colour at all.</strong> That is deliberate: each application declares its palette in its own <code>@theme</code>. The showroom maps those palettes onto a common set of semantic roles — and that set is what the theme switcher rewrites.',
     'couleurs.p2':
       'Palette of the current theme, read through <code>getComputedStyle</code>.',
+    'couleurs.compareTitle': 'Light and dark, side by side',
+    'couleurs.compareIntro':
+      'Validating a palette by toggling between schemes is a poor tool. Here they are simultaneously, for the selected theme.',
 
     /* ── Primitives ───────────────────────────────────────────────────── */
     'primitives.h21': 'Interface primitives',
@@ -340,6 +343,15 @@ globalThis.SHOWROOM_I18N = {
     'ui.a11y.group.familyCards': 'Family cards',
     'ui.a11y.group.footerLinks': 'Footer links',
     'ui.a11y.mutedOnSurface': 'Muted text on surface',
+    'ui.a11y.suggestText': 'text',
+    'ui.a11y.suggestBg': 'background',
+    'ui.a11y.copyFix': 'Copy the suggested colour',
+    'ui.a11y.locate': 'Locate on the page',
+    'ui.usage': 'Usage',
+    'ui.copySnippet': 'Copy the snippet',
+    'ui.copyToken': 'Copy',
+    'ui.copied': 'Copied',
+    'ui.copyFailed': 'Copy unavailable — select the text',
 
     /* ── Accroches des thèmes (le FR vit dans themes.js) ──────────────── */
     'theme.generic.name': 'Generic — preset only',
