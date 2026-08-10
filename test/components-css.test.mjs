@@ -103,6 +103,24 @@ test('la cible tactile de 2,75 rem est imposée aux commandes', () => {
   assert.match(CSS, /min-height:\s*2\.75rem/);
 });
 
+test('un `display` d’auteur ne neutralise pas l’attribut hidden', () => {
+  // L'attribut `hidden` n'agit que via la feuille de style du navigateur : dès
+  // qu'une règle d'auteur pose un `display`, l'élément réapparaît. La feuille
+  // modale du showroom s'affichait ainsi par-dessus la page au chargement,
+  // alors qu'elle portait bien `hidden`.
+  const rule = /\[data-dwc\]\[hidden\]\s*\{\s*display:\s*none;?\s*\}/;
+  assert.match(CSS, rule, 'règle de neutralisation de [hidden] absente');
+
+  // Elle doit rester la DERNIÈRE : à spécificité égale, c'est l'ordre qui
+  // tranche, et plusieurs sélecteurs du fichier pèsent (0,2,0) comme elle.
+  const after = CSS.slice(CSS.search(rule) + CSS.match(rule)[0].length);
+  assert.equal(
+    after.replace(/[\s}]/g, ''),
+    '',
+    'des règles suivent [data-dwc][hidden] : elles pourraient la neutraliser'
+  );
+});
+
 test('components.css est exporté et publié', () => {
   assert.equal(PKG.exports['./components.css'], './components.css');
   assert.ok(

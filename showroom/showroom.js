@@ -666,12 +666,14 @@
     sheet.addEventListener('mousedown', function (event) {
       if (event.target === sheet) close();
     });
+    // Croix, « Enregistrer » et « Annuler » ferment tous la feuille : dans une
+    // vraie app, l'action d'enregistrement ferme aussi le panneau.
     sheet
       .querySelector('[data-dwc="sheet-close"]')
       ?.addEventListener('click', close);
-    sheet
-      .querySelector('[data-sheet-cancel]')
-      ?.addEventListener('click', close);
+    sheet.querySelectorAll('[data-sheet-close]').forEach(function (button) {
+      button.addEventListener('click', close);
+    });
   }
 
   /* ── Contrôles d'accessibilité, mesurés sur la page ────────────────── */
