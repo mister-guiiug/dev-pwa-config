@@ -1105,41 +1105,390 @@
   /* ── Extraits d'usage, copies, tableaux en cartes ──────────────────── */
 
   var SNIPPETS = globalThis.SHOWROOM_SNIPPETS || {};
+  var CATALOGUE = globalThis.SHOWROOM_CATALOGUE || {};
+  var COMPONENTS = CATALOGUE.components || [];
+  var HOOKS = CATALOGUE.hooks || [];
+  var DECISIONS = CATALOGUE.decisions || [];
 
-  /** Injecte l'extrait React dans chaque emplacement `data-snippet`. */
-  function renderSnippets() {
+  /**
+   * Champ bilingue `{ fr, en }` du catalogue, dans la langue courante.
+   *
+   * Contrairement au reste de la page, le catalogue porte ses deux langues
+   * côte à côte : il n'a pas de HTML source dont capturer le français, et un
+   * objet unique rend la parité vérifiable par construction.
+   */
+  function loc(field) {
+    if (!field) return '';
+    return field[lang] !== undefined ? field[lang] : field.fr;
+  }
+
+  function catalogueEntry(id) {
+    for (var i = 0; i < COMPONENTS.length; i++) {
+      if (COMPONENTS[i].id === id) return COMPONENTS[i];
+    }
+    return null;
+  }
+
+  /**
+   * Écrit un texte dont les portions entre accents graves deviennent des
+   * `<code>`. Par création de nœuds et non par `innerHTML` : le contenu vient
+   * d'un fichier de données, autant ne pas ouvrir cette porte pour du balisage
+   * qu'on peut produire directement.
+   */
+  function richText(target, text) {
+    String(text)
+      .split('`')
+      .forEach(function (part, i) {
+        if (!part) return;
+        if (i % 2) {
+          var code = document.createElement('code');
+          code.textContent = part;
+          target.appendChild(code);
+        } else {
+          target.appendChild(document.createTextNode(part));
+        }
+      });
+  }
+
+  /**
+   * Remplit chaque emplacement `data-snippet` : extrait d'usage, pièges,
+   * note d'accessibilité.
+   *
+   * Les pièges ne sont pas des conseils — chacun décrit un défaut CONSTATÉ.
+   * Ils vivaient jusqu'ici dans les commentaires de `components.css` et les
+   * notes de version, c'est-à-dire partout sauf là où l'erreur se commet.
+   */
+  function renderComponentDocs() {
     document.querySelectorAll('[data-snippet]').forEach(function (slot) {
-      var code = SNIPPETS[slot.dataset.snippet];
-      if (!code) return;
+      var id = slot.dataset.snippet;
+      var code = SNIPPETS[id];
+      var entry = catalogueEntry(id);
+      if (!code && !entry) return;
       slot.textContent = '';
+      slot.id = 'doc-' + id;
 
-      var head = document.createElement('p');
-      head.className = 'sr-snippet-head';
-      head.textContent = t('ui.usage', 'Utilisation');
-      attachCopy(head, code, t('ui.copySnippet', 'Copier l’extrait'));
+      if (code) {
+        var head = document.createElement('p');
+        head.className = 'sr-snippet-head';
+        head.textContent = t('ui.usage', 'Utilisation');
+        attachCopy(head, code, t('ui.copySnippet', 'Copier l’extrait'));
 
-      var pre = document.createElement('pre');
-      var el = document.createElement('code');
-      el.textContent = code;
-      pre.appendChild(el);
+        var pre = document.createElement('pre');
+        var el = document.createElement('code');
+        el.textContent = code;
+        pre.appendChild(el);
 
-      slot.appendChild(head);
-      slot.appendChild(pre);
+        slot.appendChild(head);
+        slot.appendChild(pre);
+      }
+
+      if (!entry) return;
+
+      var donts = loc(entry.donts) || [];
+      if (donts.length) {
+        var box = document.createElement('div');
+        box.className = 'sr-pitfalls';
+
+        var title = document.createElement('p');
+        title.className = 'sr-pitfalls-head';
+        title.textContent = t('ui.pitfalls', 'Pièges');
+        var count = document.createElement('span');
+        count.className = 'sr-computed';
+        count.textContent = String(donts.length);
+        title.appendChild(count);
+        box.appendChild(title);
+
+        var list = document.createElement('ul');
+        donts.forEach(function (text) {
+          var li = document.createElement('li');
+          richText(li, text);
+          list.appendChild(li);
+        });
+        box.appendChild(list);
+        slot.appendChild(box);
+      }
+
+      var a11y = loc(entry.a11y);
+      if (a11y) {
+        var note = document.createElement('p');
+        note.className = 'sr-a11y-note';
+        var label = document.createElement('strong');
+        label.textContent = t('ui.a11yNote', 'Accessibilité');
+        note.appendChild(label);
+        note.appendChild(document.createTextNode(' — '));
+        richText(note, a11y);
+        slot.appendChild(note);
+      }
     });
   }
 
-  /** Bouton de copie sur chaque nom de token et chaque sélecteur listé. */
+  /* ── Arbres de décision ────────────────────────────────────────────── *
+   * Le showroom montrait chaque composant seul et ne disait jamais lequel
+   * prendre quand deux conviennent. C'est pourtant là qu'on hésite.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  function renderDecisions() {
+    var host = document.getElementById('decision-trees');
+    if (!host) return;
+    host.textContent = '';
+
+    DECISIONS.forEach(function (tree) {
+      var block = document.createElement('div');
+      block.className = 'sr-tree';
+      block.id = 'tree-' + tree.id;
+
+      var q = document.createElement('h3');
+      q.className = 'sr-subtitle sr-tree-q';
+      q.textContent = loc(tree.question);
+      block.appendChild(q);
+
+      var list = document.createElement('ul');
+      list.className = 'sr-tree-branches';
+
+      tree.branches.forEach(function (branch) {
+        var li = document.createElement('li');
+        li.className = 'sr-branch';
+
+        var when = document.createElement('p');
+        when.className = 'sr-branch-when';
+        when.textContent = loc(branch.when);
+        li.appendChild(when);
+
+        // La recommandation est un lien vers la fiche : « lequel » et
+        // « comment » ne doivent pas demander de chercher.
+        var use = document.createElement('a');
+        use.className = 'sr-branch-use';
+        use.href = '#doc-' + branch.target;
+        use.textContent = branch.use;
+        li.appendChild(use);
+
+        var why = document.createElement('p');
+        why.className = 'sr-branch-why';
+        richText(why, loc(branch.why));
+        li.appendChild(why);
+
+        list.appendChild(li);
+      });
+
+      block.appendChild(list);
+      host.appendChild(block);
+    });
+  }
+
+  /* ── Hooks ─────────────────────────────────────────────────────────── */
+
+  function renderHooks() {
+    var table = document.getElementById('hooks-table');
+    if (!table) return;
+    table.textContent = '';
+    table.appendChild(
+      headRow([
+        t('ui.hooks.th.name', 'Signature'),
+        t('ui.hooks.th.what', 'Ce qu’il fait'),
+        t('ui.hooks.th.dont', 'Piège'),
+      ])
+    );
+
+    var tbody = document.createElement('tbody');
+    HOOKS.forEach(function (hook) {
+      var tr = document.createElement('tr');
+
+      var th = document.createElement('th');
+      th.scope = 'row';
+      var sig = document.createElement('code');
+      sig.textContent = hook.signature;
+      th.appendChild(sig);
+      tr.appendChild(th);
+
+      var what = document.createElement('td');
+      richText(what, loc(hook.summary));
+      tr.appendChild(what);
+
+      var dont = document.createElement('td');
+      richText(dont, loc(hook.dont));
+      tr.appendChild(dont);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+  }
+
+  /* ── Index cherchable ──────────────────────────────────────────────── *
+   * Vingt-trois entrées réparties sur six sections : sans index, trouver
+   * `useOfflineMutationQueue` demandait de savoir qu'il existait.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  var CAT_ORDER = ['primitive', 'feedback', 'pwa', 'shell', 'hook'];
+
+  /**
+   * Libellé d'une catégorie. Un `switch` et non une table indexée : les clés
+   * restent LITTÉRALES, donc vérifiables par le test de parité des
+   * traductions, qui ne sait pas lire `t(TABLE[x][0])`.
+   */
+  function catLabel(category) {
+    switch (category) {
+      case 'primitive':
+        return t('ui.cat.primitive', 'Primitive');
+      case 'feedback':
+        return t('ui.cat.feedback', 'Retour utilisateur');
+      case 'pwa':
+        return t('ui.cat.pwa', 'PWA');
+      case 'shell':
+        return t('ui.cat.shell', 'Coque');
+      case 'hook':
+        return t('ui.cat.hook', 'Hook');
+      default:
+        return category;
+    }
+  }
+
+  var catFilter = 'all';
+  var catQuery = '';
+
+  /** Composants et hooks dans un même jeu : on cherche une capacité. */
+  function catalogueItems() {
+    return COMPONENTS.map(function (c) {
+      return {
+        id: c.id,
+        category: c.category,
+        href: '#doc-' + c.id,
+        meta: (loc(c.donts) || []).length,
+        a11y: !!loc(c.a11y),
+      };
+    }).concat(
+      HOOKS.map(function (h) {
+        return {
+          id: h.id,
+          category: 'hook',
+          href: '#hooks',
+          meta: 0,
+          a11y: false,
+          summary: loc(h.summary),
+        };
+      })
+    );
+  }
+
+  /**
+   * Boutons de filtre. Séparés de la grille, et c'est le point : les
+   * reconstruire à chaque clic détruisait le bouton sur lequel on venait
+   * d'appuyer — au clavier, le focus repartait sur `<body>`, c'est-à-dire en
+   * haut de la page. Ils ne se reconstruisent donc qu'au changement de langue ;
+   * un clic ne fait plus que déplacer `aria-pressed`.
+   */
+  function renderCatalogueFilters() {
+    var filters = document.getElementById('cat-filters');
+    if (!filters) return;
+
+    var items = catalogueItems();
+    var kept = filters.querySelector('.sr-visually-hidden');
+    filters.textContent = '';
+    if (kept) filters.appendChild(kept);
+
+    var buckets = [['all', t('ui.cat.all', 'Tout'), items.length]];
+    CAT_ORDER.forEach(function (key) {
+      var n = items.filter(function (i) {
+        return i.category === key;
+      }).length;
+      if (n) buckets.push([key, catLabel(key), n]);
+    });
+
+    buckets.forEach(function (bucket) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sr-cat-filter';
+      button.dataset.cat = bucket[0];
+      button.setAttribute('aria-pressed', String(catFilter === bucket[0]));
+      button.textContent = bucket[1];
+      var badge = document.createElement('span');
+      badge.className = 'sr-computed';
+      badge.textContent = String(bucket[2]);
+      button.appendChild(badge);
+      button.addEventListener('click', function () {
+        catFilter = bucket[0];
+        filters.querySelectorAll('.sr-cat-filter').forEach(function (other) {
+          other.setAttribute(
+            'aria-pressed',
+            String(other.dataset.cat === catFilter)
+          );
+        });
+        renderCatalogueIndex();
+      });
+      filters.appendChild(button);
+    });
+  }
+
+  function renderCatalogueIndex() {
+    var grid = document.getElementById('cat-grid');
+    var count = document.getElementById('cat-count');
+    if (!grid || !count) return;
+
+    var items = catalogueItems();
+    var term = catQuery.trim().toLowerCase();
+    var shown = items.filter(function (item) {
+      if (catFilter !== 'all' && item.category !== catFilter) return false;
+      if (!term) return true;
+      return (
+        item.id.toLowerCase().indexOf(term) !== -1 ||
+        (item.summary || '').toLowerCase().indexOf(term) !== -1
+      );
+    });
+
+    grid.textContent = '';
+    shown.forEach(function (item) {
+      var li = document.createElement('li');
+      var link = document.createElement('a');
+      link.className = 'sr-cat-card';
+      link.href = item.href;
+      link.dataset.cat = item.category;
+
+      var name = document.createElement('span');
+      name.className = 'sr-cat-name';
+      name.textContent = item.id;
+      link.appendChild(name);
+
+      var meta = document.createElement('span');
+      meta.className = 'sr-cat-meta';
+      meta.textContent = catLabel(item.category);
+      if (item.meta) {
+        meta.appendChild(
+          document.createTextNode(
+            ' · ' + item.meta + ' ' + t('ui.pitfalls', 'Pièges').toLowerCase()
+          )
+        );
+      }
+      link.appendChild(meta);
+
+      li.appendChild(link);
+      grid.appendChild(li);
+    });
+
+    count.textContent =
+      shown.length === items.length
+        ? t('ui.cat.total', '{n} entrées').replace('{n}', String(items.length))
+        : t('ui.cat.shown', '{n} sur {total}')
+            .replace('{n}', String(shown.length))
+            .replace('{total}', String(items.length));
+  }
+
+  /**
+   * Bouton de copie sur chaque nom de token et chaque sélecteur listé.
+   *
+   * Une custom property est copiée SOUS SA FORME UTILISABLE — `var(--x)` et
+   * non `--x`. Ce qu'on colle doit marcher sans retouche ; coller `--x` dans
+   * une déclaration en fait une variable qu'on redéfinit, pas qu'on lit. Les
+   * sélecteurs `[data-dwc='…']`, eux, se copient tels quels.
+   */
   function attachTokenCopies() {
     document
       .querySelectorAll('#fondations tbody th code, .sr-selectors code')
       .forEach(function (code) {
         var parent = code.parentElement;
         if (!parent || parent.querySelector(':scope > .sr-copy')) return;
+        var raw = code.textContent.trim();
+        var value = raw.indexOf('--') === 0 ? 'var(' + raw + ')' : raw;
         parent.appendChild(
-          copyButton(
-            code.textContent.trim(),
-            t('ui.copyToken', 'Copier') + ' ' + code.textContent.trim()
-          )
+          copyButton(value, t('ui.copyToken', 'Copier') + ' ' + value)
         );
       });
   }
@@ -2301,7 +2650,11 @@
     renderFamilyApps();
     renderDemoMenu();
     renderDemoStage();
-    renderSnippets();
+    renderComponentDocs();
+    renderDecisions();
+    renderHooks();
+    renderCatalogueFilters();
+    renderCatalogueIndex();
     renderPlayground();
     renderForcedColors();
     applyTheme(currentTheme);
@@ -2309,6 +2662,16 @@
     // Après le rendu : les tableaux engendrés doivent être étiquetés eux aussi.
     labelTableCells();
     attachTokenCopies();
+  }
+
+  // Recherche de l'index : `input` et non `change`, pour que la grille suive
+  // la frappe. Le filtre par catégorie, lui, se recâble à chaque rendu.
+  var catSearch = document.getElementById('cat-search');
+  if (catSearch) {
+    catSearch.addEventListener('input', function () {
+      catQuery = catSearch.value;
+      renderCatalogueIndex();
+    });
   }
 
   setupSheet();
