@@ -145,6 +145,9 @@
           <li>
             <a href="#fondations" data-i18n="ui.toc.fondations">Fondations</a>
           </li>
+          <li>
+            <a href="#catalogue" data-i18n="ui.toc.catalogue">Catalogue</a>
+          </li>
           <li><a href="#couleurs" data-i18n="ui.toc.couleurs">Couleurs</a></li>
           <li>
             <a href="#primitives" data-i18n="ui.toc.primitives">Primitives</a>
@@ -154,6 +157,10 @@
               >Composants applicatifs</a
             >
           </li>
+          <li>
+            <a href="#decisions" data-i18n="ui.toc.decisions">Lequel choisir</a>
+          </li>
+          <li><a href="#hooks" data-i18n="ui.toc.hooks">Hooks</a></li>
           <li>
             <a href="#a11y" data-i18n="ui.toc.a11y"
               >Contrôles d’accessibilité</a
@@ -167,6 +174,52 @@
             >
           </li>
         </ul>
+      </section>
+
+      <!-- ── Catalogue ─────────────────────────────────────────────────── -->
+      <section
+        class="sr-section"
+        id="catalogue"
+        aria-labelledby="catalogue-title"
+      >
+        <h2 data-i18n="catalogue.h21" id="catalogue-title">Catalogue</h2>
+        <p data-i18n="catalogue.p1">
+          Tout ce que le paquet exporte, en une grille. Un test compare cette
+          liste aux exports réels de <code>react/index.js</code> : ce qui n’est
+          pas ici est soit couvert par une autre fiche, soit nommément exclu —
+          c’est ainsi que les neuf hooks, absents de leur propre vitrine, ont
+          été repérés.
+        </p>
+
+        <div class="sr-cat-controls">
+          <p class="sr-control">
+            <label for="cat-search" data-i18n="ui.cat.search">Rechercher</label>
+            <input
+              type="search"
+              id="cat-search"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </p>
+          <div
+            class="sr-cat-filters"
+            id="cat-filters"
+            role="group"
+            aria-labelledby="cat-filters-label"
+          >
+            <span
+              class="sr-visually-hidden"
+              id="cat-filters-label"
+              data-i18n="ui.cat.filterLegend"
+              >Filtrer par catégorie</span
+            >
+          </div>
+        </div>
+
+        <!-- Le compte est annoncé : filtrer sans retour parlé revient à ne
+             rien filtrer pour qui n'a pas la grille sous les yeux. -->
+        <p class="sr-cat-count" id="cat-count" role="status"></p>
+        <ul class="sr-cat-grid" id="cat-grid"></ul>
       </section>
 
       <!-- ── Fondations ────────────────────────────────────────────────── -->
@@ -1124,6 +1177,48 @@
         </article>
       </section>
 
+      <!-- ── Arbres de décision ────────────────────────────────────────── -->
+      <section
+        class="sr-section"
+        id="decisions"
+        aria-labelledby="decisions-title"
+      >
+        <h2 data-i18n="decisions.h21" id="decisions-title">Lequel choisir ?</h2>
+        <p data-i18n="decisions.p1">
+          Les sections précédentes montrent chaque composant seul. Elles ne
+          disent jamais lequel prendre quand deux conviennent — et c’est
+          pourtant là qu’on hésite. Chaque arbre tient en deux à quatre branches
+          ; au-delà, ce n’est pas l’arbre qui manque de place, c’est l’API qui
+          est sous-spécifiée.
+        </p>
+        <div id="decision-trees"></div>
+      </section>
+
+      <!-- ── Hooks ─────────────────────────────────────────────────────── -->
+      <section class="sr-section" id="hooks" aria-labelledby="hooks-title">
+        <h2 data-i18n="hooks.h21" id="hooks-title">Hooks et utilitaires</h2>
+        <p data-i18n="hooks.p1">
+          Neuf exports du barrel, soit près de la moitié de la surface React du
+          paquet — et aucun n’apparaissait ici jusqu’à présent. Ils n’ont pas de
+          démo : un hook ne se regarde pas. Ils ont une signature, une phrase,
+          et le piège qui va avec.
+        </p>
+        <div class="sr-table-wrap">
+          <table class="sr-table" id="hooks-table">
+            <caption class="sr-visually-hidden" data-i18n="hooks.caption">
+              Hooks et utilitaires exportés par le paquet
+            </caption>
+          </table>
+        </div>
+        <p class="sr-note" data-i18n="hooks.p2">
+          <code>useTheme</code> mérite une mention à part : c’est le contrat que
+          reproduit le sélecteur en haut de cette page —
+          <code>light | dark | system</code> persisté sous
+          <code>dwc_theme</code>, attribut <code>data-theme</code> posé sur
+          <code>&lt;html&gt;</code>.
+        </p>
+      </section>
+
       <!-- ── Contrôles a11y ────────────────────────────────────────────── -->
       <section class="sr-section" id="a11y" aria-labelledby="a11y-title">
         <h2 data-i18n="a11y.h21" id="a11y-title">Contrôles d’accessibilité</h2>
@@ -1699,6 +1794,7 @@
 
     <script src="themes.js"></script>
     <script src="snippets.js"></script>
+    <script src="catalogue.js"></script>
     <script src="screenshots.js"></script>
     <script src="i18n.js"></script>
     <script src="showroom.js"></script>

@@ -873,6 +873,235 @@ pre code {
   color: var(--dwc-text-soft);
 }
 
+/* ── Pièges et note d'accessibilité ──────────────────────────────────────── *
+ * Volontairement discrets : ils vivent SOUS l'extrait d'usage, pas à la place.
+ * Un encadré rouge par composant transformerait la page en mur d'alertes, et
+ * on cesserait de les lire au troisième.
+ * ────────────────────────────────────────────────────────────────────────── */
+.sr-pitfalls {
+  margin-top: var(--spacing-fluid-sm);
+  padding: 0.6rem 0.85rem;
+  border-left: 3px solid var(--ds-warning);
+  border-radius: 0 calc(var(--ds-radius) * 0.5) calc(var(--ds-radius) * 0.5) 0;
+  background: color-mix(in srgb, var(--ds-warning) 8%, transparent);
+}
+
+.sr-pitfalls-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.35rem;
+  font-size: var(--text-fluid-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sr-pitfalls ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+  font-size: var(--text-fluid-sm);
+}
+
+.sr-a11y-note {
+  margin: 0.5rem 0 0;
+  font-size: var(--text-fluid-sm);
+  color: var(--ds-text-soft);
+}
+
+.sr-a11y-note strong {
+  color: var(--ds-text);
+}
+
+/* ── Arbres de décision ──────────────────────────────────────────────────── */
+.sr-tree + .sr-tree {
+  margin-top: var(--spacing-fluid-lg);
+}
+
+.sr-tree-q {
+  margin-bottom: var(--spacing-fluid-sm);
+}
+
+.sr-tree-branches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--spacing-fluid-sm);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.sr-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: var(--spacing-fluid-sm);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  min-width: 0;
+}
+
+.sr-branch-when {
+  margin: 0;
+  font-size: var(--text-fluid-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ds-text-soft);
+}
+
+/* La recommandation EST le lien : « lequel » et « comment » ne doivent pas
+   demander de chercher ailleurs dans la page.
+
+   L'encre n'est PAS la primaire brute. Mesuré sur les 28 combinaisons
+   thème × schéma, la primaire posée en texte tombait sous 4,5:1 dans cinq
+   d'entre elles (qowa 3,10 — footcoach 3,30 — supaboss 3,49 — doc 3,74).
+   Ailleurs dans la page une couleur de marque qui échoue est un CONSTAT sur
+   l'app ; ici c'est du chrome de showroom, et il doit rester lisible. On
+   mélange donc la primaire à la couleur de texte : la teinte survit, le
+   contraste devient tenable — exactement ce que `components.css` fait pour
+   l'encre des pastilles. */
+.sr-branch-use {
+  font-family: var(--font-mono);
+  font-size: var(--text-fluid-sm);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--ds-primary) 55%, var(--ds-text));
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.sr-branch-use:hover,
+.sr-branch-use:focus-visible {
+  text-decoration: underline;
+}
+
+.sr-branch-why {
+  margin: 0;
+  font-size: var(--text-fluid-sm);
+  color: var(--ds-text-soft);
+}
+
+/* ── Index cherchable ────────────────────────────────────────────────────── */
+.sr-cat-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-fluid-sm);
+  margin-bottom: var(--spacing-fluid-sm);
+}
+
+.sr-cat-controls .sr-control {
+  margin: 0;
+}
+
+.sr-cat-controls input[type='search'] {
+  font: inherit;
+  /* 16 px minimum : en dessous, iOS zoome au focus. */
+  font-size: max(1rem, var(--text-fluid-sm));
+  min-height: 2.75rem;
+  padding: 0.4rem 0.7rem;
+  color: var(--ds-text);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius) * 0.6);
+}
+
+.sr-cat-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sr-cat-filter {
+  font: inherit;
+  font-size: var(--text-fluid-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  cursor: pointer;
+}
+
+.sr-cat-filter[aria-pressed='true'] {
+  border-color: var(--ds-primary);
+  background: var(--ds-primary-soft);
+  font-weight: 600;
+}
+
+.sr-cat-count {
+  margin: 0 0 var(--spacing-fluid-sm);
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+}
+
+.sr-cat-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+}
+
+.sr-cat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ds-border);
+  border-left-width: 3px;
+  border-radius: calc(var(--ds-radius) * 0.6);
+  background: var(--ds-surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.sr-cat-card:hover,
+.sr-cat-card:focus-visible {
+  border-color: var(--ds-primary);
+}
+
+/* La catégorie est déjà écrite sous le nom : la couleur du liseré ne fait que
+   la doubler, elle ne la remplace pas. */
+.sr-cat-card[data-cat='primitive'] {
+  border-left-color: var(--ds-primary);
+}
+.sr-cat-card[data-cat='feedback'] {
+  border-left-color: var(--ds-warning);
+}
+.sr-cat-card[data-cat='pwa'] {
+  border-left-color: var(--ds-info);
+}
+.sr-cat-card[data-cat='shell'] {
+  border-left-color: var(--ds-text-soft);
+}
+.sr-cat-card[data-cat='hook'] {
+  border-left-color: var(--ds-success);
+}
+
+.sr-cat-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-fluid-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sr-cat-meta {
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+}
+
 /* ── Bac à sable ─────────────────────────────────────────────────────────── */
 .sr-playground {
   display: grid;
@@ -1324,8 +1553,17 @@ span[data-dwc='family-app-icon'] {
   .sr-topbar,
   .sr-copy,
   .sr-pg-controls,
+  .sr-cat-controls,
   #demo-menu {
     display: none !important;
+  }
+
+  /* L'index reste sur papier — c'est une table des matières. Il imprime ce
+     qui est à l'écran, filtre compris : imprimer autre chose que ce qu'on
+     voit surprendrait davantage que ça n'aiderait. */
+  .sr-branch,
+  .sr-pitfalls {
+    break-inside: avoid;
   }
 
   .sr-main,

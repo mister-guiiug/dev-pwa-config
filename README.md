@@ -40,6 +40,14 @@ réellement :
   (redimensionner la fenêtre fait jouer les `clamp()`) ;
 - le DOM exact de chaque composant `/react` et les sélecteurs
   `[data-dwc="…"]` correspondants ;
+- un **catalogue cherchable** de tout ce que le paquet exporte — composants et
+  hooks —, dont `test/showroom-catalogue.test.mjs` vérifie qu'il ne laisse
+  échapper aucun export de `react/index.js` ;
+- des **pièges par composant**, tirés de défauts constatés et non de principes
+  (7 apps sur 13 avaient réimplémenté `EmptyState`, les variantes `sm` locales
+  descendaient à 32 px…), et une note d'accessibilité par fiche ;
+- des **arbres de décision** pour les cas où deux composants conviennent :
+  signaler un problème, occuper une attente, demander une saisie, dire un état ;
 - un **sélecteur de thème** qui rhabille toute la page avec l'univers visuel de
   chaque application consommatrice, plus le contrat clair / sombre / système du
   hook `useTheme` ;

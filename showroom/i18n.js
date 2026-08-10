@@ -32,6 +32,9 @@ globalThis.SHOWROOM_I18N = {
     'intro.title': 'The miss-* / mister-* family design system',
     'intro.lede':
       'This package shares a <strong>structure</strong>, not an identity: fluid scales, breakpoints, iOS safe areas, touch targets, and React components shipped <strong>unstyled</strong>. Colour, display type and corner radii belong to each application.',
+    'ui.toc.catalogue': 'Catalogue',
+    'ui.toc.decisions': 'Which one',
+    'ui.toc.hooks': 'Hooks',
     'ui.toc.fondations': 'Foundations',
     'ui.toc.couleurs': 'Colours',
     'ui.toc.primitives': 'Primitives',
@@ -39,6 +42,26 @@ globalThis.SHOWROOM_I18N = {
     'ui.toc.a11y': 'Accessibility checks',
     'ui.toc.stack': 'Stack',
     'ui.toc.integration': 'Integration',
+
+    /* ── Catalogue ────────────────────────────────────────────────────── */
+    'catalogue.h21': 'Catalogue',
+    'catalogue.p1':
+      'Everything the package exports, on one grid. A test compares this list against the real exports of <code>react/index.js</code>: whatever is not here is either covered by another entry or explicitly excluded — that is how the nine hooks, missing from their own showcase, were spotted.',
+    'ui.cat.search': 'Search',
+    'ui.cat.filterLegend': 'Filter by category',
+
+    /* ── Which one do I use ───────────────────────────────────────────── */
+    'decisions.h21': 'Which one do I use?',
+    'decisions.p1':
+      'The sections above show each component on its own. They never say which one to pick when two would do — and that is exactly where one hesitates. Each tree holds two to four branches; beyond that, it is not the tree that runs out of room, it is the API that is under-specified.',
+
+    /* ── Hooks ────────────────────────────────────────────────────────── */
+    'hooks.h21': 'Hooks and utilities',
+    'hooks.p1':
+      'Nine barrel exports — close to half the package’s React surface — and not one of them appeared here until now. They have no demo: a hook is not something you look at. They have a signature, a sentence, and the pitfall that comes with it.',
+    'hooks.caption': 'Hooks and utilities exported by the package',
+    'hooks.p2':
+      '<code>useTheme</code> deserves a separate mention: it is the contract the switcher at the top of this page reproduces — <code>light | dark | system</code> persisted under <code>dwc_theme</code>, <code>data-theme</code> set on <code>&lt;html&gt;</code>.',
 
     /* ── Foundations ──────────────────────────────────────────────────── */
     'fondations.h21': 'Foundations',
@@ -374,6 +397,21 @@ globalThis.SHOWROOM_I18N = {
     'ui.a11y.suggestBg': 'background',
     'ui.a11y.copyFix': 'Copy the suggested colour',
     'ui.a11y.locate': 'Locate on the page',
+    /* ── Catalogue, pièges, hooks ─────────────────────────────────────── */
+    'ui.pitfalls': 'Pitfalls',
+    'ui.a11yNote': 'Accessibility',
+    'ui.hooks.th.name': 'Signature',
+    'ui.hooks.th.what': 'What it does',
+    'ui.hooks.th.dont': 'Pitfall',
+    'ui.cat.all': 'All',
+    'ui.cat.primitive': 'Primitive',
+    'ui.cat.feedback': 'Feedback',
+    'ui.cat.pwa': 'PWA',
+    'ui.cat.shell': 'Shell',
+    'ui.cat.hook': 'Hook',
+    'ui.cat.total': '{n} entries',
+    'ui.cat.shown': '{n} of {total}',
+
     /* ── Bac à sable ──────────────────────────────────────────────────── */
     'ui.pg.component': 'Component',
     'ui.pg.preview': 'Preview',
