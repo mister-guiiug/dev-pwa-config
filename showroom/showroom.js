@@ -321,6 +321,10 @@
     renderSwatches();
     // Le contraste dépend du thème appliqué : on le recalcule à chaque bascule.
     measureContrast();
+    // La galerie suit le thème, quelle que soit la commande qui l'a changé
+    // (menu de démo ou sélecteur de la barre supérieure).
+    syncDemoMenu();
+    renderDemoStage();
   }
 
   /* ── Schéma clair / sombre / système ───────────────────────────────── */
@@ -854,6 +858,195 @@
     table.appendChild(tbody);
   }
 
+  /* ── Galerie de démo par application ───────────────────────────────── */
+
+  var SHOTS = globalThis.SHOWROOM_SCREENSHOTS || {};
+
+  function appThemes() {
+    return themes.filter(function (theme) {
+      return theme.id !== 'generic';
+    });
+  }
+
+  function renderDemoMenu() {
+    var menu = document.getElementById('demo-menu');
+    if (!menu) return;
+    menu.textContent = '';
+
+    appThemes().forEach(function (theme) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sr-demo-chip';
+      button.dataset.app = theme.id;
+      button.setAttribute(
+        'aria-pressed',
+        theme.id === currentTheme.id ? 'true' : 'false'
+      );
+
+      var dot = document.createElement('span');
+      dot.className = 'sr-demo-dot';
+      // Pastille peinte avec la primaire de l'app : le menu se lit d'un coup
+      // d'œil, même sans avoir sélectionné quoi que ce soit.
+      var palette = theme.dark ?? theme.light;
+      dot.style.background = palette ? palette.primary : 'currentColor';
+      button.appendChild(dot);
+      button.appendChild(document.createTextNode(theme.name));
+
+      button.addEventListener('click', function () {
+        currentTheme = theme;
+        write(APP_KEY, theme.id);
+        var select = document.getElementById('theme-app');
+        if (select) select.value = theme.id;
+        applyScheme(currentScheme, theme);
+        syncSchemeInputs(currentScheme, theme);
+        // `applyTheme` rafraîchit déjà le menu et l'aperçu.
+        applyTheme(theme);
+      });
+
+      menu.appendChild(button);
+    });
+  }
+
+  // État sélectionné du menu, sans le reconstruire : `applyTheme` est appelé
+  // à chaque bascule, y compris depuis la barre supérieure.
+  function syncDemoMenu() {
+    document.querySelectorAll('#demo-menu .sr-demo-chip').forEach(function (b) {
+      b.setAttribute(
+        'aria-pressed',
+        b.dataset.app === currentTheme.id ? 'true' : 'false'
+      );
+    });
+  }
+
+  // Petit écran de démonstration : rien d'inventé, uniquement des composants
+  // du paquet, donc peints par `components.css` et le thème courant.
+  function renderDemoStage() {
+    var stage = document.getElementById('demo-stage');
+    if (!stage) return;
+    stage.textContent = '';
+
+    var frame = document.createElement('div');
+    frame.className = 'sr-phone';
+
+    var shot = SHOTS[currentTheme.id];
+    if (shot) {
+      var img = document.createElement('img');
+      img.src = 'screenshots/' + shot.file;
+      img.alt = shot.alt || currentTheme.name;
+      img.loading = 'lazy';
+      img.className = 'sr-phone-shot';
+      frame.appendChild(img);
+    } else {
+      frame.appendChild(buildPreview());
+    }
+
+    var caption = document.createElement('p');
+    caption.className = 'sr-note';
+    caption.style.marginTop = 'var(--spacing-fluid-sm)';
+    caption.textContent =
+      currentTheme.name +
+      ' — ' +
+      t('theme.' + currentTheme.id + '.tagline', currentTheme.tagline);
+
+    stage.appendChild(frame);
+    stage.appendChild(caption);
+  }
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    Object.entries(attrs || {}).forEach(function (entry) {
+      if (entry[0] === 'text') node.textContent = entry[1];
+      else if (entry[0] === 'style') node.style.cssText = entry[1];
+      else node.setAttribute(entry[0], entry[1]);
+    });
+    (children || []).forEach(function (child) {
+      node.appendChild(child);
+    });
+    return node;
+  }
+
+  function buildPreview() {
+    var screen = el('div', { class: 'sr-phone-screen' });
+
+    screen.appendChild(
+      el('div', { class: 'sr-phone-bar' }, [
+        el('strong', { text: currentTheme.name }),
+        el('span', {
+          'data-dwc': 'badge',
+          'data-tone': 'brand',
+          'data-variant': 'soft',
+          text: t('ui.demo.season', 'Saison'),
+        }),
+      ])
+    );
+
+    screen.appendChild(
+      el('dl', { 'data-dwc': 'stat' }, [
+        el('div', { 'data-dwc': 'stat-head' }, [
+          el('dt', {
+            'data-dwc': 'stat-label',
+            text: t('ui.demo.members', 'Adhérents'),
+          }),
+        ]),
+        el('dd', { 'data-dwc': 'stat-value', text: '128' }),
+        el('dd', { 'data-dwc': 'stat-delta', 'data-trend': 'up' }, [
+          el('span', { 'aria-hidden': 'true', text: '↑ ' }),
+          document.createTextNode('12'),
+        ]),
+      ])
+    );
+
+    screen.appendChild(
+      el('div', { class: 'sr-phone-row' }, [
+        el('span', {
+          'data-dwc': 'badge',
+          'data-tone': 'success',
+          'data-variant': 'soft',
+          text: t('ui.demo.paid', 'À jour'),
+        }),
+        el('span', {
+          'data-dwc': 'badge',
+          'data-tone': 'warning',
+          'data-variant': 'soft',
+          text: t('ui.demo.pending', 'En attente'),
+        }),
+      ])
+    );
+
+    screen.appendChild(
+      el('div', { 'data-dwc': 'field' }, [
+        el('span', {
+          'data-dwc': 'field-label',
+          text: t('ui.demo.search', 'Rechercher'),
+        }),
+        el('span', {
+          'data-dwc': 'field-control',
+          class: 'sr-phone-input',
+          text: t('ui.demo.searchValue', 'Cotisation…'),
+        }),
+      ])
+    );
+
+    screen.appendChild(
+      el('div', { class: 'sr-phone-actions' }, [
+        el('span', {
+          'data-dwc': 'button',
+          'data-variant': 'primary',
+          'data-size': 'md',
+          text: t('ui.demo.validate', 'Valider'),
+        }),
+        el('span', {
+          'data-dwc': 'button',
+          'data-variant': 'ghost',
+          'data-size': 'md',
+          text: t('ui.demo.later', 'Plus tard'),
+        }),
+      ])
+    );
+
+    return screen;
+  }
+
   /* ── Démo FamilyApps ───────────────────────────────────────────────── */
 
   function svg(width, height, viewBox, children) {
@@ -1025,6 +1218,8 @@
       'ui.tone.'
     );
     renderFamilyApps();
+    renderDemoMenu();
+    renderDemoStage();
     applyTheme(currentTheme);
     measure();
   }
