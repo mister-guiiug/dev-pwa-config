@@ -277,9 +277,10 @@ test('themes.js expose des palettes complètes et bien formées', async () => {
 
 /* ── Page ───────────────────────────────────────────────────────────────── */
 
-test('index.html charge les quatre ressources du showroom', () => {
+test('index.html charge les ressources du showroom', () => {
   for (const asset of [
     'preset.css',
+    'components.css',
     'showroom.css',
     'themes.js',
     'showroom.js',

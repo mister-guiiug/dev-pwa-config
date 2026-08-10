@@ -581,6 +581,58 @@ export { default } from '@mister-guiiug/dev-wpa-config/lint-staged';
 Ce que l'import apporte exactement (et ce qu'il n'apporte pas) est visible dans
 le [showroom](#showroom-du-design-system) : `npm run showroom`.
 
+### Habillage des composants (`components.css`, opt-in)
+
+Les composants `/react` ne posent que des attributs `data-dwc` : non stylés, par
+construction. En pratique, **11 apps sur 13 ont fini par réécrire à la main les
+mêmes 12 à 23 sélecteurs**, et **7 ont réimplémenté `EmptyState`** plutôt que
+d'habiller celui du paquet. `components.css` ferme cet écart :
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-wpa-config/components.css'; /* ← opt-in */
+```
+
+Ce seul import donne déjà un rendu correct **en clair et en sombre**, sans
+configuration : les replis passent par les couleurs système CSS (`Canvas`,
+`CanvasText`, `GrayText`), qui suivent `color-scheme`. Pour passer aux couleurs
+de l'app, brancher le contrat — treize lignes, une fois :
+
+```css
+:root {
+  --dwc-surface: var(--uwh-surface);
+  --dwc-surface-2: var(--uwh-surface-2);
+  --dwc-text: var(--uwh-text);
+  --dwc-text-soft: var(--uwh-text-soft);
+  --dwc-border: var(--uwh-border);
+  --dwc-primary: var(--color-primary);
+  --dwc-primary-contrast: #fff;
+  --dwc-primary-soft: var(--color-primary-soft);
+  --dwc-success: var(--uwh-credit);
+  --dwc-warning: var(--uwh-warn);
+  --dwc-danger: var(--uwh-debit);
+  --dwc-radius: var(--radius-card);
+  --dwc-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+}
+```
+
+Les variables peuvent être définies n'importe où (`:root`, `@theme`,
+`[data-theme='dark']`, `.dark`…) : la résolution passe par l'héritage, pas par
+les couches.
+
+**Rien n'est verrouillé.** Tout est en `@layer components`, la couche Tailwind
+prévue pour ça : les utilitaires (`bg-primary`, `rounded-none`…) et tout CSS non
+« layered » de l'app l'emportent. On garde la base, on la teinte, ou on écrase
+au sélecteur près.
+
+Trois promesses sont tenues par `test/components-css.test.mjs`, pas par la
+bonne volonté : tout est confiné dans `@layer components`, chaque
+`var(--dwc-*)` porte un repli, et la liste des variables lues ne dérive pas du
+contrat documenté. Un quatrième test impose la **cible tactile de 2,75 rem** à
+toutes les commandes — c'est le principal intérêt d'une base partagée, une
+taille `sm` locale finissant toujours par passer sous le seuil.
+
 ### Helpers React (`@mister-guiiug/dev-wpa-config/react`)
 
 Hooks et composants PWA partagés (auparavant recopiés app par app). Livrés en
