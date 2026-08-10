@@ -642,6 +642,19 @@ contrat documenté. Un quatrième test impose la **cible tactile de 2,75 rem** �
 toutes les commandes — c'est le principal intérêt d'une base partagée, une
 taille `sm` locale finissant toujours par passer sous le seuil.
 
+#### Contraste forcé et impression
+
+Deux rendus que personne ne regarde, et qui remplacent les couleurs sans
+prévenir. Le fichier les traite ; les tests empêchent la récidive.
+
+| Mode                                          | Ce qui casse par défaut                                                                                                                                                                                                                            | Ce que le fichier fait                                                                                                                                    |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Contraste forcé** (`forced-colors: active`) | `transparent` n'est **pas** remplacé : le bouton primaire perd son aplat et garde un contour invisible. `box-shadow` disparaît, le panneau modal se confond avec son voile. Le squelette et la pastille de synchro n'existaient que par leur fond. | Contour en `currentColor`, `outline` intérieur sur le panneau et le squelette, survol et état désactivé sur les paires système (`Highlight`, `GrayText`). |
+| **Impression** (`@media print`)               | Les fonds sont supprimés, la couleur du texte non : un libellé en `--dwc-primary-contrast` s'imprime **blanc sur blanc**.                                                                                                                          | Texte sur aplat repassé en encre système, bannières d'installation et de mise à jour masquées, animations figées.                                         |
+
+Aucun `forced-color-adjust: none` — figer nos teintes reviendrait à passer outre
+le réglage de l'utilisateur. Un test le vérifie.
+
 ### Helpers React (`@mister-guiiug/dev-wpa-config/react`)
 
 Hooks et composants PWA partagés (auparavant recopiés app par app). Livrés en

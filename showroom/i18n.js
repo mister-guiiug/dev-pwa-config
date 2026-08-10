@@ -100,6 +100,11 @@ globalThis.SHOWROOM_I18N = {
     'primitives.p10':
       'Try it with the keyboard: <kbd>Tab</kbd> cycles inside the panel, <kbd>Esc</kbd> closes it, and focus returns to the opening button — the three behaviours no local copy had all at once.',
     'ui.sheet.open': 'Open the sheet',
+    'primitives.h37': 'Playground — compose and copy',
+    'primitives.p11':
+      'The matrices show chosen combinations; the one you need may not be among them. Set the props below: the preview follows, and the React call to copy is rewritten with them — <em>including</em> the accessibility attributes they entail.',
+    'primitives.p12':
+      'The DOM generated here is hand-written, as everywhere on this page — the showroom does not ship React. It is the <strong>same markup</strong> the component produces, dressed by the package’s real <code>components.css</code>; but it is the code snippet, not the preview, that is authoritative.',
 
     /* ── Application components ───────────────────────────────────────── */
     'composants.h21': 'Application components',
@@ -158,6 +163,14 @@ globalThis.SHOWROOM_I18N = {
       'Contrast ratios computed per foreground / background pair',
     'a11y.p3':
       'AA thresholds: 4.5:1 for body text, 3:1 for large text and user-interface elements. An app theme that fails here fails inside the app too.',
+    'a11y.fc.title': 'Forced colours',
+    'a11y.fc.intro':
+      'Under Windows high contrast, the browser <strong>overrides</strong> text, background and border colours, and drops shadows. Since all of <code>components.css</code> rests on custom properties and <code>color-mix()</code>, that rendering cannot be reasoned about — it has to be looked at.',
+    'a11y.fc.before': 'Without the fixes',
+    'a11y.fc.after': 'With the shipped fixes',
+    'a11y.fc.sim':
+      '<strong>These two panels are an emulation</strong>, not the real mode: the page reproduces by hand what the browser does — colours reduced to the Windows “Aquatic” system palette, shadows removed, and <code>transparent</code> <strong>left untouched</strong>, because forcing does not affect it. That last point is exactly what empties the primary button on the left. The authentic rendering comes from switching on a contrast theme in the operating system, or from <code>Rendering › Emulate CSS media (forced-colors)</code> in the developer tools.',
+    'a11y.fc.caption': 'Forced-colours regressions and the fixes shipped',
 
     /* ── Accessibility tooling ────────────────────────────────────────── */
     'a11y.toolsTitle': 'The tool chain',
@@ -233,6 +246,20 @@ globalThis.SHOWROOM_I18N = {
       'Only one app needs them: <strong>miss-lookhouse</strong> (property watch), with <strong>Leaflet 1.9</strong> — listing display and a polygon zone editor. <strong>OpenStreetMap</strong> tiles, with attribution and <strong>no API key</strong>: no third-party account, no quota, no tracker.',
     'stack.maps.note':
       'No family-wide standard here — a single use case does not justify a rule. If a second app needs mapping, Leaflet + OSM is the starting point to reuse.',
+    'stack.rive.title': 'Animation — Rive',
+    'stack.rive.body':
+      '<strong>3 apps out of 15</strong> integrate <a href="https://rive.app" rel="noopener noreferrer" target="_blank">Rive</a> — vector animation driven by <em>state machines</em> rather than Lottie/GIF loops. And on two different runtimes: <code>@rive-app/react-canvas</code> for miss-badminton and mister-mölkky, <code>@rive-app/react-webgl2</code> for miss-genius.',
+    'stack.rive.th.app': 'Application',
+    'stack.rive.th.runtime': 'Runtime',
+    'stack.rive.th.guard': 'Guard before loading the engine',
+    'stack.rive.badminton':
+      '<code>import.meta.glob</code> at build time: no file means no <code>fetch</code>, hence no 404. Then a check of the <strong>4 header bytes</strong> (<code>RIVE</code>) before mounting the canvas.',
+    'stack.rive.molkky':
+      'The same header probe, plus a <code>React.lazy</code> on the canvas module: the WASM (~200 kB) only comes down if a valid file exists.',
+    'stack.rive.genius':
+      'Three exits towards the static visual: no <code>src</code>, a <code>loaderror</code> event, or <code>prefers-reduced-motion</code>. The WebGL engine is then never loaded at all.',
+    'stack.rive.note':
+      'Two findings a <code>package.json</code> does not show. <strong>No <code>.riv</code> file is shipped</strong> — the three folders hold nothing but a README: in production all three apps currently display their static fallback, which is also the best-tested path. And <strong>none of them uses the package’s wrapper</strong> (<code>RiveAnimation</code>, subpath <code>/react/rive</code>): it wraps the <code>&lt;Rive&gt;</code> <em>component</em>, whereas all three need the <code>useRive</code> <em>hook</em> to reach the instance — state-machine inputs, error events, <code>cleanup()</code>. A wrapper that hides the instance is useless here; that is an API mismatch, not an oversight.',
     'stack.tests.title': 'Testing tools',
     'stack.tests.th.tool': 'Tool',
     'stack.tests.th.scope': 'Scope',
@@ -347,6 +374,60 @@ globalThis.SHOWROOM_I18N = {
     'ui.a11y.suggestBg': 'background',
     'ui.a11y.copyFix': 'Copy the suggested colour',
     'ui.a11y.locate': 'Locate on the page',
+    /* ── Bac à sable ──────────────────────────────────────────────────── */
+    'ui.pg.component': 'Component',
+    'ui.pg.preview': 'Preview',
+    'ui.pg.save': 'Save',
+    'ui.pg.badge': 'Up to date',
+    'ui.pg.amount': 'Amount',
+    'ui.pg.hint': 'In euros, two decimals.',
+    'ui.pg.error': 'The amount must be positive.',
+    'ui.pg.members': 'Members',
+    'ui.pg.up': 'rising',
+    'ui.pg.down': 'falling',
+    'ui.pg.loading': 'Loading entries',
+    'ui.pg.note.iconOnly':
+      '`iconOnly` requires `aria-label` — it is added to the snippet above: without it the button would have no accessible name.',
+    'ui.pg.note.loading':
+      '`loading` sets `aria-busy` AND disables: that is what prevents double submission.',
+    'ui.pg.note.badge':
+      'The tone states an INTENT; the hue comes from the application’s theme.',
+    'ui.pg.note.field':
+      'aria-describedby references the hint AND the error — local copies replaced one with the other.',
+    'ui.pg.note.stat':
+      '`trendLabel` is read by screen readers: the arrow and the colour are not enough.',
+    'ui.pg.note.skeleton':
+      'The label is announced ONCE, by the container — not once per bar.',
+
+    /* ── Contraste forcé ──────────────────────────────────────────────── */
+    'ui.fc.synced': 'Synced',
+    'ui.fc.panel': 'Modal panel',
+    'ui.fc.th.what': 'What breaks',
+    'ui.fc.th.why': 'Why',
+    'ui.fc.th.fix': 'Fix shipped',
+    'ui.fc.on':
+      'Your browser is in forced colours: this whole page, emulation included, is already rendered by the real mode.',
+    'ui.fc.off':
+      'Your browser is not in forced colours — the two panels below are therefore a reconstruction.',
+    'fc.row.button': 'Primary button, soft badge',
+    'fc.cause.transparent':
+      '`transparent` is not replaced: the fill disappears, the border stays invisible.',
+    'fc.row.sheet': 'Modal panel',
+    'fc.cause.shadow':
+      '`box-shadow` is dropped and the backdrop turns opaque: the two merge.',
+    'fc.row.skeleton': 'Loading skeleton',
+    'fc.cause.fill':
+      'It only ever existed through its background colour, reduced to `Canvas`.',
+    'fc.row.sync': 'Sync badge',
+    'fc.cause.dot':
+      'Same cause. Tones no longer differ — at no cost: the state is spelled out next to it.',
+    'fc.row.hover': 'Hover',
+    'fc.cause.filter':
+      '`filter` is not forced: `brightness()` washes out the palette the user chose.',
+    'fc.row.disabled': 'Disabled button',
+    'fc.cause.opacity':
+      '`opacity` is not forced either: the button stays legible, hence misleading.',
+
     'ui.usage': 'Usage',
     'ui.copySnippet': 'Copy the snippet',
     'ui.copyToken': 'Copy',

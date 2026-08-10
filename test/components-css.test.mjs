@@ -121,6 +121,86 @@ test('un `display` d’auteur ne neutralise pas l’attribut hidden', () => {
   );
 });
 
+/** Corps d'un bloc `@media <query>` de premier niveau, accolades équilibrées. */
+function mediaBody(query) {
+  const start = CSS.indexOf(`@media ${query}`);
+  if (start === -1) return null;
+  const open = CSS.indexOf('{', start);
+  let depth = 0;
+  for (let i = open; i < CSS.length; i += 1) {
+    if (CSS[i] === '{') depth += 1;
+    else if (CSS[i] === '}') {
+      depth -= 1;
+      if (depth === 0) return CSS.slice(open + 1, i);
+    }
+  }
+  return null;
+}
+
+// Ces deux tests ne vérifient pas que les blocs EXISTENT — ça ne prouverait
+// rien. Ils vérifient que chaque règle qui crée le défaut porte son antidote,
+// pour qu'un composant ajouté demain ne rouvre pas la brèche en silence.
+
+test('tout contour transparent est rattrapé en contraste forcé', () => {
+  // `transparent` n'est pas remplacé par le navigateur en contraste forcé :
+  // un aplat perdu + un contour transparent = un composant invisible.
+  const body = mediaBody('(forced-colors: active)');
+  assert.ok(body, 'bloc @media (forced-colors: active) absent');
+
+  const rules = CSS.slice(0, CSS.indexOf('@media (forced-colors: active)'));
+  const transparents = [
+    ...rules.matchAll(/([^{}]+)\{[^{}]*border:[^;}]*\btransparent\b/g),
+  ].map(m =>
+    m[1]
+      .trim()
+      .split(/\s*,\s*/)
+      .pop()
+  );
+
+  const orphans = transparents.filter(sel => !body.includes(sel));
+  assert.deepEqual(
+    orphans,
+    [],
+    'ces sélecteurs posent une bordure transparente sans contrepartie en contraste forcé'
+  );
+});
+
+test('aucun texte posé sur un aplat ne s’imprime en blanc sur blanc', () => {
+  // Les navigateurs suppriment les fonds à l'impression mais gardent la
+  // couleur du texte : un libellé en `--dwc-primary-contrast` disparaît.
+  const body = mediaBody('print');
+  assert.ok(body, 'bloc @media print absent');
+
+  const rules = CSS.slice(0, CSS.indexOf('@media print'));
+  const onFill = [
+    ...rules.matchAll(/([^{}]+)\{[^{}]*color:\s*var\(--dwc-primary-contrast/g),
+  ].map(m =>
+    m[1]
+      .trim()
+      .split(/\s*,\s*/)
+      .pop()
+  );
+
+  assert.ok(onFill.length, 'aucun sélecteur détecté : le motif a changé');
+  const orphans = onFill.filter(sel => !body.includes(sel));
+  assert.deepEqual(
+    orphans,
+    [],
+    'ces sélecteurs impriment du texte clair sur un fond que l’imprimante retire'
+  );
+});
+
+test('le contraste forcé n’est jamais désactivé', () => {
+  // `forced-color-adjust: none` fige NOS teintes et passe outre le réglage de
+  // l'utilisateur. Légitime pour un nuancier (la couleur EST l'information),
+  // jamais pour un composant d'interface.
+  assert.doesNotMatch(
+    CSS,
+    /forced-color-adjust:\s*none/,
+    'un composant impose ses couleurs malgré le réglage de contraste forcé'
+  );
+});
+
 test('components.css est exporté et publié', () => {
   assert.equal(PKG.exports['./components.css'], './components.css');
   assert.ok(

@@ -683,6 +683,31 @@
           les trois comportements qu’aucune copie locale n’avait au complet.
         </p>
         <div data-snippet="Sheet"></div>
+
+        <h3 class="sr-subtitle" data-i18n="primitives.h37">
+          Bac à sable — composer et copier
+        </h3>
+        <p data-i18n="primitives.p11">
+          Les matrices montrent des combinaisons choisies ; celle dont vous avez
+          besoin n’y est pas forcément. Réglez les props ci-dessous : le rendu
+          suit, et l’appel React à copier se réécrit avec — <em>y compris</em>
+          les attributs d’accessibilité qu’ils entraînent.
+        </p>
+        <div class="sr-playground" id="playground">
+          <div class="sr-pg-controls" id="pg-controls"></div>
+          <div class="sr-pg-preview">
+            <p class="sr-pg-head" id="pg-stage-head"></p>
+            <div class="sr-pg-stage" id="pg-stage"></div>
+          </div>
+          <div class="sr-pg-code" id="pg-code"></div>
+        </div>
+        <p class="sr-note" data-i18n="primitives.p12">
+          Le DOM engendré ici est écrit à la main, comme dans toute cette page —
+          le showroom n’embarque pas React. C’est bien le
+          <strong>même balisage</strong> que produit le composant, et il est
+          habillé par le <code>components.css</code> réel du paquet ; mais c’est
+          l’extrait de code, pas l’aperçu, qui fait foi.
+        </p>
       </section>
 
       <!-- ── Composants ────────────────────────────────────────────────── -->
@@ -1223,6 +1248,56 @@
           éléments d’interface. Un thème d’app qui échoue ici échoue aussi dans
           l’app.
         </p>
+
+        <h3 class="sr-subtitle" data-i18n="a11y.fc.title">Contraste forcé</h3>
+        <p data-i18n="a11y.fc.intro">
+          Sous « contraste élevé » de Windows, le navigateur
+          <strong>remplace d’autorité</strong> les couleurs de texte, de fond et
+          de bordure, et supprime les ombres. Tout
+          <code>components.css</code> reposant sur des variables et des
+          <code>color-mix()</code>, ce rendu-là ne se déduit pas : il se
+          regarde.
+        </p>
+
+        <!-- État réel du navigateur qui lit la page : la seule mesure non
+             simulée de cette sous-section. -->
+        <p class="sr-fc-state" id="fc-state" role="status"></p>
+
+        <div class="sr-fc-pair">
+          <div class="sr-fc-panel" data-fix="off">
+            <p class="sr-fc-head" data-i18n="a11y.fc.before">
+              Sans les correctifs
+            </p>
+            <div class="sr-fc-demo" data-fc-demo></div>
+          </div>
+          <div class="sr-fc-panel" data-fix="on">
+            <p class="sr-fc-head" data-i18n="a11y.fc.after">
+              Avec les correctifs livrés
+            </p>
+            <div class="sr-fc-demo" data-fc-demo></div>
+          </div>
+        </div>
+
+        <p class="sr-note" data-i18n="a11y.fc.sim">
+          <strong>Ces deux panneaux sont une émulation</strong>, pas le vrai
+          mode : la page reproduit à la main ce que fait le navigateur —
+          couleurs ramenées à la palette système « Aquatique » de Windows,
+          ombres supprimées, et <code>transparent</code>
+          <strong>laissé intact</strong>, car le forçage ne le touche pas. C’est
+          précisément ce dernier point qui vide le bouton primaire à gauche. Le
+          rendu authentique s’obtient en activant le thème de contraste dans le
+          système, ou via
+          <code>Rendering › Emulate CSS media (forced-colors)</code> dans les
+          outils de développement.
+        </p>
+
+        <div class="sr-table-wrap">
+          <table class="sr-table" id="fc-table">
+            <caption class="sr-visually-hidden" data-i18n="a11y.fc.caption">
+              Régressions du contraste forcé et correctifs livrés
+            </caption>
+          </table>
+        </div>
       </section>
 
       <!-- ── Démo ──────────────────────────────────────────────────────── -->
@@ -1364,6 +1439,80 @@
           Pas de standard famille imposé ici — un seul cas d’usage ne justifie
           pas une règle. Si une deuxième app cartographie, Leaflet + OSM est le
           point de départ à reprendre.
+        </p>
+
+        <h3 class="sr-subtitle" data-i18n="stack.rive.title">
+          Animations — Rive
+        </h3>
+        <p data-i18n="stack.rive.body">
+          <strong>3 apps sur 15</strong> intègrent
+          <a href="https://rive.app" rel="noopener noreferrer" target="_blank"
+            >Rive</a
+          >
+          — animations vectorielles pilotées par <em>machines à états</em>,
+          plutôt que par des Lottie/GIF joués en boucle. Et sur deux runtimes
+          différents : <code>@rive-app/react-canvas</code> pour miss-badminton
+          et mister-mölkky, <code>@rive-app/react-webgl2</code> pour
+          miss-genius.
+        </p>
+        <div class="sr-table-wrap">
+          <table class="sr-table">
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="stack.rive.th.app">Application</th>
+                <th scope="col" data-i18n="stack.rive.th.runtime">Runtime</th>
+                <th scope="col" data-i18n="stack.rive.th.guard">
+                  Garde-fou avant de charger le moteur
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">miss-badminton</th>
+                <td><code>react-canvas</code> 4.28</td>
+                <td data-i18n="stack.rive.badminton">
+                  <code>import.meta.glob</code> à la compilation : fichier
+                  absent = aucun <code>fetch</code>, donc aucun 404. Puis
+                  vérification des <strong>4 octets d’en-tête</strong>
+                  (<code>RIVE</code>) avant de monter le canvas.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">mister-mölkky</th>
+                <td><code>react-canvas</code> 4.28</td>
+                <td data-i18n="stack.rive.molkky">
+                  Même sonde d’en-tête, plus un <code>React.lazy</code> sur le
+                  module du canvas : le WASM (~200 ko) ne descend que si un
+                  fichier valide existe.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">miss-genius</th>
+                <td><code>react-webgl2</code> 4.18</td>
+                <td data-i18n="stack.rive.genius">
+                  Trois sorties vers le visuel statique : pas de
+                  <code>src</code>, événement <code>loaderror</code>, ou
+                  <code>prefers-reduced-motion</code>. Le moteur WebGL n’est
+                  alors jamais chargé.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sr-note" data-i18n="stack.rive.note">
+          Deux constats qui ne se voient pas dans un <code>package.json</code>.
+          <strong>Aucun fichier <code>.riv</code> n’est livré</strong> — les
+          trois dossiers ne contiennent qu’un README : en production, les trois
+          apps affichent aujourd’hui leur repli statique, et c’est le chemin le
+          mieux testé. Et
+          <strong>aucune n’utilise le wrapper du paquet</strong>
+          (<code>RiveAnimation</code>, sous-chemin <code>/react/rive</code>) :
+          il enveloppe le <em>composant</em> <code>&lt;Rive&gt;</code>, alors
+          que les trois ont besoin du <em>hook</em> <code>useRive</code> pour
+          atteindre l’instance — entrées de machine à états, événements
+          d’erreur, <code>cleanup()</code>. Un wrapper qui ne donne pas accès à
+          l’instance ne sert à rien ici ; c’est une inadéquation d’API, pas un
+          oubli.
         </p>
 
         <h3 class="sr-subtitle" data-i18n="stack.tests.title">

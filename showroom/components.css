@@ -41,6 +41,12 @@
  * PRIORITÉ. Tout est en `@layer components`, la couche Tailwind prévue pour ça :
  * les utilitaires (`bg-primary`, `rounded-none`…) et tout CSS non « layered » de
  * l'app l'emportent. Importer ce fichier ne verrouille donc rien.
+ *
+ * DEUX RENDUS QUE PERSONNE NE REGARDE. Le contraste forcé et l'impression
+ * remplacent ou suppriment les couleurs sans prévenir : un aplat de marque y
+ * disparaît, et le texte clair posé dessus avec lui. Les deux blocs en fin de
+ * fichier rattrapent ce que ces modes cassent — voir leurs commentaires pour le
+ * détail, et `test/components-css.test.mjs` pour les garde-fous.
  */
 
 @layer components {
@@ -849,6 +855,117 @@
     [data-dwc='sheet-panel'] {
       animation-duration: 0.001ms;
       animation-iteration-count: 1;
+    }
+  }
+
+  /* ── Contraste forcé ───────────────────────────────────────────────────── *
+   * En contraste forcé (« contraste élevé » de Windows, thèmes à contraste
+   * accru), le navigateur REMPLACE d'autorité `color`, `background-color`,
+   * `border-color`, et SUPPRIME `box-shadow`. Ce fichier repose entièrement sur
+   * des variables et des `color-mix()` : tout cela est donc écrasé.
+   *
+   * L'essentiel survit — c'est le bénéfice d'avoir bâti sur les couleurs
+   * système. Trois régressions subsistent pourtant, et elles ne se devinent
+   * pas :
+   *
+   *   1. `transparent` n'est PAS forcé. Un bouton primaire perd son aplat,
+   *      garde sa bordure transparente, et devient un simple texte flottant.
+   *      Idem pour la pastille `soft`, qui perd sa forme.
+   *   2. `box-shadow` disparaît. Le panneau modal n'a aucune bordure : il se
+   *      confond avec son propre voile, lui aussi ramené à `Canvas`.
+   *   3. Ce qui n'existait QUE par sa couleur de fond n'existe plus : le
+   *      squelette de chargement et la pastille de synchro.
+   *
+   * La correction consiste à NOMMER les couleurs système — elles, conservées
+   * telles quelles — plutôt qu'à figer nos teintes avec `forced-color-adjust:
+   * none`, qui reviendrait à passer outre le réglage de l'utilisateur.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  @media (forced-colors: active) {
+    /* 1 — rendre le contour visible là où il était transparent. Une seule
+       règle suffit : les variantes qui posent déjà `border-color` sont plus
+       spécifiques, et leur couleur est de toute façon forcée. */
+    [data-dwc='button'],
+    [data-dwc='badge'] {
+      border-color: currentColor;
+    }
+
+    /* `filter` n'est pas forcé : `brightness()` viendrait délaver une palette
+       que l'utilisateur a précisément choisie. La paire système prévue pour
+       la mise en évidence dit la même chose, en respectant son réglage. */
+    [data-dwc='button']:hover:not(:disabled) {
+      filter: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+
+    /* `opacity` n'est pas forcé non plus : le bouton désactivé resterait à
+       pleine couleur système sous 45 % d'opacité, donc lisible et trompeur.
+       `GrayText` est le signal que les technologies d'assistance attendent. */
+    [data-dwc='button']:disabled {
+      opacity: 1;
+      color: GrayText;
+      border-color: GrayText;
+    }
+
+    /* 2 — séparer le panneau de son voile. `outline` avec un décalage négatif
+       plutôt qu'une bordure : dessiné à l'intérieur, il ne décale rien et ne
+       peut pas être rogné par le bord de l'écran. */
+    [data-dwc='sheet-panel'] {
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
+    }
+
+    /* 3 — redonner un corps à ce qui n'était qu'un aplat. La pastille de
+       synchro perd en revanche sa distinction par ton : c'est sans perte, le
+       composant écrit toujours l'état en toutes lettres à côté. */
+    [data-dwc='skeleton'] {
+      outline: 1px solid GrayText;
+      outline-offset: -1px;
+    }
+
+    [data-dwc='sync-status']::before {
+      background: CanvasText;
+    }
+  }
+
+  /* ── Impression ────────────────────────────────────────────────────────── *
+   * Les navigateurs SUPPRIMENT les fonds à l'impression, mais gardent la
+   * couleur du texte. Un libellé blanc posé sur la primaire devient donc blanc
+   * sur blanc : le bouton s'imprime vide. C'est le seul défaut réellement
+   * invisible à l'écran de toute cette feuille.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  @media print {
+    /* Ce qui n'a de sens que devant un écran. Une invitation à installer
+       l'application n'a rien à faire sur un bilan imprimé. */
+    [data-dwc='sheet'],
+    [data-dwc='pwa-install-prompt'],
+    [data-dwc='update-banner'] {
+      display: none;
+    }
+
+    /* Texte sur aplat → encre système, et contour pour compenser le fond
+       disparu. Sélecteurs alignés sur ceux des variantes, sinon ces dernières
+       l'emporteraient. */
+    [data-dwc='button'][data-variant='primary'],
+    [data-dwc='button'][data-variant='danger'],
+    span[data-dwc='family-app-icon'] {
+      color: CanvasText;
+      border-color: CanvasText;
+    }
+
+    /* L'animation se fige à l'opacité qu'elle avait au moment du rendu : le
+       squelette s'imprimerait plus ou moins pâle, au hasard. */
+    [data-dwc='skeleton'] {
+      animation: none;
+      opacity: 1;
+    }
+
+    [data-dwc='stat'],
+    [data-dwc='sheet-panel'],
+    [data-dwc='pwa-install-prompt'] {
+      box-shadow: none;
     }
   }
 

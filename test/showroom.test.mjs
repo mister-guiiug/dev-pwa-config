@@ -336,3 +336,150 @@ test('index.html charge les ressources du showroom', () => {
   assert.match(INDEX_HTML, /viewport-fit=cover/);
   assert.match(INDEX_HTML, /<html lang="fr"/);
 });
+
+/* ── Bac à sable ─────────────────────────────────────────────────────────── */
+
+// Chaque composant du bac à sable est décrit à trois endroits : ses props
+// réglables, le DOM qu'il produit, l'appel React affiché. Une prop ajoutée aux
+// commandes mais oubliée dans `code` donnerait un extrait qui ne correspond pas
+// à l'aperçu — exactement le contraire de ce que la page promet.
+const PG_SOURCE = SHOWROOM_JS.slice(
+  SHOWROOM_JS.indexOf('var PG_COMPONENTS'),
+  SHOWROOM_JS.indexOf('function plusIcon')
+);
+
+/** Découpe la source par composant, sur les marqueurs `id: 'Nom'`. */
+function playgroundSpecs() {
+  const marks = [...PG_SOURCE.matchAll(/\n {6}id: '(\w+)',/g)];
+  return marks.map((mark, i) => ({
+    id: mark[1],
+    body: PG_SOURCE.slice(
+      mark.index,
+      i + 1 < marks.length ? marks[i + 1].index : PG_SOURCE.length
+    ),
+  }));
+}
+
+test('le bac à sable déclare plusieurs composants complets', () => {
+  const specs = playgroundSpecs();
+  assert.ok(specs.length >= 4, 'moins de quatre composants réglables');
+  for (const spec of specs) {
+    for (const part of ['props:', 'build:', 'code:']) {
+      assert.ok(
+        spec.body.includes(part),
+        `${spec.id} ne déclare pas « ${part} »`
+      );
+    }
+  }
+});
+
+test('chaque prop réglable agit sur l’aperçu ET sur l’extrait copié', () => {
+  for (const spec of playgroundSpecs()) {
+    const build = spec.body.slice(
+      spec.body.indexOf('build:'),
+      spec.body.indexOf('code:')
+    );
+    const code = spec.body.slice(spec.body.indexOf('code:'));
+    const props = [...spec.body.matchAll(/\{\s*name: '(\w+)'/g)].map(m => m[1]);
+
+    assert.ok(props.length, `${spec.id} n'expose aucune prop`);
+    for (const prop of props) {
+      assert.ok(
+        build.includes(`p.${prop}`),
+        `${spec.id}.${prop} ne change rien à l'aperçu`
+      );
+      assert.ok(
+        code.includes(`p.${prop}`),
+        `${spec.id}.${prop} est absent de l'extrait copié : le code ne dirait pas ce que l'aperçu montre`
+      );
+    }
+  }
+});
+
+/* ── Émulation du contraste forcé ────────────────────────────────────────── */
+
+test('l’émulation rejoue exactement les composants corrigés dans le paquet', () => {
+  // On ne peut pas activer le contraste forcé depuis la page : le panneau
+  // « avec les correctifs » recopie donc à la main le bloc @media de
+  // `components.css`. Cette duplication est assumée, mais pas libre — si le
+  // paquet corrige un composant de plus, l'émulation doit suivre, sinon elle
+  // montre un « après » qui n'existe pas.
+  const css = stripComments(read('components.css'));
+  const start = css.indexOf('@media (forced-colors: active)');
+  assert.notEqual(
+    start,
+    -1,
+    'bloc de contraste forcé absent de components.css'
+  );
+
+  const open = css.indexOf('{', start);
+  let depth = 0;
+  let end = -1;
+  for (let i = open; i < css.length; i += 1) {
+    if (css[i] === '{') depth += 1;
+    else if (css[i] === '}' && --depth === 0) {
+      end = i;
+      break;
+    }
+  }
+  const block = css.slice(open, end);
+  const fixed = new Set(
+    [...block.matchAll(/\[data-dwc='([\w-]+)'\]/g)].map(m => m[1])
+  );
+  assert.ok(fixed.size >= 4, 'trop peu de composants relevés : motif changé ?');
+
+  // Les sauts de ligne d'une liste de sélecteurs ne doivent pas fausser la
+  // recherche.
+  const flat = SHOWROOM_CSS.replace(/\s+/g, ' ');
+  for (const name of fixed) {
+    assert.ok(
+      flat.includes(`[data-fix='on'] .sr-fc-demo [data-dwc='${name}']`),
+      `${name} est corrigé dans components.css mais absent de l'émulation du showroom`
+    );
+  }
+});
+
+test('la page rend le bac à sable et l’audit de contraste forcé', () => {
+  for (const id of [
+    'pg-controls',
+    'pg-stage',
+    'pg-code',
+    'fc-table',
+    'fc-state',
+  ])
+    assert.match(INDEX_HTML, new RegExp(`id="${id}"`), `#${id} absent du HTML`);
+
+  // Tout ce qui est engendré doit l'être à CHAQUE changement de langue.
+  const generated = SHOWROOM_JS.slice(
+    SHOWROOM_JS.indexOf('function renderGenerated'),
+    SHOWROOM_JS.indexOf('setupSheet();')
+  );
+  for (const fn of ['renderPlayground()', 'renderForcedColors()'])
+    assert.ok(
+      generated.includes(fn),
+      `${fn} hors de renderGenerated : le bloc resterait en français`
+    );
+});
+
+test('la feuille d’impression rend le showroom lisible sur papier', () => {
+  const print = SHOWROOM_CSS.slice(SHOWROOM_CSS.indexOf('@media print'));
+  assert.ok(print, 'aucune feuille d’impression');
+
+  // En thème sombre, les navigateurs retirent les fonds mais gardent la
+  // couleur du texte : sans repassage des neutres, la page s'imprime vide.
+  for (const token of ['--ds-text', '--ds-bg', '--ds-surface'])
+    assert.match(
+      print,
+      new RegExp(`${token}:[^;]+!important`),
+      `${token} non forcé : le thème sombre s'imprimerait illisible`
+    );
+
+  // `applyTheme` pose la palette en style inline sur <html> : sans
+  // `!important`, aucun sélecteur ne peut la surclasser.
+  assert.match(SHOWROOM_JS, /style\.setProperty\(role\[1\]/);
+
+  // Le contenu d'un <details> replié est masqué d'une façon qu'aucune règle
+  // CSS ne défait — d'où l'ouverture temporaire au moment d'imprimer.
+  assert.match(SHOWROOM_JS, /addEventListener\('beforeprint'/);
+  assert.match(SHOWROOM_JS, /addEventListener\('afterprint'/);
+});
