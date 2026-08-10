@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-wpa-config",
-  "version": "3.5.2",
+  "version": "3.6.0",
   "private": false,
   "engines": {
     "node": ">=22"
