@@ -137,6 +137,37 @@
     }
   }
 
+  /* ── État partageable ──────────────────────────────────────────────── *
+   * Le showroom sert à COMPARER des thèmes : ne pas pouvoir en envoyer un par
+   * lien était le manque le plus surprenant. L'état vit donc dans l'URL, le
+   * stockage local ne servant plus que de mémoire entre deux visites.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  function paramOr(name, fallback) {
+    try {
+      return new URLSearchParams(location.search).get(name) ?? fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  /**
+   * Reflète l'état courant dans la query, sans empiler d'entrées d'historique
+   * — chaque bascule de thème polluerait le bouton « précédent » — et sans
+   * toucher au fragment, qui porte l'ancre de section.
+   */
+  function syncUrl() {
+    try {
+      var url = new URL(location.href);
+      url.searchParams.set('app', currentTheme.id);
+      url.searchParams.set('scheme', currentScheme);
+      url.searchParams.set('lang', lang);
+      history.replaceState(null, '', url);
+    } catch (e) {
+      /* URL non manipulable (file://) : le stockage prend le relais */
+    }
+  }
+
   /* ── Contraste WCAG ────────────────────────────────────────────────── */
 
   // `getComputedStyle` ne résout PAS les custom properties : la valeur revient
@@ -901,6 +932,7 @@
         syncSchemeInputs(currentScheme, theme);
         // `applyTheme` rafraîchit déjà le menu et l'aperçu.
         applyTheme(theme);
+        syncUrl();
       });
 
       menu.appendChild(button);
@@ -1145,8 +1177,8 @@
   /* ── Amorçage ──────────────────────────────────────────────────────── */
 
   var select = document.getElementById('theme-app');
-  var currentScheme = read(SCHEME_KEY, 'system');
-  var currentTheme = themeById(read(APP_KEY, 'generic'));
+  var currentScheme = paramOr('scheme', read(SCHEME_KEY, 'system'));
+  var currentTheme = themeById(paramOr('app', read(APP_KEY, 'generic')));
 
   if (select) {
     select.textContent = '';
@@ -1172,6 +1204,7 @@
       applyScheme(currentScheme, currentTheme);
       syncSchemeInputs(currentScheme, currentTheme);
       applyTheme(currentTheme);
+      syncUrl();
     });
   }
 
@@ -1182,6 +1215,7 @@
       write(SCHEME_KEY, currentScheme);
       applyScheme(currentScheme, currentTheme);
       applyTheme(currentTheme);
+      syncUrl();
     });
   });
 
@@ -1228,7 +1262,7 @@
 
   // Langue : préférence stockée, sinon celle du navigateur, sinon français.
   var langSelect = document.getElementById('lang');
-  var storedLang = read(LANG_KEY, '');
+  var storedLang = paramOr('lang', read(LANG_KEY, ''));
   var initialLang =
     storedLang ||
     (LANGS.indexOf((navigator.language || 'fr').slice(0, 2)) !== -1
@@ -1241,6 +1275,20 @@
       write(LANG_KEY, langSelect.value);
       applyLang(langSelect.value);
       renderGenerated();
+      syncUrl();
+    });
+  }
+
+  // Divulgation des réglages sous `sm`. Le panneau reste dans le DOM au-delà
+  // (la media query le ré-affiche) : rien à déplacer, rien à recâbler.
+  var settingsToggle = document.getElementById('settings-toggle');
+  var settingsPanel = document.getElementById('settings');
+  if (settingsToggle && settingsPanel) {
+    settingsToggle.addEventListener('click', function () {
+      var open = settingsToggle.getAttribute('aria-expanded') === 'true';
+      settingsToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+      if (open) settingsPanel.removeAttribute('data-open');
+      else settingsPanel.setAttribute('data-open', '');
     });
   }
 
@@ -1248,4 +1296,5 @@
   syncSchemeInputs(currentScheme, currentTheme);
   applyLang(initialLang);
   renderGenerated();
+  syncUrl();
 })();
