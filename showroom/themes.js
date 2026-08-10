@@ -59,6 +59,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#16a34a',
       warning: '#d97706',
       danger: '#dc2626',
+      info: '#2563eb',
     },
     dark: {
       bg: '#0f172a',
@@ -74,6 +75,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#4ade80',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#60a5fa',
     },
   },
 
@@ -99,6 +101,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#22c55e',
       warning: '#f59e0b',
       danger: '#b91c1c',
+      info: '#3b82f6',
     },
     dark: {
       bg: '#0f172a',
@@ -114,6 +117,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#4ade80',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#60a5fa',
     },
   },
 
@@ -141,6 +145,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#2e8b3d',
       warning: '#d97706',
       danger: '#c41e3a',
+      info: '#7828a8',
     },
     dark: {
       bg: '#160b1c',
@@ -156,6 +161,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#6cbf78',
       warning: '#f3b347',
       danger: '#f47b8a',
+      info: '#b06ee0',
     },
   },
 
@@ -181,6 +187,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#10b981',
       warning: '#f59e0b',
       danger: '#ef4444',
+      info: '#0ea5e9',
     },
     dark: {
       bg: '#16131f',
@@ -196,6 +203,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#34d399',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#38bdf8',
     },
   },
 
@@ -221,6 +229,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#15803d',
       warning: '#b45309',
       danger: '#b91c1c',
+      info: '#0284c7',
     },
     dark: {
       bg: '#08201e',
@@ -236,6 +245,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#4ade80',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#38bdf8',
     },
   },
 
@@ -261,6 +271,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#0f9d63',
       warning: '#b45309',
       danger: '#be123c',
+      info: '#2563eb',
     },
     dark: {
       bg: '#0c1222',
@@ -276,6 +287,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#3ecf8e',
       warning: '#fbbf24',
       danger: '#fb7185',
+      info: '#60a5fa',
     },
   },
 
@@ -301,6 +313,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#15803d',
       warning: '#f59e0b',
       danger: '#e11d48',
+      info: '#0ea5e9',
     },
     dark: {
       bg: '#0a1626',
@@ -316,6 +329,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#4ade80',
       warning: '#fbbf24',
       danger: '#fb7185',
+      info: '#38bdf8',
     },
   },
 
@@ -341,6 +355,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#059669',
       warning: '#d97706',
       danger: '#dc2626',
+      info: '#0369a1',
     },
     dark: {
       bg: '#0c1222',
@@ -356,6 +371,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#34d399',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#38bdf8',
     },
   },
 
@@ -381,6 +397,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#16a34a',
       warning: '#d97706',
       danger: '#dc2626',
+      info: '#0284c7',
     },
     dark: {
       bg: '#020617',
@@ -396,6 +413,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#4ade80',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#38bdf8',
     },
   },
 
@@ -421,6 +439,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#16a34a',
       warning: '#d97706',
       danger: '#dc2626',
+      info: '#2563eb',
     },
     dark: {
       bg: '#0f172a',
@@ -436,6 +455,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#22c55e',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#60a5fa',
     },
   },
 
@@ -464,6 +484,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#2e8b3d',
       warning: '#d97706',
       danger: '#c0392b',
+      info: '#3a6ea5',
     },
     dark: {
       bg: '#141813',
@@ -479,6 +500,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#6cbf78',
       warning: '#f3b347',
       danger: '#e85a55',
+      info: '#7fb3d5',
     },
   },
 
@@ -504,6 +526,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#16a34a',
       warning: '#d97706',
       danger: '#dc2626',
+      info: '#2563eb',
     },
     dark: {
       bg: '#0f1014',
@@ -519,6 +542,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#4ade80',
       warning: '#fbbf24',
       danger: '#f87171',
+      info: '#60a5fa',
     },
   },
 
@@ -547,6 +571,7 @@ globalThis.SHOWROOM_THEMES = [
       success: '#26890c',
       warning: '#d89e00',
       danger: '#e21b3c',
+      info: '#1368ce',
     },
   },
 ];

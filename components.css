@@ -29,6 +29,7 @@
  *   --dwc-success            validé / en ligne            (repli : vert)
  *   --dwc-warning            en attente / dégradé         (repli : ambre)
  *   --dwc-danger             erreur / destructif          (repli : rouge)
+ *   --dwc-info               information neutre           (repli : bleu)
  *   --dwc-radius             rayon des blocs              (repli : 0.75rem)
  *   --dwc-shadow             ombre des blocs              (repli : aucune)
  *
@@ -415,5 +416,439 @@
     color: var(--dwc-text-soft, GrayText);
     line-height: 0;
     flex: none;
+  }
+
+  /* ── Button ────────────────────────────────────────────────────────────── *
+   * Quatre apps avaient convergé sur `primary | secondary | ghost | danger`.
+   * `outline` complète le jeu. La cible tactile tient à TOUTES les tailles :
+   * c'est le défaut que les copies locales laissaient passer en `sm`.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='button'] {
+    font: inherit;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
+    cursor: pointer;
+    text-decoration: none;
+    /* `sm` reste tapable : on joue sur le padding, jamais sous 2,75 rem. */
+    min-height: 2.75rem;
+  }
+
+  [data-dwc='button'][data-size='sm'] {
+    font-size: var(--text-fluid-xs, 0.8rem);
+    padding-inline: 0.75rem;
+  }
+
+  [data-dwc='button'][data-size='md'] {
+    font-size: var(--text-fluid-sm, 0.9rem);
+    padding-inline: 1rem;
+  }
+
+  [data-dwc='button'][data-size='lg'] {
+    font-size: var(--text-fluid-base, 1rem);
+    padding-inline: 1.5rem;
+    min-height: 3.25rem;
+  }
+
+  [data-dwc='button'][data-block] {
+    width: 100%;
+  }
+
+  [data-dwc='button'][data-icon-only] {
+    padding-inline: 0;
+    aspect-ratio: 1;
+    min-width: 2.75rem;
+  }
+
+  [data-dwc='button'][data-variant='primary'] {
+    background: var(--dwc-primary, CanvasText);
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  [data-dwc='button'][data-variant='secondary'] {
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    color: var(--dwc-text, CanvasText);
+    border-color: var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+  }
+
+  [data-dwc='button'][data-variant='outline'] {
+    background: transparent;
+    color: var(--dwc-primary, CanvasText);
+    border-color: currentColor;
+  }
+
+  [data-dwc='button'][data-variant='ghost'] {
+    background: transparent;
+    color: var(--dwc-text, CanvasText);
+  }
+
+  [data-dwc='button'][data-variant='danger'] {
+    background: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  [data-dwc='button']:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  [data-dwc='button']:disabled {
+    opacity: 0.45;
+    filter: none;
+    cursor: not-allowed;
+  }
+
+  [data-dwc='button-spinner'] {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    border-radius: 999px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: dwc-spin 0.7s linear infinite;
+  }
+
+  /* ── Field ─────────────────────────────────────────────────────────────── */
+
+  [data-dwc='field'] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  [data-dwc='field-label'] {
+    font-size: var(--text-fluid-sm, 0.9rem);
+    font-weight: 600;
+  }
+
+  [data-dwc='field-control'] {
+    font: inherit;
+    /* 16 px minimum : en dessous, iOS zoome au focus. */
+    font-size: max(1rem, var(--text-fluid-sm, 0.9rem));
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--dwc-text, CanvasText);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
+  }
+
+  [data-dwc='field-control'][data-multiline] {
+    min-height: 5rem;
+    resize: vertical;
+  }
+
+  [data-dwc='field'][data-invalid] [data-dwc='field-control'] {
+    border-color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+
+  [data-dwc='field-hint'] {
+    margin: 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='field-error'] {
+    margin: 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+
+  /* ── Skeleton ──────────────────────────────────────────────────────────── */
+
+  [data-dwc='skeleton-group'] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Le libellé est pour les lecteurs d'écran uniquement. */
+  [data-dwc='skeleton-label'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  [data-dwc='skeleton'] {
+    display: block;
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    animation: dwc-pulse 1.6s ease-in-out infinite;
+  }
+
+  [data-dwc='skeleton'][data-radius='sm'] {
+    border-radius: 0.25rem;
+  }
+  [data-dwc='skeleton'][data-radius='md'] {
+    border-radius: 0.5rem;
+  }
+  [data-dwc='skeleton'][data-radius='lg'] {
+    border-radius: var(--dwc-radius, 0.75rem);
+  }
+  [data-dwc='skeleton'][data-radius='full'] {
+    border-radius: 999px;
+  }
+
+  /* ── Sheet ─────────────────────────────────────────────────────────────── */
+
+  [data-dwc='sheet'] {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  @media (min-width: 40rem) {
+    [data-dwc='sheet'] {
+      align-items: center;
+    }
+  }
+
+  [data-dwc='sheet-backdrop'] {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  [data-dwc='sheet-panel'] {
+    position: relative;
+    width: 100%;
+    max-height: 88dvh;
+    overflow-y: auto;
+    padding: var(--spacing-fluid-md, 1rem);
+    /* Home bar iOS : le contenu ne se glisse pas dessous. */
+    padding-bottom: calc(
+      var(--spacing-fluid-md, 1rem) + max(env(safe-area-inset-bottom), 0px)
+    );
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 1.6)
+      calc(var(--dwc-radius, 0.75rem) * 1.6) 0 0;
+    box-shadow: var(--dwc-shadow, none);
+    outline: none;
+    animation: dwc-rise 0.22s ease-out both;
+  }
+
+  @media (min-width: 40rem) {
+    [data-dwc='sheet-panel'] {
+      max-width: 30rem;
+      border-radius: calc(var(--dwc-radius, 0.75rem) * 1.6);
+    }
+  }
+
+  [data-dwc='sheet-head'] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: var(--spacing-fluid-sm, 0.75rem);
+  }
+
+  [data-dwc='sheet-title'] {
+    margin: 0;
+    font-size: var(--text-fluid-lg, 1.125rem);
+  }
+
+  [data-dwc='sheet-close'] {
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    flex: none;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--dwc-text-soft, GrayText);
+    cursor: pointer;
+  }
+
+  /* ── Stat ──────────────────────────────────────────────────────────────── */
+
+  [data-dwc='stat'] {
+    margin: 0;
+    display: grid;
+    gap: 0.15rem;
+    padding: var(--spacing-fluid-md, 1rem);
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: var(--dwc-surface, Canvas);
+    box-shadow: var(--dwc-shadow, none);
+  }
+
+  [data-dwc='stat-head'] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='stat-label'] {
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='stat-icon'] {
+    color: var(--dwc-text-soft, GrayText);
+    line-height: 0;
+  }
+
+  [data-dwc='stat-value'] {
+    margin: 0;
+    font-size: var(--text-fluid-2xl, 1.75rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+
+  [data-dwc='stat-delta'] {
+    margin: 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    font-variant-numeric: tabular-nums;
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='stat-delta'][data-trend='up'] {
+    color: var(--dwc-success, light-dark(#15803d, #4ade80));
+  }
+
+  [data-dwc='stat-delta'][data-trend='down'] {
+    color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+
+  /* Libellé de tendance : lu, pas vu — la couleur ne porte pas seule le sens. */
+  [data-dwc='stat-trend-label'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ── Badge ─────────────────────────────────────────────────────────────── *
+   * Un ton SÉMANTIQUE (ce que la pastille veut dire), décliné en trois
+   * intensités. La couleur du ton est résolue une fois dans `--_dwc-tone`,
+   * puis réutilisée par les trois variantes.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='badge'] {
+    --_dwc-tone: var(--dwc-text-soft, GrayText);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  [data-dwc='badge'][data-tone='brand'] {
+    --_dwc-tone: var(--dwc-primary, CanvasText);
+  }
+  [data-dwc='badge'][data-tone='success'] {
+    --_dwc-tone: var(--dwc-success, light-dark(#15803d, #4ade80));
+  }
+  [data-dwc='badge'][data-tone='warning'] {
+    --_dwc-tone: var(--dwc-warning, light-dark(#b45309, #fbbf24));
+  }
+  [data-dwc='badge'][data-tone='danger'] {
+    --_dwc-tone: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+  [data-dwc='badge'][data-tone='info'] {
+    --_dwc-tone: var(--dwc-info, light-dark(#1d4ed8, #60a5fa));
+  }
+
+  /*
+   * Deux variantes seulement, et c'est un choix.
+   *
+   * Une variante « pleine » (ton en aplat, texte inversé) a été essayée puis
+   * retirée : avec UNE seule couleur par ton, le texte posé dessus ne peut pas
+   * tenir 4,5:1 partout. Le contrôle de contraste du showroom la voyait échouer
+   * dans 11 thèmes sur 14 — un ambre ou un vert clair ne portent pas de texte
+   * blanc. Il aurait fallu une seconde couleur par ton (« 600 » pour le fond),
+   * c'est-à-dire doubler le contrat pour un gain cosmétique.
+   *
+   * Les pastilles réellement utilisées dans la famille sont d'ailleurs
+   * teintées, pas pleines (miss-uwh : fond à 14 %, texte foncé).
+   */
+  /*
+   * Le texte n'est PAS le ton brut. Un ambre ou un vert de marque posés tels
+   * quels sur un fond clair tombent à 2:1 — mesuré sur les 14 thèmes du
+   * showroom. On mélange donc le ton avec la couleur de texte du thème :
+   * quasi-noire en clair, quasi-blanche en sombre. La teinte est conservée,
+   * le contraste devient tenable, et aucun `light-dark()` n'est nécessaire
+   * puisque `--dwc-text` suit déjà le schéma.
+   *
+   * C'est exactement ce que miss-uwh faisait à la main (#166534 au lieu de son
+   * vert de token) — sauf qu'ici c'est dérivé, donc valable pour tout thème.
+   */
+  [data-dwc='badge'] {
+    --_dwc-tone-ink: color-mix(
+      in srgb,
+      var(--_dwc-tone) 48%,
+      var(--dwc-text, CanvasText)
+    );
+  }
+
+  [data-dwc='badge'][data-variant='soft'] {
+    background: color-mix(in srgb, var(--_dwc-tone) 16%, transparent);
+    color: var(--_dwc-tone-ink);
+  }
+
+  [data-dwc='badge'][data-variant='outline'] {
+    color: var(--_dwc-tone-ink);
+    border-color: color-mix(in srgb, var(--_dwc-tone) 55%, transparent);
+  }
+
+  /* ── Animations ────────────────────────────────────────────────────────── */
+
+  @keyframes dwc-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes dwc-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  @keyframes dwc-rise {
+    from {
+      transform: translateY(1rem);
+      opacity: 0;
+    }
+  }
+
+  /* Le mouvement est un confort, jamais une information : on le retire quand
+     l'utilisateur l'a demandé, sans rien casser d'autre. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-dwc='button-spinner'],
+    [data-dwc='skeleton'],
+    [data-dwc='sheet-panel'] {
+      animation-duration: 0.001ms;
+      animation-iteration-count: 1;
+    }
   }
 }

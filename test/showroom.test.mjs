@@ -176,6 +176,7 @@ const DS_ROLES = [
   '--ds-success',
   '--ds-warning',
   '--ds-danger',
+  '--ds-info',
 ];
 
 test('le thème générique définit tous les rôles en clair ET en sombre', () => {

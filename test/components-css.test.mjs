@@ -22,6 +22,7 @@ const PKG = JSON.parse(read('package.json'));
 const CONTRACT = [
   '--dwc-border',
   '--dwc-danger',
+  '--dwc-info',
   '--dwc-primary',
   '--dwc-primary-contrast',
   '--dwc-primary-soft',

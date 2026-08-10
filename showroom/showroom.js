@@ -51,6 +51,7 @@
     ['success', '--ds-success', 'Succès', 'Validé, crédit, en ligne'],
     ['warning', '--ds-warning', 'Avertissement', 'En attente, dégradé'],
     ['danger', '--ds-danger', 'Danger', 'Erreur, suppression, débit'],
+    ['info', '--ds-info', 'Information', 'Neutre, contextuel, aide'],
   ];
 
   // Maturités RÉELLES (apps-catalog.js) pour la démo FamilyApps : montre les
@@ -100,31 +101,98 @@
   // `getComputedStyle` ne résout PAS les custom properties : la valeur revient
   // telle qu'écrite (`#6d28d9`), jamais en `rgb()`. On gère donc l'hex d'abord
   // — sinon `#0f172a` se laisserait lire comme trois nombres bidon.
-  function parseRgb(value) {
-    var hex = String(value).trim();
-    var short = hex.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
+  //
+  // Retourne `{ rgb: [r, g, b], a }`, l'alpha étant indispensable : les fonds
+  // teintés du design system sont des `color-mix(… , transparent)`.
+  function parseColor(value) {
+    var raw = String(value).trim();
+
+    var short = raw.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
     if (short) {
-      return [1, 2, 3].map(function (i) {
-        return parseInt(short[i] + short[i], 16);
-      });
+      return {
+        rgb: [1, 2, 3].map(function (i) {
+          return parseInt(short[i] + short[i], 16);
+        }),
+        a: 1,
+      };
     }
-    var long = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+
+    var long = raw.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
     if (long) {
-      return [1, 2, 3].map(function (i) {
-        return parseInt(long[i], 16);
-      });
+      return {
+        rgb: [1, 2, 3].map(function (i) {
+          return parseInt(long[i], 16);
+        }),
+        a: 1,
+      };
     }
-    var fn = hex.match(/^rgba?\(([^)]+)\)$/i);
+
+    var fn = raw.match(/^rgba?\(([^)]+)\)$/i);
     if (fn) {
       var parts = fn[1]
         .split(/[\s,/]+/)
         .filter(Boolean)
         .map(Number);
       if (parts.length >= 3 && parts.slice(0, 3).every(Number.isFinite)) {
-        return parts.slice(0, 3);
+        return {
+          rgb: parts.slice(0, 3),
+          a: parts.length > 3 && Number.isFinite(parts[3]) ? parts[3] : 1,
+        };
       }
     }
+
+    // `color-mix()` revient en `color(srgb r g b / a)`, canaux 0→1.
+    var srgb = raw.match(/^color\(srgb\s+([^)]+)\)$/i);
+    if (srgb) {
+      var chans = srgb[1]
+        .split(/[\s/]+/)
+        .filter(Boolean)
+        .map(Number);
+      if (chans.length >= 3 && chans.slice(0, 3).every(Number.isFinite)) {
+        return {
+          rgb: chans.slice(0, 3).map(function (v) {
+            return Math.round(v * 255);
+          }),
+          a: chans.length > 3 && Number.isFinite(chans[3]) ? chans[3] : 1,
+        };
+      }
+    }
+
     return null;
+  }
+
+  function parseRgb(value) {
+    var color = parseColor(value);
+    return color ? color.rgb : null;
+  }
+
+  /**
+   * Couleur de fond RÉELLEMENT perçue derrière un élément.
+   *
+   * Ne pas se contenter du premier fond non transparent : les fonds teintés du
+   * design system (`color-mix(…, transparent)`) sont SEMI-transparents. Les
+   * comparer tels quels revient à mesurer une couleur contre elle-même — le
+   * ratio sort à 1,00:1 et le contrôle ne détecte plus rien. On empile donc
+   * les couches jusqu'à la première opaque, puis on les compose.
+   */
+  function effectiveBackground(el) {
+    var layers = [];
+    for (var node = el; node; node = node.parentElement) {
+      var color = parseColor(getComputedStyle(node).backgroundColor);
+      if (!color || color.a === 0) continue;
+      layers.push(color);
+      if (color.a >= 1) break;
+    }
+
+    var base = layers.pop() ?? { rgb: [255, 255, 255], a: 1 };
+    var out = base.rgb;
+    while (layers.length) {
+      var top = layers.pop();
+      out = out.map(function (under, i) {
+        return Math.round(top.rgb[i] * top.a + under * (1 - top.a));
+      });
+    }
+    return 'rgb(' + out.join(', ') + ')';
   }
 
   function luminance(rgb) {
@@ -199,6 +267,8 @@
     }
 
     renderSwatches();
+    // Le contraste dépend du thème appliqué : on le recalcule à chaque bascule.
+    measureContrast();
   }
 
   /* ── Schéma clair / sombre / système ───────────────────────────────── */
@@ -342,6 +412,324 @@
         rem.toFixed(0) +
         ' px';
     }
+
+    // Les tailles fluides bougent avec la fenêtre : la cible tactile se
+    // remesure, elle ne se déduit pas.
+    measureTargets();
+  }
+
+  /* ── Matrices de primitives ────────────────────────────────────────── */
+
+  var BUTTON_VARIANTS = [
+    ['primary', 'Primaire'],
+    ['secondary', 'Secondaire'],
+    ['outline', 'Contour'],
+    ['ghost', 'Fantôme'],
+    ['danger', 'Danger'],
+  ];
+
+  // Colonnes = tailles puis états. Les états sont testés en taille `md`.
+  var BUTTON_COLUMNS = [
+    { key: 'sm', head: 'sm', props: { size: 'sm' }, label: 'Petit' },
+    { key: 'md', head: 'md', props: { size: 'md' }, label: 'Moyen' },
+    { key: 'lg', head: 'lg', props: { size: 'lg' }, label: 'Grand' },
+    {
+      key: 'loading',
+      head: 'loading',
+      props: { size: 'md', loading: true },
+      label: 'Envoi…',
+    },
+    {
+      key: 'disabled',
+      head: 'disabled',
+      props: { size: 'md', disabled: true },
+      label: 'Inactif',
+    },
+    {
+      key: 'icon',
+      head: 'iconOnly',
+      props: { size: 'md', iconOnly: true },
+      label: '+',
+    },
+  ];
+
+  function makeButton(variant, column) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.dwc = 'button';
+    b.dataset.variant = variant;
+    b.dataset.size = column.props.size;
+    if (column.props.loading) {
+      b.dataset.loading = '';
+      b.setAttribute('aria-busy', 'true');
+      b.disabled = true;
+      var spinner = document.createElement('span');
+      spinner.dataset.dwc = 'button-spinner';
+      spinner.setAttribute('aria-hidden', 'true');
+      b.appendChild(spinner);
+    }
+    if (column.props.disabled) b.disabled = true;
+    if (column.props.iconOnly) {
+      b.dataset.iconOnly = '';
+      // Sans libellé visible, le libellé accessible est obligatoire.
+      b.setAttribute('aria-label', 'Ajouter');
+    }
+    b.appendChild(document.createTextNode(column.label));
+    return b;
+  }
+
+  function buildMatrix(table, headLabel, rows, columns, cellFactory) {
+    if (!table) return;
+    table.textContent = '';
+
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    [headLabel].concat(columns.map(c => c.head ?? c)).forEach(function (label) {
+      var th = document.createElement('th');
+      th.scope = 'col';
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement('tbody');
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      var th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = row[1];
+      tr.appendChild(th);
+      columns.forEach(function (column) {
+        var td = document.createElement('td');
+        td.appendChild(cellFactory(row[0], column));
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+  }
+
+  var BADGE_TONES = [
+    ['brand', 'brand'],
+    ['success', 'success'],
+    ['warning', 'warning'],
+    ['danger', 'danger'],
+    ['info', 'info'],
+    ['muted', 'muted'],
+  ];
+  var BADGE_VARIANTS = [
+    { key: 'soft', head: 'soft' },
+    { key: 'outline', head: 'outline' },
+  ];
+
+  function makeBadge(tone, column) {
+    var span = document.createElement('span');
+    span.dataset.dwc = 'badge';
+    span.dataset.tone = tone;
+    span.dataset.variant = column.key;
+    span.textContent = tone;
+    return span;
+  }
+
+  /* ── Feuille modale de démonstration ───────────────────────────────── */
+
+  var FOCUSABLE =
+    'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+  function setupSheet() {
+    var sheet = document.getElementById('demo-sheet');
+    var opener = document.getElementById('sheet-open');
+    if (!sheet || !opener) return;
+    var panel = sheet.querySelector('[data-dwc="sheet-panel"]');
+    var restore = null;
+
+    function close() {
+      sheet.hidden = true;
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', onKeyDown);
+      restore?.focus();
+    }
+
+    // Reproduit le comportement du composant : Échap ferme, Tab boucle.
+    function onKeyDown(event) {
+      if (event.key === 'Escape') {
+        close();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      var items = [...panel.querySelectorAll(FOCUSABLE)];
+      if (!items.length) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    opener.addEventListener('click', function () {
+      restore = opener;
+      sheet.hidden = false;
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', onKeyDown);
+      panel.focus();
+    });
+
+    sheet.addEventListener('mousedown', function (event) {
+      if (event.target === sheet) close();
+    });
+    sheet
+      .querySelector('[data-dwc="sheet-close"]')
+      ?.addEventListener('click', close);
+    sheet
+      .querySelector('[data-sheet-cancel]')
+      ?.addEventListener('click', close);
+  }
+
+  /* ── Contrôles d'accessibilité, mesurés sur la page ────────────────── */
+
+  var TARGET_MIN = 44;
+
+  // Ce qu'on mesure : les commandes réellement tapables, groupées par type.
+  var TARGET_GROUPS = [
+    ['Button — toutes tailles', '#button-matrix [data-dwc="button"]'],
+    ['Champs de saisie', '[data-dwc="field-control"]'],
+    ['Fermeture de feuille', '[data-dwc="sheet-close"]'],
+    ['Actions de bannière', '[data-dwc="error-banner-retry"]'],
+    ['Cartes famille', '[data-dwc="family-app"]'],
+    ['Liens de pied de page', '[data-dwc="footer-source"]'],
+  ];
+
+  function row(cells) {
+    var tr = document.createElement('tr');
+    cells.forEach(function (cell, i) {
+      var el = document.createElement(i === 0 ? 'th' : 'td');
+      if (i === 0) el.scope = 'row';
+      if (cell && typeof cell === 'object') {
+        el.textContent = cell.text;
+        if (cell.className) el.className = cell.className;
+        if (cell.color) el.style.color = cell.color;
+      } else {
+        el.textContent = cell;
+      }
+      tr.appendChild(el);
+    });
+    return tr;
+  }
+
+  function headRow(labels) {
+    var thead = document.createElement('thead');
+    var tr = document.createElement('tr');
+    labels.forEach(function (label) {
+      var th = document.createElement('th');
+      th.scope = 'col';
+      th.textContent = label;
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+    return thead;
+  }
+
+  function measureTargets() {
+    var table = document.getElementById('a11y-target');
+    if (!table) return;
+    table.textContent = '';
+    table.appendChild(
+      headRow(['Commande', 'Mesurées', 'Hauteur min.', 'Verdict'])
+    );
+    var tbody = document.createElement('tbody');
+
+    TARGET_GROUPS.forEach(function (group) {
+      var nodes = [...document.querySelectorAll(group[1])].filter(function (n) {
+        // Un élément masqué mesure 0 : il fausserait le minimum.
+        return n.getClientRects().length > 0;
+      });
+      if (!nodes.length) return;
+      var min = Math.min(
+        ...nodes.map(function (n) {
+          return n.getBoundingClientRect().height;
+        })
+      );
+      var ok = min >= TARGET_MIN - 0.5;
+      tbody.appendChild(
+        row([
+          group[0],
+          String(nodes.length),
+          { text: min.toFixed(1) + ' px', className: 'sr-computed' },
+          {
+            text: ok ? '✓ ≥ 44 px' : '✗ sous le seuil',
+            color: ok ? 'var(--ds-success)' : 'var(--ds-danger)',
+          },
+        ])
+      );
+    });
+
+    table.appendChild(tbody);
+  }
+
+  function contrastRow(label, fg, bg, threshold) {
+    var ratio = contrastRatio(fg, bg);
+    if (!ratio) return null;
+    var ok = ratio >= threshold;
+    return row([
+      label,
+      { text: ratio.toFixed(2) + ':1', className: 'sr-computed' },
+      threshold.toFixed(1) + ':1',
+      {
+        text: ok ? '✓ conforme' : '✗ insuffisant',
+        color: ok ? 'var(--ds-success)' : 'var(--ds-danger)',
+      },
+    ]);
+  }
+
+  function measureContrast() {
+    var table = document.getElementById('a11y-contrast');
+    if (!table) return;
+    table.textContent = '';
+    table.appendChild(headRow(['Paire', 'Ratio', 'Seuil AA', 'Verdict']));
+    var tbody = document.createElement('tbody');
+
+    function push(label, el, threshold) {
+      if (!el) return;
+      var styles = getComputedStyle(el);
+      var line = contrastRow(
+        label,
+        styles.color,
+        effectiveBackground(el),
+        threshold
+      );
+      if (line) tbody.appendChild(line);
+    }
+
+    BUTTON_VARIANTS.forEach(function (variant) {
+      push(
+        'Button ' + variant[0],
+        document.querySelector(
+          '#button-matrix [data-variant="' +
+            variant[0] +
+            '"][data-size="md"]:not([disabled])'
+        ),
+        4.5
+      );
+    });
+
+    BADGE_TONES.forEach(function (tone) {
+      push(
+        'Badge ' + tone[0],
+        document.querySelector(
+          '#badge-matrix [data-tone="' + tone[0] + '"][data-variant="soft"]'
+        ),
+        4.5
+      );
+    });
+
+    push('Texte atténué sur surface', document.querySelector('.sr-note'), 4.5);
+
+    table.appendChild(tbody);
   }
 
   /* ── Démo FamilyApps ───────────────────────────────────────────────── */
@@ -487,6 +875,24 @@
     });
 
   window.addEventListener('resize', measure, { passive: true });
+
+  // Les matrices doivent exister AVANT la première mesure : les contrôles
+  // a11y s'appuient sur les éléments réellement présents dans le document.
+  buildMatrix(
+    document.getElementById('button-matrix'),
+    'Variante',
+    BUTTON_VARIANTS,
+    BUTTON_COLUMNS,
+    makeButton
+  );
+  buildMatrix(
+    document.getElementById('badge-matrix'),
+    'Ton',
+    BADGE_TONES,
+    BADGE_VARIANTS,
+    makeBadge
+  );
+  setupSheet();
 
   applyScheme(currentScheme, currentTheme);
   syncSchemeInputs(currentScheme, currentTheme);

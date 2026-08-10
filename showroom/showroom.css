@@ -27,6 +27,7 @@
   --ds-success: #15803d;
   --ds-warning: #b45309;
   --ds-danger: #b91c1c;
+  --ds-info: #4b5563;
 
   --ds-font-display: var(--font-sans);
   --ds-radius: 0.75rem;
@@ -54,6 +55,7 @@
   --dwc-success: var(--ds-success);
   --dwc-warning: var(--ds-warning);
   --dwc-danger: var(--ds-danger);
+  --dwc-info: var(--ds-info);
   --dwc-radius: var(--ds-radius);
   --dwc-shadow: var(--ds-shadow);
 }
@@ -73,6 +75,7 @@
   --ds-success: #4ade80;
   --ds-warning: #fbbf24;
   --ds-danger: #fb7185;
+  --ds-info: #b6bec9;
 
   --ds-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.35);
   --sr-code-bg: color-mix(in srgb, var(--ds-text) 10%, transparent);
