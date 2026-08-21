@@ -69,7 +69,8 @@
     [data-dwc='footer-sponsor'],
     [data-dwc='family-source'],
     [data-dwc='family-sponsor'],
-    [data-dwc='family-app']
+    [data-dwc='family-app'],
+    [data-dwc='family-app-repo']
   ) {
     min-height: 2.75rem;
   }
@@ -353,6 +354,52 @@
 
   [data-dwc='family-app']:hover {
     border-color: var(--dwc-primary, CanvasText);
+  }
+
+  /*
+   * Variante `showRepoLinks` : la carte gagne un second lien, vers le DÉPÔT.
+   * Deux destinations distinctes = deux ancres, jamais une ancre imbriquée
+   * (invalide, et un lecteur d'écran n'en annonce qu'une). C'est donc le `<li>`
+   * qui devient la carte visible, et le lien application qui rend sa bordure.
+   */
+  [data-dwc='family-app-item'][data-with-repo] {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding-inline-end: 0.35rem;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+  }
+
+  [data-dwc='family-app-item'][data-with-repo]:hover {
+    border-color: var(--dwc-primary, CanvasText);
+  }
+
+  [data-dwc='family-app-item'][data-with-repo] > [data-dwc='family-app'] {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-color: transparent;
+    background: none;
+  }
+
+  [data-dwc='family-app-repo'] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-width: 2.75rem;
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.6);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='family-app-repo']:hover {
+    color: var(--dwc-primary, CanvasText);
+    background: var(
+      --dwc-primary-soft,
+      color-mix(in srgb, CanvasText 8%, Canvas)
+    );
   }
 
   [data-dwc='family-app-icon'] {
