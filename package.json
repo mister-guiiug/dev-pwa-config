@@ -8,7 +8,7 @@
   "scripts": {
     "test": "node --test",
     "showroom": "node scripts/serve-showroom.mjs",
-    "showroom:sync": "node --eval \"require('node:fs').copyFileSync('components.css','showroom/components.css')\"",
+    "showroom:sync": "node scripts/sync-showroom.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate": "npm run format:check && npm run test",

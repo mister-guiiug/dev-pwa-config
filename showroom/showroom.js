@@ -162,10 +162,24 @@
       url.searchParams.set('app', currentTheme.id);
       url.searchParams.set('scheme', currentScheme);
       url.searchParams.set('lang', lang);
+      // L'état de la vitrine n'entre dans l'URL que s'il s'écarte du défaut :
+      // trois paramètres vides sur chaque lien partagé, ce serait du bruit.
+      setOrDrop(url, 'q', appQuery.trim());
+      setOrDrop(url, 'sort', appSort === 'curated' ? '' : appSort);
+      setOrDrop(url, 'maturity', appFacets.maturity);
+      setOrDrop(url, 'backend', appFacets.backend);
+      setOrDrop(url, 'category', appFacets.category);
       history.replaceState(null, '', url);
     } catch (e) {
       /* URL non manipulable (file://) : le stockage prend le relais */
     }
+  }
+
+  // `all` et la chaîne vide désignent tous les deux « pas de filtre » : ni
+  // l'un ni l'autre n'a sa place dans la query.
+  function setOrDrop(url, name, value) {
+    if (!value || value === 'all') url.searchParams.delete(name);
+    else url.searchParams.set(name, value);
   }
 
   /* ── Copie au presse-papier ────────────────────────────────────────── *
@@ -442,9 +456,11 @@
     // Le contraste dépend du thème appliqué : on le recalcule à chaque bascule.
     measureContrast();
     labelTableCells();
-    // La galerie et la comparaison suivent le thème, quelle que soit la
-    // commande qui l'a changé (menu de démo ou sélecteur de la barre).
+    // La galerie, la vitrine et la comparaison suivent le thème, quelle que
+    // soit la commande qui l'a changé (menu de démo, carte de la vitrine ou
+    // sélecteur de la barre).
     syncDemoMenu();
+    syncAppGrid();
     renderDemoStage();
     renderCompare();
   }
@@ -1471,6 +1487,481 @@
             .replace('{total}', String(items.length));
   }
 
+  /* ── Vitrine des dépôts de la famille ──────────────────────────────── *
+   * La page documentait le design system sans jamais montrer CE QU'IL HABILLE.
+   * Les seize dépôts n'apparaissaient que par fragments : trois cartes de
+   * démonstration du composant `FamilyApps`, treize palettes dans le sélecteur,
+   * des noms dispersés dans la prose de la section « Stack ».
+   *
+   * La grille ci-dessous les rassemble, et elle est ENGENDRÉE depuis le miroir
+   * de `apps-catalog.js` (`showroom/apps.js`, produit par
+   * `npm run showroom:sync`) : le même catalogue qu'importent les apps pour
+   * s'afficher les unes les autres. Une entrée fausse ici est fausse en
+   * production, ce qui est exactement la propriété recherchée.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  var CATALOG = globalThis.SHOWROOM_APPS || {};
+  var APPS = CATALOG.apps || [];
+
+  var MATURITY_RANK = { alpha: 0, beta: 1, stable: 2 };
+
+  // Libellés français par défaut ; `t()` les remplace dans les autres langues.
+  // La clé `none` couvre la persistance NON RELEVÉE (l'app desktop) : mieux
+  // vaut une case honnêtement vide qu'une famille de base de données devinée.
+  var BACKEND_FR = {
+    supabase: 'Supabase',
+    firebase: 'Firebase',
+    local: 'Local-first',
+    api: 'API tierce',
+    none: 'Non relevé',
+  };
+  var CATEGORY_FR = {
+    sante: 'Santé',
+    sport: 'Sport',
+    jeux: 'Jeux',
+    education: 'Éducation',
+    outils: 'Outils',
+    dev: 'Développement',
+  };
+  var PLATFORM_FR = { web: 'Web', desktop: 'Desktop' };
+  var SORT_FR = {
+    curated: 'Ordre du catalogue',
+    maturity: 'Maturité',
+    name: 'Nom',
+  };
+
+  function backendLabel(value) {
+    var key = value || 'none';
+    return t('ui.backend.' + key, BACKEND_FR[key] || key);
+  }
+  function categoryLabel(value) {
+    return t('ui.category.' + value, CATEGORY_FR[value] || value);
+  }
+  function platformLabel(value) {
+    return t('ui.platform.' + value, PLATFORM_FR[value] || value);
+  }
+  function sortLabel(value) {
+    return t('ui.apps.sortBy.' + value, SORT_FR[value] || value);
+  }
+
+  // Axes de filtrage : [clé de facette, clé i18n du titre, repli FR, valeurs,
+  // fonction de libellé]. `backend` ajoute `''` pour la persistance non relevée.
+  var APP_FACETS = [
+    [
+      'maturity',
+      'ui.apps.facet.maturity',
+      'Maturité',
+      (CATALOG.maturities || []).slice().reverse(),
+      maturityLabel,
+    ],
+    [
+      'backend',
+      'ui.apps.facet.backend',
+      'Persistance',
+      (CATALOG.backends || []).concat(['none']),
+      backendLabel,
+    ],
+    [
+      'category',
+      'ui.apps.facet.category',
+      'Domaine',
+      CATALOG.categories || [],
+      categoryLabel,
+    ],
+  ];
+
+  var APP_SORTS = ['curated', 'maturity', 'name'];
+
+  /** Valeur d'URL retenue seulement si elle existe vraiment. */
+  function facetParam(key, values) {
+    var raw = paramOr(key, 'all');
+    return values.indexOf(raw) === -1 ? 'all' : raw;
+  }
+
+  var appQuery = paramOr('q', '');
+  var appSort =
+    APP_SORTS.indexOf(paramOr('sort', 'curated')) === -1
+      ? 'curated'
+      : paramOr('sort', 'curated');
+  var appFacets = {
+    maturity: facetParam('maturity', CATALOG.maturities || []),
+    backend: facetParam('backend', (CATALOG.backends || []).concat(['none'])),
+    category: facetParam('category', CATALOG.categories || []),
+  };
+
+  /**
+   * Deux lettres du mot distinctif. « Miss » et « Mister » préfixent seize
+   * noms : une seule initiale, et la grille afficherait seize fois « M ».
+   */
+  function monogram(name) {
+    var word = name.replace(/^(miss|mister)\s+/i, '');
+    return (word || name).slice(0, 2).toUpperCase();
+  }
+
+  /**
+   * Primaire réelle de l'app, relevée dans `themes.js` pour le schéma courant.
+   * Les trois apps sans palette relevée (dice, ticket, quota) retombent sur la
+   * primaire du thème actif — pas de couleur inventée.
+   */
+  function appAccent(id) {
+    var scheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    for (var i = 0; i < themes.length; i++) {
+      if (themes[i].id !== id) continue;
+      var palette = themes[i][scheme] || themes[i].dark || themes[i].light;
+      return palette && palette.primary ? palette.primary : '';
+    }
+    return '';
+  }
+
+  /** Une app a-t-elle une palette relevée, donc une démo à montrer ? */
+  function hasTheme(id) {
+    for (var i = 0; i < themes.length; i++) {
+      if (themes[i].id === id) return true;
+    }
+    return false;
+  }
+
+  function normalizeText(value) {
+    return String(value)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  /**
+   * Applique les critères. `overrides` permet de compter ce que DONNERAIT une
+   * facette sans l'appliquer — c'est le nombre affiché sur chaque pastille.
+   */
+  function selectApps(overrides) {
+    var facets = {
+      maturity: appFacets.maturity,
+      backend: appFacets.backend,
+      category: appFacets.category,
+    };
+    if (overrides) {
+      for (var key in overrides) {
+        if (Object.prototype.hasOwnProperty.call(overrides, key)) {
+          facets[key] = overrides[key];
+        }
+      }
+    }
+    var terms = normalizeText(appQuery).split(/\s+/).filter(Boolean);
+
+    return APPS.filter(function (a) {
+      if (facets.maturity !== 'all' && a.maturity !== facets.maturity)
+        return false;
+      if (facets.category !== 'all' && a.category !== facets.category)
+        return false;
+      if (facets.backend !== 'all' && (a.backend || 'none') !== facets.backend)
+        return false;
+      if (!terms.length) return true;
+      // Recherche sans diacritiques : « molkky » doit trouver « Mölkky », sinon
+      // seule l'orthographe exacte fonctionne — autant ne pas offrir de champ.
+      var hay = normalizeText(a.id + ' ' + a.name + ' ' + a.description);
+      return terms.every(function (term) {
+        return hay.indexOf(term) !== -1;
+      });
+    });
+  }
+
+  function sortedApps(list) {
+    var out = list.slice();
+    if (appSort === 'name') {
+      return out.sort(function (a, b) {
+        return a.name.localeCompare(b.name);
+      });
+    }
+    if (appSort === 'maturity') {
+      return out.sort(function (a, b) {
+        return (
+          MATURITY_RANK[b.maturity] - MATURITY_RANK[a.maturity] ||
+          a.name.localeCompare(b.name)
+        );
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Pastilles de filtre, construites UNE fois par langue. Les reconstruire à
+   * chaque clic détruirait le bouton pressé — au clavier, le focus repartirait
+   * sur `<body>`. Seuls `aria-pressed` et le compte bougent ensuite.
+   */
+  function renderAppFacets() {
+    var host = document.getElementById('apps-facets');
+    if (!host) return;
+    host.textContent = '';
+
+    APP_FACETS.forEach(function (facet) {
+      var key = facet[0];
+      var group = document.createElement('div');
+      group.className = 'sr-facet-group';
+      group.setAttribute('role', 'group');
+      group.setAttribute('aria-labelledby', 'facet-' + key + '-label');
+
+      var label = document.createElement('span');
+      label.className = 'sr-facet-label';
+      label.id = 'facet-' + key + '-label';
+      label.textContent = t(facet[1], facet[2]);
+      group.appendChild(label);
+
+      var values = ['all'].concat(facet[3]);
+      values.forEach(function (value) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'sr-cat-filter';
+        button.dataset.facet = key;
+        button.dataset.value = value;
+        button.textContent =
+          value === 'all' ? t('ui.apps.all', 'Tout') : facet[4](value);
+
+        var badge = document.createElement('span');
+        badge.className = 'sr-computed';
+        button.appendChild(badge);
+
+        button.addEventListener('click', function () {
+          // Re-cliquer la pastille active revient à « Tout » : sans cela, il
+          // faut viser une autre cible pour annuler un filtre.
+          appFacets[key] = appFacets[key] === value ? 'all' : value;
+          renderAppGrid();
+          syncUrl();
+        });
+
+        group.appendChild(button);
+      });
+
+      host.appendChild(group);
+    });
+  }
+
+  function renderAppSort() {
+    var select = document.getElementById('apps-sort');
+    if (!select) return;
+    select.textContent = '';
+    APP_SORTS.forEach(function (value) {
+      var option = document.createElement('option');
+      option.value = value;
+      option.textContent = sortLabel(value);
+      select.appendChild(option);
+    });
+    select.value = appSort;
+  }
+
+  /** Carte d'un dépôt. Deux liens (app, dépôt) et, si elle a une palette
+   *  relevée, un bouton qui rhabille la page entière avec. */
+  function appCard(item) {
+    var li = document.createElement('li');
+    li.className = 'sr-app';
+    li.dataset.maturity = item.maturity;
+    if (item.category) li.dataset.category = item.category;
+    if (item.backend) li.dataset.backend = item.backend;
+    li.dataset.platform = item.platform;
+
+    var mono = document.createElement('span');
+    mono.className = 'sr-app-mono';
+    mono.setAttribute('aria-hidden', 'true');
+    mono.dataset.app = item.id;
+    var accent = appAccent(item.id);
+    if (accent) mono.style.setProperty('--sr-app-accent', accent);
+    mono.textContent = monogram(item.name);
+    li.appendChild(mono);
+
+    var body = document.createElement('div');
+    body.className = 'sr-app-body';
+
+    var head = document.createElement('h3');
+    head.className = 'sr-app-name';
+    head.appendChild(document.createTextNode(item.name));
+    var badge = document.createElement('span');
+    badge.dataset.dwc = 'maturity';
+    badge.dataset.maturity = item.maturity;
+    badge.textContent = maturityLabel(item.maturity);
+    head.appendChild(badge);
+    body.appendChild(head);
+
+    var desc = document.createElement('p');
+    desc.className = 'sr-app-desc';
+    desc.textContent = item.description;
+    body.appendChild(desc);
+
+    var meta = document.createElement('p');
+    meta.className = 'sr-app-meta';
+    var tags = [
+      ['category', item.category ? categoryLabel(item.category) : ''],
+      ['backend', backendLabel(item.backend)],
+    ];
+    // La plateforme n'est affichée que lorsqu'elle SURPREND : quinze PWA et une
+    // application desktop, répéter « Web » quinze fois n'apprend rien.
+    if (item.platform !== 'web') {
+      tags.push(['platform', platformLabel(item.platform)]);
+    }
+    tags.forEach(function (tag) {
+      if (!tag[1]) return;
+      var span = document.createElement('span');
+      span.className = 'sr-app-tag';
+      span.dataset.facet = tag[0];
+      span.textContent = tag[1];
+      meta.appendChild(span);
+    });
+    body.appendChild(meta);
+
+    var actions = document.createElement('p');
+    actions.className = 'sr-app-actions';
+
+    var open = document.createElement('a');
+    open.className = 'sr-app-link';
+    open.href = item.appUrl;
+    open.target = '_blank';
+    open.rel = 'noopener noreferrer';
+    // L'app desktop n'a pas de page publique : son « ouvrir » mène aux
+    // releases du dépôt, et le libellé le dit.
+    var openLabel =
+      item.platform === 'desktop'
+        ? t('ui.apps.releases', 'Téléchargements')
+        : t('ui.apps.open', 'Ouvrir l’app');
+    open.textContent = openLabel;
+    open.setAttribute(
+      'aria-label',
+      openLabel +
+        ' — ' +
+        item.name +
+        ' (' +
+        t('ui.newTab', 'nouvel onglet') +
+        ')'
+    );
+    actions.appendChild(open);
+
+    var repo = document.createElement('a');
+    repo.className = 'sr-app-link';
+    repo.href = item.repoUrl;
+    repo.target = '_blank';
+    repo.rel = 'noopener noreferrer';
+    repo.textContent = t('ui.apps.repo', 'Dépôt');
+    repo.setAttribute(
+      'aria-label',
+      t('ui.apps.repo', 'Dépôt') +
+        ' — ' +
+        item.name +
+        ' (' +
+        t('ui.newTab', 'nouvel onglet') +
+        ')'
+    );
+    actions.appendChild(repo);
+
+    if (hasTheme(item.id)) {
+      var demo = document.createElement('button');
+      demo.type = 'button';
+      demo.className = 'sr-app-link';
+      demo.dataset.demo = item.id;
+      demo.textContent = t('ui.apps.theme', 'Habiller la page');
+      demo.setAttribute(
+        'aria-pressed',
+        item.id === currentTheme.id ? 'true' : 'false'
+      );
+      demo.addEventListener('click', function () {
+        selectTheme(themeById(item.id));
+      });
+      actions.appendChild(demo);
+    }
+
+    body.appendChild(actions);
+    li.appendChild(body);
+    return li;
+  }
+
+  function renderAppGrid() {
+    var grid = document.getElementById('apps-grid');
+    var count = document.getElementById('apps-count');
+    if (!grid || !count) return;
+
+    var shown = sortedApps(selectApps(null));
+    grid.textContent = '';
+
+    if (!shown.length) {
+      var empty = document.createElement('li');
+      empty.className = 'sr-app-empty';
+      var text = document.createElement('span');
+      text.textContent = t(
+        'ui.apps.none',
+        'Aucune application ne correspond à ces critères.'
+      );
+      empty.appendChild(text);
+      var reset = document.createElement('button');
+      reset.type = 'button';
+      reset.className = 'sr-app-link';
+      reset.textContent = t('ui.apps.reset', 'Tout réafficher');
+      reset.addEventListener('click', function () {
+        appQuery = '';
+        appFacets.maturity = 'all';
+        appFacets.backend = 'all';
+        appFacets.category = 'all';
+        var search = document.getElementById('apps-search');
+        if (search) search.value = '';
+        renderAppGrid();
+        syncUrl();
+        if (search) search.focus();
+      });
+      empty.appendChild(reset);
+      grid.appendChild(empty);
+    } else {
+      shown.forEach(function (item) {
+        grid.appendChild(appCard(item));
+      });
+    }
+
+    count.textContent =
+      shown.length === APPS.length
+        ? t('ui.apps.total', '{n} applications').replace(
+            '{n}',
+            String(APPS.length)
+          )
+        : t('ui.apps.shown', '{n} sur {total}')
+            .replace('{n}', String(shown.length))
+            .replace('{total}', String(APPS.length));
+
+    syncAppFacets();
+  }
+
+  /**
+   * État pressé et compte de chaque pastille, SANS reconstruire les boutons.
+   * Le compte est celui qu'obtiendrait un clic : les autres facettes et la
+   * recherche restent appliquées, seule la facette du groupe est remplacée.
+   */
+  function syncAppFacets() {
+    var host = document.getElementById('apps-facets');
+    if (!host) return;
+    host.querySelectorAll('.sr-cat-filter').forEach(function (button) {
+      var key = button.dataset.facet;
+      var value = button.dataset.value;
+      button.setAttribute('aria-pressed', String(appFacets[key] === value));
+      var override = {};
+      override[key] = value;
+      var badge = button.querySelector('.sr-computed');
+      if (badge) badge.textContent = String(selectApps(override).length);
+    });
+  }
+
+  /**
+   * Suit une bascule de thème sans reconstruire la grille : recolorer les
+   * pastilles et déplacer `aria-pressed` suffit, et le bouton qui vient d'être
+   * activé garde le focus.
+   */
+  function syncAppGrid() {
+    document.querySelectorAll('#apps-grid .sr-app-mono').forEach(function (el) {
+      var accent = appAccent(el.dataset.app);
+      if (accent) el.style.setProperty('--sr-app-accent', accent);
+      else el.style.removeProperty('--sr-app-accent');
+    });
+    document
+      .querySelectorAll('#apps-grid [data-demo]')
+      .forEach(function (button) {
+        button.setAttribute(
+          'aria-pressed',
+          button.dataset.demo === currentTheme.id ? 'true' : 'false'
+        );
+      });
+  }
+
   /**
    * Bouton de copie sur chaque nom de token et chaque sélecteur listé.
    *
@@ -2275,6 +2766,24 @@
     });
   }
 
+  /**
+   * Bascule vers un thème d'app, quelle que soit la commande qui le demande :
+   * le sélecteur de la barre, une pastille du menu de démo, ou le bouton
+   * « Habiller la page » d'une carte de la vitrine. Trois copies de cette
+   * séquence dériveraient — celle du menu oubliait déjà d'exister ailleurs.
+   */
+  function selectTheme(theme) {
+    currentTheme = theme;
+    write(APP_KEY, theme.id);
+    var select = document.getElementById('theme-app');
+    if (select) select.value = theme.id;
+    applyScheme(currentScheme, theme);
+    syncSchemeInputs(currentScheme, theme);
+    // `applyTheme` rafraîchit déjà le menu, l'aperçu et la vitrine.
+    applyTheme(theme);
+    syncUrl();
+  }
+
   function renderDemoMenu() {
     var menu = document.getElementById('demo-menu');
     if (!menu) return;
@@ -2300,15 +2809,7 @@
       button.appendChild(document.createTextNode(theme.name));
 
       button.addEventListener('click', function () {
-        currentTheme = theme;
-        write(APP_KEY, theme.id);
-        var select = document.getElementById('theme-app');
-        if (select) select.value = theme.id;
-        applyScheme(currentScheme, theme);
-        syncSchemeInputs(currentScheme, theme);
-        // `applyTheme` rafraîchit déjà le menu et l'aperçu.
-        applyTheme(theme);
-        syncUrl();
+        selectTheme(theme);
       });
 
       menu.appendChild(button);
@@ -2655,6 +3156,9 @@
     renderHooks();
     renderCatalogueFilters();
     renderCatalogueIndex();
+    renderAppFacets();
+    renderAppSort();
+    renderAppGrid();
     renderPlayground();
     renderForcedColors();
     applyTheme(currentTheme);
@@ -2671,6 +3175,28 @@
     catSearch.addEventListener('input', function () {
       catQuery = catSearch.value;
       renderCatalogueIndex();
+    });
+  }
+
+  // Vitrine : la recherche suit la frappe, le tri attend le choix. Les deux
+  // commandes sont restituées depuis l'URL — un lien vers « les apps Supabase
+  // en bêta » doit montrer ce qu'il promet.
+  var appSearch = document.getElementById('apps-search');
+  if (appSearch) {
+    appSearch.value = appQuery;
+    appSearch.addEventListener('input', function () {
+      appQuery = appSearch.value;
+      renderAppGrid();
+      syncUrl();
+    });
+  }
+
+  var appSortSelect = document.getElementById('apps-sort');
+  if (appSortSelect) {
+    appSortSelect.addEventListener('change', function () {
+      appSort = appSortSelect.value;
+      renderAppGrid();
+      syncUrl();
     });
   }
 

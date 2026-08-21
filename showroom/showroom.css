@@ -1102,6 +1102,172 @@ pre code {
   color: var(--ds-text-soft);
 }
 
+/* ── Vitrine des dépôts ──────────────────────────────────────────────────── *
+ * Trois axes de filtrage, chacun son groupe nommé : sans le nom, une pastille
+ * « Stable » et une pastille « Local-first » se ressemblent trop pour qu'on
+ * devine ce qu'elles filtrent.
+ * ────────────────────────────────────────────────────────────────────────── */
+.sr-facets {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: var(--spacing-fluid-sm);
+}
+
+.sr-facet-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sr-facet-label {
+  font-size: var(--text-fluid-xs);
+  font-weight: 600;
+  color: var(--ds-text-soft);
+  min-width: 6.5rem;
+}
+
+.sr-app-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+}
+
+.sr-app {
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius) * 0.7);
+  background: var(--ds-surface);
+}
+
+/*
+ * Pastille peinte avec la primaire RÉELLE de l'app quand elle est relevée
+ * (`themes.js`), sinon celle du thème courant. Pas d'icône distante : la page
+ * ne fait aucune requête réseau, et la promesse vaut aussi pour la vitrine.
+ */
+.sr-app-mono {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.8rem;
+  font-weight: 700;
+  font-size: var(--text-fluid-sm);
+  letter-spacing: 0.02em;
+  background: var(--sr-app-accent, var(--ds-primary));
+  color: var(--ds-primary-contrast);
+}
+
+.sr-app-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sr-app-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: var(--text-fluid-sm);
+  font-weight: 600;
+}
+
+.sr-app-desc {
+  margin: 0;
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+}
+
+.sr-app-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.sr-app-tag {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--ds-border);
+  color: var(--ds-text-soft);
+}
+
+/* La persistance est l'axe technique de la vitrine : elle mérite d'être lue
+   avant le domaine, qui n'est qu'éditorial. */
+.sr-app-tag[data-facet='backend'] {
+  border-color: var(--ds-primary);
+  color: var(--ds-primary);
+}
+
+/* Poussée en bas de la carte : sur une ligne de la grille, les descriptions
+   n'ont pas la même longueur, et des commandes à des hauteurs différentes se
+   cherchent à la souris comme au clavier. */
+.sr-app-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: auto 0 0;
+  padding-top: 0.15rem;
+}
+
+.sr-app-link {
+  font: inherit;
+  font-size: var(--text-fluid-xs);
+  display: inline-flex;
+  align-items: center;
+  /* Cible tactile : trois commandes côte à côte dans une carte, c'est
+     exactement là qu'une taille `sm` locale passerait sous le seuil. */
+  min-height: 2.75rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius) * 0.5);
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sr-app-link:hover,
+.sr-app-link:focus-visible {
+  border-color: var(--ds-primary);
+  color: var(--ds-primary);
+}
+
+.sr-app-link[aria-pressed='true'] {
+  border-color: var(--ds-primary);
+  background: var(--ds-primary-soft);
+  color: var(--ds-primary);
+  font-weight: 600;
+}
+
+.sr-app-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: var(--spacing-fluid-sm);
+  border: 1px dashed var(--ds-border);
+  border-radius: calc(var(--ds-radius) * 0.7);
+  font-size: var(--text-fluid-sm);
+  color: var(--ds-text-soft);
+}
+
 /* ── Bac à sable ─────────────────────────────────────────────────────────── */
 .sr-playground {
   display: grid;
@@ -1372,6 +1538,13 @@ pre code {
   .sr-table:not(.sr-table--matrix) code {
     overflow-wrap: anywhere;
   }
+
+  /* Sous `sm`, un libellé de facette en regard ne laisse plus la place aux
+     pastilles : il passe au-dessus de son groupe. */
+  .sr-facet-label {
+    flex-basis: 100%;
+    min-width: 0;
+  }
 }
 
 /* ── Galerie de démo par application ─────────────────────────────────────── */
@@ -1554,8 +1727,18 @@ span[data-dwc='family-app-icon'] {
   .sr-copy,
   .sr-pg-controls,
   .sr-cat-controls,
+  .sr-facets,
+  .sr-app-actions button,
   #demo-menu {
     display: none !important;
+  }
+
+  /* Même défaut que la pastille du composant `FamilyApps` : le monogramme est
+     du texte clair sur un aplat que l'impression supprime. Sans cela, seize
+     carrés blancs. */
+  .sr-app-mono {
+    color: CanvasText;
+    border: 1px solid CanvasText;
   }
 
   /* L'index reste sur papier — c'est une table des matières. Il imprime ce
@@ -1587,6 +1770,7 @@ span[data-dwc='family-app-icon'] {
   pre,
   .sr-swatch,
   .sr-card,
+  .sr-app,
   .sr-fc-panel,
   .sr-compare-panel,
   .sr-phone,

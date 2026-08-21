@@ -1,6 +1,11 @@
 import { createElement as h, useState } from 'react';
 import { GithubIcon, CoffeeIcon, ExternalLinkIcon } from './icons.js';
-import { FAMILY_APPS, SPONSOR_URL, otherApps } from '../apps-catalog.js';
+import {
+  FAMILY_APPS,
+  SPONSOR_URL,
+  otherApps,
+  sortApps,
+} from '../apps-catalog.js';
 
 // Liens externes sécurisés.
 const EXT = { target: '_blank', rel: 'noopener noreferrer' };
@@ -71,7 +76,13 @@ function AppCard({ item, maturityLabels }) {
  * sponsor (Buy Me a Coffee) et les AUTRES applications de la famille avec leur
  * badge de maturité. Non stylé : cibler les sélecteurs `[data-dwc="…"]`
  * (`family-apps`, `family-links`, `family-source`, `family-sponsor`,
- * `family-app-list`, `family-app`, `maturity[data-maturity]`) en CSS du projet.
+ * `family-app-list`, `family-app-item`, `family-app`, `family-app-repo`,
+ * `maturity[data-maturity]`) en CSS du projet.
+ *
+ * Chaque `<li>` porte les facettes du catalogue
+ * (`data-maturity`, `data-category`, `data-backend`, `data-platform`) : une app
+ * peut ainsi teinter ses cartes par domaine ou masquer une facette en CSS,
+ * sans réimplémenter la grille.
  *
  * @param {{
  *   currentAppId: string,
@@ -80,8 +91,11 @@ function AppCard({ item, maturityLabels }) {
  *   sponsorUrl?: string,
  *   showSource?: boolean,
  *   showSponsor?: boolean,
+ *   showRepoLinks?: boolean,
+ *   sort?: 'curated'|'maturity'|'name',
+ *   max?: number,
  *   labels?: {
- *     source?: string, sponsor?: string, otherApps?: string,
+ *     source?: string, sponsor?: string, otherApps?: string, repo?: string,
  *     maturity?: Partial<Record<'alpha'|'beta'|'stable', string>>
  *   },
  *   className?: string,
@@ -95,6 +109,9 @@ export function FamilyApps(props) {
     sponsorUrl = SPONSOR_URL,
     showSource = !!repoUrl,
     showSponsor = true,
+    showRepoLinks = false,
+    sort = 'curated',
+    max,
     labels = {},
     className,
   } = props;
@@ -106,13 +123,21 @@ export function FamilyApps(props) {
   const sourceLabel = labels.source ?? 'Code source';
   const sponsorLabel = labels.sponsor ?? 'M’offrir un café';
   const otherAppsLabel = labels.otherApps ?? 'Nos autres applications';
+  // `{app}` est remplacé par le nom : un lecteur d'écran qui parcourt la grille
+  // entend seize fois « Code source » sans cela.
+  const repoLabel = labels.repo ?? 'Code source de {app}';
 
   // Réutilise le helper si on travaille sur le catalogue par défaut, sinon
   // filtre la liste fournie.
-  const list =
+  const selected =
     apps === FAMILY_APPS
       ? otherApps(currentAppId)
       : apps.filter(a => a.id !== currentAppId);
+  const ordered = sort === 'curated' ? selected : sortApps(selected, sort);
+  // `max` coupe APRÈS le tri : « les trois plus mûres » n'aurait aucun sens si
+  // la coupe précédait l'ordre demandé.
+  const list =
+    typeof max === 'number' && max >= 0 ? ordered.slice(0, max) : ordered;
 
   const links = [];
   if (showSource && repoUrl) {
@@ -150,7 +175,34 @@ export function FamilyApps(props) {
       'ul',
       { 'data-dwc': 'family-app-list' },
       list.map(item =>
-        h('li', { key: item.id }, h(AppCard, { item, maturityLabels }))
+        h(
+          'li',
+          {
+            key: item.id,
+            'data-dwc': 'family-app-item',
+            // Facettes exposées au CSS de l'app consommatrice. Les valeurs
+            // absentes ne sont pas rendues : `[data-backend]` reste alors un
+            // sélecteur honnête (« persistance relevée »).
+            'data-maturity': item.maturity,
+            'data-category': item.category,
+            'data-backend': item.backend,
+            'data-platform': item.platform,
+            'data-with-repo': showRepoLinks ? '' : undefined,
+          },
+          h(AppCard, { item, maturityLabels }),
+          showRepoLinks
+            ? h(
+                'a',
+                {
+                  href: item.repoUrl,
+                  ...EXT,
+                  'data-dwc': 'family-app-repo',
+                  'aria-label': repoLabel.replace('{app}', item.name),
+                },
+                h(GithubIcon)
+              )
+            : null
+        )
       )
     )
   );

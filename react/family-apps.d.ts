@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import type { FamilyApp, Maturity } from '../apps-catalog';
+import type { FamilyApp, Maturity, SortBy } from '../apps-catalog';
 
 export interface FamilyAppsLabels {
   /** Libellé du lien code source (défaut : « Code source »). */
@@ -8,6 +8,11 @@ export interface FamilyAppsLabels {
   sponsor?: string;
   /** Titre de la grille (défaut : « Nos autres applications »). */
   otherApps?: string;
+  /**
+   * Libellé accessible du lien dépôt par carte. `{app}` est remplacé par le
+   * nom de l'application (défaut : « Code source de {app} »).
+   */
+  repo?: string;
   /** Libellés des badges de maturité (défaut : Alpha / Bêta / Stable). */
   maturity?: Partial<Record<Maturity, string>>;
 }
@@ -25,6 +30,16 @@ export interface FamilyAppsProps {
   showSource?: boolean;
   /** Afficher le lien sponsor (défaut : `true`). */
   showSponsor?: boolean;
+  /**
+   * Ajouter à chaque carte un lien discret vers son dépôt GitHub
+   * (défaut : `false`). La carte reste un lien vers l'application ; le lien
+   * dépôt est un frère dans le `<li>`, jamais une ancre imbriquée.
+   */
+  showRepoLinks?: boolean;
+  /** Ordre d'affichage (défaut : `curated`, l'ordre du catalogue). */
+  sort?: SortBy;
+  /** Nombre maximum de cartes, appliqué APRÈS le tri. */
+  max?: number;
   /** Libellés (i18n). */
   labels?: FamilyAppsLabels;
   className?: string;

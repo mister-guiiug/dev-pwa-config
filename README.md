@@ -20,7 +20,7 @@ projets PWA de la famille `miss-*` et `mister-*`.
 | [`miss-genius`](../miss-genius/)           | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, vite-pwa-base, `lucide-react`                                                       |
 | [`miss-lookhouse`](../miss-lookhouse/)     | React + Supabase (opt-in, local-first)        | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
 | [`miss-supaboss`](../miss-supaboss/)       | React + backend Node + Supabase               | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, playwright-base, `lucide-react`                                                     |
-| [`miss-uwh`](../miss-uwh/)                 | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (coverage)                                                                           |
+| [`miss-uwh`](../miss-uwh/)                 | React + Supabase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (coverage)                                                                           |
 | [`miss-ticket-pwa`](../miss-ticket-pwa/)   | React + Firebase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
 | [`mister-cim10`](../mister-cim10/)         | React                                         | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base                                           |
 | [`mister-doc`](../mister-doc/)             | React + Supabase (planning gardes)            | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (coverage)                                                                           |
@@ -40,6 +40,11 @@ réellement :
   (redimensionner la fenêtre fait jouer les `clamp()`) ;
 - le DOM exact de chaque composant `/react` et les sélecteurs
   `[data-dwc="…"]` correspondants ;
+- une **vitrine des seize dépôts** de la famille : recherche sans diacritiques,
+  filtres croisés (maturité × persistance × domaine) avec le compte qu'ils
+  donneraient, tri, liens app + dépôt, et un bouton qui rhabille la page entière
+  avec la palette de l'app. La grille est **engendrée depuis `apps-catalog.js`**
+  — le fichier qu'importent les apps pour s'afficher les unes les autres ;
 - un **catalogue cherchable** de tout ce que le paquet exporte — composants et
   hooks —, dont `test/showroom-catalogue.test.mjs` vérifie qu'il ne laisse
   échapper aucun export de `react/index.js` ;
@@ -75,6 +80,19 @@ monochrome ; les palettes des applications sont relevées dans `showroom/themes.
 > ni `@utility` : `showroom/preset.css` rejoue donc le preset en CSS natif.
 > `test/showroom.test.mjs` compare les deux fichiers token par token — une
 > modification du preset non répercutée fait échouer la CI, pas le navigateur.
+
+Même raison pour le catalogue : chargeable en `file://`, la page ne peut pas
+`import` un module ES. `showroom/apps.js` (`globalThis.SHOWROOM_APPS`) et
+`showroom/components.css` sont donc **engendrés** depuis la racine :
+
+```bash
+npm run showroom:sync   # scripts/sync-showroom.mjs
+```
+
+`test/apps-catalog.test.mjs` compare le miroir au catalogue et refuse une copie
+périmée ; il vérifie aussi que les comptes annoncés par la section « Stack »
+(« 6 apps Supabase », « 3 Firebase », « 5 local-first ») collent toujours au
+champ `backend` du catalogue.
 
 ## Stack cible (juin 2026)
 
@@ -270,7 +288,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`       | `.json`         | Durcissement TS **opt-in** : `noPropertyAccessFromIndexSignature` + `noImplicitOverride` + `exactOptionalPropertyTypes` (par-dessus la base stricte)                                                  |
 | `@mister-guiiug/dev-wpa-config/vitest-base`                | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                     |
 | `@mister-guiiug/dev-wpa-config/vitest-setup`               | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                            |
-| `@mister-guiiug/dev-wpa-config/apps-catalog`               | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                                              |
+| `@mister-guiiug/dev-wpa-config/apps-catalog`               | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**              |
 | `@mister-guiiug/dev-wpa-config/react`                      | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)         |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt`    | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + snooze) — couplé à vite-plugin-pwa, hors barrel                                                                                                               |
 | `@mister-guiiug/dev-wpa-config/react/rive`                 | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                       |
@@ -768,16 +786,40 @@ consorts.
 ### Catalogue famille & `FamilyApps`
 
 `apps-catalog` est la **source unique** des applications de la famille (id, nom,
-description, `repoUrl`, `appUrl`, `iconUrl`, **`maturity`** saisie à la main parmi
-`alpha | beta | stable`). C'est de la **donnée pure** : importable depuis une app,
-un script ou un test Node, sans dépendre de React.
+description, `repoUrl`, `appUrl`, `iconUrl`). C'est de la **donnée pure** :
+importable depuis une app, un script ou un test Node, sans dépendre de React.
+
+Quatre facettes décrivent chaque app, et elles n'ont **pas le même statut** —
+c'est la distinction qui rend le catalogue utilisable comme donnée :
+
+| Champ      | Statut                  | Valeurs                                                |
+| ---------- | ----------------------- | ------------------------------------------------------ |
+| `maturity` | éditorial, obligatoire  | `alpha \| beta \| stable`                              |
+| `category` | éditorial, obligatoire  | `sante \| sport \| jeux \| education \| outils \| dev` |
+| `backend`  | **relevé** dans le code | `supabase \| firebase \| local \| api`, ou absent      |
+| `platform` | fait                    | `web` (défaut) \| `desktop`                            |
+
+`backend` est **laissé absent** quand la persistance n'a pas été relevée (une
+seule app aujourd'hui, l'app Electron) : un filtre qui affiche « non relevé »
+vaut mieux qu'une donnée devinée. `category` et `backend` sont des identifiants
+ASCII stables — les libellés affichés vivent côté présentation, donc traduisibles.
 
 ```ts
 import {
   FAMILY_APPS,
   otherApps,
+  appById,
+  sortApps, // 'curated' (défaut) | 'maturity' | 'name' — ne mute pas
+  filterApps, // critères en ET ; tableau = OU à l'intérieur d'un critère
+  countBy, // facette → { valeur: nombre }, clé '' pour les absentes
   SPONSOR_URL,
 } from '@mister-guiiug/dev-wpa-config/apps-catalog';
+
+// Les apps Supabase encore en bêta ou en alpha :
+filterApps({ backend: 'supabase', maturity: ['alpha', 'beta'] });
+
+// La recherche ignore les diacritiques : « molkky » trouve « Mölkky ».
+filterApps({ query: 'molkky' });
 ```
 
 Le composant `FamilyApps` (non stylé, attributs `[data-dwc="…"]`) met en avant,
@@ -794,10 +836,30 @@ import { REPO_URL } from './links';
 
 // Grille seule (si la page affiche déjà source/sponsor par ailleurs) :
 <FamilyApps currentAppId="miss-dice" showSource={false} showSponsor={false} />;
+
+// Vitrine : un lien vers le DÉPÔT sur chaque carte, les trois plus mûres
+// seulement. `max` coupe APRÈS le tri.
+<FamilyApps
+  currentAppId="miss-dice"
+  repoUrl={REPO_URL}
+  showRepoLinks
+  sort="maturity"
+  max={3}
+/>;
 ```
 
+`showRepoLinks` est **opt-in** : sans lui, le DOM produit est exactement celui
+des versions précédentes. Avec lui, chaque carte porte deux ancres **frères** —
+l'application et son dépôt — jamais imbriquées : une ancre dans une ancre est
+invalide, et un lecteur d'écran n'en annoncerait qu'une.
+
+Chaque `<li data-dwc="family-app-item">` porte les facettes du catalogue
+(`data-maturity`, `data-category`, `data-backend`, `data-platform`) : une app
+peut teinter ses cartes par domaine, ou masquer une facette, en CSS seul.
+
 Sélecteurs CSS à styliser côté app : `[data-dwc="family-apps"]`, `family-links`,
-`family-source`, `family-sponsor`, `family-app-list`, `family-app`, et le badge
+`family-source`, `family-sponsor`, `family-app-list`, `family-app-item`,
+`family-app`, `family-app-repo`, et le badge
 `[data-dwc="maturity"][data-maturity="alpha|beta|stable"]` (3 couleurs).
 
 ### Animations Rive (`@mister-guiiug/dev-wpa-config/react/rive`)

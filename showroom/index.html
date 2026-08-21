@@ -142,6 +142,7 @@
           >
         </p>
         <ul class="sr-toc">
+          <li><a href="#apps" data-i18n="ui.toc.apps">Applications</a></li>
           <li>
             <a href="#fondations" data-i18n="ui.toc.fondations">Fondations</a>
           </li>
@@ -174,6 +175,56 @@
             >
           </li>
         </ul>
+      </section>
+
+      <!-- ── Vitrine des dépôts ────────────────────────────────────────── -->
+      <section class="sr-section" id="apps" aria-labelledby="apps-title">
+        <h2 data-i18n="apps.h21" id="apps-title">
+          Les applications de la famille
+        </h2>
+        <p data-i18n="apps.p1">
+          Seize dépôts publics, tous consommateurs de ce paquet. Cette grille
+          n’est pas une liste tenue à la main dans la page : elle est engendrée
+          depuis <code>apps-catalog.js</code> — le fichier qu’importent les
+          applications elles-mêmes pour s’afficher les unes les autres. Ce qui
+          serait faux ici serait faux dans leurs pieds de page.
+        </p>
+
+        <div class="sr-cat-controls">
+          <p class="sr-control">
+            <label for="apps-search" data-i18n="ui.apps.search"
+              >Rechercher</label
+            >
+            <input
+              type="search"
+              id="apps-search"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </p>
+          <p class="sr-control">
+            <label for="apps-sort" data-i18n="ui.apps.sort">Trier</label>
+            <select id="apps-sort"></select>
+          </p>
+        </div>
+
+        <!-- Trois axes, un seul choix par axe : la combinaison « bêta ×
+             Supabase × santé » se lit encore dans le compte annoncé, une
+             multi-sélection sur trois groupes ne se lirait plus. -->
+        <div class="sr-facets" id="apps-facets"></div>
+
+        <p class="sr-cat-count" id="apps-count" role="status"></p>
+        <ul class="sr-app-grid" id="apps-grid"></ul>
+
+        <p class="sr-note" data-i18n="apps.note">
+          <strong>Le domaine et la maturité sont éditoriaux</strong>, saisis à
+          la main : ils disent une intention, pas une version publiée. La
+          <strong>persistance est relevée</strong> dans le code de chaque app,
+          et laissée vide quand elle ne l’a pas été — un filtre qui affiche «
+          non relevé » vaut mieux qu’une donnée inventée. Les pastilles sont
+          peintes avec la primaire réelle de chaque application, jamais avec une
+          icône distante : le showroom ne fait aucune requête réseau.
+        </p>
       </section>
 
       <!-- ── Catalogue ─────────────────────────────────────────────────── -->
@@ -1154,7 +1205,9 @@
                 </li>
                 <li>
                   <code>[data-dwc="family-app-list"]</code>,
-                  <code>[data-dwc="family-app"]</code>
+                  <code>[data-dwc="family-app-item"]</code>,
+                  <code>[data-dwc="family-app"]</code>,
+                  <code>[data-dwc="family-app-repo"]</code>
                 </li>
                 <li>
                   <code>[data-dwc="family-app-icon"]</code>,
@@ -1793,6 +1846,8 @@
     </div>
 
     <script src="themes.js"></script>
+    <!-- Miroir engendré de `apps-catalog.js` (`npm run showroom:sync`). -->
+    <script src="apps.js"></script>
     <script src="snippets.js"></script>
     <script src="catalogue.js"></script>
     <script src="screenshots.js"></script>
