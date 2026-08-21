@@ -260,15 +260,15 @@ test('countBy regroupe les valeurs absentes sous la clé vide', () => {
 /*
  * Le showroom est statique et chargeable en `file://` : il ne peut pas
  * `import` le catalogue, il en lit une copie. Une copie non vérifiée ment tôt
- * ou tard — `npm run showroom:sync` la régénère.
+ * ou tard — `npm run sync` la régénère.
  */
 test('showroom/apps.js est le miroir exact du catalogue', async () => {
   await import('../showroom/apps.js');
-  const { showroomAppsData } = await import('../scripts/sync-showroom.mjs');
+  const { showroomAppsData } = await import('../scripts/sync-generated.mjs');
   assert.deepEqual(
     globalThis.SHOWROOM_APPS,
     showroomAppsData(),
-    'miroir périmé : lancer `npm run showroom:sync`'
+    'miroir périmé : lancer `npm run sync`'
   );
 });
 
@@ -281,4 +281,139 @@ test('le showroom charge le miroir avant showroom.js', () => {
   const main = html.indexOf('showroom.js"');
   assert.ok(miroir !== -1, 'showroom/apps.js n’est pas chargé');
   assert.ok(miroir < main, 'showroom.js lirait un catalogue non défini');
+});
+
+/* ── Sous-chemins consommés ────────────────────────────────────────────── */
+
+test('configs est toujours un tableau de sous-chemins connus', async () => {
+  const { CONFIG_SUBPATHS } = await import('../apps-catalog.js');
+  const pkg = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+  );
+  // Un sous-chemin relevé qui n'existe pas dans `exports` serait soit une
+  // faute de frappe du relevé, soit un export retiré sans prévenir les apps.
+  const exported = new Set(
+    Object.keys(pkg.exports)
+      .filter(k => k !== '.')
+      .map(k => k.replace(/^\.\//, ''))
+  );
+  for (const a of FAMILY_APPS) {
+    assert.ok(
+      Array.isArray(a.configs),
+      `${a.id}: configs doit être un tableau`
+    );
+    for (const c of a.configs) {
+      assert.ok(exported.has(c), `${a.id}: sous-chemin inconnu « ${c} »`);
+    }
+    assert.deepEqual(
+      a.configs,
+      [...a.configs].sort(),
+      `${a.id}: configs doit rester trié`
+    );
+    assert.equal(
+      new Set(a.configs).size,
+      a.configs.length,
+      `${a.id}: doublon dans configs`
+    );
+  }
+  assert.deepEqual(
+    CONFIG_SUBPATHS,
+    [...new Set(FAMILY_APPS.flatMap(a => a.configs))].sort(),
+    'CONFIG_SUBPATHS a dérivé du relevé'
+  );
+});
+
+test('countByConfig compte des dépôts, pas des imports', async () => {
+  const { countByConfig } = await import('../apps-catalog.js');
+  const usage = countByConfig();
+  for (const [subpath, n] of Object.entries(usage)) {
+    assert.ok(n >= 1 && n <= FAMILY_APPS.length, `${subpath}: compte aberrant`);
+    assert.equal(
+      n,
+      FAMILY_APPS.filter(a => a.configs.includes(subpath)).length,
+      `${subpath}: compte incohérent avec le catalogue`
+    );
+  }
+  assert.equal(
+    Object.keys(usage).length,
+    new Set(FAMILY_APPS.flatMap(a => a.configs)).size
+  );
+});
+
+test('filterApps({config}) retient les dépôts qui consomment le sous-chemin', () => {
+  const withCss = filterApps({ config: 'components.css' });
+  assert.ok(withCss.every(a => a.configs.includes('components.css')));
+  assert.equal(
+    withCss.length,
+    FAMILY_APPS.filter(a => a.configs.includes('components.css')).length
+  );
+  // Un tableau vaut « l'un OU l'autre ».
+  const either = filterApps({ config: ['commitlint', 'components.css'] });
+  assert.ok(either.length >= withCss.length);
+});
+
+/*
+ * Le tableau « Projets consommateurs » du README redisait à la main ce que le
+ * catalogue sait déjà, et il avait divergé sur la persistance de `miss-uwh`.
+ * Il est désormais engendré ; ce test refuse une version périmée.
+ */
+test('le tableau du README est celui qu’engendre le catalogue', async () => {
+  const { consumersTable, README_START, README_END } = await import(
+    '../scripts/sync-generated.mjs'
+  );
+  const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  const start = readme.indexOf(README_START);
+  const end = readme.indexOf(README_END);
+  assert.ok(start !== -1 && end > start, 'marqueurs du bloc engendré absents');
+
+  const bloc = readme.slice(start + README_START.length, end).trim();
+  const attendu = consumersTable().trim();
+  const compact = md =>
+    md
+      .split('\n')
+      .map(l =>
+        l
+          .split('|')
+          .map(c => c.trim())
+          .join('|')
+      )
+      // Prettier réaligne les colonnes et les tirets de séparation : on compare
+      // le contenu, pas la largeur des cellules.
+      .filter(l => !/^\|?[-|\s]+\|?$/.test(l))
+      .join('\n');
+  assert.equal(
+    compact(bloc),
+    compact(attendu),
+    'tableau périmé : lancer `npm run sync`'
+  );
+});
+
+/*
+ * Le showroom est une page unique : sans données structurées, il n'expose
+ * qu'un titre aux moteurs, pour seize applications décrites. Le bloc est
+ * ENGENDRÉ dans le `<head>` plutôt qu'injecté en JS — sinon un moteur qui
+ * n'exécute pas le script ne le voit pas.
+ */
+test('le JSON-LD de la vitrine décrit les seize apps', async () => {
+  const { appsJsonLd, JSONLD_START, JSONLD_END } = await import(
+    '../scripts/sync-generated.mjs'
+  );
+  const html = readFileSync(
+    new URL('../showroom/index.html', import.meta.url),
+    'utf8'
+  );
+  const start = html.indexOf(JSONLD_START);
+  const end = html.indexOf(JSONLD_END);
+  assert.ok(start !== -1 && end > start, 'marqueurs du bloc JSON-LD absents');
+
+  const bloc = html.slice(start + JSONLD_START.length, end);
+  const json = bloc.match(
+    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
+  );
+  assert.ok(json, 'balise application/ld+json absente du bloc engendré');
+  assert.deepEqual(
+    JSON.parse(json[1]),
+    appsJsonLd(),
+    'JSON-LD périmé : lancer `npm run sync`'
+  );
 });

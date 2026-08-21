@@ -1164,6 +1164,19 @@ pre code {
   color: var(--ds-primary-contrast);
 }
 
+/* Vignette d'une vraie capture : même gabarit que le monogramme, cadrée en
+   haut — c'est l'en-tête de l'écran qui identifie une app, pas son pied. */
+.sr-app-shot {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.8rem;
+  object-fit: cover;
+  object-position: top center;
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface-2);
+}
+
 .sr-app-body {
   display: flex;
   flex-direction: column;
@@ -1253,6 +1266,102 @@ pre code {
   background: var(--ds-primary-soft);
   color: var(--ds-primary);
   font-weight: 600;
+}
+
+.sr-view-toggle {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.sr-apps-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: var(--spacing-fluid-sm);
+}
+
+.sr-apps-status .sr-cat-count {
+  margin: 0;
+}
+
+/* Ancre par carte : discrète au repos, visible dès qu'on survole ou qu'on
+   l'atteint au clavier — jamais absente du parcours de tabulation. */
+.sr-app-anchor {
+  font-family: var(--font-mono);
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+  text-decoration: none;
+  opacity: 0;
+}
+
+.sr-app:hover .sr-app-anchor,
+.sr-app-anchor:focus-visible {
+  opacity: 1;
+}
+
+/* Cible d'une ancre : on souligne la carte atteinte, sinon rien ne dit
+   laquelle des seize on vient d'ouvrir. */
+.sr-app:target {
+  border-color: var(--ds-primary);
+  box-shadow: 0 0 0 2px var(--ds-primary-soft);
+}
+
+/* Mesures relevées : discrètes, mais l'état « archivé » doit sauter aux yeux. */
+.sr-app-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-app-metrics [data-metric='version'] {
+  font-family: var(--font-mono);
+  color: var(--ds-text);
+}
+
+.sr-app-metrics [data-metric='archived'] {
+  color: var(--ds-warning);
+  font-weight: 600;
+}
+
+.sr-metrics-date {
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+}
+
+.sr-app-configs {
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+}
+
+.sr-app-configs summary {
+  cursor: pointer;
+  min-height: 1.8rem;
+  display: flex;
+  align-items: center;
+}
+
+.sr-app-configs ul {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.sr-app-configs code {
+  font-size: 0.72rem;
+}
+
+.sr-app-nodep {
+  margin: 0;
+  font-size: var(--text-fluid-xs);
+  font-style: italic;
+  color: var(--ds-text-soft);
 }
 
 .sr-app-empty {
@@ -1548,40 +1657,13 @@ pre code {
 }
 
 /* ── Galerie de démo par application ─────────────────────────────────────── */
-#demo-menu {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: var(--spacing-fluid-md);
-}
 
-.sr-demo-chip {
-  font: inherit;
-  font-size: var(--text-fluid-xs);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.75rem;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--ds-border);
-  border-radius: 999px;
-  background: var(--ds-surface);
-  color: var(--ds-text);
-  cursor: pointer;
-}
-
-.sr-demo-chip[aria-pressed='true'] {
-  border-color: var(--ds-primary);
-  background: var(--ds-primary-soft);
-  font-weight: 600;
-}
-
-.sr-demo-dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  flex: none;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--ds-text) 20%, transparent);
+/* La section n'a plus de menu : la vitrine est le seul sélecteur
+   d'application. Il ne reste qu'à dire lequel est affiché. */
+.sr-demo-current {
+  margin: 0 0 var(--spacing-fluid-md);
+  font-size: var(--text-fluid-sm);
+  color: var(--ds-text-soft);
 }
 
 .sr-demo-stage-app {
@@ -1729,7 +1811,7 @@ span[data-dwc='family-app-icon'] {
   .sr-cat-controls,
   .sr-facets,
   .sr-app-actions button,
-  #demo-menu {
+  .sr-view-toggle {
     display: none !important;
   }
 

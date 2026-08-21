@@ -11,23 +11,34 @@ projets PWA de la famille `miss-*` et `mister-*`.
 
 ## Projets consommateurs
 
-| Projet                                     | Type                                          | Configs utilisées                                                                                                                                           |
-| ------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`miss-badminton`](../miss-badminton/)     | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (icônes : SVG inline, pas de `lucide-react`)                                         |
-| [`miss-carbook`](../miss-carbook/)         | React + Supabase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
-| [`miss-contraction`](../miss-contraction/) | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
-| [`miss-dice`](../miss-dice/)               | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
-| [`miss-genius`](../miss-genius/)           | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, vite-pwa-base, `lucide-react`                                                       |
-| [`miss-lookhouse`](../miss-lookhouse/)     | React + Supabase (opt-in, local-first)        | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`miss-supaboss`](../miss-supaboss/)       | React + backend Node + Supabase               | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, playwright-base, `lucide-react`                                                     |
-| [`miss-uwh`](../miss-uwh/)                 | React + Supabase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (coverage)                                                                           |
-| [`miss-ticket-pwa`](../miss-ticket-pwa/)   | React + Firebase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`mister-cim10`](../mister-cim10/)         | React                                         | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base                                           |
-| [`mister-doc`](../mister-doc/)             | React + Supabase (planning gardes)            | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (coverage)                                                                           |
-| [`mister-footcoach`](../mister-footcoach/) | React + Supabase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`mister-molkky`](../mister-molkky/)       | React + localStorage (sync Supabase opt-in)   | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`mister-puzzle`](../mister-puzzle/)       | React + Firebase                              | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base, `lucide-react` |
-| [`mister-qowa`](../mister-qowa/)           | React + Firebase (RTDB, Firestore, Functions) | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, playwright-base, `lucide-react`                                                     |
+Tableau **engendré** depuis `apps-catalog.js` (`npm run sync`) : la colonne
+« Sous-chemins consommés » est un RELEVÉ — les `import` et les `extends` trouvés
+dans le code de chaque dépôt —, pas une intention. Deux choses s'y lisent tout
+de suite : `components.css` n'a **qu'un adoptant sur seize**, et `mister-quota`
+ne consomme rien du paquet.
+
+<!-- CONSOMMATEURS:DÉBUT — engendré par `npm run sync` depuis apps-catalog.js -->
+
+| Projet                                                                  | Persistance              | Sous-chemins consommés                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`miss-carbook`](https://github.com/mister-guiiug/miss-carbook)         | Supabase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                  |
+| [`miss-contraction`](https://github.com/mister-guiiug/miss-contraction) | Local-first              | `eslint-react`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **12**                                                   |
+| [`miss-genius`](https://github.com/mister-guiiug/miss-genius)           | Local-first              | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **15**      |
+| [`miss-uwh`](https://github.com/mister-guiiug/miss-uwh)                 | Supabase                 | `components.css`, `eslint-react`, `lint-staged`, `playwright-a11y`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **15**       |
+| [`mister-cim10`](https://github.com/mister-guiiug/mister-cim10)         | Local-first              | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base` — **13**                                  |
+| [`mister-footcoach`](https://github.com/mister-guiiug/mister-footcoach) | Supabase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **15**      |
+| [`mister-puzzle`](https://github.com/mister-guiiug/mister-puzzle)       | Firebase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                    |
+| [`miss-ticket-pwa`](https://github.com/mister-guiiug/miss-ticket-pwa)   | Firebase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                             |
+| [`mister-doc`](https://github.com/mister-guiiug/mister-doc)             | Supabase                 | `eslint-react`, `lint-staged`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **12**                                                        |
+| [`miss-lookhouse`](https://github.com/mister-guiiug/miss-lookhouse)     | Supabase                 | `eslint-react`, `prettier`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base`, `vitest-setup` — **7**                                                                                                                                       |
+| [`miss-badminton`](https://github.com/mister-guiiug/miss-badminton)     | Local-first              | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                    |
+| [`miss-dice`](https://github.com/mister-guiiug/miss-dice)               | Local-first              | `commitlint`, `eslint-react`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/observability`, `vite-csp`, `vite-pwa-base`, `vitest-setup` — **10**                                                                                                      |
+| [`miss-supaboss`](https://github.com/mister-guiiug/miss-supaboss)       | API tierce               | `commitlint`, `eslint-react`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `react/use-update-prompt`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vitest-base`, `vitest-setup` — **15** |
+| [`mister-molkky`](https://github.com/mister-guiiug/mister-molkky)       | Supabase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                    |
+| [`mister-qowa`](https://github.com/mister-guiiug/mister-qowa)           | Firebase                 | `eslint-react`, `playwright-base`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base` — **6**                                                                                                                                                |
+| [`mister-quota`](https://github.com/mister-guiiug/mister-quota)         | — (non relevé) · desktop | **aucun** — ce dépôt ne consomme pas le paquet                                                                                                                                                                                                                        |
+
+<!-- CONSOMMATEURS:FIN -->
 
 ## Showroom du design system
 
@@ -40,11 +51,15 @@ réellement :
   (redimensionner la fenêtre fait jouer les `clamp()`) ;
 - le DOM exact de chaque composant `/react` et les sélecteurs
   `[data-dwc="…"]` correspondants ;
-- une **vitrine des seize dépôts** de la famille : recherche sans diacritiques,
-  filtres croisés (maturité × persistance × domaine) avec le compte qu'ils
-  donneraient, tri, liens app + dépôt, et un bouton qui rhabille la page entière
-  avec la palette de l'app. La grille est **engendrée depuis `apps-catalog.js`**
-  — le fichier qu'importent les apps pour s'afficher les unes les autres ;
+- une **vitrine des seize dépôts** de la famille, en grille ou en tableau :
+  recherche sans diacritiques (les facettes et les sous-chemins y sont
+  cherchables : « supabase », « vite-csp »), quatre axes de filtres croisés
+  affichant le compte qu'ils donneraient, tri, ancre par application, liens app
+  - dépôt, et un bouton qui rhabille la page entière avec la palette de l'app.
+    La grille est **engendrée depuis `apps-catalog.js`** — le fichier qu'importent
+    les apps pour s'afficher les unes les autres. Le filtre **Consomme** répond à
+    la question qu'un design system doit se poser en premier : qui utilise
+    vraiment quoi ? (`components.css` : un adoptant sur seize) ;
 - un **catalogue cherchable** de tout ce que le paquet exporte — composants et
   hooks —, dont `test/showroom-catalogue.test.mjs` vérifie qu'il ne laisse
   échapper aucun export de `react/index.js` ;
@@ -86,13 +101,31 @@ Même raison pour le catalogue : chargeable en `file://`, la page ne peut pas
 `showroom/components.css` sont donc **engendrés** depuis la racine :
 
 ```bash
-npm run showroom:sync   # scripts/sync-showroom.mjs
+npm run sync   # scripts/sync-generated.mjs
 ```
 
-`test/apps-catalog.test.mjs` compare le miroir au catalogue et refuse une copie
-périmée ; il vérifie aussi que les comptes annoncés par la section « Stack »
-(« 6 apps Supabase », « 3 Firebase », « 5 local-first ») collent toujours au
-champ `backend` du catalogue.
+`npm run sync` régénère **quatre** dérivés du catalogue : `showroom/apps.js`,
+`showroom/components.css`, le bloc JSON-LD du `<head>` de la page (seize
+`SoftwareApplication`, lisibles sans exécuter le script) et le tableau
+« Projets consommateurs » ci-dessus. `test/apps-catalog.test.mjs` les compare
+tous au catalogue et refuse une copie périmée ; il vérifie aussi que les comptes
+annoncés par la section « Stack » (« 6 apps Supabase », « 3 Firebase »,
+« 5 local-first ») collent toujours au champ `backend`.
+
+Deux relevés complètent la vitrine, et ne sont **pas** dans `sync` parce qu'ils
+demandent un accès réseau :
+
+```bash
+npm run screenshots            # captures des apps déployées → showroom/screenshots/
+npm run screenshots -- miss-dice
+node scripts/fetch-metrics.mjs # état des dépôts → showroom/metrics.js
+```
+
+Le second tourne **une fois par nuit** en CI (`showroom-metrics.yml`) et commite
+`showroom/metrics.js` : version publiée, date du dernier push, dépôt archivé.
+La page ne fait toujours aucune requête — le relevé est posé sur `globalThis`
+par un `<script src>`, comme `themes.js`. Un fichier vide est un état valide :
+la vitrine n'affiche alors simplement aucune mesure.
 
 ## Stack cible (juin 2026)
 

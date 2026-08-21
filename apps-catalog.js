@@ -50,6 +50,250 @@ export const BACKENDS = ['supabase', 'firebase', 'local', 'api'];
 /** Plateformes de livraison. */
 export const PLATFORMS = ['web', 'desktop'];
 
+/**
+ * Sous-chemins du paquet effectivement importés par chaque dépôt.
+ *
+ * RELEVÉ, pas éditorial : obtenu en cherchant `'@mister-guiiug/dev-wpa-config/…'`
+ * entre guillemets dans le code source de chaque application — donc les imports
+ * et les `extends` réels, pas les mentions en commentaire ni les copies
+ * inlinées. Le tableau « Projets consommateurs » du README est engendré depuis
+ * cette table : c'est la fin d'une liste tenue à la main en double, qui avait
+ * déjà divergé sur la persistance de `miss-uwh`.
+ *
+ * Ce que la table dit d'utile au premier regard : `components.css` n'a qu'UN
+ * adoptant sur seize, `commitlint` deux, alors qu'`eslint-react` en a quinze.
+ */
+const CONSUMED = {
+  'miss-carbook': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'miss-contraction': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'miss-genius': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'miss-uwh': [
+    'components.css',
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'mister-cim10': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-pwa-base',
+    'vitest-base',
+  ],
+  'mister-footcoach': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'mister-puzzle': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'miss-ticket-pwa': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'mister-doc': [
+    'eslint-react',
+    'lint-staged',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'miss-lookhouse': [
+    'eslint-react',
+    'prettier',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'miss-badminton': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'miss-dice': [
+    'commitlint',
+    'eslint-react',
+    'lint-staged',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/observability',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-setup',
+  ],
+  'miss-supaboss': [
+    'commitlint',
+    'eslint-react',
+    'lint-staged',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/i18n',
+    'react/observability',
+    'react/use-update-prompt',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'mister-molkky': [
+    'eslint-react',
+    'lint-staged',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/observability',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
+  'mister-qowa': [
+    'eslint-react',
+    'playwright-base',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vitest-base',
+  ],
+  // Application Electron : elle n'importe RIEN du paquet — relevé, pas
+  // oubli. C'est le seul dépôt de la famille dans ce cas.
+  'mister-quota': [],
+};
+
+/** Tous les sous-chemins consommés au moins une fois, triés. */
+export const CONFIG_SUBPATHS = [
+  ...new Set(Object.values(CONSUMED).flat()),
+].sort();
+
 /** URL du dépôt GitHub d'une app à partir de son id (= nom du repo). */
 export function repoUrl(id) {
   return `https://github.com/${GITHUB_OWNER}/${id}`;
@@ -82,6 +326,7 @@ function app(id, name, description, maturity, overrides = {}) {
     category: overrides.category,
     backend: overrides.backend,
     platform: overrides.platform ?? 'web',
+    configs: CONSUMED[id] ?? [],
     repoUrl: overrides.repoUrl ?? repoUrl(id),
     appUrl,
     iconUrl,
@@ -287,6 +532,7 @@ export function filterApps(criteria = {}, apps = FAMILY_APPS) {
   const category = wanted(criteria.category);
   const backend = wanted(criteria.backend);
   const platform = wanted(criteria.platform);
+  const config = wanted(criteria.config);
   const terms = normalize(criteria.query ?? '')
     .split(/\s+/)
     .filter(Boolean);
@@ -296,8 +542,17 @@ export function filterApps(criteria = {}, apps = FAMILY_APPS) {
     if (category && !category.has(a.category)) return false;
     if (backend && !backend.has(a.backend)) return false;
     if (platform && !platform.has(a.platform)) return false;
+    // Un dépôt correspond dès qu'il consomme L'UN des sous-chemins demandés.
+    if (config && !a.configs.some(c => config.has(c))) return false;
     if (!terms.length) return true;
-    const haystack = normalize(`${a.id} ${a.name} ${a.description}`);
+    // Les facettes entrent dans le texte cherché : une pastille « Supabase 6 »
+    // à côté d'un champ où « supabase » ne trouve rien, c'est la page qui se
+    // contredit sous les yeux de qui l'utilise.
+    const haystack = normalize(
+      [a.id, a.name, a.description, a.category, a.backend, a.platform]
+        .filter(Boolean)
+        .join(' ')
+    );
     // Tous les mots doivent apparaître : « puzzle temps » doit affiner, pas
     // élargir.
     return terms.every(term => haystack.includes(term));
@@ -317,6 +572,22 @@ export function countBy(key, apps = FAMILY_APPS) {
   for (const a of apps) {
     const value = a[key] ?? '';
     out[value] = (out[value] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Nombre de dépôts consommant chaque sous-chemin. Un dépôt compte une fois par
+ * sous-chemin, jamais plus : c'est un taux d'adoption, pas un nombre d'imports.
+ * Les sous-chemins que personne n'utilise sont absents du résultat.
+ *
+ * @param {import('./apps-catalog').FamilyApp[]} [apps]
+ * @returns {Record<string, number>}
+ */
+export function countByConfig(apps = FAMILY_APPS) {
+  const out = {};
+  for (const a of apps) {
+    for (const c of new Set(a.configs)) out[c] = (out[c] ?? 0) + 1;
   }
   return out;
 }

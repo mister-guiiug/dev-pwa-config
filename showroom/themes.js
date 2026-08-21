@@ -574,4 +574,143 @@ globalThis.SHOWROOM_THEMES = [
       info: '#1368ce',
     },
   },
+
+  /*
+   * Les trois entrées ci-dessous complètent le catalogue : 16 apps, 16
+   * palettes. Deux précisions sur la méthode, valables pour elles comme pour
+   * les précédentes.
+   *
+   * COMPOSITES. Ces apps expriment certaines couleurs en `rgba()` posé sur un
+   * fond (bordures, fonds teintés). Le showroom veut des hex opaques : la
+   * valeur ici est la COMPOSITION calculée de la rgba sur le fond réel de
+   * l'app, pas une teinte choisie à vue.
+   *
+   * ACCENT. Le rôle `accent` désigne un SECOND plan de marque. Ces trois apps
+   * n'en ont qu'un : `accent` y répète donc `primary`, plutôt que d'inventer
+   * une couleur qui n'existe nulle part dans leur code.
+   */
+
+  {
+    id: 'miss-dice',
+    name: 'Miss Dice',
+    tagline: 'Nuit indigo et violet électrique, un seul ton de marque.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.875rem',
+    light: {
+      bg: '#f4f5fb',
+      // L'app n'a que deux niveaux de surface en clair (fond et blanc) :
+      // `surface2` répète le fond plutôt que d'inventer un troisième palier.
+      surface: '#ffffff',
+      surface2: '#f4f5fb',
+      text: '#181b27',
+      textSoft: '#5b6276',
+      border: '#dedfe1',
+      primary: '#6a44e8',
+      primaryContrast: '#ffffff',
+      primarySoft: '#dfdaf8',
+      accent: '#6a44e8',
+      success: '#166534',
+      warning: '#854d0e',
+      danger: '#d4504e',
+      info: '#3b82f6',
+    },
+    dark: {
+      bg: '#0f1220',
+      surface: '#1a1f33',
+      surface2: '#20263c',
+      text: '#f3f5fb',
+      textSoft: '#9aa3bd',
+      border: '#2c2e3b',
+      primary: '#7c5cf6',
+      primaryContrast: '#ffffff',
+      primarySoft: '#1f1d40',
+      accent: '#7c5cf6',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      // `--danger` et `--blue` ne sont définis NULLE PART dans l'app : seules
+      // les valeurs de repli de `var(--danger, …)` s'affichent, et elles
+      // divergent d'un appel à l'autre (#e5484d / #d4504e). On retient celle
+      // du chemin le plus visible.
+      danger: '#e5484d',
+      info: '#3b82f6',
+    },
+  },
+
+  {
+    id: 'miss-ticket-pwa',
+    name: 'Miss Ticket',
+    tagline: 'Neutres zinc quasi noirs et rose framboise, échelle unique.',
+    schemes: ['light', 'dark'],
+    // L'app pose ses couleurs en propriétés inline sur `<html>` plutôt que par
+    // un attribut : `data-theme` est ici le défaut du showroom, pas un relevé.
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.75rem',
+    light: {
+      bg: '#ffffff',
+      surface: '#ffffff',
+      surface2: '#f5f5f5',
+      text: '#171717',
+      textSoft: '#525252',
+      border: '#e6e6e6',
+      primary: '#f43f5e',
+      primaryContrast: '#ffffff',
+      primarySoft: '#fff1f2',
+      accent: '#f43f5e',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#2563eb',
+    },
+    dark: {
+      bg: '#0a0a0a',
+      surface: '#1a1a1a',
+      surface2: '#262626',
+      text: '#fafafa',
+      textSoft: '#a3a3a3',
+      border: '#272727',
+      primary: '#f43f5e',
+      primaryContrast: '#ffffff',
+      primarySoft: '#210f12',
+      accent: '#f43f5e',
+      success: '#22c55e',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+      info: '#3b82f6',
+    },
+  },
+
+  {
+    id: 'mister-quota',
+    name: 'Mister Quota',
+    tagline: 'Ardoise froide et bleu ciel — application desktop, sombre seule.',
+    // Seule app desktop de la famille, et seule à ne déclarer qu'un jeu de
+    // valeurs : pas de palette claire à relever.
+    schemes: ['dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.625rem',
+    dark: {
+      bg: '#0f1115',
+      surface: '#161a22',
+      surface2: '#1d222c',
+      text: '#e6e8ee',
+      textSoft: '#9aa3b2',
+      border: '#2a3140',
+      primary: '#6ea8ff',
+      // Le texte posé sur la primaire est presque noir dans l'app : c'est un
+      // relevé, pas un choix du showroom.
+      primaryContrast: '#0a0e16',
+      primarySoft: '#1d2838',
+      accent: '#6ea8ff',
+      success: '#56c66a',
+      warning: '#f0b347',
+      danger: '#ef5e5e',
+      // L'app n'a pas de ton « information » : l'état « en avance » réutilise
+      // l'accent. On retient donc la même valeur.
+      info: '#6ea8ff',
+    },
+  },
 ];
