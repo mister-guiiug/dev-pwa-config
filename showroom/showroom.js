@@ -169,6 +169,8 @@
       setOrDrop(url, 'maturity', appFacets.maturity);
       setOrDrop(url, 'backend', appFacets.backend);
       setOrDrop(url, 'category', appFacets.category);
+      setOrDrop(url, 'config', appFacets.config);
+      setOrDrop(url, 'view', appView === 'grid' ? '' : appView);
       history.replaceState(null, '', url);
     } catch (e) {
       /* URL non manipulable (file://) : le stockage prend le relais */
@@ -459,7 +461,7 @@
     // La galerie, la vitrine et la comparaison suivent le thème, quelle que
     // soit la commande qui l'a changé (menu de démo, carte de la vitrine ou
     // sélecteur de la barre).
-    syncDemoMenu();
+    renderDemoCurrent();
     syncAppGrid();
     renderDemoStage();
     renderCompare();
@@ -1503,6 +1505,70 @@
   var CATALOG = globalThis.SHOWROOM_APPS || {};
   var APPS = CATALOG.apps || [];
 
+  /*
+   * Relevé nocturne de l'état des dépôts (`metrics.js`, workflow
+   * `showroom-metrics.yml`). Vide tant que le workflow n'est pas passé : tout
+   * ce qui suit doit rester correct dans ce cas — c'est l'état par défaut du
+   * fichier commité, pas une panne.
+   */
+  var METRICS = globalThis.SHOWROOM_METRICS || {};
+  var REPO_METRICS = METRICS.repos || {};
+  var HAS_METRICS = Object.keys(REPO_METRICS).length > 0;
+
+  /**
+   * « il y a 3 mois » plutôt qu'une date ISO : sur une vitrine, ce qui compte
+   * n'est pas QUAND mais DEPUIS COMBIEN DE TEMPS. Calculé à l'affichage, donc
+   * jamais périmé — contrairement à une phrase écrite dans le fichier.
+   */
+  function timeAgo(iso) {
+    if (!iso) return '';
+    var days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (!isFinite(days) || days < 0) return '';
+    if (days === 0) return t('ui.ago.today', 'aujourd’hui');
+    if (days < 31)
+      return t('ui.ago.days', 'il y a {n} j').replace('{n}', String(days));
+    var months = Math.floor(days / 30.44);
+    if (months < 24)
+      return t('ui.ago.months', 'il y a {n} mois').replace(
+        '{n}',
+        String(months)
+      );
+    return t('ui.ago.years', 'il y a {n} ans').replace(
+      '{n}',
+      String(Math.floor(days / 365.25))
+    );
+  }
+
+  /** Ligne de mesures d'une carte, ou `null` si rien n'a été relevé. */
+  function metricsBlock(item) {
+    var m = REPO_METRICS[item.id];
+    if (!m) return null;
+
+    var parts = [];
+    if (m.version) parts.push(['version', m.version]);
+    var pushed = timeAgo(m.pushedAt);
+    if (pushed)
+      parts.push([
+        'pushed',
+        t('ui.metrics.pushed', 'code {ago}').replace('{ago}', pushed),
+      ]);
+    // Un dépôt archivé se dit en toutes lettres : c'est la seule mesure qui
+    // change ce qu'un lecteur doit faire du lien.
+    if (m.archived)
+      parts.push(['archived', t('ui.metrics.archived', 'archivé')]);
+    if (!parts.length) return null;
+
+    var p = document.createElement('p');
+    p.className = 'sr-app-metrics';
+    parts.forEach(function (part) {
+      var span = document.createElement('span');
+      span.dataset.metric = part[0];
+      span.textContent = part[1];
+      p.appendChild(span);
+    });
+    return p;
+  }
+
   var MATURITY_RANK = { alpha: 0, beta: 1, stable: 2 };
 
   // Libellés français par défaut ; `t()` les remplace dans les autres langues.
@@ -1528,6 +1594,7 @@
     curated: 'Ordre du catalogue',
     maturity: 'Maturité',
     name: 'Nom',
+    updated: 'Dernière activité',
   };
 
   function backendLabel(value) {
@@ -1571,6 +1638,9 @@
   ];
 
   var APP_SORTS = ['curated', 'maturity', 'name'];
+  // Trier par activité n'a de sens que si l'activité a été relevée : l'option
+  // n'apparaît pas quand `metrics.js` est vide.
+  if (HAS_METRICS) APP_SORTS.push('updated');
 
   /** Valeur d'URL retenue seulement si elle existe vraiment. */
   function facetParam(key, values) {
@@ -1578,7 +1648,13 @@
     return values.indexOf(raw) === -1 ? 'all' : raw;
   }
 
+  var APP_VIEWS = ['grid', 'table'];
+
   var appQuery = paramOr('q', '');
+  var appView =
+    APP_VIEWS.indexOf(paramOr('view', 'grid')) === -1
+      ? 'grid'
+      : paramOr('view', 'grid');
   var appSort =
     APP_SORTS.indexOf(paramOr('sort', 'curated')) === -1
       ? 'curated'
@@ -1587,6 +1663,11 @@
     maturity: facetParam('maturity', CATALOG.maturities || []),
     backend: facetParam('backend', (CATALOG.backends || []).concat(['none'])),
     category: facetParam('category', CATALOG.categories || []),
+    // Dix-huit valeurs : servi par un menu déroulant, pas par des pastilles.
+    config: facetParam(
+      'config',
+      (CATALOG.configSubpaths || []).concat(['none'])
+    ),
   };
 
   /**
@@ -1629,6 +1710,31 @@
   }
 
   /**
+   * Texte dans lequel la recherche pioche. Les FACETTES en font partie, sous
+   * leur identifiant ET sous leur libellé traduit : la page affichait une
+   * pastille « Supabase 6 » à côté d'un champ où « supabase » ne renvoyait
+   * qu'une seule carte — elle se contredisait sous les yeux de qui l'utilise.
+   * Le libellé traduit compte autant que l'identifiant : en anglais, on tape
+   * « health », pas « sante ».
+   */
+  function searchText(a) {
+    return [
+      a.id,
+      a.name,
+      a.description,
+      a.category,
+      a.category ? categoryLabel(a.category) : '',
+      a.backend || 'none',
+      backendLabel(a.backend),
+      a.platform,
+      platformLabel(a.platform),
+      (a.configs || []).join(' '),
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  /**
    * Applique les critères. `overrides` permet de compter ce que DONNERAIT une
    * facette sans l'appliquer — c'est le nombre affiché sur chaque pastille.
    */
@@ -1637,6 +1743,7 @@
       maturity: appFacets.maturity,
       backend: appFacets.backend,
       category: appFacets.category,
+      config: appFacets.config,
     };
     if (overrides) {
       for (var key in overrides) {
@@ -1654,10 +1761,17 @@
         return false;
       if (facets.backend !== 'all' && (a.backend || 'none') !== facets.backend)
         return false;
+      if (facets.config !== 'all') {
+        // `none` isole les dépôts qui ne consomment RIEN du paquet — la
+        // question la plus intéressante que cette facette sache poser.
+        var uses = (a.configs || []).indexOf(facets.config) !== -1;
+        if (facets.config === 'none' ? (a.configs || []).length : !uses)
+          return false;
+      }
       if (!terms.length) return true;
       // Recherche sans diacritiques : « molkky » doit trouver « Mölkky », sinon
       // seule l'orthographe exacte fonctionne — autant ne pas offrir de champ.
-      var hay = normalizeText(a.id + ' ' + a.name + ' ' + a.description);
+      var hay = normalizeText(searchText(a));
       return terms.every(function (term) {
         return hay.indexOf(term) !== -1;
       });
@@ -1669,6 +1783,15 @@
     if (appSort === 'name') {
       return out.sort(function (a, b) {
         return a.name.localeCompare(b.name);
+      });
+    }
+    if (appSort === 'updated') {
+      return out.sort(function (a, b) {
+        // Un dépôt sans relevé descend en bas : mieux vaut le dire par sa
+        // position que lui inventer une date.
+        var ta = Date.parse((REPO_METRICS[a.id] || {}).pushedAt || '') || 0;
+        var tb = Date.parse((REPO_METRICS[b.id] || {}).pushedAt || '') || 0;
+        return tb - ta || a.name.localeCompare(b.name);
       });
     }
     if (appSort === 'maturity') {
@@ -1734,6 +1857,104 @@
     });
   }
 
+  /**
+   * Menu « Consomme… ». Le compte accompagne chaque option : « components.css
+   * (1) » raconte l'adoption du paquet mieux qu'un paragraphe.
+   */
+  function renderAppConfigFilter() {
+    var select = document.getElementById('apps-config');
+    if (!select) return;
+    var usage = CATALOG.configUsage || {};
+    select.textContent = '';
+
+    var all = document.createElement('option');
+    all.value = 'all';
+    all.textContent = t('ui.apps.all', 'Tout');
+    select.appendChild(all);
+
+    (CATALOG.configSubpaths || []).forEach(function (subpath) {
+      var option = document.createElement('option');
+      option.value = subpath;
+      option.textContent = subpath + ' (' + (usage[subpath] || 0) + ')';
+      select.appendChild(option);
+    });
+
+    var none = document.createElement('option');
+    none.value = 'none';
+    none.textContent = t('ui.apps.consumesNothing', 'Ne consomme rien');
+    select.appendChild(none);
+
+    select.value = appFacets.config;
+  }
+
+  /** Grille ou tableau. Le tableau compare seize lignes d'un coup d'œil. */
+  function renderAppViewToggle() {
+    var host = document.getElementById('apps-view');
+    if (!host) return;
+    var kept = host.querySelector('.sr-visually-hidden');
+    host.textContent = '';
+    if (kept) host.appendChild(kept);
+
+    APP_VIEWS.forEach(function (view) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sr-cat-filter';
+      button.dataset.view = view;
+      button.setAttribute('aria-pressed', String(appView === view));
+      button.textContent =
+        view === 'grid'
+          ? t('ui.apps.viewGrid', 'Grille')
+          : t('ui.apps.viewTable', 'Tableau');
+      button.addEventListener('click', function () {
+        appView = view;
+        host.querySelectorAll('[data-view]').forEach(function (other) {
+          other.setAttribute(
+            'aria-pressed',
+            String(other.dataset.view === view)
+          );
+        });
+        renderAppGrid();
+        syncUrl();
+      });
+      host.appendChild(button);
+    });
+  }
+
+  /**
+   * Copier le lien de la vue courante. L'état de la vitrine entrait déjà dans
+   * l'URL, mais l'attraper supposait d'aller la lire dans la barre d'adresse —
+   * l'affordance manquait, pas la fonctionnalité.
+   */
+  /**
+   * De quand datent les mesures ? Une donnée « vivante » sans date est pire
+   * qu'une donnée absente : on la croit d'aujourd'hui.
+   */
+  function renderMetricsDate() {
+    var node = document.getElementById('apps-metrics-date');
+    if (!node) return;
+    var ago = HAS_METRICS ? timeAgo(METRICS.generatedAt) : '';
+    node.textContent = ago
+      ? t('ui.metrics.date', 'état des dépôts relevé {ago}').replace(
+          '{ago}',
+          ago
+        )
+      : '';
+  }
+
+  function renderAppShare() {
+    var host = document.getElementById('apps-share');
+    if (!host) return;
+    host.textContent = '';
+    host.appendChild(
+      copyButton(
+        function () {
+          return location.href;
+        },
+        t('ui.apps.share', 'Copier le lien de cette vue')
+      )
+    );
+  }
+
   function renderAppSort() {
     var select = document.getElementById('apps-sort');
     if (!select) return;
@@ -1747,24 +1968,80 @@
     select.value = appSort;
   }
 
+  /**
+   * Ce que le dépôt consomme du paquet — la seule chose qu'une vitrine de
+   * design system doit vraiment savoir dire de ses dépôts. Replié par défaut :
+   * quinze sous-chemins par carte noieraient la description.
+   *
+   * `<details>` natif plutôt qu'un dépliant maison : clavier, lecteur d'écran
+   * et « rechercher dans la page » du navigateur marchent sans une ligne de JS.
+   */
+  function configsBlock(item) {
+    var configs = item.configs || [];
+    if (!configs.length) {
+      var empty = document.createElement('p');
+      empty.className = 'sr-app-nodep';
+      empty.textContent = t('ui.apps.noConfig', 'Ne consomme rien du paquet.');
+      return empty;
+    }
+
+    var details = document.createElement('details');
+    details.className = 'sr-app-configs';
+
+    var summary = document.createElement('summary');
+    summary.textContent = t('ui.apps.configs', '{n} sous-chemins').replace(
+      '{n}',
+      String(configs.length)
+    );
+    details.appendChild(summary);
+
+    var list = document.createElement('ul');
+    configs.forEach(function (subpath) {
+      var li = document.createElement('li');
+      var code = document.createElement('code');
+      code.textContent = subpath;
+      li.appendChild(code);
+      list.appendChild(li);
+    });
+    details.appendChild(list);
+    return details;
+  }
+
   /** Carte d'un dépôt. Deux liens (app, dépôt) et, si elle a une palette
    *  relevée, un bouton qui rhabille la page entière avec. */
   function appCard(item) {
     var li = document.createElement('li');
     li.className = 'sr-app';
+    // Ancre stable : sans elle, on ne peut partager qu'un filtre, jamais UNE
+    // application.
+    li.id = 'app-' + item.id;
     li.dataset.maturity = item.maturity;
     if (item.category) li.dataset.category = item.category;
     if (item.backend) li.dataset.backend = item.backend;
     li.dataset.platform = item.platform;
 
-    var mono = document.createElement('span');
-    mono.className = 'sr-app-mono';
-    mono.setAttribute('aria-hidden', 'true');
-    mono.dataset.app = item.id;
-    var accent = appAccent(item.id);
-    if (accent) mono.style.setProperty('--sr-app-accent', accent);
-    mono.textContent = monogram(item.name);
-    li.appendChild(mono);
+    // Une VRAIE capture prend la place du monogramme quand elle existe. Les
+    // deux font la même taille : déposer un fichier ne bouscule pas la grille.
+    var shot = SHOTS[item.id];
+    if (shot) {
+      var thumb = document.createElement('img');
+      thumb.className = 'sr-app-shot';
+      thumb.src = 'screenshots/' + shot.file;
+      thumb.alt = shot.alt || item.name;
+      thumb.loading = 'lazy';
+      thumb.width = 44;
+      thumb.height = 44;
+      li.appendChild(thumb);
+    } else {
+      var mono = document.createElement('span');
+      mono.className = 'sr-app-mono';
+      mono.setAttribute('aria-hidden', 'true');
+      mono.dataset.app = item.id;
+      var accent = appAccent(item.id);
+      if (accent) mono.style.setProperty('--sr-app-accent', accent);
+      mono.textContent = monogram(item.name);
+      li.appendChild(mono);
+    }
 
     var body = document.createElement('div');
     body.className = 'sr-app-body';
@@ -1772,6 +2049,18 @@
     var head = document.createElement('h3');
     head.className = 'sr-app-name';
     head.appendChild(document.createTextNode(item.name));
+    var anchor = document.createElement('a');
+    anchor.className = 'sr-app-anchor';
+    anchor.href = '#app-' + item.id;
+    anchor.textContent = '#';
+    anchor.setAttribute(
+      'aria-label',
+      t('ui.apps.permalink', 'Lien direct vers {app}').replace(
+        '{app}',
+        item.name
+      )
+    );
+    head.appendChild(anchor);
     var badge = document.createElement('span');
     badge.dataset.dwc = 'maturity';
     badge.dataset.maturity = item.maturity;
@@ -1804,6 +2093,9 @@
       meta.appendChild(span);
     });
     body.appendChild(meta);
+    var metrics = metricsBlock(item);
+    if (metrics) body.appendChild(metrics);
+    body.appendChild(configsBlock(item));
 
     var actions = document.createElement('p');
     actions.className = 'sr-app-actions';
@@ -1869,13 +2161,84 @@
     return li;
   }
 
+  /**
+   * Vue tableau : seize lignes, cinq colonnes, tout comparable d'un coup
+   * d'œil. La grille montre les apps une par une ; le tableau montre la
+   * FAMILLE — deux questions différentes, deux formes.
+   */
+  function renderAppTable(shown) {
+    var table = document.getElementById('apps-table');
+    if (!table) return;
+    table.textContent = '';
+
+    var columns = [
+      t('ui.apps.th.app', 'Application'),
+      t('ui.apps.facet.maturity', 'Maturité'),
+      t('ui.apps.facet.backend', 'Persistance'),
+      t('ui.apps.facet.category', 'Domaine'),
+      t('ui.apps.th.configs', 'Sous-chemins'),
+    ];
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    columns.forEach(function (label) {
+      var th = document.createElement('th');
+      th.scope = 'col';
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = document.createElement('tbody');
+    shown.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var th = document.createElement('th');
+      th.scope = 'row';
+      var link = document.createElement('a');
+      link.href = item.repoUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = item.name;
+      th.appendChild(link);
+      tr.appendChild(th);
+
+      [
+        maturityLabel(item.maturity),
+        backendLabel(item.backend),
+        item.category ? categoryLabel(item.category) : '—',
+        String((item.configs || []).length),
+      ].forEach(function (value) {
+        var td = document.createElement('td');
+        td.textContent = value;
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    // Sous `sm`, les tableaux du showroom deviennent des cartes : chaque
+    // cellule doit porter l'en-tête de sa colonne.
+    labelTableCells();
+  }
+
   function renderAppGrid() {
     var grid = document.getElementById('apps-grid');
     var count = document.getElementById('apps-count');
     if (!grid || !count) return;
 
     var shown = sortedApps(selectApps(null));
+    var wrap = document.getElementById('apps-table-wrap');
+    var asTable = appView === 'table' && shown.length > 0;
+    if (wrap) wrap.hidden = !asTable;
+    grid.hidden = asTable;
     grid.textContent = '';
+    if (asTable) {
+      renderAppTable(shown);
+      renderAppCount(count, shown.length);
+      syncAppFacets();
+      return;
+    }
 
     if (!shown.length) {
       var empty = document.createElement('li');
@@ -1895,8 +2258,11 @@
         appFacets.maturity = 'all';
         appFacets.backend = 'all';
         appFacets.category = 'all';
+        appFacets.config = 'all';
         var search = document.getElementById('apps-search');
         if (search) search.value = '';
+        var configSelect = document.getElementById('apps-config');
+        if (configSelect) configSelect.value = 'all';
         renderAppGrid();
         syncUrl();
         if (search) search.focus();
@@ -1909,17 +2275,17 @@
       });
     }
 
-    count.textContent =
-      shown.length === APPS.length
-        ? t('ui.apps.total', '{n} applications').replace(
-            '{n}',
-            String(APPS.length)
-          )
-        : t('ui.apps.shown', '{n} sur {total}')
-            .replace('{n}', String(shown.length))
-            .replace('{total}', String(APPS.length));
-
+    renderAppCount(count, shown.length);
     syncAppFacets();
+  }
+
+  function renderAppCount(node, n) {
+    node.textContent =
+      n === APPS.length
+        ? t('ui.apps.total', '{n} applications').replace('{n}', String(n))
+        : t('ui.apps.shown', '{n} sur {total}')
+            .replace('{n}', String(n))
+            .replace('{total}', String(APPS.length));
   }
 
   /**
@@ -2768,9 +3134,10 @@
 
   /**
    * Bascule vers un thème d'app, quelle que soit la commande qui le demande :
-   * le sélecteur de la barre, une pastille du menu de démo, ou le bouton
-   * « Habiller la page » d'une carte de la vitrine. Trois copies de cette
-   * séquence dériveraient — celle du menu oubliait déjà d'exister ailleurs.
+   * le sélecteur de la barre supérieure ou le bouton « Habiller la page »
+   * d'une carte de la vitrine. La section Démo avait son propre menu des mêmes
+   * applications — deux sélecteurs pour une seule bascule, et treize apps d'un
+   * côté contre seize de l'autre. Il a été retiré.
    */
   function selectTheme(theme) {
     currentTheme = theme;
@@ -2779,52 +3146,29 @@
     if (select) select.value = theme.id;
     applyScheme(currentScheme, theme);
     syncSchemeInputs(currentScheme, theme);
-    // `applyTheme` rafraîchit déjà le menu, l'aperçu et la vitrine.
+    // `applyTheme` rafraîchit déjà l'aperçu, la vitrine et cette légende.
     applyTheme(theme);
     syncUrl();
   }
 
-  function renderDemoMenu() {
-    var menu = document.getElementById('demo-menu');
-    if (!menu) return;
-    menu.textContent = '';
-
-    appThemes().forEach(function (theme) {
-      var button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'sr-demo-chip';
-      button.dataset.app = theme.id;
-      button.setAttribute(
-        'aria-pressed',
-        theme.id === currentTheme.id ? 'true' : 'false'
-      );
-
-      var dot = document.createElement('span');
-      dot.className = 'sr-demo-dot';
-      // Pastille peinte avec la primaire de l'app : le menu se lit d'un coup
-      // d'œil, même sans avoir sélectionné quoi que ce soit.
-      var palette = theme.dark ?? theme.light;
-      dot.style.background = palette ? palette.primary : 'currentColor';
-      button.appendChild(dot);
-      button.appendChild(document.createTextNode(theme.name));
-
-      button.addEventListener('click', function () {
-        selectTheme(theme);
-      });
-
-      menu.appendChild(button);
-    });
-  }
-
-  // État sélectionné du menu, sans le reconstruire : `applyTheme` est appelé
-  // à chaque bascule, y compris depuis la barre supérieure.
-  function syncDemoMenu() {
-    document.querySelectorAll('#demo-menu .sr-demo-chip').forEach(function (b) {
-      b.setAttribute(
-        'aria-pressed',
-        b.dataset.app === currentTheme.id ? 'true' : 'false'
-      );
-    });
+  /**
+   * Quelle application l'aperçu montre-t-il ? Sans le menu, plus rien ne le
+   * disait — et `role="status"` l'annonce à qui ne voit pas la page changer
+   * de couleur.
+   */
+  function renderDemoCurrent() {
+    var node = document.getElementById('demo-current');
+    if (!node) return;
+    node.textContent =
+      currentTheme.id === 'generic'
+        ? t(
+            'ui.demo.generic',
+            'Aperçu générique : aucune application sélectionnée.'
+          )
+        : t('ui.demo.current', 'Aperçu habillé par {app}.').replace(
+            '{app}',
+            t('theme.' + currentTheme.id + '.name', currentTheme.name)
+          );
   }
 
   // Petit écran de démonstration : rien d'inventé, uniquement des composants
@@ -3149,7 +3493,7 @@
       'ui.tone.'
     );
     renderFamilyApps();
-    renderDemoMenu();
+    renderDemoCurrent();
     renderDemoStage();
     renderComponentDocs();
     renderDecisions();
@@ -3157,7 +3501,11 @@
     renderCatalogueFilters();
     renderCatalogueIndex();
     renderAppFacets();
+    renderAppConfigFilter();
+    renderAppViewToggle();
     renderAppSort();
+    renderAppShare();
+    renderMetricsDate();
     renderAppGrid();
     renderPlayground();
     renderForcedColors();
@@ -3190,6 +3538,34 @@
       syncUrl();
     });
   }
+
+  var appConfigSelect = document.getElementById('apps-config');
+  if (appConfigSelect) {
+    appConfigSelect.addEventListener('change', function () {
+      appFacets.config = appConfigSelect.value;
+      renderAppGrid();
+      syncUrl();
+    });
+  }
+
+  /*
+   * `/` amène à la recherche de la vitrine — la convention de toutes les docs
+   * cherchables. Ignoré dès qu'on est déjà en train de saisir quelque part,
+   * sinon la touche disparaîtrait du clavier au milieu d'un mot.
+   */
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey)
+      return;
+    var active = document.activeElement;
+    var tag = active ? active.tagName : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (active && active.isContentEditable) return;
+    var search = document.getElementById('apps-search');
+    if (!search) return;
+    event.preventDefault();
+    search.focus();
+    search.select();
+  });
 
   var appSortSelect = document.getElementById('apps-sort');
   if (appSortSelect) {

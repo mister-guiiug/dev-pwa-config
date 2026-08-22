@@ -27,6 +27,8 @@ export interface AppFilter {
   category?: Category | Category[];
   backend?: Backend | Backend[];
   platform?: Platform | Platform[];
+  /** Un dépôt correspond dès qu'il consomme L'UN de ces sous-chemins. */
+  config?: string | string[];
 }
 
 /** Ordre de tri accepté par `sortApps`. */
@@ -48,6 +50,11 @@ export interface FamilyApp {
   backend?: Backend;
   /** Plateforme de livraison (défaut `web`). */
   platform: Platform;
+  /**
+   * Sous-chemins du paquet réellement importés par le dépôt, relevés dans son
+   * code source. Tableau VIDE pour un dépôt qui ne consomme pas le paquet.
+   */
+  configs: string[];
   /** URL du dépôt GitHub. */
   repoUrl: string;
   /** URL publique de l'app (GitHub Pages, ou dépôt pour une app desktop). */
@@ -79,6 +86,9 @@ export declare const BACKENDS: Backend[];
 /** Plateformes de livraison connues. */
 export declare const PLATFORMS: Platform[];
 
+/** Tous les sous-chemins consommés au moins une fois par la famille, triés. */
+export declare const CONFIG_SUBPATHS: string[];
+
 /** URL du dépôt GitHub d'une app à partir de son id. */
 export declare function repoUrl(id: string): string;
 
@@ -106,5 +116,10 @@ export declare function filterApps(
 /** Compte par valeur de facette ; la clé `''` regroupe les valeurs absentes. */
 export declare function countBy(
   key: FacetKey,
+  apps?: FamilyApp[]
+): Record<string, number>;
+
+/** Taux d'adoption par sous-chemin : un dépôt n'est compté qu'une fois. */
+export declare function countByConfig(
   apps?: FamilyApp[]
 ): Record<string, number>;

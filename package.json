@@ -8,7 +8,8 @@
   "scripts": {
     "test": "node --test",
     "showroom": "node scripts/serve-showroom.mjs",
-    "showroom:sync": "node scripts/sync-showroom.mjs",
+    "sync": "node scripts/sync-generated.mjs",
+    "screenshots": "node scripts/capture-screenshots.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "validate": "npm run format:check && npm run test",
