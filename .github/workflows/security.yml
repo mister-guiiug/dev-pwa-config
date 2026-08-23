@@ -23,16 +23,31 @@ jobs:
     name: Revue des dépendances
     # Compare les dépendances de la PR à celles de la base : refuse d'introduire
     # une vulnérabilité connue, ou une licence incompatible.
+    #
+    # DÉPEND D'UN RÉGLAGE DU DÉPÔT. L'action exige que le « Dependency graph »
+    # soit activé (Settings → Code security). Il ne l'est pas ici : l'action
+    # échoue alors avec « Dependency review is not supported on this
+    # repository ». Plutôt que de bloquer chaque PR sur un réglage que le code
+    # ne peut pas changer, l'étape n'est pas bloquante — mais son échec est
+    # ANNONCÉ, parce qu'un contrôle de sécurité vert qui n'a rien vérifié serait
+    # exactement la fausse assurance que cette PR retire ailleurs.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: actions/dependency-review-action@v4
+      - id: review
+        continue-on-error: true
+        uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: high
           comment-summary-in-pr: on-failure
+      - name: Dire si la revue n'a rien vérifié
+        if: steps.review.outcome != 'success'
+        run: |
+          echo "::warning title=Revue des dépendances inactive::L'action n'a pas pu s'exécuter — le « Dependency graph » est probablement désactivé (Settings → Code security). Tant qu'il l'est, aucune vulnérabilité introduite par une PR n'est signalée ici. \`npm audit\` reste actif."
+          echo "Voir https://github.com/mister-guiiug/dev-wpa-config/settings/security_analysis" 
 
   audit:
     name: npm audit

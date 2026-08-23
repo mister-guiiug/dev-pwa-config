@@ -85,7 +85,7 @@ jobs:
             "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz \
             typescript prettier eslint @eslint/js typescript-eslint globals \
             eslint-plugin-jsx-a11y eslint-plugin-react-hooks eslint-plugin-react-refresh \
-            react react-dom
+            react react-dom @testing-library/jest-dom
 
       - name: tsconfig `extends` resolves through exports
         working-directory: /tmp/fixture
@@ -105,27 +105,41 @@ jobs:
       # `exports` du tarball installé. Elle en couvrait dix sur vingt-six, dont
       # aucun des plus consommés (`react`, `react/observability`, `vite-csp`).
       # Tout nouvel export est désormais couvert d'office.
+      #
+      # Trois modules ne s'importent pas hors de leur contexte, et c'est voulu :
+      # ils sont nommés un par un, avec la raison. Une liste d'exclusion muette
+      # finirait par cacher un vrai module cassé.
       - name: Every JS subpath import resolves
         working-directory: /tmp/fixture
         run: |
           node --input-type=module -e "
-            const { createRequire } = await import('node:module');
-            const require = createRequire(process.cwd() + '/');
-            const pkg = require('@mister-guiiug/dev-wpa-config/package.json');
+            const { readFileSync } = await import('node:fs');
+            // Lu comme un FICHIER : \`package.json\` n'est pas dans la table
+            // \`exports\`, donc pas résoluble comme sous-chemin.
+            const pkg = JSON.parse(
+              readFileSync('node_modules/@mister-guiiug/dev-wpa-config/package.json', 'utf8')
+            );
+            const CONTEXT_BOUND = {
+              'vitest-setup': 'appelle vi.mock() au niveau module — n existe que dans un run Vitest',
+              'react/use-update-prompt': 'importe virtual:pwa-register/react, module virtuel de Vite',
+              'react/update-prompt-banner': 'importe virtual:pwa-register/react, module virtuel de Vite',
+            };
             const subs = Object.entries(pkg.exports)
-              .filter(([, target]) => {
-                const file = typeof target === 'string' ? target : target.default;
-                return file.endsWith('.js');
-              })
-              .map(([sub]) => sub.replace(/^\.\//, ''));
+              .filter(([, t]) => (typeof t === 'string' ? t : t.default).endsWith('.js'))
+              .map(([s]) => s.replace(/^\.\//, ''));
             let ok = 0;
             for (const s of subs) {
+              if (s in CONTEXT_BOUND) {
+                console.log('— ' + s + ' : ' + CONTEXT_BOUND[s]);
+                continue;
+              }
               await import('@mister-guiiug/dev-wpa-config/' + s);
               console.log('✅ import ' + s);
               ok++;
             }
             if (ok < 20) throw new Error('trop peu de sous-chemins couverts : ' + ok);
-            console.log(ok + ' sous-chemins JS résolus');
+            console.log(ok + ' sous-chemins JS résolus sur ' + subs.length +
+              ' (' + Object.keys(CONTEXT_BOUND).length + ' hors contexte)');
           "
 
       - name: CSS + JSON assets are shipped in the tarball
