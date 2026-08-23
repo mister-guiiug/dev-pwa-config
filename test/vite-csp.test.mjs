@@ -10,6 +10,22 @@ const run = (opts, html) => cspPlugin(opts).transformIndexHtml.handler(html);
 const render = (html, opts = {}) =>
   /content="([^"]+)"/.exec(run(opts, html))[1];
 
+/**
+ * Sources déclarées pour une directive, en LISTE.
+ *
+ * Chercher `https://www.googletagmanager.com` comme sous-chaîne de la politique
+ * entière est un test faible — et CodeQL le signale à raison (« incomplete URL
+ * substring sanitization ») : `https://www.googletagmanager.com.evil.test`
+ * contient la même sous-chaîne. On compare donc des jetons entiers.
+ */
+const sourcesOf = (csp, directive) => {
+  const found = csp
+    .split(';')
+    .map(part => part.trim().split(/\s+/))
+    .find(([name]) => name === directive);
+  return found ? found.slice(1) : [];
+};
+
 const SCRIPT =
   "(function(){document.documentElement.dataset.theme='dark';})();";
 const HASH = `'sha256-${createHash('sha256').update(SCRIPT).digest('base64')}'`;
@@ -90,8 +106,16 @@ test('analytics: autorise les hôtes que pwaSeoPlugin injecte réellement', asyn
   const { head, body } = buildAnalyticsHtmlFragments({
     gtmContainerId: 'GTM-ABC123',
   });
-  assert.ok(head.includes('www.googletagmanager.com'), 'fragment GTM attendu');
-  assert.ok(body.includes('<iframe'), 'repli noscript attendu');
+  // Origine comparée exactement, pas cherchée comme sous-chaîne : la seconde
+  // méthode accepterait `www.googletagmanager.com.evil.test`.
+  const origins = [...head.matchAll(/https:\/\/[^'"\s)]+/g)].map(
+    ([url]) => new URL(url).origin
+  );
+  assert.ok(
+    origins.includes('https://www.googletagmanager.com'),
+    `fragment GTM attendu, origines vues : ${origins.join(', ')}`
+  );
+  assert.match(body, /<iframe[^>]+src="https:\/\/www\.googletagmanager\.com\//);
 
   // La page réelle : fragments analytics injectés, PUIS la CSP par-dessus.
   const html = `<head><meta charset="utf-8">${head}</head><body>${body}</body>`;
@@ -99,15 +123,35 @@ test('analytics: autorise les hôtes que pwaSeoPlugin injecte réellement', asyn
 
   // Sans ces trois-là, activer les deux plugins du paquet coupe l'analytics
   // sans qu'aucun build n'échoue.
-  assert.match(csp, /script-src[^;]*https:\/\/www\.googletagmanager\.com/);
-  assert.match(csp, /frame-src[^;]*https:\/\/www\.googletagmanager\.com/);
-  assert.match(csp, /connect-src[^;]*https:\/\/\*\.google-analytics\.com/);
+  assert.ok(
+    sourcesOf(csp, 'script-src').includes('https://www.googletagmanager.com'),
+    'script-src doit autoriser le tag manager'
+  );
+  assert.ok(
+    sourcesOf(csp, 'frame-src').includes('https://www.googletagmanager.com'),
+    'frame-src doit autoriser l’iframe de repli noscript'
+  );
+  assert.ok(
+    sourcesOf(csp, 'connect-src').includes('https://*.google-analytics.com'),
+    'connect-src doit autoriser la collecte GA4'
+  );
 });
 
 test('sans analytics, rien de Google n’est autorisé', () => {
   const csp = render('<head><meta charset="utf-8"></head>');
-  assert.doesNotMatch(csp, /googletagmanager/);
-  assert.match(csp, /frame-src 'none'/);
+  for (const directive of [
+    'script-src',
+    'frame-src',
+    'connect-src',
+    'img-src',
+  ]) {
+    const sources = sourcesOf(csp, directive);
+    assert.ok(
+      sources.every(source => !source.endsWith('googletagmanager.com')),
+      `${directive} ne doit rien autoriser de Google : ${sources.join(' ')}`
+    );
+  }
+  assert.deepEqual(sourcesOf(csp, 'frame-src'), ["'none'"]);
 });
 
 test("frame-src 'none' ne se mélange jamais à des hôtes", () => {

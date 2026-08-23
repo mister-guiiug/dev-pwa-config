@@ -56,10 +56,25 @@ const DEFAULT_ICONS = [
   },
 ];
 
-/** Chemin de base normalisé : toujours `/…/`, ou `/`. */
+/**
+ * Chemin de base normalisé : toujours `/…/`, ou `/`.
+ *
+ * Le rognage se fait par index, pas par `replace(/^\/+|\/+$/g, '')` : cette
+ * alternative ancrée aux deux bouts fait reculer le moteur d'expressions
+ * régulières sur une chaîne pleine de barres obliques (signalé par CodeQL —
+ * « polynomial regular expression used on uncontrolled data »). Ici l'entrée
+ * vient d'une configuration, donc le risque est théorique ; deux boucles
+ * linéaires le retirent quand même, et se lisent aussi bien.
+ */
 export function normalizeBasePath(basePath) {
   if (!basePath || basePath === '/') return '/';
-  return `/${String(basePath).replace(/^\/+|\/+$/g, '')}/`;
+  const value = String(basePath);
+  let start = 0;
+  let end = value.length;
+  while (start < end && value[start] === '/') start += 1;
+  while (end > start && value[end - 1] === '/') end -= 1;
+  const trimmed = value.slice(start, end);
+  return trimmed ? `/${trimmed}/` : '/';
 }
 
 /**
