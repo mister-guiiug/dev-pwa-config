@@ -606,6 +606,68 @@ Variables d'env de build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`,
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
 `htmlTrackingPlugin()`), désormais factorisés ici.
 
+### `vite-csp` — Content-Security-Policy par hash
+
+```ts
+import { pwaSeoPlugin } from '@mister-guiiug/dev-wpa-config/vite-pwa-base';
+import { cspPlugin } from '@mister-guiiug/dev-wpa-config/vite-csp';
+
+export default defineConfig(({ command }) => ({
+  plugins: [
+    react(),
+    tailwindcss(),
+    pwaSeoPlugin({ siteName: 'Mister Puzzle' }),
+    cspPlugin({
+      dev: command === 'serve',
+      connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
+      analytics: true, // ← si pwaSeoPlugin injecte GTM ou GA4
+    }),
+    VitePWA({ ... }),
+  ],
+}));
+```
+
+`cspPlugin` doit venir **après** `pwaSeoPlugin` : il hashe le HTML final, donc
+les scripts inline injectés en amont.
+
+**`analytics: true` n'est pas cosmétique.** GA4 charge un `<script src>` externe
+et GTM un `<iframe>` de repli `noscript` : `default-src 'self'` les bloque tous
+les deux, sans la moindre erreur de build. Activer les deux plugins sans cette
+option coupe donc l'analytics **en silence**. L'option ajoute exactement les
+hôtes que `pwaSeoPlugin` injecte (`script`, `img`, `connect`, `frame`).
+
+**Ce qu'une CSP en `<meta>` ne peut pas faire.** La spécification exclut
+`frame-ancestors`, `report-uri` et `sandbox` d'une politique délivrée par
+balise : le navigateur les **ignore**. Le template `index.html` de ce paquet
+portait `frame-ancestors 'none'` — une protection anti-clickjacking qui n'a
+jamais existé, avec toute l'apparence du contraire. Le plugin refuse désormais
+ces trois directives plutôt que de les relayer.
+
+Pour protéger réellement du clickjacking, il faut un **en-tête HTTP** :
+
+```jsonc
+// firebase.json — pour les apps déployées sur Firebase Hosting
+{
+  "hosting": {
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "frame-ancestors 'none'",
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+**GitHub Pages ne permet aucun en-tête personnalisé** : les apps qui y sont
+déployées n'ont pas de protection anti-clickjacking effective. C'est un fait à
+connaître, pas à masquer derrière une directive inerte.
+
 ### Tests a11y (axe-core) — `playwright-a11y`
 
 ```ts

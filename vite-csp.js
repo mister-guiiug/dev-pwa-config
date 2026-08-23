@@ -33,8 +33,39 @@
  * Si un <meta http-equiv="Content-Security-Policy"> statique existe déjà dans
  * index.html, il est REMPLACÉ (le plugin devient la source unique) ; sinon la
  * balise est insérée juste après <meta charset>.
+ *
+ * CE QU'UNE CSP EN <meta> NE PEUT PAS FAIRE. La spécification exclut
+ * explicitement `frame-ancestors`, `report-uri` et `sandbox` d'une politique
+ * délivrée par balise : le navigateur les IGNORE, en silence. Le template
+ * `index.html` du paquet terminait pourtant sa CSP par `frame-ancestors 'none'`
+ * — une protection anti-clickjacking qui n'a jamais existé, avec toute
+ * l'apparence du contraire. Elle demande un EN-TÊTE HTTP, donc un hébergeur qui
+ * en pose : Firebase Hosting le permet (`headers` dans `firebase.json`), GitHub
+ * Pages non. Le plugin refuse désormais la directive plutôt que de la relayer.
  */
 import { createHash } from 'node:crypto';
+
+/**
+ * Hôtes exigés par les fragments analytics qu'injecte `pwaSeoPlugin`.
+ *
+ * Les deux plugins du paquet sont documentés côte à côte, dans le même exemple,
+ * et se cassaient mutuellement : GA4 charge un `<script src>` externe et GTM un
+ * `<iframe>` de repli `noscript`, tous deux bloqués par `default-src 'self'`.
+ * Activer les deux coupait l'analytics sans erreur de build — silencieusement.
+ */
+export const ANALYTICS_HOSTS = {
+  script: ['https://www.googletagmanager.com'],
+  img: ['https://www.googletagmanager.com', 'https://*.google-analytics.com'],
+  connect: [
+    'https://www.googletagmanager.com',
+    'https://*.google-analytics.com',
+    'https://*.analytics.google.com',
+  ],
+  frame: ['https://www.googletagmanager.com'],
+};
+
+/** Directives qu'un navigateur ignore dans une CSP posée par `<meta>`. */
+const META_IGNORED = ['frame-ancestors', 'report-uri', 'sandbox'];
 
 const CSP_META_RE = /<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/i;
 const CHARSET_RE = /<meta\s+charset=["'][^"']*["']\s*\/?>/i;
@@ -58,8 +89,20 @@ export function cspPlugin(options = {}) {
     fontSrc = ["'self'", 'data:'],
     styleSrc = ["'self'", "'unsafe-inline'"],
     scriptSrc = [],
+    // `'none'` par défaut : une app de la famille n'encadre rien. C'est la
+    // directive qui compte réellement dans un `<meta>`, contrairement à
+    // `frame-ancestors` qui y est ignorée.
+    frameSrc = ["'none'"],
+    analytics = false,
     extraDirectives = {},
   } = options;
+
+  // `'none'` doit rester seul : mêlé à des hôtes, il produit une directive
+  // malformée que les navigateurs interprètent chacun à leur façon.
+  const withAnalytics = (list, extra) =>
+    analytics
+      ? [...new Set([...list.filter(source => source !== "'none'"), ...extra])]
+      : list;
 
   return {
     name: 'dwc-csp',
@@ -69,18 +112,23 @@ export function cspPlugin(options = {}) {
         const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
           m => sha256(m[1] ?? '')
         );
+        const scripts = withAnalytics(scriptSrc, ANALYTICS_HOSTS.script);
         const scriptSrcValue = dev
-          ? "'self' 'unsafe-inline'"
-          : ["'self'", ...scriptSrc, ...hashes].join(' ');
+          ? ["'self'", "'unsafe-inline'", ...scripts].join(' ')
+          : ["'self'", ...scripts, ...hashes].join(' ');
 
         /** @type {Record<string, string>} */
         const directives = {
           'default-src': "'self'",
           'script-src': scriptSrcValue,
           'style-src': styleSrc.join(' '),
-          'img-src': imgSrc.join(' '),
+          'img-src': withAnalytics(imgSrc, ANALYTICS_HOSTS.img).join(' '),
           'font-src': fontSrc.join(' '),
-          'connect-src': connectSrc.join(' '),
+          'connect-src': withAnalytics(
+            connectSrc,
+            ANALYTICS_HOSTS.connect
+          ).join(' '),
+          'frame-src': withAnalytics(frameSrc, ANALYTICS_HOSTS.frame).join(' '),
           'manifest-src': "'self'",
           'worker-src': "'self'",
           'object-src': "'none'",
@@ -88,6 +136,19 @@ export function cspPlugin(options = {}) {
           'form-action': "'self'",
           ...extraDirectives,
         };
+
+        for (const name of META_IGNORED) {
+          if (!(name in extraDirectives)) continue;
+          // Échouer bruyamment vaut mieux que poser une directive inerte :
+          // c'est exactement la fausse assurance qu'on vient de retirer du
+          // template.
+          throw new Error(
+            `[dwc-csp] « ${name} » est ignorée dans une CSP <meta> : la poser ` +
+              `ici donnerait une protection illusoire. Elle doit venir d'un ` +
+              `en-tête HTTP (Firebase Hosting : "headers" dans firebase.json ; ` +
+              `GitHub Pages ne permet pas d'en poser).`
+          );
+        }
 
         const content = Object.entries(directives)
           .filter(([, v]) => v != null && v !== '')

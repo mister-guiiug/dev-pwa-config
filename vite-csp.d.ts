@@ -25,11 +25,35 @@ export interface CspOptions {
    */
   scriptSrc?: string[];
   /**
-   * Ajoute ou écrase des directives arbitraires (ex.
-   * `{ 'frame-ancestors': "'none'" }`). Une valeur vide (`''`) retire la directive.
+   * Directive `frame-src` (ce que la page a le droit d'encadrer).
+   * Défaut : `["'none'"]`.
+   */
+  frameSrc?: string[];
+  /**
+   * Autorise les hôtes exigés par les fragments GTM / GA4 qu'injecte
+   * `pwaSeoPlugin` : sans ça, activer les deux plugins coupe l'analytics sans
+   * erreur de build (script externe et iframe de repli bloqués par
+   * `default-src 'self'`). Défaut : `false`.
+   */
+  analytics?: boolean;
+  /**
+   * Ajoute ou écrase des directives arbitraires. Une valeur vide (`''`) retire
+   * la directive.
+   *
+   * `frame-ancestors`, `report-uri` et `sandbox` sont REFUSÉS : un navigateur
+   * les ignore dans une CSP posée par `<meta>`, les accepter ici donnerait une
+   * protection illusoire. Elles demandent un en-tête HTTP.
    */
   extraDirectives?: Record<string, string>;
 }
+
+/** Hôtes exigés par les fragments analytics injectés par `pwaSeoPlugin`. */
+export declare const ANALYTICS_HOSTS: {
+  script: string[];
+  img: string[];
+  connect: string[];
+  frame: string[];
+};
 
 /**
  * Plugin Vite : injecte la Content-Security-Policy dans le <head>, avec

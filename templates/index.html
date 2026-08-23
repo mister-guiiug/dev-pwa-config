@@ -27,12 +27,24 @@
       Si l'app appelle un backend, ÉLARGIR connect-src :
         - Supabase : connect-src 'self' https://*.supabase.co wss://*.supabase.co
         - Firebase : connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com
-        - GA4/GTM  : ajouter https://www.googletagmanager.com https://*.google-analytics.com
-                     et autoriser script-src https://www.googletagmanager.com
+        - GA4/GTM  : `cspPlugin({ analytics: true })` s'en charge (hôtes script,
+                     img, connect et frame). Ne pas les recopier à la main ici.
+
+      PAS DE frame-ancestors ICI. La spécification exclut cette directive (comme
+      `report-uri` et `sandbox`) d'une CSP délivrée par balise <meta> : le
+      navigateur l'IGNORE. Ce template l'a longtemps portée — une protection
+      anti-clickjacking qui n'existait pas, avec l'apparence du contraire.
+      Elle demande un EN-TÊTE HTTP :
+        - Firebase Hosting : "headers" dans firebase.json
+            { "source": "**", "headers": [
+                { "key": "Content-Security-Policy", "value": "frame-ancestors 'none'" } ] }
+        - GitHub Pages : impossible, aucun en-tête personnalisé. Les apps qui y
+          sont déployées n'ont pas de protection anti-clickjacking effective —
+          fait à connaître, pas à masquer.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'"
     />
 
     <!-- Script anti-FOUC : applique le thème avant tout rendu (clé alignée useTheme). -->
