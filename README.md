@@ -691,8 +691,10 @@ hôtes que `pwaSeoPlugin` injecte (`script`, `img`, `connect`, `frame`).
 `frame-ancestors`, `report-uri` et `sandbox` d'une politique délivrée par
 balise : le navigateur les **ignore**. Le template `index.html` de ce paquet
 portait `frame-ancestors 'none'` — une protection anti-clickjacking qui n'a
-jamais existé, avec toute l'apparence du contraire. Le plugin refuse désormais
-ces trois directives plutôt que de les relayer.
+jamais existé, avec toute l'apparence du contraire. Le plugin **retire** désormais
+ces trois directives et le signale, plutôt que de les relayer. Huit apps de la
+famille en passaient une : échouer aurait cassé huit builds pour retirer
+quelque chose que le navigateur ignorait déjà.
 
 Pour protéger réellement du clickjacking, il faut un **en-tête HTTP** :
 

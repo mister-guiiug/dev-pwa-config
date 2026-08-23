@@ -40,9 +40,10 @@ export interface CspOptions {
    * Ajoute ou écrase des directives arbitraires. Une valeur vide (`''`) retire
    * la directive.
    *
-   * `frame-ancestors`, `report-uri` et `sandbox` sont REFUSÉS : un navigateur
-   * les ignore dans une CSP posée par `<meta>`, les accepter ici donnerait une
-   * protection illusoire. Elles demandent un en-tête HTTP.
+   * `frame-ancestors`, `report-uri` et `sandbox` sont RETIRÉS avec un
+   * avertissement : un navigateur les ignore dans une CSP posée par `<meta>`,
+   * les relayer donnerait une protection illusoire. Elles demandent un en-tête
+   * HTTP.
    */
   extraDirectives?: Record<string, string>;
 }

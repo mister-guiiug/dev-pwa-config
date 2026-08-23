@@ -120,19 +120,39 @@ test("frame-src 'none' ne se mélange jamais à des hôtes", () => {
   assert.ok(!frameSrc.includes("'none'"), `directive malformée : ${frameSrc}`);
 });
 
-test('une directive inerte en <meta> est refusée, pas relayée', () => {
-  // `frame-ancestors` dans un <meta> est ignorée par le navigateur : l'accepter
-  // reviendrait à afficher une protection anti-clickjacking inexistante.
+test('une directive inerte en <meta> est retirée, et signalée', () => {
+  // `frame-ancestors` dans un <meta> est ignorée par le navigateur : la relayer
+  // afficherait une protection anti-clickjacking inexistante. Huit apps de la
+  // famille la passent pourtant — d'où un avertissement, et non une exception
+  // qui casserait huit builds pour retirer quelque chose d'inerte.
+  const warnings = [];
+  const original = console.warn;
+  console.warn = message => warnings.push(String(message));
+  try {
+    for (const name of ['frame-ancestors', 'report-uri', 'sandbox']) {
+      const csp = render('<head><meta charset="utf-8"></head>', {
+        extraDirectives: { [name]: "'none'" },
+      });
+      assert.doesNotMatch(
+        csp,
+        new RegExp(name),
+        `${name} ne doit pas être posée`
+      );
+    }
+  } finally {
+    console.warn = original;
+  }
+  assert.equal(warnings.length, 3, 'chaque retrait doit être signalé');
   for (const name of ['frame-ancestors', 'report-uri', 'sandbox']) {
-    assert.throws(
-      () =>
-        render('<head><meta charset="utf-8"></head>', {
-          extraDirectives: { [name]: "'none'" },
-        }),
-      new RegExp(name),
-      `${name} devrait être refusée`
+    assert.ok(
+      warnings.some(w => w.includes(name)),
+      `l'avertissement doit nommer ${name}`
     );
   }
+  assert.ok(
+    warnings.every(w => w.includes('en-tête')),
+    'l’avertissement doit dire où poser la protection pour de vrai'
+  );
 });
 
 test('le template ne porte plus de directive inerte', () => {

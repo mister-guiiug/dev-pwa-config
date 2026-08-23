@@ -41,7 +41,8 @@
  * — une protection anti-clickjacking qui n'a jamais existé, avec toute
  * l'apparence du contraire. Elle demande un EN-TÊTE HTTP, donc un hébergeur qui
  * en pose : Firebase Hosting le permet (`headers` dans `firebase.json`), GitHub
- * Pages non. Le plugin refuse désormais la directive plutôt que de la relayer.
+ * Pages non. Le plugin retire donc ces directives et le signale, au lieu de les
+ * relayer.
  */
 import { createHash } from 'node:crypto';
 
@@ -137,16 +138,19 @@ export function cspPlugin(options = {}) {
           ...extraDirectives,
         };
 
+        // Directives inertes en <meta> : on les RETIRE, en le disant. HUIT
+        // apps de la famille passent `frame-ancestors` ici — lever une
+        // exception casserait leur build pour retirer quelque chose que le
+        // navigateur ignorait déjà. Le résultat est identique côté protection ;
+        // ce qui change, c'est que l'illusion cesse.
         for (const name of META_IGNORED) {
-          if (!(name in extraDirectives)) continue;
-          // Échouer bruyamment vaut mieux que poser une directive inerte :
-          // c'est exactement la fausse assurance qu'on vient de retirer du
-          // template.
-          throw new Error(
-            `[dwc-csp] « ${name} » est ignorée dans une CSP <meta> : la poser ` +
-              `ici donnerait une protection illusoire. Elle doit venir d'un ` +
-              `en-tête HTTP (Firebase Hosting : "headers" dans firebase.json ; ` +
-              `GitHub Pages ne permet pas d'en poser).`
+          if (!(name in directives)) continue;
+          delete directives[name];
+          console.warn(
+            `[dwc-csp] « ${name} » retirée : un navigateur l'ignore dans une ` +
+              `CSP posée par <meta>. Cette protection doit venir d'un en-tête ` +
+              `HTTP — Firebase Hosting : "headers" dans firebase.json ; ` +
+              `GitHub Pages ne permet pas d'en poser.`
           );
         }
 
