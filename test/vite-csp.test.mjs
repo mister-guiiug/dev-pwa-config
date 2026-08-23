@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { cspPlugin } from '../vite-csp.js';
+import { cspPlugin, ANALYTICS_HOSTS } from '../vite-csp.js';
 
 const run = (opts, html) => cspPlugin(opts).transformIndexHtml.handler(html);
 
@@ -106,52 +106,61 @@ test('analytics: autorise les hôtes que pwaSeoPlugin injecte réellement', asyn
   const { head, body } = buildAnalyticsHtmlFragments({
     gtmContainerId: 'GTM-ABC123',
   });
-  // Origine comparée exactement, pas cherchée comme sous-chaîne : la seconde
-  // méthode accepterait `www.googletagmanager.com.evil.test`.
-  const origins = [...head.matchAll(/https:\/\/[^'"\s)]+/g)].map(
-    ([url]) => new URL(url).origin
-  );
-  assert.ok(
-    origins.includes('https://www.googletagmanager.com'),
-    `fragment GTM attendu, origines vues : ${origins.join(', ')}`
-  );
-  assert.match(body, /<iframe[^>]+src="https:\/\/www\.googletagmanager\.com\//);
+
+  // Les origines sont COMPARÉES ENTIÈREMENT à ce que le module déclare, jamais
+  // cherchées comme sous-chaîne : `includes('https://www.googletagmanager.com')`
+  // accepterait `https://www.googletagmanager.com.evil.test`, et CodeQL le
+  // signale à raison. L'égalité de liste est aussi un test plus fort — un hôte
+  // en trop échoue, au lieu de passer inaperçu.
+  const origins = [
+    ...new Set(
+      [...head.matchAll(/https:\/\/[^'"\s)]+/g)].map(
+        ([url]) => new URL(url).origin
+      )
+    ),
+  ];
+  assert.deepEqual(origins, ANALYTICS_HOSTS.script, 'fragment GTM attendu');
+
+  const iframe = /<iframe[^>]+src="([^"]+)"/.exec(body);
+  assert.ok(iframe, 'repli noscript attendu');
+  assert.deepEqual([new URL(iframe[1]).origin], ANALYTICS_HOSTS.frame);
 
   // La page réelle : fragments analytics injectés, PUIS la CSP par-dessus.
   const html = `<head><meta charset="utf-8">${head}</head><body>${body}</body>`;
   const csp = render(html, { analytics: true });
 
-  // Sans ces trois-là, activer les deux plugins du paquet coupe l'analytics
-  // sans qu'aucun build n'échoue.
-  assert.ok(
-    sourcesOf(csp, 'script-src').includes('https://www.googletagmanager.com'),
-    'script-src doit autoriser le tag manager'
+  // Sans ces hôtes, activer les deux plugins du paquet coupe l'analytics sans
+  // qu'aucun build n'échoue.
+  const hashes = sourcesOf(csp, 'script-src').filter(source =>
+    source.startsWith("'sha256-")
   );
-  assert.ok(
-    sourcesOf(csp, 'frame-src').includes('https://www.googletagmanager.com'),
-    'frame-src doit autoriser l’iframe de repli noscript'
-  );
-  assert.ok(
-    sourcesOf(csp, 'connect-src').includes('https://*.google-analytics.com'),
-    'connect-src doit autoriser la collecte GA4'
-  );
+  assert.deepEqual(sourcesOf(csp, 'script-src'), [
+    "'self'",
+    ...ANALYTICS_HOSTS.script,
+    ...hashes,
+  ]);
+  assert.deepEqual(sourcesOf(csp, 'frame-src'), ANALYTICS_HOSTS.frame);
+  assert.deepEqual(sourcesOf(csp, 'connect-src'), [
+    "'self'",
+    ...ANALYTICS_HOSTS.connect,
+  ]);
+  assert.deepEqual(sourcesOf(csp, 'img-src'), [
+    "'self'",
+    'data:',
+    'blob:',
+    ...ANALYTICS_HOSTS.img,
+  ]);
 });
 
 test('sans analytics, rien de Google n’est autorisé', () => {
+  // Comparaison à la valeur EXACTE de chaque directive : n'importe quel hôte
+  // en trop échoue, sans avoir à chercher un nom de domaine dans la politique.
   const csp = render('<head><meta charset="utf-8"></head>');
-  for (const directive of [
-    'script-src',
-    'frame-src',
-    'connect-src',
-    'img-src',
-  ]) {
-    const sources = sourcesOf(csp, directive);
-    assert.ok(
-      sources.every(source => !source.endsWith('googletagmanager.com')),
-      `${directive} ne doit rien autoriser de Google : ${sources.join(' ')}`
-    );
-  }
+  assert.deepEqual(sourcesOf(csp, 'script-src'), ["'self'"]);
   assert.deepEqual(sourcesOf(csp, 'frame-src'), ["'none'"]);
+  assert.deepEqual(sourcesOf(csp, 'connect-src'), ["'self'"]);
+  assert.deepEqual(sourcesOf(csp, 'img-src'), ["'self'", 'data:', 'blob:']);
+  assert.deepEqual(sourcesOf(csp, 'font-src'), ["'self'", 'data:']);
 });
 
 test("frame-src 'none' ne se mélange jamais à des hôtes", () => {
