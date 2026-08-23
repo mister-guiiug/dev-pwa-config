@@ -305,7 +305,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 4. **TypeScript** : `tsconfig.app.json` + `tsconfig.node.json` en `extends`.
 5. **Tests** : `vitest.config.ts` (`baseTestOptions`) + `src/test/setup.ts`
    (`import '@mister-guiiug/dev-wpa-config/vitest-setup'`).
-6. **CI/CD** (`secrets: inherit` + `permissions` au niveau caller) : `ci.yml` →
+6. **CI/CD** (secrets passés NOMMÉMENT — jamais `inherit` — + `permissions` au niveau caller) : `ci.yml` →
    `pwa-ci.yml@v3`, `deploy.yml` → `pwa-deploy.yml@v3`, `lighthouse.yml` →
    `pwa-lighthouse.yml@v3`.
 7. **PWA/SEO** : `index.html` depuis [`templates/index.html`](./templates/index.html) +
@@ -1096,7 +1096,9 @@ permissions:
 jobs:
   ci:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v3
-    secrets: inherit
+    # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
+    # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
+    # secrets du dépôt à un workflow qui n'en demande aucun.
     with:
       run-e2e: false # passer à true quand Playwright est en place
       e2e-grep: '@critical'
@@ -1122,7 +1124,10 @@ permissions:
 jobs:
   deploy:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
-    secrets: inherit
+    # Le workflow DÉCLARE les secrets dont il a besoin : on ne passe que
+    # ceux-là. `secrets: inherit` enverrait tout le trousseau du dépôt.
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
     with:
       use-base-path: true
       pre-build-script: '' # ex: 'migrate:db' pour Supabase
@@ -1156,7 +1161,9 @@ permissions:
 jobs:
   publish:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v3
-    secrets: inherit
+    # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
+    # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
+    # secrets du dépôt à un workflow qui n'en demande aucun.
 ```
 
 ## Personnalisation par projet
@@ -1363,3 +1370,19 @@ Toute modification de stack famille (bump majeur React, ESLint, etc.) :
 3. `npm run version-packages`, committer, taguer, pousser (cf. ci-dessus) → publication auto.
 4. Aligner les consommateurs : `node scripts/migrate-consumers.mjs <version> --write`
    (dry-run par défaut sans `--write`), puis tester chaque app.
+
+## Gouvernance
+
+|                                             |                                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)        | Comment contribuer, et les quatre règles du dépôt — dont « promouvoir sans migrer, c'est ne pas avoir fini » |
+| [`SECURITY.md`](SECURITY.md)                | Signalement privé d'une vulnérabilité, périmètre, et les deux limites connues qui ne sont pas des failles    |
+| [`.github/CODEOWNERS`](.github/CODEOWNERS)  | `workflows/`, `actions/` et `scripts/` demandent une relecture : ils s'exécutent dans seize dépôts           |
+| `npm run validate`                          | Ce que la CI exécute : format, lint, types, tests                                                            |
+| `node scripts/apply-rulesets.mjs --dry-run` | Protection de `main` sur les dix-huit dépôts — liste lue dans le catalogue, checks exigés par dépôt          |
+
+**Secrets.** Chaque workflow réutilisable **déclare** les secrets dont il a
+besoin ; un caller ne passe que ceux-là. `secrets: inherit` enverrait tout le
+trousseau du dépôt à un workflow qui n'en demande souvent aucun — c'est le
+chemin d'escalade le plus court de la famille, et il ne figure plus nulle part
+dans la documentation.

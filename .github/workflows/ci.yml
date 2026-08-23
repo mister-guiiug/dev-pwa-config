@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: In-repo config parse
@@ -14,57 +17,47 @@ jobs:
         with:
           persist-credentials: false
 
-      # Pas de cache npm : pas de lockfile commité (config-only package).
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          # Le lockfile est désormais commité : installs reproductibles, et le
+          # cache npm redevient possible. Deux exécutions à une semaine d'écart
+          # installaient auparavant des arbres différents.
+          cache: npm
 
       - name: Install
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
-      - name: Format check (dogfood prettier-base)
-        run: npm run format:check
+      # format + lint + typecheck + tests. Le paquet publiait deux configs
+      # ESLint sans en appliquer aucune, et livrait `tsconfig-strict-plus` sans
+      # jamais type-checker ses propres déclarations.
+      - name: Validate
+        run: npm run validate
 
-      - name: Unit tests (exports/files/parité/chargement)
-        run: npm test
-
-      - name: Verify ESLint configs are syntactically valid
+      - name: Les fichiers engendrés sont à jour
         run: |
-          node --input-type=module -e "import('./eslint-base.js').then(m => console.log('eslint-base OK:', m.default.length, 'configs'))"
-          node --input-type=module -e "import('./eslint-react.js').then(m => console.log('eslint-react OK:', m.default.length, 'configs'))"
-
-      - name: Verify Prettier config is valid
-        run: |
-          node --input-type=module -e "import('./prettier-base.js').then(m => console.log('prettier OK:', JSON.stringify(m.default)))"
+          npm run sync
+          if ! git diff --quiet; then
+            echo "::error::Un dérivé a divergé de sa source. Lancer 'npm run sync' et recommiter."
+            git --no-pager diff --stat
+            exit 1
+          fi
+          echo "✅ showroom, JSON-LD et tableau du README alignés sur leurs sources"
 
       - name: Verify TS configs parse
         run: |
           node -e "JSON.parse(require('fs').readFileSync('./tsconfig-app.json'))"
           node -e "JSON.parse(require('fs').readFileSync('./tsconfig-app-react.json'))"
           node -e "JSON.parse(require('fs').readFileSync('./tsconfig-node.json'))"
+          node -e "JSON.parse(require('fs').readFileSync('./tsconfig-strict-plus.json'))"
           echo "✅ tsconfigs parsent"
 
-      - name: Verify vitest configs parse
-        run: |
-          node --input-type=module -e "import('./vitest-base.js').then(m => console.log('vitest-base OK:', JSON.stringify(m.baseTestOptions)))"
-          node --input-type=module -e "import('./vitest-browser-base.js').then(m => console.log('vitest-browser-base OK:', JSON.stringify(m.baseBrowserTestOptions)))"
-
-      - name: Verify other configs parse
-        run: |
-          node --input-type=module -e "import('./commitlint-base.js').then(m => console.log('commitlint OK'))"
-          node --input-type=module -e "import('./lint-staged-base.js').then(m => console.log('lint-staged OK'))"
-          node --input-type=module -e "import('./playwright-base.js').then(m => console.log('playwright-base OK'))"
-          node --input-type=module -e "import('./tailwind-preset.js').then(m => console.log('tailwind-preset OK'))"
-          node --input-type=module -e "import('./vite-pwa-base.js').then(m => console.log('vite-pwa-base OK'))"
-
   # ── Smoke test « consommateur réel » ────────────────────────────────────────
-  # Le job `validate` ci-dessus ne teste que le parsing des fichiers DANS le repo.
-  # Il ne prouve PAS que le paquet, une fois `npm pack` + installé, résout ses
-  # subpath via la table `exports`. C'est exactement ce trou qui a laissé passer
-  # le bug de résolution intermittente du subpath `./tsconfig-app-react` en CI
-  # (mister-molkky a dû ré-inliner ses tsconfig/vitest pour le contourner).
-  # Ce job reproduit le mode de défaillance réel : extends/import depuis le
-  # tarball INSTALLÉ, pas depuis le repo.
+  # Le job `validate` ci-dessus ne teste que le dépôt. Il ne prouve PAS que le
+  # paquet, une fois `npm pack` + installé, résout ses subpath via la table
+  # `exports`. C'est exactement ce trou qui a laissé passer le bug de résolution
+  # intermittente du subpath `./tsconfig-app-react` en CI (mister-molkky a dû
+  # ré-inliner ses tsconfig/vitest pour le contourner).
   consumer-resolution:
     name: Consumer subpath resolution
     runs-on: ubuntu-latest
@@ -76,10 +69,11 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          cache: npm
 
       - name: Install + pack
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm pack                       # produit mister-guiiug-dev-wpa-config-*.tgz
 
       - name: Scaffold a throwaway consumer
@@ -90,7 +84,8 @@ jobs:
           npm install --no-audit --no-fund \
             "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz \
             typescript prettier eslint @eslint/js typescript-eslint globals \
-            eslint-plugin-react-hooks eslint-plugin-react-refresh
+            eslint-plugin-jsx-a11y eslint-plugin-react-hooks eslint-plugin-react-refresh \
+            react react-dom
 
       - name: tsconfig `extends` resolves through exports
         working-directory: /tmp/fixture
@@ -101,27 +96,42 @@ jobs:
           # pas les paquets de `types`, donc l'absence de vite/node types ici
           # n'est pas un problème : on ne valide QUE la résolution du extends.
           mkdir -p src && echo 'export {};' > src/x.ts
-          for cfg in tsconfig-app tsconfig-app-react tsconfig-node; do
+          for cfg in tsconfig-app tsconfig-app-react tsconfig-node tsconfig-strict-plus; do
             echo "{\"extends\":\"@mister-guiiug/dev-wpa-config/$cfg\",\"include\":[\"src\"]}" > tsconfig.json
             npx tsc --showConfig >/dev/null && echo "✅ extends $cfg"
           done
 
+      # La liste n'est plus écrite à la main : elle est DÉRIVÉE de la table
+      # `exports` du tarball installé. Elle en couvrait dix sur vingt-six, dont
+      # aucun des plus consommés (`react`, `react/observability`, `vite-csp`).
+      # Tout nouvel export est désormais couvert d'office.
       - name: Every JS subpath import resolves
         working-directory: /tmp/fixture
         run: |
           node --input-type=module -e "
-            const subs = ['eslint-base','eslint-react','prettier','commitlint',
-              'lint-staged','vitest-base','vitest-browser-base','playwright-base',
-              'tailwind-preset','vite-pwa-base'];
+            const { createRequire } = await import('node:module');
+            const require = createRequire(process.cwd() + '/');
+            const pkg = require('@mister-guiiug/dev-wpa-config/package.json');
+            const subs = Object.entries(pkg.exports)
+              .filter(([, target]) => {
+                const file = typeof target === 'string' ? target : target.default;
+                return file.endsWith('.js');
+              })
+              .map(([sub]) => sub.replace(/^\.\//, ''));
+            let ok = 0;
             for (const s of subs) {
               await import('@mister-guiiug/dev-wpa-config/' + s);
               console.log('✅ import ' + s);
+              ok++;
             }
+            if (ok < 20) throw new Error('trop peu de sous-chemins couverts : ' + ok);
+            console.log(ok + ' sous-chemins JS résolus');
           "
 
       - name: CSS + JSON assets are shipped in the tarball
         working-directory: /tmp/fixture
         run: |
           node -e "require.resolve('@mister-guiiug/dev-wpa-config/tailwind-preset.css'); console.log('✅ tailwind-preset.css present')"
+          node -e "require.resolve('@mister-guiiug/dev-wpa-config/tokens.css'); console.log('✅ tokens.css present')"
           node -e "require.resolve('@mister-guiiug/dev-wpa-config/components.css'); console.log('✅ components.css present')"
           node -e "require.resolve('@mister-guiiug/dev-wpa-config/tsconfig-app'); console.log('✅ tsconfig-app json present')"

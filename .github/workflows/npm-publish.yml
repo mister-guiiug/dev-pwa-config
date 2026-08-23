@@ -15,7 +15,6 @@
 # jobs:
 #   publish:
 #     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v3
-#     secrets: inherit
 name: Reusable npm publish
 
 on:
