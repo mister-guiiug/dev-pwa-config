@@ -36,10 +36,14 @@ test('Button : variante et taille exposées, type "button" par défaut', () => {
   assert.match(html, />Valider</);
 });
 
-test('Button : loading pose aria-busy ET désactive (anti double-clic)', () => {
+test('Button : loading pose aria-busy et aria-disabled, sans retirer le focus', () => {
   const html = render(Button, { loading: true }, 'Enregistrer');
   assert.match(html, /aria-busy="true"/);
-  assert.match(html, /disabled=""/);
+  assert.match(html, /aria-disabled="true"/);
+  // `disabled` retirerait le bouton du parcours clavier : le focus retombe sur
+  // <body> au moment précis où l'utilisateur attend le résultat. Le double-clic
+  // est bloqué par le gestionnaire, pas par l'attribut.
+  assert.doesNotMatch(html, /(^|\s)disabled=""/);
   assert.match(html, /data-dwc="button-spinner"/);
 });
 
@@ -143,7 +147,15 @@ test('Sheet : dialogue modal correctement étiqueté', () => {
   );
   assert.match(html, /role="dialog"/);
   assert.match(html, /aria-modal="true"/);
-  assert.match(html, /aria-label="Ajouter une dépense"/);
+  // Étiqueté PAR le titre affiché, pas par une copie de son texte : un seul
+  // endroit à traduire, et le nom accessible ne peut pas diverger du visible.
+  const labelledBy = html.match(/aria-labelledby="([^"]+)"/);
+  assert.ok(labelledBy, 'aria-labelledby attendu sur le dialogue');
+  assert.match(
+    html,
+    new RegExp(`id="${labelledBy[1]}"[^>]*>Ajouter une dépense<`)
+  );
+  assert.doesNotMatch(html, /aria-label="Ajouter une dépense"/);
   // Le panneau doit être focusable pour recevoir le focus à l'ouverture.
   assert.match(html, /tabindex="-1"/);
   assert.match(html, /data-dwc="sheet-backdrop"[^>]*aria-hidden="true"/);
