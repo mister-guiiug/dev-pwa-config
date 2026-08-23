@@ -182,6 +182,14 @@
       "types": "./vite-pwa-base.d.ts",
       "default": "./vite-pwa-base.js"
     },
+    "./vite-pwa": {
+      "types": "./vite-pwa.d.ts",
+      "default": "./vite-pwa.js"
+    },
+    "./vite-seo": {
+      "types": "./vite-pwa-base.d.ts",
+      "default": "./vite-pwa-base.js"
+    },
     "./vite-csp": {
       "types": "./vite-csp.d.ts",
       "default": "./vite-csp.js"
@@ -221,6 +229,8 @@
     "playwright-a11y.d.ts",
     "vite-pwa-base.js",
     "vite-pwa-base.d.ts",
+    "vite-pwa.js",
+    "vite-pwa.d.ts",
     "vite-csp.js",
     "vite-csp.d.ts",
     "tailwind-preset.js",

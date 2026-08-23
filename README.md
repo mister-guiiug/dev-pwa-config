@@ -606,6 +606,57 @@ Variables d'env de build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`,
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
 `htmlTrackingPlugin()`), désormais factorisés ici.
 
+### `vite-pwa` — options `VitePWA()` partagées
+
+```ts
+import { pwaBaseOptions } from '@mister-guiiug/dev-wpa-config/vite-pwa';
+
+VitePWA(
+  pwaBaseOptions({
+    id: 'miss-uwh', // identifiant du dépôt : base, scope, et couleurs du thème
+    name: 'Miss UWH — Bilan comptable',
+    shortName: 'Miss UWH',
+    description: 'Bilan comptable saisonnier d’un club de hockey subaquatique.',
+    categories: ['finance', 'productivity', 'sports'],
+    shortcuts: [{ name: 'Journal', url: '#/finances/journal' }],
+  })
+);
+```
+
+Relevé du 23/08/2026 sur les seize apps, avant ce module :
+
+|                   |                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `registerType`    | 10 en `prompt`, 4 en `autoUpdate`, 2 sans                                                                              |
+| `runtimeCaching`  | 5 apps sur 16 en déclarent un                                                                                          |
+| manifest          | 3 apps sans `display` ni `theme_color`                                                                                 |
+| mise à jour du SW | **15 apps sur 16** recâblent `virtual:pwa-register` à la main, alors que `react/use-update-prompt` existe (1 adoptant) |
+
+Trois défauts méritent d'être expliqués, parce qu'on pourrait les « améliorer »
+à tort :
+
+- **`registerType: 'prompt'`** — seul mode compatible avec `use-update-prompt` +
+  `UpdatePromptBanner` que le paquet livre. En `autoUpdate`, l'app se recharge
+  sous les doigts de l'utilisateur, parfois au milieu d'une saisie.
+- **Aucune mise en cache d'API par défaut** — mettre en cache une réponse
+  authentifiée expose les données d'un utilisateur au suivant sur un appareil
+  partagé. Les origines à mettre en cache se déclarent (`apiOrigins`), et
+  passent en `NetworkFirst` : une donnée périmée servie en ligne est un bug
+  fonctionnel, pas une optimisation.
+- **`theme_color` et `background_color` sont LUS dans `themes.js`** quand l'app
+  y figure, plutôt que recopiés. Cinq manifests sur treize avaient divergé du
+  relevé, sans qu'on puisse distinguer le choix délibéré de l'oubli. Une couleur
+  passée explicitement l'emporte toujours — le choix reste possible, il devient
+  écrit.
+
+Le module n'importe **pas** `vite-plugin-pwa` : il renvoie un objet d'options
+ordinaire, que l'app passe à son propre `VitePWA()`.
+
+> **`vite-pwa-base` ne contient rien de PWA** : ni manifest, ni service worker,
+> ni stratégie de cache — c'est du SEO et de l'analytics. Il est désormais aussi
+> exporté sous `./vite-seo`, qui dit ce qu'il fait. `./vite-pwa-base` reste
+> valide tant que des apps l'importent.
+
 ### `vite-csp` — Content-Security-Policy par hash
 
 ```ts

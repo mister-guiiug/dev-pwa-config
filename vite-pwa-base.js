@@ -1,6 +1,12 @@
 /**
  * Helpers Vite partagés pour les PWA miss-* / mister-*.
  *
+ * ⚠️ NOM TROMPEUR, CONSERVÉ POUR COMPATIBILITÉ. Ce module ne contient rien de
+ * PWA : ni manifest, ni service worker, ni stratégie de cache. Il fait du SEO
+ * et de l'analytics. Le même fichier est exporté sous `./vite-seo`, qui dit ce
+ * qu'il fait ; `./vite-pwa-base` reste valide et le restera tant que des apps
+ * l'importent. La vraie couche PWA est `./vite-pwa` (`pwaBaseOptions`).
+ *
  * Généralise les plugins qui étaient dupliqués :
  *   - mister-puzzle/vite-plugin-seo.ts  (GTM/GA4 + sitemap/robots/llms)
  *   - miss-carbook  htmlTrackingPlugin() (GTM/GSC/GA4)
