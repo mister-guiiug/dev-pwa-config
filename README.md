@@ -127,6 +127,12 @@ La page ne fait toujours aucune requête — le relevé est posé sur `globalThi
 par un `<script src>`, comme `themes.js`. Un fichier vide est un état valide :
 la vitrine n'affiche alors simplement aucune mesure.
 
+> Le workflow redemande **explicitement** la publication Pages après avoir
+> commité. Un push effectué avec le `GITHUB_TOKEN` ne déclenche aucun autre
+> workflow — c'est la protection anti-récursion de GitHub Actions — et le
+> relevé serait donc commité sans jamais être publié. Un `workflow_dispatch`
+> par l'API, lui, s'exécute normalement.
+
 ## Stack cible (juin 2026)
 
 Les configs imposent / supposent les versions suivantes côté projet consommateur :
