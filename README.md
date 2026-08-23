@@ -672,8 +672,33 @@ d'habiller celui du paquet. `components.css` ferme cet écart :
 
 Ce seul import donne déjà un rendu correct **en clair et en sombre**, sans
 configuration : les replis passent par les couleurs système CSS (`Canvas`,
-`CanvasText`, `GrayText`), qui suivent `color-scheme`. Pour passer aux couleurs
-de l'app, brancher le contrat — treize lignes, une fois :
+`CanvasText`, `GrayText`), qui suivent `color-scheme`.
+
+**Le plus simple : importer aussi `tokens.css`**, qui livre un jeu de valeurs
+neutre pour les quinze variables du contrat, clair et sombre, au contraste
+vérifié en CI (`test/tokens.test.mjs`) :
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-wpa-config/tokens.css'; /* ← valeurs par défaut */
+@import '@mister-guiiug/dev-wpa-config/components.css';
+
+/* Puis la teinte de l'app, deux lignes : */
+:root {
+  --dwc-primary: var(--color-primary);
+  --dwc-primary-contrast: #fff;
+}
+```
+
+`tokens.css` n'impose **aucune couleur de marque** : sa primaire est une ardoise
+neutre, faite pour être remplacée. Il traite les trois états de thème — choix
+clair, choix sombre, et réglage « système » qui ne pose aucun attribut — et
+distingue deux filets : `--dwc-border` sépare (discret), `--dwc-border-strong`
+désigne le contour d'un contrôle (3:1, WCAG 1.4.11).
+
+Pour brancher le contrat sur les variables existantes de l'app plutôt que sur
+les valeurs par défaut :
 
 ```css
 :root {
@@ -682,6 +707,7 @@ de l'app, brancher le contrat — treize lignes, une fois :
   --dwc-text: var(--uwh-text);
   --dwc-text-soft: var(--uwh-text-soft);
   --dwc-border: var(--uwh-border);
+  --dwc-border-strong: var(--uwh-border-strong);
   --dwc-primary: var(--color-primary);
   --dwc-primary-contrast: #fff;
   --dwc-primary-soft: var(--color-primary-soft);

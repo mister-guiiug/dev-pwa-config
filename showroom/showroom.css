@@ -49,6 +49,13 @@
   --dwc-text: var(--ds-text);
   --dwc-text-soft: var(--ds-text-soft);
   --dwc-border: var(--ds-border);
+  /*
+   * Le contour qui DÉSIGNE un contrôle demande 3:1 (WCAG 1.4.11), ce qu'un
+   * filet de séparation ne tient pas. Aucun thème du showroom ne déclare de
+   * `--ds-border-strong` : on retombe sur le texte secondaire, garanti lisible
+   * sur les deux fonds, donc largement au-dessus de 3:1.
+   */
+  --dwc-border-strong: var(--ds-border-strong, var(--ds-text-soft));
   --dwc-primary: var(--ds-primary);
   --dwc-primary-contrast: var(--ds-primary-contrast);
   --dwc-primary-soft: var(--ds-primary-soft);

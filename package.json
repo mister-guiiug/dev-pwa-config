@@ -99,6 +99,7 @@
     },
     "./tailwind-preset": "./tailwind-preset.js",
     "./tailwind-preset.css": "./tailwind-preset.css",
+    "./tokens.css": "./tokens.css",
     "./components.css": "./components.css"
   },
   "bin": {
@@ -133,6 +134,7 @@
     "vite-csp.d.ts",
     "tailwind-preset.js",
     "tailwind-preset.css",
+    "tokens.css",
     "components.css",
     "scripts/generate-pwa-icons.mjs"
   ],
