@@ -18,13 +18,7 @@
  *   node scripts/migrate-consumers.mjs 1.5.0 --write
  *   node scripts/migrate-consumers.mjs --install
  */
-import {
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  readdirSync,
-  statSync,
-} from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
