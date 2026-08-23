@@ -1,13 +1,39 @@
 /*
- * FICHIER GÉNÉRÉ — ne pas modifier à la main.
+ * Palettes des applications de la famille miss-* / mister-*.
  *
- * Source : `themes.js` à la racine du paquet (avec ses commentaires de relevé).
- * Régénérer : `npm run sync`.
+ * SOURCE DE VÉRITÉ. Ce fichier est la source ; `showroom/themes.js` en est le
+ * miroir engendré par `npm run sync`, et un test vérifie l'égalité à l'octet.
+ * Les palettes vivaient auparavant DANS le showroom, qui n'est pas publié : le
+ * paquet ignorait donc les seize palettes que sa propre vitrine connaissait.
  *
- * Le showroom ne peut pas `import` le module (page statique, `file://`) : il en
- * lit ce miroir. `test/themes.test.mjs` vérifie qu'il ne dérive pas.
+ * MÉTHODE. Chaque palette est RELEVÉE dans le `src/*.css` de l'app, jamais
+ * choisie ici. Deux règles de relevé :
+ *  - les valeurs exprimées en `rgba()` sont composées sur le fond réel de
+ *    l'app, pas approximées à vue ;
+ *  - `accent` répète `primary` là où l'app n'a qu'un ton de marque, plutôt que
+ *    d'inventer une couleur qu'elle n'utilise pas.
+ *
+ * CE QUE CE FICHIER N'EST PAS. Ce n'est pas une charte : le paquet n'impose
+ * aucune couleur (voir `tokens.css` pour le jeu neutre par défaut). C'est un
+ * relevé, utile pour rhabiller un composant d'un univers à l'autre, engendrer
+ * le `theme_color` d'un manifest, ou vérifier un contraste.
+ *
+ * Format d'un thème :
+ *   id           identifiant du dépôt (= nom GitHub), ou 'generic'
+ *   name         libellé affiché dans le sélecteur
+ *   tagline      une phrase sur l'univers visuel
+ *   schemes      ['light','dark'] ou ['dark'] pour une app dark-only
+ *   attribute    'data-theme' (défaut de `useTheme`) ou 'class' (variante .dark)
+ *   fontDisplay  police de titrage de l'app (repli système si non installée)
+ *   radius       rayon de carte
+ *   light/dark   rôles sémantiques → couleurs
+ *
+ * Le thème `generic` ne porte PAS de couleurs : il s'appuie sur les valeurs par
+ * défaut du showroom, qui restent la seule définition de la palette neutre.
  */
-globalThis.SHOWROOM_THEMES = [
+
+/** @type {import('./themes.js').FamilyTheme[]} */
+export const FAMILY_THEMES = [
   {
     id: 'generic',
     name: 'Générique — preset seul',
@@ -19,6 +45,7 @@ globalThis.SHOWROOM_THEMES = [
     radius: '0.75rem',
     usesCssDefaults: true,
   },
+
   {
     id: 'miss-badminton',
     name: 'Miss Badminton',
@@ -60,6 +87,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
+
   {
     id: 'miss-carbook',
     name: 'Miss Carbook',
@@ -101,6 +129,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
+
   {
     id: 'miss-contraction',
     name: 'Miss Contraction',
@@ -144,6 +173,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#b06ee0',
     },
   },
+
   {
     id: 'miss-genius',
     name: 'Miss Genius',
@@ -185,6 +215,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
+
   {
     id: 'miss-lookhouse',
     name: 'Miss Lookhouse',
@@ -226,6 +257,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
+
   {
     id: 'miss-supaboss',
     name: 'Miss Supaboss',
@@ -267,6 +299,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
+
   {
     id: 'miss-uwh',
     name: 'Miss UWH',
@@ -308,6 +341,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
+
   {
     id: 'mister-cim10',
     name: 'Mister CIM-10',
@@ -349,6 +383,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
+
   {
     id: 'mister-doc',
     name: 'Mister Doc',
@@ -390,6 +425,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
+
   {
     id: 'mister-footcoach',
     name: 'Mister Footcoach',
@@ -431,6 +467,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
+
   {
     id: 'mister-molkky',
     name: 'Mister Mölkky',
@@ -475,6 +512,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#7fb3d5',
     },
   },
+
   {
     id: 'mister-puzzle',
     name: 'Mister Puzzle',
@@ -516,6 +554,7 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
+
   {
     id: 'mister-qowa',
     name: 'Mister Qowa',
@@ -544,6 +583,22 @@ globalThis.SHOWROOM_THEMES = [
       info: '#1368ce',
     },
   },
+
+  /*
+   * Les trois entrées ci-dessous complètent le catalogue : 16 apps, 16
+   * palettes. Deux précisions sur la méthode, valables pour elles comme pour
+   * les précédentes.
+   *
+   * COMPOSITES. Ces apps expriment certaines couleurs en `rgba()` posé sur un
+   * fond (bordures, fonds teintés). Le showroom veut des hex opaques : la
+   * valeur ici est la COMPOSITION calculée de la rgba sur le fond réel de
+   * l'app, pas une teinte choisie à vue.
+   *
+   * ACCENT. Le rôle `accent` désigne un SECOND plan de marque. Ces trois apps
+   * n'en ont qu'un : `accent` y répète donc `primary`, plutôt que d'inventer
+   * une couleur qui n'existe nulle part dans leur code.
+   */
+
   {
     id: 'miss-dice',
     name: 'Miss Dice',
@@ -554,6 +609,8 @@ globalThis.SHOWROOM_THEMES = [
     radius: '0.875rem',
     light: {
       bg: '#f4f5fb',
+      // L'app n'a que deux niveaux de surface en clair (fond et blanc) :
+      // `surface2` répète le fond plutôt que d'inventer un troisième palier.
       surface: '#ffffff',
       surface2: '#f4f5fb',
       text: '#181b27',
@@ -581,15 +638,22 @@ globalThis.SHOWROOM_THEMES = [
       accent: '#7c5cf6',
       success: '#4ade80',
       warning: '#fbbf24',
+      // `--danger` et `--blue` ne sont définis NULLE PART dans l'app : seules
+      // les valeurs de repli de `var(--danger, …)` s'affichent, et elles
+      // divergent d'un appel à l'autre (#e5484d / #d4504e). On retient celle
+      // du chemin le plus visible.
       danger: '#e5484d',
       info: '#3b82f6',
     },
   },
+
   {
     id: 'miss-ticket-pwa',
     name: 'Miss Ticket',
     tagline: 'Neutres zinc quasi noirs et rose framboise, échelle unique.',
     schemes: ['light', 'dark'],
+    // L'app pose ses couleurs en propriétés inline sur `<html>` plutôt que par
+    // un attribut : `data-theme` est ici le défaut du showroom, pas un relevé.
     attribute: 'data-theme',
     fontDisplay: null,
     radius: '0.75rem',
@@ -626,10 +690,13 @@ globalThis.SHOWROOM_THEMES = [
       info: '#3b82f6',
     },
   },
+
   {
     id: 'mister-quota',
     name: 'Mister Quota',
     tagline: 'Ardoise froide et bleu ciel — application desktop, sombre seule.',
+    // Seule app desktop de la famille, et seule à ne déclarer qu'un jeu de
+    // valeurs : pas de palette claire à relever.
     schemes: ['dark'],
     attribute: 'data-theme',
     fontDisplay: null,
@@ -642,13 +709,33 @@ globalThis.SHOWROOM_THEMES = [
       textSoft: '#9aa3b2',
       border: '#2a3140',
       primary: '#6ea8ff',
+      // Le texte posé sur la primaire est presque noir dans l'app : c'est un
+      // relevé, pas un choix du showroom.
       primaryContrast: '#0a0e16',
       primarySoft: '#1d2838',
       accent: '#6ea8ff',
       success: '#56c66a',
       warning: '#f0b347',
       danger: '#ef5e5e',
+      // L'app n'a pas de ton « information » : l'état « en avance » réutilise
+      // l'accent. On retient donc la même valeur.
       info: '#6ea8ff',
     },
   },
 ];
+
+/** Thème d'une app par son identifiant de dépôt. */
+export function themeById(id) {
+  return FAMILY_THEMES.find(theme => theme.id === id);
+}
+
+/**
+ * Couleur de marque d'une app, dans un schéma donné. C'est cette valeur qui
+ * doit alimenter le `theme_color` d'un manifest PWA plutôt qu'un littéral
+ * recopié à la main — cinq manifests sur treize avaient divergé du relevé.
+ */
+export function brandColor(id, scheme = 'light') {
+  const theme = themeById(id);
+  const palette = theme?.[scheme] ?? theme?.[theme?.schemes?.[0]];
+  return palette?.primary;
+}

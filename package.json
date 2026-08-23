@@ -53,6 +53,10 @@
       "types": "./apps-catalog.d.ts",
       "default": "./apps-catalog.js"
     },
+    "./themes": {
+      "types": "./themes.d.ts",
+      "default": "./themes.js"
+    },
     "./react": {
       "types": "./react/index.d.ts",
       "default": "./react/index.js"
@@ -121,6 +125,8 @@
     "vitest-setup.d.ts",
     "apps-catalog.js",
     "apps-catalog.d.ts",
+    "themes.js",
+    "themes.d.ts",
     "react",
     "vitest-browser-base.js",
     "vitest-browser-base.d.ts",
