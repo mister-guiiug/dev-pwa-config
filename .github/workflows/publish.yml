@@ -1,6 +1,22 @@
 # Publish dev-wpa-config sur GitHub Packages.
 # Note : workflow standalone (ne s'appuie pas sur le reusable npm-publish.yml du
-# même repo pour éviter le problème de bootstrap au tag initial v1).
+# même repo pour éviter le problème de bootstrap au tag initial).
+#
+# DEUX DÉCLENCHEURS, une seule mécanique :
+#
+#   - poussée d'un tag `v*` — le chemin habituel ;
+#   - `workflow_dispatch` — la version est lue dans `package.json`, et le tag est
+#     CRÉÉ ICI.
+#
+# Le chemin manuel était déclaré mais inopérant : la garde de version lisait
+# `${GITHUB_REF#refs/tags/v}`, qui vaut `refs/heads/main` hors contexte de tag et
+# ne pouvait donc jamais correspondre au `package.json`. Tout déclenchement
+# manuel échouait à la première étape.
+#
+# LE TAG POSÉ ICI NE REDÉCLENCHE PAS CE WORKFLOW : une poussée authentifiée par
+# `GITHUB_TOKEN` ne déclenche aucun autre workflow. C'est ce qui évite la boucle
+# — et c'est aussi pourquoi le chemin manuel doit publier lui-même, au lieu de se
+# contenter de poser le tag et d'attendre.
 name: Publish to GitHub Packages
 
 on:
@@ -9,7 +25,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # requis pour faire avancer le tag majeur mobile (v1)
+  contents: write # requis pour poser le tag et faire avancer le tag majeur mobile
   packages: write
   id-token: write # requis pour npm --provenance
 
@@ -25,52 +41,87 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@mister-guiiug'
 
-      - name: Vérifier que la version du tag correspond à package.json
-        # Ne pas exécuter pour le tag mobile `v1` (toujours v1.x.y avec x ≥ 0).
-        if: ${{ github.ref != 'refs/tags/v1' }}
+      - name: Résoudre la version et le tag
+        id: resolve
         run: |
-          TAG_VERSION=${GITHUB_REF#refs/tags/v}
           PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "❌ Tag $TAG_VERSION ≠ package.json version $PKG_VERSION"
-            exit 1
-          fi
-          echo "✅ Version cohérente : $TAG_VERSION"
 
-      - name: Skip publish on rolling major tag (v1)
-        if: ${{ github.ref == 'refs/tags/v1' }}
-        run: echo "Tag v1 (rolling major) — pas de publication npm, GitHub Actions consume directly."
+          # Tag majeur mobile (`v3`) : il ne fait que suivre une release, il n'y
+          # a rien à publier. La forme est reconnue par le motif `vN`, et non
+          # plus comparée au littéral `v1` — le majeur courant est 3 depuis
+          # longtemps, si bien qu'une poussée de `v3` tombait dans le chemin de
+          # publication et échouait à la garde de version.
+          if [ "${{ github.event_name }}" = "push" ] &&
+             printf '%s' "$GITHUB_REF" | grep -qE '^refs/tags/v[0-9]+$'; then
+            echo "rolling=true" >> "$GITHUB_OUTPUT"
+            echo "Tag mobile ${GITHUB_REF#refs/tags/} — pas de publication npm."
+            exit 0
+          fi
+          echo "rolling=false" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="v$PKG_VERSION"
+            # Refuser une version déjà publiée : `npm publish` est irréversible,
+            # et un second passage écraserait un tag qui fait foi.
+            if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+              echo "❌ $TAG existe déjà — cette version est déjà publiée."
+              exit 1
+            fi
+            echo "create_tag=true" >> "$GITHUB_OUTPUT"
+          else
+            TAG=${GITHUB_REF#refs/tags/}
+            if [ "${TAG#v}" != "$PKG_VERSION" ]; then
+              echo "❌ Tag ${TAG#v} ≠ package.json version $PKG_VERSION"
+              exit 1
+            fi
+            echo "create_tag=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "✅ Version cohérente : $PKG_VERSION ($TAG)"
+
+      # Le tag est posé AVANT la publication : si `npm publish` échoue, il reste
+      # un tag sans paquet, ce qui se corrige. L'inverse — un paquet publié sans
+      # tag — ne se corrige pas, la version étant définitivement prise.
+      # Tag léger, comme celui du majeur mobile : pas d'identité git à
+      # configurer dans le runner.
+      - name: Poser le tag (déclenchement manuel)
+        if: ${{ steps.resolve.outputs.create_tag == 'true' }}
+        run: |
+          TAG="${{ steps.resolve.outputs.tag }}"
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+          echo "✅ $TAG → $GITHUB_SHA"
 
       - name: Publish (avec provenance sigstore)
-        if: ${{ github.ref != 'refs/tags/v1' }}
+        if: ${{ steps.resolve.outputs.rolling != 'true' }}
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Fait pointer le tag majeur mobile (v1) sur cette release stable, afin que
-      # tous les consommateurs référençant `...@v1` reçoivent les derniers
+      # Fait pointer le tag majeur mobile (`v3`) sur cette release stable, afin
+      # que tous les consommateurs référençant `...@v3` reçoivent les derniers
       # workflows/actions réutilisables sans intervention manuelle.
-      # Ignoré pour les pré-releases (v1.5.0-beta.1) et pour le tag v1 lui-même.
+      # Ignoré pour les pré-releases (v3.5.0-beta.1).
       - name: Advance rolling major tag
-        if: ${{ github.ref != 'refs/tags/v1' && !contains(github.ref, '-') }}
+        if: ${{ steps.resolve.outputs.rolling != 'true' && !contains(steps.resolve.outputs.tag, '-') }}
         run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          MAJOR=${TAG%%.*}            # v1.5.0 -> v1
+          TAG="${{ steps.resolve.outputs.tag }}"
+          MAJOR=${TAG%%.*}            # v3.11.0 -> v3
           git tag -f "$MAJOR" "$GITHUB_SHA"
           git push -f origin "refs/tags/$MAJOR"
           echo "✅ $MAJOR → $TAG ($GITHUB_SHA)"
 
       # Crée la GitHub Release correspondante (notes = section du CHANGELOG de
       # cette version). Rend la release visible sur l'onglet Releases + notifie
-      # les watchers. Ignoré pour le tag mobile `v1` ; les pré-releases
-      # (v3.5.0-beta.1) sont créées et marquées `--prerelease`.
+      # les watchers. Les pré-releases sont marquées `--prerelease`.
       - name: GitHub Release
-        if: ${{ github.ref != 'refs/tags/v1' }}
+        if: ${{ steps.resolve.outputs.rolling != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          VERSION=${TAG#v}
+          TAG="${{ steps.resolve.outputs.tag }}"
+          VERSION="${{ steps.resolve.outputs.version }}"
           # Extrait la section « ## <version> » du CHANGELOG jusqu'au prochain « ## ».
           awk -v v="## $VERSION" '
             $0 == v {f=1; next}
