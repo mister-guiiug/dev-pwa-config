@@ -4,6 +4,8 @@ export interface EmptyStateProps {
   icon?: ReactNode;
   title?: string;
   description?: string;
+  /** Contenu riche : une liste, un lien, plusieurs paragraphes. */
+  children?: ReactNode;
   /** CTA contextuel (bouton/lien). */
   action?: ReactNode;
   className?: string;

@@ -240,3 +240,62 @@ test('Sheet : le gestionnaire clavier est retiré au démontage', async () => {
     dom.restore();
   }
 });
+
+test('Sheet : le pied est épinglé, et le corps est ce qui défile', async () => {
+  // LE BLOCAGE MESURÉ. miss-uwh passe un `footer` dans QUINZE de ses vingt-trois
+  // feuilles, avec ce commentaire : « reste TOUJOURS visible même quand le corps
+  // défile (essentiel sur mobile pour les formulaires longs) ». Sans cette prop,
+  // la feuille du paquet ne pouvait pas remplacer la sienne — c'était le seul
+  // empêchement réel trouvé en comparant les deux API.
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(
+        Sheet,
+        {
+          open: true,
+          title: 'Dépense',
+          onClose() {},
+          footer: h('button', {}, 'Enregistrer'),
+        },
+        h('p', {}, 'corps')
+      )
+    );
+    const panel = view.container.querySelector('[data-dwc="sheet-panel"]');
+    const body = view.container.querySelector('[data-dwc="sheet-body"]');
+    const foot = view.container.querySelector('[data-dwc="sheet-footer"]');
+
+    assert.ok(foot, 'pied absent');
+    assert.match(foot.textContent, /Enregistrer/);
+    // Le pied est un FRÈRE du corps, pas un enfant : sinon il défile avec lui.
+    assert.equal(foot.parentElement, panel);
+    assert.equal(body.parentElement, panel);
+    assert.ok(
+      [...panel.children].indexOf(foot) > [...panel.children].indexOf(body),
+      'le pied doit venir après le corps'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('Sheet : sans footer, aucun élément parasite', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(
+        Sheet,
+        { open: true, title: 'Simple', onClose() {} },
+        h('p', {}, 'corps')
+      )
+    );
+    assert.equal(
+      view.container.querySelector('[data-dwc="sheet-footer"]'),
+      null
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});

@@ -82,3 +82,48 @@ export function CloseIcon() {
     h('path', { d: 'M18 6 6 18M6 6l12 12' })
   );
 }
+
+/**
+ * Base commune des trois icônes de thème : même boîte, même trait.
+ * @param {...import('react').ReactNode} children
+ */
+function themeIcon(...children) {
+  return h(
+    'svg',
+    {
+      width: 18,
+      height: 18,
+      viewBox: '0 0 24 24',
+      'aria-hidden': 'true',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+    },
+    ...children
+  );
+}
+
+/** Soleil — thème clair. */
+export function SunIcon() {
+  return themeIcon(
+    h('circle', { cx: 12, cy: 12, r: 4 }),
+    h('path', {
+      d: 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+    })
+  );
+}
+
+/** Lune — thème sombre. */
+export function MoonIcon() {
+  return themeIcon(h('path', { d: 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z' }));
+}
+
+/** Écran — thème système, celui du système d'exploitation. */
+export function SystemIcon() {
+  return themeIcon(
+    h('rect', { x: 2, y: 4, width: 20, height: 13, rx: 2 }),
+    h('path', { d: 'M8 21h8M12 17v4' })
+  );
+}

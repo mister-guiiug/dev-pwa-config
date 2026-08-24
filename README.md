@@ -40,6 +40,69 @@ ne consomme rien du paquet.
 
 <!-- CONSOMMATEURS:FIN -->
 
+### Adoption réelle
+
+Le tableau ci-dessus dit ce que chaque app importe. Celui-ci dit l'inverse — ce
+qu'elle **n'importe pas alors que le paquet le fournit**, parce qu'elle en garde
+une copie. C'est le seul chiffre qui mesure l'utilité de ce dépôt, et il n'était
+écrit nulle part.
+
+Ce qu'il montre, au relevé : la couche **outillage** est adoptée (`vitest-base`,
+l'observabilité, Playwright, les greffons Vite), la couche **interface** ne l'est
+pas encore. Les six primitives publiées le 10 août ne sont importées par aucune
+app, pendant que quatre à sept en portent une réimplémentation. Promouvoir un
+composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
+
+<!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
+
+_Relevé du 2026-08-24 sur 16 dépôts, par `npm run adoption`._
+
+| Export ou module                          | Importé par | Encore recopié dans |
+| ----------------------------------------- | ----------- | ------------------- |
+| `baseTestOptions`                         | 14 / 16     | —                   |
+| `FamilyApps`                              | 13 / 16     | —                   |
+| `initSentry`                              | 13 / 16     | —                   |
+| `installErrorReporter`                    | 13 / 16     | —                   |
+| `recordError`                             | 13 / 16     | —                   |
+| `definePwaPlaywrightConfig`               | 12 / 16     | —                   |
+| `pwaSeoPlugin`                            | 12 / 16     | —                   |
+| `ErrorBoundary`                           | 9 / 16      | 6 / 16              |
+| `cspPlugin`                               | 9 / 16      | —                   |
+| `expectNoA11yViolations`                  | 9 / 16      | —                   |
+| `createI18n`                              | 8 / 16      | —                   |
+| `coveragePreset`                          | 6 / 16      | —                   |
+| `createTranslator`                        | 2 / 16      | —                   |
+| `useTheme`                                | 1 / 16      | 8 / 16              |
+| `clearErrorLog`                           | 1 / 16      | —                   |
+| `getErrorLog`                             | 1 / 16      | —                   |
+| `I18nPaths`                               | 1 / 16      | —                   |
+| `resolveSeoPublicUrls`                    | 1 / 16      | —                   |
+| `useReducedMotion`                        | 1 / 16      | —                   |
+| `useUpdatePrompt`                         | 1 / 16      | —                   |
+| `links`                                   | 0 / 16      | 9 / 16              |
+| `applyUpdate`                             | 0 / 16      | 8 / 16              |
+| `BottomNav`                               | 0 / 16      | 8 / 16              |
+| `format`                                  | 0 / 16      | 8 / 16              |
+| `UpdatePromptBanner`                      | 0 / 16      | 8 / 16              |
+| `ConfirmDialog`                           | 0 / 16      | 7 / 16              |
+| `EmptyState`                              | 0 / 16      | 7 / 16              |
+| `AppFooter`                               | 0 / 16      | 6 / 16              |
+| `backup`                                  | 0 / 16      | 6 / 16              |
+| `Sheet`                                   | 0 / 16      | 6 / 16              |
+| `Toast`                                   | 0 / 16      | 6 / 16              |
+| `ThemeToggle`                             | 0 / 16      | 5 / 16              |
+| `Button`                                  | 0 / 16      | 4 / 16              |
+| `share`                                   | 0 / 16      | 4 / 16              |
+| `useI18n`                                 | 0 / 16      | 4 / 16              |
+| `useOnline`                               | 0 / 16      | 4 / 16              |
+| `webVitals`                               | 0 / 16      | 4 / 16              |
+| `security`                                | 0 / 16      | 3 / 16              |
+| `Skeleton`                                | 0 / 16      | 3 / 16              |
+| `TextField / SelectField / TextAreaField` | 0 / 16      | 3 / 16              |
+| `Badge`                                   | 0 / 16      | 2 / 16              |
+
+<!-- ADOPTION:FIN -->
+
 ## Showroom du design system
 
 `showroom/` est une page **statique** (HTML + CSS + JS, aucune dépendance,
@@ -336,6 +399,10 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/react/bottom-nav`           | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                        |
 | `@mister-guiiug/dev-wpa-config/react/labels`               | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés fr/en des composants du paquet (prop > contexte > français)                                                                                                                            |
 | `@mister-guiiug/dev-wpa-config/sw-update`                  | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` : appliquer une mise à jour de service worker — **sans React ni module virtuel**                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/download`                   | `.js` + `.d.ts` | `downloadBlob` / `downloadJson` / `downloadText` / `readJsonFile` / `dateSlug` — la danse `createObjectURL` + ancre + `revoke`, recopiée dans **12 apps sur 16**                                                                 |
+| `@mister-guiiug/dev-wpa-config/share`                      | `.js` + `.d.ts` | `shareOrCopy` / `copyToClipboard` / `currentAppUrl` — Web Share avec repli presse-papiers ; l'annulation est distinguée de l'échec                                                                                               |
+| `@mister-guiiug/dev-wpa-config/web-vitals`                 | `.js` + `.d.ts` | `initWebVitals` / `rate` / `THRESHOLDS` — chaque métrique enregistrée indépendamment, `onINP` au lieu d'`onFID` (retiré en v4). Peer **optionnelle** `web-vitals` ^4                                                             |
+| `@mister-guiiug/dev-wpa-config/react/theme-toggle`         | `.js` + `.d.ts` | `ThemeToggle` : cycle clair → sombre → **système**, `type="button"`, nom accessible qui dit l'état courant                                                                                                                       |
 | `@mister-guiiug/dev-wpa-config/react/rive`                 | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                                                  |
 | `@mister-guiiug/dev-wpa-config/react/i18n`                 | `.js` + `.d.ts` | `createI18n` : i18n minimal typé (clés dot-notation dérivées des messages), `I18nProvider`/`useI18n`, zéro dépendance runtime                                                                                                    |
 | `@mister-guiiug/dev-wpa-config/react/observability`        | `.js` + `.d.ts` | `installErrorReporter`/`recordError`/`initSentry` (peer optionnelle `@sentry/react`, `loader` pour bundler l'import) — hors barrel                                                                                               |

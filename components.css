@@ -694,7 +694,10 @@
     position: relative;
     width: 100%;
     max-height: 88dvh;
-    overflow-y: auto;
+    /* Colonne, et c'est le CORPS qui défile : un pied épinglé dans un panneau
+       défilant défilerait avec lui, ce qui est exactement ce qu'on veut éviter. */
+    display: flex;
+    flex-direction: column;
     padding: var(--spacing-fluid-md, 1rem);
     /* Home bar iOS : le contenu ne se glisse pas dessous. */
     padding-bottom: calc(
@@ -727,6 +730,27 @@
   [data-dwc='sheet-title'] {
     margin: 0;
     font-size: var(--text-fluid-lg, 1.125rem);
+  }
+
+  [data-dwc='sheet-body'] {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    /* Le défilement tactile ne doit pas entraîner la page derrière. */
+    overscroll-behavior: contain;
+  }
+
+  /* Barre d'actions épinglée : reste visible pendant que le corps défile.
+     Quinze des vingt-trois feuilles de miss-uwh en dépendent. */
+  [data-dwc='sheet-footer'] {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: var(--spacing-fluid-sm, 0.75rem);
+    padding-top: var(--spacing-fluid-sm, 0.75rem);
+    border-top: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
   }
 
   [data-dwc='sheet-close'] {
@@ -1175,6 +1199,43 @@
     white-space: nowrap;
   }
 
+  /* ── ThemeToggle ───────────────────────────────────────────────────────── *
+   * L'état courant n'est pas porté par la seule icône : le composant recalcule
+   * son nom accessible à chaque rendu. L'habillage ci-dessous ne fait que le
+   * rendre visible.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='theme-toggle'] {
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding-inline: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: none;
+    color: var(--dwc-text-soft, GrayText);
+    cursor: pointer;
+  }
+
+  [data-dwc='theme-toggle'][data-theme-state='dark'],
+  [data-dwc='theme-toggle'][data-theme-state='light'] {
+    color: var(--dwc-text, CanvasText);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+  }
+
+  [data-dwc='theme-toggle-icon'] {
+    display: inline-flex;
+    line-height: 0;
+  }
+
+  [data-dwc='theme-toggle-label'] {
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
   /* ── Animations ────────────────────────────────────────────────────────── */
 
   @keyframes dwc-spin {
@@ -1235,7 +1296,8 @@
        règle suffit : les variantes qui posent déjà `border-color` sont plus
        spécifiques, et leur couleur est de toute façon forcée. */
     [data-dwc='button'],
-    [data-dwc='badge'] {
+    [data-dwc='badge'],
+    [data-dwc='theme-toggle'] {
       border-color: currentColor;
     }
 

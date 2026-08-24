@@ -143,11 +143,13 @@ globalThis.SHOWROOM_CATALOGUE = {
           'Ne pas la réimplémenter : aucune copie locale n’avait les trois comportements au complet — Échap, piège de focus, focus restitué à la fermeture.',
           'Ne pas oublier le verrou de défilement du fond : sans lui, la page derrière glisse sous les doigts sur mobile.',
           'Ne pas poser un `display` d’auteur sur `[data-dwc="sheet"]` — il neutralise l’attribut `hidden` et la feuille s’affiche au chargement.',
+          'Ne pas mettre la barre d’actions dans `children` : elle défilerait avec le corps. `footer` l’épingle — quinze des vingt-trois feuilles de miss-uwh en dépendent.',
         ],
         en: [
           'Don’t re-implement it: no local copy had all three behaviours at once — Esc, focus trap, focus restored on close.',
           'Don’t forget the background scroll lock: without it the page behind slides under the fingers on mobile.',
           'Don’t set an author `display` on `[data-dwc="sheet"]` — it neutralises the `hidden` attribute and the sheet shows on load.',
+          'Don’t put the action bar in `children`: it would scroll away with the body. `footer` pins it — fifteen of miss-uwh’s twenty-three sheets depend on it.',
         ],
       },
       a11y: {
@@ -332,6 +334,27 @@ globalThis.SHOWROOM_CATALOGUE = {
       a11y: {
         fr: '`aria-current="page"` sur l’onglet courant, doublé d’un « Page actuelle » lu mais non vu, et d’un trait qui survit au contraste forcé. Le bouton « Plus » porte `aria-expanded` et `aria-controls`.',
         en: '`aria-current="page"` on the current tab, doubled by a “Current page” that is read but not seen, and by a rule that survives forced colours. The “More” button carries `aria-expanded` and `aria-controls`.',
+      },
+    },
+    {
+      id: 'ThemeToggle',
+      category: 'shell',
+      covers: ['ThemeToggle'],
+      donts: {
+        fr: [
+          'Ne pas omettre `type="button"` : mister-doc et miss-lookhouse l’oublient, et le bouton soumet alors le formulaire qui l’entoure.',
+          'Ne pas se contenter d’un `aria-label` figé : quatre copies sur cinq ne disent jamais QUEL thème est actif. Le nom accessible est recalculé à chaque rendu.',
+          'Ne pas réduire le thème à deux états : les cinq copies basculent clair / sombre, et l’app ne peut plus jamais revenir à « système ». Restreindre par `states` est une décision, pas un défaut.',
+        ],
+        en: [
+          'Don’t omit `type="button"`: mister-doc and miss-lookhouse forget it, and the button then submits the surrounding form.',
+          'Don’t settle for a fixed `aria-label`: four copies out of five never say WHICH theme is active. The accessible name is recomputed on every render.',
+          'Don’t reduce the theme to two states: all five copies toggle light / dark, and the app can then never return to “system”. Restricting via `states` is a decision, not a defect.',
+        ],
+      },
+      a11y: {
+        fr: 'Le nom accessible porte l’état courant et le suivant. À deux états seulement, `aria-pressed` s’y ajoute — à trois, « appuyé » ne décrirait rien.',
+        en: 'The accessible name carries the current state and the next. With two states only, `aria-pressed` is added — with three, “pressed” would describe nothing.',
       },
     },
     {

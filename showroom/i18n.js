@@ -231,6 +231,10 @@ globalThis.SHOWROOM_I18N = {
     'composants.p18':
       'Seven apps out of sixteen have one. The current tab is never told apart by colour alone: <code>aria-current</code>, a rule, and a “Current page” that is read but not seen.',
     'composants.summary11': 'CSS selectors',
+    'composants.h52': 'ThemeToggle',
+    'composants.p19':
+      'Five apps have one. This one cycles through the <em>three</em> states of <code>useTheme</code>: a two-state toggle makes “system” unreachable.',
+    'composants.summary12': 'CSS selectors',
     'composants.h47': 'AppFooter',
     'composants.p13': 'Source-code link plus sponsor link, opened safely.',
     'composants.summary7': 'CSS selectors',
@@ -540,6 +544,7 @@ globalThis.SHOWROOM_I18N = {
     'fc.cause.tint':
       'Primary and soft text collapse onto the SAME system ink: telling the active tab apart by colour stops working.',
     'ui.fc.toast': 'Saved',
+    'ui.fc.theme': 'Theme: dark',
     'ui.fc.nav': 'Main navigation',
     'ui.fc.tab.home': 'Home',
     'ui.fc.tab.settings': 'Settings',
