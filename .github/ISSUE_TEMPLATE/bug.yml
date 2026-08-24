@@ -1,0 +1,44 @@
+name: Anomalie
+description: Quelque chose ne fonctionne pas comme documenté.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Faille de sécurité ? Ne pas ouvrir d'issue publique — voir
+        [SECURITY.md](../blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Version du paquet
+      description: '`npm ls @mister-guiiug/dev-wpa-config`'
+      placeholder: 3.11.0
+    validations:
+      required: true
+  - type: input
+    id: subpath
+    attributes:
+      label: Sous-chemin concerné
+      placeholder: react/use-offline-queue, vite-csp, tokens.css…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Attendu / obtenu
+      description: Ce que la documentation promet, et ce qui se produit.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Les étapes minimales. Un dépôt minimal vaut mieux qu'une description.
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: App concernée
+      description: Utile pour savoir combien des seize dépôts sont touchés.
+      placeholder: miss-uwh

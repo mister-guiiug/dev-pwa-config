@@ -6,7 +6,6 @@
 # jobs:
 #   ci:
 #     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v3
-#     secrets: inherit
 #     with:
 #       run-e2e: false
 name: Reusable PWA CI

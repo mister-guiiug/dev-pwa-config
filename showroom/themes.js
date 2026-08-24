@@ -1,28 +1,11 @@
 /*
- * Palettes des applications consommatrices du preset.
+ * FICHIER GÉNÉRÉ — ne pas modifier à la main.
  *
- * Le preset (`tailwind-preset.css`) ne fournit AUCUNE couleur : structure,
- * échelles fluides, safe-areas et cible tactile seulement. La couleur est la
- * part VARIABLE, propriété de chaque app. Ce fichier collecte donc la palette
- * réelle de chaque app (relevée dans son `src/*.css`) pour permettre au
- * showroom de rhabiller les mêmes composants d'un univers à l'autre.
+ * Source : `themes.js` à la racine du paquet (avec ses commentaires de relevé).
+ * Régénérer : `npm run sync`.
  *
- * Format d'un thème :
- *   id           identifiant du dépôt (= nom GitHub), ou 'generic'
- *   name         libellé affiché dans le sélecteur
- *   tagline      une phrase sur l'univers visuel
- *   schemes      ['light','dark'] ou ['dark'] pour une app dark-only
- *   attribute    'data-theme' (défaut de `useTheme`) ou 'class' (variante .dark)
- *   fontDisplay  police de titrage de l'app (repli système si non installée)
- *   radius       rayon de carte
- *   light/dark   rôles sémantiques → couleurs
- *
- * Le thème `generic` ne porte PAS de couleurs : il s'appuie sur les valeurs par
- * défaut de `showroom.css` (`:root` / `:root[data-theme='dark']`), qui restent
- * la seule définition de la palette neutre — pas de doublon à resynchroniser.
- *
- * Fichier volontairement SANS import/export : chargeable tel quel par un
- * `<script src>` classique (file:// compris) ET importable par node:test.
+ * Le showroom ne peut pas `import` le module (page statique, `file://`) : il en
+ * lit ce miroir. `test/themes.test.mjs` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_THEMES = [
   {
@@ -36,7 +19,6 @@ globalThis.SHOWROOM_THEMES = [
     radius: '0.75rem',
     usesCssDefaults: true,
   },
-
   {
     id: 'miss-badminton',
     name: 'Miss Badminton',
@@ -78,7 +60,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
-
   {
     id: 'miss-carbook',
     name: 'Miss Carbook',
@@ -120,7 +101,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
-
   {
     id: 'miss-contraction',
     name: 'Miss Contraction',
@@ -164,7 +144,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#b06ee0',
     },
   },
-
   {
     id: 'miss-genius',
     name: 'Miss Genius',
@@ -206,7 +185,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
-
   {
     id: 'miss-lookhouse',
     name: 'Miss Lookhouse',
@@ -248,7 +226,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
-
   {
     id: 'miss-supaboss',
     name: 'Miss Supaboss',
@@ -290,7 +267,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
-
   {
     id: 'miss-uwh',
     name: 'Miss UWH',
@@ -332,7 +308,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
-
   {
     id: 'mister-cim10',
     name: 'Mister CIM-10',
@@ -374,7 +349,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
-
   {
     id: 'mister-doc',
     name: 'Mister Doc',
@@ -416,7 +390,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#38bdf8',
     },
   },
-
   {
     id: 'mister-footcoach',
     name: 'Mister Footcoach',
@@ -458,7 +431,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
-
   {
     id: 'mister-molkky',
     name: 'Mister Mölkky',
@@ -503,7 +475,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#7fb3d5',
     },
   },
-
   {
     id: 'mister-puzzle',
     name: 'Mister Puzzle',
@@ -545,7 +516,6 @@ globalThis.SHOWROOM_THEMES = [
       info: '#60a5fa',
     },
   },
-
   {
     id: 'mister-qowa',
     name: 'Mister Qowa',
@@ -572,6 +542,113 @@ globalThis.SHOWROOM_THEMES = [
       warning: '#d89e00',
       danger: '#e21b3c',
       info: '#1368ce',
+    },
+  },
+  {
+    id: 'miss-dice',
+    name: 'Miss Dice',
+    tagline: 'Nuit indigo et violet électrique, un seul ton de marque.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.875rem',
+    light: {
+      bg: '#f4f5fb',
+      surface: '#ffffff',
+      surface2: '#f4f5fb',
+      text: '#181b27',
+      textSoft: '#5b6276',
+      border: '#dedfe1',
+      primary: '#6a44e8',
+      primaryContrast: '#ffffff',
+      primarySoft: '#dfdaf8',
+      accent: '#6a44e8',
+      success: '#166534',
+      warning: '#854d0e',
+      danger: '#d4504e',
+      info: '#3b82f6',
+    },
+    dark: {
+      bg: '#0f1220',
+      surface: '#1a1f33',
+      surface2: '#20263c',
+      text: '#f3f5fb',
+      textSoft: '#9aa3bd',
+      border: '#2c2e3b',
+      primary: '#7c5cf6',
+      primaryContrast: '#ffffff',
+      primarySoft: '#1f1d40',
+      accent: '#7c5cf6',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#e5484d',
+      info: '#3b82f6',
+    },
+  },
+  {
+    id: 'miss-ticket-pwa',
+    name: 'Miss Ticket',
+    tagline: 'Neutres zinc quasi noirs et rose framboise, échelle unique.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.75rem',
+    light: {
+      bg: '#ffffff',
+      surface: '#ffffff',
+      surface2: '#f5f5f5',
+      text: '#171717',
+      textSoft: '#525252',
+      border: '#e6e6e6',
+      primary: '#f43f5e',
+      primaryContrast: '#ffffff',
+      primarySoft: '#fff1f2',
+      accent: '#f43f5e',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#2563eb',
+    },
+    dark: {
+      bg: '#0a0a0a',
+      surface: '#1a1a1a',
+      surface2: '#262626',
+      text: '#fafafa',
+      textSoft: '#a3a3a3',
+      border: '#272727',
+      primary: '#f43f5e',
+      primaryContrast: '#ffffff',
+      primarySoft: '#210f12',
+      accent: '#f43f5e',
+      success: '#22c55e',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+      info: '#3b82f6',
+    },
+  },
+  {
+    id: 'mister-quota',
+    name: 'Mister Quota',
+    tagline: 'Ardoise froide et bleu ciel — application desktop, sombre seule.',
+    schemes: ['dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.625rem',
+    dark: {
+      bg: '#0f1115',
+      surface: '#161a22',
+      surface2: '#1d222c',
+      text: '#e6e8ee',
+      textSoft: '#9aa3b2',
+      border: '#2a3140',
+      primary: '#6ea8ff',
+      primaryContrast: '#0a0e16',
+      primarySoft: '#1d2838',
+      accent: '#6ea8ff',
+      success: '#56c66a',
+      warning: '#f0b347',
+      danger: '#ef5e5e',
+      info: '#6ea8ff',
     },
   },
 ];

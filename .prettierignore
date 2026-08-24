@@ -4,3 +4,9 @@ dev-dist
 *.tgz
 CHANGELOG.md
 package-lock.json
+
+# Engendré en CI par `scripts/fetch-metrics.mjs`, où les devDependencies (donc
+# Prettier) ne sont pas installées : c'est le script qui possède le format, et
+# `test/showroom-metrics.test.mjs` compare le fichier octet pour octet à ce
+# qu'il produit. Le laisser à Prettier ferait diverger les deux à chaque nuit.
+showroom/metrics.js

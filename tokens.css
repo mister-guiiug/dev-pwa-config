@@ -1,0 +1,133 @@
+/*
+ * Jeu de tokens neutre pour le contrat de couleur `--dwc-*`.
+ *
+ *   @import 'tailwindcss';
+ *   @import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+ *   @import '@mister-guiiug/dev-wpa-config/tokens.css';       ← ce fichier
+ *   @import '@mister-guiiug/dev-wpa-config/components.css';
+ *
+ * POURQUOI. `components.css` lit quinze variables `--dwc-*` et n'en
+ * définissait aucune : chaque `var()` portait un repli, mais aucune valeur
+ * n'était livrée. Une seule app sur seize définissait ce contrat — les quinze
+ * autres ne pouvaient donc pas utiliser `components.css` sans repartir de zéro.
+ * Ce fichier ferme l'écart : il donne des valeurs réelles, claires et sombres,
+ * dont le contraste est vérifié (`test/tokens.test.mjs`).
+ *
+ * DEUX FILETS, PAS UN. `--dwc-border` sépare et encadre : il peut être discret,
+ * puisque ce n'est pas lui qui identifie quoi que ce soit. `--dwc-border-strong`
+ * est le contour qui DÉSIGNE un contrôle — le pourtour d'un champ de saisie est
+ * la seule chose qui dit à l'utilisateur où cliquer, et WCAG 1.4.11 lui demande
+ * 3:1. Un seul filet pour les deux rôles obligeait à choisir entre une carte
+ * cerclée de gris foncé et un champ invisible.
+ *
+ * AUCUNE COULEUR DE MARQUE N'EST IMPOSÉE. La primaire par défaut est une
+ * ardoise neutre. Une app pose sa teinte APRÈS cet import, où elle veut :
+ *
+ *   :root { --dwc-primary: #0f766e; --dwc-primary-contrast: #ffffff; }
+ *
+ * TROIS ÉTATS DE THÈME, pas deux. `useTheme` pose `data-theme` (défaut) ou la
+ * classe `.dark` ; le réglage « système » ne pose RIEN et ne se distingue que
+ * par `prefers-color-scheme`. Les trois cas sont donc traités : le bloc système
+ * est gardé par `:not([data-theme='light']):not(.light)` pour qu'un choix clair
+ * explicite l'emporte sur un système sombre, et les sélecteurs explicites
+ * repassent derrière pour l'emporter dans l'autre sens.
+ *
+ * PRIORITÉ. Rien n'est dans `@layer` : ces variables doivent pouvoir être
+ * écrasées par l'app avec une simple règle `:root`. Ce sont des valeurs par
+ * défaut, pas une charte.
+ */
+
+:root {
+  /* Surfaces et texte */
+  --dwc-surface: #ffffff;
+  --dwc-surface-2: #f3f4f6;
+  --dwc-text: #14171c;
+  --dwc-text-soft: #545b66;
+  --dwc-border: #d3d8de;
+  --dwc-border-strong: #7e848d;
+
+  /* Action principale — ardoise neutre, à remplacer par la teinte de l'app */
+  --dwc-primary: #2b3648;
+  --dwc-primary-contrast: #ffffff;
+  --dwc-primary-soft: #ebedf1;
+
+  /* États */
+  --dwc-success: #14663f;
+  --dwc-warning: #8a5300;
+  --dwc-danger: #b3261e;
+  --dwc-info: #1a5fb4;
+
+  /* Forme */
+  --dwc-radius: 0.75rem;
+  --dwc-shadow: 0 1px 2px rgb(16 22 32 / 6%), 0 4px 12px rgb(16 22 32 / 6%);
+
+  color-scheme: light dark;
+}
+
+/*
+ * Réglage « système » : aucun attribut n'est posé sur <html>, seule la
+ * préférence du système sépare clair et sombre.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not(.light) {
+    --dwc-surface: #16191d;
+    --dwc-surface-2: #1e2228;
+    --dwc-text: #e7eaee;
+    --dwc-text-soft: #a7afba;
+    --dwc-border: #333941;
+    --dwc-border-strong: #767d87;
+
+    --dwc-primary: #d5dce7;
+    --dwc-primary-contrast: #14171c;
+    --dwc-primary-soft: #262c35;
+
+    --dwc-success: #5cc98d;
+    --dwc-warning: #e2ad52;
+    --dwc-danger: #f2938a;
+    --dwc-info: #86b6f0;
+
+    --dwc-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 12px rgb(0 0 0 / 32%);
+  }
+}
+
+/* Choix explicite « sombre » : `data-theme` ou la classe, selon `useTheme`. */
+:root[data-theme='dark'],
+:root.dark {
+  --dwc-surface: #16191d;
+  --dwc-surface-2: #1e2228;
+  --dwc-text: #e7eaee;
+  --dwc-text-soft: #a7afba;
+  --dwc-border: #333941;
+  --dwc-border-strong: #767d87;
+
+  --dwc-primary: #d5dce7;
+  --dwc-primary-contrast: #14171c;
+  --dwc-primary-soft: #262c35;
+
+  --dwc-success: #5cc98d;
+  --dwc-warning: #e2ad52;
+  --dwc-danger: #f2938a;
+  --dwc-info: #86b6f0;
+
+  --dwc-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 12px rgb(0 0 0 / 32%);
+}
+
+/*
+ * Contraste forcé : le système impose ses propres couleurs. On rend la main
+ * plutôt que d'imposer des valeurs qu'il remplacerait de toute façon à moitié
+ * — c'est le même parti pris que le bloc `forced-colors` de `components.css`.
+ */
+@media (forced-colors: active) {
+  :root {
+    --dwc-surface: Canvas;
+    --dwc-surface-2: Canvas;
+    --dwc-text: CanvasText;
+    --dwc-text-soft: CanvasText;
+    --dwc-border: CanvasText;
+    --dwc-border-strong: CanvasText;
+    --dwc-primary: LinkText;
+    --dwc-primary-contrast: Canvas;
+    --dwc-primary-soft: Canvas;
+    --dwc-shadow: none;
+  }
+}

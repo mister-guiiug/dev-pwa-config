@@ -30,6 +30,14 @@ const DYNAMIC_PREFIXES = [
   'ui.contrast',
   'ui.a11y.group.',
   'theme.',
+  // Facettes de la vitrine : les libellés sont construits depuis les valeurs
+  // du catalogue (`ui.backend.' + backend`), et le titre de chaque groupe est
+  // lu dans un tableau (`t(facet[1], …)`), invisible pour l'analyse ci-dessus.
+  'ui.apps.facet.',
+  'ui.apps.sortBy.',
+  'ui.backend.',
+  'ui.category.',
+  'ui.platform.',
 ];
 
 test('chaque langue déclare un dictionnaire non vide', () => {

@@ -127,5 +127,15 @@ import { REPO_URL, SPONSOR_URL } from './links';
   FamilyApps: `import { FamilyApps } from '@mister-guiiug/dev-wpa-config/react';
 
 {/* La grille exclut d'elle-même l'app courante. */}
-<FamilyApps currentAppId="miss-uwh" repoUrl={REPO_URL} />`,
+<FamilyApps currentAppId="miss-uwh" repoUrl={REPO_URL} />
+
+{/* Vitrine : chaque carte gagne un lien vers son dépôt, et la grille se
+    limite aux trois plus mûres. \`max\` coupe APRÈS le tri. */}
+<FamilyApps
+  currentAppId="miss-uwh"
+  repoUrl={REPO_URL}
+  showRepoLinks
+  sort="maturity"
+  max={3}
+/>`,
 };

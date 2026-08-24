@@ -3,6 +3,9 @@ import { osmRasterTiles } from './index.js';
 /**
  * Adaptateur MapLibre GL du port `MapProvider`.
  *
+ * PROVENANCE : mister-family-map, où il a remplacé Leaflet — bascule qui n'a
+ * coûté qu'un fichier, ce qui a validé le port et motivé cette promotion.
+ *
  * Peer OPTIONNEL : `maplibre-gl` (^6). L'app doit importer
  * `maplibre-gl/dist/maplibre-gl.css`.
  *
@@ -94,8 +97,7 @@ export function createMapLibreMapProvider(engineOptions = {}) {
   return {
     async mount(container, options) {
       engine = await import('maplibre-gl');
-      const { AttributionControl, MapLibreMap, Marker, NavigationControl } =
-        engine;
+      const { AttributionControl, MapLibreMap, NavigationControl } = engine;
       // `workerUrl` permet de reprendre la main hors Vite (autre bundler, CDN).
       engine.setWorkerUrl(await resolveWorkerUrl(engineOptions.workerUrl));
 

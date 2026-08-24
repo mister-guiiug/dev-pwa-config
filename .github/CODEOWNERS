@@ -1,0 +1,9 @@
+# Propriétaires par défaut de tout le dépôt.
+*                       @mister-guiiug
+
+# Chemin d'escalade le plus court de la famille : ces fichiers s'exécutent dans
+# seize dépôts, avec leurs secrets. Toute modification mérite une relecture,
+# même — surtout — quand elle paraît anodine.
+/.github/workflows/     @mister-guiiug
+/.github/actions/       @mister-guiiug
+/scripts/               @mister-guiiug

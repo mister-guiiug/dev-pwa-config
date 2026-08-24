@@ -1,6 +1,14 @@
 /**
  * Socle cartographique AGNOSTIQUE du moteur de rendu.
  *
+ * PROVENANCE — à la différence des autres promotions de ce paquet, celle-ci
+ * vient d'UNE SEULE app (mister-family-map) et non d'une convergence
+ * constatée : aucune autre app de la famille n'affiche de carte à ce jour.
+ * Ce qui la justifie n'est donc pas « ce serait utile », mais le fait que les
+ * trois pièges de production ci-dessous ont coûté une session de débogage
+ * réelle — invisibles en développement, ils se repaieraient à l'identique dans
+ * la deuxième app qui ferait une carte. Voir la PR pour la discussion.
+ *
  * Deux axes indépendants, souvent confondus :
  *   1. le MOTEUR de rendu   → Leaflet (DOM) ou MapLibre GL (WebGL) ;
  *      un adaptateur par moteur, dans un sous-chemin dédié

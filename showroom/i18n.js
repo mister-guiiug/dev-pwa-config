@@ -42,6 +42,63 @@ globalThis.SHOWROOM_I18N = {
     'ui.toc.a11y': 'Accessibility checks',
     'ui.toc.stack': 'Stack',
     'ui.toc.integration': 'Integration',
+    'ui.toc.apps': 'Applications',
+
+    /* ── Vitrine des dépôts ───────────────────────────────────────────── */
+    'apps.h21': 'The family’s applications',
+    'apps.p1':
+      'Sixteen public repositories, <strong>fifteen</strong> of which consume this package — the desktop application imports none of it, and the “subpaths” field is what revealed it. This grid is not a list kept by hand in the page: it is generated from <code>apps-catalog.js</code> — the very file the applications import to show one another. Anything wrong here would be wrong in their footers.',
+    'apps.note':
+      '<strong>Domain and maturity are editorial</strong>, entered by hand: they state an intent, not a published version. <strong>Persistence</strong> and <strong>subpaths</strong> are <strong>surveyed</strong> in each app’s code — the real <code>import</code>s and <code>extends</code>, not an intention — and left blank where they were not: a filter that says “not surveyed” beats invented data. The <em>Consumes</em> filter therefore answers the first question a design system should ask itself: who actually uses what? <code>components.css</code> has a single adopter out of sixteen. The badges are painted with each application’s real primary colour, never with a remote icon: this showroom makes no network request.',
+    'ui.apps.search': 'Search',
+    'ui.apps.sort': 'Sort',
+    'ui.apps.sortBy.curated': 'Catalogue order',
+    'ui.apps.sortBy.maturity': 'Maturity',
+    'ui.apps.sortBy.name': 'Name',
+    'ui.apps.facet.maturity': 'Maturity',
+    'ui.apps.facet.backend': 'Persistence',
+    'ui.apps.facet.category': 'Domain',
+    'ui.apps.all': 'All',
+    'ui.apps.open': 'Open the app',
+    'ui.apps.releases': 'Downloads',
+    'ui.apps.repo': 'Repository',
+    'ui.apps.theme': 'Dress the page',
+    'ui.apps.total': '{n} applications',
+    'ui.apps.shown': '{n} of {total}',
+    'ui.apps.none': 'No application matches these criteria.',
+    'ui.apps.reset': 'Show them all again',
+    'ui.apps.consumes': 'Consumes',
+    'ui.apps.consumesNothing': 'Consumes nothing',
+    'ui.apps.configs': '{n} subpaths',
+    'ui.apps.noConfig': 'Consumes nothing from the package.',
+    'ui.apps.permalink': 'Direct link to {app}',
+    'ui.apps.share': 'Copy the link to this view',
+    'ui.apps.viewLegend': 'Display',
+    'ui.apps.viewGrid': 'Grid',
+    'ui.apps.viewTable': 'Table',
+    'ui.apps.th.app': 'Application',
+    'ui.apps.th.configs': 'Subpaths',
+    'ui.apps.sortBy.updated': 'Last activity',
+    'ui.ago.today': 'today',
+    'ui.ago.days': '{n} d ago',
+    'ui.ago.months': '{n} months ago',
+    'ui.ago.years': '{n} years ago',
+    'ui.metrics.pushed': 'code {ago}',
+    'ui.metrics.archived': 'archived',
+    'ui.metrics.date': 'repository state surveyed {ago}',
+    'ui.backend.supabase': 'Supabase',
+    'ui.backend.firebase': 'Firebase',
+    'ui.backend.local': 'Local-first',
+    'ui.backend.api': 'Third-party API',
+    'ui.backend.none': 'Not surveyed',
+    'ui.category.sante': 'Health',
+    'ui.category.sport': 'Sport',
+    'ui.category.jeux': 'Games',
+    'ui.category.education': 'Education',
+    'ui.category.outils': 'Tools',
+    'ui.category.dev': 'Development',
+    'ui.platform.web': 'Web',
+    'ui.platform.desktop': 'Desktop',
 
     /* ── Catalogue ────────────────────────────────────────────────────── */
     'catalogue.h21': 'Catalogue',
@@ -222,7 +279,9 @@ globalThis.SHOWROOM_I18N = {
     /* ── Demo gallery ─────────────────────────────────────────────────── */
     'demo.title': 'Demo by application',
     'demo.intro':
-      'Pick an application: the whole showroom switches to its universe, and the preview below shows the shared components dressed in its colours. Same page, same CSS — only the thirteen contract variables change.',
+      'The <em>Dress the page</em> button on a <a href="#apps">showcase</a> card switches the whole showroom into that application’s universe; the preview below then shows the shared components wearing its colours. Same page, same CSS — only the thirteen contract variables change. This section used to carry its own application menu: two selectors for one switch was one too many.',
+    'ui.demo.current': 'Preview dressed by {app}.',
+    'ui.demo.generic': 'Generic preview: no application selected.',
     'demo.note':
       '<strong>These are generated previews, not screenshots.</strong> They are painted live with each app’s real palette and the package’s real components — so they show the design system faithfully in each universe, but not the applications’ own screens. A real capture dropped into <code>showroom/screenshots/</code> and declared in <code>screenshots.js</code> automatically takes the preview’s place.',
     'ui.demo.season': 'Season',
@@ -502,5 +561,11 @@ globalThis.SHOWROOM_I18N = {
       'Indigo on zinc neutrals, calm and contrasted real-time.',
     'theme.mister-qowa.tagline':
       'TV quiz stage: midnight violet, vivid accents. Dark-only app.',
+    'theme.miss-dice.tagline':
+      'Indigo night and electric violet, a single brand tone.',
+    'theme.miss-ticket-pwa.tagline':
+      'Near-black zinc neutrals and raspberry pink, one single scale.',
+    'theme.mister-quota.tagline':
+      'Cold slate and sky blue — desktop application, dark-only.',
   },
 };

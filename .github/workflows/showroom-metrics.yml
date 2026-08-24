@@ -1,0 +1,82 @@
+# Relevé nocturne de l'état des dépôts de la famille, pour la vitrine.
+#
+# La vitrine affiche des étiquettes éditoriales — « stable », « alpha » — que
+# rien ne date. Ce workflow ajoute les seules mesures qui ne peuvent pas être
+# saisies à la main sans pourrir : dernière release, dernier push, dépôt
+# archivé.
+#
+# Le relevé a lieu ICI et non dans la page : le showroom ne fait aucune requête
+# réseau, c'est ce qui lui permet de s'ouvrir en `file://` sans clé d'API. Il ne
+# lit donc qu'un fichier statique, daté et commité.
+#
+# Sans commit à faire, le job se termine sans rien pousser — pas de commit vide
+# quotidien dans l'historique.
+name: Showroom metrics
+
+on:
+  schedule:
+    # 04:17 UTC : creux de charge côté Actions, et loin des heures rondes que
+    # tout le monde choisit.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Redéclencher la publication Pages. Un push fait avec le `GITHUB_TOKEN` ne
+  # déclenche AUCUN autre workflow (protection anti-récursion de GitHub
+  # Actions) : sans ce droit et sans l'étape finale, le relevé serait commité
+  # mais jamais publié — la page servirait indéfiniment un `metrics.js` vide.
+  actions: write
+
+concurrency:
+  group: showroom-metrics
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Relever et commiter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Aucune dépendance à installer : `fetch` et `node:fs` suffisent.
+      - name: Relever l'état des dépôts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/fetch-metrics.mjs
+
+      # Le fichier doit rester lisible par le test de forme et par la page.
+      - name: Vérifier le fichier produit
+        run: node --test test/showroom-metrics.test.mjs
+
+      - name: Commiter si quelque chose a changé
+        id: commit
+        run: |
+          if git diff --quiet -- showroom/metrics.js; then
+            echo "Aucun changement : rien à commiter."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add showroom/metrics.js
+          git commit -m "chore(showroom): relevé nocturne de l'état des dépôts"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # Le commit ci-dessus ne réveille pas `showroom-pages.yml` : les
+      # événements produits par le `GITHUB_TOKEN` n'enclenchent pas de nouveau
+      # workflow. On demande donc la publication explicitement — un
+      # `workflow_dispatch` par l'API, lui, s'exécute bien.
+      #
+      # Seulement quand le relevé a CHANGÉ : republier une page identique
+      # chaque nuit ne ferait que du bruit dans l'historique des déploiements.
+      - name: Republier le showroom
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run showroom-pages.yml --ref main

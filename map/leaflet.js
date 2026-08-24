@@ -3,6 +3,10 @@ import { osmRasterTiles } from './index.js';
 /**
  * Adaptateur Leaflet du port `MapProvider`.
  *
+ * PROVENANCE : mister-family-map (premier moteur retenu, remplacé par MapLibre
+ * dans cette app ; conservé ici parce qu'il reste le bon choix quand le poids
+ * prime sur le rendu — 42 ko contre 253).
+ *
  * Peer OPTIONNEL : `leaflet` (+ sa feuille de style
  * `leaflet/dist/leaflet.css`, à importer par l'app). N'importer ce
  * sous-chemin que si c'est le moteur retenu — sinon Leaflet est embarqué

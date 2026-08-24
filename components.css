@@ -16,13 +16,16 @@
  * CONTRAT DE COULEUR. Aucune couleur de marque n'est imposée. Tout est lu dans
  * des variables que l'app définit où elle veut (`:root`, `@theme`, `[data-theme]`,
  * `.dark`…) ; chaque `var()` porte un repli neutre, donc l'import seul donne
- * déjà un rendu correct en clair ET en sombre :
+ * déjà un rendu correct en clair ET en sombre. Un jeu de valeurs prêt à
+ * l'emploi, au contraste vérifié, est livré à part :
+ * `@import '@mister-guiiug/dev-wpa-config/tokens.css'`.
  *
  *   --dwc-surface            fond des panneaux            (repli : Canvas)
  *   --dwc-surface-2          fond en retrait              (repli : dérivé)
  *   --dwc-text               texte principal              (repli : CanvasText)
  *   --dwc-text-soft          texte secondaire             (repli : GrayText)
- *   --dwc-border             filets et contours           (repli : dérivé)
+ *   --dwc-border             filets de séparation         (repli : dérivé)
+ *   --dwc-border-strong      contour d'un contrôle, 3:1   (repli : --dwc-border)
  *   --dwc-primary            action principale            (repli : CanvasText)
  *   --dwc-primary-contrast   texte posé sur la primaire   (repli : Canvas)
  *   --dwc-primary-soft       fond teinté de marque        (repli : dérivé)
@@ -69,7 +72,8 @@
     [data-dwc='footer-sponsor'],
     [data-dwc='family-source'],
     [data-dwc='family-sponsor'],
-    [data-dwc='family-app']
+    [data-dwc='family-app'],
+    [data-dwc='family-app-repo']
   ) {
     min-height: 2.75rem;
   }
@@ -355,6 +359,52 @@
     border-color: var(--dwc-primary, CanvasText);
   }
 
+  /*
+   * Variante `showRepoLinks` : la carte gagne un second lien, vers le DÉPÔT.
+   * Deux destinations distinctes = deux ancres, jamais une ancre imbriquée
+   * (invalide, et un lecteur d'écran n'en annonce qu'une). C'est donc le `<li>`
+   * qui devient la carte visible, et le lien application qui rend sa bordure.
+   */
+  [data-dwc='family-app-item'][data-with-repo] {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding-inline-end: 0.35rem;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+  }
+
+  [data-dwc='family-app-item'][data-with-repo]:hover {
+    border-color: var(--dwc-primary, CanvasText);
+  }
+
+  [data-dwc='family-app-item'][data-with-repo] > [data-dwc='family-app'] {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-color: transparent;
+    background: none;
+  }
+
+  [data-dwc='family-app-repo'] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-width: 2.75rem;
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.6);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='family-app-repo']:hover {
+    color: var(--dwc-primary, CanvasText);
+    background: var(
+      --dwc-primary-soft,
+      color-mix(in srgb, CanvasText 8%, Canvas)
+    );
+  }
+
   [data-dwc='family-app-icon'] {
     width: 2.5rem;
     height: 2.5rem;
@@ -479,7 +529,11 @@
   [data-dwc='button'][data-variant='secondary'] {
     background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
     color: var(--dwc-text, CanvasText);
-    border-color: var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    /* Contour d'un contrôle : même règle que le champ de saisie. */
+    border-color: var(
+      --dwc-border-strong,
+      var(--dwc-border, color-mix(in srgb, CanvasText 40%, Canvas))
+    );
   }
 
   [data-dwc='button'][data-variant='outline'] {
@@ -540,8 +594,16 @@
     padding: 0.5rem 0.75rem;
     color: var(--dwc-text, CanvasText);
     background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    /*
+     * `border-strong`, pas `border` : le pourtour d'un champ est la seule chose
+     * qui dit où cliquer. WCAG 1.4.11 lui demande 3:1 — ce qu'un filet de
+     * séparation discret ne tient pas (test/tokens.test.mjs).
+     */
     border: 1px solid
-      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+      var(
+        --dwc-border-strong,
+        var(--dwc-border, color-mix(in srgb, CanvasText 40%, Canvas))
+      );
     border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
   }
 

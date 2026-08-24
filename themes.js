@@ -1,0 +1,741 @@
+/*
+ * Palettes des applications de la famille miss-* / mister-*.
+ *
+ * SOURCE DE VÉRITÉ. Ce fichier est la source ; `showroom/themes.js` en est le
+ * miroir engendré par `npm run sync`, et un test vérifie l'égalité à l'octet.
+ * Les palettes vivaient auparavant DANS le showroom, qui n'est pas publié : le
+ * paquet ignorait donc les seize palettes que sa propre vitrine connaissait.
+ *
+ * MÉTHODE. Chaque palette est RELEVÉE dans le `src/*.css` de l'app, jamais
+ * choisie ici. Deux règles de relevé :
+ *  - les valeurs exprimées en `rgba()` sont composées sur le fond réel de
+ *    l'app, pas approximées à vue ;
+ *  - `accent` répète `primary` là où l'app n'a qu'un ton de marque, plutôt que
+ *    d'inventer une couleur qu'elle n'utilise pas.
+ *
+ * CE QUE CE FICHIER N'EST PAS. Ce n'est pas une charte : le paquet n'impose
+ * aucune couleur (voir `tokens.css` pour le jeu neutre par défaut). C'est un
+ * relevé, utile pour rhabiller un composant d'un univers à l'autre, engendrer
+ * le `theme_color` d'un manifest, ou vérifier un contraste.
+ *
+ * Format d'un thème :
+ *   id           identifiant du dépôt (= nom GitHub), ou 'generic'
+ *   name         libellé affiché dans le sélecteur
+ *   tagline      une phrase sur l'univers visuel
+ *   schemes      ['light','dark'] ou ['dark'] pour une app dark-only
+ *   attribute    'data-theme' (défaut de `useTheme`) ou 'class' (variante .dark)
+ *   fontDisplay  police de titrage de l'app (repli système si non installée)
+ *   radius       rayon de carte
+ *   light/dark   rôles sémantiques → couleurs
+ *
+ * Le thème `generic` ne porte PAS de couleurs : il s'appuie sur les valeurs par
+ * défaut du showroom, qui restent la seule définition de la palette neutre.
+ */
+
+/** @type {import('./themes.js').FamilyTheme[]} */
+export const FAMILY_THEMES = [
+  {
+    id: 'generic',
+    name: 'Générique — preset seul',
+    tagline:
+      'Ce que le preset fournit réellement : de la structure, pas de couleur. Palette monochrome de référence.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.75rem',
+    usesCssDefaults: true,
+  },
+
+  {
+    id: 'miss-badminton',
+    name: 'Miss Badminton',
+    tagline: 'Neutres slate + indigo, halos violets en fond.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '1rem',
+    light: {
+      bg: '#f8fafc',
+      surface: '#ffffff',
+      surface2: '#f1f5f9',
+      text: '#0f172a',
+      textSoft: '#64748b',
+      border: '#e2e8f0',
+      primary: '#4f46e5',
+      primaryContrast: '#ffffff',
+      primarySoft: '#eef2ff',
+      accent: '#a855f7',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#2563eb',
+    },
+    dark: {
+      bg: '#0f172a',
+      surface: '#1e293b',
+      surface2: '#263449',
+      text: '#f1f5f9',
+      textSoft: '#94a3b8',
+      border: '#34455c',
+      primary: '#818cf8',
+      primaryContrast: '#10162b',
+      primarySoft: '#1e2547',
+      accent: '#c084fc',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#60a5fa',
+    },
+  },
+
+  {
+    id: 'miss-carbook',
+    name: 'Miss Carbook',
+    tagline: 'Sarcelle profond + ambre, tableaux denses et badges de statut.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.625rem',
+    light: {
+      bg: '#f8fafc',
+      surface: '#ffffff',
+      surface2: '#f1f5f9',
+      text: '#0f172a',
+      textSoft: '#64748b',
+      border: '#e2e8f0',
+      primary: '#0f766e',
+      primaryContrast: '#ecfdf5',
+      primarySoft: '#e6f6f4',
+      accent: '#f59e0b',
+      success: '#22c55e',
+      warning: '#f59e0b',
+      danger: '#b91c1c',
+      info: '#3b82f6',
+    },
+    dark: {
+      bg: '#0f172a',
+      surface: '#1e293b',
+      surface2: '#334155',
+      text: '#f1f5f9',
+      textSoft: '#94a3b8',
+      border: '#334155',
+      primary: '#2dd4bf',
+      primaryContrast: '#042f2e',
+      primarySoft: '#14343a',
+      accent: '#fbbf24',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#60a5fa',
+    },
+  },
+
+  {
+    id: 'miss-contraction',
+    name: 'Miss Contraction',
+    tagline: 'Magenta doux sur dégradés pastel, ambiance maternité apaisée.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '1rem',
+    light: {
+      bg: '#f8f2fc',
+      bgImage:
+        'radial-gradient(120% 80% at 100% 0%, rgba(236, 180, 220, 0.45), transparent 55%), radial-gradient(90% 70% at 0% 100%, rgba(200, 170, 255, 0.35), transparent 50%), linear-gradient(168deg, #fff5fb 0%, #f5ecff 48%, #ede4ff 100%)',
+      surface: '#ffffff',
+      surface2: '#f3e9fa',
+      text: '#2b1833',
+      textSoft: '#6b5678',
+      border: '#e6cdec',
+      primary: '#a0309a',
+      primaryContrast: '#ffffff',
+      primarySoft: '#f7e6f6',
+      accent: '#7828a8',
+      success: '#2e8b3d',
+      warning: '#d97706',
+      danger: '#c41e3a',
+      info: '#7828a8',
+    },
+    dark: {
+      bg: '#160b1c',
+      surface: '#1e1028',
+      surface2: '#2a1836',
+      text: '#f0e8f5',
+      textSoft: '#b89dc5',
+      border: '#3a2547',
+      primary: '#d678cf',
+      primaryContrast: '#1a0a20',
+      primarySoft: '#33163a',
+      accent: '#b06ee0',
+      success: '#6cbf78',
+      warning: '#f3b347',
+      danger: '#f47b8a',
+      info: '#b06ee0',
+    },
+  },
+
+  {
+    id: 'miss-genius',
+    name: 'Miss Genius',
+    tagline: 'Violet profond + corail, scolaire moderne, arrondis généreux.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: "'Fredoka', system-ui, sans-serif",
+    radius: '1.25rem',
+    light: {
+      bg: '#f7f5ff',
+      surface: '#ffffff',
+      surface2: '#faf8ff',
+      text: '#1e1b2e',
+      textSoft: '#6b6580',
+      border: '#ece8fb',
+      primary: '#6d28d9',
+      primaryContrast: '#ffffff',
+      primarySoft: '#ede9fe',
+      accent: '#f43f7e',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+      info: '#0ea5e9',
+    },
+    dark: {
+      bg: '#16131f',
+      surface: '#211c2e',
+      surface2: '#2a2438',
+      text: '#f4f1fb',
+      textSoft: '#aaa2c0',
+      border: '#322a45',
+      primary: '#c4b5fd',
+      primaryContrast: '#1b1430',
+      primarySoft: '#2e2447',
+      accent: '#fb7185',
+      success: '#34d399',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#38bdf8',
+    },
+  },
+
+  {
+    id: 'miss-lookhouse',
+    name: 'Miss Lookhouse',
+    tagline: 'Sarcelle et cyan clairs, veille immobilière lisible et sobre.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.875rem',
+    light: {
+      bg: '#ecfeff',
+      surface: '#ffffff',
+      surface2: '#f0fdfa',
+      text: '#0f2e2b',
+      textSoft: '#4b6764',
+      border: '#cbe9e6',
+      primary: '#0f766e',
+      primaryContrast: '#ffffff',
+      primarySoft: '#d7f2ef',
+      accent: '#14b8a6',
+      success: '#15803d',
+      warning: '#b45309',
+      danger: '#b91c1c',
+      info: '#0284c7',
+    },
+    dark: {
+      bg: '#08201e',
+      surface: '#0f2e2b',
+      surface2: '#123b37',
+      text: '#e6fffb',
+      textSoft: '#93b5b1',
+      border: '#1d4d48',
+      primary: '#2dd4bf',
+      primaryContrast: '#04201d',
+      primarySoft: '#124440',
+      accent: '#5eead4',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#38bdf8',
+    },
+  },
+
+  {
+    id: 'miss-supaboss',
+    name: 'Miss Supaboss',
+    tagline: 'Vert Supabase sur bleus nuit, outil d’ops pensé dark-first.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '1rem',
+    light: {
+      bg: '#f4f7fb',
+      surface: '#ffffff',
+      surface2: '#e9eef7',
+      text: '#0e1a30',
+      textSoft: '#54637f',
+      border: '#d7e0ee',
+      primary: '#0f9d63',
+      primaryContrast: '#ffffff',
+      primarySoft: '#d9f3e6',
+      accent: '#0f9d63',
+      success: '#0f9d63',
+      warning: '#b45309',
+      danger: '#be123c',
+      info: '#2563eb',
+    },
+    dark: {
+      bg: '#0c1222',
+      surface: '#131c33',
+      surface2: '#1a2545',
+      text: '#e9f0fc',
+      textSoft: '#93a3c4',
+      border: '#263354',
+      primary: '#3ecf8e',
+      primaryContrast: '#04120b',
+      primarySoft: '#103526',
+      accent: '#3ecf8e',
+      success: '#3ecf8e',
+      warning: '#fbbf24',
+      danger: '#fb7185',
+      info: '#60a5fa',
+    },
+  },
+
+  {
+    id: 'miss-uwh',
+    name: 'Miss UWH',
+    tagline: 'Bleu cobalt + jaune doré du club, neutres bleutés.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: "'Fredoka', system-ui, sans-serif",
+    radius: '1.1rem',
+    light: {
+      bg: '#f3f6fc',
+      surface: '#ffffff',
+      surface2: '#eef3fb',
+      text: '#0e1f3a',
+      textSoft: '#5a6a86',
+      border: '#d9e2f1',
+      primary: '#1758ba',
+      primaryContrast: '#ffffff',
+      primarySoft: '#d8e6fb',
+      accent: '#edc715',
+      success: '#15803d',
+      warning: '#f59e0b',
+      danger: '#e11d48',
+      info: '#0ea5e9',
+    },
+    dark: {
+      bg: '#0a1626',
+      surface: '#10213b',
+      surface2: '#16294a',
+      text: '#eaf1fc',
+      textSoft: '#9fb2cf',
+      border: '#243a5e',
+      primary: '#7aa6f0',
+      primaryContrast: '#08152b',
+      primarySoft: '#16294a',
+      accent: '#edc715',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#fb7185',
+      info: '#38bdf8',
+    },
+  },
+
+  {
+    id: 'mister-cim10',
+    name: 'Mister CIM-10',
+    tagline: 'Sarcelle clinique sur bleu nuit, densité d’information élevée.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
+    radius: '0.75rem',
+    light: {
+      bg: '#eef2f7',
+      surface: '#ffffff',
+      surface2: '#e2e8f0',
+      text: '#0f172a',
+      textSoft: '#556175',
+      border: '#d4dce6',
+      primary: '#0f766e',
+      primaryContrast: '#f8fafc',
+      primarySoft: '#d8ecea',
+      accent: '#115e59',
+      success: '#059669',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#0369a1',
+    },
+    dark: {
+      bg: '#0c1222',
+      surface: '#151b2e',
+      surface2: '#2a3347',
+      text: '#f1f5f9',
+      textSoft: '#94a3b8',
+      border: '#2a3347',
+      primary: '#2dd4bf',
+      primaryContrast: '#0c1222',
+      primarySoft: '#123b3a',
+      accent: '#14b8a6',
+      success: '#34d399',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#38bdf8',
+    },
+  },
+
+  {
+    id: 'mister-doc',
+    name: 'Mister Doc',
+    tagline: 'Sarcelle sur slate très sombre, planning de gardes lisible.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: "'Inter', system-ui, sans-serif",
+    radius: '0.75rem',
+    light: {
+      bg: '#f8fafc',
+      surface: '#ffffff',
+      surface2: '#f1f5f9',
+      text: '#0f172a',
+      textSoft: '#64748b',
+      border: '#e2e8f0',
+      primary: '#0d9488',
+      primaryContrast: '#ffffff',
+      primarySoft: '#ccfbf1',
+      accent: '#0284c7',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#0284c7',
+    },
+    dark: {
+      bg: '#020617',
+      surface: '#0f172a',
+      surface2: '#1e293b',
+      text: '#e2e8f0',
+      textSoft: '#94a3b8',
+      border: '#1e293b',
+      primary: '#2dd4bf',
+      primaryContrast: '#042f2e',
+      primarySoft: '#042f2e',
+      accent: '#38bdf8',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#38bdf8',
+    },
+  },
+
+  {
+    id: 'mister-footcoach',
+    name: 'Mister Footcoach',
+    tagline: 'Vert terrain sur neutres gray, thème piloté par la classe .dark.',
+    schemes: ['light', 'dark'],
+    attribute: 'class',
+    fontDisplay: null,
+    radius: '0.75rem',
+    light: {
+      bg: '#f9fafb',
+      surface: '#ffffff',
+      surface2: '#f0fdf4',
+      text: '#111827',
+      textSoft: '#4b5563',
+      border: '#e5e7eb',
+      primary: '#16a34a',
+      primaryContrast: '#ffffff',
+      primarySoft: '#dcfce7',
+      accent: '#15803d',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#2563eb',
+    },
+    dark: {
+      bg: '#0f172a',
+      surface: '#1e293b',
+      surface2: '#0f2d1a',
+      text: '#f1f5f9',
+      textSoft: '#94a3b8',
+      border: '#334155',
+      primary: '#22c55e',
+      primaryContrast: '#052e16',
+      primarySoft: '#14532d',
+      accent: '#4ade80',
+      success: '#22c55e',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#60a5fa',
+    },
+  },
+
+  {
+    id: 'mister-molkky',
+    name: 'Mister Mölkky',
+    tagline:
+      'Vert prairie et bois chaud, papier crème, ambiance jeu de plein air.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.875rem',
+    light: {
+      bg: '#f5f5f0',
+      bgImage:
+        'radial-gradient(circle at 18% -10%, rgba(109, 169, 67, 0.18) 0%, transparent 55%), radial-gradient(circle at 110% 100%, rgba(212, 137, 43, 0.14) 0%, transparent 50%), #f5f5f0',
+      surface: '#ffffff',
+      surface2: '#f0eee5',
+      text: '#1b1d18',
+      textSoft: '#6b7065',
+      border: '#d8d6cb',
+      primary: '#4a7c2a',
+      primaryContrast: '#ffffff',
+      primarySoft: '#e4eeda',
+      accent: '#d4892b',
+      success: '#2e8b3d',
+      warning: '#d97706',
+      danger: '#c0392b',
+      info: '#3a6ea5',
+    },
+    dark: {
+      bg: '#141813',
+      surface: '#1f241d',
+      surface2: '#2a3026',
+      text: '#ecede5',
+      textSoft: '#989b90',
+      border: '#333a2d',
+      primary: '#7eb455',
+      primaryContrast: '#10140f',
+      primarySoft: '#263019',
+      accent: '#e1a566',
+      success: '#6cbf78',
+      warning: '#f3b347',
+      danger: '#e85a55',
+      info: '#7fb3d5',
+    },
+  },
+
+  {
+    id: 'mister-puzzle',
+    name: 'Mister Puzzle',
+    tagline: 'Indigo sur neutres zinc, temps réel calme et contrasté.',
+    schemes: ['light', 'dark'],
+    attribute: 'class',
+    fontDisplay: null,
+    radius: '0.75rem',
+    light: {
+      bg: '#f9fafb',
+      surface: '#ffffff',
+      surface2: '#f3f4f6',
+      text: '#111827',
+      textSoft: '#4b5563',
+      border: '#e5e7eb',
+      primary: '#4f46e5',
+      primaryContrast: '#ffffff',
+      primarySoft: '#eef2ff',
+      accent: '#7c3aed',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#2563eb',
+    },
+    dark: {
+      bg: '#0f1014',
+      surface: '#18181b',
+      surface2: '#27272a',
+      text: '#f3f4f6',
+      textSoft: '#a1a1aa',
+      border: '#3f3f46',
+      primary: '#a5b4fc',
+      primaryContrast: '#1e1b4b',
+      primarySoft: '#312e81',
+      accent: '#a78bfa',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#f87171',
+      info: '#60a5fa',
+    },
+  },
+
+  {
+    id: 'mister-qowa',
+    name: 'Mister Qowa',
+    tagline:
+      'Plateau de quiz télévisé : violet nuit, accents vifs. App dark-only.',
+    schemes: ['dark'],
+    attribute: 'data-theme',
+    fontDisplay: "'Fredoka', system-ui, sans-serif",
+    radius: '1.5rem',
+    dark: {
+      bg: '#0f0a1e',
+      bgImage:
+        'radial-gradient(1200px 600px at 50% -10%, #3b1d72 0%, transparent 60%), linear-gradient(160deg, #160b2e 0%, #0f0a1e 100%)',
+      surface: '#1c1236',
+      surface2: '#271748',
+      text: '#f5f3ff',
+      textSoft: '#c4b5fd',
+      border: '#3b2a63',
+      primary: '#7c3aed',
+      primaryContrast: '#ffffff',
+      primarySoft: '#2a1a52',
+      accent: '#a78bfa',
+      success: '#26890c',
+      warning: '#d89e00',
+      danger: '#e21b3c',
+      info: '#1368ce',
+    },
+  },
+
+  /*
+   * Les trois entrées ci-dessous complètent le catalogue : 16 apps, 16
+   * palettes. Deux précisions sur la méthode, valables pour elles comme pour
+   * les précédentes.
+   *
+   * COMPOSITES. Ces apps expriment certaines couleurs en `rgba()` posé sur un
+   * fond (bordures, fonds teintés). Le showroom veut des hex opaques : la
+   * valeur ici est la COMPOSITION calculée de la rgba sur le fond réel de
+   * l'app, pas une teinte choisie à vue.
+   *
+   * ACCENT. Le rôle `accent` désigne un SECOND plan de marque. Ces trois apps
+   * n'en ont qu'un : `accent` y répète donc `primary`, plutôt que d'inventer
+   * une couleur qui n'existe nulle part dans leur code.
+   */
+
+  {
+    id: 'miss-dice',
+    name: 'Miss Dice',
+    tagline: 'Nuit indigo et violet électrique, un seul ton de marque.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.875rem',
+    light: {
+      bg: '#f4f5fb',
+      // L'app n'a que deux niveaux de surface en clair (fond et blanc) :
+      // `surface2` répète le fond plutôt que d'inventer un troisième palier.
+      surface: '#ffffff',
+      surface2: '#f4f5fb',
+      text: '#181b27',
+      textSoft: '#5b6276',
+      border: '#dedfe1',
+      primary: '#6a44e8',
+      primaryContrast: '#ffffff',
+      primarySoft: '#dfdaf8',
+      accent: '#6a44e8',
+      success: '#166534',
+      warning: '#854d0e',
+      danger: '#d4504e',
+      info: '#3b82f6',
+    },
+    dark: {
+      bg: '#0f1220',
+      surface: '#1a1f33',
+      surface2: '#20263c',
+      text: '#f3f5fb',
+      textSoft: '#9aa3bd',
+      border: '#2c2e3b',
+      primary: '#7c5cf6',
+      primaryContrast: '#ffffff',
+      primarySoft: '#1f1d40',
+      accent: '#7c5cf6',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      // `--danger` et `--blue` ne sont définis NULLE PART dans l'app : seules
+      // les valeurs de repli de `var(--danger, …)` s'affichent, et elles
+      // divergent d'un appel à l'autre (#e5484d / #d4504e). On retient celle
+      // du chemin le plus visible.
+      danger: '#e5484d',
+      info: '#3b82f6',
+    },
+  },
+
+  {
+    id: 'miss-ticket-pwa',
+    name: 'Miss Ticket',
+    tagline: 'Neutres zinc quasi noirs et rose framboise, échelle unique.',
+    schemes: ['light', 'dark'],
+    // L'app pose ses couleurs en propriétés inline sur `<html>` plutôt que par
+    // un attribut : `data-theme` est ici le défaut du showroom, pas un relevé.
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.75rem',
+    light: {
+      bg: '#ffffff',
+      surface: '#ffffff',
+      surface2: '#f5f5f5',
+      text: '#171717',
+      textSoft: '#525252',
+      border: '#e6e6e6',
+      primary: '#f43f5e',
+      primaryContrast: '#ffffff',
+      primarySoft: '#fff1f2',
+      accent: '#f43f5e',
+      success: '#16a34a',
+      warning: '#d97706',
+      danger: '#dc2626',
+      info: '#2563eb',
+    },
+    dark: {
+      bg: '#0a0a0a',
+      surface: '#1a1a1a',
+      surface2: '#262626',
+      text: '#fafafa',
+      textSoft: '#a3a3a3',
+      border: '#272727',
+      primary: '#f43f5e',
+      primaryContrast: '#ffffff',
+      primarySoft: '#210f12',
+      accent: '#f43f5e',
+      success: '#22c55e',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+      info: '#3b82f6',
+    },
+  },
+
+  {
+    id: 'mister-quota',
+    name: 'Mister Quota',
+    tagline: 'Ardoise froide et bleu ciel — application desktop, sombre seule.',
+    // Seule app desktop de la famille, et seule à ne déclarer qu'un jeu de
+    // valeurs : pas de palette claire à relever.
+    schemes: ['dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.625rem',
+    dark: {
+      bg: '#0f1115',
+      surface: '#161a22',
+      surface2: '#1d222c',
+      text: '#e6e8ee',
+      textSoft: '#9aa3b2',
+      border: '#2a3140',
+      primary: '#6ea8ff',
+      // Le texte posé sur la primaire est presque noir dans l'app : c'est un
+      // relevé, pas un choix du showroom.
+      primaryContrast: '#0a0e16',
+      primarySoft: '#1d2838',
+      accent: '#6ea8ff',
+      success: '#56c66a',
+      warning: '#f0b347',
+      danger: '#ef5e5e',
+      // L'app n'a pas de ton « information » : l'état « en avance » réutilise
+      // l'accent. On retient donc la même valeur.
+      info: '#6ea8ff',
+    },
+  },
+];
+
+/** Thème d'une app par son identifiant de dépôt. */
+export function themeById(id) {
+  return FAMILY_THEMES.find(theme => theme.id === id);
+}
+
+/**
+ * Couleur de marque d'une app, dans un schéma donné. C'est cette valeur qui
+ * doit alimenter le `theme_color` d'un manifest PWA plutôt qu'un littéral
+ * recopié à la main — cinq manifests sur treize avaient divergé du relevé.
+ */
+export function brandColor(id, scheme = 'light') {
+  const theme = themeById(id);
+  const palette = theme?.[scheme] ?? theme?.[theme?.schemes?.[0]];
+  return palette?.primary;
+}

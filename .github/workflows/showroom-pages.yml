@@ -14,9 +14,11 @@ on:
       - 'showroom/**'
       - 'components.css'
       - 'tailwind-preset.css'
+      - 'apps-catalog.js'
       - 'test/showroom.test.mjs'
       - 'test/components-css.test.mjs'
       - 'test/showroom-i18n.test.mjs'
+      - 'test/apps-catalog.test.mjs'
       - '.github/workflows/showroom-pages.yml'
   workflow_dispatch:
 
@@ -43,14 +45,14 @@ jobs:
         with:
           node-version: '22'
 
-      # Le showroom rejoue `tailwind-preset.css` en CSS natif et embarque une
-      # copie de `components.css` : on refuse de publier une page qui aurait
-      # dérivé de ces sources de vérité. Aucune dépendance à installer
-      # (node:test + modules natifs uniquement).
-      - name: Parité preset / components ↔ showroom
+      # Le showroom rejoue `tailwind-preset.css` en CSS natif et embarque des
+      # copies de `components.css` et du catalogue famille : on refuse de
+      # publier une page qui aurait dérivé de ces sources de vérité. Aucune
+      # dépendance à installer (node:test + modules natifs uniquement).
+      - name: Parité preset / components / catalogue ↔ showroom
         run: >-
           node --test test/showroom.test.mjs test/components-css.test.mjs
-          test/showroom-i18n.test.mjs
+          test/showroom-i18n.test.mjs test/apps-catalog.test.mjs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

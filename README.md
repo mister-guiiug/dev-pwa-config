@@ -11,23 +11,34 @@ projets PWA de la famille `miss-*` et `mister-*`.
 
 ## Projets consommateurs
 
-| Projet                                     | Type                                          | Configs utilisées                                                                                                                                           |
-| ------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`miss-badminton`](../miss-badminton/)     | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (icônes : SVG inline, pas de `lucide-react`)                                         |
-| [`miss-carbook`](../miss-carbook/)         | React + Supabase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
-| [`miss-contraction`](../miss-contraction/) | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
-| [`miss-dice`](../miss-dice/)               | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base                                                                                      |
-| [`miss-genius`](../miss-genius/)           | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, vite-pwa-base, `lucide-react`                                                       |
-| [`miss-lookhouse`](../miss-lookhouse/)     | React + Supabase (opt-in, local-first)        | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`miss-supaboss`](../miss-supaboss/)       | React + backend Node + Supabase               | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, playwright-base, `lucide-react`                                                     |
-| [`miss-uwh`](../miss-uwh/)                 | React + localStorage                          | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (coverage)                                                                           |
-| [`miss-ticket-pwa`](../miss-ticket-pwa/)   | React + Firebase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`mister-cim10`](../mister-cim10/)         | React                                         | eslint-react, prettier, tsconfig-app-react (avec overrides `allowJs`/`strict: false`), tsconfig-node, vitest-base                                           |
-| [`mister-doc`](../mister-doc/)             | React + Supabase (planning gardes)            | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base (coverage)                                                                           |
-| [`mister-footcoach`](../mister-footcoach/) | React + Supabase                              | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`mister-molkky`](../mister-molkky/)       | React + localStorage (sync Supabase opt-in)   | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, `lucide-react`                                                                      |
-| [`mister-puzzle`](../mister-puzzle/)       | React + Firebase                              | eslint-react, prettier, tsconfig-app-react (avec overrides `verbatimModuleSyntax`, `erasableSyntaxOnly`), tsconfig-node (idem), vitest-base, `lucide-react` |
-| [`mister-qowa`](../mister-qowa/)           | React + Firebase (RTDB, Firestore, Functions) | eslint-react, prettier, tsconfig-app-react, tsconfig-node, vitest-base, playwright-base, `lucide-react`                                                     |
+Tableau **engendré** depuis `apps-catalog.js` (`npm run sync`) : la colonne
+« Sous-chemins consommés » est un RELEVÉ — les `import` et les `extends` trouvés
+dans le code de chaque dépôt —, pas une intention. Deux choses s'y lisent tout
+de suite : `components.css` n'a **qu'un adoptant sur seize**, et `mister-quota`
+ne consomme rien du paquet.
+
+<!-- CONSOMMATEURS:DÉBUT — engendré par `npm run sync` depuis apps-catalog.js -->
+
+| Projet                                                                  | Persistance              | Sous-chemins consommés                                                                                                                                                                                                                                                |
+| ----------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`miss-carbook`](https://github.com/mister-guiiug/miss-carbook)         | Supabase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                  |
+| [`miss-contraction`](https://github.com/mister-guiiug/miss-contraction) | Local-first              | `eslint-react`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **12**                                                   |
+| [`miss-genius`](https://github.com/mister-guiiug/miss-genius)           | Local-first              | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **15**      |
+| [`miss-uwh`](https://github.com/mister-guiiug/miss-uwh)                 | Supabase                 | `components.css`, `eslint-react`, `lint-staged`, `playwright-a11y`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **15**       |
+| [`mister-cim10`](https://github.com/mister-guiiug/mister-cim10)         | Local-first              | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base` — **13**                                  |
+| [`mister-footcoach`](https://github.com/mister-guiiug/mister-footcoach) | Supabase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **15**      |
+| [`mister-puzzle`](https://github.com/mister-guiiug/mister-puzzle)       | Firebase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                    |
+| [`miss-ticket-pwa`](https://github.com/mister-guiiug/miss-ticket-pwa)   | Firebase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                             |
+| [`mister-doc`](https://github.com/mister-guiiug/mister-doc)             | Supabase                 | `eslint-react`, `lint-staged`, `prettier`, `react`, `react/i18n`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **12**                                                        |
+| [`miss-lookhouse`](https://github.com/mister-guiiug/miss-lookhouse)     | Supabase                 | `eslint-react`, `prettier`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base`, `vitest-setup` — **7**                                                                                                                                       |
+| [`miss-badminton`](https://github.com/mister-guiiug/miss-badminton)     | Local-first              | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                    |
+| [`miss-dice`](https://github.com/mister-guiiug/miss-dice)               | Local-first              | `commitlint`, `eslint-react`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/observability`, `vite-csp`, `vite-pwa-base`, `vitest-setup` — **10**                                                                                                      |
+| [`miss-supaboss`](https://github.com/mister-guiiug/miss-supaboss)       | API tierce               | `commitlint`, `eslint-react`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/observability`, `react/use-update-prompt`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vitest-base`, `vitest-setup` — **15** |
+| [`mister-molkky`](https://github.com/mister-guiiug/mister-molkky)       | Supabase                 | `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **14**                    |
+| [`mister-qowa`](https://github.com/mister-guiiug/mister-qowa)           | Firebase                 | `eslint-react`, `playwright-base`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base` — **6**                                                                                                                                                |
+| [`mister-quota`](https://github.com/mister-guiiug/mister-quota)         | — (non relevé) · desktop | **aucun** — ce dépôt ne consomme pas le paquet                                                                                                                                                                                                                        |
+
+<!-- CONSOMMATEURS:FIN -->
 
 ## Showroom du design system
 
@@ -40,6 +51,15 @@ réellement :
   (redimensionner la fenêtre fait jouer les `clamp()`) ;
 - le DOM exact de chaque composant `/react` et les sélecteurs
   `[data-dwc="…"]` correspondants ;
+- une **vitrine des seize dépôts** de la famille, en grille ou en tableau :
+  recherche sans diacritiques (les facettes et les sous-chemins y sont
+  cherchables : « supabase », « vite-csp »), quatre axes de filtres croisés
+  affichant le compte qu'ils donneraient, tri, ancre par application, liens app
+  - dépôt, et un bouton qui rhabille la page entière avec la palette de l'app.
+    La grille est **engendrée depuis `apps-catalog.js`** — le fichier qu'importent
+    les apps pour s'afficher les unes les autres. Le filtre **Consomme** répond à
+    la question qu'un design system doit se poser en premier : qui utilise
+    vraiment quoi ? (`components.css` : un adoptant sur seize) ;
 - un **catalogue cherchable** de tout ce que le paquet exporte — composants et
   hooks —, dont `test/showroom-catalogue.test.mjs` vérifie qu'il ne laisse
   échapper aucun export de `react/index.js` ;
@@ -75,6 +95,43 @@ monochrome ; les palettes des applications sont relevées dans `showroom/themes.
 > ni `@utility` : `showroom/preset.css` rejoue donc le preset en CSS natif.
 > `test/showroom.test.mjs` compare les deux fichiers token par token — une
 > modification du preset non répercutée fait échouer la CI, pas le navigateur.
+
+Même raison pour le catalogue : chargeable en `file://`, la page ne peut pas
+`import` un module ES. `showroom/apps.js` (`globalThis.SHOWROOM_APPS`) et
+`showroom/components.css` sont donc **engendrés** depuis la racine :
+
+```bash
+npm run sync   # scripts/sync-generated.mjs
+```
+
+`npm run sync` régénère **quatre** dérivés du catalogue : `showroom/apps.js`,
+`showroom/components.css`, le bloc JSON-LD du `<head>` de la page (seize
+`SoftwareApplication`, lisibles sans exécuter le script) et le tableau
+« Projets consommateurs » ci-dessus. `test/apps-catalog.test.mjs` les compare
+tous au catalogue et refuse une copie périmée ; il vérifie aussi que les comptes
+annoncés par la section « Stack » (« 6 apps Supabase », « 3 Firebase »,
+« 5 local-first ») collent toujours au champ `backend`.
+
+Deux relevés complètent la vitrine, et ne sont **pas** dans `sync` parce qu'ils
+demandent un accès réseau :
+
+```bash
+npm run screenshots            # captures des apps déployées → showroom/screenshots/
+npm run screenshots -- miss-dice
+node scripts/fetch-metrics.mjs # état des dépôts → showroom/metrics.js
+```
+
+Le second tourne **une fois par nuit** en CI (`showroom-metrics.yml`) et commite
+`showroom/metrics.js` : version publiée, date du dernier push, dépôt archivé.
+La page ne fait toujours aucune requête — le relevé est posé sur `globalThis`
+par un `<script src>`, comme `themes.js`. Un fichier vide est un état valide :
+la vitrine n'affiche alors simplement aucune mesure.
+
+> Le workflow redemande **explicitement** la publication Pages après avoir
+> commité. Un push effectué avec le `GITHUB_TOKEN` ne déclenche aucun autre
+> workflow — c'est la protection anti-récursion de GitHub Actions — et le
+> relevé serait donc commité sans jamais être publié. Un `workflow_dispatch`
+> par l'API, lui, s'exécute normalement.
 
 ## Stack cible (juin 2026)
 
@@ -248,7 +305,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 4. **TypeScript** : `tsconfig.app.json` + `tsconfig.node.json` en `extends`.
 5. **Tests** : `vitest.config.ts` (`baseTestOptions`) + `src/test/setup.ts`
    (`import '@mister-guiiug/dev-wpa-config/vitest-setup'`).
-6. **CI/CD** (`secrets: inherit` + `permissions` au niveau caller) : `ci.yml` →
+6. **CI/CD** (secrets passés NOMMÉMENT — jamais `inherit` — + `permissions` au niveau caller) : `ci.yml` →
    `pwa-ci.yml@v3`, `deploy.yml` → `pwa-deploy.yml@v3`, `lighthouse.yml` →
    `pwa-lighthouse.yml@v3`.
 7. **PWA/SEO** : `index.html` depuis [`templates/index.html`](./templates/index.html) +
@@ -270,7 +327,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`       | `.json`         | Durcissement TS **opt-in** : `noPropertyAccessFromIndexSignature` + `noImplicitOverride` + `exactOptionalPropertyTypes` (par-dessus la base stricte)                                                                             |
 | `@mister-guiiug/dev-wpa-config/vitest-base`                | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                                                |
 | `@mister-guiiug/dev-wpa-config/vitest-setup`               | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                                                       |
-| `@mister-guiiug/dev-wpa-config/apps-catalog`               | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                                                                         |
+| `@mister-guiiug/dev-wpa-config/apps-catalog`               | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                         |
 | `@mister-guiiug/dev-wpa-config/react`                      | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                    |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt`    | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + snooze) — couplé à vite-plugin-pwa, hors barrel                                                                                                                                          |
 | `@mister-guiiug/dev-wpa-config/react/rive`                 | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                                                  |
@@ -552,6 +609,121 @@ Variables d'env de build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`,
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
 `htmlTrackingPlugin()`), désormais factorisés ici.
 
+### `vite-pwa` — options `VitePWA()` partagées
+
+```ts
+import { pwaBaseOptions } from '@mister-guiiug/dev-wpa-config/vite-pwa';
+
+VitePWA(
+  pwaBaseOptions({
+    id: 'miss-uwh', // identifiant du dépôt : base, scope, et couleurs du thème
+    name: 'Miss UWH — Bilan comptable',
+    shortName: 'Miss UWH',
+    description: 'Bilan comptable saisonnier d’un club de hockey subaquatique.',
+    categories: ['finance', 'productivity', 'sports'],
+    shortcuts: [{ name: 'Journal', url: '#/finances/journal' }],
+  })
+);
+```
+
+Relevé du 23/08/2026 sur les seize apps, avant ce module :
+
+|                   |                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `registerType`    | 10 en `prompt`, 4 en `autoUpdate`, 2 sans                                                                              |
+| `runtimeCaching`  | 5 apps sur 16 en déclarent un                                                                                          |
+| manifest          | 3 apps sans `display` ni `theme_color`                                                                                 |
+| mise à jour du SW | **15 apps sur 16** recâblent `virtual:pwa-register` à la main, alors que `react/use-update-prompt` existe (1 adoptant) |
+
+Trois défauts méritent d'être expliqués, parce qu'on pourrait les « améliorer »
+à tort :
+
+- **`registerType: 'prompt'`** — seul mode compatible avec `use-update-prompt` +
+  `UpdatePromptBanner` que le paquet livre. En `autoUpdate`, l'app se recharge
+  sous les doigts de l'utilisateur, parfois au milieu d'une saisie.
+- **Aucune mise en cache d'API par défaut** — mettre en cache une réponse
+  authentifiée expose les données d'un utilisateur au suivant sur un appareil
+  partagé. Les origines à mettre en cache se déclarent (`apiOrigins`), et
+  passent en `NetworkFirst` : une donnée périmée servie en ligne est un bug
+  fonctionnel, pas une optimisation.
+- **`theme_color` et `background_color` sont LUS dans `themes.js`** quand l'app
+  y figure, plutôt que recopiés. Cinq manifests sur treize avaient divergé du
+  relevé, sans qu'on puisse distinguer le choix délibéré de l'oubli. Une couleur
+  passée explicitement l'emporte toujours — le choix reste possible, il devient
+  écrit.
+
+Le module n'importe **pas** `vite-plugin-pwa` : il renvoie un objet d'options
+ordinaire, que l'app passe à son propre `VitePWA()`.
+
+> **`vite-pwa-base` ne contient rien de PWA** : ni manifest, ni service worker,
+> ni stratégie de cache — c'est du SEO et de l'analytics. Il est désormais aussi
+> exporté sous `./vite-seo`, qui dit ce qu'il fait. `./vite-pwa-base` reste
+> valide tant que des apps l'importent.
+
+### `vite-csp` — Content-Security-Policy par hash
+
+```ts
+import { pwaSeoPlugin } from '@mister-guiiug/dev-wpa-config/vite-pwa-base';
+import { cspPlugin } from '@mister-guiiug/dev-wpa-config/vite-csp';
+
+export default defineConfig(({ command }) => ({
+  plugins: [
+    react(),
+    tailwindcss(),
+    pwaSeoPlugin({ siteName: 'Mister Puzzle' }),
+    cspPlugin({
+      dev: command === 'serve',
+      connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
+      analytics: true, // ← si pwaSeoPlugin injecte GTM ou GA4
+    }),
+    VitePWA({ ... }),
+  ],
+}));
+```
+
+`cspPlugin` doit venir **après** `pwaSeoPlugin` : il hashe le HTML final, donc
+les scripts inline injectés en amont.
+
+**`analytics: true` n'est pas cosmétique.** GA4 charge un `<script src>` externe
+et GTM un `<iframe>` de repli `noscript` : `default-src 'self'` les bloque tous
+les deux, sans la moindre erreur de build. Activer les deux plugins sans cette
+option coupe donc l'analytics **en silence**. L'option ajoute exactement les
+hôtes que `pwaSeoPlugin` injecte (`script`, `img`, `connect`, `frame`).
+
+**Ce qu'une CSP en `<meta>` ne peut pas faire.** La spécification exclut
+`frame-ancestors`, `report-uri` et `sandbox` d'une politique délivrée par
+balise : le navigateur les **ignore**. Le template `index.html` de ce paquet
+portait `frame-ancestors 'none'` — une protection anti-clickjacking qui n'a
+jamais existé, avec toute l'apparence du contraire. Le plugin **retire** désormais
+ces trois directives et le signale, plutôt que de les relayer. Huit apps de la
+famille en passaient une : échouer aurait cassé huit builds pour retirer
+quelque chose que le navigateur ignorait déjà.
+
+Pour protéger réellement du clickjacking, il faut un **en-tête HTTP** :
+
+```jsonc
+// firebase.json — pour les apps déployées sur Firebase Hosting
+{
+  "hosting": {
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "frame-ancestors 'none'",
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+**GitHub Pages ne permet aucun en-tête personnalisé** : les apps qui y sont
+déployées n'ont pas de protection anti-clickjacking effective. C'est un fait à
+connaître, pas à masquer derrière une directive inerte.
+
 ### Tests a11y (axe-core) — `playwright-a11y`
 
 ```ts
@@ -618,8 +790,33 @@ d'habiller celui du paquet. `components.css` ferme cet écart :
 
 Ce seul import donne déjà un rendu correct **en clair et en sombre**, sans
 configuration : les replis passent par les couleurs système CSS (`Canvas`,
-`CanvasText`, `GrayText`), qui suivent `color-scheme`. Pour passer aux couleurs
-de l'app, brancher le contrat — treize lignes, une fois :
+`CanvasText`, `GrayText`), qui suivent `color-scheme`.
+
+**Le plus simple : importer aussi `tokens.css`**, qui livre un jeu de valeurs
+neutre pour les quinze variables du contrat, clair et sombre, au contraste
+vérifié en CI (`test/tokens.test.mjs`) :
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-wpa-config/tokens.css'; /* ← valeurs par défaut */
+@import '@mister-guiiug/dev-wpa-config/components.css';
+
+/* Puis la teinte de l'app, deux lignes : */
+:root {
+  --dwc-primary: var(--color-primary);
+  --dwc-primary-contrast: #fff;
+}
+```
+
+`tokens.css` n'impose **aucune couleur de marque** : sa primaire est une ardoise
+neutre, faite pour être remplacée. Il traite les trois états de thème — choix
+clair, choix sombre, et réglage « système » qui ne pose aucun attribut — et
+distingue deux filets : `--dwc-border` sépare (discret), `--dwc-border-strong`
+désigne le contour d'un contrôle (3:1, WCAG 1.4.11).
+
+Pour brancher le contrat sur les variables existantes de l'app plutôt que sur
+les valeurs par défaut :
 
 ```css
 :root {
@@ -628,6 +825,7 @@ de l'app, brancher le contrat — treize lignes, une fois :
   --dwc-text: var(--uwh-text);
   --dwc-text-soft: var(--uwh-text-soft);
   --dwc-border: var(--uwh-border);
+  --dwc-border-strong: var(--uwh-border-strong);
   --dwc-primary: var(--color-primary);
   --dwc-primary-contrast: #fff;
   --dwc-primary-soft: var(--color-primary-soft);
@@ -865,16 +1063,40 @@ consorts.
 ### Catalogue famille & `FamilyApps`
 
 `apps-catalog` est la **source unique** des applications de la famille (id, nom,
-description, `repoUrl`, `appUrl`, `iconUrl`, **`maturity`** saisie à la main parmi
-`alpha | beta | stable`). C'est de la **donnée pure** : importable depuis une app,
-un script ou un test Node, sans dépendre de React.
+description, `repoUrl`, `appUrl`, `iconUrl`). C'est de la **donnée pure** :
+importable depuis une app, un script ou un test Node, sans dépendre de React.
+
+Quatre facettes décrivent chaque app, et elles n'ont **pas le même statut** —
+c'est la distinction qui rend le catalogue utilisable comme donnée :
+
+| Champ      | Statut                  | Valeurs                                                |
+| ---------- | ----------------------- | ------------------------------------------------------ |
+| `maturity` | éditorial, obligatoire  | `alpha \| beta \| stable`                              |
+| `category` | éditorial, obligatoire  | `sante \| sport \| jeux \| education \| outils \| dev` |
+| `backend`  | **relevé** dans le code | `supabase \| firebase \| local \| api`, ou absent      |
+| `platform` | fait                    | `web` (défaut) \| `desktop`                            |
+
+`backend` est **laissé absent** quand la persistance n'a pas été relevée (une
+seule app aujourd'hui, l'app Electron) : un filtre qui affiche « non relevé »
+vaut mieux qu'une donnée devinée. `category` et `backend` sont des identifiants
+ASCII stables — les libellés affichés vivent côté présentation, donc traduisibles.
 
 ```ts
 import {
   FAMILY_APPS,
   otherApps,
+  appById,
+  sortApps, // 'curated' (défaut) | 'maturity' | 'name' — ne mute pas
+  filterApps, // critères en ET ; tableau = OU à l'intérieur d'un critère
+  countBy, // facette → { valeur: nombre }, clé '' pour les absentes
   SPONSOR_URL,
 } from '@mister-guiiug/dev-wpa-config/apps-catalog';
+
+// Les apps Supabase encore en bêta ou en alpha :
+filterApps({ backend: 'supabase', maturity: ['alpha', 'beta'] });
+
+// La recherche ignore les diacritiques : « molkky » trouve « Mölkky ».
+filterApps({ query: 'molkky' });
 ```
 
 Le composant `FamilyApps` (non stylé, attributs `[data-dwc="…"]`) met en avant,
@@ -891,10 +1113,30 @@ import { REPO_URL } from './links';
 
 // Grille seule (si la page affiche déjà source/sponsor par ailleurs) :
 <FamilyApps currentAppId="miss-dice" showSource={false} showSponsor={false} />;
+
+// Vitrine : un lien vers le DÉPÔT sur chaque carte, les trois plus mûres
+// seulement. `max` coupe APRÈS le tri.
+<FamilyApps
+  currentAppId="miss-dice"
+  repoUrl={REPO_URL}
+  showRepoLinks
+  sort="maturity"
+  max={3}
+/>;
 ```
 
+`showRepoLinks` est **opt-in** : sans lui, le DOM produit est exactement celui
+des versions précédentes. Avec lui, chaque carte porte deux ancres **frères** —
+l'application et son dépôt — jamais imbriquées : une ancre dans une ancre est
+invalide, et un lecteur d'écran n'en annoncerait qu'une.
+
+Chaque `<li data-dwc="family-app-item">` porte les facettes du catalogue
+(`data-maturity`, `data-category`, `data-backend`, `data-platform`) : une app
+peut teinter ses cartes par domaine, ou masquer une facette, en CSS seul.
+
 Sélecteurs CSS à styliser côté app : `[data-dwc="family-apps"]`, `family-links`,
-`family-source`, `family-sponsor`, `family-app-list`, `family-app`, et le badge
+`family-source`, `family-sponsor`, `family-app-list`, `family-app-item`,
+`family-app`, `family-app-repo`, et le badge
 `[data-dwc="maturity"][data-maturity="alpha|beta|stable"]` (3 couleurs).
 
 ### Animations Rive (`@mister-guiiug/dev-wpa-config/react/rive`)
@@ -953,7 +1195,9 @@ permissions:
 jobs:
   ci:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v3
-    secrets: inherit
+    # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
+    # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
+    # secrets du dépôt à un workflow qui n'en demande aucun.
     with:
       run-e2e: false # passer à true quand Playwright est en place
       e2e-grep: '@critical'
@@ -979,7 +1223,10 @@ permissions:
 jobs:
   deploy:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
-    secrets: inherit
+    # Le workflow DÉCLARE les secrets dont il a besoin : on ne passe que
+    # ceux-là. `secrets: inherit` enverrait tout le trousseau du dépôt.
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
     with:
       use-base-path: true
       pre-build-script: '' # ex: 'migrate:db' pour Supabase
@@ -1013,7 +1260,9 @@ permissions:
 jobs:
   publish:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v3
-    secrets: inherit
+    # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
+    # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
+    # secrets du dépôt à un workflow qui n'en demande aucun.
 ```
 
 ## Personnalisation par projet
@@ -1220,3 +1469,19 @@ Toute modification de stack famille (bump majeur React, ESLint, etc.) :
 3. `npm run version-packages`, committer, taguer, pousser (cf. ci-dessus) → publication auto.
 4. Aligner les consommateurs : `node scripts/migrate-consumers.mjs <version> --write`
    (dry-run par défaut sans `--write`), puis tester chaque app.
+
+## Gouvernance
+
+|                                             |                                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)        | Comment contribuer, et les quatre règles du dépôt — dont « promouvoir sans migrer, c'est ne pas avoir fini » |
+| [`SECURITY.md`](SECURITY.md)                | Signalement privé d'une vulnérabilité, périmètre, et les deux limites connues qui ne sont pas des failles    |
+| [`.github/CODEOWNERS`](.github/CODEOWNERS)  | `workflows/`, `actions/` et `scripts/` demandent une relecture : ils s'exécutent dans seize dépôts           |
+| `npm run validate`                          | Ce que la CI exécute : format, lint, types, tests                                                            |
+| `node scripts/apply-rulesets.mjs --dry-run` | Protection de `main` sur les dix-huit dépôts — liste lue dans le catalogue, checks exigés par dépôt          |
+
+**Secrets.** Chaque workflow réutilisable **déclare** les secrets dont il a
+besoin ; un caller ne passe que ceux-là. `secrets: inherit` enverrait tout le
+trousseau du dépôt à un workflow qui n'en demande souvent aucun — c'est le
+chemin d'escalade le plus court de la famille, et il ne figure plus nulle part
+dans la documentation.
