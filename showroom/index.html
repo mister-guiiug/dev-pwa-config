@@ -1519,6 +1519,49 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
+            <h4 data-i18n="composants.h52">ThemeToggle</h4>
+            <p data-i18n="composants.p19">
+              Cinq apps en ont un. Celui-ci parcourt les <em>trois</em> états de
+              <code>useTheme</code> : une bascule à deux états interdit de
+              revenir à « système ».
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <button
+              type="button"
+              data-dwc="theme-toggle"
+              data-theme-state="system"
+              aria-label="Thème : système. Activer le thème clair."
+            >
+              <span data-dwc="theme-toggle-icon" aria-hidden="true">◐</span>
+            </button>
+            <button
+              type="button"
+              data-dwc="theme-toggle"
+              data-theme-state="dark"
+              aria-label="Thème : sombre. Activer le thème système."
+            >
+              <span data-dwc="theme-toggle-icon" aria-hidden="true">☾</span>
+            </button>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary12">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="ThemeToggle"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="theme-toggle"]</code></li>
+                <li>
+                  <code>[data-dwc="theme-toggle"][data-theme-state]</code>
+                </li>
+                <li><code>[data-dwc="theme-toggle-icon"]</code></li>
+                <li><code>[data-dwc="theme-toggle-label"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
             <h4 data-i18n="composants.h47">AppFooter</h4>
             <p data-i18n="composants.p13">
               Lien code source + lien sponsor, ouverture sécurisée.

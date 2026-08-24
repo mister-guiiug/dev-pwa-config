@@ -71,6 +71,13 @@ export const LABELS = {
       offline: 'Hors ligne',
       error: 'Erreur',
     },
+    theme: {
+      label: 'Thème',
+      light: 'clair',
+      dark: 'sombre',
+      system: 'système',
+      next: 'Thème : {current}. Activer le thème {next}.',
+    },
     nav: {
       label: 'Navigation principale',
       current: 'Page actuelle',
@@ -115,6 +122,13 @@ export const LABELS = {
       pending: 'Pending',
       offline: 'Offline',
       error: 'Error',
+    },
+    theme: {
+      label: 'Theme',
+      light: 'light',
+      dark: 'dark',
+      system: 'system',
+      next: 'Theme: {current}. Switch to the {next} theme.',
     },
     nav: { label: 'Main navigation', current: 'Current page', more: 'More' },
   },

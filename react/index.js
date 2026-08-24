@@ -40,3 +40,4 @@ export { useUpdatePrompt } from './use-update-prompt.js';
 export { UpdatePromptBanner } from './update-prompt-banner.js';
 export { UpdateButton } from './update-button.js';
 export { applyUpdate } from '../sw-update.js';
+export { ThemeToggle } from './theme-toggle.js';

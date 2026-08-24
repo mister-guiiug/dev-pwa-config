@@ -1569,7 +1569,8 @@ pre code {
    C'est toute la démonstration — le bouton primaire perd son aplat et garde
    un contour invisible. */
 .sr-fc-demo [data-dwc='button'],
-.sr-fc-demo [data-dwc='badge'] {
+.sr-fc-demo [data-dwc='badge'],
+.sr-fc-demo [data-dwc='theme-toggle'] {
   border-color: transparent;
 }
 
@@ -1599,7 +1600,8 @@ pre code {
 
 /* ── Les correctifs livrés, rejoués à l'identique ─────────────────────────── */
 .sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='button'],
-.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='badge'] {
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='badge'],
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='theme-toggle'] {
   border-color: currentColor;
 }
 

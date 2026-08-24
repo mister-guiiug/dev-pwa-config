@@ -3002,7 +3002,16 @@
       nav.appendChild(tab);
     });
 
-    [primary, off, badge, sync, skeleton, panel, toast, nav].forEach(
+    var themeBtn = dwc('button', 'theme-toggle', {
+      type: 'button',
+      'data-theme-state': 'dark',
+      'aria-label': t('ui.fc.theme', 'Thème : sombre'),
+    });
+    var themeIcon = dwc('span', 'theme-toggle-icon', { 'aria-hidden': 'true' });
+    themeIcon.textContent = '☾';
+    themeBtn.appendChild(themeIcon);
+
+    [primary, off, badge, sync, skeleton, panel, toast, nav, themeBtn].forEach(
       function (node) {
         host.appendChild(node);
       }

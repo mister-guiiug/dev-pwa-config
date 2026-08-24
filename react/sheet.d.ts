@@ -8,6 +8,12 @@ export interface SheetProps {
   /** Libellé accessible du bouton de fermeture. */
   closeLabel?: string;
   children?: ReactNode;
+  /**
+   * Barre d'actions épinglée en bas : reste visible pendant que le corps
+   * défile. Sur un formulaire long, sans elle le bouton de validation sort de
+   * l'écran — miss-uwh la passe dans 15 de ses 23 feuilles.
+   */
+  footer?: ReactNode;
   className?: string;
 }
 

@@ -30,6 +30,13 @@ export interface LabelGroups {
   };
   maturity: { alpha: string; beta: string; stable: string };
   sync: { synced: string; pending: string; offline: string; error: string };
+  theme: {
+    label: string;
+    light: string;
+    dark: string;
+    system: string;
+    next: string;
+  };
   nav: { label: string; current: string; more: string };
 }
 

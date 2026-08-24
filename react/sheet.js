@@ -20,7 +20,8 @@ import { useDialogBehaviour } from './use-dialog.js';
  *    d'origine** à la fermeture (aucune copie locale ne le faisait) ;
  *  - **piège de focus** : Tab et Maj+Tab bouclent dans le panneau, au lieu de
  *    partir dans la page de fond restée visible ;
- *  - scroll de fond verrouillé **par compteur**, restauré à sa valeur d'origine.
+ *  - scroll de fond verrouillé **par compteur**, restauré à sa valeur d'origine ;
+ *  - `footer` optionnel, **épinglé** pendant que le corps défile.
  *
  * LIMITE. Le contenu de fond n'est pas rendu `inert` : la feuille n'utilise pas
  * de portail et ne peut donc pas neutraliser ses propres ancêtres sans risque.
@@ -31,10 +32,11 @@ import { useDialogBehaviour } from './use-dialog.js';
  *
  * @param {{ open: boolean, title: string, onClose: () => void,
  *   closeLabel?: string, children?: import('react').ReactNode,
- *   className?: string }} props
+ *   footer?: import('react').ReactNode, className?: string }} props
  */
 export function Sheet(props = {}) {
-  const { open, title, onClose, closeLabel, children, className } = props;
+  const { open, title, onClose, closeLabel, children, footer, className } =
+    props;
 
   // Le libellé passé en prop l'emporte ; sinon le dictionnaire (français hors
   // provider, donc aucun changement pour une app qui ne fait rien).
@@ -87,7 +89,13 @@ export function Sheet(props = {}) {
           h(CloseIcon)
         )
       ),
-      h('div', { 'data-dwc': 'sheet-body' }, children)
+      h('div', { 'data-dwc': 'sheet-body' }, children),
+      // Barre d'actions ÉPINGLÉE : elle reste visible pendant que le corps
+      // défile. Sans elle, le bouton « Enregistrer » d'un formulaire long part
+      // hors de l'écran sur mobile — c'est le motif de miss-uwh, qui le passe
+      // dans QUINZE de ses vingt-trois feuilles, et le seul empêchement mesuré
+      // à remplacer sa copie locale par celle-ci.
+      footer ? h('div', { 'data-dwc': 'sheet-footer' }, footer) : null
     )
   );
 }

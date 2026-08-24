@@ -143,6 +143,70 @@ export function withConsumersTable(markdown, table) {
   );
 }
 
+/* ── Tableau « Adoption réelle » du README ──────────────────────────────── */
+
+export const ADOPTION_START =
+  '<!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->';
+export const ADOPTION_END = '<!-- ADOPTION:FIN -->';
+
+/**
+ * Ce que les apps importent vraiment, et ce qu'elles recopient encore.
+ *
+ * Le README présentait chaque export comme la manière de faire, sans jamais
+ * dire combien d'apps s'en servaient. Le relevé du 24/08/2026 a montré l'écart :
+ * la couche outillage est adoptée par huit à quatorze apps, la couche interface
+ * par zéro ou une — pendant que quatre à neuf apps en gardent une copie. Un
+ * document qui tait ce chiffre laisse croire à une adoption qui n'existe pas.
+ */
+export function adoptionTable(adoption) {
+  if (!adoption || !adoption.measured) {
+    return '_Relevé non disponible : lancer `npm run adoption` avec les dépôts des apps à côté._';
+  }
+  const names = new Set([
+    ...Object.keys(adoption.bySymbol ?? {}),
+    ...Object.keys(adoption.byDuplicate ?? {}),
+  ]);
+  const rows = [...names]
+    .map(name => ({
+      name,
+      used: (adoption.bySymbol?.[name] ?? []).length,
+      copied: (adoption.byDuplicate?.[name] ?? []).length,
+    }))
+    .sort(
+      (a, b) =>
+        b.used - a.used || b.copied - a.copied || a.name.localeCompare(b.name)
+    )
+    .map(
+      r =>
+        `| \`${r.name}\` | ${r.used} / ${adoption.measured} | ${r.copied ? `${r.copied} / ${adoption.measured}` : '—'} |`
+    );
+  return [
+    `_Relevé du ${adoption.generatedAt.slice(0, 10)} sur ${adoption.measured} dépôts, par \`npm run adoption\`._`,
+    '',
+    '| Export ou module | Importé par | Encore recopié dans |',
+    '| --- | --- | --- |',
+    ...rows,
+  ].join('\n');
+}
+
+/** Remplace le bloc entre marqueurs ; échoue plutôt que d'écrire à côté. */
+export function withAdoptionTable(markdown, table) {
+  const start = markdown.indexOf(ADOPTION_START);
+  const end = markdown.indexOf(ADOPTION_END);
+  if (start === -1 || end === -1 || end < start) {
+    throw new Error(
+      `Marqueurs ${ADOPTION_START} / ${ADOPTION_END} introuvables dans le README`
+    );
+  }
+  return (
+    markdown.slice(0, start + ADOPTION_START.length) +
+    '\n\n' +
+    table +
+    '\n\n' +
+    markdown.slice(end)
+  );
+}
+
 /* ── Données structurées de la vitrine ──────────────────────────────────── */
 
 export const JSONLD_START =
@@ -221,10 +285,15 @@ async function main() {
   const themes = at('showroom/themes.js');
   writeFileSync(themes, await format(showroomThemesFile(), themes));
 
+  // Le relevé d'adoption est un fichier COMMITÉ (il exige les dépôts des apps,
+  // que la CI n'a pas) : on le lit, on ne le refait pas.
+  await import('../showroom/adoption.js');
+  const adoption = globalThis.SHOWROOM_ADOPTION;
+
   const readme = at('README.md');
-  const updated = withConsumersTable(
-    readFileSync(readme, 'utf8'),
-    consumersTable()
+  const updated = withAdoptionTable(
+    withConsumersTable(readFileSync(readme, 'utf8'), consumersTable()),
+    adoptionTable(adoption)
   );
   writeFileSync(readme, await format(updated, readme));
 

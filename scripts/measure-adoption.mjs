@@ -1,0 +1,263 @@
+#!/usr/bin/env node
+/**
+ * Relève CE QUE LES SEIZE APPS IMPORTENT VRAIMENT du paquet — et ce qu'elles
+ * continuent de recopier à côté. Écrit `showroom/adoption.js`.
+ *
+ *   node scripts/measure-adoption.mjs [--root ../mister-guiiug] [--write]
+ *
+ * POURQUOI. Le catalogue porte déjà un champ `configs` : les sous-chemins qu'une
+ * app importe. Il ne dit pas l'inverse — ce qu'elle N'IMPORTE PAS alors que le
+ * paquet le fournit. Or c'est le seul chiffre qui mesure l'utilité réelle de ce
+ * dépôt, et le relevé du 24/08/2026 est sans appel : la couche outillage est
+ * adoptée (`vitest-base` 14/16, `observability` 13, `playwright-base` 12), la
+ * couche interface ne l'est pas. Sur tout `/react`, seuls `FamilyApps` (13) et
+ * `ErrorBoundary` (9) sont importés ; `Button`, `Sheet`, `EmptyState`, `Badge`,
+ * `Stat`, `Skeleton`, `AppFooter` sont à ZÉRO — publiés le 10 août, recopiés
+ * dans quatre à sept apps.
+ *
+ * Un paquet qui promeut plus vite qu'il n'est adopté fabrique une étagère, pas
+ * un socle. Ce relevé donne le chiffre qui doit baisser.
+ *
+ * COMMENT LES DOUBLONS SONT DÉTECTÉS. Par nom de fichier, contre la table
+ * `EQUIVALENTS` ci-dessous — une correspondance DÉCLARÉE, pas devinée. Chaque
+ * ligne dit « ce fichier local fait le travail de cet export ». Ajouter une
+ * ligne est une décision ; c'est ce qui distingue un doublon d'une homonymie.
+ * La table ne prétend pas être exhaustive : elle ne compte que ce qui a été
+ * constaté.
+ *
+ * FICHIER COMMITÉ, PAS DE REQUÊTE. Même forme que `showroom/metrics.js` : le
+ * résultat est posé sur `globalThis` par un `<script src>`, la page ne fait
+ * aucun appel réseau. Un fichier VIDE est un état valide — le relevé exige les
+ * dépôts des apps à côté, ce que la CI n'a pas.
+ *
+ * Non publié (absent de `files`) : outil de développement du dépôt.
+ */
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { FAMILY_APPS } from '../apps-catalog.js';
+
+/**
+ * « Cet export du paquet est déjà fait, à la main, dans un fichier qui
+ * s'appelle… ». Constaté au relevé, pas supposé.
+ */
+const EQUIVALENTS = {
+  Button: ['Button.tsx'],
+  'TextField / SelectField / TextAreaField': ['Field.tsx', 'TextField.tsx'],
+  Sheet: ['Sheet.tsx', 'Modal.tsx'],
+  Stat: ['Stat.tsx', 'StatCard.tsx'],
+  Badge: ['Badge.tsx'],
+  Skeleton: ['Skeleton.tsx'],
+  EmptyState: ['EmptyState.tsx'],
+  ErrorBoundary: ['ErrorBoundary.tsx'],
+  ErrorBanner: ['ErrorBanner.tsx'],
+  AppFooter: ['AppFooter.tsx'],
+  ConfirmDialog: ['ConfirmDialog.tsx'],
+  Toast: ['Toast.tsx', 'Toaster.tsx', 'ToastViewport.tsx', 'ToastContext.tsx'],
+  BottomNav: ['BottomNav.tsx', 'Navbar.tsx'],
+  ThemeToggle: ['ThemeToggle.tsx'],
+  UpdatePromptBanner: ['UpdatePrompt.tsx', 'UpdateBanner.tsx'],
+  applyUpdate: ['register-sw.ts', 'forceUpdate.ts'],
+  useTheme: ['useTheme.ts', 'theme.ts'],
+  useOnline: ['useOnline.ts'],
+  useI18n: ['useI18n.ts'],
+  format: ['format.ts'],
+  security: ['security.ts'],
+  links: ['links.ts'],
+  share: ['share.ts'],
+  backup: ['storage.ts'],
+  webVitals: ['web-vitals.ts'],
+};
+
+const IGNORED_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  'coverage',
+  'playwright-report',
+  'test-results',
+]);
+
+const SOURCE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
+const GENERATED = /\.(test|spec)\./;
+
+/**
+ * Imports du paquet, y compris multiligne — c'est la forme que produit Prettier
+ * dès deux symboles, et une expression mono-ligne les rate tous.
+ *
+ * `[^{}]*` interdit de traverser une AUTRE paire d'accolades : sans cette
+ * restriction, la recherche part d'un `import {` quelconque et avale les
+ * imports voisins jusqu'à trouver le nom du paquet. Défaut constaté sur le
+ * premier jet de ce relevé, qui rendait « 185 symboles » dont `useState`.
+ */
+const IMPORT_RE =
+  /import\s+(?:type\s+)?\{([^{}]*)\}\s*from\s*['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
+
+function walk(dir, out = []) {
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    if (IGNORED_DIRS.has(entry.name)) continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) walk(full, out);
+    else if (SOURCE.test(entry.name)) out.push(full);
+  }
+  return out;
+}
+
+/** Racine où trouver les dépôts des apps, ou `null` si aucune ne s'y trouve. */
+function findRoot(explicit) {
+  const here = fileURLToPath(new URL('..', import.meta.url));
+  const candidates = explicit
+    ? [explicit]
+    : [join(here, '..'), join(here, '..', 'mister-guiiug')];
+  for (const root of candidates) {
+    const found = FAMILY_APPS.filter(app => {
+      try {
+        return statSync(join(root, app.id)).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+    if (found.length > 0) return { root, found: found.length };
+  }
+  return null;
+}
+
+/** Relève une app : ce qu'elle importe, ce qu'elle recopie. */
+function measureApp(appDir) {
+  const files = walk(appDir);
+  const symbols = new Set();
+  const subpaths = new Set();
+
+  for (const file of files) {
+    let source;
+    try {
+      source = readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const match of source.matchAll(IMPORT_RE)) {
+      subpaths.add(match[2] || '/');
+      for (const raw of match[1].split(',')) {
+        const name = raw
+          .replace(/\btype\b/g, '')
+          .split(' as ')[0]
+          .trim();
+        if (name) symbols.add(name);
+      }
+    }
+  }
+
+  // Doublons : un fichier local porte le nom déclaré équivalent, et l'app
+  // n'importe pas le symbole correspondant. Les tests sont écartés — un
+  // `Button.test.tsx` n'est pas une réimplémentation.
+  const basenames = new Set(
+    files
+      .filter(file => !GENERATED.test(file))
+      .map(file => file.slice(file.lastIndexOf('/') + 1))
+  );
+  const duplicates = [];
+  for (const [exported, names] of Object.entries(EQUIVALENTS)) {
+    if (symbols.has(exported)) continue;
+    const hit = names.find(name => basenames.has(name));
+    if (hit) duplicates.push({ exported, file: hit });
+  }
+
+  return {
+    symbols: [...symbols].sort(),
+    subpaths: [...subpaths].sort(),
+    duplicates: duplicates.sort((a, b) => a.exported.localeCompare(b.exported)),
+  };
+}
+
+const args = process.argv.slice(2);
+const rootArg = args.includes('--root')
+  ? args[args.indexOf('--root') + 1]
+  : undefined;
+const write = args.includes('--write');
+
+const located = findRoot(rootArg);
+if (!located) {
+  console.error(
+    "Aucun dépôt d'app trouvé. Cloner les apps à côté, ou passer --root <dossier>."
+  );
+  process.exit(1);
+}
+
+const apps = {};
+for (const app of FAMILY_APPS) {
+  let dir;
+  try {
+    dir = join(located.root, app.id);
+    if (!statSync(dir).isDirectory()) continue;
+  } catch {
+    continue;
+  }
+  apps[app.id] = measureApp(dir);
+}
+
+const measured = Object.keys(apps).length;
+const bySymbol = {};
+const byDuplicate = {};
+for (const [id, data] of Object.entries(apps)) {
+  for (const symbol of data.symbols) (bySymbol[symbol] ??= []).push(id);
+  for (const dup of data.duplicates)
+    (byDuplicate[dup.exported] ??= []).push(id);
+}
+
+const payload = {
+  generatedAt: new Date().toISOString(),
+  measured,
+  total: FAMILY_APPS.length,
+  apps,
+  bySymbol,
+  byDuplicate,
+};
+
+const banner = `/*
+ * FICHIER GÉNÉRÉ — ne pas modifier à la main.
+ *
+ * Ce que chaque app importe RÉELLEMENT du paquet, et ce qu'elle recopie encore
+ * à côté. Écrit par \`scripts/measure-adoption.mjs\`, qui exige les dépôts des
+ * apps clonés à côté de celui-ci — ce que la CI n'a pas.
+ *
+ * Chargé par un \`<script src>\` classique, comme \`metrics.js\` : la page ne fait
+ * AUCUNE requête réseau et s'ouvre en \`file://\`.
+ *
+ * \`measured: 0\` = le relevé n'a jamais tourné. La vitrine n'affiche alors
+ * simplement aucun taux d'adoption.
+ */
+globalThis.SHOWROOM_ADOPTION = `;
+
+const out = fileURLToPath(new URL('../showroom/adoption.js', import.meta.url));
+if (write) {
+  writeFileSync(out, `${banner}${JSON.stringify(payload, null, 2)};\n`, 'utf8');
+  console.log(
+    `✅ showroom/adoption.js — ${measured}/${FAMILY_APPS.length} apps`
+  );
+}
+
+// Résumé lisible, toujours affiché : c'est le chiffre qui doit bouger.
+const rows = Object.entries(bySymbol)
+  .map(([s, list]) => [s, list.length])
+  .sort((a, b) => b[1] - a[1]);
+console.log(
+  `\nRelevé sur ${measured}/${FAMILY_APPS.length} apps (${located.root})`
+);
+console.log('\nIMPORTÉ :');
+for (const [symbol, count] of rows) {
+  console.log(`  ${String(count).padStart(3)}  ${symbol}`);
+}
+const dups = Object.entries(byDuplicate)
+  .map(([s, list]) => [s, list.length])
+  .sort((a, b) => b[1] - a[1]);
+console.log('\nRECOPIÉ PLUTÔT QU’IMPORTÉ :');
+for (const [symbol, count] of dups) {
+  console.log(`  ${String(count).padStart(3)}  ${symbol}`);
+}
