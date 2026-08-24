@@ -9,7 +9,8 @@
 # jobs:
 #   deploy:
 #     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
-#     secrets: inherit
+#     secrets:
+#       FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
 #     with:
 #       use-base-path: true
 #

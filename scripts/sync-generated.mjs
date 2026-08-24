@@ -15,6 +15,9 @@
  *   showroom/index.html       le bloc JSON-LD des seize apps, en dur dans le
  *                             `<head>` : un moteur doit le lire sans exécuter
  *                             le script ;
+ *   showroom/themes.js        même raison que `apps.js` : les seize palettes
+ *                             sont désormais un module publié (`themes.js`),
+ *                             la page en lit un miroir sur `globalThis` ;
  *   README.md                 le tableau « Projets consommateurs » redisait à
  *                             la main ce que le catalogue sait déjà. Il avait
  *                             divergé sur la persistance de `miss-uwh` : deux
@@ -38,6 +41,7 @@ import {
   CONFIG_SUBPATHS,
   countByConfig,
 } from '../apps-catalog.js';
+import { FAMILY_THEMES } from '../themes.js';
 
 const root = new URL('../', import.meta.url);
 const at = path => fileURLToPath(new URL(path, root));
@@ -71,6 +75,23 @@ const HEADER = `/*
  * \`screenshots.js\`. \`test/apps-catalog.test.mjs\` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_APPS = `;
+
+const THEMES_HEADER = `/*
+ * FICHIER GÉNÉRÉ — ne pas modifier à la main.
+ *
+ * Source : \`themes.js\` à la racine du paquet (avec ses commentaires de relevé).
+ * Régénérer : \`npm run sync\`.
+ *
+ * Le showroom ne peut pas \`import\` le module (page statique, \`file://\`) : il en
+ * lit ce miroir. \`test/themes.test.mjs\` vérifie qu'il ne dérive pas.
+ */
+globalThis.SHOWROOM_THEMES = `;
+
+/** Miroir sérialisable des palettes, tel que le lit `showroom.js`. */
+export function showroomThemesFile() {
+  const data = JSON.parse(JSON.stringify(FAMILY_THEMES));
+  return `${THEMES_HEADER}${JSON.stringify(data, null, 2)};\n`;
+}
 
 /* ── Tableau « Projets consommateurs » du README ────────────────────────── */
 
@@ -197,6 +218,9 @@ async function main() {
   const body = `${HEADER}${JSON.stringify(showroomAppsData(), null, 2)};\n`;
   writeFileSync(mirror, await format(body, mirror));
 
+  const themes = at('showroom/themes.js');
+  writeFileSync(themes, await format(showroomThemesFile(), themes));
+
   const readme = at('README.md');
   const updated = withConsumersTable(
     readFileSync(readme, 'utf8'),
@@ -211,8 +235,9 @@ async function main() {
   );
 
   console.log(
-    `showroom/components.css, showroom/apps.js, le JSON-LD et le tableau du README ` +
-      `régénérés (${FAMILY_APPS.length} apps, ${CONFIG_SUBPATHS.length} sous-chemins).`
+    `showroom/components.css, showroom/apps.js, showroom/themes.js, le JSON-LD ` +
+      `et le tableau du README régénérés (${FAMILY_APPS.length} apps, ` +
+      `${FAMILY_THEMES.length} thèmes, ${CONFIG_SUBPATHS.length} sous-chemins).`
   );
 }
 

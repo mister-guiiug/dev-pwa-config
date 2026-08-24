@@ -21,6 +21,7 @@ const PKG = JSON.parse(read('package.json'));
 // change pour les apps qui l'ont câblée.
 const CONTRACT = [
   '--dwc-border',
+  '--dwc-border-strong',
   '--dwc-danger',
   '--dwc-info',
   '--dwc-primary',

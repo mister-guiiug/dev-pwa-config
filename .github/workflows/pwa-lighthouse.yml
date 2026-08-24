@@ -15,7 +15,6 @@
 # jobs:
 #   lighthouse:
 #     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-lighthouse.yml@v3
-#     secrets: inherit
 #
 # Prérequis projet : un .lighthouserc.json à la racine (cf. templates/.lighthouserc.json).
 #

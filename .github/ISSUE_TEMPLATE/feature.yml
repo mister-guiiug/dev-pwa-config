@@ -1,0 +1,34 @@
+name: Promotion ou évolution
+description: Proposer qu'une chose recopiée dans plusieurs apps rejoigne le socle.
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Le socle promeut ce qui a **déjà convergé** dans les apps, il n'invente
+        pas d'API. La question décisive est donc : combien d'apps ont écrit la
+        même chose de leur côté ?
+  - type: textarea
+    id: duplication
+    attributes:
+      label: Où est-ce déjà écrit ?
+      description: Les apps concernées, et le fichier dans chacune.
+      placeholder: |
+        miss-uwh/src/shared/components/Toast.tsx
+        mister-doc/src/components/ui/Toast.tsx
+    validations:
+      required: true
+  - type: textarea
+    id: differences
+    attributes:
+      label: En quoi ces copies diffèrent-elles ?
+      description: Ce qui est commun devient l'API ; ce qui diffère devient une option — ou reste local.
+    validations:
+      required: true
+  - type: textarea
+    id: migration
+    attributes:
+      label: Migration
+      description: Qui migre, et quand ? Un composant promu et non migré est un travail non terminé.
+    validations:
+      required: true

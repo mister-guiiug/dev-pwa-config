@@ -32,7 +32,17 @@ export interface InitSentryOptions {
    * runtime non analysable ne fonctionne que si le module est résoluble
    * à l'exécution (cas hors bundler).
    */
-  loader?: () => Promise<any>;
+  loader?: () => Promise<SentryLike>;
+}
+
+/**
+ * Surface minimale attendue d'un module Sentry : ce que le paquet appelle
+ * réellement, rien de plus. Typer `any` masquait le fait qu'un loader peut
+ * renvoyer n'importe quoi et faire échouer `initSentry` en silence.
+ */
+export interface SentryLike {
+  init(options: Record<string, unknown>): void;
+  captureException(error: unknown, hint?: Record<string, unknown>): void;
 }
 
 /** Résout vers le module Sentry initialisé, ou null si dsn absent / échec. */

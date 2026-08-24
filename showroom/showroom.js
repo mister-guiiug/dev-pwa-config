@@ -124,7 +124,7 @@
   function read(key, fallback) {
     try {
       return localStorage.getItem(key) || fallback;
-    } catch (e) {
+    } catch {
       return fallback;
     }
   }
@@ -132,7 +132,7 @@
   function write(key, value) {
     try {
       localStorage.setItem(key, value);
-    } catch (e) {
+    } catch {
       /* mode privé / stockage plein : la bascule reste fonctionnelle */
     }
   }
@@ -146,7 +146,7 @@
   function paramOr(name, fallback) {
     try {
       return new URLSearchParams(location.search).get(name) ?? fallback;
-    } catch (e) {
+    } catch {
       return fallback;
     }
   }
@@ -172,7 +172,7 @@
       setOrDrop(url, 'config', appFacets.config);
       setOrDrop(url, 'view', appView === 'grid' ? '' : appView);
       history.replaceState(null, '', url);
-    } catch (e) {
+    } catch {
       /* URL non manipulable (file://) : le stockage prend le relais */
     }
   }
@@ -207,7 +207,7 @@
       var ok = document.execCommand('copy');
       area.remove();
       return ok;
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -259,7 +259,7 @@
             done(legacyCopy(text));
           }
         );
-      } catch (e) {
+      } catch {
         done(legacyCopy(text));
       }
     });
@@ -3125,12 +3125,6 @@
   /* ── Galerie de démo par application ───────────────────────────────── */
 
   var SHOTS = globalThis.SHOWROOM_SCREENSHOTS || {};
-
-  function appThemes() {
-    return themes.filter(function (theme) {
-      return theme.id !== 'generic';
-    });
-  }
 
   /**
    * Bascule vers un thème d'app, quelle que soit la commande qui le demande :

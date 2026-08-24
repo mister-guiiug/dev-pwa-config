@@ -1,0 +1,88 @@
+# Analyse de sécurité du dépôt lui-même.
+#
+# Le paquet est le socle de seize applications : une dépendance vulnérable ou un
+# motif dangereux introduit ici se propage à toutes. Le workflow réutilisable
+# `pwa-ci.yml` proposait déjà un `npm audit` — mais aux APPS, en opt-in, et
+# désactivé par défaut. Ce dépôt-ci n'auditait rien.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Hebdomadaire : une vulnérabilité publiée après le dernier commit ne serait
+    # sinon jamais signalée sur un dépôt qui bouge peu.
+    - cron: '23 5 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Revue des dépendances
+    # Compare les dépendances de la PR à celles de la base : refuse d'introduire
+    # une vulnérabilité connue, ou une licence incompatible.
+    #
+    # DÉPEND D'UN RÉGLAGE DU DÉPÔT. L'action exige que le « Dependency graph »
+    # soit activé (Settings → Code security). Il ne l'est pas ici : l'action
+    # échoue alors avec « Dependency review is not supported on this
+    # repository ». Plutôt que de bloquer chaque PR sur un réglage que le code
+    # ne peut pas changer, l'étape n'est pas bloquante — mais son échec est
+    # ANNONCÉ, parce qu'un contrôle de sécurité vert qui n'a rien vérifié serait
+    # exactement la fausse assurance que cette PR retire ailleurs.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - id: review
+        continue-on-error: true
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+      - name: Dire si la revue n'a rien vérifié
+        if: steps.review.outcome != 'success'
+        run: |
+          echo "::warning title=Revue des dépendances inactive::L'action n'a pas pu s'exécuter — le « Dependency graph » est probablement désactivé (Settings → Code security). Tant qu'il l'est, aucune vulnérabilité introduite par une PR n'est signalée ici. \`npm audit\` reste actif."
+          echo "Voir https://github.com/mister-guiiug/dev-wpa-config/settings/security_analysis"
+
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      # `--omit=dev` : ce qui atteint réellement les apps consommatrices. Les
+      # devDependencies du socle ne sont installées par personne d'autre.
+      - name: Dépendances publiées
+        run: npm audit --omit=dev --audit-level=high
+      # Les devDependencies comptent quand même — c'est la chaîne de build qui
+      # produit le tarball — mais elles ne bloquent pas la PR.
+      - name: Chaîne de développement (informatif)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@v3

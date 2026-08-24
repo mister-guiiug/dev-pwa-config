@@ -1,4 +1,4 @@
-/**
+/*
  * Design tokens famille (miss-* / mister-*) — export INFORMATIONNEL.
  *
  * ⚠️ Source de vérité = `tailwind-preset.css` (`@theme`). Tailwind 4 lit les
@@ -6,7 +6,9 @@
  * Tailwind ; il sert de référence programmatique (tests, scripts, génération de
  * doc, lecture d'un token hors CSS). Garder ces valeurs alignées sur le `.css`.
  *
- * Usage Tailwind côté consumer (src/index.css) :
+ * Usage Tailwind côté consumer (src/index.css) — noter que ce bloc n'est
+ * volontairement PAS un JSDoc (`/**`) : TypeScript y lirait les lignes
+ * `@import` comme des directives de type et échouerait à les parser.
  *   @import 'tailwindcss';
  *   @import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
  */

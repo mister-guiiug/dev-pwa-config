@@ -305,7 +305,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 4. **TypeScript** : `tsconfig.app.json` + `tsconfig.node.json` en `extends`.
 5. **Tests** : `vitest.config.ts` (`baseTestOptions`) + `src/test/setup.ts`
    (`import '@mister-guiiug/dev-wpa-config/vitest-setup'`).
-6. **CI/CD** (`secrets: inherit` + `permissions` au niveau caller) : `ci.yml` →
+6. **CI/CD** (secrets passés NOMMÉMENT — jamais `inherit` — + `permissions` au niveau caller) : `ci.yml` →
    `pwa-ci.yml@v3`, `deploy.yml` → `pwa-deploy.yml@v3`, `lighthouse.yml` →
    `pwa-lighthouse.yml@v3`.
 7. **PWA/SEO** : `index.html` depuis [`templates/index.html`](./templates/index.html) +
@@ -606,6 +606,121 @@ Variables d'env de build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`,
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
 `htmlTrackingPlugin()`), désormais factorisés ici.
 
+### `vite-pwa` — options `VitePWA()` partagées
+
+```ts
+import { pwaBaseOptions } from '@mister-guiiug/dev-wpa-config/vite-pwa';
+
+VitePWA(
+  pwaBaseOptions({
+    id: 'miss-uwh', // identifiant du dépôt : base, scope, et couleurs du thème
+    name: 'Miss UWH — Bilan comptable',
+    shortName: 'Miss UWH',
+    description: 'Bilan comptable saisonnier d’un club de hockey subaquatique.',
+    categories: ['finance', 'productivity', 'sports'],
+    shortcuts: [{ name: 'Journal', url: '#/finances/journal' }],
+  })
+);
+```
+
+Relevé du 23/08/2026 sur les seize apps, avant ce module :
+
+|                   |                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `registerType`    | 10 en `prompt`, 4 en `autoUpdate`, 2 sans                                                                              |
+| `runtimeCaching`  | 5 apps sur 16 en déclarent un                                                                                          |
+| manifest          | 3 apps sans `display` ni `theme_color`                                                                                 |
+| mise à jour du SW | **15 apps sur 16** recâblent `virtual:pwa-register` à la main, alors que `react/use-update-prompt` existe (1 adoptant) |
+
+Trois défauts méritent d'être expliqués, parce qu'on pourrait les « améliorer »
+à tort :
+
+- **`registerType: 'prompt'`** — seul mode compatible avec `use-update-prompt` +
+  `UpdatePromptBanner` que le paquet livre. En `autoUpdate`, l'app se recharge
+  sous les doigts de l'utilisateur, parfois au milieu d'une saisie.
+- **Aucune mise en cache d'API par défaut** — mettre en cache une réponse
+  authentifiée expose les données d'un utilisateur au suivant sur un appareil
+  partagé. Les origines à mettre en cache se déclarent (`apiOrigins`), et
+  passent en `NetworkFirst` : une donnée périmée servie en ligne est un bug
+  fonctionnel, pas une optimisation.
+- **`theme_color` et `background_color` sont LUS dans `themes.js`** quand l'app
+  y figure, plutôt que recopiés. Cinq manifests sur treize avaient divergé du
+  relevé, sans qu'on puisse distinguer le choix délibéré de l'oubli. Une couleur
+  passée explicitement l'emporte toujours — le choix reste possible, il devient
+  écrit.
+
+Le module n'importe **pas** `vite-plugin-pwa` : il renvoie un objet d'options
+ordinaire, que l'app passe à son propre `VitePWA()`.
+
+> **`vite-pwa-base` ne contient rien de PWA** : ni manifest, ni service worker,
+> ni stratégie de cache — c'est du SEO et de l'analytics. Il est désormais aussi
+> exporté sous `./vite-seo`, qui dit ce qu'il fait. `./vite-pwa-base` reste
+> valide tant que des apps l'importent.
+
+### `vite-csp` — Content-Security-Policy par hash
+
+```ts
+import { pwaSeoPlugin } from '@mister-guiiug/dev-wpa-config/vite-pwa-base';
+import { cspPlugin } from '@mister-guiiug/dev-wpa-config/vite-csp';
+
+export default defineConfig(({ command }) => ({
+  plugins: [
+    react(),
+    tailwindcss(),
+    pwaSeoPlugin({ siteName: 'Mister Puzzle' }),
+    cspPlugin({
+      dev: command === 'serve',
+      connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
+      analytics: true, // ← si pwaSeoPlugin injecte GTM ou GA4
+    }),
+    VitePWA({ ... }),
+  ],
+}));
+```
+
+`cspPlugin` doit venir **après** `pwaSeoPlugin` : il hashe le HTML final, donc
+les scripts inline injectés en amont.
+
+**`analytics: true` n'est pas cosmétique.** GA4 charge un `<script src>` externe
+et GTM un `<iframe>` de repli `noscript` : `default-src 'self'` les bloque tous
+les deux, sans la moindre erreur de build. Activer les deux plugins sans cette
+option coupe donc l'analytics **en silence**. L'option ajoute exactement les
+hôtes que `pwaSeoPlugin` injecte (`script`, `img`, `connect`, `frame`).
+
+**Ce qu'une CSP en `<meta>` ne peut pas faire.** La spécification exclut
+`frame-ancestors`, `report-uri` et `sandbox` d'une politique délivrée par
+balise : le navigateur les **ignore**. Le template `index.html` de ce paquet
+portait `frame-ancestors 'none'` — une protection anti-clickjacking qui n'a
+jamais existé, avec toute l'apparence du contraire. Le plugin **retire** désormais
+ces trois directives et le signale, plutôt que de les relayer. Huit apps de la
+famille en passaient une : échouer aurait cassé huit builds pour retirer
+quelque chose que le navigateur ignorait déjà.
+
+Pour protéger réellement du clickjacking, il faut un **en-tête HTTP** :
+
+```jsonc
+// firebase.json — pour les apps déployées sur Firebase Hosting
+{
+  "hosting": {
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "frame-ancestors 'none'",
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+**GitHub Pages ne permet aucun en-tête personnalisé** : les apps qui y sont
+déployées n'ont pas de protection anti-clickjacking effective. C'est un fait à
+connaître, pas à masquer derrière une directive inerte.
+
 ### Tests a11y (axe-core) — `playwright-a11y`
 
 ```ts
@@ -672,8 +787,33 @@ d'habiller celui du paquet. `components.css` ferme cet écart :
 
 Ce seul import donne déjà un rendu correct **en clair et en sombre**, sans
 configuration : les replis passent par les couleurs système CSS (`Canvas`,
-`CanvasText`, `GrayText`), qui suivent `color-scheme`. Pour passer aux couleurs
-de l'app, brancher le contrat — treize lignes, une fois :
+`CanvasText`, `GrayText`), qui suivent `color-scheme`.
+
+**Le plus simple : importer aussi `tokens.css`**, qui livre un jeu de valeurs
+neutre pour les quinze variables du contrat, clair et sombre, au contraste
+vérifié en CI (`test/tokens.test.mjs`) :
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-wpa-config/tokens.css'; /* ← valeurs par défaut */
+@import '@mister-guiiug/dev-wpa-config/components.css';
+
+/* Puis la teinte de l'app, deux lignes : */
+:root {
+  --dwc-primary: var(--color-primary);
+  --dwc-primary-contrast: #fff;
+}
+```
+
+`tokens.css` n'impose **aucune couleur de marque** : sa primaire est une ardoise
+neutre, faite pour être remplacée. Il traite les trois états de thème — choix
+clair, choix sombre, et réglage « système » qui ne pose aucun attribut — et
+distingue deux filets : `--dwc-border` sépare (discret), `--dwc-border-strong`
+désigne le contour d'un contrôle (3:1, WCAG 1.4.11).
+
+Pour brancher le contrat sur les variables existantes de l'app plutôt que sur
+les valeurs par défaut :
 
 ```css
 :root {
@@ -682,6 +822,7 @@ de l'app, brancher le contrat — treize lignes, une fois :
   --dwc-text: var(--uwh-text);
   --dwc-text-soft: var(--uwh-text-soft);
   --dwc-border: var(--uwh-border);
+  --dwc-border-strong: var(--uwh-border-strong);
   --dwc-primary: var(--color-primary);
   --dwc-primary-contrast: #fff;
   --dwc-primary-soft: var(--color-primary-soft);
@@ -957,7 +1098,9 @@ permissions:
 jobs:
   ci:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v3
-    secrets: inherit
+    # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
+    # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
+    # secrets du dépôt à un workflow qui n'en demande aucun.
     with:
       run-e2e: false # passer à true quand Playwright est en place
       e2e-grep: '@critical'
@@ -983,7 +1126,10 @@ permissions:
 jobs:
   deploy:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
-    secrets: inherit
+    # Le workflow DÉCLARE les secrets dont il a besoin : on ne passe que
+    # ceux-là. `secrets: inherit` enverrait tout le trousseau du dépôt.
+    secrets:
+      FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
     with:
       use-base-path: true
       pre-build-script: '' # ex: 'migrate:db' pour Supabase
@@ -1017,7 +1163,9 @@ permissions:
 jobs:
   publish:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/npm-publish.yml@v3
-    secrets: inherit
+    # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
+    # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
+    # secrets du dépôt à un workflow qui n'en demande aucun.
 ```
 
 ## Personnalisation par projet
@@ -1224,3 +1372,19 @@ Toute modification de stack famille (bump majeur React, ESLint, etc.) :
 3. `npm run version-packages`, committer, taguer, pousser (cf. ci-dessus) → publication auto.
 4. Aligner les consommateurs : `node scripts/migrate-consumers.mjs <version> --write`
    (dry-run par défaut sans `--write`), puis tester chaque app.
+
+## Gouvernance
+
+|                                             |                                                                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md)        | Comment contribuer, et les quatre règles du dépôt — dont « promouvoir sans migrer, c'est ne pas avoir fini » |
+| [`SECURITY.md`](SECURITY.md)                | Signalement privé d'une vulnérabilité, périmètre, et les deux limites connues qui ne sont pas des failles    |
+| [`.github/CODEOWNERS`](.github/CODEOWNERS)  | `workflows/`, `actions/` et `scripts/` demandent une relecture : ils s'exécutent dans seize dépôts           |
+| `npm run validate`                          | Ce que la CI exécute : format, lint, types, tests                                                            |
+| `node scripts/apply-rulesets.mjs --dry-run` | Protection de `main` sur les dix-huit dépôts — liste lue dans le catalogue, checks exigés par dépôt          |
+
+**Secrets.** Chaque workflow réutilisable **déclare** les secrets dont il a
+besoin ; un caller ne passe que ceux-là. `secrets: inherit` enverrait tout le
+trousseau du dépôt à un workflow qui n'en demande souvent aucun — c'est le
+chemin d'escalade le plus court de la famille, et il ne figure plus nulle part
+dans la documentation.

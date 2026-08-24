@@ -9,17 +9,32 @@ export type ButtonVariant =
 
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-export interface ButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-busy'> {
+interface ButtonBaseProps
+  extends Omit<
+    ButtonHTMLAttributes<HTMLButtonElement>,
+    'aria-busy' | 'aria-disabled'
+  > {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  /** Affiche un indicateur, pose `aria-busy` et désactive le bouton. */
+  /**
+   * Affiche un indicateur et pose `aria-busy`. Le bouton reçoit
+   * `aria-disabled` (pas `disabled`) : il garde le focus, et le clic est
+   * neutralisé par le composant.
+   */
   loading?: boolean;
   /** Occupe toute la largeur disponible. */
   block?: boolean;
-  /** Bouton carré sans libellé visible — fournir `aria-label`. */
-  iconOnly?: boolean;
 }
+
+/**
+ * En mode icône seule, un nom accessible est EXIGÉ par le type — pas seulement
+ * recommandé par la documentation. Un avertissement console double la règle en
+ * développement, pour les appelants en JavaScript.
+ */
+export type ButtonProps =
+  | (ButtonBaseProps & { iconOnly?: false })
+  | (ButtonBaseProps & { iconOnly: true; 'aria-label': string })
+  | (ButtonBaseProps & { iconOnly: true; 'aria-labelledby': string });
 
 /**
  * Bouton famille (non stylé, cibler `[data-dwc="button"]` ou importer

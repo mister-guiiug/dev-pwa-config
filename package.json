@@ -7,12 +7,14 @@
   },
   "scripts": {
     "test": "node --test",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.check.json",
     "showroom": "node scripts/serve-showroom.mjs",
     "sync": "node scripts/sync-generated.mjs",
     "screenshots": "node scripts/capture-screenshots.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "validate": "npm run format:check && npm run test",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },
@@ -31,6 +33,9 @@
     "registry": "https://npm.pkg.github.com"
   },
   "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     "./eslint-base": "./eslint-base.js",
     "./eslint-react": "./eslint-react.js",
@@ -53,29 +58,113 @@
       "types": "./apps-catalog.d.ts",
       "default": "./apps-catalog.js"
     },
+    "./themes": {
+      "types": "./themes.d.ts",
+      "default": "./themes.js"
+    },
     "./react": {
       "types": "./react/index.d.ts",
       "default": "./react/index.js"
     },
-    "./react/use-update-prompt": {
-      "types": "./react/use-update-prompt.d.ts",
-      "default": "./react/use-update-prompt.js"
+    "./react/app-footer": {
+      "types": "./react/app-footer.d.ts",
+      "default": "./react/app-footer.js"
     },
-    "./react/rive": {
-      "types": "./react/rive.d.ts",
-      "default": "./react/rive.js"
+    "./react/badge": {
+      "types": "./react/badge.d.ts",
+      "default": "./react/badge.js"
+    },
+    "./react/button": {
+      "types": "./react/button.d.ts",
+      "default": "./react/button.js"
+    },
+    "./react/empty-state": {
+      "types": "./react/empty-state.d.ts",
+      "default": "./react/empty-state.js"
+    },
+    "./react/error-banner": {
+      "types": "./react/error-banner.d.ts",
+      "default": "./react/error-banner.js"
+    },
+    "./react/error-boundary": {
+      "types": "./react/error-boundary.d.ts",
+      "default": "./react/error-boundary.js"
+    },
+    "./react/family-apps": {
+      "types": "./react/family-apps.d.ts",
+      "default": "./react/family-apps.js"
+    },
+    "./react/field": {
+      "types": "./react/field.d.ts",
+      "default": "./react/field.js"
+    },
+    "./react/i18n": {
+      "types": "./react/i18n.d.ts",
+      "default": "./react/i18n.js"
+    },
+    "./react/net": {
+      "types": "./react/net.d.ts",
+      "default": "./react/net.js"
     },
     "./react/observability": {
       "types": "./react/observability.d.ts",
       "default": "./react/observability.js"
     },
+    "./react/pwa-install-prompt": {
+      "types": "./react/pwa-install-prompt.d.ts",
+      "default": "./react/pwa-install-prompt.js"
+    },
+    "./react/rive": {
+      "types": "./react/rive.d.ts",
+      "default": "./react/rive.js"
+    },
+    "./react/sheet": {
+      "types": "./react/sheet.d.ts",
+      "default": "./react/sheet.js"
+    },
+    "./react/skeleton": {
+      "types": "./react/skeleton.d.ts",
+      "default": "./react/skeleton.js"
+    },
+    "./react/stat": {
+      "types": "./react/stat.d.ts",
+      "default": "./react/stat.js"
+    },
+    "./react/sync-status-badge": {
+      "types": "./react/sync-status-badge.d.ts",
+      "default": "./react/sync-status-badge.js"
+    },
     "./react/update-prompt-banner": {
       "types": "./react/update-prompt-banner.d.ts",
       "default": "./react/update-prompt-banner.js"
     },
-    "./react/i18n": {
-      "types": "./react/i18n.d.ts",
-      "default": "./react/i18n.js"
+    "./react/use-install-prompt": {
+      "types": "./react/use-install-prompt.d.ts",
+      "default": "./react/use-install-prompt.js"
+    },
+    "./react/use-local-storage": {
+      "types": "./react/use-local-storage.d.ts",
+      "default": "./react/use-local-storage.js"
+    },
+    "./react/use-media-query": {
+      "types": "./react/use-media-query.d.ts",
+      "default": "./react/use-media-query.js"
+    },
+    "./react/use-offline-queue": {
+      "types": "./react/use-offline-queue.d.ts",
+      "default": "./react/use-offline-queue.js"
+    },
+    "./react/use-online": {
+      "types": "./react/use-online.d.ts",
+      "default": "./react/use-online.js"
+    },
+    "./react/use-theme": {
+      "types": "./react/use-theme.d.ts",
+      "default": "./react/use-theme.js"
+    },
+    "./react/use-update-prompt": {
+      "types": "./react/use-update-prompt.d.ts",
+      "default": "./react/use-update-prompt.js"
     },
     "./vitest-browser-base": {
       "types": "./vitest-browser-base.d.ts",
@@ -93,12 +182,21 @@
       "types": "./vite-pwa-base.d.ts",
       "default": "./vite-pwa-base.js"
     },
+    "./vite-pwa": {
+      "types": "./vite-pwa.d.ts",
+      "default": "./vite-pwa.js"
+    },
+    "./vite-seo": {
+      "types": "./vite-pwa-base.d.ts",
+      "default": "./vite-pwa-base.js"
+    },
     "./vite-csp": {
       "types": "./vite-csp.d.ts",
       "default": "./vite-csp.js"
     },
     "./tailwind-preset": "./tailwind-preset.js",
     "./tailwind-preset.css": "./tailwind-preset.css",
+    "./tokens.css": "./tokens.css",
     "./components.css": "./components.css"
   },
   "bin": {
@@ -120,6 +218,8 @@
     "vitest-setup.d.ts",
     "apps-catalog.js",
     "apps-catalog.d.ts",
+    "themes.js",
+    "themes.d.ts",
     "react",
     "vitest-browser-base.js",
     "vitest-browser-base.d.ts",
@@ -129,10 +229,13 @@
     "playwright-a11y.d.ts",
     "vite-pwa-base.js",
     "vite-pwa-base.d.ts",
+    "vite-pwa.js",
+    "vite-pwa.d.ts",
     "vite-csp.js",
     "vite-csp.d.ts",
     "tailwind-preset.js",
     "tailwind-preset.css",
+    "tokens.css",
     "components.css",
     "scripts/generate-pwa-icons.mjs"
   ],
@@ -184,15 +287,6 @@
     "@vitest/browser": {
       "optional": true
     },
-    "eslint-plugin-jsx-a11y": {
-      "optional": true
-    },
-    "eslint-plugin-react-hooks": {
-      "optional": true
-    },
-    "eslint-plugin-react-refresh": {
-      "optional": true
-    },
     "lucide-react": {
       "optional": true
     },
@@ -215,19 +309,23 @@
       "optional": true
     }
   },
-  "dependencies": {
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
     "@eslint/js": "^9.39.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "eslint": "^9.39.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
-    "typescript-eslint": "^8.58.0"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.27.0",
+    "jsdom": "^30.0.1",
     "prettier": "3.6.2",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.58.0"
   }
 }
