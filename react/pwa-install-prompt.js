@@ -1,3 +1,4 @@
+import { useLabels } from './labels.js';
 import { createElement as h, useState } from 'react';
 import { useInstallPrompt } from './use-install-prompt.js';
 
@@ -18,12 +19,16 @@ export function PwaInstallPrompt(props = {}) {
   const {
     storage = 'local',
     dismissKey = 'dwc_pwa_install_dismissed',
-    title = 'Installer l’application',
-    description = 'Ajoutez cette application à votre écran d’accueil : accès rapide, hors-ligne.',
-    installLabel = 'Installer',
-    dismissLabel = 'Plus tard',
+    title,
+    description,
+    installLabel,
+    dismissLabel,
     className,
   } = props;
+
+  const labels = useLabels('install');
+  const title_ = title ?? labels.title;
+  const description_ = description ?? labels.description;
 
   const { canInstall, promptInstall } = useInstallPrompt();
   const [dismissed, setDismissed] = useState(() => {
@@ -52,20 +57,24 @@ export function PwaInstallPrompt(props = {}) {
       // Bannière passive, non modale : `region` (et non `dialog`, qui
       // promettrait à tort un piège de focus / une gestion d'échappement).
       role: 'region',
-      'aria-label': title,
+      'aria-label': title_,
       'data-dwc': 'pwa-install-prompt',
     },
-    h('p', { 'data-dwc': 'pwa-install-title' }, title),
-    h('p', { 'data-dwc': 'pwa-install-desc' }, description),
+    h('p', { 'data-dwc': 'pwa-install-title' }, title_),
+    h('p', { 'data-dwc': 'pwa-install-desc' }, description_),
     h(
       'div',
       { 'data-dwc': 'pwa-install-actions' },
       h(
         'button',
         { type: 'button', onClick: () => void promptInstall() },
-        installLabel
+        installLabel ?? labels.install
       ),
-      h('button', { type: 'button', onClick: dismiss }, dismissLabel)
+      h(
+        'button',
+        { type: 'button', onClick: dismiss },
+        dismissLabel ?? labels.dismiss
+      )
     )
   );
 }

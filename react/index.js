@@ -1,10 +1,12 @@
 // Barrel des helpers React partagés (hooks + composants PWA).
 //
-// Sont volontairement EXCLUS de ce barrel (couplés à vite-plugin-pwa via
-// `virtual:pwa-register/react`, casseraient un import hors contexte Vite/PWA) :
-//   import { useUpdatePrompt } from '@mister-guiiug/dev-wpa-config/react/use-update-prompt';
-//   import { UpdatePromptBanner } from '@mister-guiiug/dev-wpa-config/react/update-prompt-banner';
-// Et l'observabilité (init à effets, lazy Sentry) :
+// La mise à jour du service worker A REJOINT ce barrel : `useUpdatePrompt`
+// n'importe plus `virtual:pwa-register/react` en dur, il reçoit `registerSW` en
+// paramètre. Le sous-chemin s'importe donc partout, y compris dans le balayage
+// de résolution de la CI.
+//
+// Reste volontairement EXCLUE l'observabilité (init à effets, Sentry chargé à
+// la demande) :
 //   import { installErrorReporter } from '@mister-guiiug/dev-wpa-config/react/observability';
 export { useLocalStorage } from './use-local-storage.js';
 export { useInstallPrompt } from './use-install-prompt.js';
@@ -30,3 +32,11 @@ export { Skeleton, SkeletonGroup } from './skeleton.js';
 export { Sheet } from './sheet.js';
 export { Stat } from './stat.js';
 export { Badge } from './badge.js';
+export { ConfirmDialog } from './confirm-dialog.js';
+export { ToastProvider, ToastViewport, useToast } from './toast.js';
+export { BottomNav } from './bottom-nav.js';
+export { LabelsProvider, useLabels, mergeLabels, LABELS } from './labels.js';
+export { useUpdatePrompt } from './use-update-prompt.js';
+export { UpdatePromptBanner } from './update-prompt-banner.js';
+export { UpdateButton } from './update-button.js';
+export { applyUpdate } from '../sw-update.js';

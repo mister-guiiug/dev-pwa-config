@@ -1,3 +1,4 @@
+import { useLabels } from './labels.js';
 import { createElement as h } from 'react';
 import { GithubIcon, CoffeeIcon } from './icons.js';
 
@@ -13,10 +14,12 @@ export function AppFooter(props) {
   const {
     repoUrl,
     sponsorUrl = 'https://buymeacoffee.com/mister.guiiug',
-    sourceLabel = 'Code source',
-    sponsorLabel = 'M’offrir un café',
+    sourceLabel,
+    sponsorLabel,
     className,
   } = props;
+
+  const labels = useLabels('footer');
 
   const ext = { target: '_blank', rel: 'noopener noreferrer' };
 
@@ -28,7 +31,7 @@ export function AppFooter(props) {
           'a',
           { href: repoUrl, ...ext, 'data-dwc': 'footer-source' },
           h(GithubIcon),
-          h('span', null, sourceLabel)
+          h('span', null, sourceLabel ?? labels.source)
         )
       : null,
     sponsorUrl
@@ -36,7 +39,7 @@ export function AppFooter(props) {
           'a',
           { href: sponsorUrl, ...ext, 'data-dwc': 'footer-sponsor' },
           h(CoffeeIcon),
-          h('span', null, sponsorLabel)
+          h('span', null, sponsorLabel ?? labels.sponsor)
         )
       : null
   );
