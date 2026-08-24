@@ -58,6 +58,18 @@
       "types": "./apps-catalog.d.ts",
       "default": "./apps-catalog.js"
     },
+    "./format": {
+      "types": "./format.d.ts",
+      "default": "./format.js"
+    },
+    "./security": {
+      "types": "./security.d.ts",
+      "default": "./security.js"
+    },
+    "./sw-update": {
+      "types": "./sw-update.d.ts",
+      "default": "./sw-update.js"
+    },
     "./themes": {
       "types": "./themes.d.ts",
       "default": "./themes.js"
@@ -74,9 +86,17 @@
       "types": "./react/badge.d.ts",
       "default": "./react/badge.js"
     },
+    "./react/bottom-nav": {
+      "types": "./react/bottom-nav.d.ts",
+      "default": "./react/bottom-nav.js"
+    },
     "./react/button": {
       "types": "./react/button.d.ts",
       "default": "./react/button.js"
+    },
+    "./react/confirm-dialog": {
+      "types": "./react/confirm-dialog.d.ts",
+      "default": "./react/confirm-dialog.js"
     },
     "./react/empty-state": {
       "types": "./react/empty-state.d.ts",
@@ -101,6 +121,10 @@
     "./react/i18n": {
       "types": "./react/i18n.d.ts",
       "default": "./react/i18n.js"
+    },
+    "./react/labels": {
+      "types": "./react/labels.d.ts",
+      "default": "./react/labels.js"
     },
     "./react/net": {
       "types": "./react/net.d.ts",
@@ -133,6 +157,14 @@
     "./react/sync-status-badge": {
       "types": "./react/sync-status-badge.d.ts",
       "default": "./react/sync-status-badge.js"
+    },
+    "./react/toast": {
+      "types": "./react/toast.d.ts",
+      "default": "./react/toast.js"
+    },
+    "./react/update-button": {
+      "types": "./react/update-button.d.ts",
+      "default": "./react/update-button.js"
     },
     "./react/update-prompt-banner": {
       "types": "./react/update-prompt-banner.d.ts",
@@ -218,6 +250,12 @@
     "vitest-setup.d.ts",
     "apps-catalog.js",
     "apps-catalog.d.ts",
+    "format.js",
+    "format.d.ts",
+    "security.js",
+    "security.d.ts",
+    "sw-update.js",
+    "sw-update.d.ts",
     "themes.js",
     "themes.d.ts",
     "react",

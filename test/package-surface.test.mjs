@@ -20,7 +20,7 @@ const PKG = JSON.parse(readFileSync(at('package.json'), 'utf8'));
  * Les lister ici est une DÉCISION, pas un oubli — c'est ce qui distingue « pas
  * encore exporté » de « délibérément privé ».
  */
-const INTERNAL = new Set(['index', 'icons', 'i18n-core']);
+const INTERNAL = new Set(['index', 'icons', 'i18n-core', 'use-dialog']);
 
 const reactModules = readdirSync(at('react'))
   .filter(name => name.endsWith('.js'))

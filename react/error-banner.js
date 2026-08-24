@@ -1,3 +1,4 @@
+import { useLabels } from './labels.js';
 import { createElement as h } from 'react';
 
 /**
@@ -14,10 +15,12 @@ export function ErrorBanner(props = {}) {
     message,
     severity = 'error',
     onRetry,
-    retryLabel = 'Réessayer',
+    retryLabel,
     onDismiss,
     className,
   } = props;
+
+  const labels = useLabels('error');
   if (!message) return null;
   return h(
     'div',
@@ -36,7 +39,7 @@ export function ErrorBanner(props = {}) {
             onClick: onRetry,
             'data-dwc': 'error-banner-retry',
           },
-          retryLabel
+          retryLabel ?? labels.retry
         )
       : null,
     typeof onDismiss === 'function'
@@ -45,7 +48,7 @@ export function ErrorBanner(props = {}) {
           {
             type: 'button',
             onClick: onDismiss,
-            'aria-label': 'Fermer',
+            'aria-label': labels.close,
             'data-dwc': 'error-banner-dismiss',
           },
           '×'

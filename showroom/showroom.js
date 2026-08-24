@@ -2928,6 +2928,14 @@
         ),
         'color: GrayText',
       ],
+      [
+        t('fc.row.nav', 'Onglet courant de la barre basse'),
+        t(
+          'fc.cause.tint',
+          'Primaire et texte doux sont ramenés à la MÊME encre système : distinguer l’onglet actif par la couleur ne marche plus.'
+        ),
+        'border-block-start-color: Highlight',
+      ],
     ];
   }
 
@@ -2968,9 +2976,37 @@
     title.textContent = t('ui.fc.panel', 'Panneau modal');
     panel.appendChild(title);
 
-    [primary, off, badge, sync, skeleton, panel].forEach(function (node) {
-      host.appendChild(node);
+    var toast = dwc('div', 'toast', { 'data-tone': 'success' });
+    var toastMsg = dwc('span', 'toast-message', {});
+    toastMsg.textContent = t('ui.fc.toast', 'Enregistré');
+    toast.appendChild(toastMsg);
+
+    // La barre basse est la démonstration la plus nette du chapitre : son
+    // onglet courant ne se distingue QUE par la couleur dans quatre apps sur
+    // sept, et le forçage ramène les deux teintes à la même encre.
+    var nav = dwc('nav', 'bottom-nav', {
+      'aria-label': t('ui.fc.nav', 'Navigation principale'),
     });
+    [
+      [t('ui.fc.tab.home', 'Accueil'), true],
+      [t('ui.fc.tab.settings', 'Réglages'), false],
+    ].forEach(function (pair) {
+      var tab = dwc(
+        'span',
+        'bottom-nav-item',
+        pair[1] ? { 'data-current': '' } : {}
+      );
+      var label = dwc('span', 'bottom-nav-label', {});
+      label.textContent = pair[0];
+      tab.appendChild(label);
+      nav.appendChild(tab);
+    });
+
+    [primary, off, badge, sync, skeleton, panel, toast, nav].forEach(
+      function (node) {
+        host.appendChild(node);
+      }
+    );
   }
 
   var fcQuery = null;

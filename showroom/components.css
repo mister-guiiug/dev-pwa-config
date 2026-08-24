@@ -888,6 +888,293 @@
     border-color: color-mix(in srgb, var(--_dwc-tone) 55%, transparent);
   }
 
+  /* ── ConfirmDialog ─────────────────────────────────────────────────────── *
+   * Même charpente que `Sheet` (voile + panneau centré), rôle différent :
+   * `alertdialog`. Les sept copies mesurées divergeaient sur le bouton mis en
+   * avant — ici c'est TOUJOURS l'annulation qui reçoit le focus, et c'est la
+   * confirmation qui est peinte, jamais l'inverse.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='confirm'] {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(env(safe-area-inset-top), 1rem)
+      max(env(safe-area-inset-right), 1rem)
+      max(env(safe-area-inset-bottom), 1rem)
+      max(env(safe-area-inset-left), 1rem);
+  }
+
+  [data-dwc='confirm-backdrop'] {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.55);
+  }
+
+  [data-dwc='confirm-panel'] {
+    position: relative;
+    width: 100%;
+    max-width: 24rem;
+    max-height: 88dvh;
+    overflow-y: auto;
+    padding: var(--spacing-fluid-md, 1rem);
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 1.4);
+    box-shadow: var(--dwc-shadow, none);
+    outline: none;
+    animation: dwc-rise 0.18s ease-out both;
+  }
+
+  [data-dwc='confirm-title'] {
+    margin: 0;
+    font-size: var(--text-fluid-lg, 1.125rem);
+  }
+
+  [data-dwc='confirm-body'] {
+    margin-top: 0.35rem;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='confirm-actions'] {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: var(--spacing-fluid-md, 1rem);
+  }
+
+  [data-dwc='confirm-cancel'],
+  [data-dwc='confirm-confirm'] {
+    font: inherit;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding-inline: 1rem;
+    border-radius: var(--dwc-radius, 0.75rem);
+    cursor: pointer;
+  }
+
+  [data-dwc='confirm-cancel'] {
+    border: 1px solid var(--dwc-border-strong, var(--dwc-border, GrayText));
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+  }
+
+  [data-dwc='confirm-confirm'] {
+    border: 1px solid var(--dwc-primary, CanvasText);
+    background: var(--dwc-primary, CanvasText);
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  /* Destructif : la couleur ne porte pas seule le sens — le libellé passe à
+     « Supprimer » côté composant. Elle le renforce, c'est tout. */
+  [data-dwc='confirm'][data-destructive] [data-dwc='confirm-confirm'] {
+    border-color: var(--dwc-danger, light-dark(#b42318, #f97066));
+    background: var(--dwc-danger, light-dark(#b42318, #f97066));
+  }
+
+  [data-dwc='confirm-cancel'][aria-disabled='true'],
+  [data-dwc='confirm-confirm'][aria-disabled='true'] {
+    opacity: 0.55;
+    cursor: progress;
+  }
+
+  /* ── Toast ─────────────────────────────────────────────────────────────── *
+   * Deux régions vivantes, montées en permanence et VIDES au repos : un
+   * lecteur d'écran n'annonce une insertion que dans une région déjà présente.
+   * Le message, lui, ne porte aucun rôle — c'est la double annonce constatée
+   * dans deux apps.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='toast-viewport'] {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: var(--spacing-fluid-sm, 0.75rem);
+    padding-bottom: calc(
+      var(--spacing-fluid-sm, 0.75rem) + max(env(safe-area-inset-bottom), 0px)
+    );
+    /* Le conteneur ne doit pas intercepter les clics de la page en dessous ;
+       chaque message les reprend. */
+    pointer-events: none;
+  }
+
+  [data-dwc='toast-region'] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='toast'] {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 26rem;
+    padding: 0.65rem 0.75rem;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-inline-start: 4px solid var(--dwc-info, light-dark(#175cd3, #84caff));
+    border-radius: var(--dwc-radius, 0.75rem);
+    box-shadow: var(--dwc-shadow, none);
+    animation: dwc-rise 0.18s ease-out both;
+  }
+
+  [data-dwc='toast'][data-tone='success'] {
+    border-inline-start-color: var(--dwc-success, light-dark(#067647, #4ade80));
+  }
+
+  [data-dwc='toast'][data-tone='error'] {
+    border-inline-start-color: var(--dwc-danger, light-dark(#b42318, #f97066));
+  }
+
+  [data-dwc='toast-message'] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  [data-dwc='toast-close'] {
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    /* Marge négative : la cible tactile reste entière sans épaissir le
+       message. */
+    margin: -0.65rem -0.4rem -0.65rem 0;
+    flex: none;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: var(--dwc-text-soft, GrayText);
+    cursor: pointer;
+  }
+
+  /* ── BottomNav ─────────────────────────────────────────────────────────── *
+   * L'onglet actif n'est JAMAIS distingué par la seule couleur : le composant
+   * pose `aria-current`, ajoute un texte lu, et l'habillage ci-dessous y
+   * ajoute un trait. Quatre des sept copies mesurées n'avaient que l'encre.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='bottom-nav'] {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    background: var(--dwc-surface, Canvas);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  [data-dwc='bottom-nav-item'],
+  [data-dwc='bottom-nav-more'] {
+    font: inherit;
+    font-size: var(--text-fluid-xs, 0.75rem);
+    font-weight: 600;
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    /* Au-delà des 2,75 rem du contrat : une barre d'onglets se vise au pouce,
+       et la plus petite copie mesurée tombait à ~38 px. */
+    min-height: 3.25rem;
+    padding: 0.35rem 0.25rem;
+    border: 0;
+    /* Le trait actif est réservé dès le repos : l'onglet ne bouge pas de deux
+       pixels quand il devient courant. */
+    border-block-start: 2px solid transparent;
+    background: none;
+    color: var(--dwc-text-soft, GrayText);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  [data-dwc='bottom-nav-item'][data-current],
+  [data-dwc='bottom-nav-more'][data-current] {
+    color: var(--dwc-primary, CanvasText);
+    border-block-start-color: var(--dwc-primary, CanvasText);
+  }
+
+  [data-dwc='bottom-nav-icon'] {
+    display: inline-flex;
+    line-height: 0;
+  }
+
+  [data-dwc='bottom-nav-badge'] {
+    position: absolute;
+    transform: translate(0.9rem, -0.6rem);
+    min-width: 1.05rem;
+    padding-inline: 0.2rem;
+    font-size: 0.65rem;
+    line-height: 1.05rem;
+    text-align: center;
+    border-radius: 999px;
+    background: var(--dwc-danger, light-dark(#b42318, #f97066));
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  [data-dwc='bottom-nav-drawer'] {
+    position: absolute;
+    inset-inline: 0.5rem;
+    bottom: calc(100% + 0.5rem);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.35rem;
+    background: var(--dwc-surface, Canvas);
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: var(--dwc-radius, 0.75rem);
+    box-shadow: var(--dwc-shadow, none);
+  }
+
+  [data-dwc='bottom-nav-drawer-item'] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-inline: 0.6rem;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
+    color: var(--dwc-text, CanvasText);
+    text-decoration: none;
+  }
+
+  [data-dwc='bottom-nav-drawer-item'][data-current] {
+    color: var(--dwc-primary, CanvasText);
+  }
+
+  /* Lu, pas vu — l'état courant et le sens d'une pastille. */
+  [data-dwc='bottom-nav-sr'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   /* ── Animations ────────────────────────────────────────────────────────── */
 
   @keyframes dwc-spin {
@@ -989,6 +1276,23 @@
     [data-dwc='sync-status']::before {
       background: CanvasText;
     }
+
+    /* 4 — les trois surfaces ajoutées ensuite, même raison qu'au point 2. */
+    [data-dwc='confirm-panel'],
+    [data-dwc='toast'],
+    [data-dwc='bottom-nav-drawer'] {
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
+    }
+
+    /* 5 — l'onglet courant. En contraste forcé, `--dwc-primary` et
+       `--dwc-text-soft` sont remplacés par la MÊME encre système : la
+       distinction par la couleur disparaît entièrement. Le trait, lui, reste —
+       et c'est précisément pourquoi le composant le double d'un texte lu. */
+    [data-dwc='bottom-nav-item'][data-current],
+    [data-dwc='bottom-nav-more'][data-current] {
+      border-block-start-color: Highlight;
+    }
   }
 
   /* ── Impression ────────────────────────────────────────────────────────── *
@@ -1002,8 +1306,12 @@
     /* Ce qui n'a de sens que devant un écran. Une invitation à installer
        l'application n'a rien à faire sur un bilan imprimé. */
     [data-dwc='sheet'],
+    [data-dwc='confirm'],
+    [data-dwc='toast-viewport'],
+    [data-dwc='bottom-nav'],
     [data-dwc='pwa-install-prompt'],
-    [data-dwc='update-banner'] {
+    [data-dwc='update-banner'],
+    [data-dwc='update-button-group'] {
       display: none;
     }
 
@@ -1012,6 +1320,8 @@
        l'emporteraient. */
     [data-dwc='button'][data-variant='primary'],
     [data-dwc='button'][data-variant='danger'],
+    [data-dwc='confirm-confirm'],
+    [data-dwc='bottom-nav-badge'],
     span[data-dwc='family-app-icon'] {
       color: CanvasText;
       border-color: CanvasText;

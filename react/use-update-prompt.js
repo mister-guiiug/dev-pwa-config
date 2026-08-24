@@ -1,10 +1,75 @@
-import { useCallback, useState } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { applyUpdate } from '../sw-update.js';
+
+/**
+ * Mise à jour du service worker : état du bandeau, report, application.
+ *
+ * CE QUI CHANGE. Le hook importait `virtual:pwa-register/react` en dur. Ce
+ * module virtuel n'existe QUE dans un build Vite avec vite-plugin-pwa : le
+ * sous-chemin était donc inimportable ailleurs — hors du barrel, hors du
+ * balayage de résolution de la CI, intestable. `registerSW` est désormais
+ * **injecté** :
+ *
+ *   import { registerSW } from 'virtual:pwa-register';
+ *   const update = useUpdatePrompt({ registerSW });
+ *
+ * Sans injection, le hook fonctionne quand même : `needRefresh` reste faux,
+ * mais `update()` et `forceUpdate()` restent utilisables — c'est exactement le
+ * bouton « Forcer la mise à jour » que six apps portent dans leurs réglages,
+ * lequel n'a jamais eu besoin de `registerSW`.
+ *
+ * POURQUOI `registerSW` ET PAS `useRegisterSW`. Un hook ne s'appelle pas
+ * conditionnellement : injecter `useRegisterSW` obligerait à l'appeler toujours.
+ * `useRegisterSW` n'est de toute façon qu'une enveloppe React autour de
+ * `registerSW` ; le relevé montre les deux formes en usage (cinq apps
+ * `registerSW`, six `useRegisterSW`), et la forme impérative les couvre toutes.
+ *
+ * UN SEUL ENREGISTREMENT. `registerSW` pose des écouteurs : l'appeler deux fois
+ * les double. Le hook mémorise la connexion PAR fonction injectée, ce qui
+ * neutralise aussi le double effet de `StrictMode`.
+ */
+
+/** @type {WeakMap<Function, { updateSW?: Function, needRefresh: boolean, offlineReady: boolean, listeners: Set<Function> }>} */
+const CONNECTIONS = new WeakMap();
+
+function connect(registerSW) {
+  const existing = CONNECTIONS.get(registerSW);
+  if (existing) return existing;
+
+  const connection = {
+    updateSW: undefined,
+    needRefresh: false,
+    offlineReady: false,
+    listeners: new Set(),
+  };
+  CONNECTIONS.set(registerSW, connection);
+
+  const notify = () => {
+    for (const listener of connection.listeners) listener();
+  };
+  try {
+    connection.updateSW = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        connection.needRefresh = true;
+        notify();
+      },
+      onOfflineReady() {
+        connection.offlineReady = true;
+        notify();
+      },
+    });
+  } catch {
+    // Un enregistrement raté ne doit pas casser le rendu : l'app reste
+    // utilisable, simplement sans bandeau.
+  }
+  return connection;
+}
 
 function readSnooze(key) {
   try {
-    const v = window.localStorage.getItem(key);
-    return v ? Number(v) : 0;
+    const value = globalThis.localStorage?.getItem(key);
+    return value ? Number(value) : 0;
   } catch {
     return 0;
   }
@@ -12,56 +77,95 @@ function readSnooze(key) {
 
 function writeSnooze(key, until) {
   try {
-    window.localStorage.setItem(key, String(until));
+    globalThis.localStorage?.setItem(key, String(until));
   } catch {
-    /* ignore */
+    /* stockage refusé (navigation privée) : le report vaut pour la session */
   }
 }
 
 /**
- * Gestion unifiée de la mise à jour du service worker (vite-plugin-pwa).
- * Variante « snooze » optionnelle : reporte le bandeau de `snoozeHours` heures.
- *
- * Requiert vite-plugin-pwa (module virtuel `virtual:pwa-register/react`).
- *
- * @param {{ snoozeHours?: number, snoozeKey?: string }} [options]
+ * @param {{
+ *   registerSW?: Function,
+ *   snoozeHours?: number,
+ *   snoozeKey?: string,
+ *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions,
+ * }} [options]
  */
 export function useUpdatePrompt(options = {}) {
-  const { snoozeHours = 0, snoozeKey = 'dwc_sw_update_snoozed_until' } =
-    options;
-
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    offlineReady: [offlineReady, setOfflineReady],
-    updateServiceWorker,
-  } = useRegisterSW();
+    registerSW,
+    snoozeHours = 0,
+    snoozeKey = 'dwc_sw_update_snoozed_until',
+    updateOptions,
+  } = options;
 
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [snoozedUntil, setSnoozedUntil] = useState(() =>
     snoozeHours > 0 ? readSnooze(snoozeKey) : 0
   );
 
+  // Les options de `applyUpdate` sont lues au moment du clic : une app qui
+  // reconstruit l'objet à chaque rendu ne doit pas invalider `update`.
+  const updateOptionsRef = useRef(updateOptions);
+  updateOptionsRef.current = updateOptions;
+
+  useEffect(() => {
+    if (typeof registerSW !== 'function') return undefined;
+    const connection = connect(registerSW);
+    const sync = () => {
+      setNeedRefresh(connection.needRefresh);
+      setOfflineReady(connection.offlineReady);
+      if (connection.needRefresh) setDismissed(false);
+    };
+    connection.listeners.add(sync);
+    sync();
+    return () => {
+      connection.listeners.delete(sync);
+    };
+  }, [registerSW]);
+
   const visible =
-    needRefresh && (snoozeHours <= 0 || Date.now() >= snoozedUntil);
+    needRefresh &&
+    !dismissed &&
+    (snoozeHours <= 0 || Date.now() >= snoozedUntil);
 
-  const update = useCallback(
-    () => updateServiceWorker(true),
-    [updateServiceWorker]
-  );
+  const run = useCallback(async extra => {
+    setUpdating(true);
+    try {
+      return await applyUpdate({ ...updateOptionsRef.current, ...extra });
+    } finally {
+      // La page se décharge normalement avant d'arriver ici. Si elle est
+      // toujours là (navigation ignorée), le bouton doit redevenir cliquable.
+      setUpdating(false);
+    }
+  }, []);
 
-  const dismiss = useCallback(() => {
-    setNeedRefresh(false);
-    setOfflineReady(false);
-  }, [setNeedRefresh, setOfflineReady]);
+  const update = useCallback(() => run(), [run]);
+  const forceUpdate = useCallback(() => run({ hard: true }), [run]);
+
+  const dismiss = useCallback(() => setDismissed(true), []);
 
   const snooze = useCallback(() => {
     if (snoozeHours <= 0) {
-      dismiss();
+      setDismissed(true);
       return;
     }
     const until = Date.now() + snoozeHours * 3_600_000;
     writeSnooze(snoozeKey, until);
     setSnoozedUntil(until);
-  }, [snoozeHours, snoozeKey, dismiss]);
+  }, [snoozeHours, snoozeKey]);
 
-  return { needRefresh, offlineReady, visible, update, dismiss, snooze };
+  return {
+    needRefresh,
+    offlineReady,
+    visible,
+    updating,
+    update,
+    forceUpdate,
+    dismiss,
+    snooze,
+  };
 }

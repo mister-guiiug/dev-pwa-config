@@ -33,7 +33,7 @@ import {
 } from 'react';
 import { createTranslator } from './i18n-core.js';
 
-export { createTranslator } from './i18n-core.js';
+export { createTranslator, plural } from './i18n-core.js';
 
 /**
  * @param {import('./i18n.js').I18nConfig<any, string>} config

@@ -1,11 +1,5 @@
 import { createElement as h } from 'react';
-
-const DEFAULT_LABELS = {
-  synced: 'Synchronisé',
-  pending: 'En attente',
-  offline: 'Hors ligne',
-  error: 'Erreur',
-};
+import { useLabels } from './labels.js';
 
 /**
  * Badge d'état de synchronisation (non stylé : cibler `[data-dwc="sync-status"]`
@@ -16,7 +10,8 @@ const DEFAULT_LABELS = {
  */
 export function SyncStatusBadge(props) {
   const { status, pending = 0, className, labels = {} } = props;
-  const base = labels[status] ?? DEFAULT_LABELS[status] ?? status;
+  const dictionary = useLabels('sync');
+  const base = labels[status] ?? dictionary[status] ?? status;
   const text =
     status === 'pending' && pending > 0 ? `${base} (${pending})` : base;
   return h(

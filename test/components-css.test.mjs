@@ -149,8 +149,13 @@ test('tout contour transparent est rattrapé en contraste forcé', () => {
   assert.ok(body, 'bloc @media (forced-colors: active) absent');
 
   const rules = CSS.slice(0, CSS.indexOf('@media (forced-colors: active)'));
+  // `border` ET ses raccourcis directionnels : `BottomNav` réserve son trait
+  // actif par un `border-block-start` transparent, que la version précédente de
+  // cette garde ne voyait pas.
   const transparents = [
-    ...rules.matchAll(/([^{}]+)\{[^{}]*border:[^;}]*\btransparent\b/g),
+    ...rules.matchAll(
+      /([^{}]+)\{[^{}]*border(?:-block|-inline)?(?:-start|-end|-top|-bottom|-left|-right)?:[^;}]*\btransparent\b/g
+    ),
   ].map(m =>
     m[1]
       .trim()
