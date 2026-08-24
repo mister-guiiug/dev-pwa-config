@@ -28,3 +28,24 @@ export function createTranslator<M, L extends string>(
   locale: L,
   fallbackLocale: L
 ): (path: I18nPaths<M>, params?: Record<string, string | number>) => string;
+
+/** Formes CLDR d'un pluriel. `other` est la seule vraiment obligatoire. */
+export interface PluralForms {
+  zero?: string;
+  one?: string;
+  two?: string;
+  few?: string;
+  many?: string;
+  other: string;
+}
+
+/**
+ * Choisit la forme correcte selon la quantité, via `Intl.PluralRules`.
+ * `{count}` est interpolé automatiquement.
+ */
+export function plural(
+  count: number,
+  forms: PluralForms,
+  locale?: string,
+  params?: Record<string, string | number>
+): string;

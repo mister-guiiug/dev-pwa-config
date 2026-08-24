@@ -1,44 +1,7 @@
-import {
-  createElement as h,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-} from 'react';
+import { createElement as h, useId, useRef } from 'react';
 import { CloseIcon } from './icons.js';
-
-// Éléments focusables, dans l'ordre du document. `:not([disabled])` et
-// `tabindex="-1"` exclus : ils ne participent pas au parcours clavier.
-const FOCUSABLE = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  'summary',
-  '[contenteditable]:not([contenteditable="false"])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(',');
-
-// Le verrou de scroll est COMPTÉ : deux feuilles ouvertes puis fermées dans le
-// désordre laissaient sinon `overflow: hidden` collé sur le <body>, page
-// définitivement figée. Le compteur vit au niveau du module, pas du composant :
-// c'est le <body> qui est partagé.
-let lockCount = 0;
-let lockedFrom = '';
-
-function lockScroll() {
-  if (lockCount === 0) {
-    lockedFrom = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-  }
-  lockCount += 1;
-}
-
-function unlockScroll() {
-  lockCount = Math.max(0, lockCount - 1);
-  if (lockCount === 0) document.body.style.overflow = lockedFrom;
-}
+import { useLabels } from './labels.js';
+import { useDialogBehaviour } from './use-dialog.js';
 
 /**
  * Feuille modale (bottom sheet sur mobile, boîte centrée au-delà).
@@ -71,78 +34,19 @@ function unlockScroll() {
  *   className?: string }} props
  */
 export function Sheet(props = {}) {
-  const {
-    open,
-    title,
-    onClose,
-    closeLabel = 'Fermer',
-    children,
-    className,
-  } = props;
+  const { open, title, onClose, closeLabel, children, className } = props;
+
+  // Le libellé passé en prop l'emporte ; sinon le dictionnaire (français hors
+  // provider, donc aucun changement pour une app qui ne fait rien).
+  const labels = useLabels('sheet');
+  const close_ = closeLabel ?? labels.close;
 
   const panelRef = useRef(null);
-  const restoreRef = useRef(null);
   const titleId = useId();
 
-  const close = useCallback(() => {
-    if (typeof onClose === 'function') onClose();
-  }, [onClose]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    // Mémorise l'élément qui avait le focus AVANT l'ouverture : sans ça, le
-    // focus retombe sur <body> à la fermeture et la navigation clavier
-    // repart du début de la page.
-    restoreRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-
-    const onKeyDown = event => {
-      if (event.key === 'Escape') {
-        close();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-
-      const panel = panelRef.current;
-      if (!panel) return;
-      const items = [...panel.querySelectorAll(FOCUSABLE)];
-      if (items.length === 0) {
-        // Panneau sans élément focusable : on garde le focus sur le panneau.
-        event.preventDefault();
-        panel.focus();
-        return;
-      }
-      const first = items[0];
-      const last = items[items.length - 1];
-      // Le focus peut avoir quitté le panneau (clic dans le fond) : on le
-      // ramène au lieu de laisser Tab s'échapper.
-      if (!panel.contains(document.activeElement)) {
-        event.preventDefault();
-        first.focus();
-        return;
-      }
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    lockScroll();
-    panelRef.current?.focus();
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      unlockScroll();
-      restoreRef.current?.focus();
-    };
-  }, [open, close]);
+  // Échap, piège de focus, restitution et verrou de scroll : voir
+  // `use-dialog.js`. `ConfirmDialog` partage exactement ce comportement.
+  const close = useDialogBehaviour({ open, onClose, panelRef });
 
   if (!open) return null;
 
@@ -177,7 +81,7 @@ export function Sheet(props = {}) {
           {
             type: 'button',
             onClick: close,
-            'aria-label': closeLabel,
+            'aria-label': close_,
             'data-dwc': 'sheet-close',
           },
           h(CloseIcon)

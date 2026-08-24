@@ -329,7 +329,13 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/vitest-setup`               | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                                                       |
 | `@mister-guiiug/dev-wpa-config/apps-catalog`               | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                         |
 | `@mister-guiiug/dev-wpa-config/react`                      | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                    |
-| `@mister-guiiug/dev-wpa-config/react/use-update-prompt`    | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + snooze) — couplé à vite-plugin-pwa, hors barrel                                                                                                                                          |
+| `@mister-guiiug/dev-wpa-config/react/use-update-prompt`    | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/react/update-button`        | `.js` + `.d.ts` | `UpdateButton` : bouton « Forcer la mise à jour » des réglages, sans dépendance à vite-plugin-pwa                                                                                                                                |
+| `@mister-guiiug/dev-wpa-config/react/confirm-dialog`       | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone                                                                                                                    |
+| `@mister-guiiug/dev-wpa-config/react/toast`                | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/react/bottom-nav`           | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                        |
+| `@mister-guiiug/dev-wpa-config/react/labels`               | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés fr/en des composants du paquet (prop > contexte > français)                                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/sw-update`                  | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` : appliquer une mise à jour de service worker — **sans React ni module virtuel**                                                                                                                  |
 | `@mister-guiiug/dev-wpa-config/react/rive`                 | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                                                  |
 | `@mister-guiiug/dev-wpa-config/react/i18n`                 | `.js` + `.d.ts` | `createI18n` : i18n minimal typé (clés dot-notation dérivées des messages), `I18nProvider`/`useI18n`, zéro dépendance runtime                                                                                                    |
 | `@mister-guiiug/dev-wpa-config/react/observability`        | `.js` + `.d.ts` | `installErrorReporter`/`recordError`/`initSentry` (peer optionnelle `@sentry/react`, `loader` pour bundler l'import) — hors barrel                                                                                               |
@@ -990,40 +996,98 @@ function Settings() {
 }
 ```
 
-`useUpdatePrompt` est **hors barrel** (il importe `virtual:pwa-register/react` de
-vite-plugin-pwa) — l'importer par son sous-chemin :
+#### Mise à jour du service worker
+
+`useUpdatePrompt` **a rejoint le barrel** : il n'importe plus
+`virtual:pwa-register/react`, il reçoit `registerSW` en paramètre. Le module
+s'importe donc partout — y compris dans un test Node ou un rendu serveur.
 
 ```tsx
-import { useUpdatePrompt } from '@mister-guiiug/dev-wpa-config/react/use-update-prompt';
+import { registerSW } from 'virtual:pwa-register';
+import { UpdatePromptBanner } from '@mister-guiiug/dev-wpa-config/react';
 
-const { visible, update, snooze } = useUpdatePrompt({ snoozeHours: 24 });
-if (visible)
-  return (
-    <div role="status">
-      Mise à jour disponible. <button onClick={update}>Recharger</button>
-      <button onClick={snooze}>Plus tard</button>
-    </div>
-  );
+<UpdatePromptBanner registerSW={registerSW} snoozeHours={24} />;
+```
+
+Le **bouton des réglages** — six apps en avaient un, avec six mécaniques
+différentes — n'a besoin de rien : il sert justement quand aucune version n'a
+encore été signalée.
+
+```tsx
+import { UpdateButton } from '@mister-guiiug/dev-wpa-config/react';
+
+<UpdateButton showHint />;
+```
+
+Sous les deux, `applyUpdate` (également exporté seul, sans React, par
+`@mister-guiiug/dev-wpa-config/sw-update`) : il active le worker en attente et
+**attend `controllerchange`** avant de recharger — deux apps rechargeaient dans
+la foulée, si bien que la page pouvait encore être servie par l'ancien worker.
+Sans worker en attente, il bascule sur la purge du Cache Storage au lieu de ne
+rien faire : c'est le « bouton mort » constaté sur mobile, que
+`updateServiceWorker(true)` provoque à lui seul. `localStorage`,
+`sessionStorage` et IndexedDB ne sont jamais touchés.
+
+```ts
+import { applyUpdate } from '@mister-guiiug/dev-wpa-config/sw-update';
+
+await applyUpdate({
+  hard: true,
+  keepCache: name => name.startsWith('donnees-'),
+});
 ```
 
 > En test (jsdom), importer `@mister-guiiug/dev-wpa-config/vitest-setup` depuis
 > `src/test/setup.ts` fournit les mocks `virtual:pwa-register` + `matchMedia`.
 
+#### Libellés fr/en des composants
+
+Onze libellés étaient codés en dur en français dans six composants. Ils vivent
+désormais dans un dictionnaire, avec **trois niveaux** : la prop l'emporte, puis
+le contexte, puis le français. Une app qui ne fait rien obtient exactement ce
+qu'elle avait avant.
+
+```tsx
+import { LabelsProvider } from '@mister-guiiug/dev-wpa-config/react';
+import { useI18n } from './i18n';
+
+const { locale } = useI18n(); // le i18n de l'app, inchangé
+<LabelsProvider locale={locale} overrides={{ sheet: { close: 'Retour' } }}>
+  <App />
+</LabelsProvider>;
+```
+
+Le contexte est **séparé de `createI18n`** à dessein : `createI18n` fabrique un
+contexte isolé par app, que le paquet ne peut pas lire et dans lequel il n'a pas
+à imposer ses clés. Pour l'accord en nombre, `plural` (exporté par
+`react/i18n`) s'appuie sur `Intl.PluralRules` — le ternaire `n > 1` des apps
+donne « 0 éléments » en français, ce qui est faux.
+
+```ts
+import { plural } from '@mister-guiiug/dev-wpa-config/react/i18n';
+
+plural(0, { one: '{count} élément', other: '{count} éléments' }, 'fr');
+// → « 0 élément »   (et « 0 items » en anglais)
+```
+
 ### Primitives d'interface
 
-Ces six composants n'ont pas été inventés : ils ont été **extraits** de ce que
+Ces neuf composants n'ont pas été inventés : ils ont été **extraits** de ce que
 plusieurs apps avaient déjà réécrit chacune de leur côté. L'API reprend leur
 convergence ; la version partagée referme les trous d'accessibilité que chaque
 copie laissait passer.
 
-| Composant                                     | Réécrit dans                                                      | Ce que la version partagée garantit en plus                                                                                                   |
-| --------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Button`                                      | 4 apps, mêmes variantes `primary \| secondary \| ghost \| danger` | cible tactile 2,75 rem **à toutes les tailles**, `aria-busy` + désactivation pendant `loading` (anti double-clic), `type="button"` par défaut |
-| `TextField` / `SelectField` / `TextAreaField` | 3 apps (deux fichiers identiques à la variable près)              | `aria-describedby` référence l'aide **et** l'erreur, au lieu de faire disparaître l'aide                                                      |
-| `Skeleton` / `SkeletonGroup`                  | 3 apps                                                            | barres `aria-hidden`, `role="status"` + `aria-busy` porté par le conteneur seul                                                               |
-| `Sheet`                                       | 4 apps, ~20 écrans consommateurs                                  | piège de focus, focus **restitué** à la fermeture, scroll de fond restauré, safe-area iOS                                                     |
-| `Stat`                                        | tableaux de bord de 10 apps                                       | `<dl>/<dt>/<dd>` relie le libellé à la valeur ; la tendance a une flèche **et** un libellé lu                                                 |
-| `Badge`                                       | 4 apps, couleurs ad hoc                                           | axe `tone` sémantique (`brand \| success \| warning \| danger \| info \| muted`) × `variant` (`soft \| outline`)                              |
+| Composant                                      | Réécrit dans                                                      | Ce que la version partagée garantit en plus                                                                                                                  |
+| ---------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Button`                                       | 4 apps, mêmes variantes `primary \| secondary \| ghost \| danger` | cible tactile 2,75 rem **à toutes les tailles**, `aria-busy` + désactivation pendant `loading` (anti double-clic), `type="button"` par défaut                |
+| `TextField` / `SelectField` / `TextAreaField`  | 3 apps (deux fichiers identiques à la variable près)              | `aria-describedby` référence l'aide **et** l'erreur, au lieu de faire disparaître l'aide                                                                     |
+| `Skeleton` / `SkeletonGroup`                   | 3 apps                                                            | barres `aria-hidden`, `role="status"` + `aria-busy` porté par le conteneur seul                                                                              |
+| `Sheet`                                        | 4 apps, ~20 écrans consommateurs                                  | piège de focus, focus **restitué** à la fermeture, scroll de fond restauré, safe-area iOS                                                                    |
+| `Stat`                                         | tableaux de bord de 10 apps                                       | `<dl>/<dt>/<dd>` relie le libellé à la valeur ; la tendance a une flèche **et** un libellé lu                                                                |
+| `Badge`                                        | 4 apps, couleurs ad hoc                                           | axe `tone` sémantique (`brand \| success \| warning \| danger \| info \| muted`) × `variant` (`soft \| outline`)                                             |
+| `ConfirmDialog`                                | 7 apps, sept fichiers différents                                  | `role="alertdialog"` nommé par son titre, focus initial sur **Annuler** (une app le posait sur la suppression), `loading` pour une confirmation asynchrone   |
+| `ToastProvider` / `ToastViewport` / `useToast` | 6 apps, six mécaniques                                            | régions vivantes montées en permanence et **sans rôle sur le message** (deux apps l'annonçaient deux fois), pile bornée, compte à rebours suspendu au survol |
+| `BottomNav`                                    | 7 apps                                                            | `<nav>` toujours nommé (3 ne l'étaient pas), onglet courant jamais distingué par la seule couleur (4 le faisaient), bouton « Plus » avec `aria-expanded`     |
 
 ```tsx
 import {
@@ -1053,6 +1117,43 @@ import {
 <Sheet open={open} title="Ajouter une dépense" onClose={close}>
   …
 </Sheet>;
+```
+
+```tsx
+import {
+  BottomNav,
+  ConfirmDialog,
+  ToastProvider,
+  useToast,
+} from '@mister-guiiug/dev-wpa-config/react';
+
+// Une seule fois, au sommet de l'app.
+<ToastProvider>…</ToastProvider>;
+
+const toast = useToast();
+toast.success('Fiche enregistrée');
+toast.error('Envoi impossible'); // ne s'efface pas tout seul
+
+<ConfirmDialog
+  open={open}
+  title="Supprimer la partie ?"
+  message="Cette action est définitive."
+  destructive
+  loading={suppression}
+  onConfirm={supprimer}
+  onCancel={fermer}
+/>;
+
+// Agnostique de routeur : `linkComponent` + `hrefProp` branchent react-router.
+<BottomNav
+  items={[
+    { href: '/', label: 'Accueil', icon: <Home aria-hidden /> },
+    { href: '/alertes', label: 'Alertes', badge: 3, badgeLabel: '3 non lues' },
+  ]}
+  currentPath={pathname}
+  linkComponent={Link}
+  hrefProp="to"
+/>;
 ```
 
 Non stylés par défaut, comme les autres : importer

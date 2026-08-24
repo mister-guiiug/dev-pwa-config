@@ -217,8 +217,20 @@ globalThis.SHOWROOM_I18N = {
     'composants.summary5': 'CSS selectors',
     'composants.h46': 'UpdatePromptBanner',
     'composants.p12':
-      'Imported through its own subpath (coupled to <code>virtual:pwa-register/react</code>, outside the barrel).',
+      '<code>registerSW</code> is now a prop instead of a hard import: the module has joined the barrel. The settings-screen <code>UpdateButton</code> does without it entirely.',
     'composants.summary6': 'CSS selectors',
+    'composants.h49': 'ConfirmDialog',
+    'composants.p16':
+      'Seven apps out of sixteen had one, all different. Focus opens on <em>Cancel</em> — never on the confirmation.',
+    'composants.summary9': 'CSS selectors',
+    'composants.h50': 'Toast',
+    'composants.p17':
+      'Two live regions mounted at all times, and no role on the message: that is what avoids the double announcement found in two apps.',
+    'composants.summary10': 'CSS selectors',
+    'composants.h51': 'BottomNav',
+    'composants.p18':
+      'Seven apps out of sixteen have one. The current tab is never told apart by colour alone: <code>aria-current</code>, a rule, and a “Current page” that is read but not seen.',
+    'composants.summary11': 'CSS selectors',
     'composants.h47': 'AppFooter',
     'composants.p13': 'Source-code link plus sponsor link, opened safely.',
     'composants.summary7': 'CSS selectors',
@@ -524,6 +536,13 @@ globalThis.SHOWROOM_I18N = {
     'fc.row.disabled': 'Disabled button',
     'fc.cause.opacity':
       '`opacity` is not forced either: the button stays legible, hence misleading.',
+    'fc.row.nav': 'Current tab of the bottom bar',
+    'fc.cause.tint':
+      'Primary and soft text collapse onto the SAME system ink: telling the active tab apart by colour stops working.',
+    'ui.fc.toast': 'Saved',
+    'ui.fc.nav': 'Main navigation',
+    'ui.fc.tab.home': 'Home',
+    'ui.fc.tab.settings': 'Settings',
 
     'ui.usage': 'Usage',
     'ui.copySnippet': 'Copy the snippet',

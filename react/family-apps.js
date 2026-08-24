@@ -1,3 +1,4 @@
+import { useLabels } from './labels.js';
 import { createElement as h, useState } from 'react';
 import { GithubIcon, CoffeeIcon, ExternalLinkIcon } from './icons.js';
 import {
@@ -9,12 +10,6 @@ import {
 
 // Liens externes sécurisés.
 const EXT = { target: '_blank', rel: 'noopener noreferrer' };
-
-const DEFAULT_MATURITY_LABELS = {
-  alpha: 'Alpha',
-  beta: 'Bêta',
-  stable: 'Stable',
-};
 
 // Carte d'une application : icône (ou initiale en repli si l'icône échoue),
 // nom + badge de maturité, description, flèche « lien externe ». Le lien entier
@@ -116,16 +111,19 @@ export function FamilyApps(props) {
     className,
   } = props;
 
+  const maturityDictionary = useLabels('maturity');
+  const appsDictionary = useLabels('apps');
+
   const maturityLabels = {
-    ...DEFAULT_MATURITY_LABELS,
+    ...maturityDictionary,
     ...(labels.maturity || {}),
   };
-  const sourceLabel = labels.source ?? 'Code source';
-  const sponsorLabel = labels.sponsor ?? 'M’offrir un café';
-  const otherAppsLabel = labels.otherApps ?? 'Nos autres applications';
+  const sourceLabel = labels.source ?? appsDictionary.source;
+  const sponsorLabel = labels.sponsor ?? appsDictionary.sponsor;
+  const otherAppsLabel = labels.otherApps ?? appsDictionary.otherApps;
   // `{app}` est remplacé par le nom : un lecteur d'écran qui parcourt la grille
   // entend seize fois « Code source » sans cela.
-  const repoLabel = labels.repo ?? 'Code source de {app}';
+  const repoLabel = labels.repo ?? appsDictionary.repo;
 
   // Réutilise le helper si on travaille sur le catalogue par défaut, sinon
   // filtre la liste fournie.

@@ -2,7 +2,8 @@ import type { FC, ReactNode } from 'react';
 import type { I18nPaths } from './i18n-core.js';
 
 export type { I18nPaths } from './i18n-core.js';
-export { createTranslator } from './i18n-core.js';
+export { createTranslator, plural } from './i18n-core.js';
+export type { PluralForms } from './i18n-core.js';
 
 export interface I18nConfig<M, L extends string> {
   /** Un dictionnaire de messages par locale (toutes de même forme `M`). */

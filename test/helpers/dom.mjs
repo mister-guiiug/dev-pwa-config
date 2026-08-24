@@ -25,6 +25,9 @@ const GLOBALS = [
   'window',
   'document',
   'navigator',
+  // Sans `location`, tout module qui lit l'URL courante est intestable : c'est
+  // ce qui manquait à `sw-update.js`, dont la destination anti-cache en dépend.
+  'location',
   'localStorage',
   'HTMLElement',
   'Element',

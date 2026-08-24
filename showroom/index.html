@@ -1361,8 +1361,9 @@
           <div class="sr-demo-head">
             <h4 data-i18n="composants.h46">UpdatePromptBanner</h4>
             <p data-i18n="composants.p12">
-              Import par sous-chemin dédié (couplé à
-              <code>virtual:pwa-register/react</code>, hors barrel).
+              <code>registerSW</code> est reçu en prop, plus importé en dur : le
+              module a rejoint le barrel. Le bouton
+              <code>UpdateButton</code> des réglages, lui, s’en passe.
             </p>
           </div>
           <div class="sr-demo-stage">
@@ -1385,6 +1386,132 @@
                 <li><code>[data-dwc="update-banner-title"]</code></li>
                 <li><code>[data-dwc="update-banner-update"]</code></li>
                 <li><code>[data-dwc="update-banner-dismiss"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4 data-i18n="composants.h49">ConfirmDialog</h4>
+            <p data-i18n="composants.p16">
+              Sept apps sur seize en avaient un, tous différents. Le focus
+              s’ouvre sur <em>Annuler</em> — jamais sur la confirmation.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="confirm-panel">
+              <h2 data-dwc="confirm-title">Supprimer la partie&nbsp;?</h2>
+              <div data-dwc="confirm-body">Cette action est définitive.</div>
+              <div data-dwc="confirm-actions">
+                <button type="button" data-dwc="confirm-cancel">Annuler</button>
+                <button type="button" data-dwc="confirm-confirm">
+                  Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary9">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="ConfirmDialog"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="confirm"]</code></li>
+                <li><code>[data-dwc="confirm-panel"]</code></li>
+                <li><code>[data-dwc="confirm-title"]</code></li>
+                <li><code>[data-dwc="confirm-body"]</code></li>
+                <li><code>[data-dwc="confirm-actions"]</code></li>
+                <li><code>[data-dwc="confirm-cancel"]</code></li>
+                <li><code>[data-dwc="confirm-confirm"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4 data-i18n="composants.h50">Toast</h4>
+            <p data-i18n="composants.p17">
+              Deux régions vivantes montées en permanence, et aucun rôle sur le
+              message : c’est ce qui évite la double annonce constatée dans deux
+              apps.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="toast" data-tone="success">
+              <span data-dwc="toast-message">Fiche enregistrée</span>
+              <button
+                type="button"
+                data-dwc="toast-close"
+                aria-label="Fermer la notification"
+              >
+                ×
+              </button>
+            </div>
+            <div data-dwc="toast" data-tone="error">
+              <span data-dwc="toast-message">Envoi impossible</span>
+              <button
+                type="button"
+                data-dwc="toast-close"
+                aria-label="Fermer la notification"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary10">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="Toast"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="toast-viewport"]</code></li>
+                <li><code>[data-dwc="toast-region"]</code></li>
+                <li><code>[data-dwc="toast"][data-tone]</code></li>
+                <li><code>[data-dwc="toast-message"]</code></li>
+                <li><code>[data-dwc="toast-close"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4 data-i18n="composants.h51">BottomNav</h4>
+            <p data-i18n="composants.p18">
+              Sept apps sur seize en ont une. L’onglet courant n’est jamais
+              distingué par la seule couleur : <code>aria-current</code>, un
+              trait, et un « Page actuelle » lu mais non vu.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <nav data-dwc="bottom-nav" aria-label="Navigation d’exemple">
+              <a href="#composants" data-dwc="bottom-nav-item" data-current
+                ><span data-dwc="bottom-nav-label">Accueil</span
+                ><span data-dwc="bottom-nav-sr">Page actuelle</span></a
+              >
+              <a href="#composants" data-dwc="bottom-nav-item"
+                ><span data-dwc="bottom-nav-label">Historique</span></a
+              >
+              <a href="#composants" data-dwc="bottom-nav-item"
+                ><span data-dwc="bottom-nav-label">Réglages</span
+                ><span data-dwc="bottom-nav-badge"
+                  ><span aria-hidden="true">3</span
+                  ><span data-dwc="bottom-nav-sr">3 non lues</span></span
+                ></a
+              >
+            </nav>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary11">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="BottomNav"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="bottom-nav"]</code></li>
+                <li><code>[data-dwc="bottom-nav-item"][data-current]</code></li>
+                <li><code>[data-dwc="bottom-nav-icon"]</code></li>
+                <li><code>[data-dwc="bottom-nav-label"]</code></li>
+                <li><code>[data-dwc="bottom-nav-badge"]</code></li>
+                <li><code>[data-dwc="bottom-nav-more"]</code></li>
+                <li><code>[data-dwc="bottom-nav-drawer"]</code></li>
               </ul>
             </div>
           </details>

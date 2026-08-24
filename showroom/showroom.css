@@ -1528,6 +1528,7 @@ pre code {
   --sr-fc-canvas: #000000;
   --sr-fc-text: #ffffff;
   --sr-fc-gray: #3ff23f;
+  --sr-fc-highlight: #1aebff;
   border: 1px solid var(--ds-border);
   border-radius: var(--ds-radius);
   overflow: hidden;
@@ -1573,12 +1574,27 @@ pre code {
 }
 
 /* 3 — le panneau modal n'a jamais eu de bordure : il ne tenait que par son
-   ombre, que le forçage supprime. */
-.sr-fc-demo [data-dwc='sheet-panel'] {
+   ombre, que le forçage supprime. Même chose pour la boîte de confirmation, la
+   notification et le tiroir de navigation. */
+.sr-fc-demo [data-dwc='sheet-panel'],
+.sr-fc-demo [data-dwc='confirm-panel'],
+.sr-fc-demo [data-dwc='toast'] {
   position: static;
   max-height: none;
   border-radius: calc(var(--ds-radius) * 0.7);
   animation: none;
+}
+
+/* 4 — l'onglet courant. Sa distinction tient à `--dwc-primary` face à
+   `--dwc-text-soft` : le forçage ramène les deux à la MÊME encre système, et le
+   trait réservé est transparent, donc épargné. L'onglet actif devient
+   indiscernable — c'est le défaut mesuré dans quatre apps sur sept. */
+.sr-fc-demo [data-dwc='bottom-nav'] {
+  width: 100%;
+}
+
+.sr-fc-demo [data-dwc='bottom-nav-item'] {
+  border-block-start-color: transparent;
 }
 
 /* ── Les correctifs livrés, rejoués à l'identique ─────────────────────────── */
@@ -1605,6 +1621,22 @@ pre code {
 
 .sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='sync-status']::before {
   background: var(--sr-fc-text);
+}
+
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='confirm-panel'],
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='toast'],
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='bottom-nav-drawer'] {
+  outline: 1px solid var(--sr-fc-text);
+  outline-offset: -1px;
+}
+
+.sr-fc-panel[data-fix='on']
+  .sr-fc-demo
+  [data-dwc='bottom-nav-item'][data-current],
+.sr-fc-panel[data-fix='on']
+  .sr-fc-demo
+  [data-dwc='bottom-nav-more'][data-current] {
+  border-block-start-color: var(--sr-fc-highlight);
 }
 
 /* ── Tableaux en cartes sous `sm` ────────────────────────────────────────── *

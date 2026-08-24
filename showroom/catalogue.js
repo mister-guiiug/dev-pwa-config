@@ -253,21 +253,85 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'UpdatePromptBanner',
       category: 'pwa',
-      covers: [],
-      exportedFrom: '@mister-guiiug/dev-wpa-config/react/update-prompt-banner',
+      covers: ['UpdatePromptBanner', 'UpdateButton'],
       donts: {
         fr: [
-          'Ne pas l’importer depuis le barrel : il vit sur son propre sous-chemin, parce qu’il est couplé à `virtual:pwa-register/react` — un module que seul Vite fournit.',
+          'Ne pas oublier la prop `registerSW` : sans elle le bandeau ne s’affiche jamais, faute de savoir qu’une version attend. Le bouton `UpdateButton`, lui, n’en a pas besoin.',
+          'Ne pas compter sur `updateServiceWorker(true)` pour un bouton manuel : sans worker EN ATTENTE il ne fait rien — c’est le bouton mort constaté sur mobile. `applyUpdate` bascule sur la purge.',
           'Ne pas régler `snoozeHours` à zéro : une bannière de mise à jour qui revient à chaque rendu se fait fermer sans être lue.',
         ],
         en: [
-          'Don’t import it from the barrel: it lives on its own subpath because it is coupled to `virtual:pwa-register/react` — a module only Vite provides.',
+          'Don’t forget the `registerSW` prop: without it the banner never shows, having no way to know a version is waiting. `UpdateButton` needs none.',
+          'Don’t rely on `updateServiceWorker(true)` for a manual button: with no WAITING worker it does nothing — the dead button seen on mobile. `applyUpdate` falls through to a purge.',
           'Don’t set `snoozeHours` to zero: an update banner that returns on every render gets dismissed unread.',
         ],
       },
       a11y: {
-        fr: 'Annoncé en `role="status"` : la mise à jour est une information, pas une interruption.',
-        en: 'Announced as `role="status"`: an update is information, not an interruption.',
+        fr: 'Annoncé en `role="status"` : la mise à jour est une information, pas une interruption. Pendant l’opération, le bouton porte `aria-disabled` et non `disabled`, pour ne pas éjecter le focus.',
+        en: 'Announced as `role="status"`: an update is information, not an interruption. While it runs, the button carries `aria-disabled` rather than `disabled`, so focus is not thrown out.',
+      },
+    },
+    {
+      id: 'ConfirmDialog',
+      category: 'feedback',
+      covers: ['ConfirmDialog'],
+      donts: {
+        fr: [
+          'Ne pas mettre le focus initial sur la confirmation : mister-quota posait `autoFocus` dessus, si bien qu’une frappe sur Entrée supprimait. Le focus va sur `Annuler`, toujours.',
+          'Ne pas fermer soi-même après `onConfirm` : miss-uwh enchaînait les deux, ce qui interdit toute confirmation asynchrone. Utiliser `loading`, la boîte reste ouverte.',
+          'Ne pas se contenter de `role="dialog"` sans nom : mister-quota le posait sur le fond, sans `aria-label` ni titre — la boîte n’avait aucun nom accessible.',
+        ],
+        en: [
+          'Don’t put initial focus on the confirmation: mister-quota set `autoFocus` on it, so pressing Enter deleted. Focus goes to `Cancel`, always.',
+          'Don’t close it yourself after `onConfirm`: miss-uwh chained both, which rules out any asynchronous confirmation. Use `loading` — the box stays open.',
+          'Don’t settle for a nameless `role="dialog"`: mister-quota put it on the backdrop, with neither `aria-label` nor title — the box had no accessible name.',
+        ],
+      },
+      a11y: {
+        fr: '`role="alertdialog"` étiqueté par le titre et décrit par le message. Échap annule, Tab boucle dans la boîte, et le focus revient d’où il venait.',
+        en: '`role="alertdialog"`, labelled by the title and described by the message. Escape cancels, Tab loops inside, and focus returns where it came from.',
+      },
+    },
+    {
+      id: 'Toast',
+      category: 'feedback',
+      covers: ['ToastProvider', 'ToastViewport', 'useToast'],
+      donts: {
+        fr: [
+          'Ne pas poser un rôle sur le message : la région vivante est le CONTENEUR. miss-supaboss et mister-footcoach font les deux, et le message est annoncé deux fois.',
+          'Ne pas n’en afficher qu’un à la fois : miss-carbook remplace le précédent, qui disparaît sans avoir été lu. La pile est bornée, et c’est le plus ancien qui cède.',
+          'Ne pas faire d’une erreur une notification fugace : par défaut `tone="error"` ne s’efface pas tout seul. Un message qu’on n’a pas eu le temps de lire n’a servi à rien.',
+        ],
+        en: [
+          'Don’t put a role on the message: the live region is the CONTAINER. miss-supaboss and mister-footcoach do both, and the message is announced twice.',
+          'Don’t show only one at a time: miss-carbook replaces the previous one, which vanishes unread. The stack is bounded, and the oldest is the one that goes.',
+          'Don’t make an error a fleeting notice: by default `tone="error"` does not clear itself. A message nobody had time to read served no purpose.',
+        ],
+      },
+      a11y: {
+        fr: 'Deux régions montées en permanence — polie pour l’ordinaire, assertive pour l’erreur — parce qu’une région créée en même temps que son contenu n’est pas annoncée. Le compte à rebours est suspendu au survol et au focus (WCAG 2.2.1).',
+        en: 'Two regions mounted at all times — polite for the ordinary, assertive for errors — because a region created together with its content is not announced. The countdown pauses on hover and focus (WCAG 2.2.1).',
+      },
+    },
+    {
+      id: 'BottomNav',
+      category: 'shell',
+      covers: ['BottomNav'],
+      donts: {
+        fr: [
+          'Ne pas laisser le `<nav>` sans nom : trois des sept copies n’en posent aucun, et deux repères anonymes sont indiscernables dans la liste d’un lecteur d’écran.',
+          'Ne pas distinguer l’onglet courant par la seule couleur : quatre copies sur sept ne changent que l’encre. En contraste forcé, les deux teintes deviennent la même.',
+          'Ne pas nommer une pastille par `aria-label` sur un `<span>` : miss-lookhouse le fait, et rien n’est restitué. Passer `badgeLabel`.',
+        ],
+        en: [
+          'Don’t leave the `<nav>` unnamed: three of the seven copies set none, and two anonymous landmarks are indistinguishable in a screen reader’s list.',
+          'Don’t signal the current tab by colour alone: four copies out of seven change only the ink. Under forced colours the two hues become one.',
+          'Don’t name a badge with `aria-label` on a `<span>`: miss-lookhouse does, and nothing is conveyed. Pass `badgeLabel`.',
+        ],
+      },
+      a11y: {
+        fr: '`aria-current="page"` sur l’onglet courant, doublé d’un « Page actuelle » lu mais non vu, et d’un trait qui survit au contraste forcé. Le bouton « Plus » porte `aria-expanded` et `aria-controls`.',
+        en: '`aria-current="page"` on the current tab, doubled by a “Current page” that is read but not seen, and by a rule that survives forced colours. The “More” button carries `aria-expanded` and `aria-controls`.',
       },
     },
     {
@@ -431,6 +495,34 @@ globalThis.SHOWROOM_CATALOGUE = {
       dont: {
         fr: 'Ne pas doubler ce que `components.css` fait déjà : les animations du paquet se coupent toutes seules.',
         en: 'Don’t duplicate what `components.css` already does: the package’s animations switch themselves off.',
+      },
+    },
+    {
+      id: 'useUpdatePrompt',
+      covers: ['useUpdatePrompt', 'applyUpdate'],
+      signature:
+        'useUpdatePrompt({ registerSW?, snoozeHours? }) → { visible, updating, update, forceUpdate, dismiss, snooze }',
+      summary: {
+        fr: 'État du bandeau de mise à jour et application effective. `registerSW` est INJECTÉ : le module ne dépend plus de Vite et vit dans le barrel.',
+        en: 'Update-banner state plus the actual application. `registerSW` is INJECTED: the module no longer depends on Vite and lives in the barrel.',
+      },
+      dont: {
+        fr: 'Ne pas appeler `registerSW` de son côté en plus : il pose des écouteurs, et deux appels les doublent. Le hook mémorise la connexion.',
+        en: 'Don’t also call `registerSW` yourself: it installs listeners, and two calls double them. The hook memoises the connection.',
+      },
+    },
+    {
+      id: 'useLabels',
+      covers: ['useLabels', 'LabelsProvider', 'mergeLabels', 'LABELS'],
+      signature:
+        'useLabels(groupe) → Record<string, string> · <LabelsProvider locale overrides>',
+      summary: {
+        fr: 'Les libellés des composants du paquet, en français et en anglais. Trois niveaux : la prop l’emporte, puis le contexte, puis le français.',
+        en: 'The package components’ labels, in French and English. Three levels: the prop wins, then the context, then French.',
+      },
+      dont: {
+        fr: 'Ne pas y verser le dictionnaire métier de l’app : `createI18n` fabrique un contexte ISOLÉ, et celui-ci ne porte que la quinzaine de chaînes des composants.',
+        en: 'Don’t pour the app’s domain dictionary into it: `createI18n` builds an ISOLATED context, and this one carries only the components’ fifteen-odd strings.',
       },
     },
   ],
