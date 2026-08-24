@@ -24,13 +24,17 @@ jobs:
     # Compare les dépendances de la PR à celles de la base : refuse d'introduire
     # une vulnérabilité connue, ou une licence incompatible.
     #
-    # DÉPEND D'UN RÉGLAGE DU DÉPÔT. L'action exige que le « Dependency graph »
-    # soit activé (Settings → Code security). Il ne l'est pas ici : l'action
-    # échoue alors avec « Dependency review is not supported on this
-    # repository ». Plutôt que de bloquer chaque PR sur un réglage que le code
-    # ne peut pas changer, l'étape n'est pas bloquante — mais son échec est
-    # ANNONCÉ, parce qu'un contrôle de sécurité vert qui n'a rien vérifié serait
-    # exactement la fausse assurance que cette PR retire ailleurs.
+    # DÉPEND D'UN RÉGLAGE DU DÉPÔT, que le code ne peut pas changer : l'action
+    # exige le « Dependency graph » (Settings → Code security → Dependency
+    # graph), et c'est un réglage PAR DÉPÔT — l'activer ailleurs dans la famille
+    # ne fait rien ici. Sans lui, l'action échoue avec « Dependency review is
+    # not supported on this repository ».
+    #
+    # Plutôt que de bloquer chaque PR là-dessus, l'étape n'est pas bloquante —
+    # mais son échec est ANNONCÉ, parce qu'un contrôle de sécurité vert qui n'a
+    # rien vérifié serait exactement la fausse assurance que ce dépôt retire
+    # ailleurs. L'annotation qui suit est donc le TÉMOIN du réglage : tant
+    # qu'elle apparaît sur une PR, la revue ne compare rien.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
