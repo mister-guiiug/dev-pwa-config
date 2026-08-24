@@ -38,6 +38,17 @@ test('chaque entrée de "files" existe (sera publiée)', () => {
   }
 });
 
+test('chaque peer marqué optionnel existe bien dans peerDependencies', () => {
+  // `npm uninstall <pkg>` retire l'entrée de peerDependencies mais LAISSE
+  // celle de peerDependenciesMeta : l'optionalité survit sans la dépendance.
+  for (const name of Object.keys(pkg.peerDependenciesMeta ?? {})) {
+    assert.ok(
+      pkg.peerDependencies?.[name],
+      `peerDependenciesMeta.${name} sans peerDependencies.${name}`
+    );
+  }
+});
+
 test('parité .d.ts ↔ .js pour chaque export typé', () => {
   for (const [sub, target] of Object.entries(pkg.exports)) {
     if (typeof target === 'object' && target.types) {

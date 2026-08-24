@@ -96,6 +96,18 @@
       "types": "./vite-csp.d.ts",
       "default": "./vite-csp.js"
     },
+    "./map": {
+      "types": "./map/index.d.ts",
+      "default": "./map/index.js"
+    },
+    "./map/leaflet": {
+      "types": "./map/leaflet.d.ts",
+      "default": "./map/leaflet.js"
+    },
+    "./map/maplibre": {
+      "types": "./map/maplibre.d.ts",
+      "default": "./map/maplibre.js"
+    },
     "./tailwind-preset": "./tailwind-preset.js",
     "./tailwind-preset.css": "./tailwind-preset.css",
     "./components.css": "./components.css"
@@ -130,6 +142,7 @@
     "vite-pwa-base.d.ts",
     "vite-csp.js",
     "vite-csp.d.ts",
+    "map",
     "tailwind-preset.js",
     "tailwind-preset.css",
     "components.css",
@@ -149,7 +162,9 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "leaflet": "^1.9.0",
     "lucide-react": "^1.0.0",
+    "maplibre-gl": "^6.0.0",
     "playwright": "^1.49.0",
     "prettier": "^3.6.2",
     "react": "^19.0.0",
@@ -162,13 +177,13 @@
     "zod": "^4.0.0"
   },
   "peerDependenciesMeta": {
+    "@axe-core/playwright": {
+      "optional": true
+    },
     "@commitlint/cli": {
       "optional": true
     },
     "@commitlint/config-conventional": {
-      "optional": true
-    },
-    "@axe-core/playwright": {
       "optional": true
     },
     "@playwright/test": {
@@ -192,7 +207,13 @@
     "eslint-plugin-react-refresh": {
       "optional": true
     },
+    "leaflet": {
+      "optional": true
+    },
     "lucide-react": {
+      "optional": true
+    },
+    "maplibre-gl": {
       "optional": true
     },
     "playwright": {
