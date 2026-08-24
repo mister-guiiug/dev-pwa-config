@@ -1,5 +1,260 @@
 # Changelog
 
+## 3.11.0
+
+### Minor Changes
+
+- 3fbb0dc: Trois composants promus, la mise à jour rationalisée, et un dictionnaire fr/en.
+
+  **Trois composants que sept apps avaient déjà écrits chacune de leur côté.**
+  `ConfirmDialog` existe dans sept apps sur seize, en sept fichiers différents —
+  trois disent explicitement remplacer `window.confirm`. Elles se contredisent sur
+  le point le plus lourd : mister-quota met `autoFocus` sur le bouton de
+  CONFIRMATION, si bien qu'une frappe sur Entrée supprime, quand mister-doc et
+  mister-qowa documentent le choix inverse. C'est celui-ci qui est repris. S'y
+  ajoutent le rôle `alertdialog` (deux copies sur sept), un nom accessible (le
+  `role="dialog"` de mister-quota était posé sur le fond, sans étiquette), et
+  `loading` — miss-uwh enchaînait `onConfirm()` puis `onClose()`, ce qui interdit
+  toute confirmation asynchrone.
+
+  `Toast` : six piles maison, six durées, trois défauts communs. miss-supaboss et
+  mister-footcoach posent `aria-live` sur le conteneur ET `role="status"` sur
+  chaque message, qui est donc annoncé deux fois ; miss-carbook n'en affiche qu'un
+  à la fois, le précédent disparaissant sans avoir été lu ; mister-doc et
+  mister-footcoach ne nettoient jamais leurs `setTimeout`. La version promue monte
+  deux régions vivantes en permanence, borne la pile en faisant céder le plus
+  ancien, et suspend le compte à rebours au survol et au focus — ce qu'aucune des
+  six ne faisait.
+
+  `BottomNav` : sept apps, quatre défauts d'accessibilité. Trois `<nav>` sans nom ;
+  quatre onglets courants distingués par la seule couleur, invisible en contraste
+  forcé ; une pastille nommée par `aria-label` sur un `<span>`, donc muette
+  (miss-lookhouse) ; un bouton « Plus » sans `aria-expanded` (mister-footcoach,
+  alors que miss-contraction pose les deux). Le composant est agnostique de
+  routeur : `linkComponent` + `hrefProp`.
+
+  **La mise à jour cesse d'être un bouton mort.** Six apps portent un bouton
+  « Forcer la mise à jour », avec six mécaniques. `mister-molkky` documente le
+  symptôme : sans worker EN ATTENTE, `updateServiceWorker(true)` ne fait
+  strictement rien. miss-genius et miss-uwh, elles, postent `SKIP_WAITING` puis
+  rechargent dans la foulée — l'activation étant asynchrone, la page rechargée
+  peut encore être servie par l'ancien worker. Nouveau module `./sw-update`, sans
+  React ni module virtuel : il attend `controllerchange` avant de recharger, et
+  bascule sur la purge du Cache Storage quand aucun worker n'attend. Chaque appel
+  aux API service worker est plafonné (elles pendent sur iOS en mode autonome), et
+  une minuterie de secours recharge quoi qu'il arrive. `localStorage`,
+  `sessionStorage` et IndexedDB ne sont jamais touchés.
+
+  Conséquence : `useUpdatePrompt` reçoit `registerSW` en paramètre au lieu de
+  l'importer en dur. Les deux modules de mise à jour **rejoignent le barrel** et
+  sortent de la liste d'exclusion de la CI — il n'y reste qu'un module hors
+  contexte, contre trois. Nouveau `UpdateButton` pour l'écran de réglages, qui n'a
+  besoin de rien.
+
+  **Onze libellés sortent du code.** Ils étaient codés en dur en français dans six
+  composants, tous surchargeables par prop, mais sans aucun pont avec `createI18n`
+  que huit apps utilisent : chacune recâblait les mêmes chaînes à la main.
+  `LabelsProvider` / `useLabels` posent trois niveaux — la prop l'emporte, puis le
+  contexte, puis le français — de sorte qu'une app qui ne fait rien obtient
+  exactement ce qu'elle avait avant. Le contexte est séparé de `createI18n` à
+  dessein : celui-ci est isolé par app, le paquet ne peut pas le lire. Et `plural`,
+  sur `Intl.PluralRules`, remplace le ternaire `n > 1` qui donne « 0 éléments » en
+  français.
+
+  **Au passage.** Échap, piège de focus, restitution et verrou de scroll sortent de
+  `Sheet` dans un `use-dialog.js` interne, partagé avec `ConfirmDialog` — recopier
+  ces quatre-vingts lignes aurait été l'erreur que le paquet reproche aux apps. La
+  garde de `components.css` sur les bordures transparentes ne voyait pas les
+  raccourcis directionnels (`border-block-start`), elle les voit maintenant ; le
+  harnais de test n'exposait pas `location`, ce qui rendait `sw-update` intestable.
+  265 tests, contre 213 : 52 de plus, dont une bonne moitié reproduit un défaut
+  relevé dans une app nommée avant de vérifier qu'il est refermé.
+
+- 0e63a1a: Deux modules recopiés sont promus — en corrigeant ce qu'ils avaient faux.
+
+  **`./format`.** Six apps ont un `format.ts`, et **trois portent exactement la
+  même liste de dix fonctions** (miss-carbook, miss-contraction, mister-puzzle) :
+  du copier-coller, pas une convergence. `Intl.NumberFormat` apparaît dans treize
+  apps sur seize. Trois défauts tombent à la promotion : une valeur non finie
+  affichait « NaN € » et rend désormais une chaîne vide ; `slugify` s'appuyait sur
+  `[^\w-]` pour faire tomber les diacritiques — un effet de bord — et laissait
+  « bonjour- » pour « Bonjour ! » ; `formatRelativeTime` prend une référence de
+  temps, donc se teste.
+
+  **`./security`.** Trois apps portent un `src/utils/security.ts`, dont **deux
+  identiques à l'octet**, et dont l'en-tête dit déjà « Utilitaires de sécurité pour
+  tous les projets ». Deux corrections de fond : `sanitizeHtml` créait un élément
+  DOM pour lire son `innerHTML` — inutilisable en test Node, en service worker ou
+  en rendu serveur, et le nom promettait un nettoyage qui n'a jamais eu lieu ; elle
+  devient `escapeHtml`, pure, avec sa limite écrite. Et `isBotRequest`, qui
+  reniflait l'agent utilisateur, n'est pas reprise : un agent se déclare ce qu'il
+  veut.
+
+  **Un déni de service, dans la fonction la plus anodine.** `isValidEmail`
+  utilisait `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`, dont les deux dernières classes se
+  recouvrent : un point appartient à `[^\s@]`. Sur une saisie qui ÉCHOUE, le
+  moteur explore chaque découpage possible — 19 ms pour 4 ko, **1 s pour 32 ko**,
+  ×4 à chaque doublement. Un champ où l'on colle une adresse suffisait à figer
+  l'onglet. La validation se fait désormais en un seul parcours, sans expression
+  régulière, avec le même verdict sur onze cas limites. Le test échoue en 3 974 ms
+  sur l'ancienne version.
+
+- c85f4ae: feat(map) : socle cartographique multi-moteurs derrière un port `MapProvider`
+
+  Nouveaux sous-chemins :
+  - `/map` — agnostique du moteur : port `MapProvider`, sources de tuiles
+    (`osmRasterTiles`, `vectorTiles`), regroupement par grille (`clusterByGrid`,
+    `clustersToMarkers`, `isClusterId`) et helpers d'intégration
+    (`mapCspDirectives`, `mapTileRuntimeCaching`).
+  - `/map/leaflet` — adaptateur Leaflet (peer optionnelle `leaflet`).
+  - `/map/maplibre` — adaptateur MapLibre GL (peer optionnelle `maplibre-gl` ^6).
+
+  Le moteur se choisit **par l'import** : un seul adaptateur est embarqué. Il est
+  chargé paresseusement au montage, donc les modules restent importables côté
+  serveur et le poids n'est téléchargé que si une carte s'affiche.
+
+  Trois pièges de production sont pris en charge par le paquet : l'URL du worker
+  MapLibre (introuvable en prod alors que le dev fonctionne), les tuiles chargées
+  par `fetch` qui relèvent de `connect-src` et non d'`img-src`, et les échecs de
+  tuiles qui ne doivent jamais faire échouer le montage.
+
+- 7f841e3: Les cinq chantiers prioritaires de l'audit du 23/08/2026.
+
+  **Une perte d'écriture, dans le seul module sans test.** `useOfflineMutationQueue`
+  gardait un instantané de la file et réécrivait `instantané.slice(1)` après chaque
+  envoi : une mutation ajoutée pendant le rejeu était écrasée, sans erreur. Le
+  rejeu relit désormais le stockage à chaque itération et retire par identifiant.
+  Trois défauts du même module tombent avec : tête de file bloquante (quarantaine
+  après `maxAttempts`), croissance sans fin (`maxQueueSize`, refus visible plutôt
+  que perte silencieuse), `JSON.parse` non validé. Ces sept hooks n'avaient aucun
+  test — la suite rendait en HTML statique, où aucun effet ne s'exécute. D'où un
+  harnais DOM et 25 tests, dont le premier reproduit la perte. 123 → 194 tests.
+
+  **Le contrat de couleur est livré.** `components.css` lisait 93 `var(--dwc-*)`
+  sans qu'aucune valeur ne soit fournie : une seule app sur seize définissait le
+  contrat, ce qui explique son taux d'adoption de 1/16. `tokens.css` donne les
+  valeurs, claires et sombres, sans couleur de marque, pour les trois états de
+  thème. Le contraste est calculé en test, pas affirmé — et ce calcul a révélé que
+  `--dwc-border` bordait à la fois les cartes et les champs de saisie, dont le
+  pourtour demande 3:1 (WCAG 1.4.11). D'où `--dwc-border-strong`, quinzième
+  variable du contrat.
+
+  **Les seize palettes sont publiées.** Elles ne vivaient que dans le showroom, qui
+  n'est pas dans `files` : le paquet ignorait ce que sa vitrine savait. Nouvel
+  export `./themes` avec `themeById` et `brandColor` — de quoi engendrer un
+  `theme_color` au lieu de le recopier (cinq manifests sur treize avaient divergé).
+
+  **La couche PWA existe enfin.** `vite-pwa-base` ne contient rien de PWA : c'est
+  du SEO. Le relevé des seize apps montrait dix `prompt`, quatre `autoUpdate`,
+  deux sans ; cinq `runtimeCaching` ; et quinze apps recâblant
+  `virtual:pwa-register` à la main alors que le hook existe. `pwaBaseOptions()`
+  donne la base, avec trois défauts assumés et testés : `registerType: 'prompt'`,
+  aucune mise en cache d'API par défaut, couleurs lues dans `themes.js`.
+  `vite-pwa-base` gagne l'alias `./vite-seo`, qui dit ce qu'il fait.
+
+  **Deux protections qui n'en étaient pas.** `frame-ancestors` en `<meta>` est
+  ignorée par les navigateurs : le template la portait, huit apps la passent au
+  plugin. Elle est maintenant retirée avec un avertissement qui dit où la poser
+  pour de vrai. Et `cspPlugin` + `pwaSeoPlugin`, documentés côte à côte, se
+  cassaient mutuellement — `analytics: true` autorise exactement les hôtes que
+  l'autre injecte.
+
+  **Surface et outillage.** Un sous-chemin par module `react/` et
+  `sideEffects: ["*.css"]` (le barrel seul empêchait tout élagage) ; ESLint sort
+  des `dependencies` ; les trois greffons passent d'optionnels à requis, parce
+  qu'`eslint-react` les importe sans garde ; le paquet se lint et se type-checke
+  enfin (`npm run validate`), avec zéro erreur sous `strict` + `checkJs`.
+
+  **Changements de comportement, sans adoptant mesuré.** `Button` en chargement
+  pose `aria-disabled` au lieu de `disabled` (le focus ne retombe plus sur
+  `<body>` ; le double-clic reste bloqué). `retryableQuery` ne réessaie plus les
+  4xx définitifs et ajoute une gigue. `Sheet` est étiqueté par `aria-labelledby`.
+  Aucune app n'importe ces trois symboles à ce jour.
+
+- ab1e988: Vitrine des dépôts de la famille : catalogue à facettes, `FamilyApps` étendu, miroir engendré pour le showroom.
+
+  **`apps-catalog` — quatre facettes et six helpers.** Chaque app porte désormais
+  `category` (domaine éditorial), `backend` (persistance **relevée** dans son code)
+  et `platform` (`web` par défaut, `desktop` pour l'app Electron). `backend` est
+  laissé **absent** quand il n'a pas été relevé : un filtre qui affiche « non
+  relevé » vaut mieux qu'une donnée devinée. Nouveaux exports `appById`,
+  `sortApps`, `filterApps`, `countBy`, plus les constantes `MATURITIES`,
+  `MATURITY_ORDER`, `CATEGORIES`, `BACKENDS`, `PLATFORMS`. La recherche de
+  `filterApps` ignore les diacritiques (« molkky » trouve « Mölkky ») et exige
+  tous les mots. Aucun champ existant n'a changé de forme.
+
+  **`FamilyApps` — le dépôt devient atteignable depuis la carte.** Nouvelles props
+  `showRepoLinks` (lien GitHub par carte), `sort` (`curated | maturity | name`) et
+  `max` (coupe **après** le tri). `showRepoLinks` est opt-in : sans lui, le DOM
+  produit est identique à celui des versions précédentes. Avec lui, la carte porte
+  deux ancres **frères** — l'application et son dépôt —, jamais imbriquées. Chaque
+  `<li>` expose les facettes du catalogue (`data-maturity`, `data-category`,
+  `data-backend`, `data-platform`), stylables sans réimplémenter la grille.
+  `components.css` habille les nouveaux sélecteurs `family-app-item` et
+  `family-app-repo`, cible tactile de 2,75 rem comprise.
+
+  **Showroom — une section « Les applications de la famille ».** Les seize dépôts
+  en une grille : recherche, trois axes de filtres croisés affichant le compte
+  qu'ils donneraient, tri, liens app + dépôt, et un bouton qui rhabille la page
+  entière avec la palette de l'app. L'état de la vitrine entre dans l'URL, donc se
+  partage. Les pastilles sont peintes avec la primaire réelle de chaque app :
+  aucune icône distante, la page ne fait toujours aucune requête réseau.
+
+  **Anti-dérive.** `npm run showroom:sync` (`scripts/sync-showroom.mjs`) engendre
+  `showroom/apps.js` depuis le catalogue et recopie `components.css` ;
+  `test/apps-catalog.test.mjs` refuse un miroir périmé et vérifie que les comptes
+  annoncés par la section « Stack » (6 Supabase, 3 Firebase, 5 local-first)
+  collent au champ `backend`.
+
+- 3bfec7d: Vitrine, deuxième vague : ce que chaque dépôt consomme du paquet, relevé plutôt que déclaré.
+
+  **`configs` — le chaînon manquant.** Chaque app du catalogue porte désormais la
+  liste des sous-chemins du paquet qu'elle importe réellement, obtenue en
+  cherchant `'@mister-guiiug/dev-wpa-config/…'` dans son code source. Nouveaux
+  exports `CONFIG_SUBPATHS` et `countByConfig`, nouveau critère
+  `filterApps({ config })`. Le relevé a immédiatement dit deux choses que
+  personne n'avait écrites : `components.css` n'a **qu'un adoptant sur seize**
+  (`miss-uwh`), et **`mister-quota` ne consomme rien du paquet** — la vitrine
+  affirmait pourtant que les seize dépôts en étaient consommateurs.
+
+  **Le tableau « Projets consommateurs » du README est engendré.** Il redisait à
+  la main ce que le catalogue sait déjà, et avait déjà divergé sur la persistance
+  de `miss-uwh`. `npm run sync` (ex-`showroom:sync`, désormais
+  `scripts/sync-generated.mjs`) régénère quatre dérivés du catalogue : le miroir
+  du showroom, la copie de `components.css`, ce tableau, et un bloc JSON-LD
+  `ItemList` posé en dur dans le `<head>` — seize `SoftwareApplication` lisibles
+  sans exécuter le script.
+
+  **Recherche corrigée.** Taper « supabase » ne renvoyait qu'une carte, à côté
+  d'une pastille annonçant « Supabase 6 » : la page se contredisait. Les facettes
+  et les sous-chemins entrent dans le texte cherché, sous leur identifiant comme
+  sous leur libellé traduit.
+
+  **Vitrine.** Quatrième axe de filtre (« Consomme… », menu déroulant avec le taux
+  d'adoption de chacun des dix-huit sous-chemins), vue **tableau** pour comparer
+  les seize lignes d'un coup d'œil, ancre `#app-<id>` par application, bouton
+  « copier le lien de cette vue », raccourci <kbd>/</kbd> vers la recherche, et le
+  détail des sous-chemins par carte. La section « Démo » a perdu son menu
+  d'applications : deux sélecteurs pour une seule bascule, treize apps d'un côté
+  contre seize de l'autre — la vitrine est le seul sélecteur.
+
+  **Palettes complètes.** `miss-dice`, `miss-ticket-pwa` et `mister-quota`
+  rejoignent `themes.js` : seize apps, seize palettes. Les valeurs exprimées en
+  `rgba()` sont composées sur le fond réel de l'app plutôt que choisies à vue, et
+  `accent` répète `primary` là où l'app n'a qu'un ton de marque, plutôt
+  qu'inventer une couleur.
+
+  **Données vivantes.** `scripts/fetch-metrics.mjs` relève l'état réel des dépôts
+  (version publiée, dernier push, dépôt archivé) et un workflow nocturne commite
+  `showroom/metrics.js`. La page ne fait toujours **aucune requête réseau** : le
+  relevé est posé sur `globalThis` par un `<script src>`, comme `themes.js`. Un
+  fichier vide est un état valide, et c'est celui qui est livré.
+
+  **Captures.** `npm run screenshots` cadre, normalise et convertit en WebP les
+  applications déployées ; une capture déclarée remplace le monogramme sur sa
+  carte et l'aperçu généré dans la section « Démo ». Aucune image n'est livrée
+  avec cette version.
+
 ## 3.10.1
 
 ### Patch Changes
