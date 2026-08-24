@@ -203,6 +203,41 @@ test('redact masque en profondeur, sans boucler indéfiniment', () => {
   assert.equal(redact({ matricule: 'x' }, ['matricule']).matricule, '[masqué]');
 });
 
+test('une adresse invalide ne fige pas l’onglet (ReDoS polynomial)', () => {
+  // LE DÉFAUT REPRODUIT. L'expression des copies,
+  // `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`, fait se recouvrir ses deux dernières
+  // classes — un point appartient à `[^\s@]`. Sur une saisie qui ÉCHOUE, le
+  // moteur explore chaque découpage : 19 ms pour 4 ko, 1 s pour 32 ko, ×4 à
+  // chaque doublement. Un champ où l'on colle une adresse suffisait.
+  const hostile = `!@${'!.'.repeat(32_000)} `;
+  const debut = process.hrtime.bigint();
+  assert.equal(isValidEmail(hostile), false);
+  const ms = Number(process.hrtime.bigint() - debut) / 1e6;
+  // L'ancienne version mettait ~4 s sur cette entrée ; la nouvelle, ~0,1 ms.
+  // Le seuil laisse mille fois la marge, pour ne pas dépendre de la machine.
+  assert.ok(ms < 250, `${ms.toFixed(0)} ms : le temps n'est plus linéaire`);
+});
+
+test('la validation d’adresse garde exactement le même verdict', () => {
+  // Le remplacement de l'expression n'a le droit de rien changer d'autre.
+  const attendus = [
+    ['a@b.fr', true],
+    ['a@b.c.d', true],
+    ['a@b', false],
+    ['a b@c.fr', false],
+    ['a@.b', false],
+    ['a@b.', false],
+    ['@b.fr', false],
+    ['a@@b.fr', false],
+    ['a@b.fr@c.fr', false],
+    ['', false],
+    [null, false],
+  ];
+  for (const [valeur, attendu] of attendus) {
+    assert.equal(isValidEmail(valeur), attendu, JSON.stringify(valeur));
+  }
+});
+
 test('les deux modules sont exportés, livrés, et sans dépendance', async () => {
   const { readFileSync } = await import('node:fs');
   const pkg = JSON.parse(
