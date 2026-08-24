@@ -58,6 +58,14 @@
       "types": "./apps-catalog.d.ts",
       "default": "./apps-catalog.js"
     },
+    "./format": {
+      "types": "./format.d.ts",
+      "default": "./format.js"
+    },
+    "./security": {
+      "types": "./security.d.ts",
+      "default": "./security.js"
+    },
     "./themes": {
       "types": "./themes.d.ts",
       "default": "./themes.js"
@@ -218,6 +226,10 @@
     "vitest-setup.d.ts",
     "apps-catalog.js",
     "apps-catalog.d.ts",
+    "format.js",
+    "format.d.ts",
+    "security.js",
+    "security.d.ts",
     "themes.js",
     "themes.d.ts",
     "react",
