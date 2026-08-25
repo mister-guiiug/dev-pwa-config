@@ -143,10 +143,38 @@ export function themeColorMetaTags(colors = {}) {
   return tags.join('\n    ');
 }
 
-/** Retire les `<meta name="theme-color">` déjà présentes dans un HTML. */
+/**
+ * La balise elle-même. Volontairement SANS préfixe d'espaces.
+ *
+ * La première version commençait par `[ \t]*`, pour absorber l'indentation en
+ * même temps que la balise. CodeQL l'a signalée, et la mesure lui donne
+ * raison : sur une suite de N tabulations qui ne mène à aucun `<meta`, le
+ * moteur repart de chaque position et rescanne — coût quadratique, vérifié à
+ * 5 ms pour 2 000 tabulations, 379 ms pour 16 000. L'entrée est le HTML que
+ * Vite passe au plugin, donc pas une valeur dont ce module décide.
+ *
+ * Ici la balise commence par un littéral obligatoire : les positions de départ
+ * sont bornées par le nombre de `<meta` réellement présents.
+ */
+const THEME_COLOR_META = /<meta\b[^>]*\bname=["']theme-color["'][^>]*>/gi;
+
+/**
+ * Retire les `<meta name="theme-color">` déjà présentes dans un HTML.
+ *
+ * L'indentation résiduelle est traitée LIGNE PAR LIGNE, en code ordinaire : une
+ * ligne qui ne portait que la balise disparaît, une ligne qui portait autre
+ * chose est conservée telle quelle. Aucune expression rationnelle ne voit
+ * d'espaces, donc plus rien à faire rétrograder.
+ */
 export function stripThemeColorMeta(html) {
-  return String(html).replace(
-    /[ \t]*<meta\b[^>]*\bname=["']theme-color["'][^>]*>\n?/gi,
-    ''
-  );
+  const source = String(html);
+  if (!source.includes('theme-color')) return source;
+
+  const kept = [];
+  for (const line of source.split('\n')) {
+    const stripped = line.replace(THEME_COLOR_META, '');
+    if (stripped === line) kept.push(line);
+    else if (stripped.trim() !== '') kept.push(stripped);
+  }
+  return kept.join('\n');
 }

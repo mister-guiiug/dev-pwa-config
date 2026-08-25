@@ -93,6 +93,19 @@ test('themeColorMetaTags refuse une couleur non crédible', () => {
   assert.equal(themeColorMetaTags({}), '');
 });
 
+test('stripThemeColorMeta ne rétrograde pas sur une entrée adverse', () => {
+  // CodeQL a signalé le préfixe `[ \t]*` de la première version, et la mesure
+  // lui donnait raison : 5 ms pour 2 000 tabulations, 379 ms pour 16 000 —
+  // quadratique. L'entrée est le HTML que Vite passe au plugin.
+  const evil = '\t'.repeat(200_000) + 'x';
+  const start = process.hrtime.bigint();
+  assert.equal(stripThemeColorMeta(evil), evil);
+  const ms = Number(process.hrtime.bigint() - start) / 1e6;
+  // Budget large à dessein : il ne mesure pas la vitesse, il attrape un retour
+  // au comportement quadratique, qui coûterait ici des dizaines de secondes.
+  assert.ok(ms < 500, `${ms.toFixed(1)} ms pour 200 000 tabulations`);
+});
+
 test('stripThemeColorMeta retire les balises existantes', () => {
   const html = `<head>
     <meta name="theme-color" content="#0f766e" />
@@ -101,6 +114,15 @@ test('stripThemeColorMeta retire les balises existantes', () => {
   const out = stripThemeColorMeta(html);
   assert.doesNotMatch(out, /theme-color/u);
   assert.match(out, /<title>x<\/title>/u);
+  // La ligne qui ne portait que la balise disparaît avec son indentation…
+  assert.doesNotMatch(out, /\n\s*\n\s*<title>/u);
+  // …mais une balise au milieu d'une ligne n'emporte pas ses voisines.
+  assert.equal(
+    stripThemeColorMeta(
+      '<p>a</p><meta name="theme-color" content="#fff"><p>b</p>'
+    ),
+    '<p>a</p><p>b</p>'
+  );
 });
 
 test('ThemeProvider pose une balise theme-color, et la retire au démontage', async () => {
