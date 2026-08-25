@@ -1,6 +1,6 @@
 import { useLabels } from './labels.js';
 import { createElement as h, useState } from 'react';
-import { GithubIcon, CoffeeIcon, ExternalLinkIcon } from './icons.js';
+import { Icon } from './icons-context.js';
 import {
   FAMILY_APPS,
   SPONSOR_URL,
@@ -61,7 +61,7 @@ function AppCard({ item, maturityLabels }) {
     h(
       'span',
       { 'aria-hidden': 'true', 'data-dwc': 'family-app-arrow' },
-      h(ExternalLinkIcon)
+      h(Icon, { role: 'external' })
     )
   );
 }
@@ -143,7 +143,7 @@ export function FamilyApps(props) {
       h(
         'a',
         { key: 'source', href: repoUrl, ...EXT, 'data-dwc': 'family-source' },
-        h(GithubIcon),
+        h(Icon, { role: 'repo' }),
         h('span', null, sourceLabel)
       )
     );
@@ -158,7 +158,7 @@ export function FamilyApps(props) {
           ...EXT,
           'data-dwc': 'family-sponsor',
         },
-        h(CoffeeIcon),
+        h(Icon, { role: 'sponsor' }),
         h('span', null, sponsorLabel)
       )
     );
@@ -197,7 +197,7 @@ export function FamilyApps(props) {
                   'data-dwc': 'family-app-repo',
                   'aria-label': repoLabel.replace('{app}', item.name),
                 },
-                h(GithubIcon)
+                h(Icon, { role: 'repo' })
               )
             : null
         )

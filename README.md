@@ -399,6 +399,10 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/react/bottom-nav`           | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                        |
 | `@mister-guiiug/dev-wpa-config/react/labels`               | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés fr/en des composants du paquet (prop > contexte > français)                                                                                                                            |
 | `@mister-guiiug/dev-wpa-config/sw-update`                  | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` : appliquer une mise à jour de service worker — **sans React ni module virtuel**                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/theme-boot`                 | `.js` + `.d.ts` | `themeBootScript` / `themeBootSource` — le script anti-FOUC **engendré**, recopié à la main dans 13 apps sur 16 ; injecté par `pwaSeoPlugin({ themeBoot: true })`                                                                |
+| `@mister-guiiug/dev-wpa-config/react/theme-provider`       | `.js` + `.d.ts` | `ThemeProvider` / `useThemeContext` — palette du catalogue, état et variables `--dwc-*` en un seul endroit, un seul écrivain de `data-theme`                                                                                     |
+| `@mister-guiiug/dev-wpa-config/react/app-updates`          | `.js` + `.d.ts` | `AppUpdates` / `useAppUpdates` — `registerSW` donné une fois, bandeau posé seul, `checkEvery` périodique                                                                                                                         |
+| `@mister-guiiug/dev-wpa-config/react/icons-context`        | `.js` + `.d.ts` | `IconsProvider` / `Icon` / `useIcon` — le paquet demande un **rôle**, l'app fournit le dessin (10 apps sur 16 sont sur `lucide-react`)                                                                                           |
 | `@mister-guiiug/dev-wpa-config/download`                   | `.js` + `.d.ts` | `downloadBlob` / `downloadJson` / `downloadText` / `readJsonFile` / `dateSlug` — la danse `createObjectURL` + ancre + `revoke`, recopiée dans **12 apps sur 16**                                                                 |
 | `@mister-guiiug/dev-wpa-config/share`                      | `.js` + `.d.ts` | `shareOrCopy` / `copyToClipboard` / `currentAppUrl` — Web Share avec repli presse-papiers ; l'annulation est distinguée de l'échec                                                                                               |
 | `@mister-guiiug/dev-wpa-config/web-vitals`                 | `.js` + `.d.ts` | `initWebVitals` / `rate` / `THRESHOLDS` — chaque métrique enregistrée indépendamment, `onINP` au lieu d'`onFID` (retiré en v4). Peer **optionnelle** `web-vitals` ^4                                                             |
@@ -1062,6 +1066,47 @@ function Settings() {
   );
 }
 ```
+
+#### Cinq façades, pour cesser de recâbler
+
+Cinq domaines avaient leurs pièces mais aucun assemblage — et les apps
+réécrivaient la jonction, ou l'oubliaient.
+
+```tsx
+// main.tsx — deux lignes que treize apps écrivaient à l'identique
+await installObservability({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  environment: import.meta.env.MODE,
+  webVitals: true, // erreurs ET performance, relayées au même endroit
+  redactKeys: ['matricule'], // le contexte est masqué avant d'entrer dans localStorage
+});
+
+<ObservabilityBoundary>
+  {' '}
+  {/* le câblage de recordError, tenu par le composant */}
+  <ThemeProvider appId="miss-genius">
+    {' '}
+    {/* palette → variables → data-theme */}
+    <IconsProvider
+      icons={{ close: X, light: Sun, dark: Moon, system: Monitor }}
+    >
+      <AppUpdates registerSW={registerSW} checkEvery="1h">
+        <App /> {/* le bandeau de mise à jour se pose seul */}
+      </AppUpdates>
+    </IconsProvider>
+  </ThemeProvider>
+</ObservabilityBoundary>;
+```
+
+```ts
+// vite.config.ts — le script anti-FOUC cesse d'être recopié dans index.html
+pwaSeoPlugin({ themeBoot: true });
+```
+
+Chaque façade reste **facultative**, et chaque pièce reste utilisable seule :
+`ThemeToggle` sans `ThemeProvider` monte son propre état, `UpdateButton` sans
+`AppUpdates` s'enregistre lui-même, `Icon` sans `IconsProvider` rend le SVG
+maison. Une app qui ne change rien ne voit aucune différence.
 
 #### Mise à jour du service worker
 

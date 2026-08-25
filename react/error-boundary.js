@@ -1,4 +1,5 @@
 import { Component, createElement as h } from 'react';
+import { recordError } from './observability.js';
 
 /**
  * ErrorBoundary générique, DÉCOUPLÉ de tout reporter (Sentry passé via onError).
@@ -76,4 +77,38 @@ export class ErrorBoundary extends Component {
       ...children
     );
   }
+}
+
+/**
+ * La même frontière, DÉJÀ BRANCHÉE sur le journal d'erreurs.
+ *
+ * Les NEUF apps qui montent `ErrorBoundary` écrivent toutes la même liaison,
+ * et la même exactement :
+ *
+ *   <ErrorBoundary onError={e => recordError(e, { source: 'error-boundary' })}>
+ *
+ * Quatre autres (miss-dice, miss-uwh, mister-doc, mister-qowa) montent leur
+ * PROPRE frontière, qui ne relaie rien : leur écran blanc n'est enregistré nulle
+ * part, alors que c'est précisément le crash qu'on aurait voulu voir. Neuf
+ * répétitions d'un côté, quatre trous de l'autre — un branchement qu'on doit se
+ * rappeler de faire n'est pas un contrat.
+ *
+ * `onError` reste accepté, et il est appelé APRÈS l'enregistrement : une app
+ * qui veut faire plus n'a rien à retirer.
+ *
+ * @param {import('./error-boundary.js').ErrorBoundaryProps & { context?: object }} props
+ */
+export function ObservabilityBoundary(props = {}) {
+  const { onError, context, ...rest } = props;
+  return h(ErrorBoundary, {
+    ...rest,
+    onError: (error, info) => {
+      recordError(error, {
+        source: 'error-boundary',
+        react: info?.componentStack,
+        ...context,
+      });
+      if (typeof onError === 'function') onError(error, info);
+    },
+  });
 }

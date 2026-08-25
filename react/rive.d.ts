@@ -18,6 +18,12 @@ export interface RiveAnimationProps {
   respectReducedMotion?: boolean;
   /** Démarrage auto (défaut `true`, désactivé si mouvement réduit). */
   autoplay?: boolean;
+  /**
+   * Runtime Rive à charger. Défaut : `@rive-app/react-canvas`. Passer
+   * `() => import('@rive-app/react-webgl2')` pour WebGL2 — l'import doit être
+   * statiquement analysable côté app.
+   */
+  loader?: () => Promise<Record<string, unknown>>;
 }
 
 /** Wrapper Rive lazy, a11y et reduced-motion. Requiert `@rive-app/react-canvas`. */

@@ -1,4 +1,4 @@
-import type { Component, ErrorInfo, ReactNode } from 'react';
+import type { Component, ErrorInfo, FC, ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -25,3 +25,14 @@ export declare class ErrorBoundary extends Component<
 > {
   reset(): void;
 }
+
+export interface ObservabilityBoundaryProps extends ErrorBoundaryProps {
+  /** Contexte ajouté à l'entrée du journal ; masqué avant écriture. */
+  context?: Record<string, unknown>;
+}
+
+/**
+ * `ErrorBoundary` déjà branchée sur `recordError` — le câblage que neuf apps
+ * réécrivent, et que deux oublient.
+ */
+export declare const ObservabilityBoundary: FC<ObservabilityBoundaryProps>;

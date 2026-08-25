@@ -27,3 +27,6 @@ export * from './update-prompt-banner';
 export * from './update-button';
 export { applyUpdate } from '../sw-update';
 export * from './theme-toggle';
+export * from './theme-provider';
+export * from './app-updates';
+export * from './icons-context';

@@ -26,6 +26,8 @@
  *   VITE_GTM_CONTAINER_ID     ex. GTM-XXXXXXX       (optionnel)
  *   VITE_GA_MEASUREMENT_ID    ex. G-XXXXXXXXXX      (optionnel)
  */
+import { themeBootScript } from './theme-boot.js';
+
 import process from 'node:process';
 
 const DEFAULT_ORIGIN = 'https://mister-guiiug.github.io';
@@ -151,6 +153,7 @@ export function pwaSeoPlugin(opts = {}) {
     llms,
     gtmContainerId,
     gaMeasurementId,
+    themeBoot,
     extraReplacements = {},
   } = opts;
   const urlOpts = { basePath, logoPath, iconQuery };
@@ -194,7 +197,24 @@ export function pwaSeoPlugin(opts = {}) {
         gtmContainerId,
         gaMeasurementId,
       });
-      let out = html
+      // Le script anti-FOUC, INJECTÉ plutôt que recopié. Treize apps sur seize
+      // en portent un à la main dans leur `index.html`, de dix à trente-trois
+      // lignes ; il doit rester inline et synchrone, donc hors de portée d'un
+      // module. Il est posé en TÊTE de `<head>` : tout ce qui le suit peint
+      // déjà avec le bon thème.
+      //
+      // `cspPlugin` hache les scripts inline en `order: 'post'`, à partir du
+      // HTML final — celui-ci est donc couvert sans réglage supplémentaire.
+      let out = html;
+      if (themeBoot) {
+        const boot = themeBootScript(
+          typeof themeBoot === 'object' ? themeBoot : {}
+        );
+        out = out.includes('<head>')
+          ? out.replace('<head>', `<head>\n    ${boot}`)
+          : `${boot}\n${out}`;
+      }
+      out = out
         .replaceAll('__SEO_HOME_URL__', homeUrl)
         .replaceAll('__SEO_LOGO_URL__', logoUrl ?? homeUrl)
         .replaceAll('__PWA_ICON_QS__', iconQuery)
