@@ -103,7 +103,11 @@ export function correlationHeaders(options = {}) {
  * (télémétrie) — ce que fait `installCorrelation`.
  */
 export function correlationContext() {
-  return { correlationSessionId: getSessionId() };
+  // `correlationId`, PAS `correlationSessionId` : le motif de `redact` couvre
+  // `session`, si bien que la clé était masquée dans le contexte des erreurs —
+  // l'identifiant arrivait donc dans Sentry sous la forme « [masqué] », ce qui
+  // annulait exactement ce que ce module apporte. Vérifié par un test.
+  return { correlationId: getSessionId() };
 }
 
 /**
@@ -214,7 +218,7 @@ export async function installCorrelation(options = {}) {
 
   if (analytics) {
     const { setUserProperties } = await import('./analytics.js');
-    setUserProperties({ correlation_session_id: sessionId });
+    setUserProperties({ correlation_id: sessionId });
   }
 
   const correlated =

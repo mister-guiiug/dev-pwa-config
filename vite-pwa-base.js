@@ -224,6 +224,15 @@ export function pwaSeoPlugin(opts = {}) {
             // l'exclusion à la main ; comme ci-dessus, elle appartient au
             // paquet dont le module est en cause, pas aux apps.
             '@mister-guiiug/dev-wpa-config/map/maplibre',
+            // Ces deux-là n'ont pas de suffixe problématique : ils importent
+            // `react/observability`, qui est exclu ci-dessus. Un module
+            // pré-bundlé embarque sa copie des modules qu'il importe — la
+            // duplication d'un module À ÉTAT donne alors DEUX contextes de
+            // session, et le câblage de la corrélation ne produit plus rien,
+            // silencieusement. Règle générale : ce qui importe un singleton
+            // exclu doit être exclu aussi.
+            '@mister-guiiug/dev-wpa-config/correlation',
+            '@mister-guiiug/dev-wpa-config/logger',
           ],
         },
       };

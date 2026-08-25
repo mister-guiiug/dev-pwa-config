@@ -27,10 +27,37 @@ test('les en-têtes portent la requête ET la session', () => {
   assert.equal(headers[DEFAULT_SESSION_HEADER], getSessionId());
 });
 
-test('le contexte des autres canaux porte le même identifiant de session', () => {
-  assert.deepEqual(correlationContext(), {
-    correlationSessionId: getSessionId(),
-  });
+test('le contexte des autres canaux porte le même identifiant', () => {
+  assert.deepEqual(correlationContext(), { correlationId: getSessionId() });
+});
+
+test('l’identifiant SURVIT au masquage appliqué au contexte des erreurs', async () => {
+  // `redact` masque toute clé contenant « session ». Nommée
+  // `correlationSessionId`, la clé arrivait donc dans Sentry en « [masqué] » :
+  // le module s'installait sans erreur et ne servait à rien. Constaté en
+  // navigateur, sur une erreur réelle.
+  const { redact } = await import('../security.js');
+  const masked = redact(correlationContext());
+  assert.equal(
+    masked.correlationId,
+    getSessionId(),
+    'l’identifiant doit rester lisible : c’est tout son intérêt'
+  );
+});
+
+test('les sous-chemins à état sont exclus du pré-bundling', async () => {
+  // `/correlation` et `/logger` importent `react/observability`, qui porte le
+  // contexte de session. Pré-bundlés, ils en embarquent une COPIE : deux
+  // instances, et le câblage ne produit plus rien, silencieusement. Constaté
+  // en navigateur, métadonnées d'optimizeDeps à l'appui.
+  const { pwaSeoPlugin } = await import('../vite-pwa-base.js');
+  const excluded = pwaSeoPlugin().config().optimizeDeps.exclude;
+  for (const sub of ['correlation', 'logger', 'react/observability']) {
+    assert.ok(
+      excluded.includes(`@mister-guiiug/dev-wpa-config/${sub}`),
+      `${sub} doit partager l’instance d’observability`
+    );
+  }
 });
 
 test('withCorrelation pose les en-têtes et rend l’identifiant à l’appelant', async () => {
