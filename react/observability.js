@@ -7,6 +7,8 @@
  *    p.ex. depuis ErrorBoundary.onError).
  *  - initSentry({ dsn, ... }) : NO-OP si pas de dsn (bundle prod intact) ; sinon
  *    lazy-import @sentry/react (peer optionnelle) et le câble comme forwarder.
+ *  - setSessionContext / breadcrumb / captureConsole : LE CONTEXTE, c'est-à-dire
+ *    ce qui manquait pour que les erreurs remontées soient exploitables.
  *
  * Usage app (main.tsx) :
  *   installErrorReporter();
@@ -18,10 +20,18 @@ import { initWebVitals } from '../web-vitals.js';
 
 const RING_KEY = 'dwc_error_log';
 const RING_MAX = 50;
+/** Fil d'Ariane : ce que l'utilisateur venait de faire. Mémoire seule. */
+const TRAIL_MAX = 20;
 let forwarder = null;
 let installed = false;
 /** Clés supplémentaires à masquer, propres à l'app. */
 let extraRedactKeys = [];
+/** Contexte de session : app, version, langue, thème… Masqué comme le reste. */
+let sessionContext = {};
+/** Tampon circulaire des derniers gestes. En MÉMOIRE, jamais persisté. */
+let trail = [];
+/** Restauration de `console`, si `captureConsole` l'a enveloppée. */
+let consoleRestore = null;
 
 function readRing() {
   try {
@@ -54,6 +64,130 @@ export function clearErrorLog() {
   }
 }
 
+/* ── Le contexte ───────────────────────────────────────────────────────── */
+
+/**
+ * Ce qu'on savait de la session au moment de l'erreur.
+ *
+ * LE CONSTAT, MESURÉ. Treize apps sur seize initialisent Sentry — et
+ * `setUser` / `setContext` / `setTag` n'apparaissent que dans SIX. Les dix
+ * autres envoient donc des exceptions nues : pas de version, pas de langue,
+ * pas de thème, pas d'état réseau. Une trace sans contexte se trie mal et se
+ * reproduit encore plus mal.
+ *
+ * Fusionné, pas remplacé : un appel par information connue, au moment où elle
+ * l'est (la version au démarrage, la langue au changement de locale).
+ *
+ * @param {Record<string, unknown>} context
+ */
+export function setSessionContext(context = {}) {
+  sessionContext = { ...sessionContext, ...context };
+  return sessionContext;
+}
+
+/** Le contexte de session courant. */
+export function getSessionContext() {
+  return { ...sessionContext };
+}
+
+/**
+ * Un geste, daté, dans le fil d'Ariane.
+ *
+ * POURQUOI EN MÉMOIRE SEULEMENT. Le journal d'erreurs vit dans `localStorage`
+ * et y reste ; un fil d'Ariane enregistre BEAUCOUP plus d'événements, souvent
+ * porteurs de données saisies. Le persister multiplierait par vingt la surface
+ * du problème que `redact` vient de refermer. Il est joint aux erreurs, et
+ * disparaît avec l'onglet.
+ *
+ * `mister-qowa` en a écrit un — vingt et un points d'appel dans
+ * `src/lib/report.ts` — mais n'a pas de Sentry : rien n'en sort jamais.
+ *
+ * @param {string} category `'nav'`, `'clic'`, `'réseau'`…
+ * @param {string} message
+ * @param {Record<string, unknown>} [data]
+ */
+export function breadcrumb(category, message, data) {
+  const entry = {
+    ts: new Date().toISOString(),
+    category: String(category ?? 'app'),
+    message: String(message ?? ''),
+  };
+  if (data) entry.data = redact(data, extraRedactKeys);
+  trail.push(entry);
+  if (trail.length > TRAIL_MAX) trail = trail.slice(-TRAIL_MAX);
+  return entry;
+}
+
+/** Les derniers gestes enregistrés, du plus ancien au plus récent. */
+export function getBreadcrumbs() {
+  return [...trail];
+}
+
+/** Vide le fil d'Ariane (changement d'utilisateur, écran de debug). */
+export function clearBreadcrumbs() {
+  trail = [];
+}
+
+/**
+ * Fait passer `console.error` / `console.warn` dans le fil d'Ariane.
+ *
+ * LE CONSTAT. **59 appels à `console.error` ou `console.warn`** dans quatorze
+ * apps — un `catch` qui journalise et continue, presque à chaque fois. Aucun
+ * ne quitte le navigateur : quand l'erreur suivante remonte, ce qui aurait
+ * expliqué la panne a déjà disparu de la console de l'utilisateur.
+ *
+ * LA CONSOLE RESTE INTACTE : on l'enveloppe, on ne la remplace pas. La sortie
+ * d'origine est appelée dans tous les cas, y compris si l'enregistrement
+ * échoue — un outil d'observabilité qui avale les messages est pire que rien.
+ *
+ * @param {{ levels?: Array<'error'|'warn'|'log'|'info'> }} [options]
+ * @returns {() => void} La restauration, idempotente.
+ */
+export function captureConsole(options = {}) {
+  const { levels = ['error', 'warn'] } = options;
+  if (typeof console === 'undefined') return () => {};
+  if (consoleRestore) return consoleRestore;
+
+  const originals = new Map();
+  for (const level of levels) {
+    const original = console[level];
+    if (typeof original !== 'function') continue;
+    originals.set(level, original);
+    console[level] = (...args) => {
+      try {
+        breadcrumb(`console.${level}`, args.map(stringifyArg).join(' '));
+      } catch {
+        /* jamais au détriment du message */
+      }
+      original.apply(console, args);
+    };
+  }
+
+  consoleRestore = () => {
+    for (const [level, original] of originals) console[level] = original;
+    consoleRestore = null;
+  };
+  return consoleRestore;
+}
+
+/**
+ * Un argument de console en une ligne lisible, sans jeter sur un cycle.
+ *
+ * MASQUÉ AVANT D'ÊTRE MIS EN CHAÎNE. `console.warn('échec', { token })` est la
+ * forme la plus courante dans les 59 appels mesurés : sérialiser l'objet tel
+ * quel déposerait le jeton dans le fil d'Ariane, donc dans Sentry. `redact`
+ * agit sur les clés, il doit donc voir l'objet — pas sa chaîne.
+ */
+function stringifyArg(value) {
+  if (typeof value === 'string') return value;
+  if (value instanceof Error) return `${value.name}: ${value.message}`;
+  try {
+    return JSON.stringify(redact(value, extraRedactKeys));
+  } catch {
+    return String(value);
+  }
+}
+
 /** Ajoute des clés à masquer dans le contexte des erreurs (`matricule`…). */
 export function setRedactKeys(keys) {
   extraRedactKeys = Array.isArray(keys) ? keys : [];
@@ -80,14 +214,17 @@ export function recordError(error, context = {}) {
     ts: new Date().toISOString(),
     message: err.message,
     stack: err.stack,
-    context: redact(context, extraRedactKeys),
+    // Le contexte de session d'abord : l'appelant reste prioritaire sur une
+    // clé de même nom, parce qu'il en sait plus au moment de l'appel.
+    context: redact({ ...sessionContext, ...context }, extraRedactKeys),
   };
+  if (trail.length) entry.trail = [...trail];
   const ring = readRing();
   ring.push(entry);
   writeRing(ring);
   if (forwarder) {
     try {
-      forwarder(err, context);
+      forwarder(err, entry.context, entry.trail);
     } catch {
       /* un forwarder cassé ne doit jamais casser l'app */
     }
@@ -129,9 +266,15 @@ export async function initSentry(options = {}) {
       ? await loader()
       : await import(/* @vite-ignore */ specifier);
     Sentry.init({ dsn, release, environment, tracesSampleRate });
-    setForwarder((error, context) =>
-      Sentry.captureException(error, { extra: context })
-    );
+    setForwarder((error, context, breadcrumbs) => {
+      // Le fil d'Ariane part en `extra` plutôt que par `addBreadcrumb` : il est
+      // déjà masqué, déjà ordonné, et joint à CETTE exception — alors que les
+      // fils de Sentry sont globaux et se mélangent entre onglets.
+      const extra = breadcrumbs?.length
+        ? { ...context, trail: breadcrumbs }
+        : context;
+      Sentry.captureException(error, { extra });
+    });
     return Sentry;
   } catch {
     return null;
@@ -161,21 +304,43 @@ export async function initSentry(options = {}) {
  * production est inchangé. Sans `webVitals`, la bibliothèque n'est pas chargée.
  * Un appel nu installe juste les écouteurs globaux, comme avant.
  *
+ * DEUX AJOUTS QUI VALENT SANS SENTRY. `context` renseigne le contexte de
+ * session — absent de dix apps sur treize qui pourtant remontent des erreurs —
+ * et `console` (actif par défaut) fait passer les 59 `console.error`/`warn`
+ * mesurés dans le fil d'Ariane. Les deux enrichissent le journal local, donc
+ * servent aussi aux trois apps sans transport (miss-lookhouse, mister-qowa,
+ * mister-quota).
+ *
  * @param {{
  *   dsn?: string, release?: string, environment?: string,
  *   tracesSampleRate?: number, loader?: () => Promise<unknown>,
  *   webVitals?: boolean | { loader?: () => Promise<Record<string, unknown>> },
  *   redactKeys?: string[],
  *   onMetric?: (metric: { name: string, value: number, rating: string }) => void,
+ *   context?: Record<string, unknown>,
+ *   console?: boolean | { levels?: Array<'error'|'warn'|'log'|'info'> },
  * }} [options]
  * @returns {Promise<{ sentry: unknown, vitals: string[] }>} De quoi vérifier ce
  *   qui a réellement été installé — une liste de métriques vide est un signal,
  *   pas un détail.
  */
 export async function installObservability(options = {}) {
-  const { redactKeys, webVitals, onMetric, ...sentryOptions } = options;
+  const {
+    redactKeys,
+    webVitals,
+    onMetric,
+    context,
+    console: consoleOption = true,
+    ...sentryOptions
+  } = options;
 
   if (redactKeys) setRedactKeys(redactKeys);
+  // Le contexte AVANT les écouteurs : une erreur levée pendant l'installation
+  // doit déjà porter la version et l'environnement.
+  if (context) setSessionContext(context);
+  if (consoleOption) {
+    captureConsole(typeof consoleOption === 'object' ? consoleOption : {});
+  }
   installErrorReporter();
 
   const sentry = await initSentry(sentryOptions);

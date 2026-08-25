@@ -11,7 +11,11 @@ export interface RiveAnimationProps {
   animations?: string | string[];
   /** Libellé accessible. Absent ⇒ animation décorative (`aria-hidden`). */
   ariaLabel?: string;
-  /** Rendu statique de repli (mouvement réduit / pendant le lazy-load). */
+  /**
+   * Rendu statique de repli. Affiché pendant le chargement, si l'utilisateur
+   * réduit les animations, ET si le runtime ou le fichier `.riv` manque —
+   * le cas nominal aujourd'hui : les seize dépôts n'en contiennent aucun.
+   */
   fallback?: ReactNode;
   className?: string;
   /** Respecter `prefers-reduced-motion` (défaut `true`). */
@@ -24,7 +28,17 @@ export interface RiveAnimationProps {
    * statiquement analysable côté app.
    */
   loader?: () => Promise<Record<string, unknown>>;
+  /**
+   * Appelé une fois quand le runtime ou l'animation échoue, pour que l'app
+   * puisse le remonter (`recordError`) au lieu de le découvrir sur un écran
+   * vide. Le repli s'affiche dans tous les cas.
+   */
+  onError?: (error: unknown) => void;
 }
 
-/** Wrapper Rive lazy, a11y et reduced-motion. Requiert `@rive-app/react-canvas`. */
+/**
+ * Wrapper Rive lazy, a11y, reduced-motion — et à repli garanti. Requiert un
+ * runtime Rive (`@rive-app/react-canvas` par défaut) ; sans lui, le `fallback`
+ * s'affiche au lieu d'une erreur.
+ */
 export declare const RiveAnimation: FC<RiveAnimationProps>;

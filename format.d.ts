@@ -62,3 +62,44 @@ export declare function formatBytes(
   locale?: string,
   digits?: number
 ): string;
+
+/**
+ * Déplace la locale par défaut de TOUTES les fonctions ci-dessus.
+ * `createI18n` l'appelle à chaque changement de langue.
+ */
+export declare function setDefaultLocale(tag: string): void;
+
+/** Locale par défaut courante (`'fr-FR'` tant que rien ne la déplace). */
+export declare function getDefaultLocale(): string;
+
+/** Énumération dans la langue (`« a, b et c »`). */
+export declare function formatList(
+  values: readonly unknown[],
+  locale?: string,
+  options?: Intl.ListFormatOptions
+): string;
+
+/** Les mêmes fonctions, la locale déjà posée. */
+export declare function createFormatters(
+  locale?: string,
+  options?: { currency?: string }
+): {
+  locale: string;
+  currency: (value: number, code?: string) => string;
+  number: (value: number, options?: Intl.NumberFormatOptions) => string;
+  percent: (value: number, digits?: number) => string;
+  date: (
+    value: Date | string | number,
+    options?: Intl.DateTimeFormatOptions
+  ) => string;
+  dateTime: (
+    value: Date | string | number,
+    options?: Intl.DateTimeFormatOptions
+  ) => string;
+  relative: (value: Date | string | number, now?: Date | number) => string;
+  bytes: (value: number, digits?: number) => string;
+  list: (
+    values: readonly unknown[],
+    options?: Intl.ListFormatOptions
+  ) => string;
+};

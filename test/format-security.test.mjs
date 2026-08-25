@@ -115,11 +115,22 @@ test('formatPhoneNumber rend la saisie inchangée plutôt qu’un faux groupage'
   assert.equal(formatPhoneNumber('123'), '123');
 });
 
+// Espace fine insécable : ce que `Intl` place entre un nombre et son unité en
+// français, et ce que `formatNumber` produit déjà entre les milliers.
+const NNBSP = '\u202f';
+
 test('formatBytes monte d’unité et arrondit', () => {
-  assert.equal(formatBytes(0), '0 o');
-  assert.equal(formatBytes(999), '999 o');
-  assert.match(formatBytes(1503238), /1,4 Mo/u);
+  assert.equal(formatBytes(0), `0${NNBSP}o`);
+  assert.equal(formatBytes(999), `999${NNBSP}o`);
+  assert.match(formatBytes(1503238), /1,4\u202fMo/u);
   assert.equal(formatBytes(-1), '');
+});
+
+test('formatBytes traduit l’unité, au lieu de la figer en français', () => {
+  // Le défaut d'origine : le tableau `['o','ko','Mo']` était écrit en dur, si
+  // bien qu'une app en anglais affichait « 1,4 Mo ».
+  assert.match(formatBytes(1503238, 'en-US'), /1\.4 MB/u);
+  assert.match(formatBytes(1503238, 'de-DE'), /1,4.MB/u);
 });
 
 /* ── security ───────────────────────────────────────────────────────────── */

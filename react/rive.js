@@ -1,4 +1,4 @@
-import { createElement as h, lazy, Suspense, useMemo } from 'react';
+import { Component, createElement as h, lazy, Suspense, useMemo } from 'react';
 import { useReducedMotion } from './use-media-query.js';
 
 // Chargé à la demande : le runtime Rive (~100 ko + WASM) reste hors du bundle
@@ -40,7 +40,67 @@ function lazyFor(loader) {
 }
 
 /**
+ * Oublie le `lazy()` d'un loader, pour qu'un remontage RÉESSAIE.
+ *
+ * React mémorise le rejet d'un `lazy()` : une fois l'import échoué, le même
+ * composant rejette indéfiniment, sans jamais retenter. Un runtime chargé
+ * pendant une coupure réseau resterait donc mort jusqu'au rechargement complet
+ * de la page.
+ */
+function forgetLazy(loader) {
+  LAZY.delete(loader ?? DEFAULT_LOADER);
+}
+
+/**
+ * LE REPLI EST LE CAS NOMINAL, PAS L'EXCEPTION.
+ *
+ * MESURE, sur les seize dépôts : `find -name '*.riv'` renvoie **zéro
+ * fichier**. Trois apps déclarent pourtant un runtime Rive — miss-badminton et
+ * mister-molkky (`@rive-app/react-canvas` 4.28.4), miss-genius
+ * (`@rive-app/react-webgl2` 4.18.0) — et pointent vers des dossiers vides :
+ * `src/assets/rive/*.riv` pour la première, `public/rive/` pour la troisième.
+ * Aucune animation Rive n'est en production nulle part.
+ *
+ * Ce qui manquait n'était donc pas un lecteur de plus : c'était que l'ABSENCE
+ * soit traitée. Sans cette frontière, un `src` introuvable ou un runtime non
+ * installé remonte jusqu'à la frontière d'erreur de l'app et efface l'écran —
+ * pour une décoration.
+ *
+ * `onError` est appelé une fois par échec, pour que l'app puisse le remonter
+ * (`recordError`) au lieu de le découvrir sur un écran vide.
+ */
+class RiveBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { failed: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error) {
+    forgetLazy(this.props.loader);
+    this.props.onError?.(error);
+  }
+
+  componentDidUpdate(previous) {
+    // Un `src` neuf mérite une nouvelle tentative : sinon un écran qui change
+    // d'animation reste bloqué sur le repli du premier échec.
+    if (this.state.failed && previous.src !== this.props.src) {
+      this.setState({ failed: false });
+    }
+  }
+
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+/**
  * Wrapper Rive aligné sur les standards famille :
+ *  - **repli garanti** : runtime absent, `src` introuvable ou rendu qui jette
+ *    → le `fallback` s'affiche, l'écran ne disparaît pas (voir `RiveBoundary`) ;
  *  - **lazy** : le runtime Rive est chargé à la demande (code-split) ;
  *  - **prefers-reduced-motion** : si l'utilisateur réduit les animations et
  *    qu'un `fallback` est fourni, on rend le fallback statique sans charger Rive ;
@@ -53,7 +113,8 @@ function lazyFor(loader) {
  * @param {{ src: string, stateMachines?: string|string[], artboard?: string,
  *   animations?: string|string[], ariaLabel?: string, fallback?: import('react').ReactNode,
  *   className?: string, respectReducedMotion?: boolean, autoplay?: boolean,
- *   loader?: () => Promise<Record<string, unknown>> }} props
+ *   loader?: () => Promise<Record<string, unknown>>,
+ *   onError?: (error: unknown) => void }} props
  */
 export function RiveAnimation(props) {
   const {
@@ -67,6 +128,7 @@ export function RiveAnimation(props) {
     respectReducedMotion = true,
     autoplay = true,
     loader,
+    onError,
   } = props;
 
   const reduced = useReducedMotion();
@@ -86,15 +148,19 @@ export function RiveAnimation(props) {
     'div',
     { className, ...a11y },
     h(
-      Suspense,
-      { fallback },
-      h(LazyRive, {
-        src,
-        stateMachines,
-        artboard,
-        animations,
-        autoplay: shouldAutoplay,
-      })
+      RiveBoundary,
+      { fallback, loader, src, onError },
+      h(
+        Suspense,
+        { fallback },
+        h(LazyRive, {
+          src,
+          stateMachines,
+          artboard,
+          animations,
+          autoplay: shouldAutoplay,
+        })
+      )
     )
   );
 }

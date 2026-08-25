@@ -8,6 +8,12 @@ export interface UseThemeOptions {
   storageKey?: string;
   /** Application sur `<html>` : attribut `data-theme` ou classe `.dark`. */
   attribute?: 'data-theme' | 'class';
+  /**
+   * Anciennes clés lues si `storageKey` est vide, puis réécrites sous
+   * `storageKey`. Sans elles, adopter le hook perd la préférence déjà
+   * enregistrée : six clés distinctes existent dans la famille.
+   */
+  legacyKeys?: string[];
 }
 
 export interface UseTheme {

@@ -73,11 +73,24 @@ export function useIcon(role) {
  * toujours un texte ou un bouton déjà nommé. Une icône porteuse de sens se pose
  * à la main, avec son propre nom accessible.
  *
+ * UN NOM EXPLICITE REPREND LA MAIN. `aria-hidden` était posé sans condition :
+ * `<Icon role="close" aria-label="Fermer" />` rendait donc une icône à la fois
+ * nommée ET masquée — un lecteur d'écran n'en annonce rien. Les deux attributs
+ * s'excluent, et c'est le nom qui gagne.
+ *
  * @param {{ role: string, size?: number }} props
  */
 export function Icon(props = {}) {
   const { role, size = 18, ...rest } = props;
   const Component = useIcon(role);
   if (!Component) return null;
-  return h(Component, { 'aria-hidden': 'true', size, ...rest });
+  const named = rest['aria-label'] != null || rest['aria-labelledby'] != null;
+  // Un `aria-hidden` explicite l'emporte dans les deux sens : c'est une
+  // décision de l'appelant, pas une valeur à deviner.
+  const chosen = 'aria-hidden' in rest;
+  return h(Component, {
+    size,
+    ...rest,
+    ...(chosen || named ? {} : { 'aria-hidden': 'true' }),
+  });
 }

@@ -29,6 +29,14 @@ import { useTheme } from './use-theme.js';
  * sont posées en variables `--dwc-*` sur `<html>` à chaque changement de
  * schéma. Sans `appId`, rien n'est peint : `tokens.css` (ou l'app) garde la
  * main, et le fournisseur ne sert plus qu'à unifier l'état.
+ *
+ * LA BARRE DU NAVIGATEUR SUIT AUSSI. Cinq apps sur quinze resynchronisent
+ * `<meta name="theme-color">` au changement de thème ; les dix autres gardent
+ * une barre claire en mode sombre. Les balises `media` engendrées par
+ * `pwaSeoPlugin` couvrent le thème SYSTÈME dès le premier rendu ; elles ne
+ * peuvent rien pour un choix explicite contraire au système. C'est ce que ce
+ * fournisseur ajoute, en posant une balise sans `media` — donc gagnante — avec
+ * la couleur du schéma réellement affiché.
  */
 
 const ThemeContext = createContext(null);
@@ -52,9 +60,34 @@ const VARIABLES = {
 };
 
 /**
+ * La balise `theme-color` que ce fournisseur contrôle. Marquée, pour qu'un
+ * second montage la réutilise au lieu d'en empiler une par rendu.
+ */
+function setMetaThemeColor(color) {
+  if (typeof document === 'undefined') return;
+  const head = document.head;
+  if (!head) return;
+  let meta = head.querySelector('meta[data-dwc="theme-color"]');
+  if (!color) {
+    meta?.remove();
+    return;
+  }
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    meta.setAttribute('data-dwc', 'theme-color');
+    // En DERNIER : quand plusieurs balises correspondent, c'est la dernière
+    // applicable qui l'emporte, et celle-ci doit battre les balises `media`.
+    head.append(meta);
+  }
+  meta.setAttribute('content', color);
+}
+
+/**
  * @param {{ appId?: string, children?: import('react').ReactNode,
  *   defaultTheme?: 'light'|'dark'|'system', storageKey?: string,
- *   attribute?: 'data-theme'|'class', paint?: boolean }} props
+ *   attribute?: 'data-theme'|'class', paint?: boolean,
+ *   legacyKeys?: string[], themeColor?: { light?: string, dark?: string } }} props
  */
 export function ThemeProvider(props = {}) {
   const {
@@ -64,9 +97,11 @@ export function ThemeProvider(props = {}) {
     storageKey,
     attribute = 'data-theme',
     paint = true,
+    legacyKeys,
+    themeColor,
   } = props;
 
-  const state = useTheme({ defaultTheme, storageKey, attribute });
+  const state = useTheme({ defaultTheme, storageKey, attribute, legacyKeys });
   const palette = useMemo(() => (appId ? themeById(appId) : null), [appId]);
 
   useEffect(() => {
@@ -80,6 +115,21 @@ export function ThemeProvider(props = {}) {
     }
     if (palette.radius) root.style.setProperty('--dwc-radius', palette.radius);
   }, [palette, state.resolved, paint]);
+
+  // La couleur explicite l'emporte ; sinon le fond de la palette, qui est
+  // déjà la couleur que l'utilisateur voit derrière la barre.
+  const light = themeColor?.light ?? palette?.light?.bg;
+  const dark = themeColor?.dark ?? palette?.dark?.bg;
+
+  useEffect(() => {
+    const color = state.resolved === 'dark' ? dark : light;
+    if (!color) return undefined;
+    setMetaThemeColor(color);
+    // Au démontage, on retire NOTRE balise : sans ça, une app qui démonte le
+    // fournisseur (un test, un rendu conditionnel) garderait une couleur figée
+    // qui continue de battre les balises `media`.
+    return () => setMetaThemeColor(null);
+  }, [state.resolved, light, dark]);
 
   const value = useMemo(
     () => ({ ...state, appId: appId ?? null, palette }),
