@@ -239,7 +239,7 @@ test('le script anti-FOUC injecté par pwaSeoPlugin est haché par la CSP', asyn
 
   const meta = /content="([^"]+)"/.exec(final);
   assert.ok(meta, 'aucune CSP injectée');
-  const inline = /<script>([\s\S]*?)<\/script>/.exec(withBoot);
+  const inline = /<script\s*>([\s\S]*?)<\/script\s*>/i.exec(withBoot);
   assert.ok(inline, 'le script anti-FOUC est absent du HTML');
 
   const { createHash } = await import('node:crypto');
@@ -248,4 +248,40 @@ test('le script anti-FOUC injecté par pwaSeoPlugin est haché par la CSP', asyn
     meta[1].includes(hash),
     'le hash du script anti-FOUC ne figure pas dans script-src'
   );
+});
+
+test('un script inline en majuscules ou espacé est haché comme les autres', async () => {
+  // LE DÉFAUT, signalé par CodeQL sur les tests de cette PR — mais il vit dans
+  // le greffon, pas dans les tests. `/<script>/` sans `i` ne voit ni `<SCRIPT>`
+  // ni `<script >`. Ces scripts ne sont donc PAS hachés, et la CSP les bloque :
+  // l'app se casse en production alors que le développement fonctionnait.
+  //
+  // Le périmètre reste volontairement le même : seuls les `<script>` SANS
+  // attribut sont hachés. `<script src>` est couvert par `'self'`, et
+  // `<script type="application/ld+json">` n'est pas exécuté.
+  const plugin = cspPlugin({});
+  const html =
+    '<!doctype html><html><head>' +
+    '<SCRIPT>var a = 1;</SCRIPT>' +
+    '<script >var b = 2;</script>' +
+    '<script>var c = 3;</script>' +
+    '<script type="application/ld+json">{"@type":"x"}</script>' +
+    '<script src="/app.js"></script>' +
+    '</head><body></body></html>';
+
+  const out = plugin.transformIndexHtml.handler(html);
+  const csp = /content="([^"]+)"/.exec(out)[1];
+  const { createHash } = await import('node:crypto');
+  const hash = body =>
+    `'sha256-${createHash('sha256').update(body, 'utf8').digest('base64')}'`;
+
+  for (const [label, body] of [
+    ['majuscules', 'var a = 1;'],
+    ['espacé', 'var b = 2;'],
+    ['ordinaire', 'var c = 3;'],
+  ]) {
+    assert.ok(csp.includes(hash(body)), `script ${label} non haché`);
+  }
+  // Et rien de plus : le JSON-LD et le script externe restent hors du compte.
+  assert.equal((csp.match(/'sha256-/g) ?? []).length, 3);
 });

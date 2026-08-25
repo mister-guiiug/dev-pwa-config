@@ -14,8 +14,11 @@
  * Les fins de ligne sont normalisées CRLF→LF : un build Windows produirait sinon
  * un hash différent de celui que le navigateur calcule (il normalise en LF).
  *
- * Ne matche que `<script>` sans attribut : les `<script src>`, `<script type=...>`
+ * Ne matche que `<script>` SANS ATTRIBUT : les `<script src>`, `<script type=...>`
  * (modules, JSON-LD) ne sont pas concernés par un hash inline et sont ignorés.
+ * La casse et les espaces avant `>` sont tolérés — `<SCRIPT>` et `<script >`
+ * sont des scripts inline comme les autres, et les manquer revient à les faire
+ * bloquer par la CSP en production.
  *
  * Usage (vite.config.ts) :
  *   import { cspPlugin } from '@mister-guiiug/dev-wpa-config/vite-csp';
@@ -110,9 +113,13 @@ export function cspPlugin(options = {}) {
     transformIndexHtml: {
       order: 'post',
       handler(html) {
-        const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
-          m => sha256(m[1] ?? '')
-        );
+        // `i` et `\s*` ne sont pas décoratifs : sans eux, `<SCRIPT>` et
+        // `<script >` ne sont PAS hachés, donc bloqués par la CSP en
+        // production alors que le développement fonctionne. Le périmètre, lui,
+        // ne change pas : `\s*>` exclut toujours les balises À ATTRIBUT.
+        const hashes = [
+          ...html.matchAll(/<script\s*>([\s\S]*?)<\/script\s*>/gi),
+        ].map(m => sha256(m[1] ?? ''));
         const scripts = withAnalytics(scriptSrc, ANALYTICS_HOSTS.script);
         const scriptSrcValue = dev
           ? ["'self'", "'unsafe-inline'", ...scripts].join(' ')

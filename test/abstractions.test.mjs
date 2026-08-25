@@ -195,7 +195,7 @@ test('le script anti-FOUC applique le thème stocké, et survit à un stockage r
 });
 
 test('le script est injectable tel quel, et échappe la clé', () => {
-  assert.match(themeBootScript(), /^<script>.*<\/script>$/s);
+  assert.match(themeBootScript(), /^<script\s*>[\s\S]*<\/script\s*>$/i);
   // Une clé avec une apostrophe ne doit pas pouvoir refermer la chaîne.
   assert.match(themeBootSource({ storageKey: "a'b" }), /"a'b"/);
   assert.match(themeBootSource({ attribute: 'class' }), /classList\.toggle/);
