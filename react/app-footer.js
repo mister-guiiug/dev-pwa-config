@@ -1,6 +1,6 @@
 import { useLabels } from './labels.js';
 import { createElement as h } from 'react';
-import { GithubIcon, CoffeeIcon } from './icons.js';
+import { Icon } from './icons-context.js';
 
 /**
  * Footer famille : lien code source (GitHub) + lien sponsor (Buy Me a Coffee).
@@ -30,7 +30,7 @@ export function AppFooter(props) {
       ? h(
           'a',
           { href: repoUrl, ...ext, 'data-dwc': 'footer-source' },
-          h(GithubIcon),
+          h(Icon, { role: 'repo' }),
           h('span', null, sourceLabel ?? labels.source)
         )
       : null,
@@ -38,7 +38,7 @@ export function AppFooter(props) {
       ? h(
           'a',
           { href: sponsorUrl, ...ext, 'data-dwc': 'footer-sponsor' },
-          h(CoffeeIcon),
+          h(Icon, { role: 'sponsor' }),
           h('span', null, sponsorLabel ?? labels.sponsor)
         )
       : null

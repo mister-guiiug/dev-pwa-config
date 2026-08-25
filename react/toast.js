@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { CloseIcon } from './icons.js';
+import { Icon } from './icons-context.js';
 import { useLabels } from './labels.js';
 
 /**
@@ -246,7 +246,7 @@ export function ToastViewport(props = {}) {
               'aria-label': labels.close,
               'data-dwc': 'toast-close',
             },
-            h(CloseIcon)
+            h(Icon, { role: 'close' })
           )
         : null
     );

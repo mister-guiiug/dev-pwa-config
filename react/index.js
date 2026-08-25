@@ -41,3 +41,12 @@ export { UpdatePromptBanner } from './update-prompt-banner.js';
 export { UpdateButton } from './update-button.js';
 export { applyUpdate } from '../sw-update.js';
 export { ThemeToggle } from './theme-toggle.js';
+export { ThemeProvider, useThemeContext } from './theme-provider.js';
+export { AppUpdates, useAppUpdates } from './app-updates.js';
+export { ObservabilityBoundary } from './error-boundary.js';
+export {
+  IconsProvider,
+  Icon,
+  useIcon,
+  DEFAULT_ICONS,
+} from './icons-context.js';

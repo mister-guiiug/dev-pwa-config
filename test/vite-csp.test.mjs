@@ -221,3 +221,31 @@ test('le template ne porte plus de directive inerte', () => {
   assert.doesNotMatch(meta[1], /frame-ancestors/);
   assert.match(meta[1], /frame-src 'none'/);
 });
+
+test('le script anti-FOUC injecté par pwaSeoPlugin est haché par la CSP', async () => {
+  // Les deux greffons sont documentés côte à côte ; `cspPlugin` hache en
+  // `order: 'post'` à partir du HTML FINAL. Un script injecté par l'autre doit
+  // donc être couvert sans réglage — sinon la CSP le bloquerait, et la page
+  // s'afficherait en clair avant de basculer : le flash que ce script existe
+  // pour supprimer, réintroduit par la protection censée le laisser passer.
+  const { pwaSeoPlugin } = await import('../vite-pwa-base.js');
+  const seo = pwaSeoPlugin({ themeBoot: true, sitemap: false, robots: false });
+  const csp = cspPlugin({});
+
+  const source =
+    '<!doctype html><html><head><title>x</title></head><body></body></html>';
+  const withBoot = seo.transformIndexHtml(source);
+  const final = csp.transformIndexHtml.handler(withBoot);
+
+  const meta = /content="([^"]+)"/.exec(final);
+  assert.ok(meta, 'aucune CSP injectée');
+  const inline = /<script>([\s\S]*?)<\/script>/.exec(withBoot);
+  assert.ok(inline, 'le script anti-FOUC est absent du HTML');
+
+  const { createHash } = await import('node:crypto');
+  const hash = `'sha256-${createHash('sha256').update(inline[1], 'utf8').digest('base64')}'`;
+  assert.ok(
+    meta[1].includes(hash),
+    'le hash du script anti-FOUC ne figure pas dans script-src'
+  );
+});

@@ -1,8 +1,9 @@
 import { createElement as h } from 'react';
-import { MoonIcon, SunIcon, SystemIcon } from './icons.js';
+import { Icon } from './icons-context.js';
 import { useLabels } from './labels.js';
 import { interpolate } from './i18n-core.js';
 import { useTheme } from './use-theme.js';
+import { useThemeContext } from './theme-provider.js';
 
 /**
  * Bascule de thème.
@@ -33,16 +34,17 @@ import { useTheme } from './use-theme.js';
  * @param {{ states?: string[], className?: string, label?: string,
  *   showLabel?: boolean }} props
  */
-export function ThemeToggle(props = {}) {
+function Toggle(props) {
   const {
     states = ['light', 'dark', 'system'],
     className,
     label,
     showLabel = false,
+    theme,
+    setTheme,
   } = props;
 
   const labels = useLabels('theme');
-  const { theme, setTheme } = useTheme();
 
   const cycle = states.length ? states : ['light', 'dark', 'system'];
   const index = Math.max(0, cycle.indexOf(theme));
@@ -54,8 +56,11 @@ export function ThemeToggle(props = {}) {
     label ??
     interpolate(labels.next, { current: name(current), next: name(next) });
 
-  const ICONS = { light: SunIcon, dark: MoonIcon, system: SystemIcon };
-  const Icon = ICONS[current] ?? SystemIcon;
+  // Le rôle, pas le dessin : sous `IconsProvider`, ce sont les icônes de
+  // l'app qui sont rendues.
+  const role = ['light', 'dark', 'system'].includes(current)
+    ? current
+    : 'system';
 
   return h(
     'button',
@@ -76,10 +81,39 @@ export function ThemeToggle(props = {}) {
     h(
       'span',
       { 'data-dwc': 'theme-toggle-icon', 'aria-hidden': 'true' },
-      h(Icon)
+      h(Icon, { role })
     ),
     showLabel
       ? h('span', { 'data-dwc': 'theme-toggle-label' }, accessibleName)
       : null
   );
+}
+
+/** Autonome : c'est CE composant qui monte `useTheme`, et lui seul. */
+function StandaloneToggle(props) {
+  const { theme, setTheme } = useTheme();
+  return h(Toggle, { ...props, theme, setTheme });
+}
+
+/**
+ * Aiguillage. Sous `ThemeProvider`, la bascule partage SON état ; sinon elle
+ * monte son propre `useTheme`.
+ *
+ * L'aiguillage porte sur le RENDU, pas sur l'appel d'un hook : appeler
+ * `useTheme()` « au cas où » suffirait à créer un second écrivain de
+ * `data-theme`, puisque le hook l'applique dans un effet. C'est précisément le
+ * piège que le catalogue documente à l'entrée `useTheme`, et que ce composant
+ * introduisait lui-même avant ce fournisseur.
+ *
+ * @param {{ states?: string[], className?: string, label?: string,
+ *   showLabel?: boolean }} props
+ */
+export function ThemeToggle(props = {}) {
+  const shared = useThemeContext();
+  if (!shared) return h(StandaloneToggle, props);
+  return h(Toggle, {
+    ...props,
+    theme: shared.theme,
+    setTheme: shared.setTheme,
+  });
 }

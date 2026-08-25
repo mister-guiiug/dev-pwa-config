@@ -79,6 +79,10 @@
       "types": "./sw-update.d.ts",
       "default": "./sw-update.js"
     },
+    "./theme-boot": {
+      "types": "./theme-boot.d.ts",
+      "default": "./theme-boot.js"
+    },
     "./themes": {
       "types": "./themes.d.ts",
       "default": "./themes.js"
@@ -94,6 +98,10 @@
     "./react/app-footer": {
       "types": "./react/app-footer.d.ts",
       "default": "./react/app-footer.js"
+    },
+    "./react/app-updates": {
+      "types": "./react/app-updates.d.ts",
+      "default": "./react/app-updates.js"
     },
     "./react/badge": {
       "types": "./react/badge.d.ts",
@@ -135,6 +143,10 @@
       "types": "./react/i18n.d.ts",
       "default": "./react/i18n.js"
     },
+    "./react/icons-context": {
+      "types": "./react/icons-context.d.ts",
+      "default": "./react/icons-context.js"
+    },
     "./react/labels": {
       "types": "./react/labels.d.ts",
       "default": "./react/labels.js"
@@ -170,6 +182,10 @@
     "./react/sync-status-badge": {
       "types": "./react/sync-status-badge.d.ts",
       "default": "./react/sync-status-badge.js"
+    },
+    "./react/theme-provider": {
+      "types": "./react/theme-provider.d.ts",
+      "default": "./react/theme-provider.js"
     },
     "./react/theme-toggle": {
       "types": "./react/theme-toggle.d.ts",
@@ -289,6 +305,8 @@
     "share.d.ts",
     "sw-update.js",
     "sw-update.d.ts",
+    "theme-boot.js",
+    "theme-boot.d.ts",
     "themes.js",
     "themes.d.ts",
     "web-vitals.js",

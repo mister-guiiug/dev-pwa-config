@@ -198,7 +198,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'ErrorBoundary',
       category: 'feedback',
-      covers: ['ErrorBoundary'],
+      covers: ['ErrorBoundary', 'ObservabilityBoundary'],
       donts: {
         fr: [
           'Ne pas s’en servir pour une erreur réseau : elle attrape le rendu qui plante, pas la requête qui échoue. Pour celle-ci, `ErrorBanner`.',
@@ -532,6 +532,48 @@ globalThis.SHOWROOM_CATALOGUE = {
       dont: {
         fr: 'Ne pas appeler `registerSW` de son côté en plus : il pose des écouteurs, et deux appels les doublent. Le hook mémorise la connexion.',
         en: 'Don’t also call `registerSW` yourself: it installs listeners, and two calls double them. The hook memoises the connection.',
+      },
+    },
+    {
+      id: 'useThemeContext',
+      covers: ['ThemeProvider', 'useThemeContext'],
+      signature:
+        '<ThemeProvider appId storageKey> · useThemeContext() → { theme, resolved, setTheme, palette }',
+      summary: {
+        fr: 'Palette du catalogue, état du thème et variables `--dwc-*`, en un seul endroit. Sans `appId`, rien n’est peint : seul l’état est partagé.',
+        en: 'Catalogue palette, theme state and `--dwc-*` variables in one place. Without `appId` nothing is painted: only the state is shared.',
+      },
+      dont: {
+        fr: 'Ne pas appeler `useTheme()` en parallèle sous le fournisseur : deux instances écrivent `data-theme`, et la dernière rendue gagne. `useThemeContext()` lit celle qui existe déjà.',
+        en: 'Don’t also call `useTheme()` under the provider: two instances write `data-theme`, and the last render wins. `useThemeContext()` reads the one already there.',
+      },
+    },
+    {
+      id: 'useAppUpdates',
+      covers: ['AppUpdates', 'useAppUpdates'],
+      signature:
+        '<AppUpdates registerSW checkEvery="1h"> · useAppUpdates() → { visible, updating, update, forceUpdate }',
+      summary: {
+        fr: '`registerSW` donné une seule fois : le bandeau se pose seul, et `UpdateButton` posé n’importe où partage le même état.',
+        en: '`registerSW` given once: the banner places itself, and `UpdateButton` anywhere shares the same state.',
+      },
+      dont: {
+        fr: 'Ne pas omettre `checkEvery` sur une app installée : sans vérification périodique, une PWA ouverte plusieurs jours ne découvre une version qu’au prochain démarrage à froid.',
+        en: 'Don’t omit `checkEvery` on an installed app: without a periodic check, a PWA left open for days only discovers a version on its next cold start.',
+      },
+    },
+    {
+      id: 'useIcon',
+      covers: ['IconsProvider', 'Icon', 'useIcon', 'DEFAULT_ICONS'],
+      signature:
+        '<IconsProvider icons={{ close: X }}> · <Icon role="close" /> · useIcon(role)',
+      summary: {
+        fr: 'Le paquet demande un RÔLE (`close`, `light`, `repo`…), l’app fournit le dessin. Dix apps sur seize utilisent `lucide-react` ; les SVG maison restent le repli.',
+        en: 'The package asks for a ROLE (`close`, `light`, `repo`…), the app supplies the drawing. Ten apps out of sixteen use `lucide-react`; the in-house SVGs remain the fallback.',
+      },
+      dont: {
+        fr: 'Ne pas y placer une icône porteuse de sens : `Icon` est décorative (`aria-hidden`). Une icône qui informe se pose à la main, avec son nom accessible.',
+        en: 'Don’t put a meaningful icon in it: `Icon` is decorative (`aria-hidden`). An informative icon is placed by hand, with its own accessible name.',
       },
     },
     {

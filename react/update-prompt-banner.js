@@ -1,6 +1,7 @@
 import { createElement as h } from 'react';
 import { useUpdatePrompt } from './use-update-prompt.js';
 import { useLabels } from './labels.js';
+import { useAppUpdates } from './app-updates.js';
 
 /**
  * Bandeau « Mise à jour disponible », branché sur `useUpdatePrompt`.
@@ -18,9 +19,8 @@ import { useLabels } from './labels.js';
  *   dismissLabel?: string, className?: string,
  *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions }} props
  */
-export function UpdatePromptBanner(props = {}) {
+function Banner(props) {
   const {
-    registerSW,
     snoozeHours = 0,
     title,
     updateLabel,
@@ -28,15 +28,10 @@ export function UpdatePromptBanner(props = {}) {
     snoozeLabel,
     dismissLabel,
     className,
-    updateOptions,
   } = props;
 
   const labels = useLabels('update');
-  const { visible, updating, update, snooze, dismiss } = useUpdatePrompt({
-    registerSW,
-    snoozeHours,
-    updateOptions,
-  });
+  const { visible, updating, update, snooze, dismiss } = props;
   if (!visible) return null;
 
   const secondaryLabel =
@@ -78,4 +73,27 @@ export function UpdatePromptBanner(props = {}) {
       secondaryLabel
     )
   );
+}
+
+/** Autonome : c'est CE composant qui monte le hook, et lui seul. */
+function StandaloneBanner(props) {
+  const state = useUpdatePrompt({
+    registerSW: props.registerSW,
+    snoozeHours: props.snoozeHours ?? 0,
+    updateOptions: props.updateOptions,
+  });
+  return h(Banner, { ...props, ...state });
+}
+
+/**
+ * Aiguillage. Sous `AppUpdates`, le bandeau lit l'état du fournisseur : écarter
+ * le bandeau et cliquer le bouton des réglages parlent alors du même état.
+ * Hors fournisseur, il s'enregistre lui-même à partir de `registerSW`.
+ *
+ * @param {import('./update-prompt-banner.js').UpdatePromptBannerProps} props
+ */
+export function UpdatePromptBanner(props = {}) {
+  const shared = useAppUpdates();
+  if (!shared) return h(StandaloneBanner, props);
+  return h(Banner, { ...props, ...shared });
 }

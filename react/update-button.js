@@ -1,5 +1,6 @@
 import { createElement as h } from 'react';
 import { useUpdatePrompt } from './use-update-prompt.js';
+import { useAppUpdates } from './app-updates.js';
 import { useLabels } from './labels.js';
 
 /**
@@ -23,18 +24,11 @@ import { useLabels } from './labels.js';
  *   showHint?: boolean, className?: string, children?: unknown,
  *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions }} props
  */
-export function UpdateButton(props = {}) {
-  const {
-    label,
-    updatingLabel,
-    hint,
-    showHint = false,
-    className,
-    updateOptions,
-  } = props;
+function Button_(props) {
+  const { label, updatingLabel, hint, showHint = false, className } = props;
 
   const labels = useLabels('update');
-  const { updating, forceUpdate } = useUpdatePrompt({ updateOptions });
+  const { updating, forceUpdate } = props;
   const text = updating
     ? (updatingLabel ?? labels.updating)
     : (label ?? labels.force);
@@ -62,4 +56,33 @@ export function UpdateButton(props = {}) {
     button,
     h('p', { 'data-dwc': 'update-button-hint' }, hint ?? labels.forceHint)
   );
+}
+
+/** Autonome : c'est CE composant qui monte le hook, et lui seul. */
+function StandaloneUpdateButton(props) {
+  const { updating, forceUpdate } = useUpdatePrompt({
+    updateOptions: props.updateOptions,
+  });
+  return h(Button_, { ...props, updating, forceUpdate });
+}
+
+/**
+ * Aiguillage. Sous `AppUpdates`, le bouton partage l'état du fournisseur —
+ * pendant qu'une mise à jour est en cours, le bandeau ET le bouton le disent.
+ * Hors fournisseur, il monte son propre hook et reste utilisable seul, ce qui
+ * est justement son cas d'usage : un écran de réglages, là où `needRefresh`
+ * est faux et où aucun bandeau n'existe.
+ *
+ * @param {{ label?: string, updatingLabel?: string, hint?: string,
+ *   showHint?: boolean, className?: string,
+ *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions }} props
+ */
+export function UpdateButton(props = {}) {
+  const shared = useAppUpdates();
+  if (!shared) return h(StandaloneUpdateButton, props);
+  return h(Button_, {
+    ...props,
+    updating: shared.updating,
+    forceUpdate: shared.forceUpdate,
+  });
 }

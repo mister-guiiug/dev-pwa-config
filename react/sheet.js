@@ -1,5 +1,5 @@
 import { createElement as h, useId, useRef } from 'react';
-import { CloseIcon } from './icons.js';
+import { Icon } from './icons-context.js';
 import { useLabels } from './labels.js';
 import { useDialogBehaviour } from './use-dialog.js';
 
@@ -86,7 +86,7 @@ export function Sheet(props = {}) {
             'aria-label': close_,
             'data-dwc': 'sheet-close',
           },
-          h(CloseIcon)
+          h(Icon, { role: 'close' })
         )
       ),
       h('div', { 'data-dwc': 'sheet-body' }, children),
