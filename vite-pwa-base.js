@@ -26,7 +26,11 @@
  *   VITE_GTM_CONTAINER_ID     ex. GTM-XXXXXXX       (optionnel)
  *   VITE_GA_MEASUREMENT_ID    ex. G-XXXXXXXXXX      (optionnel)
  */
-import { themeBootScript } from './theme-boot.js';
+import {
+  stripThemeColorMeta,
+  themeBootScript,
+  themeColorMetaTags,
+} from './theme-boot.js';
 
 import process from 'node:process';
 
@@ -76,6 +80,16 @@ export function resolveSeoPublicUrls(arg) {
  * Fragments HTML analytics (GTM et/ou GA4) à injecter dans <head>/<body>.
  * Si GTM ET GA4 sont définis : seul GTM est chargé (configurez GA4 dans GTM
  * pour éviter le double comptage).
+ *
+ * LE CONSENTEMENT PASSE EN PREMIER, ou ne sert à rien. Le mode consentement de
+ * Google veut que l'état par défaut soit déclaré AVANT le chargement du tag :
+ * une commande postérieure n'a pas d'effet rétroactif sur ce qui a déjà été
+ * collecté. Ces fragments l'écrivaient sans, donc la valeur par défaut de
+ * Google s'appliquait — pour des applications françaises, ce n'est pas un
+ * détail de configuration.
+ *
+ * `consent: false` restaure le comportement d'avant, pour un déploiement qui
+ * gère le consentement ailleurs (dans GTM, par une CMP).
  */
 export function buildAnalyticsHtmlFragments(overrides = {}) {
   const gtm = parseGtmContainerId(
@@ -84,6 +98,19 @@ export function buildAnalyticsHtmlFragments(overrides = {}) {
   const ga = parseGaMeasurementId(
     overrides.gaMeasurementId ?? process.env.VITE_GA_MEASUREMENT_ID
   );
+  const consentDefault =
+    overrides.consent === false
+      ? ''
+      : `<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
+    analytics_storage: 'denied', functionality_storage: 'denied',
+    personalization_storage: 'denied', wait_for_update: 500
+  });
+</script>
+`;
 
   const gtmHead = id => `<!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -98,11 +125,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->`;
 
   if (gtm) {
-    return { head: gtmHead(gtm), body: gtmBody(gtm) };
+    return { head: consentDefault + gtmHead(gtm), body: gtmBody(gtm) };
   }
   if (ga) {
     return {
-      head: `<!-- Google tag (gtag.js) / GA4 -->
+      head:
+        consentDefault +
+        `<!-- Google tag (gtag.js) / GA4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=${ga}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -154,6 +183,8 @@ export function pwaSeoPlugin(opts = {}) {
     gtmContainerId,
     gaMeasurementId,
     themeBoot,
+    themeColor,
+    consent,
     extraReplacements = {},
   } = opts;
   const urlOpts = { basePath, logoPath, iconQuery };
@@ -196,6 +227,7 @@ export function pwaSeoPlugin(opts = {}) {
       const { head, body } = buildAnalyticsHtmlFragments({
         gtmContainerId,
         gaMeasurementId,
+        consent,
       });
       // Le script anti-FOUC, INJECTÉ plutôt que recopié. Treize apps sur seize
       // en portent un à la main dans leur `index.html`, de dix à trente-trois
@@ -206,6 +238,19 @@ export function pwaSeoPlugin(opts = {}) {
       // `cspPlugin` hache les scripts inline en `order: 'post'`, à partir du
       // HTML final — celui-ci est donc couvert sans réglage supplémentaire.
       let out = html;
+      // La barre du navigateur suit le thème système, DÈS LE PREMIER RENDU.
+      // Dix apps sur quinze gardaient une barre claire en mode sombre, faute
+      // d'attribut `media` sur la balise. On remplace la balise existante :
+      // en laisser deux ferait gagner la dernière, au hasard de l'ordre.
+      if (themeColor) {
+        const tags = themeColorMetaTags(themeColor);
+        if (tags) {
+          out = stripThemeColorMeta(out);
+          out = out.includes('<head>')
+            ? out.replace('<head>', `<head>\n    ${tags}`)
+            : `${tags}\n${out}`;
+        }
+      }
       if (themeBoot) {
         const boot = themeBootScript(
           typeof themeBoot === 'object' ? themeBoot : {}

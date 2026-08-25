@@ -10,6 +10,16 @@ export interface ThemeProviderProps {
   attribute?: 'data-theme' | 'class';
   /** `false` pour garder l'état partagé sans peindre les variables. */
   paint?: boolean;
+  /**
+   * Anciennes clés `localStorage` à migrer vers `storageKey` (six clés
+   * distinctes existent dans la famille).
+   */
+  legacyKeys?: string[];
+  /**
+   * Couleur de la barre du navigateur par schéma. Sans valeur, le fond de la
+   * palette d'`appId` est utilisé.
+   */
+  themeColor?: { light?: string; dark?: string };
 }
 
 export interface ThemeContextValue {

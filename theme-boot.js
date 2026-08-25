@@ -18,6 +18,15 @@
  * ensuite — d'où le partage des mêmes clés et de la même validation, sans quoi
  * les deux divergent et le flash revient par la bande.
  *
+ * LA MIGRATION DE CLÉ, sans quoi ce module casse ce qu'il vient réparer.
+ * Mesure sur les seize apps : **six clés de stockage distinctes** — `'theme'`
+ * (quatre apps), `'lh_theme'`, `'mc-theme'`, `'mister-doc:theme'`,
+ * `'mister_puzzle_theme'` — et le paquet arrive avec `'dwc_theme'`. Adopter ce
+ * script sans passer `storageKey` orpheline SILENCIEUSEMENT la préférence de
+ * chaque utilisateur déjà installé : il retrouve le thème système, sans rien
+ * avoir demandé. `legacyKeys` lit les anciennes clés une fois, réécrit sous la
+ * neuve, et le problème ne se pose plus jamais.
+ *
  * SANS DÉPENDANCE. Rend une chaîne ; l'injection est le travail de l'appelant.
  */
 
@@ -38,6 +47,7 @@ export function themeBootSource(options = {}) {
     storageKey = DEFAULT_STORAGE_KEY,
     attribute = 'data-theme',
     defaultTheme = 'system',
+    legacyKeys = [],
   } = options;
 
   // Sérialisées en JSON : une clé contenant une apostrophe ou un guillemet ne
@@ -51,11 +61,27 @@ export function themeBootSource(options = {}) {
       ? "r.classList.toggle('dark', e === 'dark');"
       : "r.setAttribute('data-theme', e);";
 
+  // La migration : on ne la génère que si des anciennes clés sont déclarées,
+  // pour ne pas alourdir d'un octet le script des apps qui n'en ont pas.
+  const legacy = (Array.isArray(legacyKeys) ? legacyKeys : [legacyKeys])
+    .filter(k => typeof k === 'string' && k && k !== storageKey)
+    .map(k => JSON.stringify(k));
+  const migrate = legacy.length
+    ? `if(v!=='light'&&v!=='dark'){var L=[${legacy.join(',')}],i;` +
+      'for(i=0;i<L.length;i++){var o=localStorage.getItem(L[i]);' +
+      // On accepte aussi `'system'` : c'est une valeur que les copies stockent,
+      // et la migrer évite de redemander le choix. Elle se résout ensuite comme
+      // une absence, donc par `prefers-color-scheme`.
+      "if(o==='light'||o==='dark'||o==='system'){v=o;" +
+      `localStorage.setItem(${key},o);break;}}}`
+    : '';
+
   return (
     '(function(){try{' +
     'var r=document.documentElement,' +
-    `v=localStorage.getItem(${key}),` +
-    "e=v==='light'||v==='dark'?v:" +
+    `v=localStorage.getItem(${key});` +
+    migrate +
+    "var e=v==='light'||v==='dark'?v:" +
     "(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');" +
     apply +
     'r.style.colorScheme=e;' +
@@ -69,4 +95,86 @@ export function themeBootSource(options = {}) {
 /** Le même script, enveloppé dans sa balise, prêt à injecter dans le `<head>`. */
 export function themeBootScript(options = {}) {
   return `<script>${themeBootSource(options)}</script>`;
+}
+
+/* ── La couleur de la barre système ────────────────────────────────────── */
+
+/** Une couleur CSS crédible, sans quoi on n'écrit rien dans le HTML. */
+function safeColor(value) {
+  const color = String(value ?? '').trim();
+  // Ni guillemet, ni chevron, ni point-virgule : c'est un attribut HTML
+  // engendré, pas une valeur de confiance.
+  return color && !/["'<>]/.test(color) && color.length <= 64 ? color : null;
+}
+
+/**
+ * Les deux balises `<meta name="theme-color">` qui suivent le thème SYSTÈME.
+ *
+ * LE CONSTAT. Quinze valeurs de `theme-color` distinctes dans la famille, et
+ * **cinq apps seulement** la resynchronisent quand le thème change : les dix
+ * autres gardent une barre de navigateur claire en mode sombre. Trois d'entre
+ * elles écrivent pour cela du JavaScript qui va chercher la balise et réécrit
+ * `content` — alors que l'attribut `media` fait exactement cela, sans script
+ * et **dès le premier rendu**, avant que le moindre bundle soit évalué.
+ *
+ * CE QUE ÇA NE COUVRE PAS, et pourquoi `ThemeProvider` complète. `media` suit
+ * `prefers-color-scheme`, donc le système. Un utilisateur qui a explicitement
+ * choisi « sombre » sur un système clair n'est pas servi ici : c'est
+ * `ThemeProvider` qui pose alors une balise sans `media`, ajoutée en dernier,
+ * qui l'emporte. Les deux se complètent au lieu de se remplacer.
+ *
+ * @param {{ light?: string, dark?: string }} colors
+ * @returns {string} Les balises, ou `''` si aucune couleur exploitable.
+ */
+export function themeColorMetaTags(colors = {}) {
+  const light = safeColor(colors.light);
+  const dark = safeColor(colors.dark);
+  const tags = [];
+  if (light) {
+    tags.push(
+      `<meta name="theme-color" content="${light}" media="(prefers-color-scheme: light)">`
+    );
+  }
+  if (dark) {
+    tags.push(
+      `<meta name="theme-color" content="${dark}" media="(prefers-color-scheme: dark)">`
+    );
+  }
+  return tags.join('\n    ');
+}
+
+/**
+ * La balise elle-même. Volontairement SANS préfixe d'espaces.
+ *
+ * La première version commençait par `[ \t]*`, pour absorber l'indentation en
+ * même temps que la balise. CodeQL l'a signalée, et la mesure lui donne
+ * raison : sur une suite de N tabulations qui ne mène à aucun `<meta`, le
+ * moteur repart de chaque position et rescanne — coût quadratique, vérifié à
+ * 5 ms pour 2 000 tabulations, 379 ms pour 16 000. L'entrée est le HTML que
+ * Vite passe au plugin, donc pas une valeur dont ce module décide.
+ *
+ * Ici la balise commence par un littéral obligatoire : les positions de départ
+ * sont bornées par le nombre de `<meta` réellement présents.
+ */
+const THEME_COLOR_META = /<meta\b[^>]*\bname=["']theme-color["'][^>]*>/gi;
+
+/**
+ * Retire les `<meta name="theme-color">` déjà présentes dans un HTML.
+ *
+ * L'indentation résiduelle est traitée LIGNE PAR LIGNE, en code ordinaire : une
+ * ligne qui ne portait que la balise disparaît, une ligne qui portait autre
+ * chose est conservée telle quelle. Aucune expression rationnelle ne voit
+ * d'espaces, donc plus rien à faire rétrograder.
+ */
+export function stripThemeColorMeta(html) {
+  const source = String(html);
+  if (!source.includes('theme-color')) return source;
+
+  const kept = [];
+  for (const line of source.split('\n')) {
+    const stripped = line.replace(THEME_COLOR_META, '');
+    if (stripped === line) kept.push(line);
+    else if (stripped.trim() !== '') kept.push(stripped);
+  }
+  return kept.join('\n');
 }

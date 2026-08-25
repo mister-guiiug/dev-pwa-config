@@ -377,50 +377,55 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 
 ## Exports npm
 
-| Sous-chemin                                                | Type            | Description                                                                                                                                                                                                                      |
-| ---------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@mister-guiiug/dev-wpa-config/eslint-base`                | `.js`           | Config ESLint pour projets vanilla TS / Node (sans React)                                                                                                                                                                        |
-| `@mister-guiiug/dev-wpa-config/eslint-react`               | `.js`           | Étend la base avec `react-hooks` + `react-refresh` + `jsx-a11y` (règles React Compiler & a11y en `warn`)                                                                                                                         |
-| `@mister-guiiug/dev-wpa-config/prettier`                   | `.js`           | Config Prettier 3.6                                                                                                                                                                                                              |
-| `@mister-guiiug/dev-wpa-config/commitlint`                 | `.js`           | Config commitlint (Conventional Commits)                                                                                                                                                                                         |
-| `@mister-guiiug/dev-wpa-config/lint-staged`                | `.js`           | Config lint-staged (eslint --fix + prettier --write)                                                                                                                                                                             |
-| `@mister-guiiug/dev-wpa-config/tsconfig-app`               | `.json`         | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]`                                                                                                                  |
-| `@mister-guiiug/dev-wpa-config/tsconfig-app-react`         | `.json`         | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client`                                                                                                                                   |
-| `@mister-guiiug/dev-wpa-config/tsconfig-node`              | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                                                          |
-| `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`       | `.json`         | Durcissement TS **opt-in** : `noPropertyAccessFromIndexSignature` + `noImplicitOverride` + `exactOptionalPropertyTypes` (par-dessus la base stricte)                                                                             |
-| `@mister-guiiug/dev-wpa-config/vitest-base`                | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                                                |
-| `@mister-guiiug/dev-wpa-config/vitest-setup`               | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                                                       |
-| `@mister-guiiug/dev-wpa-config/apps-catalog`               | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                         |
-| `@mister-guiiug/dev-wpa-config/react`                      | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                    |
-| `@mister-guiiug/dev-wpa-config/react/use-update-prompt`    | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                  |
-| `@mister-guiiug/dev-wpa-config/react/update-button`        | `.js` + `.d.ts` | `UpdateButton` : bouton « Forcer la mise à jour » des réglages, sans dépendance à vite-plugin-pwa                                                                                                                                |
-| `@mister-guiiug/dev-wpa-config/react/confirm-dialog`       | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone                                                                                                                    |
-| `@mister-guiiug/dev-wpa-config/react/toast`                | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                  |
-| `@mister-guiiug/dev-wpa-config/react/bottom-nav`           | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                        |
-| `@mister-guiiug/dev-wpa-config/react/labels`               | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés fr/en des composants du paquet (prop > contexte > français)                                                                                                                            |
-| `@mister-guiiug/dev-wpa-config/sw-update`                  | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` : appliquer une mise à jour de service worker — **sans React ni module virtuel**                                                                                                                  |
-| `@mister-guiiug/dev-wpa-config/theme-boot`                 | `.js` + `.d.ts` | `themeBootScript` / `themeBootSource` — le script anti-FOUC **engendré**, recopié à la main dans 13 apps sur 16 ; injecté par `pwaSeoPlugin({ themeBoot: true })`                                                                |
-| `@mister-guiiug/dev-wpa-config/react/theme-provider`       | `.js` + `.d.ts` | `ThemeProvider` / `useThemeContext` — palette du catalogue, état et variables `--dwc-*` en un seul endroit, un seul écrivain de `data-theme`                                                                                     |
-| `@mister-guiiug/dev-wpa-config/react/app-updates`          | `.js` + `.d.ts` | `AppUpdates` / `useAppUpdates` — `registerSW` donné une fois, bandeau posé seul, `checkEvery` périodique                                                                                                                         |
-| `@mister-guiiug/dev-wpa-config/react/icons-context`        | `.js` + `.d.ts` | `IconsProvider` / `Icon` / `useIcon` — le paquet demande un **rôle**, l'app fournit le dessin (10 apps sur 16 sont sur `lucide-react`)                                                                                           |
-| `@mister-guiiug/dev-wpa-config/download`                   | `.js` + `.d.ts` | `downloadBlob` / `downloadJson` / `downloadText` / `readJsonFile` / `dateSlug` — la danse `createObjectURL` + ancre + `revoke`, recopiée dans **12 apps sur 16**                                                                 |
-| `@mister-guiiug/dev-wpa-config/share`                      | `.js` + `.d.ts` | `shareOrCopy` / `copyToClipboard` / `currentAppUrl` — Web Share avec repli presse-papiers ; l'annulation est distinguée de l'échec                                                                                               |
-| `@mister-guiiug/dev-wpa-config/web-vitals`                 | `.js` + `.d.ts` | `initWebVitals` / `rate` / `THRESHOLDS` — chaque métrique enregistrée indépendamment, `onINP` au lieu d'`onFID` (retiré en v4). Peer **optionnelle** `web-vitals` ^4                                                             |
-| `@mister-guiiug/dev-wpa-config/react/theme-toggle`         | `.js` + `.d.ts` | `ThemeToggle` : cycle clair → sombre → **système**, `type="button"`, nom accessible qui dit l'état courant                                                                                                                       |
-| `@mister-guiiug/dev-wpa-config/react/rive`                 | `.js` + `.d.ts` | `RiveAnimation` — wrapper Rive lazy, a11y, `prefers-reduced-motion` (peer optionnelle `@rive-app/react-canvas`)                                                                                                                  |
-| `@mister-guiiug/dev-wpa-config/react/i18n`                 | `.js` + `.d.ts` | `createI18n` : i18n minimal typé (clés dot-notation dérivées des messages), `I18nProvider`/`useI18n`, zéro dépendance runtime                                                                                                    |
-| `@mister-guiiug/dev-wpa-config/react/observability`        | `.js` + `.d.ts` | `installErrorReporter`/`recordError`/`initSentry` (peer optionnelle `@sentry/react`, `loader` pour bundler l'import) — hors barrel                                                                                               |
-| `@mister-guiiug/dev-wpa-config/react/update-prompt-banner` | `.js` + `.d.ts` | `UpdatePromptBanner` : bannière MAJ service worker prête à l'emploi (couplée `useUpdatePrompt`)                                                                                                                                  |
-| `@mister-guiiug/dev-wpa-config/vitest-browser-base`        | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                                                |
-| `@mister-guiiug/dev-wpa-config/playwright-base`            | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy)                            |
-| `@mister-guiiug/dev-wpa-config/playwright-a11y`            | `.js` + `.d.ts` | `expectNoA11yViolations` / `analyzeA11y` / `formatViolations` (axe-core via `AxeBuilder` injecté ; peer optionnelle `@axe-core/playwright`)                                                                                      |
-| `@mister-guiiug/dev-wpa-config/vite-pwa-base`              | `.js` + `.d.ts` | `pwaSeoPlugin()` (injection GTM/GA4 + sitemap.xml/robots.txt) + helpers analytics                                                                                                                                                |
-| `@mister-guiiug/dev-wpa-config/vite-csp`                   | `.js` + `.d.ts` | `cspPlugin` : injecte la CSP avec `script-src` par hash SHA-256 des scripts inline (pas de `'unsafe-inline'` en prod)                                                                                                            |
-| `@mister-guiiug/dev-wpa-config/map`                        | `.js` + `.d.ts` | Socle carto **agnostique** : port `MapProvider`, sources de tuiles (`osmRasterTiles`, `vectorTiles`), clustering par grille, helpers CSP (`mapCspDirectives`) et cache workbox (`mapTileRuntimeCaching`) — aucun moteur embarqué |
-| `@mister-guiiug/dev-wpa-config/map/leaflet`                | `.js` + `.d.ts` | Adaptateur **Leaflet** (~42 ko gzip, raster uniquement ; peer optionnelle `leaflet`)                                                                                                                                             |
-| `@mister-guiiug/dev-wpa-config/map/maplibre`               | `.js` + `.d.ts` | Adaptateur **MapLibre GL** (~253 ko gzip, raster + vectoriel, WebGL ; peer optionnelle `maplibre-gl` ^6)                                                                                                                         |
-| `@mister-guiiug/dev-wpa-config/tailwind-preset`            | `.js`           | Design tokens famille (fonts, safe-areas, breakpoints)                                                                                                                                                                           |
-| `@mister-guiiug/dev-wpa-config/tailwind-preset.css`        | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                                                  |
+| Sous-chemin                                                 | Type            | Description                                                                                                                                                                                                                      |
+| ----------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@mister-guiiug/dev-wpa-config/eslint-base`                 | `.js`           | Config ESLint pour projets vanilla TS / Node (sans React)                                                                                                                                                                        |
+| `@mister-guiiug/dev-wpa-config/eslint-react`                | `.js`           | Étend la base avec `react-hooks` + `react-refresh` + `jsx-a11y` (règles React Compiler & a11y en `warn`)                                                                                                                         |
+| `@mister-guiiug/dev-wpa-config/prettier`                    | `.js`           | Config Prettier 3.6                                                                                                                                                                                                              |
+| `@mister-guiiug/dev-wpa-config/commitlint`                  | `.js`           | Config commitlint (Conventional Commits)                                                                                                                                                                                         |
+| `@mister-guiiug/dev-wpa-config/lint-staged`                 | `.js`           | Config lint-staged (eslint --fix + prettier --write)                                                                                                                                                                             |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app`                | `.json`         | Base app : ES2025 strict, `moduleResolution: bundler`, `noUncheckedSideEffectImports`, `types: ["vite/client"]`                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/tsconfig-app-react`          | `.json`         | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client`                                                                                                                                   |
+| `@mister-guiiug/dev-wpa-config/tsconfig-node`               | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                                                          |
+| `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`        | `.json`         | Durcissement TS **opt-in** : `noPropertyAccessFromIndexSignature` + `noImplicitOverride` + `exactOptionalPropertyTypes` (par-dessus la base stricte)                                                                             |
+| `@mister-guiiug/dev-wpa-config/vitest-base`                 | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                                                |
+| `@mister-guiiug/dev-wpa-config/vitest-setup`                | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                                                       |
+| `@mister-guiiug/dev-wpa-config/apps-catalog`                | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                         |
+| `@mister-guiiug/dev-wpa-config/react`                       | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                    |
+| `@mister-guiiug/dev-wpa-config/react/use-update-prompt`     | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/react/update-button`         | `.js` + `.d.ts` | `UpdateButton` : bouton « Forcer la mise à jour » des réglages, sans dépendance à vite-plugin-pwa                                                                                                                                |
+| `@mister-guiiug/dev-wpa-config/react/confirm-dialog`        | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone                                                                                                                    |
+| `@mister-guiiug/dev-wpa-config/react/toast`                 | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/react/bottom-nav`            | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                        |
+| `@mister-guiiug/dev-wpa-config/react/labels`                | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés fr/en des composants du paquet (prop > contexte > français)                                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/sw-update`                   | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` : appliquer une mise à jour de service worker — **sans React ni module virtuel**                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/theme-boot`                  | `.js` + `.d.ts` | `themeBootScript` / `themeBootSource` / `themeColorMetaTags` — le script anti-FOUC **engendré** (13 apps sur 16 le recopient), avec `legacyKeys` pour migrer les **6 clés de stockage** distinctes de la famille                 |
+| `@mister-guiiug/dev-wpa-config/react/theme-provider`        | `.js` + `.d.ts` | `ThemeProvider` / `useThemeContext` — palette du catalogue, état et variables `--dwc-*` en un seul endroit, un seul écrivain de `data-theme`                                                                                     |
+| `@mister-guiiug/dev-wpa-config/react/app-updates`           | `.js` + `.d.ts` | `AppUpdates` / `useAppUpdates` — `registerSW` donné une fois, bandeau posé seul, `checkEvery` périodique                                                                                                                         |
+| `@mister-guiiug/dev-wpa-config/react/icons-context`         | `.js` + `.d.ts` | `IconsProvider` / `Icon` / `useIcon` — le paquet demande un **rôle**, l'app fournit le dessin (10 apps sur 16 sont sur `lucide-react`)                                                                                           |
+| `@mister-guiiug/dev-wpa-config/react/icons-lucide`          | `.js` + `.d.ts` | `lucideIconSet` — le pont vers `lucide-react` en une ligne (`aria-hidden`, `focusable`, poids de trait), **sans ajouter la dépendance** au paquet                                                                                |
+| `@mister-guiiug/dev-wpa-config/react/a11y`                  | `.js` + `.d.ts` | `useFocusTrap` / `useEscape` / `useScrollLock` / `AnnouncerProvider` / `SkipLink` / `VisuallyHidden` — extraits de `Sheet`, pour les **38 dialogues** que les apps écrivent elles-mêmes                                          |
+| `@mister-guiiug/dev-wpa-config/analytics`                   | `.js` + `.d.ts` | `initAnalytics` / `trackEvent` / `trackPageView` / `setAnalyticsConsent` — GA4 ou GTM, **rien n'est injecté avant le consentement**                                                                                              |
+| `@mister-guiiug/dev-wpa-config/react/use-page-views`        | `.js` + `.d.ts` | `usePageViews` — une vue de page par navigation ; GA4 n'en envoie qu'une par chargement de document, donc toute la navigation d'une PWA est invisible sans ce hook                                                               |
+| `@mister-guiiug/dev-wpa-config/react/use-route-breadcrumbs` | `.js` + `.d.ts` | `useRouteBreadcrumbs` — le chemin courant dans le fil d'Ariane et le contexte de session, agnostique du routeur                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/download`                    | `.js` + `.d.ts` | `downloadBlob` / `downloadJson` / `downloadText` / `readJsonFile` / `dateSlug` — la danse `createObjectURL` + ancre + `revoke`, recopiée dans **12 apps sur 16**                                                                 |
+| `@mister-guiiug/dev-wpa-config/share`                       | `.js` + `.d.ts` | `shareOrCopy` / `copyToClipboard` / `currentAppUrl` — Web Share avec repli presse-papiers ; l'annulation est distinguée de l'échec                                                                                               |
+| `@mister-guiiug/dev-wpa-config/web-vitals`                  | `.js` + `.d.ts` | `initWebVitals` / `rate` / `THRESHOLDS` — chaque métrique enregistrée indépendamment, `onINP` au lieu d'`onFID` (retiré en v4). Peer **optionnelle** `web-vitals` ^4                                                             |
+| `@mister-guiiug/dev-wpa-config/react/theme-toggle`          | `.js` + `.d.ts` | `ThemeToggle` : cycle clair → sombre → **système**, `type="button"`, nom accessible qui dit l'état courant                                                                                                                       |
+| `@mister-guiiug/dev-wpa-config/react/rive`                  | `.js` + `.d.ts` | `RiveAnimation` — lazy, a11y, `prefers-reduced-motion`, et **repli garanti** si le runtime ou le `.riv` manque (aucun `.riv` n'existe dans les 16 dépôts). Peer optionnelle `@rive-app/react-canvas`                             |
+| `@mister-guiiug/dev-wpa-config/react/i18n`                  | `.js` + `.d.ts` | `createI18n` : i18n minimal typé (clés dot-notation), `I18nProvider`/`useI18n` — et **`fmt`**, les formateurs déjà liés à la locale courante (78 formatages à locale figée mesurés dans la famille). Pose `LabelsProvider`       |
+| `@mister-guiiug/dev-wpa-config/react/observability`         | `.js` + `.d.ts` | `installObservability` / `recordError` / `initSentry` + **le contexte** : `setSessionContext`, `breadcrumb`, `captureConsole` (59 `console.error/warn` perdus mesurés). Peer optionnelle `@sentry/react` — hors barrel           |
+| `@mister-guiiug/dev-wpa-config/react/update-prompt-banner`  | `.js` + `.d.ts` | `UpdatePromptBanner` : bannière MAJ service worker prête à l'emploi (couplée `useUpdatePrompt`)                                                                                                                                  |
+| `@mister-guiiug/dev-wpa-config/vitest-browser-base`         | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                                                |
+| `@mister-guiiug/dev-wpa-config/playwright-base`             | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy)                            |
+| `@mister-guiiug/dev-wpa-config/playwright-a11y`             | `.js` + `.d.ts` | `expectNoA11yViolations` / `analyzeA11y` / `formatViolations` (axe-core via `AxeBuilder` injecté ; peer optionnelle `@axe-core/playwright`)                                                                                      |
+| `@mister-guiiug/dev-wpa-config/vite-pwa-base`               | `.js` + `.d.ts` | `pwaSeoPlugin()` : GTM/GA4 **précédés de l'état de consentement**, sitemap/robots, script anti-FOUC (`themeBoot`) et `<meta name="theme-color">` par schéma (`themeColor`)                                                       |
+| `@mister-guiiug/dev-wpa-config/vite-csp`                    | `.js` + `.d.ts` | `cspPlugin` : injecte la CSP avec `script-src` par hash SHA-256 des scripts inline (pas de `'unsafe-inline'` en prod)                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/map`                         | `.js` + `.d.ts` | Socle carto **agnostique** : port `MapProvider`, sources de tuiles (`osmRasterTiles`, `vectorTiles`), clustering par grille, helpers CSP (`mapCspDirectives`) et cache workbox (`mapTileRuntimeCaching`) — aucun moteur embarqué |
+| `@mister-guiiug/dev-wpa-config/map/leaflet`                 | `.js` + `.d.ts` | Adaptateur **Leaflet** (~42 ko gzip, raster uniquement ; peer optionnelle `leaflet`)                                                                                                                                             |
+| `@mister-guiiug/dev-wpa-config/map/maplibre`                | `.js` + `.d.ts` | Adaptateur **MapLibre GL** (~253 ko gzip, raster + vectoriel, WebGL ; peer optionnelle `maplibre-gl` ^6)                                                                                                                         |
+| `@mister-guiiug/dev-wpa-config/tailwind-preset`             | `.js`           | Design tokens famille (fonts, safe-areas, breakpoints)                                                                                                                                                                           |
+| `@mister-guiiug/dev-wpa-config/tailwind-preset.css`         | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                                                  |
 
 ## Bin
 
@@ -673,10 +678,26 @@ export default defineConfig({
       iconQuery: '?v=1.0.1', // → __PWA_ICON_QS__ (cache-busting)
       gtmContainerId: 'GTM-XXXXXXX', // ID explicite (sinon VITE_GTM_CONTAINER_ID)
       llms: '# Mon app\n…', // génère dist/llms.txt
+
+      // Le script anti-FOUC, injecté en tête de <head>. `legacyKeys` migre la
+      // préférence déjà enregistrée : SIX clés distinctes existent dans la
+      // famille, et sans elles l'adoption la perd en silence.
+      themeBoot: { storageKey: 'dwc_theme', legacyKeys: ['theme'] },
+
+      // Deux <meta name="theme-color"> par schéma, qui remplacent celle de
+      // l'index. Dix apps sur quinze gardaient une barre claire en sombre.
+      themeColor: { light: '#0f766e', dark: '#0b1220' },
     }),
   ],
 });
 ```
+
+**Le consentement précède le tag.** Les fragments GTM/GA4 sont désormais
+précédés d'un `gtag('consent', 'default', …)` où tous les signaux sont `denied`.
+C'est la seule position où le mode consentement de Google en tient compte : une
+commande postérieure au chargement n'a pas d'effet rétroactif. `consent: false`
+restaure le comportement d'avant, pour un déploiement qui gère le consentement
+ailleurs (une CMP, GTM).
 
 Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
 `__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
@@ -685,6 +706,54 @@ Variables d'env de build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`,
 `VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
 `htmlTrackingPlugin()`), désormais factorisés ici.
+
+### Mesure d'audience (`@mister-guiiug/dev-wpa-config/analytics`)
+
+Le tag était posé, la mesure n'existait pas. Mesure sur les seize apps : neuf
+portent les marqueurs `__ANALYTICS_*__`, trois ont recopié un extrait `gtag` en
+dur, sept n'ont rien — et **aucune** n'envoie le moindre événement ni la moindre
+vue de page après le chargement initial.
+
+```ts
+// main.tsx
+import {
+  initAnalytics,
+  setAnalyticsConsent,
+} from '@mister-guiiug/dev-wpa-config/analytics';
+
+initAnalytics({ gaMeasurementId: import.meta.env.VITE_GA_MEASUREMENT_ID });
+// Rien n'est injecté ici : ni script, ni requête, ni cookie.
+
+// …quand l'utilisateur accepte, où que ce soit dans l'app :
+setAnalyticsConsent({ analytics: true }); // le tag est chargé à cet instant
+```
+
+```tsx
+// Une vue de page par navigation — GA4 n'en envoie qu'une par chargement de
+// document, donc toute la navigation d'une PWA est invisible sans ce hook.
+import { usePageViews } from '@mister-guiiug/dev-wpa-config/react/use-page-views';
+
+usePageViews(useLocation().pathname);
+
+// Et les événements métier :
+trackEvent('partie_terminee', { score, duree_s });
+```
+
+Trois règles que le module tient à votre place :
+
+- **Rien avant l'accord.** `trackEvent` et `trackPageView` renvoient `false`
+  tant que `analytics_storage` n'est pas accordé, et le `<script>` n'est même
+  pas créé. Les hooks peuvent donc être montés sans condition.
+- **GTM l'emporte sur GA4** quand les deux identifiants sont fournis — GA4 se
+  configure _dans_ GTM, sinon chaque événement est compté deux fois. C'est déjà
+  l'arbitrage des fragments de build ; il est le même ici.
+- **Une seule vue par navigation.** GA4 est configuré avec
+  `send_page_view: false`, pour que la page d'entrée passe par le même chemin
+  que les autres au lieu d'être comptée deux fois.
+
+`cspPlugin({ analytics: true })` autorise déjà les hôtes nécessaires : le script
+injecté vient de `googletagmanager.com` et n'ajoute aucun script en ligne à
+hacher.
 
 ### `vite-pwa` — options `VitePWA()` partagées
 
@@ -1079,6 +1148,8 @@ await installObservability({
   environment: import.meta.env.MODE,
   webVitals: true, // erreurs ET performance, relayées au même endroit
   redactKeys: ['matricule'], // le contexte est masqué avant d'entrer dans localStorage
+  context: { app: 'miss-genius', version: __APP_VERSION__ }, // joint à chaque erreur
+  // `console: true` par défaut : les console.error/warn rejoignent le fil d'Ariane
 });
 
 <ObservabilityBoundary>
@@ -1100,8 +1171,70 @@ await installObservability({
 
 ```ts
 // vite.config.ts — le script anti-FOUC cesse d'être recopié dans index.html
-pwaSeoPlugin({ themeBoot: true });
+// `legacyKeys` migre la préférence déjà enregistrée : sans elles, adopter le
+// socle la perd en silence (six clés distinctes existent dans la famille).
+pwaSeoPlugin({
+  themeBoot: { storageKey: 'dwc_theme', legacyKeys: ['theme'] },
+  themeColor: { light: '#0f766e', dark: '#0b1220' },
+});
 ```
+
+#### Le contexte d'observabilité
+
+Treize apps sur seize initialisent Sentry — et `setUser` / `setContext` /
+`setTag` n'apparaissent que dans **six**. Les dix autres envoient des exceptions
+nues : pas de version, pas de langue, pas de route. Une trace sans contexte se
+trie mal et se reproduit encore plus mal.
+
+```tsx
+import {
+  breadcrumb,
+  setSessionContext,
+} from '@mister-guiiug/dev-wpa-config/react/observability';
+import { useRouteBreadcrumbs } from '@mister-guiiug/dev-wpa-config/react/use-route-breadcrumbs';
+
+setSessionContext({ locale, theme: resolved }); // fusionné, appelable à tout moment
+useRouteBreadcrumbs(useLocation().pathname); // « où était l'utilisateur ? »
+breadcrumb('sync', 'file rejouée', { entrées: 12 });
+```
+
+Trois garanties, dans cet ordre d'importance :
+
+- **Le fil d'Ariane ne quitte pas la mémoire.** Le journal d'erreurs vit dans
+  `localStorage` ; un fil enregistre vingt fois plus d'événements, souvent
+  porteurs de données saisies. Il est joint aux erreurs, et disparaît avec
+  l'onglet.
+- **Tout est masqué avant d'être écrit** — y compris les arguments d'un
+  `console.warn('échec', { token })`, forme la plus courante des 59 appels
+  mesurés : `redact` agit sur les clés, il voit donc l'objet, pas sa chaîne.
+- **La console n'est jamais avalée.** `captureConsole` l'enveloppe ; la sortie
+  d'origine est appelée dans tous les cas.
+
+Ces trois pièces valent **sans Sentry** : elles enrichissent le journal local,
+donc servent aussi aux trois apps sans transport.
+
+#### Le pont vers `lucide-react`
+
+`IconsProvider` prend un rôle à la fois — le bon contrat, mais qui ne dit rien à
+une app qui a déjà cinquante-sept icônes (149 symboles distincts dans la
+famille, adoption d'`IconsProvider` : **zéro**). `lucideIconSet` normalise le
+jeu en une ligne, sans que le paquet dépende de `lucide-react` :
+
+```tsx
+import { X, Sun, Moon, Monitor } from 'lucide-react';
+import { lucideIconSet } from '@mister-guiiug/dev-wpa-config/react/icons-lucide';
+
+<IconsProvider
+  icons={lucideIconSet(
+    { close: X, light: Sun, dark: Moon, system: Monitor },
+    { strokeWidth: 1.75 }
+  )}
+>
+```
+
+`aria-hidden` (une icône accompagne toujours un texte déjà nommé, sauf si vous
+passez un `aria-label`), `focusable="false"`, et un poids de trait commun pour
+que la croix du `Sheet` ait le même que ses voisines.
 
 Chaque façade reste **facultative**, et chaque pièce reste utilisable seule :
 `ThemeToggle` sans `ThemeProvider` monte son propre état, `UpdateButton` sans
@@ -1171,9 +1304,14 @@ const { locale } = useI18n(); // le i18n de l'app, inchangé
 
 Le contexte est **séparé de `createI18n`** à dessein : `createI18n` fabrique un
 contexte isolé par app, que le paquet ne peut pas lire et dans lequel il n'a pas
-à imposer ses clés. Pour l'accord en nombre, `plural` (exporté par
-`react/i18n`) s'appuie sur `Intl.PluralRules` — le ternaire `n > 1` des apps
-donne « 0 éléments » en français, ce qui est faux.
+à imposer ses clés. En revanche `I18nProvider` **pose lui-même**
+`LabelsProvider` avec sa locale : le câblage manuel ci-dessus n'est plus
+nécessaire (`labels: false` pour le désactiver). Il reste utile pour un
+`overrides`, ou hors `createI18n`.
+
+Pour l'accord en nombre, `plural` (exporté par `react/i18n`) s'appuie sur
+`Intl.PluralRules` — le ternaire `n > 1` des apps donne « 0 éléments » en
+français, ce qui est faux.
 
 ```ts
 import { plural } from '@mister-guiiug/dev-wpa-config/react/i18n';
@@ -1181,6 +1319,48 @@ import { plural } from '@mister-guiiug/dev-wpa-config/react/i18n';
 plural(0, { one: '{count} élément', other: '{count} éléments' }, 'fr');
 // → « 0 élément »   (et « 0 items » en anglais)
 ```
+
+#### Le formatage suit la langue choisie
+
+**78 sites de formatage à locale figée** dans la famille : 27 constructions
+`Intl.*('xx-XX', …)` et 51 appels `toLocale*('fr-FR')`. L'utilisateur bascule en
+anglais, les libellés changent, les nombres et les dates restent français. La
+cause n'était pas la négligence : le contexte rendait `{ locale, setLocale, t,
+m, locales }` — la langue, mais aucun formateur. Le pont n'existait pas.
+
+```tsx
+const { t, locale, dir, fmt } = useI18n();
+
+fmt.number(1234.5); // suit la locale courante, sans l'écrire
+fmt.currency(12.5); // devise par app (`currency` dans createI18n)
+fmt.date(d, { weekday: 'long' });
+fmt.relative(then); // « il y a 3 jours »
+fmt.bytes(1503238); // « 1,4 Mo » / « 1.4 MB »
+fmt.list(['a', 'b', 'c']); // « a, b et c » / « a, b, and c »
+fmt.plural(n, { one: '{count} but', other: '{count} buts' });
+```
+
+```ts
+createI18n({
+  messages,
+  locales: ['fr', 'en'],
+  fallbackLocale: 'fr',
+  storageKey: 'app_locale',
+  localeTags: { en: 'en-GB' }, // quand la région compte ; sinon `Intl` suffit
+  currency: 'EUR',
+});
+```
+
+Le provider pose aussi `<html lang>` **et `dir`** (absent partout : une locale
+écrite de droite à gauche rendait la page en LTR), et appelle
+`setDefaultLocale` : `format.js` formate alors dans la bonne langue **même
+appelé sans locale**, depuis n'importe quel écran et sans qu'un seul appel soit
+réécrit. Une app sans i18n garde `'fr-FR'`, exactement comme avant.
+
+> `formatBytes` traduit désormais son unité (`1.4 MB` en anglais, au lieu du
+> `1,4 Mo` figé) et sépare le nombre de l'unité par une espace fine insécable —
+> le même séparateur que `formatNumber` produit déjà pour les milliers. Une
+> comparaison de chaînes écrite avec une espace ordinaire échoue donc.
 
 ### Primitives d'interface
 
@@ -1378,8 +1558,74 @@ import { RiveAnimation } from '@mister-guiiug/dev-wpa-config/react/rive';
 ```
 
 Conventions : `.riv` dans `public/animations/`, toujours prévoir un `fallback`
-statique (mouvement réduit + temps de chargement), `ariaLabel` uniquement si
-l'animation porte du sens (sinon décorative).
+statique, `ariaLabel` uniquement si l'animation porte du sens (sinon
+décorative).
+
+**Le repli est le cas nominal, pas l'exception.** `find -name '*.riv'` renvoie
+**zéro fichier** sur les seize dépôts, alors que trois apps déclarent un
+runtime Rive — miss-badminton et mister-molkky (`@rive-app/react-canvas`),
+miss-genius (`@rive-app/react-webgl2`) — et pointent vers des dossiers vides.
+Le `fallback` s'affiche donc dans quatre situations : pendant le chargement, si
+l'utilisateur réduit les animations, si le runtime n'est pas installé, et si le
+fichier ou le rendu échoue. `onError` permet de remonter le troisième et le
+quatrième cas plutôt que de les découvrir sur un écran vide :
+
+```tsx
+<RiveAnimation
+  src="/animations/trophy.riv"
+  loader={() => import('@rive-app/react-webgl2')}
+  fallback={<img src="/animations/trophy.svg" alt="" />}
+  onError={error => recordError(error, { animation: 'trophy' })}
+/>
+```
+
+### Accessibilité (`@mister-guiiug/dev-wpa-config/react/a11y`)
+
+Ces primitives ne sont pas nouvelles : elles étaient **enfermées** dans `Sheet`
+et `ConfirmDialog`, via un hook interne. Mesure sur les seize apps : **38
+`role="dialog"` / `alertdialog`** dans treize apps, et **trois** pièges de
+focus. Les trente-cinq autres dialogues laissent Tab s'échapper derrière le
+fond — et ne peuvent pas devenir des `Sheet`. D'où l'extraction.
+
+```tsx
+import {
+  AnnouncerProvider,
+  SkipLink,
+  VisuallyHidden,
+  useAnnouncer,
+  useEscape,
+  useFocusTrap,
+  useScrollLock,
+} from '@mister-guiiug/dev-wpa-config/react/a11y';
+
+function MaModale({ open, onClose }) {
+  const panel = useRef(null);
+  useEscape(onClose, open);
+  useScrollLock(open);
+  useFocusTrap(panel, { active: open }); // le conteneur porte tabIndex={-1}
+  return (
+    <div ref={panel} tabIndex={-1} role="dialog" aria-labelledby="t">
+      …
+    </div>
+  );
+}
+```
+
+Une seule région d'annonce pour toute l'app, montée en permanence (les seize
+apps totalisent **66** attributs `aria-live` posés au fil des écrans ; une
+région insérée au moment du message n'est souvent pas annoncée) :
+
+```tsx
+<AnnouncerProvider>…</AnnouncerProvider>;
+
+const announce = useAnnouncer();
+announce('Fiche enregistrée'); // 'assertive' pour une erreur
+```
+
+`tokens.css` fournit désormais `.dwc-sr-only` — redéfini dans **cinq** feuilles
+de style de la famille, absent des onze autres — `.dwc-skip-link`, et un bloc
+`prefers-reduced-motion` (onze apps l'honorent chacune de leur côté ; le socle
+n'en avait aucune trace).
 
 ### `src/test/setup.ts` (setup partagé)
 

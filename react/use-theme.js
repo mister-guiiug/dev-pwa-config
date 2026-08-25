@@ -32,31 +32,53 @@ function applyTheme(resolved, attribute) {
 }
 
 /**
+ * Lit la préférence stockée, en migrant depuis d'anciennes clés au besoin.
+ *
+ * SIX CLÉS distinctes ont été mesurées dans la famille (`'theme'` ×4,
+ * `'lh_theme'`, `'mc-theme'`, `'mister-doc:theme'`, `'mister_puzzle_theme'`)
+ * face au `'dwc_theme'` du paquet. Sans cette lecture de repli, adopter le
+ * hook perd le choix de l'utilisateur — silencieusement, et une seule fois,
+ * donc sans que personne ne remonte le bug.
+ */
+function readStoredTheme(storageKey, legacyKeys, fallback) {
+  try {
+    const own = window.localStorage.getItem(storageKey);
+    if (THEMES.has(own)) return own;
+    for (const key of legacyKeys) {
+      if (typeof key !== 'string' || !key || key === storageKey) continue;
+      const value = window.localStorage.getItem(key);
+      if (THEMES.has(value)) {
+        // Réécrite sous la clé neuve : la migration n'a lieu qu'une fois.
+        window.localStorage.setItem(storageKey, value);
+        return value;
+      }
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
  * Thème unifié `light | dark | system`, persistant, applique `data-theme`
  * (ou la classe `.dark`) sur `<html>` et suit les préférences système.
  *
  * @param {{ defaultTheme?: 'light'|'dark'|'system', storageKey?: string,
- *   attribute?: 'data-theme'|'class' }} [options]
+ *   attribute?: 'data-theme'|'class', legacyKeys?: string[] }} [options]
  */
 export function useTheme(options = {}) {
   const {
     defaultTheme = 'system',
     storageKey = DEFAULT_KEY,
     attribute = 'data-theme',
+    legacyKeys = [],
   } = options;
 
   const [theme, setThemeState] = useState(() => {
     if (typeof window === 'undefined') return defaultTheme;
-    try {
-      // Valeur stockée validée : une chaîne corrompue/étrangère ne doit pas
-      // se propager dans `colorScheme`/`data-theme`.
-      return sanitizeTheme(
-        window.localStorage.getItem(storageKey),
-        defaultTheme
-      );
-    } catch {
-      return defaultTheme;
-    }
+    // Valeur stockée validée : une chaîne corrompue/étrangère ne doit pas se
+    // propager dans `colorScheme`/`data-theme`.
+    return readStoredTheme(storageKey, legacyKeys, defaultTheme);
   });
 
   const [resolved, setResolved] = useState(() => resolveTheme(theme));
