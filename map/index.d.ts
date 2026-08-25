@@ -156,3 +156,14 @@ export declare function clustersToMarkers<T>(
 
 /** `true` si l'identifiant vient d'un groupe (à ne pas traiter comme un item). */
 export declare function isClusterId(id: string): boolean;
+
+/**
+ * Plugin Vite indispensable dès que `/map/maplibre` est utilisé : il sort ce
+ * sous-chemin du pré-bundling, qui ne sait pas interpréter le suffixe
+ * `?worker&url` par lequel l'adaptateur résout le worker MapLibre. Sans lui,
+ * `vite dev` échoue au démarrage (le build de production, lui, fonctionne).
+ */
+export declare function mapVitePlugin(): {
+  name: string;
+  config: () => { optimizeDeps: { exclude: string[] } };
+};

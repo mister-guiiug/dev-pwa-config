@@ -75,6 +75,14 @@
       "types": "./security.d.ts",
       "default": "./security.js"
     },
+    "./correlation": {
+      "types": "./correlation.d.ts",
+      "default": "./correlation.js"
+    },
+    "./logger": {
+      "types": "./logger.d.ts",
+      "default": "./logger.js"
+    },
     "./share": {
       "types": "./share.d.ts",
       "default": "./share.js"
@@ -320,6 +328,10 @@
     "format.js",
     "format.d.ts",
     "security.js",
+    "logger.d.ts",
+    "logger.js",
+    "correlation.d.ts",
+    "correlation.js",
     "security.d.ts",
     "download.js",
     "download.d.ts",
