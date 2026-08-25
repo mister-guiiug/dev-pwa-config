@@ -424,6 +424,8 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/map`                         | `.js` + `.d.ts` | Socle carto **agnostique** : port `MapProvider`, sources de tuiles (`osmRasterTiles`, `vectorTiles`), clustering par grille, helpers CSP (`mapCspDirectives`) et cache workbox (`mapTileRuntimeCaching`) — aucun moteur embarqué |
 | `@mister-guiiug/dev-wpa-config/map/leaflet`                 | `.js` + `.d.ts` | Adaptateur **Leaflet** (~42 ko gzip, raster uniquement ; peer optionnelle `leaflet`)                                                                                                                                             |
 | `@mister-guiiug/dev-wpa-config/map/maplibre`                | `.js` + `.d.ts` | Adaptateur **MapLibre GL** (~253 ko gzip, raster + vectoriel, WebGL ; peer optionnelle `maplibre-gl` ^6)                                                                                                                         |
+| `@mister-guiiug/dev-wpa-config/correlation`                 | `.js` + `.d.ts` | Identifiant de corrélation de bout en bout : `installCorrelation`, `withCorrelation(fetch)`, `correlationHeaders`, `getSessionId` — relie erreurs, requêtes, télémétrie et écran de crash                                        |
+| `@mister-guiiug/dev-wpa-config/logger`                      | `.js` + `.d.ts` | Journal à niveaux (`createLogger`, `setLogLevel`) écrivant dans le **même** fil d'Ariane que `breadcrumb`, estampillé de l'identifiant de corrélation                                                                            |
 | `@mister-guiiug/dev-wpa-config/tailwind-preset`             | `.js`           | Design tokens famille (fonts, safe-areas, breakpoints)                                                                                                                                                                           |
 | `@mister-guiiug/dev-wpa-config/tailwind-preset.css`         | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                                                  |
 
@@ -1012,6 +1014,55 @@ prévenir. Le fichier les traite ; les tests empêchent la récidive.
 Aucun `forced-color-adjust: none` — figer nos teintes reviendrait à passer outre
 le réglage de l'utilisateur. Un test le vérifie.
 
+### Corrélation, journal et écran de crash (`/correlation`, `/logger`)
+
+Le socle portait déjà quatre canaux d'observabilité — frontière d'erreur,
+journal local, relais Sentry, télémétrie — qui décrivaient le même incident
+**sans jamais pouvoir être rapprochés**. Le ticket dit « ça a planté », Sentry
+montre une trace, GA montre une session, le serveur montre une requête en
+erreur : rien ne dit que c'est le même événement. Un identifiant y remédie.
+
+```ts
+import { installCorrelation } from '@mister-guiiug/dev-wpa-config/correlation';
+import { installObservability } from '@mister-guiiug/dev-wpa-config/react/observability';
+
+await installObservability({ dsn: import.meta.env.VITE_SENTRY_DSN });
+const { sessionId, fetch: tracedFetch } = await installCorrelation({
+  analytics: true, // opt-in : associe l'identifiant au profil analytique
+});
+```
+
+Après cet appel, le **même** identifiant apparaît dans :
+
+| Canal              | Ce qu'il porte                                    |
+| ------------------ | ------------------------------------------------- |
+| Erreurs et Sentry  | `correlationSessionId` en contexte de session     |
+| Requêtes sortantes | `X-Correlation-Id` (par requête) + `X-Session-Id` |
+| Télémétrie GA4     | propriété `correlation_session_id`                |
+| Écran de crash     | la référence que l'utilisateur peut citer         |
+
+`ObservabilityBoundary` affiche la référence automatiquement ; `reference: false`
+la retire, `reference: '…'` la remplace.
+
+**Pas de contexte asynchrone implicite.** Le navigateur n'a pas d'équivalent
+d'`AsyncLocalStorage` : une « corrélation courante » en variable de module
+serait fausse dès deux requêtes concurrentes — un identifiant trompeur est pire
+qu'un identifiant absent. L'identifiant de session est donc implicite (il ne
+change pas) et celui de requête explicite : `withCorrelation` en produit un par
+appel et le rend à ses observateurs.
+
+```ts
+import { createLogger } from '@mister-guiiug/dev-wpa-config/logger';
+
+const log = createLogger('favoris');
+log.warn('quota atteint', { count: 51 });
+// → fil d'Ariane : favoris.warn « quota atteint » { count: 51, correlationId }
+```
+
+Le journal n'est **pas** un second système : chaque ligne finit dans le fil
+d'Ariane de `breadcrumb`, donc dans l'erreur remontée — mêmes masquages, même
+transport, rien à vider séparément.
+
 ### Carte (`@mister-guiiug/dev-wpa-config/map`)
 
 Deux axes **indépendants**, qu'on confond souvent :
@@ -1024,6 +1075,12 @@ Deux axes **indépendants**, qu'on confond souvent :
 OpenStreetMap n'est pas un moteur : c'est une **source de tuiles**, utilisable
 par les deux moteurs. Un seul adaptateur est embarqué dans le bundle : celui
 dont on importe le sous-chemin.
+
+> **Avec MapLibre, gardez `pwaSeoPlugin()` dans vos plugins Vite** : il sort
+> `/map/maplibre` du pré-bundling, qui ne sait pas interpréter le suffixe
+> `?worker&url` par lequel l'adaptateur résout le worker MapLibre. Sans cette
+> exclusion, `vite dev` échoue au démarrage — alors que le build de
+> production, lui, fonctionne. Rien à ajouter si le plugin est déjà là.
 
 ```ts
 // 1. Choisir le moteur PAR L'IMPORT (l'autre n'est jamais embarqué)

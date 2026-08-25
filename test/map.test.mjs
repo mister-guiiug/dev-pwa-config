@@ -188,3 +188,22 @@ test('MapLibre : la résolution du worker est câblée (bug production)', async 
     'l’URL du worker doit venir d’un asset empaqueté par le bundler'
   );
 });
+
+test('pwaSeoPlugin sort /map/maplibre du pré-bundling', async () => {
+  // Sans cette exclusion, `vite dev` échoue au démarrage sur
+  // [UNLOADABLE_DEPENDENCY] : le pré-bundling ne sait pas interpréter le
+  // suffixe `?worker&url` par lequel l'adaptateur résout son worker. Le build
+  // de production, lui, fonctionne — d'où un piège invisible d'un seul côté.
+  // L'exclusion vit dans le plugin qui portait déjà celle de
+  // `react/observability` : même famille de panne, même endroit.
+  const { pwaSeoPlugin } = await import('../vite-pwa-base.js');
+  const excluded = pwaSeoPlugin().config().optimizeDeps.exclude;
+  assert.ok(
+    excluded.includes('@mister-guiiug/dev-wpa-config/map/maplibre'),
+    'l’adaptateur MapLibre doit être exclu du pré-bundling'
+  );
+  assert.ok(
+    excluded.includes('@mister-guiiug/dev-wpa-config/react/observability'),
+    'l’exclusion existante ne doit pas avoir été perdue'
+  );
+});

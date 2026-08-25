@@ -1,5 +1,6 @@
 import { Component, createElement as h } from 'react';
 import { recordError } from './observability.js';
+import { getSessionId } from '../correlation.js';
 
 /**
  * ErrorBoundary générique, DÉCOUPLÉ de tout reporter (Sentry passé via onError).
@@ -71,6 +72,18 @@ export class ErrorBoundary extends Component {
         )
       );
     }
+    // La référence à citer au support. C'est le SEUL endroit où l'identifiant
+    // de corrélation devient utile à l'utilisateur : sans lui, un ticket dit
+    // « ça a planté » et personne ne retrouve la trace correspondante.
+    if (this.props.reference) {
+      children.push(
+        h(
+          'p',
+          { 'data-dwc': 'error-boundary-reference' },
+          `${this.props.referenceLabel ?? 'Référence à communiquer'} : ${this.props.reference}`
+        )
+      );
+    }
     return h(
       'div',
       { role: 'alert', 'data-dwc': 'error-boundary' },
@@ -99,16 +112,32 @@ export class ErrorBoundary extends Component {
  * @param {import('./error-boundary.js').ErrorBoundaryProps & { context?: object }} props
  */
 export function ObservabilityBoundary(props = {}) {
-  const { onError, context, ...rest } = props;
+  const { onError, context, reference, ...rest } = props;
+  // L'identifiant de corrélation est celui déjà posé en en-tête des requêtes
+  // et en contexte de session : le crash affiché et la trace collectée
+  // portent donc la même référence. `reference: false` retire l'affichage.
+  const correlationId =
+    reference === false ? null : (reference ?? safeSessionId());
   return h(ErrorBoundary, {
     ...rest,
+    ...(correlationId ? { reference: correlationId } : {}),
     onError: (error, info) => {
       recordError(error, {
         source: 'error-boundary',
         react: info?.componentStack,
+        ...(correlationId ? { correlationId } : {}),
         ...context,
       });
       if (typeof onError === 'function') onError(error, info);
     },
   });
+}
+
+/** L'identifiant de session, ou rien : l'écran de crash ne doit jamais crasher. */
+function safeSessionId() {
+  try {
+    return getSessionId();
+  } catch {
+    return null;
+  }
 }

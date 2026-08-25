@@ -119,3 +119,50 @@ test('FamilyApps : sans showRepoLinks, le DOM reste celui d’avant', async t =>
   );
   assert.ok(!html.includes('data-with-repo'), 'marqueur de variante inattendu');
 });
+
+test('ObservabilityBoundary affiche la référence à citer au support', async t => {
+  let setupDom, mount;
+  try {
+    ({ setupDom, mount } = await import('./helpers/dom.mjs'));
+  } catch {
+    t.skip('react / react-dom non installés (peers optionnels)');
+    return;
+  }
+  const { createElement: h } = await import('react');
+  const dom = setupDom();
+  try {
+    const { ObservabilityBoundary } = await import(
+      '../react/error-boundary.js'
+    );
+    // Un crash sans référence oblige l'utilisateur à décrire « ça a planté » ;
+    // l'identifiant affiché est le MÊME que celui parti en en-tête et en Sentry.
+    const Boom = () => {
+      throw new Error('boum');
+    };
+    const view = await mount(
+      h(ObservabilityBoundary, { reference: 'corr-visible' }, h(Boom))
+    );
+    const shown = view.container.querySelector(
+      '[data-dwc="error-boundary-reference"]'
+    );
+    assert.ok(shown, 'la référence est rendue');
+    assert.match(shown.textContent, /corr-visible/);
+    await view.unmount();
+
+    // `reference: false` retire l'affichage sans rien casser d'autre.
+    const muet = await mount(
+      h(ObservabilityBoundary, { reference: false }, h(Boom))
+    );
+    assert.equal(
+      muet.container.querySelector('[data-dwc="error-boundary-reference"]'),
+      null
+    );
+    assert.ok(
+      muet.container.querySelector('[data-dwc="error-boundary"]'),
+      'la frontière fonctionne toujours'
+    );
+    await muet.unmount();
+  } finally {
+    dom.restore();
+  }
+});

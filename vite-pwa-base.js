@@ -213,7 +213,18 @@ export function pwaSeoPlugin(opts = {}) {
     config() {
       return {
         optimizeDeps: {
-          exclude: ['@mister-guiiug/dev-wpa-config/react/observability'],
+          exclude: [
+            '@mister-guiiug/dev-wpa-config/react/observability',
+            // Même famille de panne, autre module : `map/maplibre` résout
+            // l'URL de son worker par le suffixe Vite `?worker&url`, sans quoi
+            // MapLibre cherche un fichier que le bundler n'émet pas et la
+            // carte meurt EN PRODUCTION. Mais le pré-bundling ne sait pas
+            // interpréter ce suffixe : `vite dev` échoue au démarrage sur
+            // `[UNLOADABLE_DEPENDENCY]`. Le premier consommateur a écrit
+            // l'exclusion à la main ; comme ci-dessus, elle appartient au
+            // paquet dont le module est en cause, pas aux apps.
+            '@mister-guiiug/dev-wpa-config/map/maplibre',
+          ],
         },
       };
     },
