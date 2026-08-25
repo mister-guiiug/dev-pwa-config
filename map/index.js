@@ -185,33 +185,3 @@ export const CLUSTER_ID_PREFIX = 'cluster-';
 export function isClusterId(id) {
   return typeof id === 'string' && id.startsWith(CLUSTER_ID_PREFIX);
 }
-
-/**
- * Plugin Vite qui rend l'adaptateur MapLibre utilisable en développement.
- *
- * LE PIÈGE, MESURÉ EN VRAI. `map/maplibre.js` résout l'URL de son worker par
- * le suffixe Vite `?worker&url` — sans quoi MapLibre cherche un fichier que le
- * bundler n'émet pas et la carte meurt EN PRODUCTION. Mais ce suffixe n'est
- * pas compris par le pré-bundling des dépendances : l'adaptateur vivant dans
- * `node_modules`, `npm run dev` refuse alors de démarrer sur
- * `[UNLOADABLE_DEPENDENCY]`. Le premier consommateur a perdu une session à
- * découvrir que le build passait et le dev non — exactement le symétrique du
- * piège de production, et tout aussi invisible depuis l'autre mode.
- *
- * L'exclusion est donc portée ici plutôt que recopiée dans chaque app.
- *
- *   plugins: [mapVitePlugin(), …]
- *
- * `config` est fusionné par Vite : une exclusion déjà posée par l'app est
- * conservée.
- */
-export function mapVitePlugin() {
-  return {
-    name: 'dwc-map',
-    config: () => ({
-      optimizeDeps: {
-        exclude: ['@mister-guiiug/dev-wpa-config/map/maplibre'],
-      },
-    }),
-  };
-}

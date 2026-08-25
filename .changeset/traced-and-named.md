@@ -23,8 +23,11 @@ le **même** fil d'Ariane que `breadcrumb` : pas de second tampon ni de second
 transport, mêmes masquages, et chaque ligne estampillée de son origine et de
 l'identifiant de corrélation.
 
-**`mapVitePlugin()`** — `map/maplibre.js` résout l'URL de son worker par le
-suffixe `?worker&url`, que le pré-bundling des dépendances ne sait pas
-interpréter : `vite dev` refusait de démarrer sur `[UNLOADABLE_DEPENDENCY]`
-alors que le build de production fonctionnait. L'exclusion est désormais portée
-par le paquet au lieu d'être recopiée dans chaque app.
+**`pwaSeoPlugin` exclut `/map/maplibre` du pré-bundling** — l'adaptateur résout
+l'URL de son worker par le suffixe `?worker&url`, que le pré-bundling des
+dépendances ne sait pas interpréter : `vite dev` refusait de démarrer sur
+`[UNLOADABLE_DEPENDENCY]` alors que le build de production fonctionnait.
+L'exclusion rejoint celle de `react/observability`, déjà portée par ce plugin
+pour la même famille de panne — les apps qui utilisent `pwaSeoPlugin` n'ont
+rien à changer, et celles qui avaient écrit l'exclusion à la main peuvent la
+retirer.

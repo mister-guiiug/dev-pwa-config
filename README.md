@@ -1076,11 +1076,11 @@ OpenStreetMap n'est pas un moteur : c'est une **source de tuiles**, utilisable
 par les deux moteurs. Un seul adaptateur est embarqué dans le bundle : celui
 dont on importe le sous-chemin.
 
-> **Avec MapLibre, ajoutez `mapVitePlugin()` à vos plugins Vite.** Il sort
+> **Avec MapLibre, gardez `pwaSeoPlugin()` dans vos plugins Vite** : il sort
 > `/map/maplibre` du pré-bundling, qui ne sait pas interpréter le suffixe
-> `?worker&url` par lequel l'adaptateur résout le worker MapLibre : sans lui,
-> `vite dev` échoue au démarrage — alors que le build de production, lui,
-> fonctionne.
+> `?worker&url` par lequel l'adaptateur résout le worker MapLibre. Sans cette
+> exclusion, `vite dev` échoue au démarrage — alors que le build de
+> production, lui, fonctionne. Rien à ajouter si le plugin est déjà là.
 
 ```ts
 // 1. Choisir le moteur PAR L'IMPORT (l'autre n'est jamais embarqué)
@@ -1145,9 +1145,6 @@ cspPlugin({
 });
 
 VitePWA({ workbox: { runtimeCaching: [mapTileRuntimeCaching(tiles)] } });
-
-// Et le plugin qui rend `vite dev` utilisable avec l'adaptateur MapLibre :
-plugins: [mapVitePlugin(), …];
 ```
 
 #### Styles des marqueurs
