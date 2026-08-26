@@ -215,6 +215,12 @@ globalThis.SHOWROOM_I18N = {
     'composants.p11':
       'Add this app to your home screen: quick access, works offline.',
     'composants.summary5': 'CSS selectors',
+    'composants.h411': 'ShareButton',
+    'composants.p21':
+      'Native share, clipboard fallback. Cancelling shows nothing: dismissing the share sheet is not a failure.',
+    'composants.share1': 'Share',
+    'composants.share2': 'Link copied',
+    'composants.summary14': 'CSS selectors',
     'composants.h46': 'UpdatePromptBanner',
     'composants.p12':
       '<code>registerSW</code> is now a prop instead of a hard import: the module has joined the barrel. The settings-screen <code>UpdateButton</code> does without it entirely.',

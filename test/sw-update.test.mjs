@@ -13,6 +13,7 @@ import { setupDom, mount, renderHook } from './helpers/dom.mjs';
 import { applyUpdate, hardNavigate } from '../sw-update.js';
 import { useUpdatePrompt } from '../react/use-update-prompt.js';
 import { UpdateButton } from '../react/update-button.js';
+import { ShareButton } from '../react/share-button.js';
 import { LabelsProvider } from '../react/labels.js';
 
 /**
@@ -21,10 +22,18 @@ import { LabelsProvider } from '../react/labels.js';
  * ce qui est le cas quand le worker refuse d'activer).
  */
 function fakeServiceWorker(options = {}) {
-  const { waiting = false, activateAfter = 10, hangs = false } = options;
+  const {
+    waiting = false,
+    activateAfter = 10,
+    hangs = false,
+    // Un vrai `ServiceWorkerRegistration` porte toujours une portée ; c'est
+    // elle qui dit quelle URL le SERVEUR sait servir.
+    scope = 'https://exemple.test/',
+  } = options;
   const listeners = new Set();
   const journal = [];
   const registration = {
+    scope,
     waiting: waiting
       ? {
           postMessage(message) {
@@ -74,7 +83,9 @@ function fakeCaches(names = ['workbox-precache', 'donnees-app']) {
 
 /** Installe un DOM plus un faux service worker, et rend de quoi tout retirer. */
 function setupSw(options = {}) {
-  const dom = setupDom();
+  // `url` traverse jusqu'à jsdom : c'est elle qui décide si la page courante
+  // est une route profonde ou la racine de l'app.
+  const dom = setupDom(options.url ? { url: options.url } : {});
   const { journal, sw } = fakeServiceWorker(options);
   const store = fakeCaches(options.cacheNames);
   Object.defineProperty(globalThis.navigator, 'serviceWorker', {
@@ -367,5 +378,206 @@ test('UpdateButton dit ce qu’il fait, dans la langue du provider', async () =>
     await fr.unmount();
   } finally {
     env.restore();
+  }
+});
+
+/*
+ * LE DÉFAUT, CONSTATÉ EN LIGNE. Une app monopage sur hébergement statique n'a
+ * de fichier qu'à sa racine : `/mister-family-map/profil` n'existe pas côté
+ * serveur, et ne répond que parce que le service worker la rattrape. Purger le
+ * worker détruit donc ce qui rendait l'URL courante joignable — et recharger
+ * cette même URL juste après renvoie le 404 de l'hébergeur.
+ *
+ * Reproduit sur un serveur statique sans repli : « Forcer la mise à jour »
+ * depuis `/profil` menait à `/profil?_t=…` et à « 404 — File not found ».
+ * Invisible en développement, où `vite preview` sert `index.html` pour
+ * n'importe quel chemin.
+ */
+test('après une purge, on ne renvoie pas vers une route que le serveur ignore', async () => {
+  const env = setupSw({
+    url: 'https://exemple.test/mister-family-map/profil',
+    scope: 'https://exemple.test/mister-family-map/',
+  });
+  try {
+    const cibles = [];
+    const chemin = await applyUpdate({
+      hard: true,
+      navigate: cible => {
+        cibles.push(cible);
+        return true;
+      },
+    });
+
+    assert.equal(chemin, 'purged');
+    assert.equal(cibles.length, 1);
+    assert.match(
+      cibles[0],
+      /^https:\/\/exemple\.test\/mister-family-map\/\?_t=/,
+      'la purge doit ramener à la portée du worker, seule URL que le serveur sert'
+    );
+    assert.ok(
+      !cibles[0].includes('/profil'),
+      'renvoyer sur la route courante après avoir désinscrit le worker donne un 404'
+    );
+  } finally {
+    env.restore();
+  }
+});
+
+test('le chemin PROPRE, lui, reste sur la page courante', async () => {
+  // Le worker n'est pas désinscrit : la route continue d'être rattrapée, et
+  // l'utilisateur n'a aucune raison de perdre l'écran où il se trouvait.
+  const env = setupSw({
+    waiting: true,
+    url: 'https://exemple.test/mister-family-map/profil',
+    scope: 'https://exemple.test/mister-family-map/',
+  });
+  try {
+    const cibles = [];
+    const chemin = await applyUpdate({
+      navigate: cible => {
+        cibles.push(cible);
+        return true;
+      },
+    });
+    assert.equal(chemin, 'activated');
+    assert.match(cibles[0], /\/mister-family-map\/profil\?_t=/);
+  } finally {
+    env.restore();
+  }
+});
+
+test('reloadTo garde le dernier mot sur la portée', async () => {
+  const env = setupSw({
+    url: 'https://exemple.test/mister-family-map/profil',
+    scope: 'https://exemple.test/mister-family-map/',
+  });
+  try {
+    const cibles = [];
+    await applyUpdate({
+      hard: true,
+      reloadTo: 'https://exemple.test/mister-family-map/bienvenue',
+      navigate: cible => {
+        cibles.push(cible);
+        return true;
+      },
+    });
+    assert.equal(cibles[0], 'https://exemple.test/mister-family-map/bienvenue');
+  } finally {
+    env.restore();
+  }
+});
+
+/* ── Le bouton « Partager » ────────────────────────────────────────────── */
+
+/**
+ * `share.js` a été promu ; les boutons, non. Le relevé donne trois façons de
+ * répondre à la même question — que montrer quand on a copié faute de partage
+ * natif — dont aucune ne distingue l'annulation d'un échec.
+ */
+test('une copie s’annonce, une annulation ne dit rien', async () => {
+  const dom = setupDom();
+  try {
+    const resultats = [];
+    let issue = 'copied';
+    const view = await mount(
+      h(ShareButton, {
+        url: 'https://exemple.test/',
+        share: async () => issue,
+        onResult: r => resultats.push(r),
+        resetAfterMs: 0,
+      })
+    );
+    const bouton = view.container.querySelector('[data-dwc="share-button"]');
+    const statut = view.container.querySelector(
+      '[data-dwc="share-button-status"]'
+    );
+
+    // La région vivante existe AVANT d'avoir quelque chose à dire : insérée en
+    // même temps que son texte, elle ne serait pas lue de façon fiable.
+    assert.equal(statut.getAttribute('role'), 'status');
+    assert.equal(statut.textContent, '');
+
+    await view.act(() => bouton.click());
+    assert.equal(statut.textContent, 'Lien copié');
+    assert.deepEqual(resultats, ['copied']);
+
+    // Une annulation n'est pas un échec : rien ne s'affiche.
+    issue = 'cancelled';
+    await view.act(() => bouton.click());
+    assert.deepEqual(resultats, ['copied', 'cancelled']);
+
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('un partage natif abouti n’affiche rien : le système l’a déjà dit', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(ShareButton, { share: async () => 'shared', resetAfterMs: 0 })
+    );
+    const bouton = view.container.querySelector('[data-dwc="share-button"]');
+    await view.act(() => bouton.click());
+    assert.equal(
+      view.container.querySelector('[data-dwc="share-button-status"]')
+        .textContent,
+      ''
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('un échec le dit, et le message finit par s’effacer', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(ShareButton, { share: async () => 'failed', resetAfterMs: 20 })
+    );
+    const bouton = view.container.querySelector('[data-dwc="share-button"]');
+    const statut = view.container.querySelector(
+      '[data-dwc="share-button-status"]'
+    );
+
+    await view.act(() => bouton.click());
+    assert.equal(statut.textContent, 'Partage impossible');
+
+    // Sans retour à l'état initial, « Lien copié » mentirait au prochain regard.
+    await view.act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 40));
+    });
+    assert.equal(statut.textContent, '');
+
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('les libellés du bouton de partage suivent la locale', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(
+        LabelsProvider,
+        { locale: 'en' },
+        h(ShareButton, { share: async () => 'copied', resetAfterMs: 0 })
+      )
+    );
+    const bouton = view.container.querySelector('[data-dwc="share-button"]');
+    assert.equal(bouton.textContent, 'Share');
+    await view.act(() => bouton.click());
+    assert.equal(
+      view.container.querySelector('[data-dwc="share-button-status"]')
+        .textContent,
+      'Link copied'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
   }
 });

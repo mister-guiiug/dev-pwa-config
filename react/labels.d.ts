@@ -22,6 +22,7 @@ export interface LabelGroups {
     forceHint: string;
   };
   footer: { source: string; sponsor: string };
+  share: { label: string; copied: string; failed: string };
   version: {
     label: string;
     /** `{version}` remplacé par le numéro. */

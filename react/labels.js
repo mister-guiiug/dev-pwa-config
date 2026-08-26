@@ -58,6 +58,11 @@ export const LABELS = {
         'Vide le cache de l’application et recharge. Vos données sont conservées.',
     },
     footer: { source: 'Code source', sponsor: 'M’offrir un café' },
+    share: {
+      label: 'Partager',
+      copied: 'Lien copié',
+      failed: 'Partage impossible',
+    },
     version: {
       label: 'Version',
       updated: 'Mis à jour vers {version}',
@@ -117,6 +122,11 @@ export const LABELS = {
       forceHint: 'Clears the app cache and reloads. Your data is kept.',
     },
     footer: { source: 'Source code', sponsor: 'Buy me a coffee' },
+    share: {
+      label: 'Share',
+      copied: 'Link copied',
+      failed: 'Sharing failed',
+    },
     version: {
       label: 'Version',
       updated: 'Updated to {version}',
