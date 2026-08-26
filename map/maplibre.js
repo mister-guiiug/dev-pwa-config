@@ -138,11 +138,17 @@ export function createMapLibreMapProvider(engineOptions = {}) {
           });
         }
 
+        // La vue initiale part par `onReady`, PAS par `onViewportChange` :
+        // une carte qui finit de charger n'a rien déplacé. Sur un poste lent
+        // — WebGL logiciel d'un runner de CI — ce `load` tombe plusieurs
+        // secondes après le premier rendu, et l'émission écrasait alors les
+        // coordonnées que l'utilisateur venait de saisir. Voir `map/leaflet.js`
+        // pour la même correction côté Leaflet.
         instance.once('load', () => {
           if (settled) return;
           settled = true;
           clearTimeout(timeout);
-          options.onViewportChange?.(toViewport(instance));
+          options.onReady?.(toViewport(instance));
           resolve();
         });
 

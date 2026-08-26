@@ -56,7 +56,19 @@ export interface MapProviderOptions {
   center: MapCoordinates;
   zoom: number;
   onMarkerClick?: (id: string) => void;
+  /**
+   * Un DÉPLACEMENT de la vue, et rien d'autre. La vue initiale ne passe pas
+   * par ici : une carte qui finit de s'initialiser n'a rien changé, et
+   * l'annoncer comme un déplacement fait d'elle un second écrivain de l'état
+   * qu'elle reflète — l'écran qui recopie le centre dans un formulaire voyait
+   * la saisie écrasée dès que l'initialisation se terminait après elle.
+   */
   onViewportChange?: (viewport: MapViewport) => void;
+  /**
+   * La vue initiale, une seule fois, quand la carte est prête. C'est ce qu'il
+   * faut pour amorcer un niveau de zoom ou un regroupement de marqueurs.
+   */
+  onReady?: (viewport: MapViewport) => void;
 }
 
 /**

@@ -1108,6 +1108,25 @@ Le moteur est chargé **paresseusement, au montage** : les modules restent
 importables côté serveur (SSR) et le poids n'est téléchargé que si une carte
 s'affiche réellement.
 
+**`onViewportChange` ne dit que les DÉPLACEMENTS ; la vue initiale part par
+`onReady`.** Les deux adaptateurs annonçaient d'abord la vue de départ par
+`onViewportChange`, et une carte qui finit de s'initialiser n'a rien déplacé.
+La confusion faisait de la carte un second écrivain de l'état qu'elle reflète :
+un écran qui recopie le centre dans un formulaire voyait la saisie de
+l'utilisateur écrasée dès que l'initialisation se terminait après elle — ce qui
+n'arrive que sur une machine lente, donc jamais en développement.
+
+```ts
+await provider.mount(container, {
+  center: { lat: 46.6, lng: 2.4 },
+  zoom: 6,
+  // Une seule fois, quand la carte est prête : de quoi amorcer un zoom.
+  onReady: viewport => setZoom(viewport.zoom),
+  // Ensuite, et seulement ensuite : ce que l'utilisateur déplace.
+  onViewportChange: viewport => setCenter(viewport.center),
+});
+```
+
 #### Regroupement de marqueurs
 
 ```ts
