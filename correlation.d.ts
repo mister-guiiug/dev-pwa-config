@@ -25,7 +25,7 @@ export declare function correlationHeaders(
  * Ce que les autres canaux doivent porter pour être rapprochables : à passer à
  * `setSessionContext` (erreurs, Sentry) et `setUserProperties` (télémétrie).
  */
-export declare function correlationContext(): { correlationSessionId: string };
+export declare function correlationContext(): { correlationId: string };
 
 export interface CorrelatedRequestInfo {
   requestId: string;
