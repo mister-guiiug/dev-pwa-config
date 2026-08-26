@@ -1,5 +1,40 @@
 # Changelog
 
+## 3.16.0
+
+### Minor Changes
+
+- 40db19a: `mister-family-map` entre au catalogue de la famille.
+
+  Dix-septième app : carte collaborative de sorties en famille, Supabase, maturité
+  `alpha`. Elle apparaît donc dans la grille `FamilyApps` des seize autres, dans le
+  tableau « Projets consommateurs » du README et dans la vitrine.
+
+  Sa palette rejoint `themes.js`, **relevée** dans le `src/shared/styles/index.css` de
+  l'app — qui exprime tout en OKLCH — et convertie en sRGB exact, pas approximée à vue.
+  Le rôle `info`, absent de l'app, reporte le repli de `components.css` plutôt que
+  d'inventer une couleur qu'elle n'utilise pas.
+
+  Deux dérivés suivent : les comptes de persistance écrits en toutes lettres dans la
+  vitrine passent de six à sept apps Supabase, et `showroom/adoption.js` voit son
+  `total` suivre le catalogue — ce champ projette le catalogue, il ne mesure rien.
+  Le relevé d'adoption de `mister-family-map` reste à faire : il exige les dix-sept
+  dépôts clonés côte à côte.
+
+### Patch Changes
+
+- c2edd10: Le barrel `/react` déclare enfin `VersionProvider`, `useAppVersion` et `AppVersion`.
+
+  `react/index.js` et `react/index.d.ts` sont deux listes tenues à la main, et rien ne
+  les comparait. Les trois modules de version ont donc rejoint le barrel d'exécution
+  sans rejoindre celui des types : l'import fonctionnait, `tsc` le refusait, et la
+  première app à les consommer a dû passer par les sous-chemins.
+
+  `npm run typecheck` ne pouvait pas le voir — il vérifie les fichiers du paquet, pas
+  la correspondance entre deux listes dont l'une n'est lue que par les consommateurs.
+  Un test compare désormais les exports d'exécution du barrel aux symboles que ses
+  types déclarent, en résolvant les `export *` par le compilateur TypeScript lui-même.
+
 ## 3.15.0
 
 ### Minor Changes
