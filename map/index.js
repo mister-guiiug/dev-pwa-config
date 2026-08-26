@@ -185,3 +185,27 @@ export const CLUSTER_ID_PREFIX = 'cluster-';
 export function isClusterId(id) {
   return typeof id === 'string' && id.startsWith(CLUSTER_ID_PREFIX);
 }
+
+/**
+ * Deux vues désignent-elles le MÊME endroit ? (centre et zoom ; les bornes en
+ * découlent, à la taille du conteneur près.)
+ *
+ * POURQUOI CE PRÉDICAT EXISTE. Les moteurs de carte émettent `moveend` pour
+ * des raisons qui ne sont pas des déplacements : un redimensionnement du
+ * conteneur en produit un, alors que la carte montre exactement la même chose.
+ * Une app qui recopie `onViewportChange` dans un formulaire voit alors la
+ * saisie de l'utilisateur écrasée par le centre de départ — sans que personne
+ * n'ait bougé la carte. Un déplacement qui ne déplace rien n'est pas un
+ * déplacement : les deux adaptateurs filtrent avec ce prédicat.
+ *
+ * Les tolérances valent le bruit du calcul flottant, pas un mouvement : 1e-9°
+ * fait un dixième de millimètre, et 1e-6 de zoom un cent-millième de palier.
+ */
+export function sameViewport(a, b) {
+  if (!a || !b) return false;
+  return (
+    Math.abs(a.center.lat - b.center.lat) < 1e-9 &&
+    Math.abs(a.center.lng - b.center.lng) < 1e-9 &&
+    Math.abs(a.zoom - b.zoom) < 1e-6
+  );
+}

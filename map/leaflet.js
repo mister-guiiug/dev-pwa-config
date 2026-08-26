@@ -1,4 +1,4 @@
-import { osmRasterTiles } from './index.js';
+import { osmRasterTiles, sameViewport } from './index.js';
 
 /**
  * Adaptateur Leaflet du port `MapProvider`.
@@ -87,9 +87,20 @@ export function createLeafletMapProvider(engineOptions = {}) {
       // l'état qu'elle est censée refléter : un écran qui écrit le centre dans
       // un formulaire voyait la saisie de l'utilisateur écrasée dès que
       // l'initialisation se terminait après elle. Voir `onReady`.
+      //
+      // `moveend` NE SUFFIT PAS À PROUVER UN DÉPLACEMENT : Leaflet l'émet aussi
+      // sur `invalidateSize()`, c'est-à-dire à chaque redimensionnement du
+      // conteneur, en rapportant le centre inchangé. La dernière vue annoncée
+      // est donc mémorisée — amorcée à la vue de montage — et l'évènement n'est
+      // relayé que s'il dit autre chose.
       if (options.onViewportChange) {
+        let last = { center: options.center, zoom: options.zoom };
         map.on('moveend', () => {
-          if (map) options.onViewportChange(toViewport(map));
+          if (!map) return;
+          const viewport = toViewport(map);
+          if (sameViewport(viewport, last)) return;
+          last = viewport;
+          options.onViewportChange(viewport);
         });
       }
       if (options.onReady) {

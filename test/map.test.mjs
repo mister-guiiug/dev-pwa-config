@@ -263,6 +263,114 @@ test('Leaflet : la vue initiale part par onReady, jamais par onViewportChange', 
   }
 });
 
+/* ── Un déplacement qui ne déplace rien n'est pas un déplacement ────────── */
+
+/**
+ * LE DÉFAUT, CONSTATÉ EN CI (suite). Retirer l'émission au chargement n'a pas
+ * suffi : le parcours critique de `mister-family-map` a échoué de nouveau, et
+ * l'instrumentation a livré le brouillon fautif — `coordinates: 46.6 / 2.4`,
+ * le centre PAR DÉFAUT de la carte, alors que le test avait tapé 45.7799 /
+ * 4.8529 et que le nom, lui, était bien celui saisi.
+ *
+ * La cause restante : les moteurs émettent `moveend` sur un REDIMENSIONNEMENT
+ * du conteneur — Leaflet par `invalidateSize`, MapLibre par son observateur de
+ * taille. La carte n'a rien bougé, elle rapporte le centre de départ, et l'app
+ * qui recopie ce callback dans un formulaire écrase la saisie.
+ *
+ * Ces trois tests tiennent la règle : le prédicat, puis chacun des deux
+ * adaptateurs.
+ */
+test('sameViewport : même centre et même zoom, aux flottants près', async () => {
+  const { sameViewport } = await import('../map/index.js');
+  const vue = { center: { lat: 45.78, lng: 4.85 }, zoom: 12 };
+
+  assert.equal(sameViewport(vue, { ...vue }), true);
+  // Le bruit du calcul flottant n'est pas un déplacement…
+  assert.equal(
+    sameViewport(vue, { center: { lat: 45.78 + 1e-12, lng: 4.85 }, zoom: 12 }),
+    true
+  );
+  // …mais un mètre, si (1e-5 degré ≈ 1,1 m).
+  assert.equal(
+    sameViewport(vue, { center: { lat: 45.78001, lng: 4.85 }, zoom: 12 }),
+    false
+  );
+  assert.equal(
+    sameViewport(vue, { center: { lat: 45.78, lng: 4.85 }, zoom: 13 }),
+    false
+  );
+  // Rien à comparer : on n'affirme pas l'égalité.
+  assert.equal(sameViewport(vue, null), false);
+  assert.equal(sameViewport(undefined, vue), false);
+});
+
+test('Leaflet : un `moveend` qui ne change pas la vue n’est pas relayé', async () => {
+  const dom = setupDom();
+  try {
+    const { createLeafletMapProvider } = await import('../map/leaflet.js');
+    const provider = createLeafletMapProvider();
+
+    const container = document.createElement('div');
+    Object.defineProperty(container, 'clientWidth', { value: 800 });
+    Object.defineProperty(container, 'clientHeight', { value: 600 });
+    document.body.appendChild(container);
+
+    const moves = [];
+    await provider.mount(container, {
+      center: { lat: 45.7799, lng: 4.8529 },
+      zoom: 14,
+      onViewportChange: viewport => moves.push(viewport),
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Recaler la carte sur la vue qu'elle occupe déjà : Leaflet émet `moveend`
+    // — c'est exactement ce que produit un redimensionnement de conteneur.
+    provider.panTo({ lat: 45.7799, lng: 4.8529 }, 14);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.deepEqual(
+      moves,
+      [],
+      'un `moveend` sur place a été relayé — c’est lui qui écrasait la saisie'
+    );
+
+    // Un vrai déplacement, lui, passe toujours.
+    provider.panTo({ lat: 48.8566, lng: 2.3522 }, 14);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(moves.length, 1, 'un déplacement réel doit être annoncé');
+    assert.equal(Math.round(moves[0].center.lat * 1e4) / 1e4, 48.8566);
+
+    provider.destroy();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('MapLibre : son gestionnaire de `moveend` compare avant d’émettre', () => {
+  // jsdom n'a pas de WebGL (voir ci-dessous) : c'est la source qui répond.
+  const source = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', 'map', 'maplibre.js'),
+    'utf8'
+  );
+  const start = source.indexOf("instance.on('moveend'");
+  assert.notEqual(start, -1, 'gestionnaire de `moveend` introuvable');
+  const handler = source.slice(start, source.indexOf('\n        });', start));
+
+  assert.ok(
+    handler.includes('sameViewport'),
+    'le gestionnaire doit comparer la vue à la précédente avant d’émettre'
+  );
+  assert.match(
+    source,
+    /import \{[^}]*sameViewport[^}]*\} from '\.\/index\.js'/
+  );
+  // Et la référence est amorcée à la vue de montage, sinon le tout premier
+  // `moveend` sur place passerait quand même.
+  assert.match(
+    source,
+    /let last = \{ center: options\.center, zoom: options\.zoom \}/
+  );
+});
+
 test('MapLibre : son gestionnaire de `load` n’émet pas de déplacement', () => {
   // jsdom n'a pas de WebGL : MapLibre ne peut pas être monté ici comme Leaflet
   // l'est ci-dessus. C'est donc la SOURCE du gestionnaire qui est vérifiée —

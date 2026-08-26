@@ -1,4 +1,4 @@
-import { osmRasterTiles } from './index.js';
+import { osmRasterTiles, sameViewport } from './index.js';
 
 /**
  * Adaptateur MapLibre GL du port `MapProvider`.
@@ -132,9 +132,22 @@ export function createMapLibreMapProvider(engineOptions = {}) {
         instance.addControl(new AttributionControl({ compact: true }));
         instance.addControl(new NavigationControl(), 'bottom-right');
 
+        // `moveend` NE PROUVE PAS UN DÉPLACEMENT. MapLibre l'émet aussi quand
+        // son conteneur change de taille — l'observateur de redimensionnement
+        // relance le rendu et clôt un « mouvement » qui n'a rien bougé, centre
+        // et zoom identiques. `mister-family-map` recopie ce callback dans le
+        // brouillon de son assistant : ce faux déplacement y réinscrivait le
+        // centre par défaut (46.6 / 2.4) par-dessus les coordonnées saisies,
+        // et la détection de doublons cherchait alors à 400 km du lieu visé.
+        // La dernière vue annoncée est donc mémorisée — amorcée à la vue de
+        // montage — et l'évènement n'est relayé que s'il dit autre chose.
         if (options.onViewportChange) {
+          let last = { center: options.center, zoom: options.zoom };
           instance.on('moveend', () => {
-            options.onViewportChange(toViewport(instance));
+            const viewport = toViewport(instance);
+            if (sameViewport(viewport, last)) return;
+            last = viewport;
+            options.onViewportChange(viewport);
           });
         }
 

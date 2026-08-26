@@ -168,3 +168,14 @@ export declare function clustersToMarkers<T>(
 
 /** `true` si l'identifiant vient d'un groupe (à ne pas traiter comme un item). */
 export declare function isClusterId(id: string): boolean;
+
+/**
+ * `true` si les deux vues désignent le même endroit (centre et zoom, aux
+ * tolérances du calcul flottant près). Sert aux adaptateurs à ignorer les
+ * `moveend` qui n'ont rien déplacé — un redimensionnement de conteneur, par
+ * exemple.
+ */
+export declare function sameViewport(
+  a: Pick<MapViewport, 'center' | 'zoom'> | null | undefined,
+  b: Pick<MapViewport, 'center' | 'zoom'> | null | undefined
+): boolean;
