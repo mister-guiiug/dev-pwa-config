@@ -139,7 +139,7 @@ test('le HTML reçoit le global, dans le head', () => {
   const html = plugin.transformIndexHtml(
     '<html><head><title>x</title></head><body></body></html>'
   );
-  assert.match(html, new RegExp(`<script>globalThis\\.${BUILD_INFO_GLOBAL}=`));
+  assert.ok(html.includes(`<script>globalThis.${BUILD_INFO_GLOBAL}=`), html);
   assert.ok(
     html.indexOf(BUILD_INFO_GLOBAL) < html.indexOf('</head>'),
     'le script doit être DANS le head'
@@ -147,9 +147,10 @@ test('le HTML reçoit le global, dans le head', () => {
 
   // Une page sans `</head>` reste servie : mieux vaut un script en tête de
   // document qu'un build qui échoue.
-  assert.match(
-    versionPlugin({ version: '1.0.0' }).transformIndexHtml('<div/>'),
-    /^<script>/
+  assert.ok(
+    versionPlugin({ version: '1.0.0' })
+      .transformIndexHtml('<div/>')
+      .startsWith('<script>')
   );
 
   assert.equal(

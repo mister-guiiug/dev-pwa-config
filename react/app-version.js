@@ -5,6 +5,22 @@ import { useAppVersion } from './version.js';
 import { useLabels } from './labels.js';
 
 /**
+ * Retire les `/` de fin, SANS expression régulière.
+ *
+ * `replace(/\/+$/, '')` faisait le même travail, et CodeQL l'a signalé à juste
+ * titre : sur une chaîne de mille barres obliques suivies d'autre chose, le
+ * moteur repart en arrière une fois par position. `repoUrl` est une prop, donc
+ * une entrée de bibliothèque — l'appelant décide de ce qu'il y met. Un balayage
+ * arrière est linéaire, et se lit aussi bien.
+ */
+function trimTrailingSlashes(value) {
+  const url = String(value);
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end -= 1;
+  return url.slice(0, end);
+}
+
+/**
  * Le numéro de version, affiché — et ce qu'il devient quand il bouge.
  *
  * OÙ ÇA MANQUAIT. `AppFooter` porte le lien source et le lien sponsor ; c'est
@@ -53,7 +69,7 @@ export function AppVersion(props = {}) {
   const href = releaseUrl
     ? releaseUrl.replaceAll('{version}', tagged)
     : repoUrl
-      ? `${String(repoUrl).replace(/\/+$/, '')}/releases/tag/${tagged}`
+      ? `${trimTrailingSlashes(repoUrl)}/releases/tag/${tagged}`
       : undefined;
 
   const value = href

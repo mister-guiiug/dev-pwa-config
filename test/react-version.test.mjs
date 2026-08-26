@@ -81,12 +81,35 @@ test('AppVersion lie le numéro à sa release, en lien externe sûr', async () =
     const link = view.container.querySelector(
       'a[data-dwc="app-version-value"]'
     );
+    // Le `repoUrl` porte une barre finale — comme celui d'`AppFooter`, où il
+    // sert aussi de lien source.
     assert.equal(
       link.getAttribute('href'),
       'https://github.com/mister-guiiug/mister-family-map/releases/tag/v3.13.0'
     );
     assert.equal(link.getAttribute('rel'), 'noopener noreferrer');
     await view.unmount();
+
+    // Les barres de fin sont retirées SANS expression régulière : celle qui le
+    // faisait avant repartait en arrière une fois par position, et `repoUrl`
+    // est une prop — c'est-à-dire une entrée libre. Cinq cents barres doivent
+    // se traiter comme une.
+    const many = await mount(
+      h(
+        VersionProvider,
+        { info: BUILD, remember: false },
+        h(AppVersion, {
+          repoUrl: `https://exemple.test/depot${'/'.repeat(500)}`,
+        })
+      )
+    );
+    assert.equal(
+      many.container
+        .querySelector('a[data-dwc="app-version-value"]')
+        .getAttribute('href'),
+      'https://exemple.test/depot/releases/tag/v3.13.0'
+    );
+    await many.unmount();
   } finally {
     dom.restore();
   }

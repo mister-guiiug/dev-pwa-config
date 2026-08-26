@@ -264,7 +264,13 @@ test('le script inline ne peut pas refermer sa propre balise', () => {
     commit: '</script><script>alert(1)',
   });
   assert.ok(!source.includes('</script>'), source);
-  assert.match(buildInfoScript({ version: '1.0.0' }), /^<script>.*<\/script>$/);
+  // `startsWith`/`endsWith` plutôt qu'une expression régulière sur une balise
+  // `<script>` : CodeQL classe ce motif en filtrage HTML défaillant (il ne
+  // couvre pas `<SCRIPT>`), et la règle a raison sur le fond — ce n'est pas un
+  // filtre ici, alors autant ne pas en écrire un.
+  const script = buildInfoScript({ version: '1.0.0' });
+  assert.ok(script.startsWith('<script>'), script);
+  assert.ok(script.endsWith('</script>'), script);
 
   // Et ce qu'il pose est bien relisible par `readBuildInfo`.
   const posed = {};
