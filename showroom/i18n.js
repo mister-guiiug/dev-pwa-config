@@ -328,7 +328,7 @@ globalThis.SHOWROOM_I18N = {
     'stack.db.th.apps': 'Applications',
     'stack.db.th.features': 'Features in use',
     'stack.db.supabase.apps':
-      '6 apps — carbook, lookhouse, uwh, doc, footcoach, mölkky',
+      '7 apps — carbook, lookhouse, uwh, doc, footcoach, mölkky, family-map',
     'stack.db.supabase.features':
       'Postgres + <strong>RLS</strong> (deny-by-default), Auth, Realtime (<code>.channel()</code>), SQL functions (<code>.rpc()</code>), Storage, Edge Functions (<code>functions.invoke</code>), versioned migrations — from 3 (footcoach) to 26 (doc).',
     'stack.db.firebase.apps': '3 apps — miss-ticket, puzzle, qowa',

@@ -287,6 +287,35 @@ const CONSUMED = {
   // Application Electron : elle n'importe RIEN du paquet — relevé, pas
   // oubli. C'est le seul dépôt de la famille dans ce cas.
   'mister-quota': [],
+  // Relevé le 26/08/2026 sur `main` : imports du code et des feuilles de
+  // style, `extends` des tsconfig, configs racine. Seule app à consommer
+  // `map`, `map/maplibre`, `correlation`, `logger` et `vite-version`.
+  'mister-family-map': [
+    'commitlint',
+    'components.css',
+    'correlation',
+    'eslint-react',
+    'lint-staged',
+    'logger',
+    'map',
+    'map/maplibre',
+    'playwright-a11y',
+    'playwright-base',
+    'prettier',
+    'react',
+    'react/app-version',
+    'react/observability',
+    'react/update-prompt-banner',
+    'react/version',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vite-version',
+    'vitest-base',
+    'vitest-setup',
+  ],
 };
 
 /** Tous les sous-chemins consommés au moins une fois, triés. */
@@ -450,6 +479,16 @@ export const FAMILY_APPS = [
     // Pas de `favicon.svg` à la racine (404 vérifié en prod) : l'icône vit
     // dans `icons/`, et le SVG reste net à toute taille.
     { icon: 'icons/icon.svg', category: 'jeux', backend: 'firebase' }
+  ),
+  app(
+    'mister-family-map',
+    'Mister Family Map',
+    'Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.',
+    'alpha',
+    // `outils` faute de mieux : la taxonomie n'a pas de « loisirs », et en
+    // ajouter une touche les filtres croisés du showroom — décision qui ne se
+    // prend pas au détour de l'ajout d'une app.
+    { category: 'outils', backend: 'supabase' }
   ),
   app(
     'mister-quota',
