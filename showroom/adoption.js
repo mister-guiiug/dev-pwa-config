@@ -10,11 +10,17 @@
  *
  * `measured: 0` = le relevé n'a jamais tourné. La vitrine n'affiche alors
  * simplement aucun taux d'adoption.
+ *
+ * `total` SUIT LE CATALOGUE, il n'est pas mesuré : il vaut 17 depuis l'ajout
+ * de `mister-family-map`, alors que `measured` en compte 16. C'est l'état
+ * normal d'un relevé partiel — la seule valeur ajustée à la main ici, parce
+ * qu'un `npm run adoption` sans les dépôts à côté n'aurait pas complété le
+ * relevé : il aurait EFFACÉ celui des seize autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
   generatedAt: '2026-08-24T22:14:45.266Z',
   measured: 16,
-  total: 16,
+  total: 17,
   apps: {
     'miss-carbook': {
       symbols: [
