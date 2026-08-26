@@ -56,10 +56,51 @@ composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-08-26 sur 1 dépôts, par `npm run adoption`._
+_Relevé du 2026-08-24 sur 16 dépôts, par `npm run adoption`._
 
-| Export ou module | Importé par | Encore recopié dans |
-| ---------------- | ----------- | ------------------- |
+| Export ou module                          | Importé par | Encore recopié dans |
+| ----------------------------------------- | ----------- | ------------------- |
+| `baseTestOptions`                         | 14 / 16     | —                   |
+| `FamilyApps`                              | 13 / 16     | —                   |
+| `initSentry`                              | 13 / 16     | —                   |
+| `installErrorReporter`                    | 13 / 16     | —                   |
+| `recordError`                             | 13 / 16     | —                   |
+| `definePwaPlaywrightConfig`               | 12 / 16     | —                   |
+| `pwaSeoPlugin`                            | 12 / 16     | —                   |
+| `ErrorBoundary`                           | 9 / 16      | 6 / 16              |
+| `cspPlugin`                               | 9 / 16      | —                   |
+| `expectNoA11yViolations`                  | 9 / 16      | —                   |
+| `createI18n`                              | 8 / 16      | —                   |
+| `coveragePreset`                          | 6 / 16      | —                   |
+| `createTranslator`                        | 2 / 16      | —                   |
+| `useTheme`                                | 1 / 16      | 8 / 16              |
+| `clearErrorLog`                           | 1 / 16      | —                   |
+| `getErrorLog`                             | 1 / 16      | —                   |
+| `I18nPaths`                               | 1 / 16      | —                   |
+| `resolveSeoPublicUrls`                    | 1 / 16      | —                   |
+| `useReducedMotion`                        | 1 / 16      | —                   |
+| `useUpdatePrompt`                         | 1 / 16      | —                   |
+| `links`                                   | 0 / 16      | 9 / 16              |
+| `applyUpdate`                             | 0 / 16      | 8 / 16              |
+| `BottomNav`                               | 0 / 16      | 8 / 16              |
+| `format`                                  | 0 / 16      | 8 / 16              |
+| `UpdatePromptBanner`                      | 0 / 16      | 8 / 16              |
+| `ConfirmDialog`                           | 0 / 16      | 7 / 16              |
+| `EmptyState`                              | 0 / 16      | 7 / 16              |
+| `AppFooter`                               | 0 / 16      | 6 / 16              |
+| `backup`                                  | 0 / 16      | 6 / 16              |
+| `Sheet`                                   | 0 / 16      | 6 / 16              |
+| `Toast`                                   | 0 / 16      | 6 / 16              |
+| `ThemeToggle`                             | 0 / 16      | 5 / 16              |
+| `Button`                                  | 0 / 16      | 4 / 16              |
+| `share`                                   | 0 / 16      | 4 / 16              |
+| `useI18n`                                 | 0 / 16      | 4 / 16              |
+| `useOnline`                               | 0 / 16      | 4 / 16              |
+| `webVitals`                               | 0 / 16      | 4 / 16              |
+| `security`                                | 0 / 16      | 3 / 16              |
+| `Skeleton`                                | 0 / 16      | 3 / 16              |
+| `TextField / SelectField / TextAreaField` | 0 / 16      | 3 / 16              |
+| `Badge`                                   | 0 / 16      | 2 / 16              |
 
 <!-- ADOPTION:FIN -->
 
