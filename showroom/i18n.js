@@ -95,6 +95,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.category.sport': 'Sport',
     'ui.category.jeux': 'Games',
     'ui.category.education': 'Education',
+    'ui.category.loisirs': 'Leisure',
     'ui.category.outils': 'Tools',
     'ui.category.dev': 'Development',
     'ui.platform.web': 'Web',

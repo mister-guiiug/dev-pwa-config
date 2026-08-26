@@ -56,51 +56,72 @@ composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-08-24 sur 16 dépôts, par `npm run adoption`._
+_Relevé du 2026-08-26 sur 17 dépôts, par `npm run adoption`._
 
 | Export ou module                          | Importé par | Encore recopié dans |
 | ----------------------------------------- | ----------- | ------------------- |
-| `baseTestOptions`                         | 14 / 16     | —                   |
-| `FamilyApps`                              | 13 / 16     | —                   |
-| `initSentry`                              | 13 / 16     | —                   |
-| `installErrorReporter`                    | 13 / 16     | —                   |
-| `recordError`                             | 13 / 16     | —                   |
-| `definePwaPlaywrightConfig`               | 12 / 16     | —                   |
-| `pwaSeoPlugin`                            | 12 / 16     | —                   |
-| `ErrorBoundary`                           | 9 / 16      | 6 / 16              |
-| `cspPlugin`                               | 9 / 16      | —                   |
-| `expectNoA11yViolations`                  | 9 / 16      | —                   |
-| `createI18n`                              | 8 / 16      | —                   |
-| `coveragePreset`                          | 6 / 16      | —                   |
-| `createTranslator`                        | 2 / 16      | —                   |
-| `useTheme`                                | 1 / 16      | 8 / 16              |
-| `clearErrorLog`                           | 1 / 16      | —                   |
-| `getErrorLog`                             | 1 / 16      | —                   |
-| `I18nPaths`                               | 1 / 16      | —                   |
-| `resolveSeoPublicUrls`                    | 1 / 16      | —                   |
-| `useReducedMotion`                        | 1 / 16      | —                   |
-| `useUpdatePrompt`                         | 1 / 16      | —                   |
-| `links`                                   | 0 / 16      | 9 / 16              |
-| `applyUpdate`                             | 0 / 16      | 8 / 16              |
-| `BottomNav`                               | 0 / 16      | 8 / 16              |
-| `format`                                  | 0 / 16      | 8 / 16              |
-| `UpdatePromptBanner`                      | 0 / 16      | 8 / 16              |
-| `ConfirmDialog`                           | 0 / 16      | 7 / 16              |
-| `EmptyState`                              | 0 / 16      | 7 / 16              |
-| `AppFooter`                               | 0 / 16      | 6 / 16              |
-| `backup`                                  | 0 / 16      | 6 / 16              |
-| `Sheet`                                   | 0 / 16      | 6 / 16              |
-| `Toast`                                   | 0 / 16      | 6 / 16              |
-| `ThemeToggle`                             | 0 / 16      | 5 / 16              |
-| `Button`                                  | 0 / 16      | 4 / 16              |
-| `share`                                   | 0 / 16      | 4 / 16              |
-| `useI18n`                                 | 0 / 16      | 4 / 16              |
-| `useOnline`                               | 0 / 16      | 4 / 16              |
-| `webVitals`                               | 0 / 16      | 4 / 16              |
-| `security`                                | 0 / 16      | 3 / 16              |
-| `Skeleton`                                | 0 / 16      | 3 / 16              |
-| `TextField / SelectField / TextAreaField` | 0 / 16      | 3 / 16              |
-| `Badge`                                   | 0 / 16      | 2 / 16              |
+| `baseTestOptions`                         | 15 / 17     | —                   |
+| `FamilyApps`                              | 14 / 17     | —                   |
+| `definePwaPlaywrightConfig`               | 13 / 17     | —                   |
+| `initSentry`                              | 13 / 17     | —                   |
+| `installErrorReporter`                    | 13 / 17     | —                   |
+| `pwaSeoPlugin`                            | 13 / 17     | —                   |
+| `recordError`                             | 13 / 17     | —                   |
+| `cspPlugin`                               | 10 / 17     | —                   |
+| `expectNoA11yViolations`                  | 10 / 17     | —                   |
+| `ErrorBoundary`                           | 9 / 17      | 6 / 17              |
+| `createI18n`                              | 8 / 17      | —                   |
+| `coveragePreset`                          | 7 / 17      | —                   |
+| `createTranslator`                        | 2 / 17      | —                   |
+| `UpdatePromptBanner`                      | 1 / 17      | 8 / 17              |
+| `useTheme`                                | 1 / 17      | 8 / 17              |
+| `EmptyState`                              | 1 / 17      | 7 / 17              |
+| `Sheet`                                   | 1 / 17      | 6 / 17              |
+| `Button`                                  | 1 / 17      | 4 / 17              |
+| `useOnline`                               | 1 / 17      | 4 / 17              |
+| `Badge`                                   | 1 / 17      | 2 / 17              |
+| `AppVersion`                              | 1 / 17      | —                   |
+| `clearErrorLog`                           | 1 / 17      | —                   |
+| `clusterByGrid`                           | 1 / 17      | —                   |
+| `clustersToMarkers`                       | 1 / 17      | —                   |
+| `createLogger`                            | 1 / 17      | —                   |
+| `createMapLibreMapProvider`               | 1 / 17      | —                   |
+| `ErrorBanner`                             | 1 / 17      | —                   |
+| `getErrorLog`                             | 1 / 17      | —                   |
+| `I18nPaths`                               | 1 / 17      | —                   |
+| `installCorrelation`                      | 1 / 17      | —                   |
+| `installObservability`                    | 1 / 17      | —                   |
+| `isClusterId`                             | 1 / 17      | —                   |
+| `mapCspDirectives`                        | 1 / 17      | —                   |
+| `mapTileRuntimeCaching`                   | 1 / 17      | —                   |
+| `ObservabilityBoundary`                   | 1 / 17      | —                   |
+| `osmRasterTiles`                          | 1 / 17      | —                   |
+| `resolveSeoPublicUrls`                    | 1 / 17      | —                   |
+| `SelectField`                             | 1 / 17      | —                   |
+| `ShareButton`                             | 1 / 17      | —                   |
+| `SkeletonGroup`                           | 1 / 17      | —                   |
+| `TextAreaField`                           | 1 / 17      | —                   |
+| `TextField`                               | 1 / 17      | —                   |
+| `UpdateButton`                            | 1 / 17      | —                   |
+| `useReducedMotion`                        | 1 / 17      | —                   |
+| `useUpdatePrompt`                         | 1 / 17      | —                   |
+| `versionPlugin`                           | 1 / 17      | —                   |
+| `VersionProvider`                         | 1 / 17      | —                   |
+| `links`                                   | 0 / 17      | 9 / 17              |
+| `applyUpdate`                             | 0 / 17      | 8 / 17              |
+| `BottomNav`                               | 0 / 17      | 8 / 17              |
+| `format`                                  | 0 / 17      | 8 / 17              |
+| `backup`                                  | 0 / 17      | 7 / 17              |
+| `ConfirmDialog`                           | 0 / 17      | 7 / 17              |
+| `AppFooter`                               | 0 / 17      | 6 / 17              |
+| `Toast`                                   | 0 / 17      | 6 / 17              |
+| `ThemeToggle`                             | 0 / 17      | 5 / 17              |
+| `share`                                   | 0 / 17      | 4 / 17              |
+| `useI18n`                                 | 0 / 17      | 4 / 17              |
+| `webVitals`                               | 0 / 17      | 4 / 17              |
+| `security`                                | 0 / 17      | 3 / 17              |
+| `Skeleton`                                | 0 / 17      | 3 / 17              |
+| `TextField / SelectField / TextAreaField` | 0 / 17      | 3 / 17              |
 
 <!-- ADOPTION:FIN -->
 

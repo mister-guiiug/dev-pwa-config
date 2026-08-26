@@ -12,7 +12,15 @@ globalThis.SHOWROOM_APPS = {
   owner: 'mister-guiiug',
   sponsorUrl: 'https://buymeacoffee.com/mister.guiiug',
   maturities: ['alpha', 'beta', 'stable'],
-  categories: ['sante', 'sport', 'jeux', 'education', 'outils', 'dev'],
+  categories: [
+    'sante',
+    'sport',
+    'jeux',
+    'loisirs',
+    'education',
+    'outils',
+    'dev',
+  ],
   backends: ['supabase', 'firebase', 'local', 'api'],
   platforms: ['web', 'desktop'],
   configSubpaths: [
@@ -487,7 +495,7 @@ globalThis.SHOWROOM_APPS = {
       description:
         'Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.',
       maturity: 'alpha',
-      category: 'outils',
+      category: 'loisirs',
       backend: 'supabase',
       platform: 'web',
       configs: [
