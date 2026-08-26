@@ -45,6 +45,7 @@ export { ThemeProvider, useThemeContext } from './theme-provider.js';
 export { AppUpdates, useAppUpdates } from './app-updates.js';
 export { VersionProvider, useAppVersion } from './version.js';
 export { AppVersion } from './app-version.js';
+export { ShareButton } from './share-button.js';
 export { ObservabilityBoundary } from './error-boundary.js';
 export {
   IconsProvider,

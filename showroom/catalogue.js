@@ -375,6 +375,29 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'ShareButton',
+      category: 'pwa',
+      covers: ['ShareButton'],
+      donts: {
+        fr: [
+          'Ne pas traiter l’annulation comme un échec : `navigator.share` lève AUSSI quand l’utilisateur ferme la feuille de partage. Une app du relevé affichait « échec » à quelqu’un qui avait simplement changé d’avis — ici `cancelled` n’affiche rien.',
+          'Ne pas recopier dans le presse-papiers après une annulation : copier ce qu’on vient de refuser de partager est une surprise. Les trois copies mesurées s’accordent là-dessus.',
+          'Ne pas insérer le message de retour en même temps que sa région vivante : elle ne serait pas lue. Elle est ici présente dès le premier rendu, vide tant qu’il n’y a rien à dire.',
+          'Ne pas laisser « Lien copié » à l’écran indéfiniment : sans `resetAfterMs`, le bouton ment au prochain regard.',
+        ],
+        en: [
+          'Don’t treat cancellation as failure: `navigator.share` ALSO throws when the user dismisses the share sheet. One surveyed app showed “failed” to someone who simply changed their mind — here `cancelled` shows nothing.',
+          'Don’t fall back to the clipboard after a cancellation: copying what someone just declined to share is a surprise. The three surveyed copies agree on this.',
+          'Don’t insert the feedback message together with its live region: it would go unread. Here the region is present from the first render, empty until there is something to say.',
+          'Don’t leave “Link copied” on screen forever: without `resetAfterMs`, the button lies at the next glance.',
+        ],
+      },
+      a11y: {
+        fr: 'Le retour est une région `status` posée dès le premier rendu, donc annoncée quand elle se remplit ; c’est un TEXTE, jamais une couleur seule. La cible tactile de 2,75 rem est celle des autres boutons du paquet.',
+        en: 'Feedback is a `status` region present from the first render, so it is announced when filled; it is TEXT, never colour alone. The 2.75 rem touch target matches the package’s other buttons.',
+      },
+    },
+    {
       id: 'AppVersion',
       category: 'shell',
       covers: ['AppVersion'],

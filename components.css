@@ -65,6 +65,7 @@
     [data-dwc='error-banner-dismiss'],
     [data-dwc='error-boundary-reset'],
     [data-dwc='error-boundary-backup'],
+    [data-dwc='share-button'],
     [data-dwc='update-banner-update'],
     [data-dwc='update-banner-dismiss'],
     [data-dwc='pwa-install-actions'] button,
@@ -82,6 +83,7 @@
     [data-dwc='error-banner-retry'],
     [data-dwc='error-boundary-reset'],
     [data-dwc='error-boundary-backup'],
+    [data-dwc='share-button'],
     [data-dwc='update-banner-update'],
     [data-dwc='update-banner-dismiss'],
     [data-dwc='pwa-install-actions'] button
@@ -336,6 +338,23 @@
    * où l'on est tenté de descendre plus bas — c'est aussi celui qu'on lit quand
    * on remplit un rapport de bug.
    */
+  /*
+   * Le retour du partage : un TEXTE, jamais une couleur seule. La région
+   * `status` existe dès le premier rendu — insérée en même temps que son
+   * message, elle ne serait pas lue de façon fiable — d'où le `:not(:empty)`
+   * qui ne l'habille que lorsqu'elle dit quelque chose.
+   */
+  [data-dwc='share-button-group'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='share-button-status']:not(:empty) {
+    color: var(--dwc-text-soft, GrayText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
   [data-dwc='app-version'] {
     display: flex;
     flex-wrap: wrap;

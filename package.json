@@ -195,6 +195,10 @@
       "types": "./react/rive.d.ts",
       "default": "./react/rive.js"
     },
+    "./react/share-button": {
+      "types": "./react/share-button.d.ts",
+      "default": "./react/share-button.js"
+    },
     "./react/sheet": {
       "types": "./react/sheet.d.ts",
       "default": "./react/sheet.js"

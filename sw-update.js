@@ -48,14 +48,54 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-/** URL courante avec un paramètre anti-cache. */
-function bustedUrl() {
+/** URL anti-cache, celle de la page par défaut, ou celle qu'on lui donne. */
+function bustedUrl(base) {
   try {
-    const url = new URL(globalThis.location?.href ?? '/');
+    const url = new URL(base || (globalThis.location?.href ?? '/'));
     url.searchParams.set('_t', Date.now().toString(36));
     return url.toString();
   } catch {
     return '/';
+  }
+}
+
+/**
+ * La portée du service worker qui contrôle cette page — c'est-à-dire la seule
+ * URL dont on sait que le SERVEUR sait la servir.
+ *
+ * POURQUOI C'EST NÉCESSAIRE. Une app monopage déployée sur un hébergement
+ * statique (GitHub Pages, pour les seize apps de la famille) n'a de fichier
+ * qu'à sa racine : `/mister-family-map/profil` n'existe pas côté serveur. Cette
+ * route ne répond que parce que le service worker la rattrape par son
+ * `navigateFallback`. Purger le worker DÉTRUIT donc ce qui rendait l'URL
+ * courante joignable — et recharger cette même URL juste après renvoie un 404.
+ *
+ * Le défaut a été reproduit sur un serveur statique sans repli : « Forcer la
+ * mise à jour » depuis `/profil` menait à `/profil?_t=…` et à la page 404 de
+ * l'hébergeur. Il ne se voit pas en développement, où `vite preview` sert
+ * `index.html` pour n'importe quel chemin.
+ *
+ * La portée est relevée AVANT la désinscription, faute de quoi il n'y a plus
+ * rien à lire. À portées multiples, la plus SPÉCIFIQUE qui couvre la page
+ * l'emporte — c'est celle qui la contrôle.
+ */
+async function controllingScope(sw, timeoutMs) {
+  try {
+    const registrations = await withTimeout(
+      Promise.resolve(sw.getRegistrations?.()).catch(() => undefined),
+      timeoutMs
+    );
+    const scopes = (registrations ?? [])
+      .map(registration => registration?.scope)
+      .filter(scope => typeof scope === 'string' && scope !== '');
+    if (scopes.length === 0) return '';
+    const here = globalThis.location?.href ?? '';
+    const couvrantes = scopes
+      .filter(scope => here.startsWith(scope))
+      .sort((a, b) => b.length - a.length);
+    return couvrantes[0] ?? scopes[0];
+  } catch {
+    return '';
   }
 }
 
@@ -171,11 +211,16 @@ export async function applyUpdate(options = {}) {
     navigate = hardNavigate,
   } = options;
 
-  const target = reloadTo ?? bustedUrl();
+  // `let` : sur le chemin de la purge, la cible devient la portée du worker —
+  // la page courante peut être une route que le serveur ne connaît pas.
+  let target = reloadTo ?? bustedUrl();
 
   // Filet inconditionnel : si TOUTES les stratégies ci-dessous sont ignorées
-  // (vu sur des vues web verrouillées), la page recharge quand même.
+  // (vu sur des vues web verrouillées), la page recharge quand même. Il vise la
+  // MÊME cible que la sortie normale : après une purge, recharger la route
+  // courante rendrait le 404 que le worker rattrapait.
   const safety = setTimeout(() => {
+    if (navigate(target)) return;
     try {
       globalThis.location?.reload();
     } catch {
@@ -216,6 +261,13 @@ export async function applyUpdate(options = {}) {
     } catch {
       /* on bascule sur la purge */
     }
+  }
+
+  // La portée se lit AVANT la désinscription : après, il n'y a plus rien à
+  // lire. `reloadTo` reste souverain quand l'app a imposé sa destination.
+  if (!reloadTo) {
+    const scope = await controllingScope(sw, timeoutMs);
+    if (scope) target = bustedUrl(scope);
   }
 
   await withTimeout(purge(keepCache), timeoutMs);

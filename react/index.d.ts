@@ -31,4 +31,5 @@ export * from './theme-provider';
 export * from './app-updates';
 export * from './version';
 export * from './app-version';
+export * from './share-button';
 export * from './icons-context';
