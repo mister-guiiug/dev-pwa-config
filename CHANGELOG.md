@@ -1,5 +1,50 @@
 # Changelog
 
+## 3.17.0
+
+### Minor Changes
+
+- eddcc1e: `react/share-button` — le bouton « Partager », la suite de `share.js`.
+
+  Le module a été promu ; les boutons, non. Quatre apps portent un `share.ts`, et
+  chacune garde son bouton — trois réponses différentes à la même question : que
+  montrer quand le partage natif n'existe pas et qu'on a copié à la place ? Rien du
+  tout, un `window.alert`, ou un libellé qui ne revient jamais à son état initial.
+
+  Ce que le composant tranche :
+  - **L'annulation n'affiche rien.** `shareOrCopy` distingue `cancelled` de `failed`
+    précisément pour ça ; afficher « échec » à quelqu'un qui a fermé la feuille de
+    partage est faux.
+  - **Le retour est annoncé.** La région `status` existe dès le premier rendu, vide
+    tant qu'il n'y a rien à dire — insérée avec son texte, elle ne serait pas lue.
+  - **L'état revient de lui-même** (`resetAfterMs`), sans quoi « Lien copié » ment au
+    prochain regard.
+
+  Trois libellés fr/en rejoignent `react/labels`, et `components.css` habille le
+  bouton comme les autres du paquet (cible tactile de 2,75 rem comprise).
+
+### Patch Changes
+
+- eddcc1e: `applyUpdate` ne renvoie plus vers une route que le serveur ignore.
+
+  Une app monopage déployée sur un hébergement statique — GitHub Pages, pour les
+  dix-sept apps de la famille — n'a de fichier qu'à sa racine :
+  `/mister-family-map/profil` n'existe pas côté serveur et ne répond que parce que le
+  service worker la rattrape par son `navigateFallback`. Le chemin de purge
+  désinscrivait le worker, **puis** rechargeait cette même URL : l'utilisateur
+  tombait sur la page 404 de l'hébergeur.
+
+  Reproduit sur un serveur statique sans repli : « Forcer la mise à jour » depuis
+  `/profil` menait à `/profil?_t=…` et à « 404 — File not found ». Le défaut ne se
+  voit pas en développement, où `vite preview` sert `index.html` pour n'importe quel
+  chemin.
+
+  La portée du worker qui contrôle la page est désormais relevée **avant** la
+  désinscription, et sert de destination : c'est la seule URL dont on sait que le
+  serveur sait la servir. Le chemin propre, lui, reste sur la page courante — le
+  worker n'est pas touché, et rien ne justifie de faire perdre son écran à
+  l'utilisateur. `reloadTo` garde le dernier mot.
+
 ## 3.16.0
 
 ### Minor Changes
