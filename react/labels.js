@@ -58,6 +58,13 @@ export const LABELS = {
         'Vide le cache de l’application et recharge. Vos données sont conservées.',
     },
     footer: { source: 'Code source', sponsor: 'M’offrir un café' },
+    version: {
+      label: 'Version',
+      updated: 'Mis à jour vers {version}',
+      available: 'Version {version} disponible',
+      built: 'Compilée le {date}',
+      release: 'Notes de version',
+    },
     apps: {
       repo: 'Code source de {app}',
       source: 'Code source',
@@ -110,6 +117,13 @@ export const LABELS = {
       forceHint: 'Clears the app cache and reloads. Your data is kept.',
     },
     footer: { source: 'Source code', sponsor: 'Buy me a coffee' },
+    version: {
+      label: 'Version',
+      updated: 'Updated to {version}',
+      available: 'Version {version} available',
+      built: 'Built on {date}',
+      release: 'Release notes',
+    },
     apps: {
       repo: 'Source code for {app}',
       source: 'Source code',

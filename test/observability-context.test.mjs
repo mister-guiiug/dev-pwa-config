@@ -19,8 +19,10 @@ import {
   getSessionContext,
   recordError,
   setForwarder,
+  installObservability,
   setSessionContext,
 } from '../react/observability.js';
+import { BUILD_INFO_GLOBAL } from '../version.js';
 import { useRouteBreadcrumbs } from '../react/use-route-breadcrumbs.js';
 import { mount, setupDom } from './helpers/dom.mjs';
 
@@ -151,6 +153,51 @@ test('useRouteBreadcrumbs enregistre l’entrée puis les transitions', async ()
     await view.unmount();
   } finally {
     clearBreadcrumbs();
+    dom.restore();
+  }
+});
+
+test('installObservability n’a plus besoin qu’on lui donne la version', async () => {
+  // Le défaut mesuré en tête du module — « pas de version, pas de langue » —
+  // tenait à ce que le paquet réclamait une version sans savoir la produire.
+  // `versionPlugin` la pose désormais sur le global ; elle doit arriver seule.
+  const dom = setupDom();
+  globalThis[BUILD_INFO_GLOBAL] = {
+    version: '3.13.0',
+    commit: '104c944abcdef',
+    buildTime: '2026-08-26T07:54:00.000Z',
+  };
+  try {
+    setSessionContext({});
+    await installObservability({
+      context: { app: 'mister-family-map', environment: 'test' },
+      console: false,
+    });
+    const context = getSessionContext();
+    assert.equal(context.version, '3.13.0');
+    assert.equal(context.commit, '104c944abcdef');
+    assert.equal(context.app, 'mister-family-map');
+    assert.equal(context.environment, 'test');
+  } finally {
+    delete globalThis[BUILD_INFO_GLOBAL];
+    setForwarder(null);
+    dom.restore();
+  }
+});
+
+test('le contexte de l’app l’emporte sur la version injectée', async () => {
+  const dom = setupDom();
+  globalThis[BUILD_INFO_GLOBAL] = { version: '3.13.0' };
+  try {
+    setSessionContext({});
+    await installObservability({
+      context: { version: 'imposée' },
+      console: false,
+    });
+    assert.equal(getSessionContext().version, 'imposée');
+  } finally {
+    delete globalThis[BUILD_INFO_GLOBAL];
+    setForwarder(null);
     dom.restore();
   }
 });

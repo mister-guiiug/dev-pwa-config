@@ -375,6 +375,29 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'AppVersion',
+      category: 'shell',
+      covers: ['AppVersion'],
+      donts: {
+        fr: [
+          'Ne pas recopier la version dans un `define` maison : `versionPlugin` la pose sur `globalThis.__DWC_BUILD__`, seul chemin que lit un module de `node_modules`. Un `define` seul ne peut pas atteindre le paquet.',
+          'Ne pas afficher le SHA complet : le composant montre les sept caractères de la forme courte, ceux qu’un rapport de bug recopie sans se tromper.',
+          'Ne pas attendre « mise à jour disponible » sans `VersionProvider` : hors fournisseur, le composant affiche la version et ne surveille rien.',
+          'Ne pas activer `checkEvery` sur un écran monté en permanence sans y réfléchir : c’est une requête réseau récurrente, et le service worker couvre déjà le cas des apps qui en ont un.',
+        ],
+        en: [
+          'Don’t re-create the version in a hand-written `define`: `versionPlugin` puts it on `globalThis.__DWC_BUILD__`, the only path a module inside `node_modules` can read. A `define` alone cannot reach the package.',
+          'Don’t print the full SHA: the component shows the seven-character short form, the one a bug report copies without a mistake.',
+          'Don’t expect “update available” without `VersionProvider`: outside the provider the component shows the version and watches nothing.',
+          'Don’t switch `checkEvery` on for a permanently mounted screen without thinking: it is a recurring network request, and the service worker already covers apps that have one.',
+        ],
+      },
+      a11y: {
+        fr: 'Chaque état porte son TEXTE, jamais une couleur seule ; l’annonce « version disponible » est une région `status`, sans quoi elle apparaîtrait après coup sans être annoncée. Sans version injectée, le composant rend `null` plutôt qu’un libellé vide.',
+        en: 'Every state carries its own TEXT, never colour alone; the “version available” notice is a `status` region, without which it would appear after the fact and never be announced. With no version injected, the component renders `null` rather than an empty label.',
+      },
+    },
+    {
       id: 'FamilyApps',
       category: 'shell',
       covers: ['FamilyApps'],
@@ -401,6 +424,20 @@ globalThis.SHOWROOM_CATALOGUE = {
    * se regarde pas. Ils ont une signature, une phrase, et le piège qui va avec.
    * ────────────────────────────────────────────────────────────────────── */
   hooks: [
+    {
+      id: 'VersionProvider',
+      covers: ['VersionProvider', 'useAppVersion'],
+      signature:
+        'VersionProvider({ checkEvery?, checkUrl? }) → useAppVersion() → { version, justUpdated, latest, updateAvailable, checkNow }',
+      summary: {
+        fr: 'La version qui tourne, celle du démarrage précédent, celle qui est en ligne. Le pendant de `AppUpdates` : celui-ci sait qu’une bascule est possible, celui-là sait vers quoi.',
+        en: 'The running version, the one from the previous start, the one that is online. The counterpart of `AppUpdates`: that one knows a switch is possible, this one knows what to.',
+      },
+      dont: {
+        fr: 'Ne pas en attendre un rechargement : poser la question et appliquer la réponse sont deux gestes, et `applyUpdate` fait déjà le second.',
+        en: 'Don’t expect it to reload: asking the question and applying the answer are two gestures, and `applyUpdate` already does the second.',
+      },
+    },
     {
       id: 'useTheme',
       covers: ['useTheme'],

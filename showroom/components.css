@@ -328,6 +328,56 @@
     text-decoration: underline;
   }
 
+  /*
+   * Le numéro de version : discret par défaut, lisible quand même.
+   *
+   * `--dwc-text-soft` est un gris SECONDAIRE, pas un gris décoratif : il tient
+   * le 4.5:1 dans les seize palettes. Le pied de page est justement l'endroit
+   * où l'on est tenté de descendre plus bas — c'est aussi celui qu'on lit quand
+   * on remplit un rapport de bug.
+   */
+  [data-dwc='app-version'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin: 0;
+    color: var(--dwc-text-soft, GrayText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  [data-dwc='app-version-value'] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a[data-dwc='app-version-value'] {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a[data-dwc='app-version-value']:hover {
+    color: var(--dwc-primary, CanvasText);
+    text-decoration: underline;
+  }
+
+  [data-dwc='app-version-details'] {
+    opacity: 0.85;
+  }
+
+  /*
+   * Les deux annonces portent leur TEXTE : la pastille colorée n'est qu'un
+   * renfort. C'est la règle que `Badge` a fait respecter après l'échec de
+   * contraste d'une variante pleine dans onze thèmes sur quatorze.
+   */
+  [data-dwc='app-version-updated'],
+  [data-dwc='app-version-available'] {
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: var(--dwc-primary-soft, rgb(0 0 0 / 8%));
+    color: var(--dwc-text, CanvasText);
+    font-size: 0.85em;
+  }
+
   [data-dwc='family-apps-title'] {
     margin: var(--spacing-fluid-sm, 0.75rem) 0;
     font-size: var(--text-fluid-lg, 1.125rem);

@@ -17,6 +17,7 @@
  */
 import { redact } from '../security.js';
 import { initWebVitals } from '../web-vitals.js';
+import { versionContext } from '../version.js';
 
 const RING_KEY = 'dwc_error_log';
 const RING_MAX = 50;
@@ -337,7 +338,16 @@ export async function installObservability(options = {}) {
   if (redactKeys) setRedactKeys(redactKeys);
   // Le contexte AVANT les écouteurs : une erreur levée pendant l'installation
   // doit déjà porter la version et l'environnement.
-  if (context) setSessionContext(context);
+  //
+  // LA VERSION N'EST PLUS À FOURNIR. Le défaut mesuré en tête de ce module —
+  // « pas de version, pas de langue » — tenait à ce que le paquet la réclamait
+  // sans savoir la produire. `versionPlugin` la pose désormais sur
+  // `globalThis.__DWC_BUILD__` ; elle arrive donc seule, et l'appelant garde le
+  // dernier mot : son `context` est fusionné PAR-DESSUS.
+  const build = versionContext();
+  if (context || Object.keys(build).length > 0) {
+    setSessionContext({ ...build, ...context });
+  }
   if (consoleOption) {
     captureConsole(typeof consoleOption === 'object' ? consoleOption : {});
   }

@@ -426,6 +426,10 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/map/maplibre`                | `.js` + `.d.ts` | Adaptateur **MapLibre GL** (~253 ko gzip, raster + vectoriel, WebGL ; peer optionnelle `maplibre-gl` ^6)                                                                                                                         |
 | `@mister-guiiug/dev-wpa-config/correlation`                 | `.js` + `.d.ts` | Identifiant de corrélation de bout en bout : `installCorrelation`, `withCorrelation(fetch)`, `correlationHeaders`, `getSessionId` — relie erreurs, requêtes, télémétrie et écran de crash                                        |
 | `@mister-guiiug/dev-wpa-config/logger`                      | `.js` + `.d.ts` | Journal à niveaux (`createLogger`, `setLogLevel`) écrivant dans le **même** fil d'Ariane que `breadcrumb`, estampillé de l'identifiant de corrélation                                                                            |
+| `@mister-guiiug/dev-wpa-config/version`                     | `.js` + `.d.ts` | `readBuildInfo` / `compareVersions` / `rememberVersion` / `fetchAppVersion` — la version côté client, SemVer comparé, changement détecté au démarrage, `version.json` interrogé. Sans React ni module virtuel                    |
+| `@mister-guiiug/dev-wpa-config/vite-version`                | `.js` + `.d.ts` | `versionPlugin()` : `__APP_VERSION__` & co par `define`, `globalThis.__DWC_BUILD__` dans le `<head>`, `version.json` à la racine du build (et servi en dev). **Avant `cspPlugin`**                                               |
+| `@mister-guiiug/dev-wpa-config/react/version`               | `.js` + `.d.ts` | `VersionProvider` / `useAppVersion` — version courante, précédente, publiée ; `checkEvery` sonde `version.json` sans attendre le service worker                                                                                  |
+| `@mister-guiiug/dev-wpa-config/react/app-version`           | `.js` + `.d.ts` | `AppVersion` : le numéro affiché, « mis à jour vers X » après une bascule réussie, « version Y disponible » en région `status`                                                                                                   |
 | `@mister-guiiug/dev-wpa-config/tailwind-preset`             | `.js`           | Design tokens famille (fonts, safe-areas, breakpoints)                                                                                                                                                                           |
 | `@mister-guiiug/dev-wpa-config/tailwind-preset.css`         | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                                                  |
 
@@ -1341,6 +1345,73 @@ await applyUpdate({
 
 > En test (jsdom), importer `@mister-guiiug/dev-wpa-config/vitest-setup` depuis
 > `src/test/setup.ts` fournit les mocks `virtual:pwa-register` + `matchMedia`.
+
+#### La version : l'afficher, et savoir qu'elle a bougé
+
+Les cinq modules ci-dessus pilotent une bascule de service worker **sans jamais
+nommer une version** : le bandeau dit « Mise à jour disponible », pas laquelle,
+et rien ne confirme après coup que la bascule a réussi. Symétriquement,
+`installObservability` réclamait `context.version` — que le paquet ne savait pas
+produire, faute de rien qui porte le numéro jusqu'au navigateur.
+
+Une ligne dans `vite.config.ts` ferme les deux :
+
+```ts
+import { versionPlugin } from '@mister-guiiug/dev-wpa-config/vite-version';
+import { cspPlugin } from '@mister-guiiug/dev-wpa-config/vite-csp';
+
+export default defineConfig({
+  // versionPlugin AVANT cspPlugin : les hash sont calculés sur le HTML final.
+  plugins: [react(), versionPlugin(), cspPlugin()],
+});
+```
+
+Le plugin lit la version du `package.json` de l'app (`VITE_APP_VERSION` la force,
+`GITHUB_SHA` fournit le commit) et produit **trois sorties** : les `define`
+`__APP_VERSION__` / `__APP_BUILD_TIME__` / `__APP_COMMIT__` pour le code de
+l'app, un `globalThis.__DWC_BUILD__` posé dans le `<head>` — le seul chemin
+qu'un module de `node_modules` puisse lire, un `define` ne l'atteignant pas — et
+un `version.json` à la racine du build, servi aussi par `vite dev`. Il est exclu
+du précache workbox : figé, il rendrait éternellement la version qui l'a figé.
+
+Aucun secret n'entre dans le bundle : un numéro de version et un SHA de commit,
+publics par construction, et le SHA n'est écrit que s'il existe.
+
+Côté écran, le numéro se pose dans le pied de page :
+
+```tsx
+import { AppFooter } from '@mister-guiiug/dev-wpa-config/react';
+
+<AppFooter
+  repoUrl="https://github.com/mister-guiiug/mister-family-map"
+  version
+/>;
+```
+
+`version` est **opt-in** : absent, le pied de page rend exactement ce qu'il
+rendait. Le `repoUrl` déjà donné sert alors de lien vers la release.
+
+Pour les deux états que seul un fournisseur peut calculer — la confirmation
+« mis à jour vers 3.14.0 » au premier démarrage après une bascule, et l'annonce
+« version 3.15.0 disponible » quand un déploiement passe :
+
+```tsx
+import { VersionProvider } from '@mister-guiiug/dev-wpa-config/react';
+
+<VersionProvider checkEvery="1h">
+  <App />
+</VersionProvider>;
+```
+
+Sans `checkEvery`, **aucune requête n'est émise**. Un rollback de déploiement ne
+s'annonce pas comme une nouveauté : `justUpdated` ne se lève que sur une montée.
+`VersionProvider` complète `AppUpdates` sans le remplacer — l'un sait qu'une
+bascule est possible, l'autre sait vers quoi ; ni l'un ni l'autre ne recharge de
+lui-même, c'est le rôle d'`applyUpdate`.
+
+Enfin, `installObservability` n'a plus rien à recevoir : la version, la date de
+compilation et le commit rejoignent seuls le contexte de session, et un
+`context` explicite garde le dernier mot.
 
 #### Libellés fr/en des composants
 
