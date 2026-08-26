@@ -124,3 +124,51 @@ test('une peer importée sans garde n’est pas déclarée optionnelle', () => {
     );
   }
 });
+
+/* ── Le barrel exporte-t-il ce qu'il DÉCLARE ? ─────────────────────────── */
+
+/**
+ * LE DÉFAUT, CONSTATÉ EN MIGRATION. `react/index.js` et `react/index.d.ts` sont
+ * deux listes tenues À LA MAIN, et rien ne les comparait. Trois modules promus
+ * (`VersionProvider`, `useAppVersion`, `AppVersion`) ont donc été ajoutés au
+ * barrel d'exécution sans l'être à celui des types : l'import marchait, `tsc`
+ * le refusait, et l'app consommatrice a dû passer par les sous-chemins.
+ *
+ * `npm run typecheck` ne pouvait pas le voir : il vérifie les fichiers du
+ * paquet, pas la correspondance entre deux listes dont l'une n'est lue que par
+ * les consommateurs.
+ *
+ * L'inverse n'est PAS vérifié : un type exporté (`ButtonProps`, `SyncStatus`…)
+ * n'a légitimement aucune contrepartie à l'exécution.
+ */
+test('tout export du barrel react est aussi DÉCLARÉ dans ses types', async () => {
+  const ts = (await import('typescript')).default;
+  const entry = at('react/index.d.ts');
+
+  const program = ts.createProgram([entry], {
+    noEmit: true,
+    skipLibCheck: true,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    target: ts.ScriptTarget.ESNext,
+    jsx: ts.JsxEmit.ReactJSX,
+  });
+  const source = program.getSourceFile(entry);
+  assert.ok(source, 'react/index.d.ts introuvable');
+  const checker = program.getTypeChecker();
+  const moduleSymbol = checker.getSymbolAtLocation(source);
+  assert.ok(moduleSymbol, 'react/index.d.ts n’est pas vu comme un module');
+
+  const declares = new Set(
+    checker.getExportsOfModule(moduleSymbol).map(symbol => symbol.name)
+  );
+  const runtime = Object.keys(await import('../react/index.js'));
+  assert.ok(runtime.length > 20, 'barrel suspicieusement court');
+
+  const nonDeclares = runtime.filter(name => !declares.has(name)).sort();
+  assert.deepEqual(
+    nonDeclares,
+    [],
+    `ces exports existent à l'exécution mais pas dans react/index.d.ts : ${nonDeclares.join(', ')} — une app les importerait sans que tsc les connaisse`
+  );
+});
