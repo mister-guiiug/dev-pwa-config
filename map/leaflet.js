@@ -80,12 +80,22 @@ export function createLeafletMapProvider(engineOptions = {}) {
       }).addTo(map);
       markerLayer = L.layerGroup().addTo(map);
 
+      // `onViewportChange` NE DIT QUE LES DÉPLACEMENTS. La première version
+      // émettait aussi la vue initiale, par `whenReady` — et une carte qui
+      // finit de s'initialiser n'a rien changé, elle rapporte son état de
+      // départ. Confondre les deux fait de la carte un SECOND ÉCRIVAIN de
+      // l'état qu'elle est censée refléter : un écran qui écrit le centre dans
+      // un formulaire voyait la saisie de l'utilisateur écrasée dès que
+      // l'initialisation se terminait après elle. Voir `onReady`.
       if (options.onViewportChange) {
-        const emit = () => {
+        map.on('moveend', () => {
           if (map) options.onViewportChange(toViewport(map));
-        };
-        map.on('moveend', emit);
-        map.whenReady(emit);
+        });
+      }
+      if (options.onReady) {
+        map.whenReady(() => {
+          if (map) options.onReady(toViewport(map));
+        });
       }
     },
 

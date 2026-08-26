@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { setupDom } from './helpers/dom.mjs';
 import {
   CLUSTER_ID_PREFIX,
   cellSizeForZoom,
@@ -206,4 +207,83 @@ test('pwaSeoPlugin sort /map/maplibre du pré-bundling', async () => {
     excluded.includes('@mister-guiiug/dev-wpa-config/react/observability'),
     'l’exclusion existante ne doit pas avoir été perdue'
   );
+});
+
+/* ── La vue initiale n'est pas un déplacement ──────────────────────────── */
+
+/**
+ * LE DÉFAUT, CONSTATÉ EN CI. Les deux adaptateurs annonçaient la vue INITIALE
+ * par `onViewportChange` — `whenReady` côté Leaflet, `once('load')` côté
+ * MapLibre. `mister-family-map` recopie ce callback dans le brouillon de son
+ * assistant « ajouter un lieu » : sur un runner à WebGL logiciel, le `load` de
+ * la carte tombait APRÈS la saisie, si bien que le centre par défaut (46.6 /
+ * 2.4, le milieu de la France) écrasait les coordonnées tapées. La détection de
+ * doublons cherchait alors à 400 km du lieu visé et ne proposait rien : le
+ * parcours critique échouait trois fois sur trois, et seulement en CI.
+ *
+ * Une carte qui finit de s'initialiser n'a RIEN DÉPLACÉ. La vue initiale part
+ * désormais par `onReady`.
+ */
+test('Leaflet : la vue initiale part par onReady, jamais par onViewportChange', async () => {
+  const dom = setupDom();
+  try {
+    const { createLeafletMapProvider } = await import('../map/leaflet.js');
+    const provider = createLeafletMapProvider();
+
+    const container = document.createElement('div');
+    // jsdom ne calcule aucune mise en page : sans dimensions, Leaflet monte une
+    // carte de 0×0 et ne devient jamais prête.
+    Object.defineProperty(container, 'clientWidth', { value: 800 });
+    Object.defineProperty(container, 'clientHeight', { value: 600 });
+    document.body.appendChild(container);
+
+    const seen = { moved: 0, ready: [] };
+    await provider.mount(container, {
+      center: { lat: 45.78, lng: 4.85 },
+      zoom: 12,
+      onViewportChange: () => {
+        seen.moved += 1;
+      },
+      onReady: viewport => seen.ready.push(viewport),
+    });
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    assert.equal(
+      seen.moved,
+      0,
+      'la vue initiale a été annoncée comme un déplacement — c’est ce qui écrasait la saisie'
+    );
+    assert.equal(seen.ready.length, 1, 'onReady doit être appelé une fois');
+    assert.equal(Math.round(seen.ready[0].center.lat * 100) / 100, 45.78);
+    assert.equal(seen.ready[0].zoom, 12);
+
+    provider.destroy();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('MapLibre : son gestionnaire de `load` n’émet pas de déplacement', () => {
+  // jsdom n'a pas de WebGL : MapLibre ne peut pas être monté ici comme Leaflet
+  // l'est ci-dessus. C'est donc la SOURCE du gestionnaire qui est vérifiée —
+  // moins bien qu'un montage, mais la règle qu'il porte est la même, et un
+  // retour en arrière serait rouge.
+  const source = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '..', 'map', 'maplibre.js'),
+    'utf8'
+  );
+  const start = source.indexOf("instance.once('load'");
+  assert.notEqual(start, -1, 'gestionnaire de `load` introuvable');
+  const handler = source.slice(start, source.indexOf('});', start));
+
+  assert.ok(
+    handler.includes('onReady'),
+    'la vue initiale doit partir par onReady'
+  );
+  assert.ok(
+    !handler.includes('onViewportChange'),
+    'une carte qui finit de charger n’a rien déplacé'
+  );
+  // Et le déplacement, lui, reste bien branché sur `moveend`.
+  assert.match(source, /instance\.on\('moveend'[\s\S]*?onViewportChange/);
 });
