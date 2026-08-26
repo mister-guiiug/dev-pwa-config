@@ -1586,6 +1586,7 @@
     sport: 'Sport',
     jeux: 'Jeux',
     education: 'Éducation',
+    loisirs: 'Loisirs',
     outils: 'Outils',
     dev: 'Développement',
   };

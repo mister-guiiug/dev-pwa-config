@@ -35,6 +35,20 @@ test('adoption.js pose un objet bien formé sur globalThis', () => {
   }
 });
 
+test('chaque entrée dit QUAND elle a été relevée', () => {
+  // Le relevé se cumule : les dix-sept dépôts ne sont jamais clonés ensemble.
+  // Sans date par entrée, une mesure de ce matin et une d'il y a six mois se
+  // ressemblent — et c'est le genre de chiffre qu'on finit par citer sans le
+  // vérifier.
+  for (const [id, data] of Object.entries(ADOPTION.apps)) {
+    assert.ok('measuredAt' in data, `${id} : measuredAt absent`);
+    assert.ok(
+      data.measuredAt === null || Number.isFinite(Date.parse(data.measuredAt)),
+      `${id} : measuredAt doit être une date ISO ou null`
+    );
+  }
+});
+
 test('le relevé ne parle que d’apps que le catalogue connaît', () => {
   for (const id of Object.keys(ADOPTION.apps)) {
     assert.ok(IDS.has(id), `${id} n’est pas au catalogue`);

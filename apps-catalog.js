@@ -33,6 +33,7 @@ export const CATEGORIES = [
   'sante',
   'sport',
   'jeux',
+  'loisirs',
   'education',
   'outils',
   'dev',
@@ -485,10 +486,10 @@ export const FAMILY_APPS = [
     'Mister Family Map',
     'Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.',
     'alpha',
-    // `outils` faute de mieux : la taxonomie n'a pas de « loisirs », et en
-    // ajouter une touche les filtres croisés du showroom — décision qui ne se
-    // prend pas au détour de l'ajout d'une app.
-    { category: 'outils', backend: 'supabase' }
+    // `loisirs` : la catégorie a été ajoutée pour elle. Sortir en famille n'est
+    // ni un outil ni un jeu, et `outils` n'était qu'un pis-aller assumé à
+    // l'ajout de l'app.
+    { category: 'loisirs', backend: 'supabase' }
   ),
   app(
     'mister-quota',

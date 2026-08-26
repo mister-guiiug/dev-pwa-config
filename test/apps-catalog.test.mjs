@@ -417,3 +417,48 @@ test('le JSON-LD de la vitrine décrit les seize apps', async () => {
     'JSON-LD périmé : lancer `npm run sync`'
   );
 });
+
+/* ── Une catégorie sans libellé est une catégorie invisible ────────────── */
+
+/**
+ * LE DÉFAUT QUE CECI EMPÊCHE. `mister-family-map` a été rangée dans `outils`
+ * « faute de mieux », la taxonomie n'ayant pas de domaine pour une sortie en
+ * famille. En ajouter un touche TROIS fichiers en plus du catalogue : le type
+ * publié, le libellé français de la vitrine, et sa traduction anglaise. Un
+ * oubli ne casse rien — la facette affiche simplement l'identifiant brut, ou
+ * rien du tout, et personne ne le voit avant un utilisateur.
+ */
+test('chaque catégorie du catalogue porte ses libellés', async () => {
+  const { readFileSync } = await import('node:fs');
+  const read = name =>
+    readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
+
+  const showroom = read('showroom/showroom.js');
+  const startFr = showroom.indexOf('var CATEGORY_FR = {');
+  assert.notEqual(startFr, -1, 'CATEGORY_FR introuvable dans la vitrine');
+  const tableFr = showroom.slice(startFr, showroom.indexOf('};', startFr));
+
+  const i18n = read('showroom/i18n.js');
+
+  for (const category of CATEGORIES) {
+    assert.match(
+      tableFr,
+      new RegExp(`\\b${category}:\\s*'`),
+      `${category} : libellé français manquant (showroom/showroom.js)`
+    );
+    assert.ok(
+      i18n.includes(`'ui.category.${category}'`),
+      `${category} : traduction anglaise manquante (showroom/i18n.js)`
+    );
+  }
+
+  // Et le type publié doit connaître les mêmes valeurs, sinon une app rangée
+  // dans une catégorie neuve ne compile pas chez le consommateur.
+  const types = read('apps-catalog.d.ts');
+  for (const category of CATEGORIES) {
+    assert.ok(
+      types.includes(`'${category}'`),
+      `${category} : absent de apps-catalog.d.ts`
+    );
+  }
+});

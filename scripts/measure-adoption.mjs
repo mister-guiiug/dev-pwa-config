@@ -4,6 +4,18 @@
  * continuent de recopier à côté. Écrit `showroom/adoption.js`.
  *
  *   node scripts/measure-adoption.mjs [--root ../mister-guiiug] [--write]
+ *                                      [--replace] [--force]
+ *
+ * LE RELEVÉ SE CUMULE, IL NE SE REMPLACE PAS. Personne n'a les dix-sept dépôts
+ * clonés en permanence : on relève ce qu'on a sous la main. `--write` FUSIONNE
+ * donc — les apps mesurées à cette exécution écrasent leur propre entrée, les
+ * autres gardent la leur, et chaque entrée porte son `measuredAt`.
+ *
+ * CE QUE ÇA CORRIGE. Lancé sans les dépôts à côté, l'outil écrivait `measured:
+ * 1` et EFFAÇAIT le relevé des seize autres apps — 1187 lignes perdues en une
+ * commande, sans un mot. Un relevé partiel n'est pas un relevé plus récent :
+ * c'est une vue partielle du même objet. `--replace` reste possible pour une
+ * campagne complète, et refuse de réduire la couverture sans `--force`.
  *
  * POURQUOI. Le catalogue porte déjà un champ `configs` : les sous-chemins qu'une
  * app importe. Il ne dit pas l'inverse — ce qu'elle N'IMPORTE PAS alors que le
@@ -36,6 +48,11 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
+import {
+  coverageVerdict,
+  indexAdoption,
+  mergeAdoption,
+} from './adoption-merge.mjs';
 
 /**
  * « Cet export du paquet est déjà fait, à la main, dans un fichier qui
@@ -181,6 +198,8 @@ const rootArg = args.includes('--root')
   ? args[args.indexOf('--root') + 1]
   : undefined;
 const write = args.includes('--write');
+const replace = args.includes('--replace');
+const force = args.includes('--force');
 
 const located = findRoot(rootArg);
 if (!located) {
@@ -202,20 +221,58 @@ for (const app of FAMILY_APPS) {
   apps[app.id] = measureApp(dir);
 }
 
-const measured = Object.keys(apps).length;
-const bySymbol = {};
-const byDuplicate = {};
-for (const [id, data] of Object.entries(apps)) {
-  for (const symbol of data.symbols) (bySymbol[symbol] ??= []).push(id);
-  for (const dup of data.duplicates)
-    (byDuplicate[dup.exported] ??= []).push(id);
+const out = fileURLToPath(new URL('../showroom/adoption.js', import.meta.url));
+
+/**
+ * Le relevé déjà en place, ou `null`. Le fichier est du JavaScript (il se
+ * charge par `<script src>`), pas du JSON : on l'exécute dans un objet à nous
+ * plutôt que d'inventer un analyseur.
+ */
+function previousRecord() {
+  try {
+    const source = readFileSync(out, 'utf8');
+    const scope = {};
+    new Function('globalThis', source)(scope);
+    const record = scope.SHOWROOM_ADOPTION;
+    return record && typeof record.apps === 'object' ? record : null;
+  } catch {
+    return null;
+  }
 }
 
+const previous = previousRecord();
+const stampedAt = new Date().toISOString();
+
+const {
+  apps: merged,
+  measured,
+  measuredNow,
+} = mergeAdoption(previous, apps, {
+  replace,
+  stampedAt,
+});
+
+const verdict = coverageVerdict(previous, measured, { replace, force });
+if (write && verdict.refuse) {
+  console.error(
+    `Refus d'écrire : --replace ferait passer le relevé de ${verdict.before} à ${verdict.after} apps.\n` +
+      "Sans --replace, l'écriture FUSIONNE et ne perd rien. Pour réduire volontairement, ajouter --force."
+  );
+  process.exit(1);
+}
+if (write && verdict.warn) {
+  console.warn(
+    `⚠ --force : le relevé passe de ${verdict.before} à ${verdict.after} apps.`
+  );
+}
+
+const { bySymbol, byDuplicate } = indexAdoption(merged);
+
 const payload = {
-  generatedAt: new Date().toISOString(),
+  generatedAt: stampedAt,
   measured,
   total: FAMILY_APPS.length,
-  apps,
+  apps: merged,
   bySymbol,
   byDuplicate,
 };
@@ -232,14 +289,20 @@ const banner = `/*
  *
  * \`measured: 0\` = le relevé n'a jamais tourné. La vitrine n'affiche alors
  * simplement aucun taux d'adoption.
+ *
+ * RELEVÉ CUMULÉ. \`measured\` compte les apps que cet enregistrement CONNAÎT,
+ * pas celles vues à la dernière exécution : chaque entrée porte son propre
+ * \`measuredAt\`. Personne n'ayant les dix-sept dépôts clonés en permanence,
+ * l'écriture fusionne au lieu de remplacer — sans quoi un relevé partiel
+ * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = `;
 
-const out = fileURLToPath(new URL('../showroom/adoption.js', import.meta.url));
 if (write) {
   writeFileSync(out, `${banner}${JSON.stringify(payload, null, 2)};\n`, 'utf8');
   console.log(
-    `✅ showroom/adoption.js — ${measured}/${FAMILY_APPS.length} apps`
+    `✅ showroom/adoption.js — ${measured}/${FAMILY_APPS.length} apps ` +
+      `(${measuredNow} relevée${measuredNow > 1 ? 's' : ''} à l'instant, ${measured - measuredNow} conservée${measured - measuredNow > 1 ? 's' : ''})`
   );
 }
 
@@ -248,7 +311,8 @@ const rows = Object.entries(bySymbol)
   .map(([s, list]) => [s, list.length])
   .sort((a, b) => b[1] - a[1]);
 console.log(
-  `\nRelevé sur ${measured}/${FAMILY_APPS.length} apps (${located.root})`
+  `\nRelevé : ${measuredNow} app(s) sous ${located.root} ; ` +
+    `enregistrement cumulé ${measured}/${FAMILY_APPS.length}`
 );
 console.log('\nIMPORTÉ :');
 for (const [symbol, count] of rows) {
