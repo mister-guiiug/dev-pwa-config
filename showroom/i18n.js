@@ -238,6 +238,13 @@ globalThis.SHOWROOM_I18N = {
     'composants.h47': 'AppFooter',
     'composants.p13': 'Source-code link plus sponsor link, opened safely.',
     'composants.summary7': 'CSS selectors',
+    'composants.h410': 'AppVersion',
+    'composants.p20':
+      'The version number, injected at build time by <code>vite-version</code>: what is running, what was just installed, what is online.',
+    'composants.version1': 'Version',
+    'composants.version2': 'Built on 26 August 2026 · 104c944',
+    'composants.version3': 'Version 3.14.0 available',
+    'composants.summary13': 'CSS selectors',
     'composants.h48': 'FamilyApps',
     'composants.p14':
       'The “our other apps” grid, fed by <code>apps-catalog.js</code>, with a maturity badge.',

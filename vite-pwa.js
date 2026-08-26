@@ -33,6 +33,7 @@
  *   );
  */
 import { themeById } from './themes.js';
+import { VERSION_MANIFEST } from './version.js';
 
 /** Tailles par défaut, alignées sur ce que produit `npx pwa-icons`. */
 const DEFAULT_ICONS = [
@@ -184,6 +185,12 @@ export function pwaWorkbox(options = {}) {
 
   return {
     globPatterns: ['**/*.{js,css,html,ico,svg,png,webp,woff2,webmanifest}'],
+    // `version.json` DOIT rester hors du précache. Il est là pour dire ce qui
+    // est en ligne : précaché, il rendrait éternellement la version du build
+    // qui l'a précaché — c'est-à-dire l'inverse de ce qu'on lui demande. La
+    // valeur par défaut de workbox (`node_modules`) est reconduite, la
+    // remplacer la ferait tomber.
+    globIgnores: ['**/node_modules/**/*', `**/${VERSION_MANIFEST}`],
     navigateFallback: `${base}index.html`,
     cleanupOutdatedCaches: true,
     maximumFileSizeToCacheInBytes: 4_000_000,

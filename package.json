@@ -99,6 +99,10 @@
       "types": "./themes.d.ts",
       "default": "./themes.js"
     },
+    "./version": {
+      "types": "./version.d.ts",
+      "default": "./version.js"
+    },
     "./web-vitals": {
       "types": "./web-vitals.d.ts",
       "default": "./web-vitals.js"
@@ -118,6 +122,10 @@
     "./react/app-updates": {
       "types": "./react/app-updates.d.ts",
       "default": "./react/app-updates.js"
+    },
+    "./react/app-version": {
+      "types": "./react/app-version.d.ts",
+      "default": "./react/app-version.js"
     },
     "./react/badge": {
       "types": "./react/badge.d.ts",
@@ -259,6 +267,10 @@
       "types": "./react/use-update-prompt.d.ts",
       "default": "./react/use-update-prompt.js"
     },
+    "./react/version": {
+      "types": "./react/version.d.ts",
+      "default": "./react/version.js"
+    },
     "./vitest-browser-base": {
       "types": "./vitest-browser-base.d.ts",
       "default": "./vitest-browser-base.js"
@@ -286,6 +298,10 @@
     "./vite-csp": {
       "types": "./vite-csp.d.ts",
       "default": "./vite-csp.js"
+    },
+    "./vite-version": {
+      "types": "./vite-version.d.ts",
+      "default": "./vite-version.js"
     },
     "./map": {
       "types": "./map/index.d.ts",
@@ -343,6 +359,8 @@
     "theme-boot.d.ts",
     "themes.js",
     "themes.d.ts",
+    "version.js",
+    "version.d.ts",
     "web-vitals.js",
     "web-vitals.d.ts",
     "react",
@@ -358,6 +376,8 @@
     "vite-pwa.d.ts",
     "vite-csp.js",
     "vite-csp.d.ts",
+    "vite-version.js",
+    "vite-version.d.ts",
     "map",
     "tailwind-preset.js",
     "tailwind-preset.css",

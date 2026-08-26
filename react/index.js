@@ -43,6 +43,8 @@ export { applyUpdate } from '../sw-update.js';
 export { ThemeToggle } from './theme-toggle.js';
 export { ThemeProvider, useThemeContext } from './theme-provider.js';
 export { AppUpdates, useAppUpdates } from './app-updates.js';
+export { VersionProvider, useAppVersion } from './version.js';
+export { AppVersion } from './app-version.js';
 export { ObservabilityBoundary } from './error-boundary.js';
 export {
   IconsProvider,

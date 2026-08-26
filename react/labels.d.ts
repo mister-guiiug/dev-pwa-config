@@ -22,6 +22,16 @@ export interface LabelGroups {
     forceHint: string;
   };
   footer: { source: string; sponsor: string };
+  version: {
+    label: string;
+    /** `{version}` remplacé par le numéro. */
+    updated: string;
+    /** `{version}` remplacé par le numéro publié. */
+    available: string;
+    /** `{date}` remplacé par la date de compilation. */
+    built: string;
+    release: string;
+  };
   apps: {
     repo: string;
     source: string;
