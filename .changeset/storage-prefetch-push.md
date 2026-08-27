@@ -10,6 +10,6 @@ Stockage tolérant, coffre chiffré, préchargement des routes, et un port de no
 
 **`./prefetch` et `./react/use-prefetch`** — NEUF, besoin constaté : les 17 apps découpent leurs routes en `lazy()`, aucune ne les préchauffe. Le précache du service worker ne couvre que la deuxième visite. Préchargement sur l'intention (pointeur, focus, doigt), coupé sur `saveData` et en 2G.
 
-**`./push` + `./push/firebase`, `./push/supabase`, `./push/webpush`** — NEUF ASSUMÉ : aucun code push n'existait dans les dépôts relevés. Livré comme un **port avec adaptateurs**, sur le modèle de `MapProvider` — le paquet n'impose aucun fournisseur. Rapporte *pourquoi* le push est indisponible (dont le cas iPhone-en-onglet), ne redemande pas une permission déjà refusée, et désabonne côté serveur d'abord.
+**`./push` + `./push/firebase`, `./push/supabase`, `./push/webpush`** — NEUF ASSUMÉ : aucun code push n'existait dans les dépôts relevés. Livré comme un **port avec adaptateurs**, sur le modèle de `MapProvider` — le paquet n'impose aucun fournisseur. Rapporte _pourquoi_ le push est indisponible (dont le cas iPhone-en-onglet), ne redemande pas une permission déjà refusée, et désabonne côté serveur d'abord.
 
 Le volet **Logging** de la demande existait déjà (`./logger`), de même que l'offline, la mise à jour et les stratégies de cache (`./vite-pwa`, `./sw-update`).
