@@ -3,6 +3,7 @@ export * from './use-install-prompt';
 export * from './use-theme';
 export * from './use-media-query';
 export * from './use-online';
+export * from './use-prefetch';
 export * from './use-offline-queue';
 export * from './net';
 export * from './pwa-install-prompt';

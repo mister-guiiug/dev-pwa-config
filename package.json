@@ -75,6 +75,14 @@
       "types": "./security.d.ts",
       "default": "./security.js"
     },
+    "./storage": {
+      "types": "./storage.d.ts",
+      "default": "./storage.js"
+    },
+    "./secure-storage": {
+      "types": "./secure-storage.d.ts",
+      "default": "./secure-storage.js"
+    },
     "./correlation": {
       "types": "./correlation.d.ts",
       "default": "./correlation.js"
@@ -87,9 +95,29 @@
       "types": "./share.d.ts",
       "default": "./share.js"
     },
+    "./prefetch": {
+      "types": "./prefetch.d.ts",
+      "default": "./prefetch.js"
+    },
     "./sw-update": {
       "types": "./sw-update.d.ts",
       "default": "./sw-update.js"
+    },
+    "./push": {
+      "types": "./push/index.d.ts",
+      "default": "./push/index.js"
+    },
+    "./push/firebase": {
+      "types": "./push/firebase.d.ts",
+      "default": "./push/firebase.js"
+    },
+    "./push/supabase": {
+      "types": "./push/supabase.d.ts",
+      "default": "./push/supabase.js"
+    },
+    "./push/webpush": {
+      "types": "./push/webpush.d.ts",
+      "default": "./push/webpush.js"
     },
     "./theme-boot": {
       "types": "./theme-boot.d.ts",
@@ -263,6 +291,10 @@
       "types": "./react/use-page-views.d.ts",
       "default": "./react/use-page-views.js"
     },
+    "./react/use-prefetch": {
+      "types": "./react/use-prefetch.d.ts",
+      "default": "./react/use-prefetch.js"
+    },
     "./react/use-theme": {
       "types": "./react/use-theme.d.ts",
       "default": "./react/use-theme.js"
@@ -387,7 +419,14 @@
     "tailwind-preset.css",
     "tokens.css",
     "components.css",
-    "scripts/generate-pwa-icons.mjs"
+    "scripts/generate-pwa-icons.mjs",
+    "storage.js",
+    "storage.d.ts",
+    "secure-storage.js",
+    "secure-storage.d.ts",
+    "prefetch.js",
+    "prefetch.d.ts",
+    "push"
   ],
   "peerDependencies": {
     "@axe-core/playwright": "^4.8.0",
@@ -396,6 +435,7 @@
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.49.0",
     "@rive-app/react-canvas": "^4.0.0",
+    "@supabase/supabase-js": "^2.0.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@vitest/browser": "^4.0.0",
     "eslint": "^9.39.4",
@@ -432,6 +472,9 @@
       "optional": true
     },
     "@rive-app/react-canvas": {
+      "optional": true
+    },
+    "@supabase/supabase-js": {
       "optional": true
     },
     "@testing-library/jest-dom": {

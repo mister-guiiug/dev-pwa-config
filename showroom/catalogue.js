@@ -515,6 +515,19 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'usePrefetch',
+      covers: ['usePrefetch', 'useVisiblePrefetch', 'useIdlePrefetch'],
+      signature: 'usePrefetch(loader) → { prefetch, linkProps }',
+      summary: {
+        fr: 'Précharge le morceau d’une route découpée à l’approche du pointeur ou du focus — avant le clic, pas pendant.',
+        en: 'Warms a code-split route’s chunk on pointer or focus intent — before the click, not during.',
+      },
+      dont: {
+        fr: 'Ne pas tout précharger au démarrage : cela annule le découpage. Le préchargement se coupe seul sur `saveData` et en 2G.',
+        en: 'Don’t prefetch everything on boot: that undoes code splitting. Prefetching stops itself on `saveData` and 2G.',
+      },
+    },
+    {
       id: 'useOnline',
       covers: ['useOnline'],
       signature: 'useOnline() → boolean',
