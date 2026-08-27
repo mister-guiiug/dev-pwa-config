@@ -17,6 +17,11 @@ export {
   usePrefersDark,
 } from './use-media-query.js';
 export { useOnline } from './use-online.js';
+export {
+  usePrefetch,
+  useVisiblePrefetch,
+  useIdlePrefetch,
+} from './use-prefetch.js';
 export { useOfflineMutationQueue } from './use-offline-queue.js';
 export { retryableQuery } from './net.js';
 export { PwaInstallPrompt } from './pwa-install-prompt.js';
