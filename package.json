@@ -87,9 +87,21 @@
       "types": "./correlation.d.ts",
       "default": "./correlation.js"
     },
+    "./columns": {
+      "types": "./columns.d.ts",
+      "default": "./columns.js"
+    },
     "./csv": {
       "types": "./csv.d.ts",
       "default": "./csv.js"
+    },
+    "./markdown": {
+      "types": "./markdown.d.ts",
+      "default": "./markdown.js"
+    },
+    "./vcard": {
+      "types": "./vcard.d.ts",
+      "default": "./vcard.js"
     },
     "./similarity": {
       "types": "./similarity.d.ts",
@@ -471,7 +483,13 @@
     "backend.d.ts",
     "sparkline.js",
     "sparkline.d.ts",
-    "realtime"
+    "realtime",
+    "columns.js",
+    "columns.d.ts",
+    "markdown.js",
+    "markdown.d.ts",
+    "vcard.js",
+    "vcard.d.ts"
   ],
   "peerDependencies": {
     "@axe-core/playwright": "^4.8.0",

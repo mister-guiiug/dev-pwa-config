@@ -30,7 +30,11 @@
  *
  * CE QUE ÇA N'EST PAS : un tableur. Pas de formules, pas de types, pas de
  * feuilles. Du texte tabulaire qui s'ouvre correctement des deux côtés.
+ *
+ * Les COLONNES viennent de `./columns.js`, partagées avec l'export Markdown et
+ * JSON : une déclaration, trois formats, le même contenu.
  */
+import { cellValue, resolveColumns } from './columns.js';
 
 /** Séparateurs reconnus à la lecture, par ordre de fréquence constatée. */
 const CANDIDATE_DELIMITERS = [',', ';', '\t', '|'];
@@ -123,26 +127,18 @@ export function toCsv(rows, options = {}) {
   // Les colonnes DÉCLARÉES priment : l'ordre des clés d'un objet est un détail
   // d'implémentation, et un export dont les colonnes bougent d'une version à
   // l'autre casse les tableurs de ceux qui s'en servent.
-  const columns = (
-    options.columns ?? [...new Set(list.flatMap(row => Object.keys(row ?? {})))]
-  ).map(column =>
-    typeof column === 'string' ? { key: column, header: column } : column
-  );
+  const columns = resolveColumns(list, options.columns);
 
   const lines = [];
   if (options.header !== false) {
     lines.push(
-      columns
-        .map(c => escapeField(c.header ?? c.key, dialect))
-        .join(dialect.delimiter)
+      columns.map(c => escapeField(c.header, dialect)).join(dialect.delimiter)
     );
   }
   for (const row of list) {
     lines.push(
       columns
-        .map(c =>
-          escapeField(c.map ? c.map(row?.[c.key], row) : row?.[c.key], dialect)
-        )
+        .map(c => escapeField(cellValue(c, row), dialect))
         .join(dialect.delimiter)
     );
   }
