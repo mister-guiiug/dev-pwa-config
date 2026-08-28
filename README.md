@@ -58,6 +58,10 @@ composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
 
 _Relevé du 2026-08-26 sur 17 dépôts, par `npm run adoption`._
 
+> **Dette d'adoption : 130 fichiers recopiés** dans 17 apps, sur 23 besoins distincts. Les pires : `links` (9), `applyUpdate` (8), `BottomNav` (8).
+>
+> **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
+
 | Export ou module                          | Importé par | Encore recopié dans |
 | ----------------------------------------- | ----------- | ------------------- |
 | `baseTestOptions`                         | 15 / 17     | —                   |

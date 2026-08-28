@@ -1,0 +1,172 @@
+// Plan d'adoption (`scripts/adopt-plan.mjs`).
+//
+// CE QUI SE JOUE. Un codemod qui interprète mal ne casse pas : il réécrit du
+// code juste en code faux, sur seize dépôts d'un coup. Ces tests éprouvent
+// surtout ce qu'il REFUSE de faire — c'est là que se trouve sa sûreté.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  EXPORTS,
+  SUBPATHS,
+  findLocalImports,
+  importedSymbols,
+  planForApp,
+  rewriteImports,
+} from '../scripts/adopt-plan.mjs';
+
+/* ── Le relevé des imports ─────────────────────────────────────────────── */
+
+test('les symboles nommés sont relevés, alias compris', () => {
+  const source = `
+    import { Button, Card as Panneau } from '../ui/Button';
+    import autre from 'ailleurs';
+  `;
+  assert.deepEqual(importedSymbols(source, '../ui/Button'), ['Button', 'Card']);
+});
+
+test('un import par défaut ou étoilé est IGNORÉ, pas deviné', () => {
+  // Un codemod qui interprète mal réécrit du code juste en code faux : mieux
+  // vaut ne rien faire et le signaler.
+  const parDefaut = `import Button from '../ui/Button';`;
+  const etoile = `import * as UI from '../ui/Button';`;
+  assert.deepEqual(importedSymbols(parDefaut, '../ui/Button'), []);
+  assert.deepEqual(importedSymbols(etoile, '../ui/Button'), []);
+});
+
+test('le chemin d’import est RELEVÉ, jamais construit', () => {
+  // Deviner `../../shared/ui/Button` depuis une arborescence suppose une
+  // convention que les dix-sept apps ne partagent pas.
+  const source = `
+    import { Button } from '../../shared/ui/Button';
+    import { Other } from './Button.tsx';
+  `;
+  const trouves = findLocalImports(source, 'Button');
+  assert.ok(trouves.includes('../../shared/ui/Button'));
+  assert.ok(trouves.includes('./Button.tsx'));
+});
+
+/* ── La réécriture ─────────────────────────────────────────────────────── */
+
+test('l’import local devient le sous-chemin du socle', () => {
+  const source = `import { EmptyState } from '../ui/EmptyState';\nexport const x = 1;`;
+  const result = rewriteImports(source, {
+    localPath: '../ui/EmptyState',
+    subpath: 'react/empty-state',
+    expected: ['EmptyState'],
+  });
+  assert.equal(
+    result.source,
+    `import { EmptyState } from '@mister-guiiug/dev-wpa-config/react/empty-state';\nexport const x = 1;`
+  );
+  assert.deepEqual(result.symbols, ['EmptyState']);
+});
+
+test('un symbole ABSENT du sous-chemin bloque tout le fichier', () => {
+  // Le cas réel : l'app a collé son `ListSkeleton` à côté du `Skeleton`
+  // promu. Réécrire l'import casserait la compilation.
+  const source = `import { Skeleton, ListSkeleton } from '../ui/Skeleton';`;
+  const result = rewriteImports(source, {
+    localPath: '../ui/Skeleton',
+    subpath: 'react/skeleton',
+    expected: ['Skeleton'],
+  });
+  assert.deepEqual(result.blocked, ['ListSkeleton']);
+  assert.equal(result.source, undefined, 'rien n’est réécrit');
+});
+
+test('un fichier qui n’importe rien de ce module rend `null`', () => {
+  // Distingue « déjà migré » de « migré maintenant » : un rapport honnête en
+  // dépend.
+  const result = rewriteImports(`import { A } from 'ailleurs';`, {
+    localPath: '../ui/Button',
+    subpath: 'react/button',
+    expected: ['Button'],
+  });
+  assert.equal(result, null);
+});
+
+test('plusieurs imports du même module sont tous réécrits', () => {
+  const source = [
+    `import { Sheet } from '../ui/Sheet';`,
+    `import { Sheet as S } from '../ui/Sheet';`,
+  ].join('\n');
+  const result = rewriteImports(source, {
+    localPath: '../ui/Sheet',
+    subpath: 'react/sheet',
+    expected: ['Sheet'],
+  });
+  assert.equal(result.source.match(/dev-wpa-config\/react\/sheet/g).length, 2);
+});
+
+test('les imports d’AUTRES modules ne sont pas touchés', () => {
+  const source = [
+    `import { Button } from '../ui/Button';`,
+    `import { Card } from '../ui/Card';`,
+  ].join('\n');
+  const result = rewriteImports(source, {
+    localPath: '../ui/Button',
+    subpath: 'react/button',
+    expected: ['Button'],
+  });
+  assert.ok(result.source.includes(`import { Card } from '../ui/Card';`));
+});
+
+/* ── Le plan ───────────────────────────────────────────────────────────── */
+
+test('un doublon sans sous-chemin est un candidat à la PROMOTION', () => {
+  // Migrer et promouvoir ne se confondent pas : dire « aucun sous-chemin » est
+  // une information, pas un échec.
+  const [step] = planForApp({
+    duplicates: [{ exported: 'inconnu', file: 'inconnu.ts' }],
+  });
+  assert.equal(step.status, 'no-subpath');
+  assert.match(step.reason, /aucun sous-chemin/);
+});
+
+test('un doublon connu porte son sous-chemin et ses symboles attendus', () => {
+  const [step] = planForApp({
+    duplicates: [{ exported: 'Toast', file: 'Toast.tsx' }],
+  });
+  assert.equal(step.status, 'ready');
+  assert.equal(step.subpath, 'react/toast');
+  assert.deepEqual(step.expected, ['Toast']);
+});
+
+test('un sous-chemin qui exporte plusieurs symboles les déclare tous', () => {
+  const [step] = planForApp({
+    duplicates: [
+      {
+        exported: 'TextField / SelectField / TextAreaField',
+        file: 'Field.tsx',
+      },
+    ],
+  });
+  assert.deepEqual(step.expected, EXPORTS['react/field']);
+  assert.ok(step.expected.includes('SelectField'));
+});
+
+/* ── La carte elle-même ────────────────────────────────────────────────── */
+
+test('chaque sous-chemin cité est réellement publié', async () => {
+  // Une carte qui pointe vers un sous-chemin inexistant produirait des imports
+  // cassés — sur seize dépôts.
+  const { readFileSync } = await import('node:fs');
+  const pkg = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+  );
+  for (const subpath of Object.values(SUBPATHS)) {
+    assert.ok(
+      pkg.exports[`./${subpath}`],
+      `${subpath} n’est pas publié par package.json`
+    );
+  }
+});
+
+test('les symboles déclarés existent vraiment dans leur module', async () => {
+  for (const [subpath, symbols] of Object.entries(EXPORTS)) {
+    const module = await import(`../${subpath}.js`);
+    for (const name of symbols) {
+      assert.ok(name in module, `${subpath} n’exporte pas ${name}`);
+    }
+  }
+});

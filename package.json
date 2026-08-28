@@ -87,6 +87,18 @@
       "types": "./correlation.d.ts",
       "default": "./correlation.js"
     },
+    "./csv": {
+      "types": "./csv.d.ts",
+      "default": "./csv.js"
+    },
+    "./similarity": {
+      "types": "./similarity.d.ts",
+      "default": "./similarity.js"
+    },
+    "./backend": {
+      "types": "./backend.d.ts",
+      "default": "./backend.js"
+    },
     "./logger": {
       "types": "./logger.d.ts",
       "default": "./logger.js"
@@ -98,6 +110,10 @@
     "./prefetch": {
       "types": "./prefetch.d.ts",
       "default": "./prefetch.js"
+    },
+    "./sparkline": {
+      "types": "./sparkline.d.ts",
+      "default": "./sparkline.js"
     },
     "./sw-update": {
       "types": "./sw-update.d.ts",
@@ -118,6 +134,22 @@
     "./push/webpush": {
       "types": "./push/webpush.d.ts",
       "default": "./push/webpush.js"
+    },
+    "./realtime": {
+      "types": "./realtime/index.d.ts",
+      "default": "./realtime/index.js"
+    },
+    "./realtime/firebase": {
+      "types": "./realtime/firebase.d.ts",
+      "default": "./realtime/firebase.js"
+    },
+    "./realtime/local": {
+      "types": "./realtime/local.d.ts",
+      "default": "./realtime/local.js"
+    },
+    "./realtime/supabase": {
+      "types": "./realtime/supabase.d.ts",
+      "default": "./realtime/supabase.js"
     },
     "./theme-boot": {
       "types": "./theme-boot.d.ts",
@@ -295,6 +327,10 @@
       "types": "./react/use-prefetch.d.ts",
       "default": "./react/use-prefetch.js"
     },
+    "./react/sparkline": {
+      "types": "./react/sparkline.d.ts",
+      "default": "./react/sparkline.js"
+    },
     "./react/use-theme": {
       "types": "./react/use-theme.d.ts",
       "default": "./react/use-theme.js"
@@ -426,7 +462,16 @@
     "secure-storage.d.ts",
     "prefetch.js",
     "prefetch.d.ts",
-    "push"
+    "push",
+    "csv.js",
+    "csv.d.ts",
+    "similarity.js",
+    "similarity.d.ts",
+    "backend.js",
+    "backend.d.ts",
+    "sparkline.js",
+    "sparkline.d.ts",
+    "realtime"
   ],
   "peerDependencies": {
     "@axe-core/playwright": "^4.8.0",

@@ -515,6 +515,19 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'Sparkline',
+      covers: ['Sparkline', 'BarChart', 'Gauge'],
+      signature: 'Sparkline({ values, label, unit }) · BarChart · Gauge',
+      summary: {
+        fr: 'Courbe, barres et jauge en SVG calculé — sans librairie, avec l’alternative textuelle produite d’office.',
+        en: 'Sparkline, bars and gauge as computed SVG — no library, with the text alternative produced by default.',
+      },
+      dont: {
+        fr: 'Ne pas confondre un trou (`null`) avec un zéro : le second fait plonger la courbe et raconte une panne qui n’a pas eu lieu.',
+        en: 'Don’t treat a gap (`null`) as a zero: it dips the line and tells of an outage that never happened.',
+      },
+    },
+    {
       id: 'usePrefetch',
       covers: ['usePrefetch', 'useVisiblePrefetch', 'useIdlePrefetch'],
       signature: 'usePrefetch(loader) → { prefetch, linkProps }',
