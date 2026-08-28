@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.20.0
+
+### Minor Changes
+
+- 988d317: Exports Markdown, JSON et vCard — et un modèle de colonnes partagé.
+
+  **`./columns`** — la déclaration de colonnes est désormais commune au CSV, au Markdown et au JSON : une déclaration, trois formats, le même contenu. `toJson` traite d'une seule façon ce que `JSON.stringify` traite de deux (`undefined` disparaît d'un objet mais devient `null` dans un tableau ; `NaN` et `Infinity` deviennent `null` sans prévenir).
+
+  **`./markdown`** — tableaux qui restent des tableaux : la barre verticale est échappée (sinon elle coupe la ligne en colonnes), le retour à la ligne devient `<br>` (sinon il termine le tableau), et les colonnes sont alignées dans la SOURCE — un tableau Markdown est lu tel quel autant qu'il est rendu. Plus `toMarkdownList` pour ce qu'un tableau à dix colonnes rend illisible sur un téléphone.
+
+  **`./vcard`** — vCard 4.0 (RFC 6350), avec les quatre règles qu'on découvre en production : CRLF et non LF, `FN` obligatoire, les cinq caractères à échapper, et surtout **le pliage compté en OCTETS** (§3.2) qui ne doit jamais couper un caractère en deux. Un pliage naïf coupe les accents en mojibake — pour des noms français, ce n'est pas un cas limite.
+
+- 36c9b4b: Sept chantiers, tirés du relevé d'adoption des dix-sept apps.
+
+  **Le constat d'abord** : sur les 23 besoins que les apps recopient encore — 130 fichiers — **aucun ne manquait au socle**. Ce n'est pas un problème de modules, c'en est un d'adoption. Deux chantiers s'en occupent, cinq ajoutent ce qui manque vraiment.
+
+  **Adoption.** `scripts/adopt.mjs` remplace un fichier recopié par l'import du socle, app par app — essai à blanc par défaut, et refus explicite quand l'app a ajouté ses propres symboles à côté (`ListSkeleton`, `ToastViewport`, `formatPercent` : quatre cas réels détectés). La dette est désormais engendrée en tête du README par `npm run sync`, avec sa partition migration / promotion.
+
+  **`./csv`** — construire un CSV, pas seulement le télécharger. Échappement RFC 4180 (le guillemet se double), dialecte `excel-fr` (point-virgule, virgule décimale, BOM), lecture caractère par caractère. Huit apps produisent des tableaux.
+
+  **`./similarity`** — promu du `dedupe` de mister-family-map (Sørensen–Dice sur bigrammes), avec le verdict EXPLIQUÉ que miss-lookhouse appelle « scoring explicable ». La distance est injectée : kilomètres, écart de prix, différence de dates.
+
+  **`./backend`** — promu de la sélection de family-map. Les ports de domaine ne se généralisent pas ; la mécanique autour, si : repli local obligatoire, migration port par port, et couverture rapportée.
+
+  **`./realtime`** + `realtime/supabase`, `realtime/firebase`, `realtime/local` — NEUF ASSUMÉ. Six apps annoncent du temps réel, aucune n'est lisible depuis cette session. Le port porte ce que la plateforme impose : retrait exponentiel dispersé, rattrapage borné après coupure, sonde au réveil de l'onglet.
+
+  **`./sparkline`** + `react/sparkline` — courbe, barres, jauge en SVG calculé, sans dépendance, avec l'alternative textuelle produite d'office. Un trou (`null`) n'est jamais un zéro.
+
 ## 3.19.0
 
 ### Minor Changes
