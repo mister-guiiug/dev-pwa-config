@@ -42,6 +42,7 @@ import {
   countByConfig,
 } from '../apps-catalog.js';
 import { FAMILY_THEMES } from '../themes.js';
+import { SUBPATHS } from './adopt-plan.mjs';
 
 const root = new URL('../', import.meta.url);
 const at = path => fileURLToPath(new URL(path, root));
@@ -150,6 +151,74 @@ export const ADOPTION_START =
 export const ADOPTION_END = '<!-- ADOPTION:FIN -->';
 
 /**
+ * La DETTE d'adoption, en tête de section : un chiffre unique qui doit baisser.
+ *
+ * POURQUOI CE CHIFFRE ET PAS LE TABLEAU. Le tableau dit, ligne par ligne, ce
+ * qui est importé et ce qui est recopié — il faut le lire en entier pour
+ * comprendre. Le relevé, lui, tient en une phrase : 130 fichiers recopiés dans
+ * dix-sept apps, et AUCUN de ces doublons ne manque au socle. Un paquet qui
+ * promeut plus vite qu'il n'est adopté fabrique une étagère, pas un socle ;
+ * c'est le seul chiffre qui le prouve, et il doit être lisible sans effort.
+ *
+ * La partition compte autant que le total : ce qui a un sous-chemin relève de
+ * la MIGRATION (un codemod, `npm run adopt`), ce qui n'en a pas relève de la
+ * PROMOTION. Confondre les deux fait promouvoir ce qui existe déjà.
+ */
+export function adoptionDebt(adoption, subpaths = {}) {
+  if (!adoption?.measured) return null;
+
+  const rows = Object.entries(adoption.byDuplicate ?? {}).map(
+    ([name, apps]) => ({
+      name,
+      apps: apps.length,
+      publie: Boolean(subpaths[name]),
+    })
+  );
+  const total = rows.reduce((sum, row) => sum + row.apps, 0);
+  const migrables = rows.filter(r => r.publie);
+  const aPromouvoir = rows.filter(r => !r.publie);
+
+  return {
+    total,
+    kinds: rows.length,
+    migrables: migrables.reduce((sum, row) => sum + row.apps, 0),
+    aPromouvoir: aPromouvoir.reduce((sum, row) => sum + row.apps, 0),
+    aPromouvoirNoms: aPromouvoir.map(r => r.name).sort(),
+    pires: [...rows]
+      .sort((a, b) => b.apps - a.apps || a.name.localeCompare(b.name))
+      .slice(0, 3),
+  };
+}
+
+/** La dette en Markdown, ou une chaîne vide s'il n'y a rien à dire. */
+export function adoptionDebtMarkdown(debt, measured) {
+  if (!debt || debt.total === 0) return '';
+  const pires = debt.pires
+    .map(row => `\`${row.name}\` (${row.apps})`)
+    .join(', ');
+  const lignes = [
+    `> **Dette d'adoption : ${debt.total} fichiers recopiés** dans ${measured} apps, ` +
+      `sur ${debt.kinds} besoins distincts. Les pires : ${pires}.`,
+    '>',
+  ];
+  if (debt.aPromouvoir === 0) {
+    lignes.push(
+      '> **Aucun de ces doublons ne manque au socle** : tout est déjà publié. ' +
+        "Ce n'est pas un problème de modules, c'en est un de migration — " +
+        '`node scripts/adopt.mjs` en fait l’essai à blanc, app par app.'
+    );
+  } else {
+    lignes.push(
+      `> ${debt.migrables} relèvent de la MIGRATION (\`node scripts/adopt.mjs\`), ` +
+        `${debt.aPromouvoir} de la PROMOTION — aucun sous-chemin ne les publie : ` +
+        debt.aPromouvoirNoms.map(n => `\`${n}\``).join(', ') +
+        '.'
+    );
+  }
+  return lignes.join('\n');
+}
+
+/**
  * Ce que les apps importent vraiment, et ce qu'elles recopient encore.
  *
  * Le README présentait chaque export comme la manière de faire, sans jamais
@@ -180,8 +249,14 @@ export function adoptionTable(adoption) {
       r =>
         `| \`${r.name}\` | ${r.used} / ${adoption.measured} | ${r.copied ? `${r.copied} / ${adoption.measured}` : '—'} |`
     );
+  const debt = adoptionDebtMarkdown(
+    adoptionDebt(adoption, SUBPATHS),
+    adoption.measured
+  );
+
   return [
     `_Relevé du ${adoption.generatedAt.slice(0, 10)} sur ${adoption.measured} dépôts, par \`npm run adoption\`._`,
+    ...(debt ? ['', debt] : []),
     '',
     '| Export ou module | Importé par | Encore recopié dans |',
     '| --- | --- | --- |',
