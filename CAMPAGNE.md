@@ -1,6 +1,6 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **127 fichiers recopiés dans les dix-sept apps, et
+Le relevé est sans appel : **120 fichiers recopiés dans les dix-sept apps, et
 aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
 imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
 machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
@@ -32,8 +32,8 @@ node scripts/migrate-consumers.mjs --install
 
 **Les composants du paquet ne sont pas habillés.** Ils ne posent que des
 attributs `data-dwc` ; c'est `components.css` qui les habille, et cet import
-est **opt-in** — deux apps sur dix-sept le font (`miss-uwh`,
-`mister-family-map`). Migrer `Button`, `Sheet` ou `BottomNav` dans les quinze
+est **opt-in** — trois apps sur dix-sept le font (`miss-genius`, `miss-uwh`,
+`mister-family-map`). Migrer `Button`, `Sheet` ou `BottomNav` dans les quatorze
 autres échange un composant stylé contre un composant **nu** : ça compile, les
 tests passent, le lint est vert, et l'écran est cassé.
 
@@ -164,9 +164,13 @@ le but de la campagne.
 ## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
 
 Relevé complet, dix-sept dépôts clonés côte à côte, tout fusionné et publié.
-**132 doublons avant, 127 après.** Le chiffre bouge peu, et c'est le vrai
-résultat de ce passage : la campagne butait sur un prérequis que personne
-n'avait vu.
+**132 doublons avant, 120 après.**
+
+Les cinq premiers sont tombés en une journée de tranche mécanique ; les sept
+suivants ont demandé de lever le prérequis `components.css` sur une app et d'y
+relire chaque site d'appel. C'est le vrai enseignement du passage : la couche
+outillage se migre par lots, la couche interface se migre app par app, et le
+prérequis se paie une fois par app.
 
 **Un `git fetch` d'abord.** Le relevé lit les COPIES DE TRAVAIL, pas les
 dépôts distants : deux clones en retard de quinze et dix-huit commits
@@ -190,21 +194,44 @@ apparaître en retard sans l'être — c'est le seul cas de la famille, et
 
 Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
 
-| App                 | Ce qui est passé au socle                                  |
-| ------------------- | ---------------------------------------------------------- |
-| `miss-supaboss`     | `useOnline` — 5 appelants                                  |
-| `miss-badminton`    | `useOnline` — 1 appelant                                   |
-| `mister-molkky`     | `useOnline` — 1 appelant                                   |
-| `mister-family-map` | `geo` — 14 fichiers, via `bac-sable` puis `npm run mirror` |
+| App                 | Ce qui est passé au socle                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `miss-genius`       | `components.css`, puis 8 doublons : `Button`, `Sheet`, `ConfirmDialog`, `Field`, `BottomNav`, `AppFooter`, `EmptyState`, `links` — **12 → 4** |
+| `mister-family-map` | `geo` — 14 fichiers, via `bac-sable` puis `npm run mirror`                                                                                    |
+| `miss-supaboss`     | `useOnline` — 5 appelants                                                                                                                     |
+| `miss-badminton`    | `useOnline` — 1 appelant                                                                                                                      |
+| `mister-molkky`     | `useOnline` — 1 appelant                                                                                                                      |
 
 Onze autres apps montent en 3.21.0 sans migration : leurs doublons sont tous
 soit refusés faute de `components.css`, soit bloqués par un symbole local.
 
+**Ce que `miss-genius` a appris à la campagne.** C'est la première app à avoir
+pris le prérequis, et le seul passage complet sur la couche interface. Trois
+enseignements, tous coûteux à redécouvrir :
+
+- **Prendre `components.css` ne suffit pas : il faut câbler les jetons.** Chaque
+  `var(--dwc-…)` a un repli neutre — sans câblage, les composants sont corrects
+  mais GRIS. Et le câblage ne se recopie pas d'un thème à l'autre :
+  `--dwc-primary` sert aussi de couleur de TEXTE, et le violet de l'app posé sur
+  sa surface sombre ne donnait que 2,33:1.
+- **Trois composants sur six n'étaient pas des remplacements d'import.**
+  `BottomNav` encapsulait ses destinations (barre VIDE sans `items`), `AppFooter`
+  une phrase d'accroche que le socle ignore, `EmptyState` une animation Rive. Les
+  deux premiers cassaient l'écran sans une erreur de type.
+- **Une enveloppe doit changer de nom.** `EmptyState.tsx` gardé comme enveloppe
+  autour du composant promu restait un « doublon » aux yeux du relevé, qui repère
+  par NOM DE FICHIER — et `adopt.mjs` proposait de réécrire ses appelants vers le
+  paquet, ce qui aurait sauté l'enveloppe. Renommer dit ce que le fichier AJOUTE.
+
+L'app garde trois traits en propre (bouton pilule, coins de la feuille, barre
+collante) et adopte le reste. C'est la ligne de partage à viser ailleurs.
+
 Ce qui reste, par ordre de valeur :
 
 1. **Le prérequis `components.css`, app par app.** C'est le verrou : il ferme
-   à lui seul 62 migrations sur les quinze apps qui ne l'ont pas. Une PR
-   d'apparence par app, avec des captures.
+   à lui seul **68 migrations sur les quatorze apps** qui ne l'ont pas. Une PR
+   d'apparence par app, avec des captures — `miss-genius` montre la forme
+   qu'elle prend, jetons compris.
 2. **`links` — neuf apps, neuf fois la même ligne.** `SPONSOR_URL` migre tel
    quel, `REPO_URL` devient `repoUrl('<id-app>')`. Aucune ne migre seule ;
    toutes migrent en une passe.
@@ -216,11 +243,13 @@ Ce qui reste, par ordre de valeur :
    importer `components.css` : la migration est possible, mais son `Button`
    local est habillé aux jetons `--uwh-*`. Trente-neuf boutons changent de
    tête — décision d'apparence, pas nettoyage d'imports.
-5. **`miss-ticket-pwa` n'a ni tests ni linter.** `npm test` sort à 0 en
-   annonçant `No test files found`, et `npm run lint` échoue parce qu'`eslint`
-   manque à ses `devDependencies` — alors que `eslint.config.js` est là et
-   pointe vers le socle. Rien ne garde cette app ; l'y adopter à l'aveugle
-   serait le seul cas de la famille sans filet.
+5. **`miss-ticket-pwa` n'a aucun test.** `npm test` sort à 0 en annonçant
+   `No test files found` : c'est la seule app de la famille dans ce cas, et sa
+   CI passe donc au vert sans rien vérifier d'autre que le lint, les types et
+   le build. L'y adopter à l'aveugle serait le seul cas sans filet. Son linter,
+   lui, est réparé : `eslint` ne figurait pas dans ses `devDependencies` — elle
+   comptait sur l'installation automatique des peers par npm, qu'un lockfile
+   régénéré n'a pas reconduite.
 6. **`mister-quota` ne dépend pas du paquet.** Ses quatre doublons ne sont pas
    une dette de migration tant que l'app n'est pas consommatrice.
 

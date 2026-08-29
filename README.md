@@ -58,31 +58,36 @@ composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
 
 _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 127 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `links` (9), `BottomNav` (8), `format` (8).
+> **Dette d'adoption : 120 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `applyUpdate` (8), `format` (8), `links` (8).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
 | Export ou module                          | Importé par | Encore recopié dans |
 | ----------------------------------------- | ----------- | ------------------- |
 | `baseTestOptions`                         | 15 / 17     | —                   |
-| `FamilyApps`                              | 12 / 17     | —                   |
-| `definePwaPlaywrightConfig`               | 11 / 17     | —                   |
-| `initSentry`                              | 11 / 17     | —                   |
-| `installErrorReporter`                    | 11 / 17     | —                   |
-| `pwaSeoPlugin`                            | 11 / 17     | —                   |
-| `recordError`                             | 11 / 17     | —                   |
-| `expectNoA11yViolations`                  | 9 / 17      | —                   |
-| `ErrorBoundary`                           | 8 / 17      | 6 / 17              |
-| `cspPlugin`                               | 8 / 17      | —                   |
+| `FamilyApps`                              | 14 / 17     | —                   |
+| `definePwaPlaywrightConfig`               | 13 / 17     | —                   |
+| `initSentry`                              | 13 / 17     | —                   |
+| `installErrorReporter`                    | 13 / 17     | —                   |
+| `pwaSeoPlugin`                            | 13 / 17     | —                   |
+| `recordError`                             | 13 / 17     | —                   |
+| `cspPlugin`                               | 10 / 17     | —                   |
+| `expectNoA11yViolations`                  | 10 / 17     | —                   |
+| `ErrorBoundary`                           | 9 / 17      | 6 / 17              |
+| `createI18n`                              | 8 / 17      | —                   |
 | `coveragePreset`                          | 7 / 17      | —                   |
-| `createI18n`                              | 7 / 17      | —                   |
 | `useOnline`                               | 4 / 17      | 1 / 17              |
+| `EmptyState`                              | 2 / 17      | 6 / 17              |
+| `Sheet`                                   | 2 / 17      | 5 / 17              |
+| `Button`                                  | 2 / 17      | 3 / 17              |
 | `createTranslator`                        | 2 / 17      | —                   |
+| `SelectField`                             | 2 / 17      | —                   |
+| `TextField`                               | 2 / 17      | —                   |
 | `UpdatePromptBanner`                      | 1 / 17      | 8 / 17              |
 | `useTheme`                                | 1 / 17      | 8 / 17              |
-| `EmptyState`                              | 1 / 17      | 7 / 17              |
-| `Sheet`                                   | 1 / 17      | 6 / 17              |
-| `Button`                                  | 1 / 17      | 4 / 17              |
+| `BottomNav`                               | 1 / 17      | 7 / 17              |
+| `ConfirmDialog`                           | 1 / 17      | 6 / 17              |
+| `AppFooter`                               | 1 / 17      | 5 / 17              |
 | `Badge`                                   | 1 / 17      | 2 / 17              |
 | `AppVersion`                              | 1 / 17      | —                   |
 | `BoundingBox`                             | 1 / 17      | —                   |
@@ -113,25 +118,21 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `ObservabilityBoundary`                   | 1 / 17      | —                   |
 | `osmRasterTiles`                          | 1 / 17      | —                   |
 | `prefetch`                                | 1 / 17      | —                   |
+| `repoUrl`                                 | 1 / 17      | —                   |
 | `resolveSeoPublicUrls`                    | 1 / 17      | —                   |
 | `rethrowWithState`                        | 1 / 17      | —                   |
-| `SelectField`                             | 1 / 17      | —                   |
 | `ShareButton`                             | 1 / 17      | —                   |
 | `SkeletonGroup`                           | 1 / 17      | —                   |
 | `TextAreaField`                           | 1 / 17      | —                   |
-| `TextField`                               | 1 / 17      | —                   |
 | `UpdateButton`                            | 1 / 17      | —                   |
 | `useReducedMotion`                        | 1 / 17      | —                   |
 | `useUpdatePrompt`                         | 1 / 17      | —                   |
 | `versionPlugin`                           | 1 / 17      | —                   |
 | `VersionProvider`                         | 1 / 17      | —                   |
-| `links`                                   | 0 / 17      | 9 / 17              |
-| `BottomNav`                               | 0 / 17      | 8 / 17              |
+| `applyUpdate`                             | 0 / 17      | 8 / 17              |
 | `format`                                  | 0 / 17      | 8 / 17              |
-| `applyUpdate`                             | 0 / 17      | 7 / 17              |
+| `links`                                   | 0 / 17      | 8 / 17              |
 | `backup`                                  | 0 / 17      | 7 / 17              |
-| `ConfirmDialog`                           | 0 / 17      | 7 / 17              |
-| `AppFooter`                               | 0 / 17      | 6 / 17              |
 | `Toast`                                   | 0 / 17      | 6 / 17              |
 | `ThemeToggle`                             | 0 / 17      | 5 / 17              |
 | `share`                                   | 0 / 17      | 4 / 17              |
@@ -139,7 +140,7 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `webVitals`                               | 0 / 17      | 4 / 17              |
 | `security`                                | 0 / 17      | 3 / 17              |
 | `Skeleton`                                | 0 / 17      | 3 / 17              |
-| `TextField / SelectField / TextAreaField` | 0 / 17      | 3 / 17              |
+| `TextField / SelectField / TextAreaField` | 0 / 17      | 2 / 17              |
 | `geo`                                     | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
