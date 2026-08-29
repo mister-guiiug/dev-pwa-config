@@ -1226,6 +1226,52 @@ L'export est **déterministe** (date d'archive figée) : même tableau, mêmes
 octets. Une seule feuille, chaînes et nombres, un seul style ; pas de
 formules, pas de dates typées, pas de lecture.
 
+### Coffre local chiffré (`/secure-storage`)
+
+`localStorage` part dans les sauvegardes, se synchronise, et se lit d'une
+ligne par n'importe quel script de la page : un jeton d'accès y est en clair.
+Promu de `miss-supaboss` (184 lignes en production qui chiffrent des PAT),
+`createVault()` range des secrets **chiffrés au repos** : AES-256-GCM, clé
+dérivée d'une phrase secrète (PBKDF2-SHA-256, 210 000 itérations) et gardée
+**en mémoire seule**. Web Crypto suffit — aucune dépendance, navigateurs et
+Node ≥ 19.
+
+```ts
+import { createVault } from '@mister-guiiug/dev-wpa-config/secure-storage';
+
+const vault = createVault({ prefix: 'app_vault_' });
+await vault.enable('phrase choisie par l’utilisateur'); // une fois
+await vault.setItem('pat', token); // chiffre, puis range
+
+// …session suivante :
+if (await vault.unlock(saisie)) {
+  const pat = await vault.getItem<string>('pat');
+}
+```
+
+`enable` / `unlock` / `lock` / `disable` tiennent le cycle de vie,
+`encrypt`/`decrypt` exposent le chiffrement brut, `keys()` liste les entrées.
+Le nombre d'itérations est **persisté et relu** : relever la constante dans
+une version future ne rend pas illisibles les coffres existants. `createVault`
+rend une **instance** — deux coffres peuvent coexister (jetons, brouillon…)
+sans partager leur phrase — et le stockage passe par `./storage`, qui absorbe
+déjà les quatre façons dont `localStorage` lève.
+
+**Ce que ça protège, et ce que ça ne protège pas** — l'en-tête du module
+l'énonce avant l'API, et il faut le redire ici :
+
+- ✔ la fuite **passive** : sauvegarde ou synchronisation du stockage, lecture
+  par un script tiers, appareil perdu ou revendu ;
+- ✘ un **XSS actif** pendant une session déverrouillée : le script appelle
+  `decrypt` comme le ferait l'app. Le chiffrement au repos n'est **pas** une
+  parade au XSS, et rien de ce qui vit dans la page ne l'est ;
+- ✘ la **phrase oubliée** : les données sont **irrécupérables** — c'est le
+  prix d'une clé qui n'est stockée nulle part. Le dire à l'utilisateur avant
+  qu'il choisisse sa phrase, pas après.
+
+Autrement dit : ceci élève le coût d'une fuite de stockage ; cela ne remplace
+ni une CSP, ni un jeton à courte durée de vie, ni un secret côté serveur.
+
 ### Carte (`@mister-guiiug/dev-wpa-config/map`)
 
 Deux axes **indépendants**, qu'on confond souvent :
@@ -1866,6 +1912,57 @@ Non stylés par défaut, comme les autres : importer
 prête à l'emploi, ou cibler `[data-dwc="button"][data-variant][data-size]` &
 consorts.
 
+### Graphiques minuscules (`/sparkline` + `/react/sparkline`)
+
+Cinq apps ont des séries à montrer — historique de prix, consommation de
+quotas, scénarios de moyennes — et une librairie de graphiques complète pèse
+l'ordre de grandeur de MapLibre pour tracer douze points dans une carte de
+réglages. Le module calcule des **coordonnées** ; le rendu tient en un
+`<polyline>`.
+
+`/sparkline` est la géométrie, sans React : `toPoints` (trois formes d'entrée
+acceptées : `[1, 2, 3]`, `[{y}]`, `[{x, y}]`), `extent` (bornes), `project`
+(mise à l'échelle dans une boîte), `toPolyline`, `bars` (proportions, la plus
+haute à 100 %), et `describeSeries` — l'alternative textuelle.
+`/react/sparkline` pose trois composants dessus : `Sparkline` (courbe),
+`BarChart` (barres), `Gauge` (jauge, `role="meter"` : un **niveau** — quota,
+batterie — pas l'avancement d'une tâche, que les lecteurs d'écran annoncent
+autrement).
+
+```tsx
+import {
+  Sparkline,
+  BarChart,
+  Gauge,
+} from '@mister-guiiug/dev-wpa-config/react/sparkline';
+
+<Sparkline values={[3, 5, null, 8, 6]} label="notes du trimestre" />;
+<BarChart values={depensesParMois} label="dépenses" unit="€" />;
+<Gauge value={82} max={100} label="quota IA consommé" unit="%" />;
+```
+
+Ce qui se calcule faux quand on l'écrit vite est traité dans le module : une
+série **constante** donne un trait plat au milieu (pas une division par zéro),
+un **trou** (`null`, `NaN`) coupe la ligne au lieu de la faire plonger — une
+mesure manquante n'est pas un zéro — et l'axe Y ne part de zéro que si
+`baseline: 'zero'` le demande (le zéro forcé est légitime pour un décompte,
+mensonger pour un prix).
+
+**`describeSeries` est l'alternative textuelle**, calculée ici parce que,
+laissée au composant, elle n'est jamais écrite : « notes du trimestre :
+4 points, de 3 à 6, minimum 3, maximum 8, en hausse, 1 mesure manquante. »
+Les trois composants la portent d'office dans un élément voisin du SVG
+(`aria-hidden` sur le dessin — `<title>` dans un SVG reste inégalement lu).
+Elle est rédigée **en français** : une app anglophone la recompose à partir
+des mêmes données.
+
+Limites, assumées : pas d'axes, pas de légende, pas d'infobulles, pas de
+valeurs négatives dans `bars` (une barre qui descend sous sa ligne de base
+demande un axe, donc un autre outil). Couleurs par `currentColor` et jetons —
+habillage prêt à l'emploi dans
+[`components.css`](#habillage-des-composants-componentscss-opt-in)
+(`[data-dwc="sparkline" | "bars" | "gauge"]`).
+
 ### Catalogue famille & `FamilyApps`
 
 `apps-catalog` est la **source unique** des applications de la famille (id, nom,
@@ -2309,6 +2406,27 @@ plateforme (`@emnapi/*`, `@rolldown/binding-*`, `@oxc-*`). Un `package-lock.json
 
 - **TypeScript ~6.0.3** : cible famille — `npm i -D typescript@~6.0.3`.
 - **Tailwind 4.3.x** : `@tailwindcss/vite@^4.3.0`.
+
+### Copie locale de `format` → `/format` (piège `formatPercentage`)
+
+Le socle suit la convention d'`Intl` (`style: 'percent'`) : `formatPercentage`
+attend une **proportion** — `formatPercentage(0.42)` → « 42 % ». Les copies
+locales des apps attendaient l'échelle **0–100** — `formatPercentage(42)` →
+« 42 % » (cas réel : la copie de `miss-contraction`). Les deux signatures se
+ressemblent trait pour trait : le remplacement à l'identique **compile, puis
+affiche « 4 200 % »**.
+
+À la migration, donc :
+
+- repérer chaque point d'appel : `grep -rn "formatPercentage" src/` ;
+- passer la proportion telle quelle quand la valeur vient d'un rapport
+  (`formatPercentage(fait / total)`), diviser quand elle est historiquement
+  stockée en 0–100 (`formatPercentage(note / 100)`) ;
+- un « 4 200 % » à l'écran — ou dans un instantané de test — est un appel
+  oublié, pas un bug du socle.
+
+Même convention dans `fmt.percent` du contexte [`createI18n`](#le-formatage-suit-la-langue-choisie),
+qui délègue à `formatPercentage`.
 
 ## Publication (changesets)
 

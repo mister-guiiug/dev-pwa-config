@@ -13,8 +13,15 @@ export interface I18nConfig<M, L extends string> {
   locales: readonly L[];
   /** Locale de repli si la détection échoue et pour les clés manquantes. */
   fallbackLocale: L;
-  /** Clé localStorage de persistance du choix de langue (ex. `'app_locale'`). */
-  storageKey: string;
+  /**
+   * Clé localStorage de persistance du choix de langue. Défaut `'dwc_locale'` :
+   * les apps de la famille partagent une origine, la langue choisie suit donc
+   * l'utilisateur de l'une à l'autre (une valeur hors `locales` est ignorée).
+   * Passer sa propre clé pour isoler l'app — ou, en migrant une copie locale,
+   * reprendre la clé existante (motif famille : `'<app>_locale'`) pour ne pas
+   * perdre le choix déjà stocké.
+   */
+  storageKey?: string;
   /**
    * Étiquette BCP-47 complète par locale, quand la région compte
    * (`{ en: 'en-GB', es: 'es-MX' }`). Sans entrée, la locale sert telle quelle :

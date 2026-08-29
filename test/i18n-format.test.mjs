@@ -136,6 +136,39 @@ test('fmt.plural passe par Intl.PluralRules, pas par « > 1 »', async () => {
   }
 });
 
+test('storageKey a un défaut : le choix persiste sous dwc_locale', async () => {
+  // Le SEUL écart entre deux copies locales mesurées (mister-cim10,
+  // miss-ticket-pwa) était la clé de stockage : elle ne doit plus être un
+  // prérequis. Les huit apps déjà migrées passent la leur — rien ne change
+  // pour elles, le défaut ne joue qu'en son absence.
+  const dom = setupDom();
+  const initial = getDefaultLocale();
+  try {
+    // La clé par défaut est LUE : sans préférence stockée, jsdom
+    // (`navigator.language === 'en-US'`) ferait choisir l'anglais.
+    localStorage.setItem('dwc_locale', 'fr');
+    const { I18nProvider, useI18n } = createI18n({
+      messages: MESSAGES,
+      locales: ['fr', 'en'],
+      fallbackLocale: 'fr',
+    });
+    const api = { current: null };
+    function Probe() {
+      api.current = useI18n();
+      return null;
+    }
+    const view = await mount(h(I18nProvider, null, h(Probe)));
+    assert.equal(api.current.locale, 'fr');
+    await view.act(() => api.current.setLocale('en'));
+    // …et ÉCRITE : le choix survivra au prochain démarrage.
+    assert.equal(localStorage.getItem('dwc_locale'), 'en');
+    await view.unmount();
+  } finally {
+    setDefaultLocale(initial);
+    dom.restore();
+  }
+});
+
 test('le provider pose LabelsProvider, sauf refus explicite', async () => {
   const dom = setupDom();
   try {

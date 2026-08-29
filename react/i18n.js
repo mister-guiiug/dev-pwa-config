@@ -9,6 +9,17 @@
  * - Locale initiale : localStorage[storageKey] si valide, sinon `navigator.language`
  *   (2 lettres) si connue, sinon `fallbackLocale`.
  * - `setLocale` persiste dans localStorage et met à jour `lang`/`dir` sur `<html>`.
+ *
+ * `storageKey` EST DÉSORMAIS OPTIONNEL (défaut : `'dwc_locale'`, même famille
+ * que `dwc_theme` et `dwc_app_version`). C'était le SEUL écart entre deux
+ * copies locales mesurées (mister-cim10, miss-ticket-pwa : trois lignes de
+ * diff, dont la clé) — et une raison de moins de copier le module. Les apps de
+ * la famille partagent une même origine GitHub Pages, donc un même
+ * `localStorage` : avec la clé par défaut, la langue choisie SUIT l'utilisateur
+ * d'une app à l'autre (une valeur inconnue de `locales` est simplement
+ * ignorée). Pour isoler une app — ou pour REPRENDRE une copie locale sans
+ * perdre le choix déjà stocké — passer sa clé : le motif de la famille est
+ * `'<app>_locale'`.
  * - `t(path, params)` (voir i18n-core) : dot-notation, repli, interpolation `{nom}`.
  * - `fmt.*` : nombres, dates, monnaie, pluriel — DÉJÀ liés à la locale courante.
  *
@@ -34,7 +45,7 @@
  *   import { createI18n } from '@mister-guiiug/dev-wpa-config/react/i18n';
  *   import { messages } from './messages';
  *   export const { I18nProvider, useI18n } = createI18n({
- *     messages, locales: ['fr', 'en'], fallbackLocale: 'fr', storageKey: 'app_locale',
+ *     messages, locales: ['fr', 'en'], fallbackLocale: 'fr',
  *   });
  */
 import {
@@ -86,7 +97,7 @@ export function createI18n(config) {
     messages,
     locales,
     fallbackLocale,
-    storageKey,
+    storageKey = 'dwc_locale',
     localeTags = {},
     currency = 'EUR',
     labels = true,
