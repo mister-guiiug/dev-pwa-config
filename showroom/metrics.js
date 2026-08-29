@@ -12,7 +12,7 @@
  * La vitrine n'affiche alors simplement aucune mesure.
  */
 globalThis.SHOWROOM_METRICS = {
-  "generatedAt": "2026-08-28T16:42:06.033Z",
+  "generatedAt": "2026-08-29T11:09:55.802Z",
   "repos": {
     "miss-carbook": {
       "pushedAt": "2026-08-10T22:40:12Z",
@@ -120,7 +120,7 @@ globalThis.SHOWROOM_METRICS = {
       "releasedAt": null
     },
     "mister-family-map": {
-      "pushedAt": "2026-08-27T09:05:28Z",
+      "pushedAt": "2026-08-29T07:14:31Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
