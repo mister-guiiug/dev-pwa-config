@@ -143,6 +143,14 @@
       "types": "./share.d.ts",
       "default": "./share.js"
     },
+    "./pairing": {
+      "types": "./pairing.d.ts",
+      "default": "./pairing.js"
+    },
+    "./qr": {
+      "types": "./qr.d.ts",
+      "default": "./qr.js"
+    },
     "./prefetch": {
       "types": "./prefetch.d.ts",
       "default": "./prefetch.js"
@@ -310,6 +318,10 @@
     "./react/share-button": {
       "types": "./react/share-button.d.ts",
       "default": "./react/share-button.js"
+    },
+    "./react/use-qr-scanner": {
+      "types": "./react/use-qr-scanner.d.ts",
+      "default": "./react/use-qr-scanner.js"
     },
     "./react/sheet": {
       "types": "./react/sheet.d.ts",
@@ -489,6 +501,10 @@
     "download.d.ts",
     "share.js",
     "share.d.ts",
+    "pairing.js",
+    "pairing.d.ts",
+    "qr.js",
+    "qr.d.ts",
     "sw-update.js",
     "sw-update.d.ts",
     "theme-boot.js",
@@ -578,6 +594,8 @@
     "maplibre-gl": "^6.0.0",
     "playwright": "^1.49.0",
     "prettier": "^3.6.2",
+    "qr-scanner": "^1.4.0",
+    "qrcode": "^1.5.0",
     "react": "^19.0.0",
     "sharp": ">=0.33.0",
     "tailwindcss": "^4.0.0",
@@ -629,6 +647,12 @@
       "optional": true
     },
     "playwright": {
+      "optional": true
+    },
+    "qr-scanner": {
+      "optional": true
+    },
+    "qrcode": {
       "optional": true
     },
     "react": {
