@@ -58,7 +58,7 @@ composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
 
 _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 120 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `applyUpdate` (8), `format` (8), `links` (8).
+> **Dette d'adoption : 113 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `applyUpdate` (8), `format` (8), `UpdatePromptBanner` (8).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -77,17 +77,19 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `createI18n`                              | 8 / 17      | —                   |
 | `coveragePreset`                          | 7 / 17      | —                   |
 | `useOnline`                               | 4 / 17      | 1 / 17              |
-| `EmptyState`                              | 2 / 17      | 6 / 17              |
-| `Sheet`                                   | 2 / 17      | 5 / 17              |
-| `Button`                                  | 2 / 17      | 3 / 17              |
+| `EmptyState`                              | 3 / 17      | 5 / 17              |
+| `Sheet`                                   | 3 / 17      | 4 / 17              |
+| `Button`                                  | 3 / 17      | 2 / 17              |
+| `SelectField`                             | 3 / 17      | —                   |
+| `TextField`                               | 3 / 17      | —                   |
+| `ConfirmDialog`                           | 2 / 17      | 5 / 17              |
+| `AppFooter`                               | 2 / 17      | 4 / 17              |
 | `createTranslator`                        | 2 / 17      | —                   |
-| `SelectField`                             | 2 / 17      | —                   |
-| `TextField`                               | 2 / 17      | —                   |
+| `repoUrl`                                 | 2 / 17      | —                   |
+| `TextAreaField`                           | 2 / 17      | —                   |
 | `UpdatePromptBanner`                      | 1 / 17      | 8 / 17              |
 | `useTheme`                                | 1 / 17      | 8 / 17              |
 | `BottomNav`                               | 1 / 17      | 7 / 17              |
-| `ConfirmDialog`                           | 1 / 17      | 6 / 17              |
-| `AppFooter`                               | 1 / 17      | 5 / 17              |
 | `Badge`                                   | 1 / 17      | 2 / 17              |
 | `AppVersion`                              | 1 / 17      | —                   |
 | `BoundingBox`                             | 1 / 17      | —                   |
@@ -112,18 +114,17 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `isValidCoordinates`                      | 1 / 17      | —                   |
 | `isValidLatitude`                         | 1 / 17      | —                   |
 | `isValidLongitude`                        | 1 / 17      | —                   |
+| `LabelsProvider`                          | 1 / 17      | —                   |
 | `localRealtimeTransport`                  | 1 / 17      | —                   |
 | `mapCspDirectives`                        | 1 / 17      | —                   |
 | `mapTileRuntimeCaching`                   | 1 / 17      | —                   |
 | `ObservabilityBoundary`                   | 1 / 17      | —                   |
 | `osmRasterTiles`                          | 1 / 17      | —                   |
 | `prefetch`                                | 1 / 17      | —                   |
-| `repoUrl`                                 | 1 / 17      | —                   |
 | `resolveSeoPublicUrls`                    | 1 / 17      | —                   |
 | `rethrowWithState`                        | 1 / 17      | —                   |
 | `ShareButton`                             | 1 / 17      | —                   |
 | `SkeletonGroup`                           | 1 / 17      | —                   |
-| `TextAreaField`                           | 1 / 17      | —                   |
 | `UpdateButton`                            | 1 / 17      | —                   |
 | `useReducedMotion`                        | 1 / 17      | —                   |
 | `useUpdatePrompt`                         | 1 / 17      | —                   |
@@ -131,8 +132,8 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `VersionProvider`                         | 1 / 17      | —                   |
 | `applyUpdate`                             | 0 / 17      | 8 / 17              |
 | `format`                                  | 0 / 17      | 8 / 17              |
-| `links`                                   | 0 / 17      | 8 / 17              |
 | `backup`                                  | 0 / 17      | 7 / 17              |
+| `links`                                   | 0 / 17      | 7 / 17              |
 | `Toast`                                   | 0 / 17      | 6 / 17              |
 | `ThemeToggle`                             | 0 / 17      | 5 / 17              |
 | `share`                                   | 0 / 17      | 4 / 17              |
@@ -140,8 +141,8 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `webVitals`                               | 0 / 17      | 4 / 17              |
 | `security`                                | 0 / 17      | 3 / 17              |
 | `Skeleton`                                | 0 / 17      | 3 / 17              |
-| `TextField / SelectField / TextAreaField` | 0 / 17      | 2 / 17              |
 | `geo`                                     | 0 / 17      | 1 / 17              |
+| `TextField / SelectField / TextAreaField` | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
 
