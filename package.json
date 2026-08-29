@@ -211,6 +211,14 @@
       "types": "./realtime/supabase.d.ts",
       "default": "./realtime/supabase.js"
     },
+    "./supabase-client": {
+      "types": "./supabase-client.d.ts",
+      "default": "./supabase-client.js"
+    },
+    "./sync-queue": {
+      "types": "./sync-queue.d.ts",
+      "default": "./sync-queue.js"
+    },
     "./theme-boot": {
       "types": "./theme-boot.d.ts",
       "default": "./theme-boot.js"
@@ -557,6 +565,10 @@
     "sparkline.js",
     "sparkline.d.ts",
     "realtime",
+    "supabase-client.js",
+    "supabase-client.d.ts",
+    "sync-queue.js",
+    "sync-queue.d.ts",
     "columns.js",
     "columns.d.ts",
     "markdown.js",

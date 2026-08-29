@@ -70,6 +70,12 @@ function writeQueue(key, entries) {
  * LIMITE CONNUE : le stockage est `localStorage`, inaccessible depuis un service
  * worker — le rejeu a donc lieu quand l'app est ouverte, pas via Background Sync.
  *
+ * VARIANTE HORS-REACT : `sync-queue` (racine du paquet) — même file, mais
+ * `Store` injecté (./storage.js), fusion par entité, lettres mortes rejouables
+ * et rejeu automatique en retrait exponentiel entre deux retours en ligne. À
+ * préférer hors de l'arbre React (couche backend, service de synchronisation) ;
+ * ce hook reste le bon choix quand un composant re-rend au fil de la file.
+ *
  * @template P
  * @param {{ storageKey?: string, process?: (payload: P) => Promise<unknown>,
  *   retries?: number, maxAttempts?: number, maxQueueSize?: number,

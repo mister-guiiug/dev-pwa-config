@@ -1275,6 +1275,88 @@ l'énonce avant l'API, et il faut le redire ici :
 Autrement dit : ceci élève le coût d'une fuite de stockage ; cela ne remplace
 ni une CSP, ni un jeton à courte durée de vie, ni un secret côté serveur.
 
+### Client Supabase (`/supabase-client`)
+
+Cinq apps (miss-uwh, miss-lookhouse, mister-molkky, mister-doc, le bac-sable)
+réécrivent la même fabrique : lire `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`,
+créer le client une fois, le garder. Et deux apps portent **mot pour mot** le
+même commentaire — « l'init au chargement du module tuait l'app avant
+`createRoot()` » : variable manquante, exception dans le chunk d'entrée, écran
+blanc sans diagnostic, Lighthouse mort en NO_FCP. La fabrique applique donc la
+doctrine : **rien ne s'exécute à l'import** — ni lecture bloquante, ni SDK, ni
+`createClient`.
+
+```ts
+// src/lib/supabase.ts — l'intégralité du fichier qu'une app garde
+import { createSupabaseClientFactory } from '@mister-guiiug/dev-wpa-config/supabase-client';
+
+export const supabase = createSupabaseClientFactory({
+  env: import.meta.env,
+  auth: { flowType: 'pkce' }, // fusionné sur persistSession + autoRefreshToken
+  correlated: true, // X-Correlation-Id + X-Session-Id sur chaque requête
+});
+
+// …plus tard, au premier usage réel :
+const client = await supabase.getClient();
+```
+
+| Décision                         | Pourquoi                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `getClient()` asynchrone         | `@supabase/supabase-js` (~120 Ko, peer **optionnelle**) est importé dynamiquement au premier appel — hors du bundle initial, le motif de mister-molkky |
+| La promesse est gardée           | deux `await` concurrents ne créent qu'**un** client (et une seule connexion realtime, qui compte dans le quota du projet)                              |
+| Rejet **nommé** si mal configuré | `getClient()` rejette en citant les variables manquantes — tard, là où une ErrorBoundary sait l'afficher                                               |
+| `missingConfig` fait foi         | même juge que `./backend` : `SUPABASE_ENV_KEYS` se passe tel quel au `requires` d'un `createBackendSelector`, qui retombe en local proprement          |
+| `correlated`                     | enveloppe le `fetch` du client via `./correlation` : le journal serveur et l'erreur client désignent le même incident                                  |
+
+Le client obtenu s'**injecte** ensuite tel quel dans `realtime/supabase`
+(descente) et dans le `process` d'une file `sync-queue` (montée) : une app n'a
+besoin que d'un client.
+
+### File d'écritures hors-ligne (`/sync-queue`)
+
+Le chemin **montant** de la synchronisation — `realtime/` est le descendant.
+Promu de miss-uwh (la référence : file persistante, drain sérialisé, lettres
+mortes) ; la copie « inspirée » de miss-lookhouse avait **perdu le retrait
+exponentiel** en route — la preuve qu'une file recopiée diverge — et
+mister-puzzle montrait le même besoin côté Firebase : le module est donc
+**agnostique du transport**, `process` est injecté.
+
+```ts
+import { createSyncQueue } from '@mister-guiiug/dev-wpa-config/sync-queue';
+import { createStore } from '@mister-guiiug/dev-wpa-config/storage';
+
+const queue = createSyncQueue({
+  store: createStore('uwh_sync_'), // la persistance ET la source de vérité
+  process: op => repository.apply(op), // Supabase, Firebase, HTTP — au choix
+  keyOf: op => (op.id ? `${op.kind}:${op.id}` : null),
+  onChange: ({ pending, dead }) => badge.update(pending, dead),
+});
+
+queue.start(); // draine, puis rejoue à chaque retour en ligne
+queue.enqueue(op); // → l'entrée, ou `null` si le plafond est atteint
+```
+
+Ce que la file garantit — et que les copies rataient :
+
+- **aucune écriture perdue** : le `Store` est relu à chaque tour, l'élément
+  traité est retiré **par identifiant** — jamais `slice(1)` sur un instantané ;
+  quand le stockage refuse (quota, mode privé), la session continue en mémoire ;
+- **pas de tête bloquante** : un rejet durable (RLS, 4xx hors 408/429 — la
+  politique est `defaultShouldRetry` de `react/net`) part en **lettre morte**,
+  consultable (`deadLetters()`) et rejouable (`requeueDead()`), et la file
+  continue ;
+- **le rejeu se reprogramme seul** : retrait exponentiel dispersé —
+  `backoffDelay` de `./realtime`, le même que la reconnexion — sans attendre un
+  évènement `online` qui ne vient jamais quand c'est le serveur qui tousse ;
+- **une entité, une opération** : `keyOf` fusionne les écritures en attente sur
+  la même entité, seule la dernière part (upsert idempotent) ;
+- **pas de croissance sans fin** : au-delà de `maxQueueSize`, `enqueue` rend
+  `null` — refuser visiblement vaut mieux que jeter en silence.
+
+`react/use-offline-queue` reste la variante **React** (un composant qui re-rend
+au fil de la file) ; `sync-queue` est la version hors-React, plus complète,
+pour une couche backend ou un service de synchronisation.
+
 ### Carte (`@mister-guiiug/dev-wpa-config/map`)
 
 Deux axes **indépendants**, qu'on confond souvent :
