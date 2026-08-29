@@ -228,7 +228,52 @@
   [data-dwc='error-boundary-title'] {
     margin: 0;
     flex: 1 1 100%;
+    font-size: var(--text-fluid-lg, 1.125rem);
     font-weight: 600;
+  }
+
+  /* La référence à citer au support : discrète, mais copiable d'un geste —
+     elle est faite pour être collée dans un ticket. */
+  [data-dwc='error-boundary-reference'] {
+    margin: 0;
+    flex: 1 1 100%;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-text-soft, GrayText);
+    user-select: all;
+  }
+
+  /*
+   * Montée à la RACINE — l'écran blanc évité. Trois apps (mister-footcoach,
+   * miss-carbook, mister-puzzle) recopient le même bloc pour ce cas : la
+   * frontière n'y est pas une bannière perdue en haut de page, c'est un ÉCRAN
+   * centré. `#root` est le point de montage Vite des dix-sept apps ;
+   * `:where()` le neutralise pour que la spécificité reste celle de
+   * l'attribut, écrasable au sélecteur près. Le cadre et le fond teintés de
+   * danger disparaissent, comme dans les trois copies : plein écran, ils
+   * crieraient plus fort que le message.
+   */
+  :where(#root) > [data-dwc='error-boundary'] {
+    min-height: 100dvh;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: var(--spacing-fluid-lg, 1.5rem);
+    text-align: center;
+    border: 0;
+    border-radius: 0;
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+  }
+
+  /* En colonne centrée, la pleine largeur des textes n'a plus à se forcer. */
+  :where(#root) > [data-dwc='error-boundary'] [data-dwc='error-boundary-title'],
+  :where(#root)
+    > [data-dwc='error-boundary']
+    [data-dwc='error-boundary-reference'] {
+    flex: none;
+    max-width: 40ch;
   }
 
   /* ── SyncStatusBadge ───────────────────────────────────────────────────── */
@@ -917,6 +962,72 @@
     white-space: nowrap;
   }
 
+  /* ── Sparkline, BarChart & Gauge ───────────────────────────────────────── *
+   * Les composants (`/react/sparkline`) rendent la géométrie, jamais la
+   * couleur : tout leur tracé passe par `currentColor`. L'habillage pose donc
+   * UNE encre — la primaire — sur le conteneur ; recolorer un graphique, c'est
+   * une règle `color` de l'app, rien de plus. Les dimensions sont des défauts
+   * (courbe et jauge portent les leurs par props), pas des contraintes.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='sparkline'] {
+    display: inline-flex;
+    color: var(--dwc-primary, CanvasText);
+    line-height: 0;
+    vertical-align: middle;
+  }
+
+  [data-dwc='bars'] {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 0.125rem;
+    width: 7.5rem;
+    height: 2rem;
+    color: var(--dwc-primary, CanvasText);
+    vertical-align: middle;
+  }
+
+  /* La hauteur vient du composant (proportion en %) ; la largeur d'ici. */
+  [data-dwc='bars-bar'] {
+    flex: 1 1 0;
+    min-width: 0.125rem;
+    background: currentColor;
+    border-radius: 0.125rem 0.125rem 0 0;
+  }
+
+  [data-dwc='gauge'] {
+    display: inline-block;
+    width: 7.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    color: var(--dwc-primary, CanvasText);
+    overflow: hidden;
+    vertical-align: middle;
+  }
+
+  [data-dwc='gauge-fill'] {
+    display: block;
+    height: 100%;
+    background: currentColor;
+    border-radius: inherit;
+  }
+
+  /* L'alternative textuelle calculée par `describeSeries` : lue, pas vue —
+     même motif que `skeleton-label`. Le composant pose aussi `sr-only`, mais
+     l'habillage ne doit pas dépendre d'un utilitaire que l'app a pu purger. */
+  [data-dwc='sparkline-text'],
+  [data-dwc='bars-text'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   /* ── Badge ─────────────────────────────────────────────────────────────── *
    * Un ton SÉMANTIQUE (ce que la pastille veut dire), décliné en trois
    * intensités. La couleur du ton est résolue une fois dans `--_dwc-tone`,
@@ -1467,6 +1578,19 @@
     [data-dwc='bottom-nav-item'][data-current],
     [data-dwc='bottom-nav-more'][data-current] {
       border-block-start-color: Highlight;
+    }
+
+    /* 6 — barres et jauge n'existaient que par leurs aplats, comme le
+       squelette : encre système sur le remplissage, contour sur le rail. La
+       courbe, elle, est un trait `currentColor` : déjà forcée correctement. */
+    [data-dwc='bars-bar'],
+    [data-dwc='gauge-fill'] {
+      background: CanvasText;
+    }
+
+    [data-dwc='gauge'] {
+      outline: 1px solid GrayText;
+      outline-offset: -1px;
     }
   }
 

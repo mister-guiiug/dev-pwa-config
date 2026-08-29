@@ -1641,6 +1641,18 @@ pre code {
   border-block-start-color: var(--sr-fc-highlight);
 }
 
+/* Barres et jauge n'existaient que par leurs aplats, comme le squelette :
+   encre système sur le remplissage, contour sur le rail. */
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='bars-bar'],
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='gauge-fill'] {
+  background: var(--sr-fc-text);
+}
+
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='gauge'] {
+  outline: 1px solid var(--sr-fc-gray);
+  outline-offset: -1px;
+}
+
 /* ── Tableaux en cartes sous `sm` ────────────────────────────────────────── *
  * Sept tableaux sur onze débordaient horizontalement en 375 px. Les tableaux
  * de RÉFÉRENCE deviennent des cartes ; les MATRICES restent des tableaux —
