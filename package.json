@@ -87,6 +87,14 @@
       "types": "./backup.d.ts",
       "default": "./backup.js"
     },
+    "./versioned-store": {
+      "types": "./versioned-store.d.ts",
+      "default": "./versioned-store.js"
+    },
+    "./idb": {
+      "types": "./idb.d.ts",
+      "default": "./idb.js"
+    },
     "./secure-storage": {
       "types": "./secure-storage.d.ts",
       "default": "./secure-storage.js"
@@ -505,7 +513,11 @@
     "geo.js",
     "geo.d.ts",
     "backup.js",
-    "backup.d.ts"
+    "backup.d.ts",
+    "versioned-store.js",
+    "versioned-store.d.ts",
+    "idb.js",
+    "idb.d.ts"
   ],
   "peerDependencies": {
     "@axe-core/playwright": "^4.8.0",
@@ -604,6 +616,7 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^17.4.0",
     "jsdom": "^30.0.1",
     "leaflet": "^1.9.4",

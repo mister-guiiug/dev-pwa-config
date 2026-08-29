@@ -27,7 +27,9 @@
  *
  * CE QUE ÇA N'EST PAS. Ce n'est pas du stockage sécurisé : tout est en clair et
  * lisible par n'importe quel script de la page. Pour un secret, voir
- * `@mister-guiiug/dev-wpa-config/secure-storage`.
+ * `@mister-guiiug/dev-wpa-config/secure-storage`. Et ce n'est pas un schéma :
+ * pour l'instantané versionné d'une app — enveloppe, migrations, validation —
+ * voir `./versioned-store.js` ; pour du volume ou des `Blob`, `./idb.js`.
  */
 
 /** Le stockage demandé, ou `null` si l'accès lui-même lève. */

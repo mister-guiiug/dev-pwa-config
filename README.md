@@ -454,6 +454,11 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/download`                    | `.js` + `.d.ts` | `downloadBlob` / `downloadJson` / `downloadText` / `readJsonFile` / `dateSlug` — la danse `createObjectURL` + ancre + `revoke`, recopiée dans **12 apps sur 16**                                                                 |
 | `@mister-guiiug/dev-wpa-config/share`                       | `.js` + `.d.ts` | `shareOrCopy` / `copyToClipboard` / `currentAppUrl` — Web Share avec repli presse-papiers ; l'annulation est distinguée de l'échec                                                                                               |
 | `@mister-guiiug/dev-wpa-config/react/share-button`          | `.js` + `.d.ts` | `ShareButton` : partage natif, repli presse-papiers, retour **annoncé** dans une région `status` posée dès le premier rendu. Une annulation n'affiche rien — ce n'est pas un échec                                               |
+| `@mister-guiiug/dev-wpa-config/storage`                     | `.js` + `.d.ts` | `createStore(prefix)` / `readJson` / `writeJson` — l'accès `localStorage`/`sessionStorage` qui ne lève **jamais** (recopié dans 7 apps sur 17) ; le préfixe isole les apps servies depuis le même domaine                        |
+| `@mister-guiiug/dev-wpa-config/versioned-store`             | `.js` + `.d.ts` | `createVersionedStore` — l'instantané versionné d'une app : enveloppe `{ v, data }`, migrations qui montent d'un cran, validation **injectée** (`schema.parse`), copie de côté avant toute perte possible                        |
+| `@mister-guiiug/dev-wpa-config/idb`                         | `.js` + `.d.ts` | `createIdb(name)` — IndexedDB clé/valeur **best-effort** (stores `kv` + `blobs`), réécrit 5 fois dans le parc ; rien ne lève jamais, le nom isole les apps                                                                       |
+| `@mister-guiiug/dev-wpa-config/backup`                      | `.js` + `.d.ts` | `createBackup` / `restoreBackup` / `downloadBackup` — sauvegarde et restauration d'un magasin en valeurs **brutes**, validation complète avant la première écriture, identité d'app vérifiée                                     |
+| `@mister-guiiug/dev-wpa-config/secure-storage`              | `.js` + `.d.ts` | `createVault` — coffre AES-256-GCM, clé dérivée (PBKDF2) gardée en mémoire seule : protège la fuite **passive** du stockage, pas un XSS actif                                                                                    |
 | `@mister-guiiug/dev-wpa-config/web-vitals`                  | `.js` + `.d.ts` | `initWebVitals` / `rate` / `THRESHOLDS` — chaque métrique enregistrée indépendamment, `onINP` au lieu d'`onFID` (retiré en v4). Peer **optionnelle** `web-vitals` ^4                                                             |
 | `@mister-guiiug/dev-wpa-config/react/theme-toggle`          | `.js` + `.d.ts` | `ThemeToggle` : cycle clair → sombre → **système**, `type="button"`, nom accessible qui dit l'état courant                                                                                                                       |
 | `@mister-guiiug/dev-wpa-config/react/rive`                  | `.js` + `.d.ts` | `RiveAnimation` — lazy, a11y, `prefers-reduced-motion`, et **repli garanti** si le runtime ou le `.riv` manque (aucun `.riv` n'existe dans les 16 dépôts). Peer optionnelle `@rive-app/react-canvas`                             |
@@ -1061,6 +1066,59 @@ prévenir. Le fichier les traite ; les tests empêchent la récidive.
 
 Aucun `forced-color-adjust: none` — figer nos teintes reviendrait à passer outre
 le réglage de l'utilisateur. Un test le vérifie.
+
+### Persistance locale (`/storage`, `/versioned-store`, `/idb`, `/backup`)
+
+Quatre couches, une par besoin — et les en-têtes des modules se renvoient les
+uns aux autres :
+
+- **`/storage`** — une préférence, un réglage : `createStore(prefix)` absorbe
+  les quatre façons dont `localStorage` lève, le préfixe isole les apps du
+  domaine partagé.
+- **`/versioned-store`** — **l'instantané complet d'une app**. Le besoin le
+  plus recopié du parc après l'accès au stockage : miss-uwh et miss-genius en
+  portaient deux copies jumelles (enveloppe versionnée + migrations + zod), et
+  miss-lookhouse montrait le piège inverse — version inconnue, données jetées.
+- **`/idb`** — du volume, des `Blob` (avatars, historiques sans plafond),
+  réécrit cinq fois dans le parc. Best-effort : rien ne lève jamais.
+- **`/backup`** — le filet : tout le magasin dans un fichier, et retour.
+  Un coffre (`/secure-storage`) complète pour les secrets.
+
+```ts
+import { createVersionedStore } from '@mister-guiiug/dev-wpa-config/versioned-store';
+import { appDataSchema } from './schema';
+
+const store = createVersionedStore({
+  store: 'monapp_', // ou un Store existant de /storage
+  version: 2,
+  migrations: {
+    // Indexées par version SOURCE ; chacune monte d'UN cran, le magasin
+    // tient le compte. La 0 reçoit les données d'avant l'enveloppe.
+    0: data => ({ ...(data as object), periodes: [] }),
+    1: data => remapIds(data),
+  },
+  validate: data => appDataSchema.parse(data), // injectée — zod reste chez l'app
+  seed: () => createInitialData(),
+});
+
+const data = store.load(); // migré, validé, persisté — jamais une exception
+store.save(next); // false si le stockage a refusé
+const json = store.export(); // fichier réimportable par store.import(json)
+```
+
+Ce que `load()` promet : **jamais de destruction silencieuse**. Version
+d'après, donnée invalide, JSON tronqué — l'original est copié sous
+`{clé}.backup-…` (clés déterministes, donc bornées) AVANT le repli sur le
+seed. `clear()` efface l'instantané **et** ses copies.
+
+```ts
+import { createIdb } from '@mister-guiiug/dev-wpa-config/idb';
+
+const idb = createIdb('mister-molkky'); // le nom EST l'isolation
+await idb.set('history', matches); // false si refusé, ne lève jamais
+const history = await idb.get('history', []);
+await idb.setBlob('avatar:j1', file); // les Blob ne passent pas par JSON
+```
 
 ### Corrélation, journal et écran de crash (`/correlation`, `/logger`)
 
