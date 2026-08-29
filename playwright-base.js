@@ -153,3 +153,85 @@ export function definePwaPlaywrightConfig({
   };
   return { ...config, ...overrides };
 }
+
+/* ── L'état au moment de l'échec ─────────────────────────────────────────── */
+
+/**
+ * L'état de l'app, relevé DANS la page — de quoi comprendre un échec de CI
+ * qu'on ne sait pas reproduire ailleurs.
+ *
+ * PROMU, PAS INVENTÉ. Le parcours critique de mister-family-map a échoué
+ * TROIS FOIS en aveugle — « element(s) not found », rien d'autre, et
+ * uniquement sur le runner — avant qu'un `try/catch` écrit à la main ne vide
+ * l'état dans le message d'erreur. C'est ce dump qui a livré la coordonnée
+ * fautive (le centre par défaut de la carte, là où le test avait saisi un
+ * autre point) et fermé le bug. Le motif vivait dans un seul test d'une seule
+ * app ; il sert désormais les dix-sept.
+ *
+ * Ce qui est relevé d'office : l'URL, le titre courant (h1/h2), et les CLÉS du
+ * stockage — pas les valeurs, qui peuvent être volumineuses ou sensibles.
+ * `keys` en ajoute (les valeurs de celles-là sont voulues) ; `evaluate` exécute
+ * du code arbitraire dans la page pour l'état propre à l'app.
+ *
+ * NE LÈVE JAMAIS : un dump qui échoue pendant qu'on documente un échec
+ * remplacerait l'erreur utile par la sienne.
+ *
+ * @param {{ evaluate: Function, url?: Function }} page
+ * @param {{ keys?: string[], evaluate?: () => object }} [options]
+ */
+export async function dumpAppState(page, options = {}) {
+  const state = { url: null, heading: null, storageKeys: [] };
+  try {
+    state.url = typeof page.url === 'function' ? page.url() : null;
+    const inPage = await page.evaluate(
+      ({ keys }) => {
+        const read = key => {
+          try {
+            return localStorage.getItem(key);
+          } catch {
+            return '<stockage indisponible>';
+          }
+        };
+        let storageKeys = [];
+        try {
+          storageKeys = Object.keys(localStorage);
+        } catch {
+          storageKeys = ['<stockage indisponible>'];
+        }
+        return {
+          heading: document.querySelector('h1, h2')?.textContent ?? null,
+          storageKeys,
+          values: Object.fromEntries((keys ?? []).map(key => [key, read(key)])),
+        };
+      },
+      { keys: options.keys ?? [] }
+    );
+    Object.assign(state, inPage);
+    if (options.evaluate) {
+      state.app = await page.evaluate(options.evaluate);
+    }
+  } catch (error) {
+    state.dumpError = String(error);
+  }
+  return state;
+}
+
+/**
+ * Relance une erreur d'assertion avec l'état joint — la pile d'origine
+ * conservée, l'état lisible en dessous.
+ *
+ *   try {
+ *     await expect(page.getByTestId('duplicate-suggestion')).toBeVisible();
+ *   } catch (error) {
+ *     rethrowWithState(error, await dumpAppState(page, { keys: ['mfm_places'] }));
+ *   }
+ *
+ * @param {unknown} error
+ * @param {object} state
+ * @returns {never}
+ */
+export function rethrowWithState(error, state) {
+  const original = error instanceof Error ? error : new Error(String(error));
+  original.message = `${original.message}\n\nÉtat au moment de l'échec :\n${JSON.stringify(state, null, 2)}`;
+  throw original;
+}

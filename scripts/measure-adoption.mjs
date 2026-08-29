@@ -83,6 +83,7 @@ const EQUIVALENTS = {
   links: ['links.ts'],
   share: ['share.ts'],
   backup: ['storage.ts'],
+  geo: ['geo.ts'],
   webVitals: ['web-vitals.ts'],
 };
 

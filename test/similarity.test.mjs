@@ -71,8 +71,9 @@ const LIEUX = [
   { id: 'blandan', name: 'Parc Blandan', at: { lat: 45.7458, lng: 4.8542 } },
 ];
 
-/** Distance grossière en kilomètres, suffisante pour un test. */
-const km = (a, b) => Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 78);
+// La vraie distance, depuis `geo.js` — promue précisément parce que ce test
+// en fabriquait une approximative à la main faute de l'avoir sous la main.
+import { distanceKm as km } from '../geo.js';
 
 test('un nom identique se dit « même nom », pas « peut-être »', () => {
   const [premier] = findSimilar(

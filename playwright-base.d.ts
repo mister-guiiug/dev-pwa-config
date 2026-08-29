@@ -33,3 +33,36 @@ export interface DefinePwaPlaywrightConfigOptions {
 export function definePwaPlaywrightConfig(
   opts: DefinePwaPlaywrightConfigOptions
 ): Record<string, unknown>;
+
+export interface AppStateOptions {
+  /** Clés dont les VALEURS sont voulues (les clés seules sont toujours listées). */
+  keys?: readonly string[];
+  /** Exécuté dans la page — l'état propre à l'app, joint sous `app`. */
+  evaluate?: () => unknown;
+}
+
+export interface AppState {
+  url: string | null;
+  heading: string | null;
+  storageKeys: string[];
+  values?: Record<string, string | null>;
+  app?: unknown;
+  /** Présent si le relevé lui-même a échoué — jamais levé. */
+  dumpError?: string;
+}
+
+/**
+ * L'état de l'app au moment d'un échec : URL, titre courant, clés du stockage,
+ * plus ce que l'app veut dire. Ne lève jamais.
+ */
+export declare function dumpAppState(
+  page: {
+    /** `page.evaluate` de Playwright — typé large pour ne pas dépendre du paquet. */
+    evaluate: (fn: (arg: never) => unknown, arg?: unknown) => Promise<unknown>;
+    url?: () => string;
+  },
+  options?: AppStateOptions
+): Promise<AppState>;
+
+/** Relance l'erreur avec l'état joint, pile d'origine conservée. */
+export declare function rethrowWithState(error: unknown, state: object): never;
