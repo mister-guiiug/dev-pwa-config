@@ -45,6 +45,16 @@
  * les utilitaires (`bg-primary`, `rounded-none`…) et tout CSS non « layered » de
  * l'app l'emportent. Importer ce fichier ne verrouille donc rien.
  *
+ * UN SEUL PIÈGE À L'ÉCRASEMENT. Redonner sa propre animation d'entrée aux
+ * panneaux (`sheet-panel`, `confirm-panel`, `toast`) est le cas le plus tentant
+ * — et le seul qui casse autre chose que l'apparence. Si elle porte
+ * `animation-fill-mode: both` ou `forwards`, le panneau garde une transformation
+ * après son entrée, devient bloc conteneur de ses descendants `position: fixed`
+ * et leur ferme un contexte d'empilement : le voile d'un `ConfirmDialog` ouvert
+ * depuis une feuille se replie alors sur la feuille au lieu de couvrir l'écran.
+ * Utiliser `backwards`. Le détail est en fin de fichier, sur `@keyframes
+ * dwc-rise`.
+ *
  * DEUX RENDUS QUE PERSONNE NE REGARDE. Le contraste forcé et l'impression
  * remplacent ou suppriment les couleurs sans prévenir : un aplat de marque y
  * disparaît, et le texte clair posé dessus avec lui. Les deux blocs en fin de
@@ -778,7 +788,11 @@
       calc(var(--dwc-radius, 0.75rem) * 1.6) 0 0;
     box-shadow: var(--dwc-shadow, none);
     outline: none;
-    animation: dwc-rise 0.22s ease-out both;
+    /* `backwards`, jamais `both` — voir « Animations » en fin de fichier : un
+       panneau qui garde une transformation après son entrée emprisonne les
+       descendants `position: fixed`, dont le ConfirmDialog qu'on ouvre depuis
+       une feuille. */
+    animation: dwc-rise 0.22s ease-out backwards;
   }
 
   @media (min-width: 40rem) {
@@ -1019,7 +1033,7 @@
     border-radius: calc(var(--dwc-radius, 0.75rem) * 1.4);
     box-shadow: var(--dwc-shadow, none);
     outline: none;
-    animation: dwc-rise 0.18s ease-out both;
+    animation: dwc-rise 0.18s ease-out backwards;
   }
 
   [data-dwc='confirm-title'] {
@@ -1126,7 +1140,7 @@
     border-inline-start: 4px solid var(--dwc-info, light-dark(#175cd3, #84caff));
     border-radius: var(--dwc-radius, 0.75rem);
     box-shadow: var(--dwc-shadow, none);
-    animation: dwc-rise 0.18s ease-out both;
+    animation: dwc-rise 0.18s ease-out backwards;
   }
 
   [data-dwc='toast'][data-tone='success'] {
@@ -1319,6 +1333,36 @@
     }
   }
 
+  /* DEUX CHOIX À NE PAS « CORRIGER ».
+   *
+   * 1. Pas d'image-clé `to`. L'état final est celui de l'élément lui-même,
+   *    quel qu'il soit : l'app peut décaler ou incliner un panneau sans que
+   *    l'animation ne réécrive sa position d'arrivée.
+   *
+   * 2. `animation-fill-mode: backwards`, jamais `both` ni `forwards`.
+   *    C'est la seule chose qui compte pour l'imbrication, et elle ne se
+   *    devine pas : `forwards` RETIENT la valeur d'arrivée après la fin, et
+   *    une transformation retenue reste une transformation — même réduite à
+   *    l'identité. Un `transform` autre que `none` fait de l'élément le bloc
+   *    conteneur de ses descendants `position: fixed` et lui ouvre un
+   *    contexte d'empilement. Mesuré : `both` laisse
+   *    `matrix(1, 0, 0, 1, 0, 0)` sur le panneau, `backwards` laisse `none`.
+   *
+   *    Ce que ça cassait : `ConfirmDialog` est `position: fixed; inset: 0;
+   *    z-index: 60`, et on l'ouvre le plus souvent DEPUIS une feuille, donc
+   *    à l'intérieur de `sheet-panel`. Avec `both`, son voile se repliait sur
+   *    les dimensions de la feuille au lieu de couvrir l'écran, et son
+   *    `z-index` restait prisonnier du panneau : la boîte de confirmation
+   *    s'affichait en transparence, par-dessus le formulaire. Idem pour
+   *    `toast-viewport`, `fixed` lui aussi.
+   *
+   *    `backwards` ne coûte rien à l'entrée : sans `to`, l'état d'arrivée de
+   *    l'animation est DÉJÀ l'état naturel de l'élément — il n'y a donc rien
+   *    à retenir, et rien ne saute à la fin. Les deux choix se tiennent.
+   *
+   * Une app qui réécrit l'entrée en CSS non « layered » écrase cette règle et
+   * rouvre la brèche. Le garde-fou de `test/components-css.test.mjs` ne voit
+   * que ce fichier ; côté app, c'est à relire à la main. */
   @keyframes dwc-rise {
     from {
       transform: translateY(1rem);

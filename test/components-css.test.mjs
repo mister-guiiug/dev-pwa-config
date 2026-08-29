@@ -196,6 +196,39 @@ test('aucun texte posé sur un aplat ne s’imprime en blanc sur blanc', () => {
   );
 });
 
+test('aucune animation ne retient sa valeur d’arrivée', () => {
+  // `both` et `forwards` gardent la valeur du dernier keyframe APRÈS la fin.
+  // Une transformation retenue — même l'identité — fait de l'élément le bloc
+  // conteneur de ses descendants `position: fixed` et lui ouvre un contexte
+  // d'empilement. Trois composants du fichier sont `position: fixed` (`sheet`,
+  // `confirm`, `toast-viewport`) et s'imbriquent : `ConfirmDialog` s'ouvre
+  // depuis une feuille, donc DANS `sheet-panel`. Avec `both`, son voile se
+  // repliait sur la feuille et son `z-index` y restait prisonnier.
+  const retenus = [...CSS.matchAll(/([^{}]+)\{[^{}]*animation:[^;}]*/g)]
+    .filter(m => /\b(both|forwards)\b/.test(m[0]))
+    .map(m =>
+      m[1]
+        .trim()
+        .split(/\s*,\s*/)
+        .pop()
+    );
+
+  assert.deepEqual(
+    retenus,
+    [],
+    'ces sélecteurs retiennent leur état final : utiliser `backwards` (voir @keyframes dwc-rise)'
+  );
+
+  // Le motif doit rester détectable : si les animations changent de forme, la
+  // garde ci-dessus passerait au vert sans plus rien vérifier.
+  const fills = [...CSS.matchAll(/animation:[^;}]*\bbackwards\b/g)];
+  assert.equal(
+    fills.length,
+    3,
+    'les trois entrées de panneau devraient porter `backwards` — le motif a changé'
+  );
+});
+
 test('le contraste forcé n’est jamais désactivé', () => {
   // `forced-color-adjust: none` fige NOS teintes et passe outre le réglage de
   // l'utilisateur. Légitime pour un nuancier (la couleur EST l'information),
