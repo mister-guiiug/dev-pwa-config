@@ -103,6 +103,14 @@
       "types": "./csv.d.ts",
       "default": "./csv.js"
     },
+    "./pdf": {
+      "types": "./pdf.d.ts",
+      "default": "./pdf.js"
+    },
+    "./xlsx": {
+      "types": "./xlsx.d.ts",
+      "default": "./xlsx.js"
+    },
     "./markdown": {
       "types": "./markdown.d.ts",
       "default": "./markdown.js"
@@ -489,6 +497,10 @@
     "push",
     "csv.js",
     "csv.d.ts",
+    "pdf.js",
+    "pdf.d.ts",
+    "xlsx.js",
+    "xlsx.d.ts",
     "similarity.js",
     "similarity.d.ts",
     "backend.js",
