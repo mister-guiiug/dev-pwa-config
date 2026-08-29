@@ -1225,6 +1225,7 @@ downloadXlsx(bytes, 'compteurs-juillet.xlsx');
 L'export est **déterministe** (date d'archive figée) : même tableau, mêmes
 octets. Une seule feuille, chaînes et nombres, un seul style ; pas de
 formules, pas de dates typées, pas de lecture.
+
 ### Coffre local chiffré (`/secure-storage`)
 
 `localStorage` part dans les sauvegardes, se synchronise, et se lit d'une
