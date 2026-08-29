@@ -1,6 +1,6 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **128 fichiers recopiés dans les dix-sept apps, et
+Le relevé est sans appel : **127 fichiers recopiés dans les dix-sept apps, et
 aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
 imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
 machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
@@ -163,9 +163,10 @@ le but de la campagne.
 
 ## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
 
-Relevé complet, dix-sept dépôts clonés côte à côte. **132 doublons avant, 128
-après.** Le chiffre bouge peu, et c'est le vrai résultat de ce passage : la
-campagne butait sur un prérequis que personne n'avait vu.
+Relevé complet, dix-sept dépôts clonés côte à côte, tout fusionné et publié.
+**132 doublons avant, 127 après.** Le chiffre bouge peu, et c'est le vrai
+résultat de ce passage : la campagne butait sur un prérequis que personne
+n'avait vu.
 
 **Un `git fetch` d'abord.** Le relevé lit les COPIES DE TRAVAIL, pas les
 dépôts distants : deux clones en retard de quinze et dix-huit commits
@@ -178,14 +179,23 @@ for d in ../*/; do git -C "$d" fetch -q origin 2>/dev/null &&
   echo "$d $(git -C "$d" rev-list --left-right --count origin/main...main 2>/dev/null)"; done
 ```
 
+**`mister-family-map` ne reçoit pas de PR.** C'est le MIROIR PUBLIC de
+`elowner-ax/bac-sable`, publié depuis le poste par `npm run mirror` : les
+minutes Actions sont gratuites sur le public, la CI y tourne, mais le
+développement se fait sur le dépôt privé. Migrer cette app veut dire ouvrir la
+PR dans `bac-sable`, puis publier. Le relevé, lui, mesure le miroir : il voit
+donc la migration **après** publication, pas après fusion. Une app peut donc
+apparaître en retard sans l'être — c'est le seul cas de la famille, et
+`docs/MIRRORING.md` du dépôt privé en donne le mode d'emploi.
+
 Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
 
-| App                 | Ce qui est passé au socle                        |
-| ------------------- | ------------------------------------------------ |
-| `mister-family-map` | `geo` — 14 fichiers, la ré-exportation supprimée |
-| `miss-supaboss`     | `useOnline` — 5 appelants                        |
-| `miss-badminton`    | `useOnline` — 1 appelant                         |
-| `mister-molkky`     | `useOnline` — 1 appelant                         |
+| App                 | Ce qui est passé au socle                                  |
+| ------------------- | ---------------------------------------------------------- |
+| `miss-supaboss`     | `useOnline` — 5 appelants                                  |
+| `miss-badminton`    | `useOnline` — 1 appelant                                   |
+| `mister-molkky`     | `useOnline` — 1 appelant                                   |
+| `mister-family-map` | `geo` — 14 fichiers, via `bac-sable` puis `npm run mirror` |
 
 Onze autres apps montent en 3.21.0 sans migration : leurs doublons sont tous
 soit refusés faute de `components.css`, soit bloqués par un symbole local.

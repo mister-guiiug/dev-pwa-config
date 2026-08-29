@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-08-29T14:49:18.763Z',
+  generatedAt: '2026-08-29T17:35:07.793Z',
   measured: 17,
   total: 17,
   apps: {
@@ -82,7 +82,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-carbook': {
       symbols: [
@@ -140,7 +140,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-contraction': {
       symbols: [
@@ -202,25 +202,11 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-dice': {
-      symbols: [
-        'FamilyApps',
-        'cspPlugin',
-        'definePwaPlaywrightConfig',
-        'initSentry',
-        'installErrorReporter',
-        'pwaSeoPlugin',
-        'recordError',
-      ],
-      subpaths: [
-        '/playwright-base',
-        '/react',
-        '/react/observability',
-        '/vite-csp',
-        '/vite-pwa-base',
-      ],
+      symbols: [],
+      subpaths: [],
       duplicates: [
         {
           exported: 'applyUpdate',
@@ -251,7 +237,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'useTheme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-genius': {
       symbols: [
@@ -327,7 +313,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-lookhouse': {
       symbols: ['baseTestOptions'],
@@ -354,7 +340,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'ThemeToggle.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -417,37 +403,12 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-ticket-pwa': {
-      symbols: [
-        'ErrorBoundary',
-        'FamilyApps',
-        'baseTestOptions',
-        'createI18n',
-        'cspPlugin',
-        'definePwaPlaywrightConfig',
-        'expectNoA11yViolations',
-        'initSentry',
-        'installErrorReporter',
-        'pwaSeoPlugin',
-        'recordError',
-      ],
-      subpaths: [
-        '/playwright-a11y',
-        '/playwright-base',
-        '/react',
-        '/react/i18n',
-        '/react/observability',
-        '/vite-csp',
-        '/vite-pwa-base',
-        '/vitest-base',
-      ],
+      symbols: ['baseTestOptions'],
+      subpaths: ['/vitest-base'],
       duplicates: [
-        {
-          exported: 'applyUpdate',
-          file: 'register-sw.ts',
-        },
         {
           exported: 'links',
           file: 'links.ts',
@@ -465,7 +426,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'miss-uwh': {
       symbols: [
@@ -544,7 +505,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-cim10': {
       symbols: [
@@ -598,7 +559,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-doc': {
       symbols: [
@@ -673,7 +634,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-family-map': {
       symbols: [
@@ -755,7 +716,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'storage.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -812,7 +773,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdateBanner.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-molkky': {
       symbols: [
@@ -877,7 +838,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -924,7 +885,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-qowa': {
       symbols: [
@@ -959,7 +920,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
     'mister-quota': {
       symbols: [],
@@ -982,7 +943,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'Toaster.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T17:35:07.793Z',
     },
   },
   bySymbol: {
@@ -991,7 +952,6 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-carbook',
       'miss-contraction',
       'miss-genius',
-      'miss-ticket-pwa',
       'mister-cim10',
       'mister-footcoach',
       'mister-molkky',
@@ -1001,10 +961,8 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
-      'miss-dice',
       'miss-genius',
       'miss-supaboss',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1033,10 +991,8 @@ globalThis.SHOWROOM_ADOPTION = {
     clearErrorLog: ['miss-badminton'],
     cspPlugin: [
       'miss-badminton',
-      'miss-dice',
       'miss-genius',
       'miss-supaboss',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-family-map',
       'mister-footcoach',
@@ -1047,10 +1003,8 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
-      'miss-dice',
       'miss-genius',
       'miss-supaboss',
-      'miss-ticket-pwa',
       'mister-cim10',
       'mister-family-map',
       'mister-footcoach',
@@ -1062,7 +1016,6 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-genius',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-family-map',
@@ -1075,10 +1028,8 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
-      'miss-dice',
       'miss-genius',
       'miss-supaboss',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1090,10 +1041,8 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
-      'miss-dice',
       'miss-genius',
       'miss-supaboss',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1105,9 +1054,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
-      'miss-dice',
       'miss-genius',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1120,10 +1067,8 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
-      'miss-dice',
       'miss-genius',
       'miss-supaboss',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1141,7 +1086,6 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-carbook',
       'miss-genius',
       'miss-supaboss',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1209,7 +1153,6 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-contraction',
       'miss-dice',
       'miss-genius',
-      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-molkky',
