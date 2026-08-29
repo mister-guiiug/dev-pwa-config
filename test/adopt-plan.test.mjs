@@ -57,6 +57,17 @@ test('les types sont relevés à part, sous leur nom nu', () => {
   assert.deepEqual(types, ['Coordinates', 'BoundingBox']);
 });
 
+test('un import DÉJÀ migré n’est pas repris pour un voisin', () => {
+  // `@mister-guiiug/dev-wpa-config/storage` se termine par `/storage` : pris
+  // pour un fichier local, il était réécrit vers lui-même et compté comme une
+  // réécriture. Le chiffre de la campagne grossissait de ce qui était déjà fait.
+  const source = [
+    `import { createStore } from '@mister-guiiug/dev-wpa-config/storage';`,
+    `import { loadData } from '../lib/storage';`,
+  ].join('\n');
+  assert.deepEqual(findLocalImports(source, 'storage'), ['../lib/storage']);
+});
+
 /* ── La réécriture ─────────────────────────────────────────────────────── */
 
 test('un type publié par le sous-chemin ne bloque PAS le fichier', () => {

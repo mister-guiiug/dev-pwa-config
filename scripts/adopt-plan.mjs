@@ -172,6 +172,12 @@ function escapeRegExp(value) {
  * On ne construit pas le chemin relatif : on RELÈVE celui que le fichier
  * écrit déjà. Deviner `../../shared/ui/Button` à partir d'une arborescence
  * suppose une convention que les dix-sept apps ne partagent pas.
+ *
+ * LE SOCLE N'EST PAS UN VOISIN. `@mister-guiiug/dev-wpa-config/storage` se
+ * termine lui aussi par `/storage` : sans cette exclusion, le codemod prenait
+ * un import DÉJÀ migré pour un fichier local, le réécrivait vers lui-même, et
+ * comptait la non-modification comme une réécriture. Le chiffre de la campagne
+ * — le seul argument du dépôt — grossissait de tout ce qui était déjà fait.
  */
 export function findLocalImports(source, fileBaseName) {
   const pattern = new RegExp(
@@ -179,7 +185,11 @@ export function findLocalImports(source, fileBaseName) {
     'g'
   );
   return [
-    ...new Set([...source.matchAll(pattern)].map(m => m[1] + (m[2] ?? ''))),
+    ...new Set(
+      [...source.matchAll(pattern)]
+        .map(m => m[1] + (m[2] ?? ''))
+        .filter(specifier => !specifier.startsWith(PACKAGE))
+    ),
   ];
 }
 
