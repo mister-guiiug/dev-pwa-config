@@ -1,6 +1,6 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **127 fichiers recopiés dans les dix-sept apps, et
+Le relevé est sans appel : **128 fichiers recopiés dans les dix-sept apps, et
 aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
 imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
 machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
@@ -163,9 +163,20 @@ le but de la campagne.
 
 ## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
 
-Relevé complet, dix-sept dépôts clonés côte à côte. **131 doublons avant, 127
+Relevé complet, dix-sept dépôts clonés côte à côte. **132 doublons avant, 128
 après.** Le chiffre bouge peu, et c'est le vrai résultat de ce passage : la
 campagne butait sur un prérequis que personne n'avait vu.
+
+**Un `git fetch` d'abord.** Le relevé lit les COPIES DE TRAVAIL, pas les
+dépôts distants : deux clones en retard de quinze et dix-huit commits
+(`miss-dice`, `miss-ticket-pwa`) ont d'abord produit un relevé faux, des
+vérifications sur du code obsolète et une PR en conflit. Rien dans l'outil ne
+le signale. Vérifier avant de mesurer :
+
+```bash
+for d in ../*/; do git -C "$d" fetch -q origin 2>/dev/null &&
+  echo "$d $(git -C "$d" rev-list --left-right --count origin/main...main 2>/dev/null)"; done
+```
 
 Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
 
@@ -195,10 +206,11 @@ Ce qui reste, par ordre de valeur :
    importer `components.css` : la migration est possible, mais son `Button`
    local est habillé aux jetons `--uwh-*`. Trente-neuf boutons changent de
    tête — décision d'apparence, pas nettoyage d'imports.
-5. **`miss-ticket-pwa` est bloquée en amont.** Restée en `^2.1.2` : la montée
-   en 3.x butte sur le durcissement TypeScript de la 3.0.0
-   (`verbatimModuleSyntax`, treize imports à passer en `import type`), et
-   `eslint` manque à ses `devDependencies`. À traiter avant toute adoption.
+5. **`miss-ticket-pwa` n'a ni tests ni linter.** `npm test` sort à 0 en
+   annonçant `No test files found`, et `npm run lint` échoue parce qu'`eslint`
+   manque à ses `devDependencies` — alors que `eslint.config.js` est là et
+   pointe vers le socle. Rien ne garde cette app ; l'y adopter à l'aveugle
+   serait le seul cas de la famille sans filet.
 6. **`mister-quota` ne dépend pas du paquet.** Ses quatre doublons ne sont pas
    une dette de migration tant que l'app n'est pas consommatrice.
 
