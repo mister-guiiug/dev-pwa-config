@@ -136,13 +136,23 @@ export function downloadBackup(store, options = {}) {
   return downloadJson(backup, name);
 }
 
+/**
+ * Un nom de fichier depuis l'identité de l'app.
+ *
+ * Le rognage des tirets de bord est une BOUCLE, pas `/^-+|-+$/` : cette
+ * alternative retente `-+$` à chaque position et devient quadratique sur une
+ * longue traîne de tirets — la même classe de ReDoS que CodeQL avait déjà
+ * signalée sur `app-version.js`, et corrigée de la même façon.
+ */
 function slugOf(value) {
-  return (
-    String(value ?? 'app')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'app'
-  );
+  const slug = String(value ?? 'app')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-');
+  let start = 0;
+  let end = slug.length;
+  while (start < end && slug[start] === '-') start += 1;
+  while (end > start && slug[end - 1] === '-') end -= 1;
+  return slug.slice(start, end) || 'app';
 }
 
 /**

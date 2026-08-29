@@ -9,6 +9,7 @@ import { createStore } from '../storage.js';
 import {
   BACKUP_FORMAT,
   createBackup,
+  downloadBackup,
   restoreBackup,
   validateBackup,
 } from '../backup.js';
@@ -154,4 +155,15 @@ test('le remplacement ne touche QUE le préfixe de l’app', () => {
     '[50]',
     'restaurer une app ne déconnecte pas les autres'
   );
+});
+
+test('le nom de fichier tient face à une identité hostile', () => {
+  const store = createStore('mfm_');
+  // 200 000 tirets de traîne : la version `/^-+|-+$/` y passait de longues
+  // millisecondes (quadratique) ; la boucle reste linéaire.
+  const debut = Date.now();
+  const ok = downloadBackup(store, { app: '--App!!' + '-'.repeat(200_000) });
+  const duree = Date.now() - debut;
+  assert.equal(ok, false, 'pas de DOM ici — mais le nom a été fabriqué avant');
+  assert.ok(duree < 300, `rognage non linéaire : ${duree} ms`);
 });
