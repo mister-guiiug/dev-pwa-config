@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-08-29T14:49:18.763Z',
+  generatedAt: '2026-08-29T15:09:44.476Z',
   measured: 17,
   total: 17,
   apps: {
@@ -82,7 +82,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-carbook': {
       symbols: [
@@ -140,7 +140,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-contraction': {
       symbols: [
@@ -202,7 +202,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-dice': {
       symbols: [
@@ -251,7 +251,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'useTheme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-genius': {
       symbols: [
@@ -327,7 +327,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-lookhouse': {
       symbols: ['baseTestOptions'],
@@ -354,7 +354,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'ThemeToggle.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -417,7 +417,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -465,7 +465,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'miss-uwh': {
       symbols: [
@@ -544,7 +544,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-cim10': {
       symbols: [
@@ -598,7 +598,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-doc': {
       symbols: [
@@ -673,15 +673,13 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-family-map': {
       symbols: [
         'AppVersion',
         'Badge',
-        'BoundingBox',
         'Button',
-        'Coordinates',
         'EmptyState',
         'ErrorBanner',
         'FamilyApps',
@@ -705,17 +703,11 @@ globalThis.SHOWROOM_ADOPTION = {
         'createStore',
         'cspPlugin',
         'definePwaPlaywrightConfig',
-        'distanceKm',
         'dumpAppState',
         'expectNoA11yViolations',
-        'formatDistance',
         'installCorrelation',
         'installObservability',
         'isClusterId',
-        'isInBoundingBox',
-        'isValidCoordinates',
-        'isValidLatitude',
-        'isValidLongitude',
         'localRealtimeTransport',
         'mapCspDirectives',
         'mapTileRuntimeCaching',
@@ -728,7 +720,6 @@ globalThis.SHOWROOM_ADOPTION = {
       ],
       subpaths: [
         '/correlation',
-        '/geo',
         '/logger',
         '/map',
         '/map/maplibre',
@@ -754,8 +745,12 @@ globalThis.SHOWROOM_ADOPTION = {
           exported: 'backup',
           file: 'storage.ts',
         },
+        {
+          exported: 'geo',
+          file: 'geo.ts',
+        },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -812,7 +807,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdateBanner.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-molkky': {
       symbols: [
@@ -877,7 +872,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -924,7 +919,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-qowa': {
       symbols: [
@@ -959,7 +954,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
     'mister-quota': {
       symbols: [],
@@ -982,7 +977,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'Toaster.tsx',
         },
       ],
-      measuredAt: '2026-08-29T14:49:18.763Z',
+      measuredAt: '2026-08-29T15:09:44.476Z',
     },
   },
   bySymbol: {
@@ -1163,9 +1158,7 @@ globalThis.SHOWROOM_ADOPTION = {
     useReducedMotion: ['mister-doc'],
     AppVersion: ['mister-family-map'],
     Badge: ['mister-family-map'],
-    BoundingBox: ['mister-family-map'],
     Button: ['mister-family-map'],
-    Coordinates: ['mister-family-map'],
     EmptyState: ['mister-family-map'],
     ErrorBanner: ['mister-family-map'],
     ObservabilityBoundary: ['mister-family-map'],
@@ -1184,16 +1177,10 @@ globalThis.SHOWROOM_ADOPTION = {
     createLogger: ['mister-family-map'],
     createMapLibreMapProvider: ['mister-family-map'],
     createStore: ['mister-family-map'],
-    distanceKm: ['mister-family-map'],
     dumpAppState: ['mister-family-map'],
-    formatDistance: ['mister-family-map'],
     installCorrelation: ['mister-family-map'],
     installObservability: ['mister-family-map'],
     isClusterId: ['mister-family-map'],
-    isInBoundingBox: ['mister-family-map'],
-    isValidCoordinates: ['mister-family-map'],
-    isValidLatitude: ['mister-family-map'],
-    isValidLongitude: ['mister-family-map'],
     localRealtimeTransport: ['mister-family-map'],
     mapCspDirectives: ['mister-family-map'],
     mapTileRuntimeCaching: ['mister-family-map'],
@@ -1351,7 +1338,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-uwh',
       'mister-doc',
     ],
-    geo: ['miss-lookhouse'],
+    geo: ['miss-lookhouse', 'mister-family-map'],
     Skeleton: ['miss-supaboss', 'mister-doc', 'mister-molkky'],
     useOnline: ['miss-ticket-pwa'],
     Badge: ['mister-doc', 'mister-footcoach'],

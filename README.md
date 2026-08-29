@@ -58,7 +58,7 @@ composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
 
 _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 128 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `links` (9), `applyUpdate` (8), `BottomNav` (8).
+> **Dette d'adoption : 129 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `links` (9), `applyUpdate` (8), `BottomNav` (8).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -85,28 +85,20 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `Button`                                  | 1 / 17      | 4 / 17              |
 | `Badge`                                   | 1 / 17      | 2 / 17              |
 | `AppVersion`                              | 1 / 17      | —                   |
-| `BoundingBox`                             | 1 / 17      | —                   |
 | `clearErrorLog`                           | 1 / 17      | —                   |
 | `clusterByGrid`                           | 1 / 17      | —                   |
 | `clustersToMarkers`                       | 1 / 17      | —                   |
-| `Coordinates`                             | 1 / 17      | —                   |
 | `createChannel`                           | 1 / 17      | —                   |
 | `createLogger`                            | 1 / 17      | —                   |
 | `createMapLibreMapProvider`               | 1 / 17      | —                   |
 | `createStore`                             | 1 / 17      | —                   |
-| `distanceKm`                              | 1 / 17      | —                   |
 | `dumpAppState`                            | 1 / 17      | —                   |
 | `ErrorBanner`                             | 1 / 17      | —                   |
-| `formatDistance`                          | 1 / 17      | —                   |
 | `getErrorLog`                             | 1 / 17      | —                   |
 | `I18nPaths`                               | 1 / 17      | —                   |
 | `installCorrelation`                      | 1 / 17      | —                   |
 | `installObservability`                    | 1 / 17      | —                   |
 | `isClusterId`                             | 1 / 17      | —                   |
-| `isInBoundingBox`                         | 1 / 17      | —                   |
-| `isValidCoordinates`                      | 1 / 17      | —                   |
-| `isValidLatitude`                         | 1 / 17      | —                   |
-| `isValidLongitude`                        | 1 / 17      | —                   |
 | `localRealtimeTransport`                  | 1 / 17      | —                   |
 | `mapCspDirectives`                        | 1 / 17      | —                   |
 | `mapTileRuntimeCaching`                   | 1 / 17      | —                   |
@@ -140,7 +132,7 @@ _Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 | `security`                                | 0 / 17      | 3 / 17              |
 | `Skeleton`                                | 0 / 17      | 3 / 17              |
 | `TextField / SelectField / TextAreaField` | 0 / 17      | 3 / 17              |
-| `geo`                                     | 0 / 17      | 1 / 17              |
+| `geo`                                     | 0 / 17      | 2 / 17              |
 
 <!-- ADOPTION:FIN -->
 
