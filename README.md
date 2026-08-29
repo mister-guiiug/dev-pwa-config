@@ -1111,6 +1111,63 @@ Le journal n'est **pas** un second système : chaque ligne finit dans le fil
 d'Ariane de `breadcrumb`, donc dans l'erreur remontée — mêmes masquages, même
 transport, rien à vider séparément.
 
+### Export PDF (`@mister-guiiug/dev-wpa-config/pdf`)
+
+Un vrai binaire `application/pdf`, sans bibliothèque — promu de mister-doc, où
+il produit les plannings mensuels et les compteurs d'équipe. Page A4 portrait,
+Helvetica / Helvetica-Bold (fontes standard, rien à embarquer), repère
+**haut-gauche** comme à l'écran, et une table `xref` dont les offsets sont
+relevés sur les octets réellement écrits : le fichier s'ouvre dans les
+lecteurs stricts, pas seulement dans les tolérants.
+
+```ts
+import {
+  PAGE,
+  PdfContent,
+  buildPdf,
+  downloadPdf,
+} from '@mister-guiiug/dev-wpa-config/pdf';
+
+const page = new PdfContent();
+page.fillRect(34, 64, PAGE.w - 68, 20, [0.42, 0.12, 0.42]); // bandeau
+page.text(40, 78, 9.5, 'Compteurs — Juillet', { bold: true, color: [1, 1, 1] });
+page.line(34, 90, PAGE.w - 34, 90, 0.8, 0.55);
+downloadPdf(buildPdf([page]), 'compteurs-juillet.pdf');
+```
+
+Une page par `PdfContent` ; `buildPdf([])` rend une page vide plutôt qu'un
+binaire invalide. Le texte est encodé WinAnsi : hors Latin-1 (`€`, `’`, `œ`…),
+le caractère devient `?`. Pas d'images, pas de compression, pas d'autres
+fontes — des tableaux qui s'ouvrent et s'impriment partout.
+
+### Export Excel (`@mister-guiiug/dev-wpa-config/xlsx`)
+
+Là où le dialecte `excel-fr` de `./csv` règle l'**ouverture** en colonnes,
+`./xlsx` règle le **type** des cellules : les nombres sont réellement typés —
+donc sommables dans le tableur — et l'en-tête est en gras. Promu de
+mister-doc : un vrai classeur Office Open XML (archive ZIP « stored », CRC32
+calculé, parties XML minimales), sans dépendance — là où charger SheetJS par
+CDN fait venir une bibliothèque entière d'un domaine tiers pour écrire un
+tableau.
+
+```ts
+import { buildXlsx, downloadXlsx } from '@mister-guiiug/dev-wpa-config/xlsx';
+
+const bytes = buildXlsx({
+  name: 'Compteurs Juillet', // assaini : ≤ 31 caractères, sans \ / ? * [ ] :
+  header: ['Médecin', 'Heures'],
+  rows: [
+    ['Alice', 12],
+    ['Bob', 7],
+  ],
+});
+downloadXlsx(bytes, 'compteurs-juillet.xlsx');
+```
+
+L'export est **déterministe** (date d'archive figée) : même tableau, mêmes
+octets. Une seule feuille, chaînes et nombres, un seul style ; pas de
+formules, pas de dates typées, pas de lecture.
+
 ### Carte (`@mister-guiiug/dev-wpa-config/map`)
 
 Deux axes **indépendants**, qu'on confond souvent :
