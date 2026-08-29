@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-08-29T17:35:07.793Z',
+  generatedAt: '2026-08-29T19:04:23.753Z',
   measured: 17,
   total: 17,
   apps: {
@@ -82,7 +82,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-carbook': {
       symbols: [
@@ -140,7 +140,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-contraction': {
       symbols: [
@@ -202,11 +202,25 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-dice': {
-      symbols: [],
-      subpaths: [],
+      symbols: [
+        'FamilyApps',
+        'cspPlugin',
+        'definePwaPlaywrightConfig',
+        'initSentry',
+        'installErrorReporter',
+        'pwaSeoPlugin',
+        'recordError',
+      ],
+      subpaths: [
+        '/playwright-base',
+        '/react',
+        '/react/observability',
+        '/vite-csp',
+        '/vite-pwa-base',
+      ],
       duplicates: [
         {
           exported: 'applyUpdate',
@@ -237,12 +251,20 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'useTheme.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-genius': {
       symbols: [
+        'AppFooter',
+        'BottomNav',
+        'Button',
+        'ConfirmDialog',
+        'EmptyState',
         'ErrorBoundary',
         'FamilyApps',
+        'SelectField',
+        'Sheet',
+        'TextField',
         'baseTestOptions',
         'createI18n',
         'cspPlugin',
@@ -252,22 +274,27 @@ globalThis.SHOWROOM_ADOPTION = {
         'installErrorReporter',
         'pwaSeoPlugin',
         'recordError',
+        'repoUrl',
       ],
       subpaths: [
+        '/apps-catalog',
         '/playwright-a11y',
         '/playwright-base',
         '/react',
+        '/react/app-footer',
+        '/react/bottom-nav',
+        '/react/button',
+        '/react/confirm-dialog',
+        '/react/empty-state',
+        '/react/field',
         '/react/i18n',
         '/react/observability',
+        '/react/sheet',
         '/vite-csp',
         '/vite-pwa-base',
         '/vitest-base',
       ],
       duplicates: [
-        {
-          exported: 'AppFooter',
-          file: 'AppFooter.tsx',
-        },
         {
           exported: 'applyUpdate',
           file: 'forceUpdate.ts',
@@ -277,43 +304,15 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'storage.ts',
         },
         {
-          exported: 'BottomNav',
-          file: 'BottomNav.tsx',
-        },
-        {
-          exported: 'Button',
-          file: 'Button.tsx',
-        },
-        {
-          exported: 'ConfirmDialog',
-          file: 'ConfirmDialog.tsx',
-        },
-        {
-          exported: 'EmptyState',
-          file: 'EmptyState.tsx',
-        },
-        {
           exported: 'format',
           file: 'format.ts',
-        },
-        {
-          exported: 'links',
-          file: 'links.ts',
-        },
-        {
-          exported: 'Sheet',
-          file: 'Sheet.tsx',
-        },
-        {
-          exported: 'TextField / SelectField / TextAreaField',
-          file: 'Field.tsx',
         },
         {
           exported: 'UpdatePromptBanner',
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-lookhouse': {
       symbols: ['baseTestOptions'],
@@ -340,7 +339,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'ThemeToggle.tsx',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -403,12 +402,37 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-ticket-pwa': {
-      symbols: ['baseTestOptions'],
-      subpaths: ['/vitest-base'],
+      symbols: [
+        'ErrorBoundary',
+        'FamilyApps',
+        'baseTestOptions',
+        'createI18n',
+        'cspPlugin',
+        'definePwaPlaywrightConfig',
+        'expectNoA11yViolations',
+        'initSentry',
+        'installErrorReporter',
+        'pwaSeoPlugin',
+        'recordError',
+      ],
+      subpaths: [
+        '/playwright-a11y',
+        '/playwright-base',
+        '/react',
+        '/react/i18n',
+        '/react/observability',
+        '/vite-csp',
+        '/vite-pwa-base',
+        '/vitest-base',
+      ],
       duplicates: [
+        {
+          exported: 'applyUpdate',
+          file: 'register-sw.ts',
+        },
         {
           exported: 'links',
           file: 'links.ts',
@@ -426,7 +450,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'miss-uwh': {
       symbols: [
@@ -505,7 +529,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-cim10': {
       symbols: [
@@ -559,7 +583,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-doc': {
       symbols: [
@@ -634,7 +658,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-family-map': {
       symbols: [
@@ -716,7 +740,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'storage.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -773,7 +797,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdateBanner.tsx',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-molkky': {
       symbols: [
@@ -838,7 +862,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -885,7 +909,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-qowa': {
       symbols: [
@@ -920,7 +944,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
     'mister-quota': {
       symbols: [],
@@ -943,7 +967,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'Toaster.tsx',
         },
       ],
-      measuredAt: '2026-08-29T17:35:07.793Z',
+      measuredAt: '2026-08-29T19:04:23.753Z',
     },
   },
   bySymbol: {
@@ -952,6 +976,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-carbook',
       'miss-contraction',
       'miss-genius',
+      'miss-ticket-pwa',
       'mister-cim10',
       'mister-footcoach',
       'mister-molkky',
@@ -961,8 +986,10 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
+      'miss-dice',
       'miss-genius',
       'miss-supaboss',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -991,8 +1018,10 @@ globalThis.SHOWROOM_ADOPTION = {
     clearErrorLog: ['miss-badminton'],
     cspPlugin: [
       'miss-badminton',
+      'miss-dice',
       'miss-genius',
       'miss-supaboss',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-family-map',
       'mister-footcoach',
@@ -1003,8 +1032,10 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
+      'miss-dice',
       'miss-genius',
       'miss-supaboss',
+      'miss-ticket-pwa',
       'mister-cim10',
       'mister-family-map',
       'mister-footcoach',
@@ -1016,6 +1047,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-genius',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-family-map',
@@ -1028,8 +1060,10 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
+      'miss-dice',
       'miss-genius',
       'miss-supaboss',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1041,8 +1075,10 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
+      'miss-dice',
       'miss-genius',
       'miss-supaboss',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1054,7 +1090,9 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
+      'miss-dice',
       'miss-genius',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1067,8 +1105,10 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-badminton',
       'miss-carbook',
       'miss-contraction',
+      'miss-dice',
       'miss-genius',
       'miss-supaboss',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
@@ -1086,11 +1126,21 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-carbook',
       'miss-genius',
       'miss-supaboss',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-doc',
       'mister-footcoach',
     ],
+    AppFooter: ['miss-genius'],
+    BottomNav: ['miss-genius'],
+    Button: ['miss-genius', 'mister-family-map'],
+    ConfirmDialog: ['miss-genius'],
+    EmptyState: ['miss-genius', 'mister-family-map'],
+    SelectField: ['miss-genius', 'mister-family-map'],
+    Sheet: ['miss-genius', 'mister-family-map'],
+    TextField: ['miss-genius', 'mister-family-map'],
+    repoUrl: ['miss-genius'],
     I18nPaths: ['miss-supaboss'],
     coveragePreset: [
       'miss-supaboss',
@@ -1108,17 +1158,12 @@ globalThis.SHOWROOM_ADOPTION = {
     AppVersion: ['mister-family-map'],
     Badge: ['mister-family-map'],
     BoundingBox: ['mister-family-map'],
-    Button: ['mister-family-map'],
     Coordinates: ['mister-family-map'],
-    EmptyState: ['mister-family-map'],
     ErrorBanner: ['mister-family-map'],
     ObservabilityBoundary: ['mister-family-map'],
-    SelectField: ['mister-family-map'],
     ShareButton: ['mister-family-map'],
-    Sheet: ['mister-family-map'],
     SkeletonGroup: ['mister-family-map'],
     TextAreaField: ['mister-family-map'],
-    TextField: ['mister-family-map'],
     UpdateButton: ['mister-family-map'],
     UpdatePromptBanner: ['mister-family-map'],
     VersionProvider: ['mister-family-map'],
@@ -1153,6 +1198,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-contraction',
       'miss-dice',
       'miss-genius',
+      'miss-ticket-pwa',
       'miss-uwh',
       'mister-cim10',
       'mister-molkky',
@@ -1168,7 +1214,6 @@ globalThis.SHOWROOM_ADOPTION = {
     ],
     ConfirmDialog: [
       'miss-badminton',
-      'miss-genius',
       'miss-uwh',
       'mister-doc',
       'mister-molkky',
@@ -1178,7 +1223,6 @@ globalThis.SHOWROOM_ADOPTION = {
     links: [
       'miss-badminton',
       'miss-dice',
-      'miss-genius',
       'miss-lookhouse',
       'miss-supaboss',
       'miss-ticket-pwa',
@@ -1190,7 +1234,6 @@ globalThis.SHOWROOM_ADOPTION = {
     Sheet: [
       'miss-badminton',
       'miss-dice',
-      'miss-genius',
       'miss-uwh',
       'mister-doc',
       'mister-molkky',
@@ -1214,7 +1257,6 @@ globalThis.SHOWROOM_ADOPTION = {
     EmptyState: [
       'miss-carbook',
       'miss-contraction',
-      'miss-genius',
       'miss-supaboss',
       'miss-uwh',
       'mister-doc',
@@ -1264,7 +1306,6 @@ globalThis.SHOWROOM_ADOPTION = {
     ],
     AppFooter: [
       'miss-contraction',
-      'miss-genius',
       'miss-uwh',
       'mister-cim10',
       'mister-molkky',
@@ -1272,7 +1313,6 @@ globalThis.SHOWROOM_ADOPTION = {
     ],
     BottomNav: [
       'miss-contraction',
-      'miss-genius',
       'miss-lookhouse',
       'miss-supaboss',
       'mister-cim10',
@@ -1288,15 +1328,11 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-qowa',
       'mister-quota',
     ],
-    Button: ['miss-genius', 'miss-uwh', 'mister-doc', 'mister-footcoach'],
-    'TextField / SelectField / TextAreaField': [
-      'miss-genius',
-      'miss-uwh',
-      'mister-doc',
-    ],
     geo: ['miss-lookhouse'],
     Skeleton: ['miss-supaboss', 'mister-doc', 'mister-molkky'],
     useOnline: ['miss-ticket-pwa'],
+    Button: ['miss-uwh', 'mister-doc', 'mister-footcoach'],
+    'TextField / SelectField / TextAreaField': ['miss-uwh', 'mister-doc'],
     Badge: ['mister-doc', 'mister-footcoach'],
   },
 };
