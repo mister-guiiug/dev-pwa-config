@@ -1,6 +1,6 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **120 fichiers recopiés dans les dix-sept apps, et
+Le relevé est sans appel : **113 fichiers recopiés dans les dix-sept apps, et
 aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
 imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
 machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
@@ -164,11 +164,12 @@ le but de la campagne.
 ## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
 
 Relevé complet, dix-sept dépôts clonés côte à côte, tout fusionné et publié.
-**132 doublons avant, 120 après.**
+**132 doublons avant, 113 après.**
 
-Les cinq premiers sont tombés en une journée de tranche mécanique ; les sept
-suivants ont demandé de lever le prérequis `components.css` sur une app et d'y
-relire chaque site d'appel. C'est le vrai enseignement du passage : la couche
+Les cinq premiers sont tombés en une journée de tranche mécanique ; les
+quatorze suivants ont demandé de relire chaque site d'appel dans une app —
+`miss-genius`, qui a dû d'abord lever le prérequis `components.css`, puis
+`miss-uwh`, qui l'avait déjà. C'est le vrai enseignement du passage : la couche
 outillage se migre par lots, la couche interface se migre app par app, et le
 prérequis se paie une fois par app.
 
@@ -197,6 +198,7 @@ Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
 | App                 | Ce qui est passé au socle                                                                                                                     |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `miss-genius`       | `components.css`, puis 8 doublons : `Button`, `Sheet`, `ConfirmDialog`, `Field`, `BottomNav`, `AppFooter`, `EmptyState`, `links` — **12 → 4** |
+| `miss-uwh`          | 7 doublons : `Button`, `Sheet`, `Field`, `EmptyState`, `ConfirmDialog`, `AppFooter`, `links` — 124 imports, 8 fichiers supprimés — **13 → 6** |
 | `mister-family-map` | `geo` — 14 fichiers, via `bac-sable` puis `npm run mirror`                                                                                    |
 | `miss-supaboss`     | `useOnline` — 5 appelants                                                                                                                     |
 | `miss-badminton`    | `useOnline` — 1 appelant                                                                                                                      |
@@ -226,23 +228,63 @@ enseignements, tous coûteux à redécouvrir :
 L'app garde trois traits en propre (bouton pilule, coins de la feuille, barre
 collante) et adopte le reste. C'est la ligne de partage à viser ailleurs.
 
+**Ce que `miss-uwh` a ajouté.** Deuxième passage complet sur la couche
+interface, et le premier sur une app qui avait DÉJÀ le prérequis : la migration
+a donc porté sur les seuls composants. Elle confirme la ligne de partage de
+`miss-genius` et ajoute trois pièges que `miss-genius` n'avait pas rencontrés,
+tous invisibles au typage :
+
+- **Un contrat de comportement peut changer sans que l'API bouge.** La copie
+  locale de `ConfirmDialog` appelait `onConfirm()` **puis** `onClose()` ; celle
+  du socle laisse `onConfirm` seul décider — pour ne pas fermer une
+  confirmation asynchrone avant la fin de sa requête, et c'est écrit dans son
+  en-tête. Les quatorze appelants s'appuyaient tous sur la fermeture
+  automatique : quatre laissaient la boîte ouverte, dix la rouvraient à la
+  feuille suivante, leur `confirmDelete` n'étant plus jamais remis à `false`.
+  **Lire l'en-tête du composant promu, pas seulement sa signature.**
+- **Une animation d'identité peut casser une imbrication.** Reposer
+  l'animation maison sur `[data-dwc='sheet-panel']` a suffi à faire disparaître
+  la confirmation rendue DANS la feuille : `to { transform: translateY(0) }`
+  avec `fill-mode: both` persiste après la fin, le panneau devient bloc
+  conteneur des `position: fixed` et ouvre un contexte d'empilement. Les
+  animations du socle n'ont qu'un `from` pour cette raison exacte — leur état
+  final est celui de l'élément, sans transformation. Une identité qui reprend
+  une animation du socle doit copier cette forme.
+- **Le contrat de jetons a des trous qui ne se voient pas.** `--dwc-border-strong`
+  manquait ; son repli est `--dwc-border`, donc rien ne casse — sauf que c'est
+  le pourtour des champs, que WCAG 1.4.11 veut à 3:1, et que le filet de
+  séparation de l'app tenait 1,3:1. Le défaut existait déjà dans la copie
+  locale ; l'adoption l'a révélé plutôt que causé. **Câbler les quinze jetons,
+  pas ceux qui se remarquent.**
+
+À quoi s'ajoute un point de méthode : `LabelsProvider` branché sur la locale de
+l'app. Les composants du paquet portent leurs propres textes et retombent sur le
+français hors fournisseur — invisible pour une app monolingue, faux pour une app
+bilingue. C'est un point de raccordement unique, à poser à la racine.
+
 Ce qui reste, par ordre de valeur :
 
-1. **Le prérequis `components.css`, app par app.** C'est le verrou : il ferme
-   à lui seul **68 migrations sur les quatorze apps** qui ne l'ont pas. Une PR
-   d'apparence par app, avec des captures — `miss-genius` montre la forme
-   qu'elle prend, jetons compris.
-2. **`links` — neuf apps, neuf fois la même ligne.** `SPONSOR_URL` migre tel
+1. **Le prérequis `components.css`, app par app.** C'est le verrou : quatorze
+   apps ne l'ont pas, et il ferme à lui seul **54 migrations réparties sur dix
+   d'entre elles**. Une PR d'apparence par app, avec des captures —
+   `miss-genius` montre la forme qu'elle prend, jetons compris, et `miss-uwh`
+   ce qui reste à faire une fois le prérequis acquis.
+2. **`links` — sept apps, sept fois la même ligne.** `SPONSOR_URL` migre tel
    quel, `REPO_URL` devient `repoUrl('<id-app>')`. Aucune ne migre seule ;
    toutes migrent en une passe.
 3. **`useTheme` (8 apps) et `useI18n` (4).** Ce ne sont pas des remplacements
    d'import : le premier demande de migrer l'état de thème vers le stockage du
    socle (`legacyKeys` est là pour ça), le second un fournisseur et des
    dictionnaires.
-4. **`miss-uwh` et ses 39 `Button`.** Seule app, avec `mister-family-map`, à
-   importer `components.css` : la migration est possible, mais son `Button`
-   local est habillé aux jetons `--uwh-*`. Trente-neuf boutons changent de
-   tête — décision d'apparence, pas nettoyage d'imports.
+4. **`applyUpdate` (8 blocages) et `backup` (7) — un besoin, huit noms.** Le
+   codemod les refuse parce qu'un symbole voisin manque au sous-chemin, mais la
+   liste des manquants n'est PAS la même d'une app à l'autre : la même fonction
+   « forcer la mise à jour » s'appelle `forceUpdate`, `forceAppUpdate`,
+   `forceSwUpdate`, `reloadApp` ou `registerServiceWorker` selon le dépôt, et
+   `backup` bloque sur sept jeux de symboles distincts. Ce n'est donc pas
+   « ajouter cinq exports » : c'est trancher un nom, comme `danger` contre
+   `destructive` l'a été pour `ConfirmDialog`. À faire dans ce dépôt, en lisant
+   d'abord les huit copies.
 5. **`miss-ticket-pwa` n'a aucun test.** `npm test` sort à 0 en annonçant
    `No test files found` : c'est la seule app de la famille dans ce cas, et sa
    CI passe donc au vert sans rien vérifier d'autre que le lint, les types et

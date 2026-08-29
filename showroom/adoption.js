@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-08-29T19:04:23.753Z',
+  generatedAt: '2026-08-29T19:40:46.692Z',
   measured: 17,
   total: 17,
   apps: {
@@ -82,7 +82,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-carbook': {
       symbols: [
@@ -140,7 +140,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-contraction': {
       symbols: [
@@ -202,7 +202,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-dice': {
       symbols: [
@@ -251,7 +251,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'useTheme.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-genius': {
       symbols: [
@@ -312,7 +312,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-lookhouse': {
       symbols: ['baseTestOptions'],
@@ -339,7 +339,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'ThemeToggle.tsx',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -402,7 +402,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -450,11 +450,20 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'miss-uwh': {
       symbols: [
+        'AppFooter',
+        'Button',
+        'ConfirmDialog',
+        'EmptyState',
         'FamilyApps',
+        'LabelsProvider',
+        'SelectField',
+        'Sheet',
+        'TextAreaField',
+        'TextField',
         'baseTestOptions',
         'coveragePreset',
         'createI18n',
@@ -465,21 +474,26 @@ globalThis.SHOWROOM_ADOPTION = {
         'installErrorReporter',
         'pwaSeoPlugin',
         'recordError',
+        'repoUrl',
       ],
       subpaths: [
+        '/apps-catalog',
         '/playwright-a11y',
         '/react',
+        '/react/app-footer',
+        '/react/button',
+        '/react/confirm-dialog',
+        '/react/empty-state',
+        '/react/field',
         '/react/i18n',
+        '/react/labels',
         '/react/observability',
+        '/react/sheet',
         '/vite-csp',
         '/vite-pwa-base',
         '/vitest-base',
       ],
       duplicates: [
-        {
-          exported: 'AppFooter',
-          file: 'AppFooter.tsx',
-        },
         {
           exported: 'applyUpdate',
           file: 'forceUpdate.ts',
@@ -487,18 +501,6 @@ globalThis.SHOWROOM_ADOPTION = {
         {
           exported: 'backup',
           file: 'storage.ts',
-        },
-        {
-          exported: 'Button',
-          file: 'Button.tsx',
-        },
-        {
-          exported: 'ConfirmDialog',
-          file: 'ConfirmDialog.tsx',
-        },
-        {
-          exported: 'EmptyState',
-          file: 'EmptyState.tsx',
         },
         {
           exported: 'ErrorBoundary',
@@ -509,18 +511,6 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'format.ts',
         },
         {
-          exported: 'links',
-          file: 'links.ts',
-        },
-        {
-          exported: 'Sheet',
-          file: 'Sheet.tsx',
-        },
-        {
-          exported: 'TextField / SelectField / TextAreaField',
-          file: 'Field.tsx',
-        },
-        {
           exported: 'Toast',
           file: 'ToastViewport.tsx',
         },
@@ -529,7 +519,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-cim10': {
       symbols: [
@@ -583,7 +573,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-doc': {
       symbols: [
@@ -658,7 +648,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-family-map': {
       symbols: [
@@ -740,7 +730,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'storage.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -797,7 +787,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdateBanner.tsx',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-molkky': {
       symbols: [
@@ -862,7 +852,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -909,7 +899,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-qowa': {
       symbols: [
@@ -944,7 +934,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'UpdatePrompt.tsx',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
     'mister-quota': {
       symbols: [],
@@ -967,7 +957,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'Toaster.tsx',
         },
       ],
-      measuredAt: '2026-08-29T19:04:23.753Z',
+      measuredAt: '2026-08-29T19:40:46.692Z',
     },
   },
   bySymbol: {
@@ -1132,15 +1122,15 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-doc',
       'mister-footcoach',
     ],
-    AppFooter: ['miss-genius'],
+    AppFooter: ['miss-genius', 'miss-uwh'],
     BottomNav: ['miss-genius'],
-    Button: ['miss-genius', 'mister-family-map'],
-    ConfirmDialog: ['miss-genius'],
-    EmptyState: ['miss-genius', 'mister-family-map'],
-    SelectField: ['miss-genius', 'mister-family-map'],
-    Sheet: ['miss-genius', 'mister-family-map'],
-    TextField: ['miss-genius', 'mister-family-map'],
-    repoUrl: ['miss-genius'],
+    Button: ['miss-genius', 'miss-uwh', 'mister-family-map'],
+    ConfirmDialog: ['miss-genius', 'miss-uwh'],
+    EmptyState: ['miss-genius', 'miss-uwh', 'mister-family-map'],
+    SelectField: ['miss-genius', 'miss-uwh', 'mister-family-map'],
+    Sheet: ['miss-genius', 'miss-uwh', 'mister-family-map'],
+    TextField: ['miss-genius', 'miss-uwh', 'mister-family-map'],
+    repoUrl: ['miss-genius', 'miss-uwh'],
     I18nPaths: ['miss-supaboss'],
     coveragePreset: [
       'miss-supaboss',
@@ -1154,6 +1144,8 @@ globalThis.SHOWROOM_ADOPTION = {
     createTranslator: ['miss-supaboss', 'miss-uwh'],
     useTheme: ['miss-supaboss'],
     useUpdatePrompt: ['miss-supaboss'],
+    LabelsProvider: ['miss-uwh'],
+    TextAreaField: ['miss-uwh', 'mister-family-map'],
     useReducedMotion: ['mister-doc'],
     AppVersion: ['mister-family-map'],
     Badge: ['mister-family-map'],
@@ -1163,7 +1155,6 @@ globalThis.SHOWROOM_ADOPTION = {
     ObservabilityBoundary: ['mister-family-map'],
     ShareButton: ['mister-family-map'],
     SkeletonGroup: ['mister-family-map'],
-    TextAreaField: ['mister-family-map'],
     UpdateButton: ['mister-family-map'],
     UpdatePromptBanner: ['mister-family-map'],
     VersionProvider: ['mister-family-map'],
@@ -1214,7 +1205,6 @@ globalThis.SHOWROOM_ADOPTION = {
     ],
     ConfirmDialog: [
       'miss-badminton',
-      'miss-uwh',
       'mister-doc',
       'mister-molkky',
       'mister-qowa',
@@ -1226,18 +1216,11 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-lookhouse',
       'miss-supaboss',
       'miss-ticket-pwa',
-      'miss-uwh',
       'mister-footcoach',
       'mister-qowa',
     ],
     share: ['miss-badminton', 'miss-dice', 'mister-molkky', 'mister-qowa'],
-    Sheet: [
-      'miss-badminton',
-      'miss-dice',
-      'miss-uwh',
-      'mister-doc',
-      'mister-molkky',
-    ],
+    Sheet: ['miss-badminton', 'miss-dice', 'mister-doc', 'mister-molkky'],
     useI18n: [
       'miss-badminton',
       'miss-contraction',
@@ -1258,7 +1241,6 @@ globalThis.SHOWROOM_ADOPTION = {
       'miss-carbook',
       'miss-contraction',
       'miss-supaboss',
-      'miss-uwh',
       'mister-doc',
       'mister-footcoach',
     ],
@@ -1306,7 +1288,6 @@ globalThis.SHOWROOM_ADOPTION = {
     ],
     AppFooter: [
       'miss-contraction',
-      'miss-uwh',
       'mister-cim10',
       'mister-molkky',
       'mister-qowa',
@@ -1331,8 +1312,8 @@ globalThis.SHOWROOM_ADOPTION = {
     geo: ['miss-lookhouse'],
     Skeleton: ['miss-supaboss', 'mister-doc', 'mister-molkky'],
     useOnline: ['miss-ticket-pwa'],
-    Button: ['miss-uwh', 'mister-doc', 'mister-footcoach'],
-    'TextField / SelectField / TextAreaField': ['miss-uwh', 'mister-doc'],
     Badge: ['mister-doc', 'mister-footcoach'],
+    Button: ['mister-doc', 'mister-footcoach'],
+    'TextField / SelectField / TextAreaField': ['mister-doc'],
   },
 };
