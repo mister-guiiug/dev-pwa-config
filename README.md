@@ -56,51 +56,65 @@ composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-08-26 sur 17 dépôts, par `npm run adoption`._
+_Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 130 fichiers recopiés** dans 17 apps, sur 23 besoins distincts. Les pires : `links` (9), `applyUpdate` (8), `BottomNav` (8).
+> **Dette d'adoption : 127 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `links` (9), `BottomNav` (8), `format` (8).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
 | Export ou module                          | Importé par | Encore recopié dans |
 | ----------------------------------------- | ----------- | ------------------- |
 | `baseTestOptions`                         | 15 / 17     | —                   |
-| `FamilyApps`                              | 14 / 17     | —                   |
-| `definePwaPlaywrightConfig`               | 13 / 17     | —                   |
-| `initSentry`                              | 13 / 17     | —                   |
-| `installErrorReporter`                    | 13 / 17     | —                   |
-| `pwaSeoPlugin`                            | 13 / 17     | —                   |
-| `recordError`                             | 13 / 17     | —                   |
-| `cspPlugin`                               | 10 / 17     | —                   |
-| `expectNoA11yViolations`                  | 10 / 17     | —                   |
-| `ErrorBoundary`                           | 9 / 17      | 6 / 17              |
-| `createI18n`                              | 8 / 17      | —                   |
+| `FamilyApps`                              | 12 / 17     | —                   |
+| `definePwaPlaywrightConfig`               | 11 / 17     | —                   |
+| `initSentry`                              | 11 / 17     | —                   |
+| `installErrorReporter`                    | 11 / 17     | —                   |
+| `pwaSeoPlugin`                            | 11 / 17     | —                   |
+| `recordError`                             | 11 / 17     | —                   |
+| `expectNoA11yViolations`                  | 9 / 17      | —                   |
+| `ErrorBoundary`                           | 8 / 17      | 6 / 17              |
+| `cspPlugin`                               | 8 / 17      | —                   |
 | `coveragePreset`                          | 7 / 17      | —                   |
+| `createI18n`                              | 7 / 17      | —                   |
+| `useOnline`                               | 4 / 17      | 1 / 17              |
 | `createTranslator`                        | 2 / 17      | —                   |
 | `UpdatePromptBanner`                      | 1 / 17      | 8 / 17              |
 | `useTheme`                                | 1 / 17      | 8 / 17              |
 | `EmptyState`                              | 1 / 17      | 7 / 17              |
 | `Sheet`                                   | 1 / 17      | 6 / 17              |
 | `Button`                                  | 1 / 17      | 4 / 17              |
-| `useOnline`                               | 1 / 17      | 4 / 17              |
 | `Badge`                                   | 1 / 17      | 2 / 17              |
 | `AppVersion`                              | 1 / 17      | —                   |
+| `BoundingBox`                             | 1 / 17      | —                   |
 | `clearErrorLog`                           | 1 / 17      | —                   |
 | `clusterByGrid`                           | 1 / 17      | —                   |
 | `clustersToMarkers`                       | 1 / 17      | —                   |
+| `Coordinates`                             | 1 / 17      | —                   |
+| `createChannel`                           | 1 / 17      | —                   |
 | `createLogger`                            | 1 / 17      | —                   |
 | `createMapLibreMapProvider`               | 1 / 17      | —                   |
+| `createStore`                             | 1 / 17      | —                   |
+| `distanceKm`                              | 1 / 17      | —                   |
+| `dumpAppState`                            | 1 / 17      | —                   |
 | `ErrorBanner`                             | 1 / 17      | —                   |
+| `formatDistance`                          | 1 / 17      | —                   |
 | `getErrorLog`                             | 1 / 17      | —                   |
 | `I18nPaths`                               | 1 / 17      | —                   |
 | `installCorrelation`                      | 1 / 17      | —                   |
 | `installObservability`                    | 1 / 17      | —                   |
 | `isClusterId`                             | 1 / 17      | —                   |
+| `isInBoundingBox`                         | 1 / 17      | —                   |
+| `isValidCoordinates`                      | 1 / 17      | —                   |
+| `isValidLatitude`                         | 1 / 17      | —                   |
+| `isValidLongitude`                        | 1 / 17      | —                   |
+| `localRealtimeTransport`                  | 1 / 17      | —                   |
 | `mapCspDirectives`                        | 1 / 17      | —                   |
 | `mapTileRuntimeCaching`                   | 1 / 17      | —                   |
 | `ObservabilityBoundary`                   | 1 / 17      | —                   |
 | `osmRasterTiles`                          | 1 / 17      | —                   |
+| `prefetch`                                | 1 / 17      | —                   |
 | `resolveSeoPublicUrls`                    | 1 / 17      | —                   |
+| `rethrowWithState`                        | 1 / 17      | —                   |
 | `SelectField`                             | 1 / 17      | —                   |
 | `ShareButton`                             | 1 / 17      | —                   |
 | `SkeletonGroup`                           | 1 / 17      | —                   |
@@ -112,9 +126,9 @@ _Relevé du 2026-08-26 sur 17 dépôts, par `npm run adoption`._
 | `versionPlugin`                           | 1 / 17      | —                   |
 | `VersionProvider`                         | 1 / 17      | —                   |
 | `links`                                   | 0 / 17      | 9 / 17              |
-| `applyUpdate`                             | 0 / 17      | 8 / 17              |
 | `BottomNav`                               | 0 / 17      | 8 / 17              |
 | `format`                                  | 0 / 17      | 8 / 17              |
+| `applyUpdate`                             | 0 / 17      | 7 / 17              |
 | `backup`                                  | 0 / 17      | 7 / 17              |
 | `ConfirmDialog`                           | 0 / 17      | 7 / 17              |
 | `AppFooter`                               | 0 / 17      | 6 / 17              |
@@ -126,6 +140,7 @@ _Relevé du 2026-08-26 sur 17 dépôts, par `npm run adoption`._
 | `security`                                | 0 / 17      | 3 / 17              |
 | `Skeleton`                                | 0 / 17      | 3 / 17              |
 | `TextField / SelectField / TextAreaField` | 0 / 17      | 3 / 17              |
+| `geo`                                     | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
 

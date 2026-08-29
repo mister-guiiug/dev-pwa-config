@@ -1,10 +1,14 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **130 fichiers recopiés dans les dix-sept apps, et
+Le relevé est sans appel : **127 fichiers recopiés dans les dix-sept apps, et
 aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
 imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
 machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
 session distante n'a.
+
+Le chiffre à jour vit dans le README, engendré par `npm run sync` ; celui-ci
+n'est qu'un ordre de grandeur. Ce qui a été fait au dernier passage, et ce
+qu'il reste, est en bas de cette page.
 
 ## Préparer
 
@@ -156,6 +160,47 @@ le but de la campagne.
   `components.css` ;
 - une app à la fois, `verify` vert avant de passer à la suivante — et le vert
   ne prouve que la compilation : l'écran, lui, se regarde.
+
+## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
+
+Relevé complet, dix-sept dépôts clonés côte à côte. **131 doublons avant, 127
+après.** Le chiffre bouge peu, et c'est le vrai résultat de ce passage : la
+campagne butait sur un prérequis que personne n'avait vu.
+
+Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
+
+| App                 | Ce qui est passé au socle                        |
+| ------------------- | ------------------------------------------------ |
+| `mister-family-map` | `geo` — 14 fichiers, la ré-exportation supprimée |
+| `miss-supaboss`     | `useOnline` — 5 appelants                        |
+| `miss-badminton`    | `useOnline` — 1 appelant                         |
+| `mister-molkky`     | `useOnline` — 1 appelant                         |
+
+Onze autres apps montent en 3.21.0 sans migration : leurs doublons sont tous
+soit refusés faute de `components.css`, soit bloqués par un symbole local.
+
+Ce qui reste, par ordre de valeur :
+
+1. **Le prérequis `components.css`, app par app.** C'est le verrou : il ferme
+   à lui seul 62 migrations sur les quinze apps qui ne l'ont pas. Une PR
+   d'apparence par app, avec des captures.
+2. **`links` — neuf apps, neuf fois la même ligne.** `SPONSOR_URL` migre tel
+   quel, `REPO_URL` devient `repoUrl('<id-app>')`. Aucune ne migre seule ;
+   toutes migrent en une passe.
+3. **`useTheme` (8 apps) et `useI18n` (4).** Ce ne sont pas des remplacements
+   d'import : le premier demande de migrer l'état de thème vers le stockage du
+   socle (`legacyKeys` est là pour ça), le second un fournisseur et des
+   dictionnaires.
+4. **`miss-uwh` et ses 39 `Button`.** Seule app, avec `mister-family-map`, à
+   importer `components.css` : la migration est possible, mais son `Button`
+   local est habillé aux jetons `--uwh-*`. Trente-neuf boutons changent de
+   tête — décision d'apparence, pas nettoyage d'imports.
+5. **`miss-ticket-pwa` est bloquée en amont.** Restée en `^2.1.2` : la montée
+   en 3.x butte sur le durcissement TypeScript de la 3.0.0
+   (`verbatimModuleSyntax`, treize imports à passer en `import type`), et
+   `eslint` manque à ses `devDependencies`. À traiter avant toute adoption.
+6. **`mister-quota` ne dépend pas du paquet.** Ses quatre doublons ne sont pas
+   une dette de migration tant que l'app n'est pas consommatrice.
 
 ## Ce que les gardes-fous ne voyaient pas, et qui a coûté cher
 
