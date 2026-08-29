@@ -49,6 +49,39 @@ export const SUBPATHS = {
   webVitals: 'web-vitals',
 };
 
+/**
+ * Les TYPES exportés par chaque sous-chemin, à part des valeurs.
+ *
+ * POURQUOI DEUX TABLES. `import { distanceKm, type Coordinates }` importe un
+ * symbole qui n'existe pas à l'exécution : le vérifier dans le module comme on
+ * vérifie `distanceKm` échouerait toujours. Les confondre coûtait six
+ * réécritures légitimes de `mister-family-map`, déclarées « bloquées » pour un
+ * type que le socle publie pourtant.
+ */
+export const EXPORTED_TYPES = {
+  geo: ['Coordinates', 'BoundingBox'],
+  'apps-catalog': [
+    'Maturity',
+    'Category',
+    'Backend',
+    'Platform',
+    'FacetKey',
+    'AppFilter',
+    'SortBy',
+    'FamilyApp',
+  ],
+  'sw-update': ['ApplyUpdateOptions', 'ApplyUpdateResult'],
+  storage: ['StorageKind', 'StoreOptions', 'Store'],
+  share: ['ShareResult', 'ShareData'],
+  'web-vitals': [
+    'WebVitalName',
+    'WebVitalRating',
+    'WebVitalReport',
+    'InitWebVitalsOptions',
+  ],
+  'react/field': ['TextFieldProps', 'SelectFieldProps', 'TextAreaFieldProps'],
+};
+
 /** Les symboles réellement exportés par chaque sous-chemin. */
 export const EXPORTS = {
   geo: [
@@ -89,23 +122,44 @@ const PACKAGE = '@mister-guiiug/dev-wpa-config';
  * imports par défaut et les `import *` sont IGNORÉS plutôt que devinés — un
  * codemod qui interprète mal réécrit du code juste en code faux, et c'est pire
  * que de ne rien faire.
+ *
+ * Les TYPES sont relevés à part, sous leur nom nu : `import type { A }` comme
+ * `import { type A }`. Confondus avec les valeurs, ils bloquaient un fichier
+ * entier au motif qu'un module JavaScript n'exporte pas une interface — ce
+ * qu'aucun module JavaScript ne fait.
+ *
+ * @returns {{ values: string[], types: string[], all: string[] }}
  */
-export function importedSymbols(source, moduleSpecifier) {
+export function splitImportedSymbols(source, moduleSpecifier) {
   const pattern = new RegExp(
-    `import\\s*\\{([^}]*)\\}\\s*from\\s*['"]${escapeRegExp(moduleSpecifier)}['"]`,
+    `import\\s*(?:(type)\\s+)?\\{([^}]*)\\}\\s*from\\s*['"]${escapeRegExp(moduleSpecifier)}['"]`,
     'g'
   );
-  const found = [];
+  const values = [];
+  const types = [];
   for (const match of source.matchAll(pattern)) {
-    for (const part of match[1].split(',')) {
-      const name = part
-        .trim()
+    const clauseIsType = Boolean(match[1]);
+    for (const part of match[2].split(',')) {
+      const raw = part.trim();
+      if (!raw) continue;
+      const inlineType = /^type\s+/.test(raw);
+      const name = raw
+        .replace(/^type\s+/, '')
         .split(/\s+as\s+/)[0]
         .trim();
-      if (name && name !== 'type') found.push(name);
+      if (!name) continue;
+      (clauseIsType || inlineType ? types : values).push(name);
     }
   }
-  return found;
+  return { values, types, all: [...values, ...types] };
+}
+
+/**
+ * Les symboles importés d'un module — valeurs et types confondus, sous leur
+ * nom nu. Conservé pour ce qui ne distingue pas les deux.
+ */
+export function importedSymbols(source, moduleSpecifier) {
+  return splitImportedSymbols(source, moduleSpecifier).all;
 }
 
 function escapeRegExp(value) {
@@ -138,23 +192,37 @@ export function findLocalImports(source, fileBaseName) {
  * @returns {{ source: string, symbols: string[], from: string, to: string }|null}
  */
 export function rewriteImports(source, options) {
-  const { localPath, subpath, expected } = options;
-  const symbols = importedSymbols(source, localPath);
+  const { localPath, subpath, expected, expectedTypes } = options;
+  const {
+    values,
+    types,
+    all: symbols,
+  } = splitImportedSymbols(source, localPath);
   if (symbols.length === 0) return null;
 
   // TOUT ce que le fichier importe doit exister dans le sous-chemin. Un seul
   // symbole absent — un helper maison ajouté à côté du composant — et la
   // réécriture casserait la compilation. Dans ce cas on ne touche à rien et on
   // le SIGNALE : c'est une décision humaine.
+  //
+  // Les types se vérifient contre LEUR table : un `.js` n'exporte pas
+  // d'interface, et les chercher là revenait à bloquer tout fichier qui importe
+  // le type à côté de la fonction.
   const known = expected ?? [];
-  const unknown = symbols.filter(name => !known.includes(name));
+  const knownTypes = expectedTypes ?? [];
+  const unknown = [
+    ...values.filter(name => !known.includes(name)),
+    ...types.filter(
+      name => !knownTypes.includes(name) && !known.includes(name)
+    ),
+  ];
   if (known.length > 0 && unknown.length > 0) {
     return { blocked: unknown, symbols, from: localPath, to: subpath };
   }
 
   const target = `${PACKAGE}/${subpath}`;
   const pattern = new RegExp(
-    `(import\\s*\\{[^}]*\\}\\s*from\\s*)['"]${escapeRegExp(localPath)}['"]`,
+    `(import\\s*(?:type\\s+)?\\{[^}]*\\}\\s*from\\s*)['"]${escapeRegExp(localPath)}['"]`,
     'g'
   );
   return {
@@ -191,6 +259,7 @@ export function planForApp(measurement) {
       file: duplicate.file,
       subpath,
       expected: EXPORTS[subpath] ?? [duplicate.exported],
+      expectedTypes: EXPORTED_TYPES[subpath] ?? [],
       status: 'ready',
     });
   }

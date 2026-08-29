@@ -24,6 +24,30 @@ Depuis `dev-wpa-config/`, mettre chaque app sur la dernière version du paquet
 node scripts/migrate-consumers.mjs --install
 ```
 
+## Le prérequis, avant tout le reste
+
+**Les composants du paquet ne sont pas habillés.** Ils ne posent que des
+attributs `data-dwc` ; c'est `components.css` qui les habille, et cet import
+est **opt-in** — deux apps sur dix-sept le font (`miss-uwh`,
+`mister-family-map`). Migrer `Button`, `Sheet` ou `BottomNav` dans les quinze
+autres échange un composant stylé contre un composant **nu** : ça compile, les
+tests passent, le lint est vert, et l'écran est cassé.
+
+Une app qui veut adopter la couche interface commence donc par :
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-wpa-config/components.css'; /* ← le prérequis */
+```
+
+C'est une décision d'apparence, pas une ligne de plomberie : elle se prend app
+par app, elle se regarde, et elle mérite sa propre revue. `adopt.mjs` REFUSE
+tant qu'elle n'est pas prise (`--allow-unstyled` pour qui a mesuré ce qu'il
+fait). Les crochets — `react/i18n`, `react/use-online`, `react/use-theme` — et
+tout ce qui n'est pas dans `react/` ne sont pas concernés : ils n'ont pas
+d'habillage à perdre.
+
 ## Mesurer avant
 
 Deux relevés, pour avoir un « avant » comparable à l'« après » :
@@ -55,17 +79,39 @@ Le rapport classe chaque doublon :
   importer le reste du paquet ; proposer le symbole à la promotion s'il est
   générique ; ou le renommer dans un fichier à lui. Jamais de réécriture
   automatique ici — elle casserait la compilation.
+- **REFUSÉS — l'app n'importe pas `components.css`** — le prérequis ci-dessus
+  n'est pas pris. Rien n'est écrit tant qu'il ne l'est pas.
 - **À PROMOUVOIR** — aucun sous-chemin ne publie cet export : c'est un
   chantier de socle, pas de migration.
+
+**Puis relire chaque site d'appel réécrit.** Le codemod compare des NOMS de
+symboles, pas des API — c'est sa limite, et elle ne se voit pas. Un composant
+local sans prop obligatoire qui puise dans un store se réécrit sans une erreur
+de type et rend autre chose :
+
+- `<BottomNav />` de `miss-lookhouse` portait cinq destinations et le compteur
+  de non-lues du store ; celui du paquet, sans prop `items`, rend une barre
+  **vide**. La migration fidèle existe — `items`, `linkComponent={NavLink}`,
+  `hrefProp="to"`, `badge` / `badgeLabel` — mais elle s'écrit à la main.
+- `<ThemeToggle />` de la même app est câblé au store Zustand de l'app ; celui
+  du paquet lit `useTheme` et son propre stockage. Les deux thèmes divergent
+  sans que rien ne le dise.
+
+La règle : un composant dont le site d'appel ne passe AUCUNE prop est suspect
+par construction. Le relire fait partie de la migration.
 
 Cas connus d'avance (relevés sur les dépôts accessibles) :
 
 - `links.ts` : `SPONSOR_URL` migre tel quel ; `REPO_URL` devient
-  `repoUrl('<id-app>')` — une ligne à la main.
+  `repoUrl('<id-app>')` — une ligne à la main. Neuf apps sur neuf sont dans ce
+  cas : aucune ne migre `links` toute seule.
 - `useActionGuard` (miss-supaboss) : le socle publie
   `react/use-action-guard`, mais la **signature diffère** (rôles injectés en
   `checks`, plus lus dans les stores). Migration à la main, volontairement
   absente de la carte du codemod.
+- les crochets `useI18n` et `useTheme` ne sont pas des remplacements d'import :
+  le premier demande un fournisseur et des dictionnaires, le second son propre
+  stockage. Les compter dans la tranche mécanique fausse le chiffre.
 
 ## Le journal partout
 
@@ -106,4 +152,25 @@ le but de la campagne.
   `--force`) ;
 - le codemod ne devine aucun chemin, n'interprète ni `import *` ni imports
   par défaut, et bloque dès qu'un symbole manque au sous-chemin ;
-- une app à la fois, `verify` vert avant de passer à la suivante.
+- il refuse un composant tant que l'app n'a pas pris le prérequis
+  `components.css` ;
+- une app à la fois, `verify` vert avant de passer à la suivante — et le vert
+  ne prouve que la compilation : l'écran, lui, se regarde.
+
+## Ce que les gardes-fous ne voyaient pas, et qui a coûté cher
+
+Trois défauts relevés le 29/08/2026, en réappliquant cette campagne aux dix-sept
+apps depuis une machine Windows. Ils sont corrigés ; ils disent surtout à quoi
+tenir un outil de campagne.
+
+- `measure-adoption.mjs` découpait le nom de fichier sur `/` seul. Sous Windows,
+  `join` sépare avec `\` : aucun nom ne correspondait à la table, le relevé
+  annonçait **zéro doublon**, et `npm run adoption` aurait publié une dette
+  éteinte que personne n'avait payée. Un relevé faux dans le sens flatteur est
+  pire que pas de relevé.
+- `adopt-plan.mjs` cherchait `type Coordinates` parmi les valeurs d'un module
+  JavaScript — qu'aucun module JavaScript n'exporte. Quatorze réécritures
+  légitimes de `mister-family-map` étaient déclarées bloquées pour cette seule
+  raison.
+- `console-audit.mjs` proposait `createLogger('src\features')` sous Windows,
+  faute de découper sur les deux séparateurs.

@@ -6,12 +6,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  EXPORTED_TYPES,
   EXPORTS,
   SUBPATHS,
   findLocalImports,
   importedSymbols,
   planForApp,
   rewriteImports,
+  splitImportedSymbols,
 } from '../scripts/adopt-plan.mjs';
 
 /* ── Le relevé des imports ─────────────────────────────────────────────── */
@@ -45,7 +47,62 @@ test('le chemin d’import est RELEVÉ, jamais construit', () => {
   assert.ok(trouves.includes('./Button.tsx'));
 });
 
+test('les types sont relevés à part, sous leur nom nu', () => {
+  const source = [
+    `import { distanceKm, type Coordinates } from './geo';`,
+    `import type { BoundingBox } from './geo';`,
+  ].join('\n');
+  const { values, types } = splitImportedSymbols(source, './geo');
+  assert.deepEqual(values, ['distanceKm']);
+  assert.deepEqual(types, ['Coordinates', 'BoundingBox']);
+});
+
 /* ── La réécriture ─────────────────────────────────────────────────────── */
+
+test('un type publié par le sous-chemin ne bloque PAS le fichier', () => {
+  // Le cas réel : quatorze fichiers de `mister-family-map` importent
+  // `type Coordinates` à côté de `distanceKm`. Cherché parmi les valeurs d'un
+  // module JavaScript, un type est toujours absent — six réécritures
+  // légitimes étaient déclarées bloquées pour cette seule raison.
+  const source = `import { distanceKm, type Coordinates } from './geo';`;
+  const result = rewriteImports(source, {
+    localPath: './geo',
+    subpath: 'geo',
+    expected: EXPORTS.geo,
+    expectedTypes: EXPORTED_TYPES.geo,
+  });
+  assert.equal(result.blocked, undefined);
+  assert.match(result.source, /from '@mister-guiiug\/dev-wpa-config\/geo'/);
+  assert.ok(result.source.includes('type Coordinates'), 'le type est conservé');
+});
+
+test('une clause `import type` entière est réécrite elle aussi', () => {
+  // Laissée derrière, elle garderait le fichier recopié vivant — et l'orphelin
+  // ne serait jamais supprimable.
+  const source = `import type { Coordinates } from './geo';`;
+  const result = rewriteImports(source, {
+    localPath: './geo',
+    subpath: 'geo',
+    expected: EXPORTS.geo,
+    expectedTypes: EXPORTED_TYPES.geo,
+  });
+  assert.equal(
+    result.source,
+    `import type { Coordinates } from '@mister-guiiug/dev-wpa-config/geo';`
+  );
+});
+
+test('un type ABSENT des deux tables bloque comme une valeur', () => {
+  const source = `import { distanceKm, type Zone } from './geo';`;
+  const result = rewriteImports(source, {
+    localPath: './geo',
+    subpath: 'geo',
+    expected: EXPORTS.geo,
+    expectedTypes: EXPORTED_TYPES.geo,
+  });
+  assert.deepEqual(result.blocked, ['Zone']);
+  assert.equal(result.source, undefined, 'rien n’est réécrit');
+});
 
 test('l’import local devient le sous-chemin du socle', () => {
   const source = `import { EmptyState } from '../ui/EmptyState';\nexport const x = 1;`;
@@ -167,6 +224,27 @@ test('les symboles déclarés existent vraiment dans leur module', async () => {
     const module = await import(`../${subpath}.js`);
     for (const name of symbols) {
       assert.ok(name in module, `${subpath} n’exporte pas ${name}`);
+    }
+  }
+});
+
+test('les types déclarés existent vraiment dans leur déclaration', async () => {
+  // Un type ne s'importe pas à l'exécution : c'est le `.d.ts` qui fait foi.
+  // Sans ce test, la table des types serait la seule affirmation du dépôt que
+  // rien ne vérifie — et un codemod qui débloque à tort est pire qu'un codemod
+  // qui bloque à tort.
+  const { readFileSync } = await import('node:fs');
+  for (const [subpath, names] of Object.entries(EXPORTED_TYPES)) {
+    const declaration = readFileSync(
+      new URL(`../${subpath}.d.ts`, import.meta.url),
+      'utf8'
+    );
+    for (const name of names) {
+      assert.match(
+        declaration,
+        new RegExp(`export (declare )?(type|interface) ${name}\\b`),
+        `${subpath}.d.ts ne déclare pas ${name}`
+      );
     }
   }
 });
