@@ -83,6 +83,10 @@ export const LABELS = {
       offline: 'Hors ligne',
       error: 'Erreur',
     },
+    guard: {
+      offline: 'Indisponible hors ligne',
+      readonly: 'Données non synchronisées — action indisponible',
+    },
     theme: {
       label: 'Thème',
       light: 'clair',
@@ -146,6 +150,10 @@ export const LABELS = {
       pending: 'Pending',
       offline: 'Offline',
       error: 'Error',
+    },
+    guard: {
+      offline: 'Unavailable while offline',
+      readonly: 'Data not synced — action unavailable',
     },
     theme: {
       label: 'Theme',

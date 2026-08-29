@@ -17,6 +17,7 @@ export {
   usePrefersDark,
 } from './use-media-query.js';
 export { useOnline } from './use-online.js';
+export { useActionGuard, resolveGuard } from './use-action-guard.js';
 export { Sparkline, BarChart, Gauge } from './sparkline.js';
 export {
   usePrefetch,

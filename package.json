@@ -71,6 +71,10 @@
       "types": "./format.d.ts",
       "default": "./format.js"
     },
+    "./geo": {
+      "types": "./geo.d.ts",
+      "default": "./geo.js"
+    },
     "./security": {
       "types": "./security.d.ts",
       "default": "./security.js"
@@ -78,6 +82,10 @@
     "./storage": {
       "types": "./storage.d.ts",
       "default": "./storage.js"
+    },
+    "./backup": {
+      "types": "./backup.d.ts",
+      "default": "./backup.js"
     },
     "./secure-storage": {
       "types": "./secure-storage.d.ts",
@@ -327,6 +335,10 @@
       "types": "./react/use-online.d.ts",
       "default": "./react/use-online.js"
     },
+    "./react/use-action-guard": {
+      "types": "./react/use-action-guard.d.ts",
+      "default": "./react/use-action-guard.js"
+    },
     "./react/use-route-breadcrumbs": {
       "types": "./react/use-route-breadcrumbs.d.ts",
       "default": "./react/use-route-breadcrumbs.js"
@@ -489,7 +501,11 @@
     "markdown.js",
     "markdown.d.ts",
     "vcard.js",
-    "vcard.d.ts"
+    "vcard.d.ts",
+    "geo.js",
+    "geo.d.ts",
+    "backup.js",
+    "backup.d.ts"
   ],
   "peerDependencies": {
     "@axe-core/playwright": "^4.8.0",

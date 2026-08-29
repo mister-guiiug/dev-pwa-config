@@ -528,6 +528,20 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'useActionGuard',
+      covers: ['useActionGuard', 'resolveGuard'],
+      signature:
+        'useActionGuard({ online, checks }) → { allowed, reason, reasonCode, disabledProps, wrap }',
+      summary: {
+        fr: 'Un bouton bloqué qui dit POURQUOI : codes stables (offline, readonly, …), texte traduit, props prêtes à étaler.',
+        en: 'A blocked button that says WHY: stable codes (offline, readonly, …), translated text, spreadable props.',
+      },
+      dont: {
+        fr: 'Ne pas remplacer `aria-disabled` par `disabled` : le bouton sortirait du focus, et l’utilisateur ne pourrait plus découvrir le motif.',
+        en: 'Don’t swap `aria-disabled` for `disabled`: the button leaves the focus order and the user can no longer discover the reason.',
+      },
+    },
+    {
       id: 'usePrefetch',
       covers: ['usePrefetch', 'useVisiblePrefetch', 'useIdlePrefetch'],
       signature: 'usePrefetch(loader) → { prefetch, linkProps }',

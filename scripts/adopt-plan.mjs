@@ -37,6 +37,7 @@ export const SUBPATHS = {
   applyUpdate: 'sw-update',
   backup: 'storage',
   format: 'format',
+  geo: 'geo',
   // `links.ts` recopie deux constantes que le catalogue porte déjà —
   // `SPONSOR_URL` à l'identique, et l'URL du dépôt sous forme de FONCTION
   // (`repoUrl(id)`) plutôt que de constante. Le codemod signalera donc
@@ -50,6 +51,14 @@ export const SUBPATHS = {
 
 /** Les symboles réellement exportés par chaque sous-chemin. */
 export const EXPORTS = {
+  geo: [
+    'isValidLatitude',
+    'isValidLongitude',
+    'isValidCoordinates',
+    'distanceKm',
+    'isInBoundingBox',
+    'formatDistance',
+  ],
   'apps-catalog': [
     'SPONSOR_URL',
     'GITHUB_OWNER',
