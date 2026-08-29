@@ -1345,6 +1345,113 @@ seul), `.dwc-map-cluster` (groupe, contient le nombre).
   `api_key` / `access_token` : un secret n'a rien à faire dans un client.
 - **Tuiles vectorielles avec Leaflet.** Refus explicite plutôt qu'écran vide.
 
+### Authentification (`@mister-guiiug/dev-wpa-config/auth`)
+
+Cinq apps portent chacune leur intégration Supabase Auth — mister-doc (la
+référence MFA), miss-uwh, miss-lookhouse, miss-carbook, mister-molkky — et
+quatre recopient exactement le même câblage : `getSession()` initial,
+ré-hydratation par `onAuthStateChange`, désabonnement au démontage. Le module
+promeut ce câblage en **port + adaptateurs**, comme `realtime/` et `push/` :
+
+| Sous-chemin        | Rôle                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `/auth`            | le PORT : machine d'état `loading` → `signed-out` \| `signed-in` \| `needs-mfa`        |
+| `/auth/supabase`   | adaptateur Supabase v2 à **client injecté** (peer optionnelle)                         |
+| `/auth/mfa`        | TOTP : enrôlement (QR/secret/uri), défi, facteurs — fidèle à mister-doc                |
+| `/auth/errors-fr`  | erreurs Auth en français (fusion doc + carbook, codes **et** sous-chaînes)             |
+| `/react/use-auth`  | le hook (`useSyncExternalStore`) — deux composants, un client, aucun Provider          |
+| `/react/auth-gate` | la garde non stylée `loading`/`fallback`/`mfa`/`children` (généralise uwh + lookhouse) |
+
+Bout en bout :
+
+```tsx
+import { createClient } from '@supabase/supabase-js';
+import { createAuthClient } from '@mister-guiiug/dev-wpa-config/auth';
+import { supabaseAuthAdapter } from '@mister-guiiug/dev-wpa-config/auth/supabase';
+import { frAuthError } from '@mister-guiiug/dev-wpa-config/auth/errors-fr';
+import { useAuth } from '@mister-guiiug/dev-wpa-config/react/use-auth';
+import { AuthGate } from '@mister-guiiug/dev-wpa-config/react/auth-gate';
+
+const supabase = createClient(url, anonKey); // LE client de l'app — jamais un second
+const adapter = supabaseAuthAdapter({ client: supabase });
+const auth = createAuthClient({
+  adapter,
+  // Chaque évènement brut : c'est là que miss-uwh purge les données locales
+  // à la déconnexion (appareil partagé).
+  onEvent: event => {
+    if (event === 'SIGNED_OUT') wipeLocal();
+  },
+});
+
+function App() {
+  return (
+    <AuthGate
+      client={auth}
+      loading={<Spinner />}
+      fallback={<LoginPage />}
+      mfa={<MfaChallenge />}
+      bypass={!IS_SUPABASE} // mode local : on laisse passer, la sécurité réelle est la RLS
+    >
+      <Routes />
+    </AuthGate>
+  );
+}
+
+function LoginPage() {
+  const { status } = useAuth(auth); // { status, session, user }
+  const signIn = async () => {
+    const res = await adapter.signInWithPassword({ email, password });
+    if (!res.ok) setError(frAuthError(res.error)); // « E-mail ou mot de passe incorrect. »
+  };
+  // Variantes : adapter.signInWithOtp({ email, emailRedirectTo }) — le lien
+  // magique de carbook ; adapter.signUp(...) rend `needsConfirmation` quand la
+  // confirmation e-mail retient la session ; adapter.signInAnonymously() ne
+  // LÈVE jamais quand le projet la désactive (repli de molkky) : `{ ok: false }`.
+}
+```
+
+Les effets d'une connexion reviennent **par `onAuthStateChange`** : les
+variantes `signIn*` restent des méthodes de l'adaptateur, le port n'a pas à
+les connaître. Le port ferme trois pièges que les copies géraient à moitié :
+la réponse `getSession` **périmée** qui écrase un évènement plus récent
+(chaque hydratation porte un numéro, seule la plus récente s'applique), la
+lecture MFA **hors-ligne** (un échec vaut « pas de défi », jamais un verrou),
+et la déconnexion **sans évènement** (`signOut` relit la session après coup).
+
+MFA TOTP (opt-in, plan gratuit, sans SMS) :
+
+```ts
+import { createTotpMfa } from '@mister-guiiug/dev-wpa-config/auth/mfa';
+
+const totp = createTotpMfa({ client: supabase });
+
+// Enrôlement (Réglages) : QR + secret + uri, TELS QUE Supabase les donne.
+const { factorId, qrCode, secret } = await totp.enrollTotp();
+// <img src={qrCode} /> — data URL SVG : la CSP doit autoriser `img-src data:`
+await totp.confirmEnrollment(factorId, code); // facteur vérifié, session aal2
+
+// Au login, quand la garde affiche `mfa` (statut `needs-mfa`) :
+await totp.challengeTotp(code); // Supabase émet MFA_CHALLENGE_VERIFIED → signed-in
+```
+
+Les erreurs de `/auth/mfa` gardent le **message Supabase d'origine** :
+`frAuthError(e)` les traduit à l'affichage. Le nettoyage des enrôlements
+abandonnés (facteurs non vérifiés) est fait avant chaque `enrollTotp`,
+comme dans mister-doc.
+
+**Les limites, assumées.**
+
+- **Pas de rôles.** La promotion d'`useActionGuard` l'a montré : les rôles ne
+  se généralisent pas (fiche médecin chez doc, dix rôles de club chez uwh,
+  rôles de démo chez bac-sable). Le port s'arrête à « qui est connecté » ;
+  « qui a le droit » reste à l'app, outillé par `react/use-action-guard`.
+- **Pas de codes de récupération.** Ceux de mister-doc sont des RPC
+  **applicatives** (table + fonctions SQL de l'app), pas une API Supabase
+  Auth : les embarquer imposerait un schéma.
+- **La garde n'est pas la sécurité.** `AuthGate` ordonne des écrans ; elle se
+  contourne dans l'inspecteur. La sécurité réelle est côté serveur, dans les
+  politiques **RLS** — uwh et lookhouse l'écrivent en toutes lettres.
+
 ### Helpers React (`@mister-guiiug/dev-wpa-config/react`)
 
 Hooks et composants PWA partagés (auparavant recopiés app par app). Livrés en

@@ -171,6 +171,22 @@
       "types": "./push/webpush.d.ts",
       "default": "./push/webpush.js"
     },
+    "./auth": {
+      "types": "./auth/index.d.ts",
+      "default": "./auth/index.js"
+    },
+    "./auth/supabase": {
+      "types": "./auth/supabase.d.ts",
+      "default": "./auth/supabase.js"
+    },
+    "./auth/mfa": {
+      "types": "./auth/mfa.d.ts",
+      "default": "./auth/mfa.js"
+    },
+    "./auth/errors-fr": {
+      "types": "./auth/errors-fr.d.ts",
+      "default": "./auth/errors-fr.js"
+    },
     "./realtime": {
       "types": "./realtime/index.d.ts",
       "default": "./realtime/index.js"
@@ -355,6 +371,14 @@
       "types": "./react/use-action-guard.d.ts",
       "default": "./react/use-action-guard.js"
     },
+    "./react/use-auth": {
+      "types": "./react/use-auth.d.ts",
+      "default": "./react/use-auth.js"
+    },
+    "./react/auth-gate": {
+      "types": "./react/auth-gate.d.ts",
+      "default": "./react/auth-gate.js"
+    },
     "./react/use-route-breadcrumbs": {
       "types": "./react/use-route-breadcrumbs.d.ts",
       "default": "./react/use-route-breadcrumbs.js"
@@ -503,6 +527,7 @@
     "prefetch.js",
     "prefetch.d.ts",
     "push",
+    "auth",
     "csv.js",
     "csv.d.ts",
     "pdf.js",
