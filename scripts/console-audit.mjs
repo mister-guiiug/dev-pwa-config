@@ -52,7 +52,10 @@ export function findConsoleCalls(source) {
  * `favoris`. Une PROPOSITION, pas une décision — c'est écrit dans le rapport.
  */
 export function suggestLoggerName(filePath) {
-  const parts = dirname(filePath).split('/').filter(Boolean);
+  // Les deux séparateurs : `relative()` rend `src\features\favoris` sous
+  // Windows, où une découpe sur `/` seul laissait le chemin en un bloc et
+  // proposait `createLogger('src\features')`.
+  const parts = dirname(filePath).split(/[/\\]/).filter(Boolean);
   const featureIdx = parts.lastIndexOf('features');
   if (featureIdx !== -1 && parts[featureIdx + 1]) return parts[featureIdx + 1];
   const last = parts[parts.length - 1];

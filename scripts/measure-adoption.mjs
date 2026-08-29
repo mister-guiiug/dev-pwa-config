@@ -45,7 +45,7 @@
  * Non publié (absent de `files`) : outil de développement du dépôt.
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
 import {
@@ -175,10 +175,13 @@ function measureApp(appDir) {
   // Doublons : un fichier local porte le nom déclaré équivalent, et l'app
   // n'importe pas le symbole correspondant. Les tests sont écartés — un
   // `Button.test.tsx` n'est pas une réimplémentation.
+  //
+  // `basename` et pas `slice(lastIndexOf('/'))` : `join` sépare avec `\` sous
+  // Windows, où la découpe manuelle rendait le CHEMIN ENTIER. Aucun nom ne
+  // correspondait alors à la table, et le relevé annonçait zéro doublon —
+  // c'est-à-dire une dette éteinte, sur une machine qui ne l'avait pas payée.
   const basenames = new Set(
-    files
-      .filter(file => !GENERATED.test(file))
-      .map(file => file.slice(file.lastIndexOf('/') + 1))
+    files.filter(file => !GENERATED.test(file)).map(file => basename(file))
   );
   const duplicates = [];
   for (const [exported, names] of Object.entries(EQUIVALENTS)) {
@@ -299,8 +302,31 @@ const banner = `/*
  */
 globalThis.SHOWROOM_ADOPTION = `;
 
+/**
+ * Le fichier engendré passe par Prettier avant d'être posé.
+ *
+ * `JSON.stringify` cite toutes les clés et double toutes les apostrophes ; la
+ * config du dépôt fait l'inverse, et `npm run validate` — donc la CI — le
+ * refuse. Sans ce passage, chaque relevé exigeait un `npm run format` derrière,
+ * qu'on oublie exactement les fois où l'on relève à la hâte. Même repli que
+ * `sync-generated.mjs` : sans Prettier installé, le fichier reste valide.
+ */
+async function formatted(source, filepath) {
+  try {
+    const prettier = await import('prettier');
+    const config = (await prettier.resolveConfig(filepath)) ?? {};
+    return await prettier.format(source, { ...config, filepath });
+  } catch {
+    return source;
+  }
+}
+
 if (write) {
-  writeFileSync(out, `${banner}${JSON.stringify(payload, null, 2)};\n`, 'utf8');
+  writeFileSync(
+    out,
+    await formatted(`${banner}${JSON.stringify(payload, null, 2)};\n`, out),
+    'utf8'
+  );
   console.log(
     `✅ showroom/adoption.js — ${measured}/${FAMILY_APPS.length} apps ` +
       `(${measuredNow} relevée${measuredNow > 1 ? 's' : ''} à l'instant, ${measured - measuredNow} conservée${measured - measuredNow > 1 ? 's' : ''})`

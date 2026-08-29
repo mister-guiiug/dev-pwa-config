@@ -1,10 +1,14 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **130 fichiers recopiés dans les dix-sept apps, et
+Le relevé est sans appel : **128 fichiers recopiés dans les dix-sept apps, et
 aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
 imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
 machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
 session distante n'a.
+
+Le chiffre à jour vit dans le README, engendré par `npm run sync` ; celui-ci
+n'est qu'un ordre de grandeur. Ce qui a été fait au dernier passage, et ce
+qu'il reste, est en bas de cette page.
 
 ## Préparer
 
@@ -23,6 +27,30 @@ Depuis `dev-wpa-config/`, mettre chaque app sur la dernière version du paquet
 ```bash
 node scripts/migrate-consumers.mjs --install
 ```
+
+## Le prérequis, avant tout le reste
+
+**Les composants du paquet ne sont pas habillés.** Ils ne posent que des
+attributs `data-dwc` ; c'est `components.css` qui les habille, et cet import
+est **opt-in** — deux apps sur dix-sept le font (`miss-uwh`,
+`mister-family-map`). Migrer `Button`, `Sheet` ou `BottomNav` dans les quinze
+autres échange un composant stylé contre un composant **nu** : ça compile, les
+tests passent, le lint est vert, et l'écran est cassé.
+
+Une app qui veut adopter la couche interface commence donc par :
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-wpa-config/components.css'; /* ← le prérequis */
+```
+
+C'est une décision d'apparence, pas une ligne de plomberie : elle se prend app
+par app, elle se regarde, et elle mérite sa propre revue. `adopt.mjs` REFUSE
+tant qu'elle n'est pas prise (`--allow-unstyled` pour qui a mesuré ce qu'il
+fait). Les crochets — `react/i18n`, `react/use-online`, `react/use-theme` — et
+tout ce qui n'est pas dans `react/` ne sont pas concernés : ils n'ont pas
+d'habillage à perdre.
 
 ## Mesurer avant
 
@@ -55,17 +83,39 @@ Le rapport classe chaque doublon :
   importer le reste du paquet ; proposer le symbole à la promotion s'il est
   générique ; ou le renommer dans un fichier à lui. Jamais de réécriture
   automatique ici — elle casserait la compilation.
+- **REFUSÉS — l'app n'importe pas `components.css`** — le prérequis ci-dessus
+  n'est pas pris. Rien n'est écrit tant qu'il ne l'est pas.
 - **À PROMOUVOIR** — aucun sous-chemin ne publie cet export : c'est un
   chantier de socle, pas de migration.
+
+**Puis relire chaque site d'appel réécrit.** Le codemod compare des NOMS de
+symboles, pas des API — c'est sa limite, et elle ne se voit pas. Un composant
+local sans prop obligatoire qui puise dans un store se réécrit sans une erreur
+de type et rend autre chose :
+
+- `<BottomNav />` de `miss-lookhouse` portait cinq destinations et le compteur
+  de non-lues du store ; celui du paquet, sans prop `items`, rend une barre
+  **vide**. La migration fidèle existe — `items`, `linkComponent={NavLink}`,
+  `hrefProp="to"`, `badge` / `badgeLabel` — mais elle s'écrit à la main.
+- `<ThemeToggle />` de la même app est câblé au store Zustand de l'app ; celui
+  du paquet lit `useTheme` et son propre stockage. Les deux thèmes divergent
+  sans que rien ne le dise.
+
+La règle : un composant dont le site d'appel ne passe AUCUNE prop est suspect
+par construction. Le relire fait partie de la migration.
 
 Cas connus d'avance (relevés sur les dépôts accessibles) :
 
 - `links.ts` : `SPONSOR_URL` migre tel quel ; `REPO_URL` devient
-  `repoUrl('<id-app>')` — une ligne à la main.
+  `repoUrl('<id-app>')` — une ligne à la main. Neuf apps sur neuf sont dans ce
+  cas : aucune ne migre `links` toute seule.
 - `useActionGuard` (miss-supaboss) : le socle publie
   `react/use-action-guard`, mais la **signature diffère** (rôles injectés en
   `checks`, plus lus dans les stores). Migration à la main, volontairement
   absente de la carte du codemod.
+- les crochets `useI18n` et `useTheme` ne sont pas des remplacements d'import :
+  le premier demande un fournisseur et des dictionnaires, le second son propre
+  stockage. Les compter dans la tranche mécanique fausse le chiffre.
 
 ## Le journal partout
 
@@ -106,4 +156,78 @@ le but de la campagne.
   `--force`) ;
 - le codemod ne devine aucun chemin, n'interprète ni `import *` ni imports
   par défaut, et bloque dès qu'un symbole manque au sous-chemin ;
-- une app à la fois, `verify` vert avant de passer à la suivante.
+- il refuse un composant tant que l'app n'a pas pris le prérequis
+  `components.css` ;
+- une app à la fois, `verify` vert avant de passer à la suivante — et le vert
+  ne prouve que la compilation : l'écran, lui, se regarde.
+
+## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
+
+Relevé complet, dix-sept dépôts clonés côte à côte. **132 doublons avant, 128
+après.** Le chiffre bouge peu, et c'est le vrai résultat de ce passage : la
+campagne butait sur un prérequis que personne n'avait vu.
+
+**Un `git fetch` d'abord.** Le relevé lit les COPIES DE TRAVAIL, pas les
+dépôts distants : deux clones en retard de quinze et dix-huit commits
+(`miss-dice`, `miss-ticket-pwa`) ont d'abord produit un relevé faux, des
+vérifications sur du code obsolète et une PR en conflit. Rien dans l'outil ne
+le signale. Vérifier avant de mesurer :
+
+```bash
+for d in ../*/; do git -C "$d" fetch -q origin 2>/dev/null &&
+  echo "$d $(git -C "$d" rev-list --left-right --count origin/main...main 2>/dev/null)"; done
+```
+
+Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
+
+| App                 | Ce qui est passé au socle                        |
+| ------------------- | ------------------------------------------------ |
+| `mister-family-map` | `geo` — 14 fichiers, la ré-exportation supprimée |
+| `miss-supaboss`     | `useOnline` — 5 appelants                        |
+| `miss-badminton`    | `useOnline` — 1 appelant                         |
+| `mister-molkky`     | `useOnline` — 1 appelant                         |
+
+Onze autres apps montent en 3.21.0 sans migration : leurs doublons sont tous
+soit refusés faute de `components.css`, soit bloqués par un symbole local.
+
+Ce qui reste, par ordre de valeur :
+
+1. **Le prérequis `components.css`, app par app.** C'est le verrou : il ferme
+   à lui seul 62 migrations sur les quinze apps qui ne l'ont pas. Une PR
+   d'apparence par app, avec des captures.
+2. **`links` — neuf apps, neuf fois la même ligne.** `SPONSOR_URL` migre tel
+   quel, `REPO_URL` devient `repoUrl('<id-app>')`. Aucune ne migre seule ;
+   toutes migrent en une passe.
+3. **`useTheme` (8 apps) et `useI18n` (4).** Ce ne sont pas des remplacements
+   d'import : le premier demande de migrer l'état de thème vers le stockage du
+   socle (`legacyKeys` est là pour ça), le second un fournisseur et des
+   dictionnaires.
+4. **`miss-uwh` et ses 39 `Button`.** Seule app, avec `mister-family-map`, à
+   importer `components.css` : la migration est possible, mais son `Button`
+   local est habillé aux jetons `--uwh-*`. Trente-neuf boutons changent de
+   tête — décision d'apparence, pas nettoyage d'imports.
+5. **`miss-ticket-pwa` n'a ni tests ni linter.** `npm test` sort à 0 en
+   annonçant `No test files found`, et `npm run lint` échoue parce qu'`eslint`
+   manque à ses `devDependencies` — alors que `eslint.config.js` est là et
+   pointe vers le socle. Rien ne garde cette app ; l'y adopter à l'aveugle
+   serait le seul cas de la famille sans filet.
+6. **`mister-quota` ne dépend pas du paquet.** Ses quatre doublons ne sont pas
+   une dette de migration tant que l'app n'est pas consommatrice.
+
+## Ce que les gardes-fous ne voyaient pas, et qui a coûté cher
+
+Trois défauts relevés le 29/08/2026, en réappliquant cette campagne aux dix-sept
+apps depuis une machine Windows. Ils sont corrigés ; ils disent surtout à quoi
+tenir un outil de campagne.
+
+- `measure-adoption.mjs` découpait le nom de fichier sur `/` seul. Sous Windows,
+  `join` sépare avec `\` : aucun nom ne correspondait à la table, le relevé
+  annonçait **zéro doublon**, et `npm run adoption` aurait publié une dette
+  éteinte que personne n'avait payée. Un relevé faux dans le sens flatteur est
+  pire que pas de relevé.
+- `adopt-plan.mjs` cherchait `type Coordinates` parmi les valeurs d'un module
+  JavaScript — qu'aucun module JavaScript n'exporte. Quatorze réécritures
+  légitimes de `mister-family-map` étaient déclarées bloquées pour cette seule
+  raison.
+- `console-audit.mjs` proposait `createLogger('src\features')` sous Windows,
+  faute de découper sur les deux séparateurs.

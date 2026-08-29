@@ -10,7 +10,7 @@
  * doublons ne manque au socle.
  *
  *   node scripts/adopt.mjs [--root ../mister-guiiug] [--app id] [--only Export]
- *                          [--write]
+ *                          [--write] [--allow-unstyled]
  *
  * SANS `--write`, RIEN N'EST ÉCRIT. C'est le mode par défaut, et il le reste :
  * un codemod qui modifie seize dépôts d'un coup sans qu'on ait lu son rapport
@@ -26,6 +26,17 @@
  *   - il refuse un fichier dont un symbole importé n'existe pas dans le
  *     sous-chemin — un helper maison collé à côté du composant. Réécrire là
  *     casserait la compilation ; le cas est signalé, pas tranché.
+ *   - il refuse de migrer un COMPOSANT vers une app qui n'importe pas
+ *     `components.css`. Les composants du paquet ne posent que des attributs
+ *     `data-dwc` : sans cette feuille, la migration compile, passe les tests,
+ *     et livre un composant NU. Quinze apps sur dix-sept sont dans ce cas.
+ *     `--allow-unstyled` lève le refus pour qui a mesuré ce qu'il fait.
+ *
+ * CE QU'IL NE PEUT PAS VOIR, ET QUI RESTE À VOUS. Il compare des NOMS de
+ * symboles, pas des API. Un composant local sans prop obligatoire qui puise
+ * dans un store — `<BottomNav />` et ses cinq destinations, `<ThemeToggle />`
+ * câblé au store de l'app — se réécrit sans erreur de type et rend autre
+ * chose. Relire chaque site d'appel réécrit fait partie de la migration.
  *
  * Non publié (absent de `files`) : outil de développement du dépôt.
  */
@@ -40,6 +51,7 @@ const flag = name => {
   return index === -1 ? undefined : args[index + 1];
 };
 const WRITE = args.includes('--write');
+const ALLOW_UNSTYLED = args.includes('--allow-unstyled');
 const ONLY_APP = flag('app');
 const ONLY_EXPORT = flag('only');
 const ROOT = flag('root');
@@ -56,7 +68,7 @@ function readAdoption() {
 
 const SKIP = new Set(['node_modules', 'dist', 'build', '.git', 'coverage']);
 
-function sourceFiles(dir, found = []) {
+function sourceFiles(dir, found = [], match = /\.[jt]sx?$/) {
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -66,10 +78,42 @@ function sourceFiles(dir, found = []) {
   for (const entry of entries) {
     if (SKIP.has(entry.name)) continue;
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) sourceFiles(full, found);
-    else if (/\.[jt]sx?$/.test(entry.name)) found.push(full);
+    if (entry.isDirectory()) sourceFiles(full, found, match);
+    else if (match.test(entry.name)) found.push(full);
   }
   return found;
+}
+
+/**
+ * Les sous-chemins qui RENDENT du balisage. Les autres — les crochets — n'ont
+ * pas d'habillage à perdre, et migrent sans que `components.css` entre en jeu.
+ */
+const HOOK_SUBPATHS = new Set([
+  'react/i18n',
+  'react/use-online',
+  'react/use-theme',
+]);
+
+const rendersMarkup = subpath =>
+  subpath.startsWith('react/') && !HOOK_SUBPATHS.has(subpath);
+
+/**
+ * L'app importe-t-elle l'habillage des composants du paquet ?
+ *
+ * Sans lui, les composants ne portent que leurs attributs `data-dwc` et
+ * s'affichent nus. Le relevé du 29/08/2026 : deux apps sur dix-sept l'importent.
+ */
+function importsComponentsCss(appDir) {
+  const files = sourceFiles(join(appDir, 'src'), [], /\.(css|scss|[jt]sx?)$/);
+  return files.some(file => {
+    try {
+      return readFileSync(file, 'utf8').includes(
+        '@mister-guiiug/dev-wpa-config/components.css'
+      );
+    } catch {
+      return false;
+    }
+  });
 }
 
 function findRoot() {
@@ -105,6 +149,7 @@ for (const [appId, measurement] of Object.entries(adoption.apps ?? {})) {
   }
 
   const files = sourceFiles(join(appDir, 'src'));
+  const styled = ALLOW_UNSTYLED || importsComponentsCss(appDir);
   const steps = planForApp(measurement).filter(
     step => !ONLY_EXPORT || step.exported === ONLY_EXPORT
   );
@@ -112,6 +157,18 @@ for (const [appId, measurement] of Object.entries(adoption.apps ?? {})) {
   for (const step of steps) {
     if (step.status === 'no-subpath') {
       report.push({ appId, ...step });
+      continue;
+    }
+
+    // Migrer un composant vers une app qui n'habille pas le socle échange un
+    // composant stylé contre un composant nu, sans qu'aucun test le dise.
+    if (!styled && rendersMarkup(step.subpath)) {
+      report.push({
+        appId,
+        exported: step.exported,
+        status: 'unstyled',
+        reason: `l'app n'importe pas components.css — ${step.subpath} rendrait un composant nu`,
+      });
       continue;
     }
 
@@ -126,6 +183,7 @@ for (const [appId, measurement] of Object.entries(adoption.apps ?? {})) {
           localPath,
           subpath: step.subpath,
           expected: step.expected,
+          expectedTypes: step.expectedTypes,
         });
         if (!result) continue;
         if (result.blocked) {
@@ -173,6 +231,7 @@ const order = [
   'would-rewrite',
   'rewritten',
   'blocked',
+  'unstyled',
   'no-subpath',
   'no-import-found',
   'absent',
@@ -181,6 +240,7 @@ const LABEL = {
   'would-rewrite': 'À RÉÉCRIRE (essai à blanc)',
   rewritten: 'RÉÉCRITS',
   blocked: 'BLOQUÉS — décision humaine',
+  unstyled: 'REFUSÉS — l’app n’importe pas components.css',
   'no-subpath': 'À PROMOUVOIR — aucun sous-chemin ne le publie',
   'no-import-found': 'aucun import trouvé (fichier orphelin ?)',
   absent: 'dépôt non cloné ici',
