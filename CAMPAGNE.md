@@ -549,3 +549,21 @@ là où le prochain lecteur la trouvera, pour qu'il ne refasse pas l'analyse. Le
 deux défauts que le socle nomme chez `mister-doc` (`DTSTAMP` recalculé à chaque
 évènement, lignes non pliées) restent donc en place, **documentés** au lieu
 d'être corrigés. C'est un résultat, pas un abandon.
+
+**Et la frontière ne passe pas entre deux fichiers : elle passe entre deux
+DOSSIERS.** `miss-lookhouse` l'a montré le lendemain, en essayant d'adopter
+`geo`. Son script `build-edge-core.mjs` recopie **tout `src/domain/`** vers ses
+Edge Functions, en réécrivant les imports pour Deno. Sept modules de plus sont
+donc dans le même cas que `geo` : `scoring`, `similarity`, `clustering`,
+`priceHistory`, `normalize`, `text`, `imageHash`.
+
+Le corollaire est inconfortable et mérite d'être écrit : **le socle porte un
+module promu en partie de `miss-lookhouse` — `similarity` — que
+`miss-lookhouse` ne pourra jamais réimporter.** Ça ne l'invalide pas, l'autre
+provenance l'importe. Mais avant d'inscrire une app dans un lot d'adoption, il
+faut savoir si le code visé franchit cette frontière : sinon on lui demande
+quelque chose qu'elle ne peut pas tenir, et c'est l'agent qui découvre le mur en
+migrant.
+
+Le repérage tient en une commande : chercher un script de build qui recopie du
+`src/` vers `supabase/functions/`.

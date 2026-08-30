@@ -21,6 +21,19 @@
  * carte, écart de prix pour une annonce, différence de dates pour un
  * évènement. Le rapprochement n'est pas réservé aux cartes.
  *
+ * UNE DES DEUX PROVENANCES NE POURRA JAMAIS L'IMPORTER — constaté le
+ * 31/08/2026, et c'est une leçon plus large que ce module. Le cœur métier de
+ * `miss-lookhouse` (`src/domain/`, dont son anti-doublons) est **recopié vers
+ * des Supabase Edge Functions** par un script de build : ce code tourne donc
+ * aussi sous Deno, qui ne peut pas résoudre un paquet publié sur un registre
+ * privé. Toute la couche, pas seulement l'anti-doublons.
+ *
+ * Ce qu'il faut en retenir avant de promouvoir : un module tiré d'un code qui
+ * franchit la frontière Deno est un module que son donneur ne récupérera pas.
+ * Ça ne l'invalide pas — l'autre provenance, elle, l'importe — mais ça se sait
+ * d'avance, et ça évite d'inscrire l'app dans un lot d'adoption qu'elle ne peut
+ * pas tenir.
+ *
  * SANS DÉPENDANCE, SANS DOM.
  */
 
