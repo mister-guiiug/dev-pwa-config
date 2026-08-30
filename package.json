@@ -127,6 +127,10 @@
       "types": "./vcard.d.ts",
       "default": "./vcard.js"
     },
+    "./ical": {
+      "types": "./ical.d.ts",
+      "default": "./ical.js"
+    },
     "./similarity": {
       "types": "./similarity.d.ts",
       "default": "./similarity.js"
@@ -643,6 +647,8 @@
     "markdown.d.ts",
     "vcard.js",
     "vcard.d.ts",
+    "ical.js",
+    "ical.d.ts",
     "geo.js",
     "geo.d.ts",
     "haptics.js",

@@ -1286,6 +1286,67 @@ L'export est **déterministe** (date d'archive figée) : même tableau, mêmes
 octets. Une seule feuille, chaînes et nombres, un seul style ; pas de
 formules, pas de dates typées, pas de lecture.
 
+### Agenda iCalendar (`@mister-guiiug/dev-wpa-config/ical`)
+
+Un `.ics` (RFC 5545) qui s'importe dans Google Agenda, Outlook et Apple
+Calendar — promu de **quatre** générateurs écrits séparément (`bac-sable`,
+`mister-footcoach`, `miss-uwh`, `mister-doc`), dont aucun ne pliait ses lignes
+correctement et dont deux n'écrivaient pas de `DTSTAMP`.
+
+```ts
+import { ICAL_MIME, toIcalendar } from '@mister-guiiug/dev-wpa-config/ical';
+import { downloadText } from '@mister-guiiug/dev-wpa-config/download';
+
+const ics = toIcalendar(
+  [
+    // Une DATE seule → journée entière ; le DTEND part au lendemain.
+    { uid: 'ag-2026', summary: 'Assemblée générale', start: '2026-01-31' },
+    // Une heure SANS fuseau → flottante : 10 h reste 10 h en déplacement.
+    {
+      uid: 'match-12',
+      summary: 'vs FC Rivale',
+      start: '2026-05-10T10:00',
+      durationMinutes: 120,
+      location: 'Stade, 1 rue X',
+      status: 'CONFIRMED',
+    },
+    // Un `Date` → un INSTANT, écrit en UTC.
+    {
+      uid: 'sortie-3',
+      summary: 'Sortie',
+      start: new Date(),
+      durationMinutes: 90,
+    },
+  ],
+  { name: 'Saison 2026', uidDomain: 'mon-app' }
+);
+downloadText(ics, 'saison-2026.ics', ICAL_MIME);
+```
+
+**La date choisit sa nature**, et c'est le seul réglage qui compte : une date
+ISO donne une journée entière, un horodatage sans décalage une heure
+**flottante** (18 h là où on la lit), un `Date` ou un horodatage avec décalage
+un **instant** UTC. Les trois se lisent à la longueur de la valeur produite.
+
+Quatre pièges sont traités d'office : le `DTEND` d'une journée entière est
+**exclusif** (un événement du 31 janvier finit le 1er février) ; le pliage se
+compte en **octets** — c'est `foldLine` de `./vcard`, même texte de RFC, donc
+pas de mojibake sur les accents ; `DTSTAMP` est obligatoire, unique pour tout
+le fichier et **injectable** (`{ dtstamp }`) pour un export testable ; et
+`URL` n'est pas une valeur texte, donc jamais échappée.
+
+Pour un **flux d'abonnement** servi par une fonction serveur, les options
+`method: 'PUBLISH'`, `timeZone: 'Europe/Paris'` et `refreshInterval: 'PT1H'`
+écrivent l'en-tête attendu (`X-WR-TIMEZONE`, `REFRESH-INTERVAL` **et**
+`X-PUBLISHED-TTL`, que les clients n'honorent pas tous pareil) ; les
+événements observés portent `transparent: true`, sans quoi un mois
+d'abonnement affiche un agenda entièrement occupé. `toIcalEvent` rend un
+`VEVENT` seul quand la composition est faite ailleurs.
+
+Pas de `RRULE`, pas de `VALARM`, pas de `VTIMEZONE` : aucune des quatre apps
+n'en émet — la récurrence est dépliée en occurrences par le domaine, en
+amont. `unfoldLines` et `unescapeText` suffisent à relire ce qu'on a écrit.
+
 ### Coffre local chiffré (`/secure-storage`)
 
 `localStorage` part dans les sauvegardes, se synchronise, et se lit d'une
