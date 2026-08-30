@@ -2,6 +2,56 @@
  * Helpers Vitest partagés. Les projets utilisent leur propre `vitest.config.ts`
  * mais peuvent réutiliser cette base de `test` options.
  */
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Chemin du double de `virtual:pwa-register`, résolu DANS le paquet installé.
+ *
+ * `new URL(…, import.meta.url)` plutôt que `import.meta.resolve` : la forme
+ * documentée jusqu'ici demandait à l'app de résoudre un sous-chemin d'export
+ * depuis SON `vitest.config.ts`, ce qui échoue sous un gestionnaire de paquets
+ * qui n'aplatit pas `node_modules`, et sous les runtimes où
+ * `import.meta.resolve` est asynchrone. Ici le chemin est relatif à CE
+ * fichier : il est correct partout où le paquet est installé.
+ */
+export const PWA_REGISTER_STUB = fileURLToPath(
+  new URL('./testing/pwa-register.js', import.meta.url)
+);
+
+/**
+ * L'alias à poser pour que les tests puissent monter un bandeau de mise à jour.
+ *
+ * `virtual:pwa-register` n'existe QUE dans un build servi par vite-plugin-pwa.
+ * Le `vi.mock` de `vitest-setup` ne suffit pas : il agit à l'exécution, quand
+ * Vite a déjà refusé de transformer le module importateur (« Failed to resolve
+ * import "virtual:pwa-register" »). Il faut un FICHIER, désigné par
+ * `resolve.alias` — et dix dépôts de la famille se l'écrivaient à la main.
+ *
+ *   import { defineConfig } from 'vitest/config';
+ *   import {
+ *     baseTestOptions,
+ *     pwaRegisterAlias,
+ *   } from '@mister-guiiug/dev-wpa-config/vitest-base';
+ *
+ *   export default defineConfig({
+ *     resolve: { alias: { ...pwaRegisterAlias } },
+ *     test: baseTestOptions,
+ *   });
+ *
+ * À poser dans `vitest.config.ts`, PAS dans `vite.config.ts` : un alias vu par
+ * le build ferait servir le double aux navigateurs, et l'app n'enregistrerait
+ * plus aucun service worker.
+ *
+ * `virtual:pwa-register/react` n'y est pas, et ce n'est pas un oubli. Les
+ * alias Vite s'appliquent par PRÉFIXE : cette entrée capte déjà le
+ * sous-chemin et le ferait pointer vers un fichier qui n'existe pas. Aucune app
+ * du parc ne l'importe — toutes passent `registerSW` à `useUpdatePrompt`, la
+ * forme impérative. Celle qui voudrait `useRegisterSW` devra fournir son propre
+ * double, sous une entrée d'alias plus spécifique placée AVANT celle-ci.
+ */
+export const pwaRegisterAlias = {
+  'virtual:pwa-register': PWA_REGISTER_STUB,
+};
 
 /**
  * Chemin du fichier de setup par défaut. Exporté pour permettre d'AJOUTER un

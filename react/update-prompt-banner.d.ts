@@ -22,11 +22,37 @@ export interface UpdatePromptBannerProps {
   ) => void;
   /** Forme historique de `onRegisteredSW`, sans l'URL du script. */
   onRegistered?: (registration?: ServiceWorkerRegistration) => void;
+  /**
+   * Nombre de sorties offertes à côté de « Recharger ».
+   *
+   * - `'auto'` (défaut) — une seule : le report si `snoozeHours > 0`, sinon
+   *   l'écartement pour la session.
+   * - `'both'` — les deux, quand `snoozeHours > 0` : le report d'abord (bouton
+   *   inchangé, `data-dwc="update-banner-dismiss"`), puis un second qui écarte
+   *   pour la seule session (`data-dwc="update-banner-ignore"`). Sans report à
+   *   offrir, se comporte exactement comme `'auto'`.
+   */
+  secondaryActions?: 'auto' | 'both';
+  /**
+   * Rend aussi le message « prêt hors ligne » quand le service worker le
+   * signale et qu'AUCUNE mise à jour n'attend. Rendu à part
+   * (`data-dwc="offline-ready"`), jamais en même temps que la mise à jour.
+   *
+   * Ne s'appelle pas `offlineReady` : l'état du hook porte déjà ce nom sur les
+   * mêmes props et écraserait l'interrupteur.
+   */
+  showOfflineReady?: boolean;
   title?: ReactNode;
   updateLabel?: string;
   updatingLabel?: string;
   snoozeLabel?: string;
   dismissLabel?: string;
+  /** Seconde sortie de `secondaryActions: 'both'` (défaut « Ignorer »). */
+  ignoreLabel?: string;
+  /** Texte du message « prêt hors ligne ». */
+  offlineReadyTitle?: ReactNode;
+  /** Bouton qui referme le message « prêt hors ligne » (défaut « OK »). */
+  offlineReadyLabel?: string;
   className?: string;
   updateOptions?: ApplyUpdateOptions;
 }

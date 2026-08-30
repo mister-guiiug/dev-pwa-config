@@ -43,14 +43,9 @@
  *
  * Pose, côté app :
  *
- *   // vitest.config.ts
- *   resolve: {
- *     alias: {
- *       'virtual:pwa-register': fileURLToPath(
- *         import.meta.resolve('@mister-guiiug/dev-wpa-config/testing/pwa-register')
- *       ),
- *     },
- *   }
+ *   // vitest.config.ts — l'alias est prêt à l'emploi, ne le réécrivez pas
+ *   import { pwaRegisterAlias } from '@mister-guiiug/dev-wpa-config/vitest-base';
+ *   resolve: { alias: { ...pwaRegisterAlias } }
  *
  *   // le test
  *   import { swStub } from '@mister-guiiug/dev-wpa-config/testing/pwa-register';

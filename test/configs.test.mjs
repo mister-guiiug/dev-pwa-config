@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -107,6 +107,31 @@ test('chaque cible de "exports" est embarquée par "files" (présente au tarball
       );
     }
   }
+});
+
+test('pwaRegisterAlias désigne un fichier réel, et le bon', async () => {
+  // LE DOUBLON REPRODUIT. Dix dépôts écrivaient cet alias à la main, chacun
+  // avec son `fileURLToPath(...)`. La forme documentée jusqu'ici demandait à
+  // l'app de résoudre un sous-chemin d'export depuis SON `vitest.config.ts` ;
+  // celle-ci résout depuis le paquet, donc partout où il est installé.
+  const { pwaRegisterAlias, PWA_REGISTER_STUB } = await import(
+    '../vitest-base.js'
+  );
+
+  assert.deepEqual(Object.keys(pwaRegisterAlias), ['virtual:pwa-register']);
+  assert.equal(pwaRegisterAlias['virtual:pwa-register'], PWA_REGISTER_STUB);
+  assert.ok(
+    existsSync(PWA_REGISTER_STUB),
+    `le double aliasé est introuvable : ${PWA_REGISTER_STUB}`
+  );
+
+  // Un chemin de FICHIER, pas une URL : c'est ce que `resolve.alias` attend.
+  assert.ok(!PWA_REGISTER_STUB.startsWith('file:'));
+
+  // Et c'est bien le double pilotable, pas n'importe quel fichier du paquet.
+  const stub = await import(pathToFileURL(PWA_REGISTER_STUB).href);
+  assert.equal(typeof stub.registerSW, 'function');
+  assert.equal(typeof stub.swStub?.needRefresh, 'function');
 });
 
 test('definePwaPlaywrightConfig échoue sans `devices`', async () => {

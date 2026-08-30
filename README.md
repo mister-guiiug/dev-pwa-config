@@ -534,9 +534,9 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-app-react`           | `.json`         | Étend `tsconfig-app` avec `jsx: react-jsx`, `jsxImportSource: react`, `vite-plugin-pwa/client`                                                                                                                                                             |
 | `@mister-guiiug/dev-wpa-config/tsconfig-node`                | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                                                                                    |
 | `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`         | `.json`         | Durcissement TS **opt-in** : `noPropertyAccessFromIndexSignature` + `noImplicitOverride` + `exactOptionalPropertyTypes` (par-dessus la base stricte)                                                                                                       |
-| `@mister-guiiug/dev-wpa-config/vitest-base`                  | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                                                                          |
-| `@mister-guiiug/dev-wpa-config/vitest-setup`                 | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                                                                                 |
-| `@mister-guiiug/dev-wpa-config/testing/pwa-register`         | `.js` + `.d.ts` | `registerSW` + `swStub` : le double **pilotable** de `virtual:pwa-register`, à désigner en `resolve.alias` — 12 dépôts l'écrivaient à la main, muet                                                                                                        |
+| `@mister-guiiug/dev-wpa-config/vitest-base`                  | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds` + **`pwaRegisterAlias`** (l'alias `resolve.alias` que 10 dépôts écrivaient à la main)                    |
+| `@mister-guiiug/dev-wpa-config/vitest-setup`                 | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`. Ces mocks **ne suffisent pas** à monter un bandeau : voir `pwaRegisterAlias`                                                   |
+| `@mister-guiiug/dev-wpa-config/testing/pwa-register`         | `.js` + `.d.ts` | `registerSW` + `swStub` : le double **pilotable** de `virtual:pwa-register`, à désigner via `pwaRegisterAlias` — 12 dépôts l'écrivaient à la main, muet                                                                                                    |
 | `@mister-guiiug/dev-wpa-config/apps-catalog`                 | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                                                   |
 | `@mister-guiiug/dev-wpa-config/react`                        | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                                              |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt`      | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                                            |
@@ -571,7 +571,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/react/rive`                   | `.js` + `.d.ts` | `RiveAnimation` — lazy, a11y, `prefers-reduced-motion`, et **repli garanti** si le runtime ou le `.riv` manque (aucun `.riv` n'existe dans les 16 dépôts). Peer optionnelle `@rive-app/react-canvas`                                                       |
 | `@mister-guiiug/dev-wpa-config/react/i18n`                   | `.js` + `.d.ts` | `createI18n` : i18n minimal typé (clés dot-notation), `I18nProvider`/`useI18n` — et **`fmt`**, les formateurs déjà liés à la locale courante (78 formatages à locale figée mesurés dans la famille). Pose `LabelsProvider`                                 |
 | `@mister-guiiug/dev-wpa-config/react/observability`          | `.js` + `.d.ts` | `installObservability` / `recordError` / `initSentry` + **le contexte** : `setSessionContext`, `breadcrumb`, `captureConsole` (59 `console.error/warn` perdus mesurés). Peer optionnelle `@sentry/react` — hors barrel                                     |
-| `@mister-guiiug/dev-wpa-config/react/update-prompt-banner`   | `.js` + `.d.ts` | `UpdatePromptBanner` : bannière MAJ service worker prête à l'emploi (couplée `useUpdatePrompt`)                                                                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/react/update-prompt-banner`   | `.js` + `.d.ts` | `UpdatePromptBanner` : bannière MAJ service worker prête à l'emploi (couplée `useUpdatePrompt`) — `secondaryActions="both"` pour deux sorties, `showOfflineReady` pour le message « prêt hors ligne »                                                      |
 | `@mister-guiiug/dev-wpa-config/vitest-browser-base`          | `.js` + `.d.ts` | `baseBrowserTestOptions` (Browser Mode Playwright pour `*.browser.test.{ts,tsx}`)                                                                                                                                                                          |
 | `@mister-guiiug/dev-wpa-config/playwright-base`              | `.js` + `.d.ts` | `definePwaPlaywrightConfig({ devices })` (factory : 5 navigateurs, reporters multi-format, snapshots/plateforme, webServer) + helpers `pwaProjects`/`pwaReporters` + `basePlaywrightOptions` (legacy)                                                      |
 | `@mister-guiiug/dev-wpa-config/playwright-a11y`              | `.js` + `.d.ts` | `expectNoA11yViolations` / `analyzeA11y` / `formatViolations` (axe-core via `AxeBuilder` injecté ; peer optionnelle `@axe-core/playwright`)                                                                                                                |
@@ -2129,6 +2129,37 @@ import { UpdatePromptBanner } from '@mister-guiiug/dev-wpa-config/react';
 />;
 ```
 
+**Deux sorties au lieu d'une**, avec `secondaryActions="both"` : le report
+persisté ET l'écartement pour la seule session. `mister-puzzle` offrait les deux
+et a dû abandonner le second en migrant.
+
+```tsx
+<UpdatePromptBanner
+  registerSW={registerSW}
+  snoozeHours={24}
+  secondaryActions="both" // « Recharger » · « Plus tard » · « Ignorer »
+/>
+```
+
+Le bouton historique ne bouge pas : `[data-dwc="update-banner-dismiss"]` désigne
+toujours le même, à la même place, avec la même action — `'both'` ne fait
+qu'**ajouter** le suivant, sous `[data-dwc="update-banner-ignore"]`. Un habillage
+CSS existant reste donc valable. Sans report à offrir (`snoozeHours` à 0),
+`'both'` se comporte exactement comme `'auto'` : deux boutons qui écartent tous
+deux pour la session ne diraient rien de plus.
+
+**Le « prêt hors ligne »** — que `useUpdatePrompt` expose depuis toujours sans
+que rien ne l'affiche — se rend avec `showOfflineReady`. Il sort sous
+`[data-dwc="offline-ready"]`, et **jamais en même temps** que la mise à jour :
+tant qu'une version attend, il se tait, y compris une fois le bandeau écarté.
+
+```tsx
+<UpdatePromptBanner registerSW={registerSW} showOfflineReady />
+```
+
+L'interrupteur ne s'appelle pas `offlineReady` parce que l'état du hook porte
+déjà ce nom sur les mêmes props, et l'écraserait à chaque rendu.
+
 **Ne pas enregistrer du tout** ne demande aucune API : `registerSW` est
 facultatif, et le hook s'en passe (`needRefresh` reste faux, `update()` et
 `forceUpdate()` restent utilisables). Le motif tient en une expression —
@@ -2195,14 +2226,35 @@ trou qui a laissé une app vivre des mois avec une bannière montée sans
 
 ```ts
 // vitest.config.ts
-resolve: {
-  alias: {
-    'virtual:pwa-register': fileURLToPath(
-      import.meta.resolve('@mister-guiiug/dev-wpa-config/testing/pwa-register')
-    ),
-  },
-},
+import { defineConfig } from 'vitest/config';
+import {
+  baseTestOptions,
+  pwaRegisterAlias,
+} from '@mister-guiiug/dev-wpa-config/vitest-base';
+
+export default defineConfig({
+  resolve: { alias: { ...pwaRegisterAlias } },
+  test: baseTestOptions,
+});
 ```
+
+`pwaRegisterAlias` résout le double **depuis le paquet**, et non depuis le
+`vitest.config.ts` de l'app : la forme précédente demandait à l'app de résoudre
+un sous-chemin d'export, ce qui échoue sous un gestionnaire de paquets qui
+n'aplatit pas `node_modules`, et sous les runtimes où `import.meta.resolve` est
+asynchrone.
+
+Deux pièges, une fois pour toutes :
+
+- **Dans `vitest.config.ts`, jamais dans `vite.config.ts`.** Un alias vu par le
+  build servirait le double aux navigateurs, et l'app n'enregistrerait plus
+  aucun service worker.
+- **`virtual:pwa-register/react` n'est pas couvert**, et l'entrée ci-dessus le
+  capte quand même : les alias Vite s'appliquent par PRÉFIXE, donc le
+  sous-chemin pointerait vers un fichier inexistant. Aucune app du parc ne
+  l'importe — toutes passent `registerSW` à `useUpdatePrompt`, la forme
+  impérative. Celle qui voudrait `useRegisterSW` doit fournir son propre double,
+  sous une entrée plus spécifique placée **avant**.
 
 ```tsx
 import { swStub } from '@mister-guiiug/dev-wpa-config/testing/pwa-register';

@@ -751,6 +751,283 @@ test('AppUpdates : le report qu’il tient est atteignable au clic', async () =>
   }
 });
 
+/* ── Deux sorties, et le message « prêt hors ligne » ─────────────────────── */
+
+/** Les libellés des boutons du bandeau, dans l'ordre du DOM. */
+function boutons(container) {
+  return [...container.querySelectorAll('button')].map(b => b.textContent);
+}
+
+test('secondaryActions « both » rend le report ET l’écartement de session', async () => {
+  // LE DÉFAUT REPRODUIT. `mister-puzzle` offrait DEUX sorties — « Plus tard
+  // (24 h) », persistée, et « Ignorer », le temps de la session. Le socle n'en
+  // rendait qu'une : la migration a fait disparaître la seconde.
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        snoozeHours: 24,
+        snoozeKey: 'puzzle_deux_sorties',
+        secondaryActions: 'both',
+      })
+    );
+    await view.act(() => state.needRefresh());
+
+    const ignorer = view.container.querySelector(
+      '[data-dwc="update-banner-ignore"]'
+    );
+    assert.ok(ignorer, 'la seconde sortie n’a pas été rendue');
+
+    // La seconde écarte pour la SESSION : rien ne doit être écrit.
+    await view.act(() => ignorer.click());
+    assert.equal(
+      view.container.querySelector('[data-dwc="update-banner"]'),
+      null,
+      'le bandeau devait disparaître'
+    );
+    assert.equal(
+      globalThis.localStorage.getItem('puzzle_deux_sorties'),
+      null,
+      'l’écartement de session a persisté un report'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('la première sortie reporte toujours, et garde son sélecteur', async () => {
+  // `'both'` AJOUTE un bouton, il n'en déplace aucun : `update-banner-dismiss`
+  // désigne le même bouton, avec la même action. Deux apps l'habillent dans
+  // leur CSS (miss-carbook, miss-genius) ; opter pour deux sorties ne doit rien
+  // leur décoiffer.
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        snoozeHours: 24,
+        snoozeKey: 'puzzle_premiere_sortie',
+        secondaryActions: 'both',
+      })
+    );
+    await view.act(() => state.needRefresh());
+    await view.act(() =>
+      view.container.querySelector('[data-dwc="update-banner-dismiss"]').click()
+    );
+
+    const until = Number(
+      globalThis.localStorage.getItem('puzzle_premiere_sortie')
+    );
+    assert.ok(
+      until > Date.now() + 23 * 3_600_000,
+      'le bouton historique a cessé de reporter'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('les deux sorties ne disent pas la même chose', async () => {
+  // `labels.update.snooze` et `labels.update.dismiss` valent TOUS DEUX « Plus
+  // tard » : chacun est seul à l'écran dans le mode `'auto'`, et c'est juste.
+  // Côte à côte, ils ne diraient plus lequel persiste — d'où `update.ignore`.
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(
+        LabelsProvider,
+        { locale: 'en' },
+        h(UpdatePromptBanner, {
+          registerSW,
+          snoozeHours: 24,
+          secondaryActions: 'both',
+        })
+      )
+    );
+    await view.act(() => state.needRefresh());
+
+    const labels = boutons(view.container);
+    assert.deepEqual(labels, ['Reload', 'Later', 'Dismiss']);
+    assert.equal(
+      new Set(labels).size,
+      labels.length,
+      'deux boutons portent le même libellé'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('sans report à offrir, « both » ne double pas l’écartement', async () => {
+  // `snoozeHours` à 0 : il n'y a rien à reporter. Deux boutons qui écartent
+  // tous deux pour la session ne diraient rien de plus que le seul d'« auto ».
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, { registerSW, secondaryActions: 'both' })
+    );
+    await view.act(() => state.needRefresh());
+
+    assert.equal(boutons(view.container).length, 2);
+    assert.equal(
+      view.container.querySelector('[data-dwc="update-banner-ignore"]'),
+      null
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('par défaut, le bandeau garde son unique sortie', async () => {
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, { registerSW, snoozeHours: 24 })
+    );
+    await view.act(() => state.needRefresh());
+
+    assert.deepEqual(boutons(view.container), ['Recharger', 'Plus tard']);
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('le message « prêt hors ligne » n’apparaît que si on le demande', async () => {
+  // LE RESTE LOCAL REPRODUIT. `useUpdatePrompt` exposait `offlineReady` depuis
+  // toujours, et rien ne l'affichait : `miss-genius` gardait pour ça un
+  // `OfflineReadyNotice` à elle.
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const muet = await mount(h(UpdatePromptBanner, { registerSW }));
+    await muet.act(() => state.offlineReady());
+    assert.equal(
+      muet.container.querySelector('[data-dwc="offline-ready"]'),
+      null,
+      'le défaut a changé : le message s’affiche sans qu’on le demande'
+    );
+    await muet.unmount();
+
+    const view = await mount(
+      h(UpdatePromptBanner, { registerSW, showOfflineReady: true })
+    );
+    await view.act(() => state.offlineReady());
+    assert.equal(
+      view.container.querySelector('[data-dwc="offline-ready-title"]')
+        ?.textContent,
+      'L’application fonctionne maintenant hors ligne.'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('une mise à jour qui attend fait taire le message hors ligne', async () => {
+  // LA PRÉCÉDENCE DE miss-genius, promue telle quelle : les deux messages ne se
+  // chevauchent jamais, et c'est la mise à jour qui l'emporte — y compris une
+  // fois son bandeau écarté, sans quoi l'écartement ferait surgir l'autre.
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, { registerSW, showOfflineReady: true })
+    );
+    await view.act(() => state.offlineReady());
+    await view.act(() => state.needRefresh());
+
+    assert.ok(view.container.querySelector('[data-dwc="update-banner"]'));
+    assert.equal(
+      view.container.querySelector('[data-dwc="offline-ready"]'),
+      null,
+      'les deux messages se sont chevauchés'
+    );
+
+    await view.act(() =>
+      view.container.querySelector('[data-dwc="update-banner-dismiss"]').click()
+    );
+    assert.equal(
+      view.container.querySelector('[data-dwc="offline-ready"]'),
+      null,
+      'écarter la mise à jour a fait surgir le message hors ligne'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('le message hors ligne se referme, et ne revient pas', async () => {
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        showOfflineReady: true,
+        offlineReadyTitle: 'Prête hors ligne',
+        offlineReadyLabel: 'Compris',
+      })
+    );
+    await view.act(() => state.offlineReady());
+    assert.deepEqual(boutons(view.container), ['Compris']);
+
+    await view.act(() =>
+      view.container.querySelector('[data-dwc="offline-ready-dismiss"]').click()
+    );
+    assert.equal(
+      view.container.querySelector('[data-dwc="offline-ready"]'),
+      null
+    );
+
+    // Le service worker peut resignaler : le message reste fermé.
+    await view.act(() => state.offlineReady());
+    assert.equal(
+      view.container.querySelector('[data-dwc="offline-ready"]'),
+      null,
+      'le message refermé est revenu'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('AppUpdates transmet les deux sorties par bannerProps', async () => {
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(AppUpdates, {
+        registerSW,
+        snoozeHours: 24,
+        snoozeKey: 'fournisseur_deux_sorties',
+        bannerProps: { secondaryActions: 'both' },
+      })
+    );
+    await view.act(() => state.needRefresh());
+
+    assert.ok(
+      view.container.querySelector('[data-dwc="update-banner-ignore"]'),
+      'le fournisseur a avalé secondaryActions'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
 /* ── Le bouton « Partager » ────────────────────────────────────────────── */
 
 /**
