@@ -37,6 +37,25 @@
  * La table ne prétend pas être exhaustive : elle ne compte que ce qui a été
  * constaté.
  *
+ * ET COMMENT ILS SONT ACQUITTÉS — deux règles, toutes deux nées d'un défaut
+ * mesuré le 30/08/2026, qui faisaient pencher le relevé du côté PESSIMISTE :
+ *
+ *   1. **Les symboles libérateurs.** Un besoin est acquitté quand l'app importe
+ *      l'un des `symbols` déclarés. Ils valaient auparavant le NOM DU BESOIN, or
+ *      neuf des vingt-six clés ne sont le nom d'aucun export du paquet
+ *      (`links`, `backup`, `format`, `Toast`, `share`, `geo`, `webVitals`,
+ *      `security`, `useI18n`) : ces besoins-là étaient INACQUITTABLES par
+ *      construction. Une app pouvait migrer parfaitement et rester comptée en
+ *      dette pour l'éternité. `test/adoption-equivalents.test.mjs` interdit
+ *      désormais qu'une clé retombe dans ce cas.
+ *   2. **La façade.** Un fichier qui porte le nom guetté mais qui importe déjà
+ *      le paquet n'est pas un doublon, c'est une adoption en cours. Trois des
+ *      sept `storage.ts` du parc étaient exactement cela.
+ *
+ * Un relevé faux dans le sens flatteur ferait croire une dette éteinte ; faux
+ * dans le sens pessimiste, il fait migrer ce qui n'a pas à l'être, et décourage
+ * en annonçant que rien ne bouge. Les deux coûtent.
+ *
  * FICHIER COMMITÉ, PAS DE REQUÊTE. Même forme que `showroom/metrics.js` : le
  * résultat est posé sur `globalThis` par un `<script src>`, la page ne fait
  * aucun appel réseau. Un fichier VIDE est un état valide — le relevé exige les
@@ -48,44 +67,12 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
+import { EQUIVALENTS } from './adoption-equivalents.mjs';
 import {
   coverageVerdict,
   indexAdoption,
   mergeAdoption,
 } from './adoption-merge.mjs';
-
-/**
- * « Cet export du paquet est déjà fait, à la main, dans un fichier qui
- * s'appelle… ». Constaté au relevé, pas supposé.
- */
-const EQUIVALENTS = {
-  Button: ['Button.tsx'],
-  'TextField / SelectField / TextAreaField': ['Field.tsx', 'TextField.tsx'],
-  Sheet: ['Sheet.tsx', 'Modal.tsx'],
-  Stat: ['Stat.tsx', 'StatCard.tsx'],
-  Badge: ['Badge.tsx'],
-  Skeleton: ['Skeleton.tsx'],
-  EmptyState: ['EmptyState.tsx'],
-  ErrorBoundary: ['ErrorBoundary.tsx'],
-  ErrorBanner: ['ErrorBanner.tsx'],
-  AppFooter: ['AppFooter.tsx'],
-  ConfirmDialog: ['ConfirmDialog.tsx'],
-  Toast: ['Toast.tsx', 'Toaster.tsx', 'ToastViewport.tsx', 'ToastContext.tsx'],
-  BottomNav: ['BottomNav.tsx', 'Navbar.tsx'],
-  ThemeToggle: ['ThemeToggle.tsx'],
-  UpdatePromptBanner: ['UpdatePrompt.tsx', 'UpdateBanner.tsx'],
-  applyUpdate: ['register-sw.ts', 'forceUpdate.ts'],
-  useTheme: ['useTheme.ts', 'theme.ts'],
-  useOnline: ['useOnline.ts'],
-  useI18n: ['useI18n.ts'],
-  format: ['format.ts'],
-  security: ['security.ts'],
-  links: ['links.ts'],
-  share: ['share.ts'],
-  backup: ['storage.ts'],
-  geo: ['geo.ts'],
-  webVitals: ['web-vitals.ts'],
-};
 
 const IGNORED_DIRS = new Set([
   'node_modules',
@@ -97,8 +84,24 @@ const IGNORED_DIRS = new Set([
   'test-results',
 ]);
 
-const SOURCE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
+const SOURCE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|css)$/;
 const GENERATED = /\.(test|spec)\./;
+
+/**
+ * LE CSS COMPTE, et il ne comptait pas. Le balayage s'arrêtait aux fichiers
+ * JavaScript, si bien que `components.css` — LE PRÉREQUIS de toute la couche
+ * interface, celui sans lequel un composant migré s'affiche NU — n'était visible
+ * dans aucun relevé. La campagne citait « quatorze apps sur dix-sept » sans
+ * qu'aucune donnée du dépôt ne l'étaye ; deux migrations l'ont relevé le même
+ * jour, en constatant que la table `CONSUMED` du catalogue n'en portait pas
+ * trace pour des apps qui l'importent depuis longtemps.
+ *
+ * Un prérequis qu'on ne mesure pas est un prérequis qu'on croit acquis.
+ */
+const CSS_IMPORT_RE =
+  /@import\s+['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
+
+const PACKAGE = '@mister-guiiug/dev-wpa-config';
 
 /**
  * Imports du paquet, y compris multiligne — c'est la forme que produit Prettier
@@ -170,6 +173,11 @@ function measureApp(appDir) {
         if (name) symbols.add(name);
       }
     }
+    // Une feuille de style n'apporte aucun symbole : seul son sous-chemin
+    // compte, et c'est justement lui qui manquait au relevé.
+    for (const match of source.matchAll(CSS_IMPORT_RE)) {
+      subpaths.add(match[1] || '/');
+    }
   }
 
   // Doublons : un fichier local porte le nom déclaré équivalent, et l'app
@@ -180,14 +188,41 @@ function measureApp(appDir) {
   // Windows, où la découpe manuelle rendait le CHEMIN ENTIER. Aucun nom ne
   // correspondait alors à la table, et le relevé annonçait zéro doublon —
   // c'est-à-dire une dette éteinte, sur une machine qui ne l'avait pas payée.
-  const basenames = new Set(
-    files.filter(file => !GENERATED.test(file)).map(file => basename(file))
-  );
+  //
+  // DEUX DÉFAUTS SYMÉTRIQUES, mesurés le 30/08/2026 — et celui-ci penchait dans
+  // l'autre sens, le PESSIMISTE : il faisait migrer ce qui n'avait pas à l'être.
+  //
+  // 1. L'acquittement testait `symbols.has(exported)`, c'est-à-dire exigeait que
+  //    l'app importe un symbole portant le NOM DU BESOIN. Or neuf des vingt-six
+  //    clés — `links`, `backup`, `format`, `Toast`, `share`, `geo`, `webVitals`,
+  //    `security`, `useI18n` — ne sont le nom d'AUCUN export du paquet : elles
+  //    étaient donc inacquittables par construction. Une app pouvait migrer
+  //    parfaitement et rester comptée en dette pour toujours. Chaque besoin
+  //    déclare maintenant ses `symbols` libérateurs.
+  // 2. Un fichier qui porte le nom guetté mais qui IMPORTE DÉJÀ LE PAQUET n'est
+  //    pas un doublon : c'est une façade, donc une adoption. Trois des sept
+  //    `storage.ts` du parc étaient dans ce cas.
+  const sourceFile = new Map();
+  for (const file of files) {
+    if (GENERATED.test(file)) continue;
+    const name = basename(file);
+    if (!sourceFile.has(name)) sourceFile.set(name, file);
+  }
   const duplicates = [];
-  for (const [exported, names] of Object.entries(EQUIVALENTS)) {
-    if (symbols.has(exported)) continue;
-    const hit = names.find(name => basenames.has(name));
-    if (hit) duplicates.push({ exported, file: hit });
+  for (const [exported, rule] of Object.entries(EQUIVALENTS)) {
+    const libres = rule.symbols ?? [exported];
+    if (libres.some(name => symbols.has(name))) continue;
+    const hit = rule.files.find(name => sourceFile.has(name));
+    if (!hit) continue;
+    // La façade : le fichier existe encore, mais il délègue au paquet.
+    let contenu = '';
+    try {
+      contenu = readFileSync(sourceFile.get(hit), 'utf8');
+    } catch {
+      /* illisible : on retombe sur le comptage par nom */
+    }
+    if (contenu.includes(PACKAGE)) continue;
+    duplicates.push({ exported, file: hit });
   }
 
   return {
