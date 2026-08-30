@@ -1,6 +1,6 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **113 fichiers recopiés dans les dix-sept apps, et
+Le relevé est sans appel : **71 fichiers recopiés dans les dix-sept apps, et
 aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
 imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
 machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
@@ -32,10 +32,14 @@ node scripts/migrate-consumers.mjs --install
 
 **Les composants du paquet ne sont pas habillés.** Ils ne posent que des
 attributs `data-dwc` ; c'est `components.css` qui les habille, et cet import
-est **opt-in** — trois apps sur dix-sept le font (`miss-genius`, `miss-uwh`,
-`mister-family-map`). Migrer `Button`, `Sheet` ou `BottomNav` dans les quatorze
-autres échange un composant stylé contre un composant **nu** : ça compile, les
-tests passent, le lint est vert, et l'écran est cassé.
+est **opt-in**. Migrer `Button`, `Sheet` ou `BottomNav` sans lui échange un
+composant stylé contre un composant **nu** : ça compile, les tests passent, le
+lint est vert, et l'écran est cassé.
+
+Le verrou a sauté le 30/08/2026 : **quatorze apps sur dix-sept** ont pris le
+prérequis (voir le passage plus bas). Les trois qui ne l'ont pas relèvent d'un
+choix, pas d'un retard — `miss-dice` et `miss-contraction` portent un design
+maison assumé, `mister-quota` est une app Electron sans Tailwind.
 
 Une app qui veut adopter la couche interface commence donc par :
 
@@ -262,38 +266,99 @@ l'app. Les composants du paquet portent leurs propres textes et retombent sur le
 français hors fournisseur — invisible pour une app monolingue, faux pour une app
 bilingue. C'est un point de raccordement unique, à poser à la racine.
 
+Ce qui restait à l'issue de ce passage — `components.css` sur quatorze apps,
+`links`, `useTheme`/`useI18n`, le nommage d'`applyUpdate`/`backup`,
+`miss-ticket-pwa` sans tests, `mister-quota` hors paquet — a été repris le
+lendemain. Voir le passage suivant.
+
+## Le passage du 30/08/2026 — le verrou saute, et le socle grandit
+
+Relevé complet, mêmes dix-sept dépôts. **113 doublons avant, 71 après.** Le
+paquet passe de 3.21.1 à **3.23.0** en trois releases dans la journée.
+
+La différence avec la veille tient en une phrase : **on n'a pas migré vers le
+socle, on a d'abord fait grandir le socle avec ce que les apps avaient déjà
+écrit.** Une analyse du parc a montré que l'adoption était **de configuration,
+pas d'exécution** — les configs partout, mais une quarantaine de modules métier
+réécrits à la main dans les apps. Onze modules ou correctifs en sont sortis,
+tous promus d'un code éprouvé en production :
+
+| Module socle                            | Promu de                                      |
+| --------------------------------------- | --------------------------------------------- |
+| `auth`, `auth/mfa`, `auth/errors-fr`    | cinq intégrations Supabase Auth, MFA de doc   |
+| `pdf`, `xlsx`                           | mister-doc (211 et 259 lignes, testées)       |
+| `pairing`, `qr`, `react/use-qr-scanner` | qowa, molkky, miss-ticket-pwa                 |
+| `versioned-store`, `idb`                | uwh/genius jumeaux, molkky, badminton, doc    |
+| `supabase-client`, `sync-queue`         | uwh (la file de référence), lookhouse, puzzle |
+
+**Le prérequis se prend en une passe, pas en dix.** Dix PRs d'apparence
+lancées ensemble, une par app, chacune avec la même consigne : importer la
+feuille, câbler les quinze jetons sur la palette existante, puis migrer
+**uniquement** les composants dont l'équivalence est prouvée en lisant les deux
+implémentations. Résultat : de trois apps à quatorze. Le trait commun des dix
+rapports est ce qui a été **écarté** — `Badge` chez mister-doc (axe chromatique
+métier contre axe sémantique du socle), `Input`/`Spinner`/`BottomNav` chez
+footcoach (chaque refus appuyé sur un test existant qui les documentait),
+`ThemeToggle` chez lookhouse (le thème vit dans le store). Le codemod compare
+des noms ; seule la lecture compare des API.
+
+**Ce que la campagne a trouvé en chemin.** Douze bugs, dont aucun n'était
+cherché :
+
+- `web-vitals` **silencieusement cassé dans trois apps** — leur copie appelait
+  `onFID`, retiré de la v4 : l'exception tombait dans un `catch` et seul CLS
+  était mesuré. Le module du socle documentait déjà la panne ;
+- `matchMedia` **inversé** dans deux apps (`prefers-color-scheme: light` avec
+  repli sombre) : démarrage en sombre dès que la requête est inévaluable ;
+- la **corruption silencieuse des codes de partie** de molkky, dont la
+  normalisation corrigeait `I`→`1` et `O`→`0` vers des caractères absents de son
+  propre alphabet — un code normalisé pouvait devenir injoignable ;
+- son **QR de partage** encodait `direct/CODE` quand le routeur ne sert que
+  `/live/:code` : le lien menait à l'accueil, le scan échouait ;
+- l'alerte de puzzle **s'affichait derrière** le tiroir et les menus (le socle
+  empile `confirm` à 60, l'app monte ses surfaces à 90) ;
+- le `git clone --recursive` de miss-ticket était **cassé** : le sous-module
+  pointait un commit orphelin après réécriture d'historique ;
+- la bannière de mise à jour de supaboss **ne pouvait jamais s'afficher**
+  (`registerSW` non injecté dans le hook) ;
+- ~1 500 lignes de `format.ts`/`security.ts` **mortes** dans quatre apps ;
+- et deux défauts **du socle lui-même**, découverts par deux migrations
+  indépendantes qui les ont mesurés au navigateur : le clic sur le voile ne
+  fermait ni `Sheet` ni `ConfirmDialog` (voile enfant recouvrant la racine
+  écoutée — les tests du paquet dispatchaient sur la racine, jsdom ne fait pas
+  de hit-testing), et `ConfirmDialog` imposait deux boutons, ce qui a bloqué
+  trois apps sur leurs dialogues d'alerte.
+
+**La boucle complète, en une journée** : une app découvre un défaut du socle en
+migrant → le socle est corrigé et publié → l'app retire sa rustine et **vérifie
+la fermeture au clic réel**. C'est ce qu'ont fait footcoach et molkky pour le
+voile ; puzzle, cim10 et carbook pour le mode mono-action. Un correctif de socle
+n'est fini que quand l'app qui l'a demandé l'a rejoué.
+
 Ce qui reste, par ordre de valeur :
 
-1. **Le prérequis `components.css`, app par app.** C'est le verrou : quatorze
-   apps ne l'ont pas, et il ferme à lui seul **54 migrations réparties sur dix
-   d'entre elles**. Une PR d'apparence par app, avec des captures —
-   `miss-genius` montre la forme qu'elle prend, jetons compris, et `miss-uwh`
-   ce qui reste à faire une fois le prérequis acquis.
+1. **Les promotions restantes** : iCalendar (quatre implémentations : bac-sable,
+   footcoach, uwh, doc), compression d'image avec retrait EXIF (trois : bac-sable,
+   carbook, puzzle), wake lock (deux : contraction, molkky).
 2. **`links` — sept apps, sept fois la même ligne.** `SPONSOR_URL` migre tel
    quel, `REPO_URL` devient `repoUrl('<id-app>')`. Aucune ne migre seule ;
    toutes migrent en une passe.
-3. **`useTheme` (8 apps) et `useI18n` (4).** Ce ne sont pas des remplacements
-   d'import : le premier demande de migrer l'état de thème vers le stockage du
-   socle (`legacyKeys` est là pour ça), le second un fournisseur et des
-   dictionnaires.
-4. **`applyUpdate` (8 blocages) et `backup` (7) — un besoin, huit noms.** Le
-   codemod les refuse parce qu'un symbole voisin manque au sous-chemin, mais la
-   liste des manquants n'est PAS la même d'une app à l'autre : la même fonction
-   « forcer la mise à jour » s'appelle `forceUpdate`, `forceAppUpdate`,
-   `forceSwUpdate`, `reloadApp` ou `registerServiceWorker` selon le dépôt, et
-   `backup` bloque sur sept jeux de symboles distincts. Ce n'est donc pas
-   « ajouter cinq exports » : c'est trancher un nom, comme `danger` contre
-   `destructive` l'a été pour `ConfirmDialog`. À faire dans ce dépôt, en lisant
-   d'abord les huit copies.
-5. **`miss-ticket-pwa` n'a aucun test.** `npm test` sort à 0 en annonçant
-   `No test files found` : c'est la seule app de la famille dans ce cas, et sa
-   CI passe donc au vert sans rien vérifier d'autre que le lint, les types et
-   le build. L'y adopter à l'aveugle serait le seul cas sans filet. Son linter,
-   lui, est réparé : `eslint` ne figurait pas dans ses `devDependencies` — elle
-   comptait sur l'installation automatique des peers par npm, qu'un lockfile
-   régénéré n'a pas reconduite.
-6. **`mister-quota` ne dépend pas du paquet.** Ses quatre doublons ne sont pas
-   une dette de migration tant que l'app n'est pas consommatrice.
+3. **`useTheme` et `useI18n`.** Ce ne sont pas des remplacements d'import : le
+   premier demande de migrer l'état de thème vers le stockage du socle
+   (`legacyKeys` est là pour ça, et `miss-badminton` puis `mister-cim10` en
+   donnent le modèle — les deux y ont tué leur `matchMedia` inversé au
+   passage), le second un fournisseur et des dictionnaires.
+4. **`applyUpdate` (6 blocages) et `backup` (7) — un besoin, huit noms.** La
+   même fonction « forcer la mise à jour » s'appelle `forceUpdate`,
+   `forceAppUpdate`, `forceSwUpdate`, `reloadApp` ou `registerServiceWorker`
+   selon le dépôt, et `backup` bloque sur sept jeux de symboles distincts. Ce
+   n'est pas « ajouter cinq exports » : c'est trancher un nom, comme `danger`
+   contre `destructive` l'a été pour `ConfirmDialog`. À faire dans ce dépôt, en
+   lisant d'abord les copies.
+5. **`UpdatePromptBanner` (8) et `Toast` (5)** restent les deux plus gros
+   postes du relevé, maintenant que la couche interface est habillée partout.
+6. **`mister-tv-webos` n'est même pas un dépôt git.** Aucune PR n'y est
+   possible : à initialiser avant toute campagne.
 
 ## Ce que les gardes-fous ne voyaient pas, et qui a coûté cher
 
@@ -312,3 +377,19 @@ tenir un outil de campagne.
   raison.
 - `console-audit.mjs` proposait `createLogger('src\features')` sous Windows,
   faute de découper sur les deux séparateurs.
+
+Un quatrième, relevé le 30/08/2026, ne concerne pas l'outillage de campagne mais
+la suite de tests du paquet lui-même — et c'est le plus instructif.
+
+- **`jsdom` ne fait pas de hit-testing.** Les tests de `Sheet` et de
+  `ConfirmDialog` vérifiaient « le clic sur le fond ferme » en dispatchant
+  l'évènement **sur la racine**. Dans un vrai navigateur, le voile est un enfant
+  qui recouvre exactement cette racine : le clic atterrit sur lui, la garde
+  `target === currentTarget` le rejette, et rien ne se ferme jamais. Les tests
+  étaient verts, la garantie était fausse, et il a fallu **deux migrations
+  indépendantes qui ouvraient une vraie feuille dans un vrai navigateur** pour
+  s'en apercevoir. Un test qui construit lui-même l'évènement qu'il attend ne
+  prouve que la fonction qu'il appelle. Quand une garantie porte sur ce que fait
+  l'utilisateur — un clic à un endroit, pas un `dispatchEvent` sur un nœud —
+  elle se vérifie une fois pour de bon dans un navigateur, et la migration qui
+  adopte le composant est le bon moment pour le faire.
