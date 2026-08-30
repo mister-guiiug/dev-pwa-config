@@ -1282,9 +1282,24 @@ const bytes = buildXlsx({
 downloadXlsx(bytes, 'compteurs-juillet.xlsx');
 ```
 
-L'export est **déterministe** (date d'archive figée) : même tableau, mêmes
-octets. Une seule feuille, chaînes et nombres, un seul style ; pas de
-formules, pas de dates typées, pas de lecture.
+**Plusieurs onglets** : passer un tableau. Les noms sont assainis _puis_
+dédoublonnés (Excel refuse le classeur entier si deux onglets portent le même
+nom, casse comprise), et `header` est facultatif — une feuille de bilan n'a
+qu'un titre sur une cellule, des lignes vides et des lignes de deux colonnes.
+Chaque ligne porte la longueur qu'elle a ; rien n'est aligné sur l'en-tête.
+
+```ts
+const bytes = buildXlsx([
+  { name: 'Bilan', rows: [['BILAN 2025-2026'], [], ['Recettes', 1234.5]] },
+  { name: 'Compte', header: ['Date', 'Libellé', 'Montant'], rows: journal },
+  { name: 'Evolution', header: ['Saison', 'Solde'], rows: parSaison },
+]);
+```
+
+L'export est **déterministe** (date d'archive figée) : mêmes feuilles, mêmes
+octets — et un objet seul rend exactement les mêmes octets que le tableau
+d'un élément. Des chaînes et des nombres, un seul style ; pas de formules, pas
+de dates typées, pas de largeurs de colonnes, pas de lecture.
 
 ### Agenda iCalendar (`@mister-guiiug/dev-wpa-config/ical`)
 

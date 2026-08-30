@@ -5,16 +5,34 @@
  * PROMU, PAS INVENTÉ. `mister-doc/src/lib/xlsx.ts` — 259 lignes et leurs
  * tests — exporte les compteurs de l'équipe médicale dans un classeur Office
  * Open XML complet : une archive ZIP contenant les parties XML minimales
- * (workbook, une feuille, styles). Ouvrable par Excel, LibreOffice et Google
+ * (workbook, feuilles, styles). Ouvrable par Excel, LibreOffice et Google
  * Sheets.
  *
  * POURQUOI, ALORS QUE `./csv` EXISTE. Le dialecte `excel-fr` règle l'ouverture
  * en colonnes ; il ne règle pas le TYPE des cellules. Ici les cellules
  * numériques sont réellement typées — donc sommables dans le tableur — et
  * l'en-tête est en gras. C'est le fichier que l'utilisateur demande quand il
- * dit « en Excel », et c'est celui que miss-uwh produit aujourd'hui en
- * chargeant SheetJS par CDN — une bibliothèque entière, tirée d'un domaine
- * tiers à l'exécution, pour écrire un tableau.
+ * dit « en Excel », là où charger SheetJS par CDN fait venir une bibliothèque
+ * entière, d'un domaine tiers, à l'exécution, pour écrire un tableau.
+ *
+ * PLUSIEURS FEUILLES, PARCE QU'UNE ADOPTION L'A EXIGÉ. La version promue de
+ * mister-doc n'écrivait qu'une feuille, et cet en-tête annonçait qu'elle
+ * remplacerait le SheetJS-par-CDN de miss-uwh. L'affirmation était fausse, et
+ * la lecture du code cible l'a montrée telle : `buildWorkbookSheets`
+ * (miss-uwh) rend AU MOINS trois onglets — Bilan, Compte, Evolution —, 19 sur
+ * son jeu de démonstration, 30 au maximum (un par catégorie mouvementée du
+ * référentiel R1–R9 / D1–D13). Basculer, c'était livrer un onglet sur
+ * dix-neuf : la bascule a été refusée pour cette raison (miss-uwh PR #54).
+ * `buildXlsx` accepte donc une feuille OU un tableau de feuilles, et
+ * l'assainissement des noms d'onglets dédoublonne — repris de `safeSheetName`
+ * (miss-uwh, `src/features/export/buildWorkbook.ts`), parce qu'Excel refuse
+ * d'ouvrir un classeur où deux onglets portent le même nom.
+ *
+ * DES LIGNES IRRÉGULIÈRES, PARCE QUE LES VRAIS CLASSEURS EN ONT. Une feuille
+ * de bilan n'a pas d'en-tête au sens de ce module : elle a un titre sur une
+ * cellule, des lignes vides et des lignes de deux colonnes. `header` est donc
+ * facultatif, et chaque ligne porte la longueur qu'elle a — la référence de
+ * cellule (`A1`, `B7`…) est calculée par ligne, jamais déduite de l'en-tête.
  *
  * STORE, PAS DEFLATE. Le format ZIP autorise des entrées non compressées
  * (méthode 0), et c'est ce qui permet de tenir sans dépendance : compresser
@@ -31,9 +49,9 @@
  * UN CHANGEMENT À LA PROMOTION : `downloadXlsx` passe par `downloadBlob`
  * (`./download.js`) au lieu de recopier la danse ObjectURL + ancre.
  *
- * CE QUE ÇA N'EST PAS : un tableur. Une seule feuille, des chaînes et des
- * nombres, un seul style (l'en-tête en gras) ; pas de formules, pas de dates
- * typées, pas de largeurs de colonnes — et pas de lecture.
+ * CE QUE ÇA N'EST PAS : un tableur. Des chaînes et des nombres, un seul style
+ * (l'en-tête en gras) ; pas de formules, pas de dates typées, pas de largeurs
+ * de colonnes, pas de cellules fusionnées — et pas de lecture.
  */
 import { downloadBlob } from './download.js';
 
@@ -43,9 +61,9 @@ const enc = new TextEncoder();
 
 /**
  * @typedef {object} XlsxSheet
- * @property {string} name Nom d'onglet (assaini : ≤ 31 car., sans `\ / ? * [ ] :`).
- * @property {string[]} header Ligne d'en-tête, rendue en gras.
- * @property {XlsxValue[][]} rows Lignes de données, alignées sur l'en-tête.
+ * @property {string} name Nom d'onglet (assaini : ≤ 31 car., sans `\ / ? * [ ] :`, dédoublonné).
+ * @property {string[]} [header] Ligne d'en-tête, rendue en gras. Absente ou vide : la feuille commence à sa première ligne de données.
+ * @property {XlsxValue[][]} rows Lignes de données ; chacune peut avoir sa propre longueur, y compris zéro.
  */
 
 /* ── CRC32 ─────────────────────────────────────────────────────────────── */
@@ -193,14 +211,34 @@ function colName(index) {
 }
 
 /**
- * Nettoie un nom d'onglet : Excel REFUSE d'ouvrir un classeur dont un onglet
- * porte un caractère interdit ou dépasse 31 caractères — il ne le corrige pas.
+ * Nettoie un nom d'onglet, et le rend UNIQUE dans le classeur : Excel REFUSE
+ * d'ouvrir un classeur dont un onglet porte un caractère interdit, dépasse 31
+ * caractères, ou répète le nom d'un autre onglet (comparaison insensible à la
+ * casse) — il ne corrige rien, il refuse le fichier entier.
+ *
+ * Le dédoublonnage est repris de `safeSheetName` (miss-uwh,
+ * `src/features/export/buildWorkbook.ts`), où deux catégories homonymes se
+ * croisaient déjà : suffixe ` 2`, ` 3`… et base retaillée pour rester sous 31.
  *
  * @param {string} name
+ * @param {Set<string>} used Noms déjà attribués, en minuscules. Muté.
  */
-function sanitizeSheetName(name) {
-  const cleaned = name.replace(/[\\/?*[\]:]/g, ' ').trim();
-  return (cleaned || 'Feuille1').slice(0, 31);
+function sanitizeSheetName(name, used) {
+  const base =
+    String(name ?? '')
+      .replace(/[\\/?*[\]:]/g, ' ')
+      .trim()
+      .slice(0, 31)
+      .trim() || 'Feuille1';
+  let final = base;
+  // Le suffixe grandit strictement à chaque tour (` 2`, ` 3`…) : deux tours ne
+  // peuvent pas produire le même nom, la boucle termine.
+  for (let i = 2; used.has(final.toLowerCase()); i += 1) {
+    const suffix = ` ${i}`;
+    final = base.slice(0, 31 - suffix.length).trim() + suffix;
+  }
+  used.add(final.toLowerCase());
+  return final;
 }
 
 /**
@@ -219,24 +257,35 @@ function cellXml(ref, value, bold) {
   return `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${escapeXml(String(value))}</t></is></c>`;
 }
 
-/** @param {XlsxSheet} sheet */
+/**
+ * Une feuille. Le numéro de ligne est COMPTÉ à l'émission, pas déduit d'un
+ * index d'en-tête : sans en-tête les données commencent en ligne 1, avec en
+ * ligne 2 — et une ligne vide occupe sa ligne comme les autres.
+ *
+ * @param {XlsxSheet} sheet
+ */
 function sheetXml(sheet) {
   /** @type {string[]} */
   const rowsXml = [];
+  let r = 0;
   /**
    * @param {XlsxValue[]} cells
-   * @param {number} rowIndex
    * @param {boolean} bold
    */
-  const emit = (cells, rowIndex, bold) => {
-    const r = rowIndex + 1;
+  const emit = (cells, bold) => {
+    r += 1;
     const cs = cells
-      .map((v, ci) => cellXml(`${colName(ci)}${r}`, v, bold))
+      // Une cellule absente (`null`, `undefined`, trou de tableau creux) n'est
+      // pas une cellule vide : elle n'est pas émise du tout. La référence des
+      // suivantes ne bouge pas, elle vient de l'index.
+      .map((v, ci) => (v == null ? '' : cellXml(`${colName(ci)}${r}`, v, bold)))
       .join('');
-    rowsXml.push(`<row r="${r}">${cs}</row>`);
+    // `<row r="7"/>` : une ligne sans cellule reste une ligne, et c'est ainsi
+    // que se rend le séparateur vide d'une feuille de bilan.
+    rowsXml.push(cs ? `<row r="${r}">${cs}</row>` : `<row r="${r}"/>`);
   };
-  emit(sheet.header, 0, true);
-  sheet.rows.forEach((row, i) => emit(row, i + 1, false));
+  if (sheet.header?.length) emit(sheet.header, true);
+  for (const row of sheet.rows ?? []) emit(row ?? [], false);
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
@@ -245,15 +294,30 @@ function sheetXml(sheet) {
   );
 }
 
-const CONTENT_TYPES =
-  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-  '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
-  '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
-  '<Default Extension="xml" ContentType="application/xml"/>' +
-  '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
-  '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
-  '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
-  '</Types>';
+/**
+ * Types de contenu : une partie déclarée pour CHAQUE feuille. Une feuille
+ * présente dans l'archive mais absente d'ici est une feuille qu'Excel ne lit
+ * pas — c'est ce fichier qui dit ce que contient le paquet.
+ *
+ * @param {number} count Nombre de feuilles.
+ */
+function contentTypesXml(count) {
+  const sheets = Array.from(
+    { length: count },
+    (_, i) =>
+      `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+  ).join('');
+  return (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    sheets +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    '</Types>'
+  );
+}
 
 const ROOT_RELS =
   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -261,12 +325,28 @@ const ROOT_RELS =
   '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
   '</Relationships>';
 
-const WORKBOOK_RELS =
-  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-  '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-  '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
-  '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
-  '</Relationships>';
+/**
+ * Relations du classeur : `rId1`…`rIdN` pour les N feuilles, puis `rId{N+1}`
+ * pour les styles. Les identifiants sont uniques dans CE fichier et nulle part
+ * ailleurs — d'où le décalage des styles quand une feuille s'ajoute ; un
+ * `rId` en double, et le classeur ne s'ouvre pas.
+ *
+ * @param {number} count Nombre de feuilles.
+ */
+function workbookRelsXml(count) {
+  const sheets = Array.from(
+    { length: count },
+    (_, i) =>
+      `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`
+  ).join('');
+  return (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    sheets +
+    `<Relationship Id="rId${count + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+    '</Relationships>'
+  );
+}
 
 // Deux styles : xf 0 = normal, xf 1 = gras (en-tête).
 const STYLES =
@@ -285,32 +365,63 @@ const STYLES =
   '</cellXfs>' +
   '</styleSheet>';
 
-/** @param {string} sheetName */
-function workbookXml(sheetName) {
+/**
+ * L'ordre des `<sheet>` est celui des onglets à l'écran. `sheetId` et `r:id`
+ * suivent le même rang que la partie `sheetN.xml` : trois numérotations qui
+ * doivent coïncider, sans quoi un onglet montre le contenu d'un autre.
+ *
+ * @param {string[]} names Noms d'onglets, déjà assainis et dédoublonnés.
+ */
+function workbookXml(names) {
+  const sheets = names
+    .map(
+      (n, i) =>
+        `<sheet name="${escapeXml(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`
+    )
+    .join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-    `<sheets><sheet name="${escapeXml(sheetName)}" sheetId="1" r:id="rId1"/></sheets>` +
+    `<sheets>${sheets}</sheets>` +
     '</workbook>'
   );
 }
 
+/** Un classeur sans onglet ne s'ouvre pas : le repli en fournit un, vide. */
+const EMPTY_SHEET = { name: 'Feuille1', header: [], rows: [] };
+
 /**
- * Construit les octets d'un fichier `.xlsx` mono-feuille.
+ * Construit les octets d'un fichier `.xlsx` — une feuille, ou plusieurs.
  *
- * @param {XlsxSheet} sheet
+ * Passer un objet reste équivalent à passer un tableau d'un seul élément, aux
+ * octets près : la forme mono-feuille d'origine n'a pas bougé.
+ *
+ * @param {XlsxSheet | XlsxSheet[]} input Une feuille, ou les onglets dans leur ordre d'affichage.
  * @returns {Uint8Array<ArrayBuffer>}
  */
-export function buildXlsx(sheet) {
-  const name = sanitizeSheetName(sheet.name);
+export function buildXlsx(input) {
+  const given = Array.isArray(input) ? input : [input];
+  const sheets = given.length ? given : [EMPTY_SHEET];
+  /** Noms déjà pris, en minuscules — Excel compare sans la casse. */
+  const used = new Set();
+  const names = sheets.map(s => sanitizeSheetName(s?.name, used));
   /** @type {ZipEntry[]} */
   const entries = [
-    { name: '[Content_Types].xml', data: enc.encode(CONTENT_TYPES) },
+    {
+      name: '[Content_Types].xml',
+      data: enc.encode(contentTypesXml(sheets.length)),
+    },
     { name: '_rels/.rels', data: enc.encode(ROOT_RELS) },
-    { name: 'xl/workbook.xml', data: enc.encode(workbookXml(name)) },
-    { name: 'xl/_rels/workbook.xml.rels', data: enc.encode(WORKBOOK_RELS) },
+    { name: 'xl/workbook.xml', data: enc.encode(workbookXml(names)) },
+    {
+      name: 'xl/_rels/workbook.xml.rels',
+      data: enc.encode(workbookRelsXml(sheets.length)),
+    },
     { name: 'xl/styles.xml', data: enc.encode(STYLES) },
-    { name: 'xl/worksheets/sheet1.xml', data: enc.encode(sheetXml(sheet)) },
+    ...sheets.map((s, i) => ({
+      name: `xl/worksheets/sheet${i + 1}.xml`,
+      data: enc.encode(sheetXml(s ?? EMPTY_SHEET)),
+    })),
   ];
   return zipStore(entries);
 }
