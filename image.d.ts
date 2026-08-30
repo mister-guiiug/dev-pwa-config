@@ -1,4 +1,22 @@
 export declare const IMAGE_MAX_BYTES: number;
+/**
+ * `image/jpeg`, `image/png`, `image/webp` — les trois formats que tout
+ * navigateur sait décoder ET ré-encoder. Un PLANCHER SÛR, pas une liste
+ * exhaustive.
+ *
+ * DÉCODER N'EST PAS ACCEPTER : `compressImageToMaxBytes` traite le GIF (il en
+ * garde la première frame) alors que `image/gif` n'est pas ici. Ce n'est pas un
+ * oubli — cette liste dit ce qu'une app accepte de RECEVOIR, pas ce que le
+ * module sait LIRE, et seule la première question appartient à l'appelant.
+ * L'élargir ici changerait ce que TOUTES les apps acceptent ; on l'élargit donc
+ * au site d'appel :
+ *
+ * ```ts
+ * validateImageFile(file, {
+ *   acceptedTypes: [...IMAGE_ACCEPTED_TYPES, 'image/gif'],
+ * });
+ * ```
+ */
 export declare const IMAGE_ACCEPTED_TYPES: string[];
 /** Plafond d'affichage : au-delà, un écran n'y gagne plus rien. */
 export declare const IMAGE_MAX_DIMENSION: number;
@@ -41,7 +59,13 @@ export interface ImageSeams {
   ) => Promise<Blob | null>;
 }
 
-/** Contrôle de type et de taille. PUR : ne lit que `type` et `size`. */
+/**
+ * Contrôle de type et de taille. PUR : ne lit que `type` et `size`.
+ *
+ * `acceptedTypes` vaut {@link IMAGE_ACCEPTED_TYPES} par défaut — plus étroit
+ * que ce que la compression sait décoder. Une app qui accepte davantage
+ * (GIF, HEIC…) passe sa propre liste ici.
+ */
 export declare function validateImageFile(
   file: { type: string; size: number },
   options?: { maxBytes?: number; acceptedTypes?: readonly string[] }
@@ -73,7 +97,8 @@ export declare function stripImageMetadata(
 /**
  * Redimensionne et ré-encode en JPEG jusqu'à passer sous `maxBytes` :
  * qualités dégressives d'abord, réduction de dimension ensuite. Les GIF
- * animés deviennent une image fixe. Nécessite le DOM.
+ * animés deviennent une image fixe — mais décoder n'est pas accepter :
+ * `image/gif` reste hors de {@link IMAGE_ACCEPTED_TYPES}. Nécessite le DOM.
  */
 export declare function compressImageToMaxBytes(
   file: File,

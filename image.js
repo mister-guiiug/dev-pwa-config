@@ -34,12 +34,26 @@ export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
  * Les trois formats que TOUT navigateur sait décoder ET ré-encoder. C'est un
  * PLANCHER SÛR, pas une liste exhaustive — et il reste volontairement étroit.
  *
- * Deux apps l'élargissent, chacune pour une bonne raison : `miss-carbook`
- * ajoute `image/gif`, `mister-puzzle` y joint AVIF, HEIC et HEIF pour ne pas
- * refuser les photos d'iPhone qui passaient jusque-là. Les élargir ICI
- * changerait ce que les autres apps acceptent **sans qu'elles l'aient
- * demandé** — un formulaire se met à accepter des fichiers que son bucket
- * refusera. La liste s'élargit donc au site d'appel :
+ * **DÉCODER N'EST PAS ACCEPTER.** `compressImageToMaxBytes` traite le GIF —
+ * il en garde la première frame, c'est écrit dans sa doc — et pourtant
+ * `image/gif` n'est PAS dans cette liste. L'écart est réel, il a été relevé
+ * pendant l'adoption de `miss-carbook` (#16), et il est INTENTIONNEL : cette
+ * liste ne dit pas ce que le module sait LIRE, elle dit ce qu'une app accepte
+ * de RECEVOIR. Deux questions, deux réponses, et seule la seconde appartient
+ * à l'appelant — lui seul connaît son bucket, ses règles serveur et ce que son
+ * écran a promis.
+ *
+ * Deux apps élargissent la liste, chacune pour une bonne raison :
+ * `miss-carbook` ajoute `image/gif` (son aide écran le promet depuis toujours,
+ * et sa boîte de compression explique la conversion en image fixe),
+ * `mister-puzzle` y joint le GIF, AVIF, HEIC et HEIF pour ne pas refuser les
+ * photos d'iPhone qui passaient jusque-là. Les élargir ICI changerait ce que
+ * les autres apps acceptent **sans qu'elles l'aient demandé** : `bac-sable`
+ * appelle `validateImageFile(file)` SANS option, sous un
+ * `accept="image/jpeg,image/png,image/webp"` et un message qui annonce
+ * « Formats acceptés : JPEG, PNG, WebP ». Un défaut plus permissif lui ferait
+ * accepter en silence ce que son propre écran refuse. La liste s'élargit donc
+ * au site d'appel :
  *
  *     validateImageFile(file, {
  *       acceptedTypes: [...IMAGE_ACCEPTED_TYPES, 'image/gif'],
@@ -94,6 +108,11 @@ export function fitWithin(width, height, maxDimension) {
 /**
  * Contrôle de type et de taille avant tout traitement. PUR (testable sans
  * DOM) : ne lit que `type` et `size`.
+ *
+ * `acceptedTypes` vaut `IMAGE_ACCEPTED_TYPES` par défaut — un PLANCHER, plus
+ * étroit que ce que la compression sait décoder. Une app qui accepte davantage
+ * (GIF, HEIC…) passe sa propre liste ici plutôt que d'élargir le défaut de
+ * toute la famille : voir l'en-tête de `IMAGE_ACCEPTED_TYPES`.
  *
  * @param {{ type: string, size: number }} file
  * @param {{ maxBytes?: number, acceptedTypes?: readonly string[] }} [options]
@@ -199,9 +218,11 @@ function fileBaseName(name) {
 /**
  * Redimensionne et ré-encode en JPEG jusqu'à ce que la taille soit
  * ≤ `maxBytes` : qualités dégressives d'abord, réduction de dimension
- * ensuite. Les GIF animés deviennent une image fixe (première frame).
- * Le ré-encodage supprime aussi les métadonnées (même mécanique que
- * `stripImageMetadata`).
+ * ensuite. Les GIF animés deviennent une image fixe (première frame) — mais
+ * DÉCODER N'EST PAS ACCEPTER : `image/gif` reste hors de
+ * `IMAGE_ACCEPTED_TYPES`, et une app qui veut le recevoir le déclare via
+ * `acceptedTypes`. Le ré-encodage supprime aussi les métadonnées (même
+ * mécanique que `stripImageMetadata`).
  *
  * @param {File} file
  * @param {number} [maxBytes]
@@ -226,8 +247,13 @@ export async function compressImageToMaxBytes(
   try {
     bitmap = await decode(file);
   } catch {
+    // Ce message disait « (JPEG, PNG, WebP ou GIF) » : il PROMETTAIT à
+    // l'utilisateur un format que le défaut de validation de ce module refuse,
+    // et qu'une app comme `bac-sable` refuse à l'écran. Ce module ne connaît
+    // pas la liste de son appelant ; il ne peut nommer sans risque que le
+    // PLANCHER, que toute app accepte par construction.
     throw new Error(
-      '[dwc] Impossible de lire cette image. Essayez un autre fichier (JPEG, PNG, WebP ou GIF).'
+      '[dwc] Impossible de lire cette image. Essayez une photo JPEG ou PNG.'
     );
   }
 
