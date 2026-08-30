@@ -1318,7 +1318,7 @@
   [data-dwc='bottom-nav-item'],
   [data-dwc='bottom-nav-more'] {
     font: inherit;
-    font-size: var(--text-fluid-xs, 0.75rem);
+    font-size: var(--text-fluid-xs, 0.8rem);
     font-weight: 600;
     flex: 1 1 0;
     display: flex;

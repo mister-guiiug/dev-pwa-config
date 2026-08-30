@@ -75,6 +75,42 @@ test('chaque var(--dwc-*) porte un repli', () => {
   );
 });
 
+/**
+ * LE REPLI EST UNE VALEUR, PAS UNE FORMALITÉ. Une app qui ne prend pas le
+ * preset — `mister-quota`, en Electron, l'a fait le 30/08/2026 — ne voit QUE
+ * les replis. Si le même jeton en porte deux différents, elle obtient deux
+ * tailles pour une seule intention, et personne ne le remarque puisque les
+ * seize autres apps définissent la variable.
+ *
+ * Constaté ce jour-là : `--text-fluid-xs` retombait sur `0.8rem` à huit
+ * endroits et sur `0.75rem` sur les onglets de `BottomNav`.
+ */
+test('un même jeton porte le même repli partout', () => {
+  // PÉRIMÈTRE ASSUMÉ : les replis SCALAIRES, ceux dont la valeur ne contient
+  // aucune parenthèse (tailles, rayons). Les replis de couleur imbriquent
+  // `light-dark()`, `color-mix()` ou un second `var()` — les comparer demande
+  // un vrai analyseur, pas une expression rationnelle, et une expression
+  // rationnelle qui les tronque comparerait des valeurs fausses. Mieux vaut un
+  // garde-fou étroit et exact qu'un large et menteur.
+  const replis = new Map();
+  for (const [, nom, repli] of CSS.matchAll(
+    /var\(\s*(--[\w-]+)\s*,\s*([^;()]+?)\s*\)/g
+  )) {
+    if (!replis.has(nom)) replis.set(nom, new Set());
+    replis.get(nom).add(repli.trim());
+  }
+  const divergents = [...replis]
+    .filter(([, valeurs]) => valeurs.size > 1)
+    .map(([nom, valeurs]) => `${nom} → ${[...valeurs].sort().join(' | ')}`)
+    .sort();
+
+  assert.deepEqual(
+    divergents,
+    [],
+    `replis divergents : ${divergents.join(', ')} — une app sans le preset verrait deux valeurs pour un seul jeton`
+  );
+});
+
 test('les variables lues correspondent exactement au contrat documenté', () => {
   const used = [
     ...new Set([...CSS.matchAll(/var\(\s*(--dwc-[\w-]+)/g)].map(m => m[1])),
