@@ -1490,6 +1490,55 @@ Ce que la file garantit — et que les copies rataient :
 au fil de la file) ; `sync-queue` est la version hors-React, plus complète,
 pour une couche backend ou un service de synchronisation.
 
+### Temps réel (`/realtime`, `/realtime/supabase`)
+
+Le chemin **descendant** : recevoir ce que les autres ont changé, et savoir
+quand on ne le reçoit plus. `createChannel` est le port — reconnexion à retrait
+exponentiel dispersé, rattrapage du trou laissé par la coupure, sonde au réveil
+de l'onglet ; `realtime/supabase`, `realtime/firebase` et `realtime/local` sont
+les adaptateurs, comme `MapProvider` l'est pour Leaflet et MapLibre.
+
+```ts
+import { createChannel } from '@mister-guiiug/dev-wpa-config/realtime';
+import { supabaseRealtimeTransport } from '@mister-guiiug/dev-wpa-config/realtime/supabase';
+
+const transport = supabaseRealtimeTransport({
+  client: supabase, // celui de l'app — jamais un second
+  table: 'comments',
+  filter: `candidate_id=eq.${id}`,
+});
+
+const canal = createChannel({ ...transport, onMessage: apply });
+void canal.start();
+```
+
+**Deux abonnements à la même table ne se marchent plus dessus.** Le sujet du
+canal valait `dwc:<schema>:<table>`, sans le filtre. Or `client.channel(sujet)`
+REND le canal déjà enregistré sous ce sujet, `subscribe()` ne fait RIEN sur un
+canal qui n'est pas `closed`, et `removeChannel()` est asynchrone. Un fil de
+commentaires par candidat et un journal par espace de travail recevaient donc
+le même canal : le second restait muet, sans la moindre erreur. Le sujet porte
+maintenant le filtre — pour la lisibilité en débogage — et un numéro monotone —
+pour l'unicité, y compris entre deux abonnements identiques. `channelName`
+renomme la part lisible ; le numéro, lui, ne se retire pas.
+
+**Une tentative qui échoue est refermée.** Avant `SUBSCRIBED`, l'appelant n'a
+aucune poignée de fermeture : si le canal n'est pas retiré ici, il reste dans
+`client.channels` pour toujours — un canal orphelin par montage, et React en
+monte deux en développement. Un `CHANNEL_ERROR`, un `TIMED_OUT`, un `CLOSED`
+mort-né ou une levée pendant l'abonnement retirent désormais le canal avant de
+rejeter.
+
+> ⚠ **`catchUp` n'applique pas `filter`.** L'abonnement est filtré côté
+> serveur, le rattrapage ne l'est pas : il interroge la table sur la seule
+> colonne curseur. Là où la RLS laisse passer plusieurs espaces — le cas
+> **normal** d'une app multi-espaces —, le rattrapage fait entrer des lignes
+> d'un **autre** espace que celui écouté, sans qu'aucune erreur ne le dise. La
+> RLS tient : ce n'est pas une fuite, c'est un mélange, et il ne se voit qu'au
+> retour d'une veille. Soit l'app refiltre ce que `catchUp` rend, soit elle ne
+> câble que `connect` et recharge l'écran avec **sa** requête — déjà filtrée —
+> à chaque retour à `live`.
+
 ### Carte (`@mister-guiiug/dev-wpa-config/map`)
 
 Deux axes **indépendants**, qu'on confond souvent :
