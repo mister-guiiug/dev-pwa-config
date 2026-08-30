@@ -36,10 +36,24 @@ est **opt-in**. Migrer `Button`, `Sheet` ou `BottomNav` sans lui échange un
 composant stylé contre un composant **nu** : ça compile, les tests passent, le
 lint est vert, et l'écran est cassé.
 
-Le verrou a sauté le 30/08/2026 : **quatorze apps sur dix-sept** ont pris le
-prérequis (voir le passage plus bas). Les trois qui ne l'ont pas relèvent d'un
-choix, pas d'un retard — `miss-dice` et `miss-contraction` portent un design
-maison assumé, `mister-quota` est une app Electron sans Tailwind.
+Le verrou a sauté le 30/08/2026 : **quinze apps sur dix-sept** ont pris le
+prérequis (voir le passage plus bas). Les deux qui ne l'ont pas — `miss-dice` et
+`miss-contraction` — portent un design maison assumé.
+
+**`mister-quota` était la troisième, et son motif ne tenait pas.** On la
+dispensait parce qu'elle est en Electron « sans Tailwind ». En allant lire la
+feuille plutôt qu'en croyant le motif, sa migration a montré que
+`components.css` **ne contient aucune directive Tailwind** (`@apply`,
+`@tailwind`, `theme()`), que tous ses sélecteurs sont portés par `[data-dwc=…]`
+— donc sans collision possible — et que `@layer components` étant du CSS natif,
+le style non layered de l'app l'emporte de plein droit. Un `@import` suffisait.
+
+Ce que cette dispense a coûté : trois défauts d'accessibilité restés en place
+dans les composants maison — un dialogue `role="dialog"` **sans nom
+accessible** dont l'`autoFocus` portait sur le bouton **destructif** (une
+frappe sur Entrée supprimait un compte), et une fermeture de notification par
+`onClick` sur un `<div>`, inatteignable au clavier. **Un motif d'exemption qui
+n'a jamais été vérifié est une dette qui ne se voit pas.**
 
 Une app qui veut adopter la couche interface commence donc par :
 

@@ -1166,6 +1166,15 @@ Ce seul import donne déjà un rendu correct **en clair et en sombre**, sans
 configuration : les replis passent par les couleurs système CSS (`Canvas`,
 `CanvasText`, `GrayText`), qui suivent `color-scheme`.
 
+**Aucune dépendance à Tailwind, et c'est vérifiable.** La feuille ne contient ni
+`@apply`, ni `@tailwind`, ni `theme()` : un `@import` CSS suffit, y compris dans
+une app qui n'a pas Tailwind du tout (`mister-quota`, en Electron, l'a prise à
+ce titre). Elle lit bien huit variables de l'échelle fluide du preset
+(`--text-fluid-*`, `--spacing-fluid-*`) **en plus** des quinze jetons du
+contrat, mais toutes portent un repli — sans le preset, les tailles sont figées,
+rien ne casse. Et comme tous ses sélecteurs sont portés par `[data-dwc="…"]`,
+elle ne peut entrer en collision avec aucun style existant.
+
 **Le plus simple : importer aussi `tokens.css`**, qui livre un jeu de valeurs
 neutre pour les quinze variables du contrat, clair et sombre, au contraste
 vérifié en CI (`test/tokens.test.mjs`) :
