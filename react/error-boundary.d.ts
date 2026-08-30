@@ -9,6 +9,15 @@ export interface ErrorBoundaryProps {
   onReset?: () => void;
   /** Si fourni, un bouton « Télécharger une sauvegarde » est rendu. */
   onDownloadBackup?: () => void;
+  /**
+   * Référence à citer au support, rendue sous le message
+   * (`[data-dwc="error-boundary-reference"]`). Absente par défaut :
+   * `ObservabilityBoundary` la renseigne seule avec l'identifiant de
+   * corrélation de la session.
+   */
+  reference?: string;
+  /** Ce qui précède la référence. Défaut : « Référence à communiquer ». */
+  referenceLabel?: string;
   title?: string;
   resetLabel?: string;
   backupLabel?: string;
@@ -26,9 +35,22 @@ export declare class ErrorBoundary extends Component<
   reset(): void;
 }
 
-export interface ObservabilityBoundaryProps extends ErrorBoundaryProps {
+/**
+ * `reference` est RETIRÉE de la base puis redéclarée : ici, `false` est une
+ * valeur légitime — elle n'existe pas sur `ErrorBoundary`, qui reçoit soit une
+ * chaîne, soit rien.
+ */
+export interface ObservabilityBoundaryProps
+  extends Omit<ErrorBoundaryProps, 'reference'> {
   /** Contexte ajouté à l'entrée du journal ; masqué avant écriture. */
   context?: Record<string, unknown>;
+  /**
+   * La référence affichée dans l'écran de secours, et jointe à l'erreur
+   * enregistrée sous `correlationId`. Par défaut l'identifiant de session de
+   * `/correlation` : l'utilisateur cite alors exactement ce que porte la trace
+   * collectée. Une chaîne le remplace, `false` retire l'affichage.
+   */
+  reference?: string | false;
 }
 
 /**

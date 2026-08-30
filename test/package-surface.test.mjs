@@ -172,3 +172,47 @@ test('tout export du barrel react est aussi DÉCLARÉ dans ses types', async () 
     `ces exports existent à l'exécution mais pas dans react/index.d.ts : ${nonDeclares.join(', ')} — une app les importerait sans que tsc les connaisse`
   );
 });
+
+/**
+ * MÊME FAMILLE DE DÉFAUT, UN CRAN PLUS BAS : une PROP lue par le composant
+ * mais absente de ses types.
+ *
+ * `ErrorBoundary` rend la référence à citer au support (`reference`, et son
+ * libellé) depuis toujours ; `ObservabilityBoundary` la renseigne seule. Ni
+ * l'une ni l'autre n'était déclarée : `npm run typecheck` ne voit que les
+ * fichiers du paquet, où le JSDoc suffit — c'est le CONSOMMATEUR qui bute.
+ * miss-supaboss (#30) a donc dû passer la prop en spread commenté pour que
+ * `tsc` la laisse passer, sur une frontière d'erreur, c'est-à-dire à l'endroit
+ * où l'on ne peut justement pas se permettre de bricoler.
+ */
+test('l’écran de secours ne lit aucune prop absente de ses types', () => {
+  const source = readFileSync(at('react/error-boundary.js'), 'utf8');
+  const types = readFileSync(at('react/error-boundary.d.ts'), 'utf8');
+
+  // Ce que la classe lit directement…
+  const lues = new Set(
+    [...source.matchAll(/this\.props\.(\w+)/g)].map(m => m[1])
+  );
+  // …et ce que la façade extrait de ses props avant de les retransmettre.
+  const facades = [...source.matchAll(/const \{([^}]*)\} = props;/g)];
+  assert.ok(facades.length, 'la façade a changé de forme : revoir ce test');
+  for (const facade of facades) {
+    for (const nom of facade[1].split(',')) {
+      const propre = nom.trim().replace(/^\.{3}/, '');
+      if (propre && propre !== 'rest') lues.add(propre);
+    }
+  }
+  assert.ok(lues.has('reference'), 'motif de lecture des props non détecté');
+
+  // Les membres des interfaces : deux espaces d'indentation, jamais une ligne
+  // de commentaire (qui commence par `*`).
+  const declarees = new Set(
+    [...types.matchAll(/^ {2}(\w+)\??:/gm)].map(m => m[1])
+  );
+  const absentes = [...lues].filter(nom => !declarees.has(nom)).sort();
+  assert.deepEqual(
+    absentes,
+    [],
+    `ces props sont lues mais non déclarées : ${absentes.join(', ')} — une app qui les passe se ferait refuser par tsc`
+  );
+});

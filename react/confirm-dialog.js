@@ -58,6 +58,12 @@ import { useDialogBehaviour } from './use-dialog.js';
  * restent applicatifs : `children` les accueille, le composant ne les
  * embarque pas.
  *
+ * Sous `components.css`, ce bouton unique prend toute la rangée — le rendu de
+ * l'`ErrorModal` de mister-puzzle. Ce n'est PAS ce que faisaient les trois
+ * copies : celle de mister-cim10 gardait un « OK » compact aligné à droite, et
+ * sa migration (#27) a dû reposer l'écart chez elle. Un défaut d'habillage,
+ * donc, que l'app reprend en deux lignes de CSS non « layered ».
+ *
  * Non stylé : cibler `[data-dwc="confirm"]` et descendants.
  *
  * @param {{ open: boolean, title: string, message?: import('react').ReactNode,
