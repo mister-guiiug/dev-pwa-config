@@ -96,13 +96,24 @@ test('parenthèses et contre-oblique sont échappées dans les littéraux', () =
   assert.ok(stream.includes('(a \\(b\\) \\\\ c)'));
 });
 
-test('hors Latin-1, le caractère devient « ? » plutôt qu’un octet faux', () => {
+test('la ponctuation CP1252 (€, —, ’, œ…) est transcodée, plus remplacée', () => {
+  // WinAnsi n'est PAS Latin-1 : CP1252 place €, ’, —, œ… sur 0x80–0x9F. Le
+  // décodeur « latin1 » du WHATWG étant en réalité windows-1252, relire ici
+  // le caractère d'origine prouve que le BON octet a été écrit (0x80 pour €,
+  // 0x97 pour —…) — « é » et « û », eux, passent tels quels (Latin-1).
   const c = new PdfContent();
-  c.text(10, 20, 10, 'Payé : 3€ — oui');
+  c.text(10, 20, 10, 'L’œuvre coûte 3 € — “payée”…');
   const stream = dec.decode(Uint8Array.from(c.bytes()));
-  // « é » (0xE9) passe tel quel ; « € » (U+20AC) et « — » (U+2014) n'ont pas
-  // d'octet ici : mieux vaut un « ? » visible qu'un glyphe au hasard.
-  assert.ok(stream.includes('(Payé : 3? ? oui)'));
+  assert.ok(stream.includes('(L’œuvre coûte 3 € — “payée”…)'));
+});
+
+test('hors WinAnsi, « ? » — et UN seul par émoji, pas un par moitié', () => {
+  const c = new PdfContent();
+  c.text(10, 20, 10, 'ok 🎉 α');
+  const stream = dec.decode(Uint8Array.from(c.bytes()));
+  // « 🎉 » (U+1F389, paire de substitution) et « α » (U+03B1) n'ont pas de
+  // position CP1252 : mieux vaut un « ? » visible qu'un glyphe au hasard.
+  assert.ok(stream.includes('(ok ? ?)'));
 });
 
 test('l’alignement centré se calcule depuis la largeur estimée', () => {
