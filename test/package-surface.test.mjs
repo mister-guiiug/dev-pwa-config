@@ -216,3 +216,42 @@ test('l’écran de secours ne lit aucune prop absente de ses types', () => {
     `ces props sont lues mais non déclarées : ${absentes.join(', ')} — une app qui les passe se ferait refuser par tsc`
   );
 });
+
+/* ── Atteignable, c'est bien. TROUVABLE, c'est la condition de l'adoption ── */
+
+/**
+ * LA LEÇON SPARKLINE, ÉRIGÉE EN GARDE-FOU. `/sparkline` est resté le seul
+ * module graphique du paquet et n'a été importé par PERSONNE pendant des
+ * semaines — non parce qu'il manquait, mais parce qu'il était absent du
+ * README : un module qu'on ne peut pas trouver n'existe pas.
+ *
+ * Le relevé du 30/08/2026 a montré l'ampleur du glissement : **75 des 137**
+ * sous-chemins publiés manquaient à la table « Exports npm », dont 22 sans
+ * aucune mention ailleurs dans la page. Les campagnes d'adoption comptaient
+ * donc des doublons pour du code que les apps ne pouvaient pas découvrir.
+ *
+ * Ce test rend le glissement impossible : publier un sous-chemin sans l'écrire
+ * dans la table fait échouer `npm test`. Le contenu de la ligne reste au
+ * jugement de l'auteur — seule sa PRÉSENCE est vérifiée.
+ */
+test('tout sous-chemin publié figure dans la table « Exports npm »', () => {
+  const readme = readFileSync(at('README.md'), 'utf8');
+  const start = readme.indexOf('## Exports npm');
+  assert.ok(start > 0, 'section « Exports npm » introuvable dans le README');
+  const table = readme.slice(start, readme.indexOf('\n## ', start + 1));
+
+  const documented = new Set(
+    [...table.matchAll(/dev-wpa-config\/([a-zA-Z0-9/.-]+)/g)].map(m => m[1])
+  );
+  const absents = Object.keys(PKG.exports)
+    .filter(subpath => subpath !== '.' && !subpath.includes('*'))
+    .map(subpath => subpath.slice(2))
+    .filter(name => !documented.has(name))
+    .sort();
+
+  assert.deepEqual(
+    absents,
+    [],
+    `ces sous-chemins sont publiés mais introuvables dans le README : ${absents.join(', ')} — une app ne peut pas adopter ce qu'elle ne voit pas`
+  );
+});
