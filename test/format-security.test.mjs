@@ -268,3 +268,54 @@ test('les deux modules sont exportés, livrés, et sans dépendance', async () =
     assert.doesNotMatch(source, /^import /m, `${name}.js doit rester autonome`);
   }
 });
+
+/* ── Les options passées à la place de la locale ────────────────────────── */
+
+/**
+ * LE PIÈGE DE CE MODULE, mesuré le 31/08/2026. Huit fonctions ont la forme
+ * `(valeur, locale, options)`, mais `formatNumber(1234, { … })` est le réflexe
+ * naturel — et c'était un appel SILENCIEUX : `Intl` accepte n'importe quoi
+ * comme `locales` sans lever, l'objet passait pour une locale illisible, et
+ * **les options disparaissaient**. Aucune erreur, un format simplement
+ * inchangé, et un appelant convaincu d'avoir configuré quelque chose.
+ *
+ * Une migration de `miss-supaboss` l'a rapporté comme « ça lève une
+ * TypeError ». Ça ne levait pas — ça ignorait, ce qui est pire : un jet se
+ * corrige, un silence se croit configuré.
+ */
+test('des options à la place de la locale sont RECONNUES, pas jetées', () => {
+  // Sans la reconnaissance, ces trois appels rendaient le format par défaut.
+  // Le séparateur de milliers français est une espace FINE INSÉCABLE (U+202F),
+  // pas une espace ordinaire : d'où l'expression rationnelle, comme au-dessus.
+  assert.match(formatNumber(1234, { maximumFractionDigits: 0 }), /^1.234$/u);
+  assert.match(
+    formatCurrency(1234, { maximumFractionDigits: 0 }),
+    /^1.234\s*€$/u,
+    'un prix sans centimes était impossible à obtenir'
+  );
+  assert.equal(
+    formatDate('2026-01-12', { dateStyle: 'full' }),
+    'lundi 12 janvier 2026'
+  );
+});
+
+test('dateStyle REMPLACE les composantes au lieu de s’y ajouter', () => {
+  // `Intl` lève « Invalid option » quand `dateStyle` côtoie `year`/`month`/
+  // `day` : sans cette exclusion, la seule façon d'obtenir une date longue
+  // serait de ne pas passer par ce module.
+  assert.doesNotThrow(() => formatDate('2026-01-12', { dateStyle: 'long' }));
+  assert.doesNotThrow(() =>
+    formatDateTime('2026-01-12T14:05', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    })
+  );
+});
+
+test('la forme historique (valeur, locale, …) est intacte', () => {
+  assert.match(formatDate('2026-01-12', 'en-GB'), /12 Jan 2026/u);
+  assert.match(formatCurrency(1234, 'en-GB', 'GBP'), /£1,234\.00/u);
+  assert.match(formatDateTime('2026-01-12T14:05'), /12 janv\. 2026/u);
+  // Un tableau de locales reste une locale, pas des options.
+  assert.match(formatDate('2026-01-12', ['en-GB', 'fr-FR']), /12 Jan 2026/u);
+});
