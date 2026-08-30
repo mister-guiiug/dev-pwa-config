@@ -34,6 +34,16 @@ import { useDialogBehaviour } from './use-dialog.js';
  * `loading` couvre ce cas : la boîte reste ouverte, les deux boutons deviennent
  * inertes et le titre porte `aria-busy`.
  *
+ * LE CLIC SUR LE FOND ACCEPTE DEUX CIBLES — la racine ET le voile. Même
+ * charpente et même bug que `Sheet` (le récit complet est dans son en-tête) :
+ * le voile recouvre toute la racine, c'est donc lui que le navigateur désigne
+ * quand on clique dans le fond, et la garde `target === currentTarget` seule
+ * ne fermait JAMAIS — mesuré en vrai navigateur par mister-footcoach#25 et
+ * mister-molkky#14, dont la rustine `pointer-events: none` envoie au
+ * contraire le clic sur la racine. Les deux topologies ferment ; la garde
+ * `loading` s'applique aux deux, et un mousedown né dans le panneau ne ferme
+ * toujours pas.
+ *
  * MODE MONO-ACTION (`cancelLabel: null`). Trois apps n'ont pas pu migrer leurs
  * boîtes d'ALERTE pendant la campagne `components.css`, parce que le composant
  * rendait inconditionnellement deux boutons : l'`ErrorModal` de mister-puzzle,
@@ -72,6 +82,7 @@ export function ConfirmDialog(props = {}) {
 
   const labels = useLabels('confirm');
   const panelRef = useRef(null);
+  const backdropRef = useRef(null);
   const cancelRef = useRef(null);
   const confirmRef = useRef(null);
   const titleId = useId();
@@ -135,11 +146,20 @@ export function ConfirmDialog(props = {}) {
       'data-destructive': destructive ? '' : undefined,
       onMouseDown: event => {
         // Le fond ferme, comme dans cinq des sept copies — mais jamais pendant
-        // une confirmation en cours.
-        if (event.target === event.currentTarget && !loading) close();
+        // une confirmation en cours. Racine OU voile : les deux topologies
+        // mesurées, voir l'en-tête. La référence (et non l'attribut) : seul
+        // NOTRE voile compte, pas un homonyme passé dans `children`.
+        const { target } = event;
+        const onBackdrop =
+          target === event.currentTarget || target === backdropRef.current;
+        if (onBackdrop && !loading) close();
       },
     },
-    h('div', { 'data-dwc': 'confirm-backdrop', 'aria-hidden': 'true' }),
+    h('div', {
+      ref: backdropRef,
+      'data-dwc': 'confirm-backdrop',
+      'aria-hidden': 'true',
+    }),
     h(
       'div',
       {
