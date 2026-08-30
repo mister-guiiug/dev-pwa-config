@@ -387,6 +387,10 @@
       "types": "./react/use-online.d.ts",
       "default": "./react/use-online.js"
     },
+    "./react/use-wake-lock": {
+      "types": "./react/use-wake-lock.d.ts",
+      "default": "./react/use-wake-lock.js"
+    },
     "./react/use-action-guard": {
       "types": "./react/use-action-guard.d.ts",
       "default": "./react/use-action-guard.js"

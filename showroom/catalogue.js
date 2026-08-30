@@ -568,6 +568,19 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'useWakeLock',
+      covers: ['useWakeLock'],
+      signature: 'useWakeLock(active?) → { supported, held }',
+      summary: {
+        fr: 'Garde l’écran allumé pendant un chronomètre ou une manche, et redemande le verrou au retour de l’onglet.',
+        en: 'Keeps the screen awake during a timer or a round, and re-requests the lock when the tab comes back.',
+      },
+      dont: {
+        fr: 'Ne pas supposer le verrou acquis une fois pour toutes : le navigateur le relâche en arrière-plan — c’est `held` qui fait foi, pas l’appel.',
+        en: 'Don’t assume the lock is held for good: the browser releases it in the background — `held` is the truth, not the call.',
+      },
+    },
+    {
       id: 'useInstallPrompt',
       covers: ['useInstallPrompt'],
       signature:
