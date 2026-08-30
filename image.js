@@ -29,6 +29,22 @@
  */
 
 export const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Les trois formats que TOUT navigateur sait décoder ET ré-encoder. C'est un
+ * PLANCHER SÛR, pas une liste exhaustive — et il reste volontairement étroit.
+ *
+ * Deux apps l'élargissent, chacune pour une bonne raison : `miss-carbook`
+ * ajoute `image/gif`, `mister-puzzle` y joint AVIF, HEIC et HEIF pour ne pas
+ * refuser les photos d'iPhone qui passaient jusque-là. Les élargir ICI
+ * changerait ce que les autres apps acceptent **sans qu'elles l'aient
+ * demandé** — un formulaire se met à accepter des fichiers que son bucket
+ * refusera. La liste s'élargit donc au site d'appel :
+ *
+ *     validateImageFile(file, {
+ *       acceptedTypes: [...IMAGE_ACCEPTED_TYPES, 'image/gif'],
+ *     });
+ */
 export const IMAGE_ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /** Plafond d'AFFICHAGE : au-delà, un écran n'y gagne plus rien. */
