@@ -7,6 +7,17 @@ export interface AppUpdatesProps {
   /** `registerSW` de `virtual:pwa-register`, donné UNE fois pour tout l'arbre. */
   registerSW?: RegisterSW;
   snoozeHours?: number;
+  /** Clé localStorage du report (défaut `dwc_sw_update_snoozed_until`). */
+  snoozeKey?: string;
+  /** L'enregistrement du service worker a échoué : une panne qui, sinon, est muette. */
+  onRegisterError?: (error: unknown) => void;
+  /** Le service worker est enregistré ; `registration` sert à le revérifier. */
+  onRegisteredSW?: (
+    swUrl: string,
+    registration?: ServiceWorkerRegistration
+  ) => void;
+  /** Forme historique de `onRegisteredSW`, sans l'URL du script. */
+  onRegistered?: (registration?: ServiceWorkerRegistration) => void;
   /**
    * Vérification périodique d'une nouvelle version : `'1h'`, `'30m'`, `'45s'`
    * ou un nombre de millisecondes. Sans elle, une PWA installée ouverte
@@ -15,7 +26,20 @@ export interface AppUpdatesProps {
   checkEvery?: string | number;
   /** `false` pour placer le bandeau soi-même. */
   banner?: boolean;
-  bannerProps?: Omit<UpdatePromptBannerProps, 'registerSW'>;
+  /**
+   * Le reste de l'habillage du bandeau. Ce que le FOURNISSEUR tient déjà en
+   * est retiré : `registerSW`, le report et les rappels d'enregistrement se
+   * donnent une seule fois, ici.
+   */
+  bannerProps?: Omit<
+    UpdatePromptBannerProps,
+    | 'registerSW'
+    | 'snoozeHours'
+    | 'snoozeKey'
+    | 'onRegisterError'
+    | 'onRegisteredSW'
+    | 'onRegistered'
+  >;
   updateOptions?: ApplyUpdateOptions;
   children?: ReactNode;
 }

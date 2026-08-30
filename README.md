@@ -527,6 +527,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`         | `.json`         | Durcissement TS **opt-in** : `noPropertyAccessFromIndexSignature` + `noImplicitOverride` + `exactOptionalPropertyTypes` (par-dessus la base stricte)                                                                                                       |
 | `@mister-guiiug/dev-wpa-config/vitest-base`                  | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds`                                                                                                          |
 | `@mister-guiiug/dev-wpa-config/vitest-setup`                 | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`                                                                                                                                 |
+| `@mister-guiiug/dev-wpa-config/testing/pwa-register`         | `.js` + `.d.ts` | `registerSW` + `swStub` : le double **pilotable** de `virtual:pwa-register`, à désigner en `resolve.alias` — 12 dépôts l'écrivaient à la main, muet                                                                                                        |
 | `@mister-guiiug/dev-wpa-config/apps-catalog`                 | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                                                   |
 | `@mister-guiiug/dev-wpa-config/react`                        | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                                              |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt`      | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                                            |
@@ -535,7 +536,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/react/toast`                  | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                                            |
 | `@mister-guiiug/dev-wpa-config/react/bottom-nav`             | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                                                  |
 | `@mister-guiiug/dev-wpa-config/react/labels`                 | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés fr/en des composants du paquet (prop > contexte > français)                                                                                                                                                      |
-| `@mister-guiiug/dev-wpa-config/sw-update`                    | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` : appliquer une mise à jour de service worker — **sans React ni module virtuel**                                                                                                                                            |
+| `@mister-guiiug/dev-wpa-config/sw-update`                    | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` / `unregisterServiceWorkers` : appliquer une mise à jour de service worker, ou tout désinscrire en dev — **sans React ni module virtuel**                                                                                   |
 | `@mister-guiiug/dev-wpa-config/theme-boot`                   | `.js` + `.d.ts` | `themeBootScript` / `themeBootSource` / `themeColorMetaTags` — le script anti-FOUC **engendré** (13 apps sur 16 le recopient), avec `legacyKeys` pour migrer les **6 clés de stockage** distinctes de la famille                                           |
 | `@mister-guiiug/dev-wpa-config/react/theme-provider`         | `.js` + `.d.ts` | `ThemeProvider` / `useThemeContext` — palette du catalogue, état et variables `--dwc-*` en un seul endroit, un seul écrivain de `data-theme`                                                                                                               |
 | `@mister-guiiug/dev-wpa-config/react/app-updates`            | `.js` + `.d.ts` | `AppUpdates` / `useAppUpdates` — `registerSW` donné une fois, bandeau posé seul, `checkEvery` périodique                                                                                                                                                   |
@@ -2099,7 +2100,37 @@ s'importe donc partout — y compris dans un test Node ou un rendu serveur.
 import { registerSW } from 'virtual:pwa-register';
 import { UpdatePromptBanner } from '@mister-guiiug/dev-wpa-config/react';
 
-<UpdatePromptBanner registerSW={registerSW} snoozeHours={24} />;
+<UpdatePromptBanner
+  registerSW={registerSW}
+  snoozeHours={24}
+  // Pour reprendre le report d'une bannière écrite à la main : sans elle, la
+  // migration oublie tout report en cours et le bandeau revient aussitôt.
+  snoozeKey="mon_app_update_snooze_until_ms"
+  // Sans ce rappel, un enregistrement raté est indiscernable d'une app à jour.
+  onRegisterError={error => log.error('serviceWorker', error)}
+/>;
+```
+
+**Ne pas enregistrer du tout** ne demande aucune API : `registerSW` est
+facultatif, et le hook s'en passe (`needRefresh` reste faux, `update()` et
+`forceUpdate()` restent utilisables). Le motif tient en une expression —
+`registerSW={import.meta.env.PROD ? registerSW : undefined}`.
+
+En développement, c'est plutôt l'inverse qu'on veut : **désinscrire** le worker
+d'une session précédente, qui sert du cache périmé pendant qu'on code. Cinq apps
+portaient ces lignes à la main ; la condition reste chez elles, la mécanique
+vient du paquet.
+
+```ts
+import { unregisterServiceWorkers } from '@mister-guiiug/dev-wpa-config/sw-update';
+
+export function registerServiceWorker(): void {
+  if (import.meta.env.DEV) {
+    void unregisterServiceWorkers();
+    return;
+  }
+  registerSW({ immediate: true });
+}
 ```
 
 Le **bouton des réglages** — six apps en avaient un, avec six mécaniques
@@ -2132,6 +2163,54 @@ await applyUpdate({
 
 > En test (jsdom), importer `@mister-guiiug/dev-wpa-config/vitest-setup` depuis
 > `src/test/setup.ts` fournit les mocks `virtual:pwa-register` + `matchMedia`.
+
+##### Prouver que le bandeau PEUT s'afficher
+
+Le `vi.mock` de `vitest-setup` **ne suffit pas** : il agit à l'exécution, quand
+Vite a déjà refusé de transformer le module importateur — `virtual:pwa-register`
+n'existe que dans un build servi par vite-plugin-pwa. Il faut un fichier,
+désigné par `resolve.alias`. Douze dépôts l'écrivaient à la main, et tous les
+douze étaient **muets** : un `registerSW` qui n'appelle jamais `onNeedRefresh`
+prouve qu'un composant se monte, jamais qu'un bandeau peut apparaître. C'est ce
+trou qui a laissé une app vivre des mois avec une bannière montée sans
+`registerSW`, donc structurellement incapable de s'afficher.
+
+```ts
+// vitest.config.ts
+resolve: {
+  alias: {
+    'virtual:pwa-register': fileURLToPath(
+      import.meta.resolve('@mister-guiiug/dev-wpa-config/testing/pwa-register')
+    ),
+  },
+},
+```
+
+```tsx
+import { swStub } from '@mister-guiiug/dev-wpa-config/testing/pwa-register';
+
+// `reset()` renouvelle l'IDENTITÉ de `registerSW` : `useUpdatePrompt` mémorise
+// sa connexion par WeakMap, et un double unique garderait `needRefresh` d'un
+// test au suivant.
+beforeEach(() => swStub.reset());
+
+it('affiche le bandeau quand une version attend', () => {
+  render(<UpdateBanner />);
+  expect(screen.queryByRole('status')).toBeNull();
+
+  act(() => swStub.needRefresh()); // lève si personne n'a injecté `registerSW`
+
+  expect(screen.getByRole('status')).toHaveAttribute(
+    'data-dwc',
+    'update-banner'
+  );
+});
+```
+
+Une app qui enrobe `registerSW` dans une constante de module — pour ajouter un
+intervalle ou une journalisation — garde une identité que `reset()` ne peut pas
+renouveler : ce cas-là demande un `vi.resetModules()`, ou un second fichier de
+test.
 
 #### La version : l'afficher, et savoir qu'elle a bougé
 

@@ -44,23 +44,41 @@ export function parseInterval(value) {
 }
 
 /**
- * @param {{ registerSW?: Function, snoozeHours?: number,
+ * @param {{ registerSW?: Function, snoozeHours?: number, snoozeKey?: string,
  *   checkEvery?: string|number, banner?: boolean,
  *   bannerProps?: object, children?: import('react').ReactNode,
- *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions }} props
+ *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions,
+ *   onRegisterError?: (error: unknown) => void,
+ *   onRegisteredSW?: (swUrl: string, registration?: ServiceWorkerRegistration) => void,
+ *   onRegistered?: (registration?: ServiceWorkerRegistration) => void }} props
  */
 export function AppUpdates(props = {}) {
   const {
     registerSW,
     snoozeHours = 0,
+    snoozeKey,
     checkEvery,
     banner = true,
     bannerProps,
     children,
     updateOptions,
+    onRegisterError,
+    onRegisteredSW,
+    onRegistered,
   } = props;
 
-  const state = useUpdatePrompt({ registerSW, snoozeHours, updateOptions });
+  // Le fournisseur est le SEUL à monter le hook : c'est ici que la clé de
+  // report et les rappels d'enregistrement doivent passer, le bandeau rendu
+  // plus bas lisant l'état déjà calculé.
+  const state = useUpdatePrompt({
+    registerSW,
+    snoozeHours,
+    snoozeKey,
+    updateOptions,
+    onRegisterError,
+    onRegisteredSW,
+    onRegistered,
+  });
 
   const everyMs = parseInterval(checkEvery);
   useEffect(() => {
@@ -86,7 +104,15 @@ export function AppUpdates(props = {}) {
     children,
     // Le bandeau se pose seul : c'est ce que les six apps écrivaient à la main
     // juste sous leur `<App />`.
-    banner ? h(UpdatePromptBanner, { ...bannerProps, registerSW }) : null
+    //
+    // `snoozeHours` REDESCEND. Le fournisseur le lisait pour calculer l'état,
+    // mais ne le passait pas au bandeau : celui-ci retombait sur `0`, donc sur
+    // le bouton « Fermer », et le report — que le fournisseur savait pourtant
+    // tenir — n'était atteignable par AUCUN clic. Un `snoozeHours` sur
+    // `AppUpdates` ne changeait rien à l'écran.
+    banner
+      ? h(UpdatePromptBanner, { ...bannerProps, snoozeHours, registerSW })
+      : null
   );
 }
 

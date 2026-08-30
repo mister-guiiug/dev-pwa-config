@@ -147,21 +147,77 @@ function awaitControllerChange(ms) {
   });
 }
 
-/** Désinscrit les service workers et vide le Cache Storage. */
-async function purge(keepCache) {
+/**
+ * Désinscrit tous les service workers, et dit combien sont tombés.
+ *
+ * PROMU DE CINQ APPS. `miss-badminton`, `miss-contraction`, `miss-dice`,
+ * `miss-ticket-pwa` et `mister-molkky` portent toutes, dans leur
+ * `src/register-sw.ts`, la même douzaine de lignes : en DÉVELOPPEMENT, un
+ * worker resté d'une session précédente sert du cache périmé pendant qu'on
+ * code, et le HMR se bat contre lui. Aucune ne l'écrit autrement, et le socle
+ * n'avait rien : `applyUpdate` ne désinscrit que sur son chemin de purge, avec
+ * un rechargement dont le développement ne veut pas.
+ *
+ * TROIS DÉFAUTS DES CINQ COPIES, corrigés ici :
+ *
+ * 1. **Un rejet non capté.** Les cinq écrivent
+ *    `regs.forEach(r => r.unregister())` sous un `.catch()` qui ne couvre QUE
+ *    `getRegistrations()` : chaque `unregister()` crée sa propre promesse, en
+ *    dehors de la chaîne captée. Une seule qui échoue, et c'est un
+ *    `unhandledrejection`. Ici, chaque désinscription porte son propre
+ *    `catch`, comme le fait déjà `purge()`.
+ * 2. **Aucun plafond.** C'est la même `getRegistrations()` qui peut bloquer
+ *    plusieurs secondes sur iOS en mode autonome — le défaut que ce module
+ *    documente déjà pour le bouton « Forcer ». Sur le chemin du démarrage,
+ *    l'attente est simplement invisible.
+ * 3. **Rien à observer.** `void` : ni l'appelant ni un test ne peut savoir si
+ *    quelque chose a été désinscrit. On rend le compte.
+ *
+ * LA CONDITION RESTE DANS L'APP. Ce paquet est aussi consommé par
+ * `node --test` : il ne peut pas lire `import.meta.env`. Le motif à écrire
+ * côté app est donc :
+ *
+ *   if (import.meta.env.DEV) {
+ *     void unregisterServiceWorkers();
+ *     return;
+ *   }
+ *   registerSW({ immediate: true });
+ *
+ * @param {{ timeoutMs?: number }} [options]
+ * @returns {Promise<number>} Nombre de workers réellement désinscrits. Ne
+ *   rejette jamais : l'absence d'API est un `0`, pas un incident.
+ */
+export async function unregisterServiceWorkers(options = {}) {
+  const { timeoutMs = 600 } = options;
   const sw = globalThis.navigator?.serviceWorker;
-  if (sw?.getRegistrations) {
-    try {
-      const registrations = await sw.getRegistrations();
-      await Promise.all(
+  if (!sw?.getRegistrations) return 0;
+  try {
+    const registrations = await withTimeout(
+      Promise.resolve(sw.getRegistrations()).catch(() => undefined),
+      timeoutMs
+    );
+    if (!registrations?.length) return 0;
+    const results = await withTimeout(
+      Promise.all(
         registrations.map(registration =>
-          registration.unregister().catch(() => false)
+          // Le `catch` est PAR désinscription : c'est ce qui manque aux cinq
+          // copies, où un seul échec devient un rejet non capté.
+          Promise.resolve(registration?.unregister?.()).catch(() => false)
         )
-      );
-    } catch {
-      /* on continue : la purge des caches compte davantage */
-    }
+      ),
+      timeoutMs
+    );
+    return (results ?? []).filter(Boolean).length;
+  } catch {
+    // Une API qui lève d'emblée (contexte non sécurisé, worker interdit) ne
+    // doit pas empêcher le démarrage de l'app.
+    return 0;
   }
+}
+
+/** Désinscrit les service workers et vide le Cache Storage. */
+async function purge(keepCache, timeoutMs) {
+  await unregisterServiceWorkers({ timeoutMs });
   const store = globalThis.caches;
   if (store?.keys) {
     try {
@@ -270,6 +326,6 @@ export async function applyUpdate(options = {}) {
     if (scope) target = bustedUrl(scope);
   }
 
-  await withTimeout(purge(keepCache), timeoutMs);
+  await withTimeout(purge(keepCache, timeoutMs), timeoutMs);
   return finish('purged');
 }

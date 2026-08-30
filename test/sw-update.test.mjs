@@ -10,8 +10,14 @@ import assert from 'node:assert/strict';
 import { createElement as h } from 'react';
 
 import { setupDom, mount, renderHook } from './helpers/dom.mjs';
-import { applyUpdate, hardNavigate } from '../sw-update.js';
+import {
+  applyUpdate,
+  hardNavigate,
+  unregisterServiceWorkers,
+} from '../sw-update.js';
 import { useUpdatePrompt } from '../react/use-update-prompt.js';
+import { UpdatePromptBanner } from '../react/update-prompt-banner.js';
+import { AppUpdates } from '../react/app-updates.js';
 import { UpdateButton } from '../react/update-button.js';
 import { ShareButton } from '../react/share-button.js';
 import { LabelsProvider } from '../react/labels.js';
@@ -279,9 +285,16 @@ test('hardNavigate descend l’échelle quand une forme lève', () => {
 
 /** Faux `registerSW`, avec de quoi déclencher `onNeedRefresh` depuis le test. */
 function fakeRegisterSW() {
-  const state = { calls: 0, needRefresh: null, offlineReady: null };
+  const state = {
+    calls: 0,
+    needRefresh: null,
+    offlineReady: null,
+    /** Tout ce que le socle a confié à `registerSW`, rappels compris. */
+    options: null,
+  };
   const registerSW = options => {
     state.calls += 1;
+    state.options = options;
     state.needRefresh = options?.onNeedRefresh;
     state.offlineReady = options?.onOfflineReady;
     return () => Promise.resolve();
@@ -463,6 +476,276 @@ test('reloadTo garde le dernier mot sur la portée', async () => {
       },
     });
     assert.equal(cibles[0], 'https://exemple.test/mister-family-map/bienvenue');
+  } finally {
+    env.restore();
+  }
+});
+
+/* ── unregisterServiceWorkers ────────────────────────────────────────────── */
+
+/**
+ * Les cinq copies (`miss-badminton`, `miss-contraction`, `miss-dice`,
+ * `miss-ticket-pwa`, `mister-molkky`) écrivent toutes la même chose dans leur
+ * `register-sw.ts`, et toutes de la même façon :
+ *
+ *   navigator.serviceWorker.getRegistrations()
+ *     .then(regs => regs.forEach(r => r.unregister()))
+ *     .catch(() => {})
+ *
+ * Les tests ci-dessous éprouvent les trois points où la version promue s'en
+ * écarte : le rejet de chaque désinscription est capté, l'API est plafonnée, et
+ * le compte revient à l'appelant.
+ */
+function fakeRegistrations(results) {
+  const journal = [];
+  return {
+    journal,
+    sw: {
+      getRegistrations: () =>
+        Promise.resolve(
+          results.map((issue, index) => ({
+            unregister() {
+              journal.push(`unregister:${index}`);
+              return issue === 'boom'
+                ? Promise.reject(new Error('désinscription refusée'))
+                : Promise.resolve(issue);
+            },
+          }))
+        ),
+    },
+  };
+}
+
+function withServiceWorker(sw) {
+  const dom = setupDom();
+  Object.defineProperty(globalThis.navigator, 'serviceWorker', {
+    value: sw,
+    configurable: true,
+  });
+  return dom;
+}
+
+test('désinscrit tout, et dit combien de workers sont tombés', async () => {
+  const { journal, sw } = fakeRegistrations([true, true]);
+  const dom = withServiceWorker(sw);
+  try {
+    assert.equal(await unregisterServiceWorkers(), 2);
+    assert.deepEqual(journal, ['unregister:0', 'unregister:1']);
+  } finally {
+    dom.restore();
+  }
+});
+
+test('une désinscription qui échoue n’emporte pas les autres', async () => {
+  // LE DÉFAUT REPRODUIT. Le `.catch()` des cinq copies ne couvre QUE
+  // `getRegistrations()` : chaque `unregister()` crée sa propre promesse, hors
+  // de la chaîne captée. Une seule qui rejette, et c'est un
+  // `unhandledrejection` — pendant le démarrage de l'app, qui plus est.
+  const { journal, sw } = fakeRegistrations([true, 'boom', true]);
+  const dom = withServiceWorker(sw);
+  try {
+    assert.equal(await unregisterServiceWorkers(), 2);
+    assert.equal(journal.length, 3, 'les trois ont bien été tentées');
+  } finally {
+    dom.restore();
+  }
+});
+
+test('une API qui pend ne bloque pas le démarrage de l’app', async () => {
+  // Même `getRegistrations()` que le bouton « Forcer », donc même risque de
+  // blocage sur iOS en mode autonome. Aucune des cinq copies ne le plafonne :
+  // sur le chemin du démarrage, l'attente est simplement invisible.
+  const dom = withServiceWorker({
+    getRegistrations: () => new Promise(() => {}),
+  });
+  try {
+    const debut = Date.now();
+    assert.equal(await unregisterServiceWorkers({ timeoutMs: 30 }), 0);
+    assert.ok(Date.now() - debut < 1000, 'la promesse a suivi l’API qui pend');
+  } finally {
+    dom.restore();
+  }
+});
+
+test('sans API service worker, c’est zéro — pas une exception', async () => {
+  const dom = setupDom();
+  try {
+    assert.equal(await unregisterServiceWorkers(), 0);
+  } finally {
+    dom.restore();
+  }
+});
+
+test('la désinscription de dev ne touche NI les caches NI les données', async () => {
+  // C'est ce qui la distingue d'`applyUpdate` : elle ne purge pas, ne recharge
+  // pas. Un développeur qui la déclenche à chaque démarrage ne doit pas perdre
+  // l'état de son app à chaque rechargement.
+  const env = setupSw({ waiting: false });
+  try {
+    globalThis.localStorage.setItem('parties', '[1,2,3]');
+    assert.equal(await unregisterServiceWorkers(), 1);
+    assert.equal(env.caches.remaining.size, 2, 'un cache a été vidé');
+    assert.equal(globalThis.localStorage.getItem('parties'), '[1,2,3]');
+  } finally {
+    env.restore();
+  }
+});
+
+/* ── Les rappels d'enregistrement ne sont plus avalés ────────────────────── */
+
+test('onRegisterError remonte à l’app : une panne muette redevient visible', async () => {
+  // LE DÉFAUT REPRODUIT. `connect()` ne passait que `immediate`,
+  // `onNeedRefresh` et `onOfflineReady`. `mister-doc` a dû enrober `registerSW`
+  // dans une constante de module pour garder sa journalisation — sans quoi un
+  // enregistrement raté est indiscernable d'une app à jour.
+  const env = setupSw();
+  try {
+    const premiers = [];
+    const seconds = [];
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        onRegisterError: error => premiers.push(error),
+      })
+    );
+
+    assert.equal(typeof state.options.onRegisterError, 'function');
+    await view.act(() =>
+      state.options.onRegisterError(new Error('injoignable'))
+    );
+    assert.equal(premiers.length, 1);
+
+    // Le rappel est lu au moment où le worker parle, pas à l'enregistrement :
+    // une fonction écrite en ligne peut donc changer sans ré-enregistrer.
+    await view.rerender(
+      h(UpdatePromptBanner, {
+        registerSW,
+        onRegisterError: error => seconds.push(error),
+      })
+    );
+    await view.act(() => state.options.onRegisterError(new Error('encore')));
+    assert.equal(seconds.length, 1, 'le rappel du dernier rendu doit servir');
+    assert.equal(premiers.length, 1);
+    assert.equal(state.calls, 1, 'un rappel changé a ré-enregistré le worker');
+
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('onRegisteredSW remonte aussi : c’est ce qui arme une revérification', async () => {
+  // `mister-qowa` enrobe `registerSW` pour ce seul rappel, dont il tire un
+  // `setInterval(() => registration.update(), 1h)`.
+  const env = setupSw();
+  try {
+    const vus = [];
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        onRegisteredSW: (url, registration) => vus.push([url, registration]),
+      })
+    );
+    await view.act(() => state.options.onRegisteredSW('/sw.js', { id: 1 }));
+    assert.deepEqual(vus, [['/sw.js', { id: 1 }]]);
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+/* ── snoozeKey : le report d'une bannière écrite à la main ───────────────── */
+
+test('le bandeau reporte sous la clé de l’app, pas sous celle du socle', async () => {
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        snoozeHours: 24,
+        snoozeKey: 'puzzle_snooze_until_ms',
+      })
+    );
+    await view.act(() => state.needRefresh());
+    await view.act(() =>
+      view.container.querySelector('[data-dwc="update-banner-dismiss"]').click()
+    );
+
+    const until = Number(
+      globalThis.localStorage.getItem('puzzle_snooze_until_ms')
+    );
+    assert.ok(until > Date.now() + 23 * 3_600_000);
+    assert.equal(
+      globalThis.localStorage.getItem('dwc_sw_update_snoozed_until'),
+      null,
+      'la clé du socle a servi malgré snoozeKey'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('un report déjà en cours sous la clé de l’app est respecté', async () => {
+  // LE DÉFAUT REPRODUIT. `mister-puzzle` a dû verser son report en cours dans
+  // la clé du socle au chargement de son module : sans `snoozeKey`, la
+  // migration oubliait tout report actif et le bandeau revenait aussitôt —
+  // chez ceux qui avaient justement demandé le silence.
+  const env = setupSw();
+  try {
+    globalThis.localStorage.setItem(
+      'puzzle_snooze_until_ms',
+      String(Date.now() + 3_600_000)
+    );
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        snoozeHours: 24,
+        snoozeKey: 'puzzle_snooze_until_ms',
+      })
+    );
+    await view.act(() => state.needRefresh());
+    assert.equal(
+      view.container.querySelector('[data-dwc="update-banner"]'),
+      null,
+      'le report en cours a été ignoré'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('AppUpdates : le report qu’il tient est atteignable au clic', async () => {
+  // LE DÉFAUT TROUVÉ EN CHEMIN. Le fournisseur lisait `snoozeHours` pour
+  // calculer l'état, mais ne le passait PAS au bandeau : celui-ci retombait sur
+  // `0`, donc sur « écarter pour la session ». Le report existait dans l'état
+  // et n'était atteignable par aucun clic.
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(AppUpdates, {
+        registerSW,
+        snoozeHours: 24,
+        snoozeKey: 'fournisseur_snooze',
+      })
+    );
+    await view.act(() => state.needRefresh());
+    await view.act(() =>
+      view.container.querySelector('[data-dwc="update-banner-dismiss"]').click()
+    );
+
+    const until = Number(globalThis.localStorage.getItem('fournisseur_snooze'));
+    assert.ok(
+      until > Date.now() + 23 * 3_600_000,
+      'le clic a écarté pour la session au lieu de reporter'
+    );
+    await view.unmount();
   } finally {
     env.restore();
   }
