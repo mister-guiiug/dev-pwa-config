@@ -55,26 +55,33 @@ son prérequis, longtemps pris par trois apps sur dix-sept — est passé à
 quatorze. `ConfirmDialog` et `ErrorBoundary` sont maintenant importés par dix
 apps, `EmptyState` par sept, `Sheet` par six.
 
-Ce qui reste recopié dit où porter l'effort suivant : `UpdatePromptBanner` (8),
-`backup` et `links` (7 chacun). Ces trois-là ne se migrent pas à l'import — le
-premier et le deuxième attendent qu'un nom soit tranché ici (voir `CAMPAGNE.md`),
-le troisième se fait en une passe sur les sept apps.
+`UpdatePromptBanner` (8 copies) et `links` (7) — les deux plus gros postes du
+matin — sont **à zéro**. Ce qui reste demande autre chose qu'un import :
+`applyUpdate` (6) et `useTheme` (6) exigent de migrer un état ou un
+enregistrement de service worker, `useI18n` (4) un fournisseur et des
+dictionnaires.
 
-**Ce chiffre SOUS-ESTIME la dette, et il faut le savoir pour le lire.** Il
-compte les copies d'un catalogue de besoins **déjà nommés** : une app qui
-réécrit quelque chose que le catalogue ignore ne compte pour rien. La journée du
-30 août l'a montré à l'échelle — treize réécritures à la main ont disparu
-(quatre agendas iCalendar, trois traitements d'image, trois verrous d'écran, un
-classeur Excel) **sans faire bouger le total d'un point**, parce qu'aucune ne
-portait un nom du catalogue. Le relevé mesure la migration de ce qu'on sait
-déjà partagé ; il ne découvre rien. Ce qui découvre, c'est de lire les apps —
-et c'est ainsi que ces quatre modules sont nés.
+**Le chiffre a baissé de 71 à 46 pour DEUX raisons, et il faut les séparer.**
+En rejouant l'ancienne règle sur l'état d'aujourd'hui, on obtient **58** :
+treize doublons ont donc été réellement éliminés par les migrations, et douze de
+plus étaient **invisibles à l'instrument** — neuf besoins qu'il ne savait pas
+acquitter, et trois façades qu'il comptait comme des réécritures (voir
+`CAMPAGNE.md`).
+
+**Et il SOUS-ESTIME encore la dette.** Il compte les copies d'un catalogue de
+besoins **déjà nommés** : une app qui réécrit quelque chose que le catalogue
+ignore ne compte pour rien. Treize réécritures à la main ont disparu le même
+jour — quatre agendas iCalendar, trois traitements d'image, trois verrous
+d'écran, un classeur Excel — **sans peser un point**, parce qu'aucune ne portait
+un nom du catalogue. Le relevé mesure la migration de ce qu'on sait déjà
+partagé ; il ne découvre rien. Ce qui découvre, c'est de lire les apps — et
+c'est ainsi que ces quatre modules sont nés.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
 _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 71 fichiers recopiés** dans 17 apps, sur 19 besoins distincts. Les pires : `UpdatePromptBanner` (8), `backup` (7), `links` (7).
+> **Dette d'adoption : 46 fichiers recopiés** dans 17 apps, sur 17 besoins distincts. Les pires : `applyUpdate` (6), `useTheme` (6), `backup` (4).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -89,13 +96,15 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `recordError`                 | 12 / 17     | —                   |
 | `ConfirmDialog`               | 11 / 17     | 1 / 17              |
 | `expectNoA11yViolations`      | 11 / 17     | —                   |
-| `ErrorBoundary`               | 10 / 17     | 4 / 17              |
+| `ErrorBoundary`               | 10 / 17     | 1 / 17              |
 | `cspPlugin`                   | 10 / 17     | —                   |
+| `repoUrl`                     | 9 / 17      | —                   |
+| `UpdatePromptBanner`          | 9 / 17      | —                   |
 | `coveragePreset`              | 8 / 17      | —                   |
 | `createI18n`                  | 8 / 17      | —                   |
 | `Sheet`                       | 7 / 17      | 2 / 17              |
 | `EmptyState`                  | 7 / 17      | 1 / 17              |
-| `useUpdatePrompt`             | 7 / 17      | —                   |
+| `SPONSOR_URL`                 | 6 / 17      | —                   |
 | `useOnline`                   | 6 / 17      | —                   |
 | `Button`                      | 5 / 17      | —                   |
 | `dateSlug`                    | 5 / 17      | —                   |
@@ -111,11 +120,13 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `generateCode`                | 3 / 17      | —                   |
 | `initWebVitals`               | 3 / 17      | —                   |
 | `LabelsProvider`              | 3 / 17      | —                   |
+| `RegisterSW`                  | 3 / 17      | —                   |
 | `SelectField`                 | 3 / 17      | —                   |
 | `Skeleton`                    | 3 / 17      | —                   |
 | `Sparkline`                   | 3 / 17      | —                   |
 | `ToastProvider`               | 3 / 17      | —                   |
 | `useToast`                    | 3 / 17      | —                   |
+| `useUpdatePrompt`             | 3 / 17      | —                   |
 | `useWakeLock`                 | 3 / 17      | —                   |
 | `applyUpdate`                 | 2 / 17      | 6 / 17              |
 | `ALPHABETS`                   | 2 / 17      | —                   |
@@ -137,7 +148,6 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `PAGE`                        | 2 / 17      | —                   |
 | `PdfContent`                  | 2 / 17      | —                   |
 | `readJsonFile`                | 2 / 17      | —                   |
-| `repoUrl`                     | 2 / 17      | —                   |
 | `shareOrCopy`                 | 2 / 17      | —                   |
 | `SyncQueue`                   | 2 / 17      | —                   |
 | `SyncQueueEntry`              | 2 / 17      | —                   |
@@ -147,9 +157,9 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `toCsv`                       | 2 / 17      | —                   |
 | `toIcalendar`                 | 2 / 17      | —                   |
 | `validateImageFile`           | 2 / 17      | —                   |
-| `UpdatePromptBanner`          | 1 / 17      | 8 / 17              |
 | `useTheme`                    | 1 / 17      | 6 / 17              |
 | `ThemeToggle`                 | 1 / 17      | 3 / 17              |
+| `appById`                     | 1 / 17      | —                   |
 | `AppVersion`                  | 1 / 17      | —                   |
 | `BoundingBox`                 | 1 / 17      | —                   |
 | `ChannelStatus`               | 1 / 17      | —                   |
@@ -185,6 +195,7 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `mapCspDirectives`            | 1 / 17      | —                   |
 | `mapTileRuntimeCaching`       | 1 / 17      | —                   |
 | `osmRasterTiles`              | 1 / 17      | —                   |
+| `pagesUrl`                    | 1 / 17      | —                   |
 | `PairingAlphabet`             | 1 / 17      | —                   |
 | `parseCsv`                    | 1 / 17      | —                   |
 | `parseDeepLink`               | 1 / 17      | —                   |
@@ -195,7 +206,6 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `PushTransport`               | 1 / 17      | —                   |
 | `qrToDataUrl`                 | 1 / 17      | —                   |
 | `qrToSvg`                     | 1 / 17      | —                   |
-| `RegisterSW`                  | 1 / 17      | —                   |
 | `resolveSeoPublicUrls`        | 1 / 17      | —                   |
 | `rethrowWithState`            | 1 / 17      | —                   |
 | `Rgb`                         | 1 / 17      | —                   |
@@ -220,12 +230,11 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `VersionProvider`             | 1 / 17      | —                   |
 | `XlsxSheet`                   | 1 / 17      | —                   |
 | `XlsxValue`                   | 1 / 17      | —                   |
-| `backup`                      | 0 / 17      | 7 / 17              |
-| `links`                       | 0 / 17      | 7 / 17              |
-| `format`                      | 0 / 17      | 5 / 17              |
-| `Toast`                       | 0 / 17      | 5 / 17              |
+| `backup`                      | 0 / 17      | 4 / 17              |
+| `format`                      | 0 / 17      | 4 / 17              |
 | `useI18n`                     | 0 / 17      | 4 / 17              |
 | `share`                       | 0 / 17      | 2 / 17              |
+| `Toast`                       | 0 / 17      | 2 / 17              |
 | `geo`                         | 0 / 17      | 1 / 17              |
 | `webVitals`                   | 0 / 17      | 1 / 17              |
 
