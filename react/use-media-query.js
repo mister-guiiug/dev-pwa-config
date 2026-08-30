@@ -36,3 +36,8 @@ export function useReducedMotion() {
 export function usePrefersDark() {
   return useMediaQuery('(prefers-color-scheme: dark)');
 }
+
+/** `true` si l'utilisateur a demandé un contraste renforcé. */
+export function usePrefersHighContrast() {
+  return useMediaQuery('(prefers-contrast: more)');
+}

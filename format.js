@@ -304,6 +304,10 @@ export function createFormatters(locale = defaultLocale, options = {}) {
     relative: (value, now) => formatRelativeTime(value, locale, now),
     bytes: (value, digits) => formatBytes(value, locale, digits),
     list: (values, opts) => formatList(values, locale, opts),
+    count: value => formatCount(value, locale),
+    usage: (value, quota, opts) =>
+      formatUsage(value, quota, { ...opts, locale }),
+    duration: ms => formatDuration(ms),
   };
 }
 
@@ -331,4 +335,64 @@ export function formatList(values, locale = defaultLocale, options = {}) {
   } catch {
     return items.join(', ');
   }
+}
+
+/* ── Promotions du 30/08/2026 ───────────────────────────────────────────── */
+
+/**
+ * Compteur compact (`1,2 k`, `50 k`, `1,3 M`).
+ *
+ * PROMU depuis `miss-supaboss` (`formatCount`), réécrit sur
+ * `Intl.NumberFormat` `notation: 'compact'` : la copie assemblait « k » et
+ * « M » à la main avec une virgule française figée — en anglais, la virgule
+ * restait. Repli sur `formatNumber` si `notation` manque.
+ *
+ * @param {number} value
+ * @param {string} [locale]
+ */
+export function formatCount(value, locale = defaultLocale) {
+  if (!Number.isFinite(value) || value < 0) return '';
+  try {
+    return numberFormat(locale, {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(value);
+  } catch {
+    return formatNumber(value, locale);
+  }
+}
+
+/**
+ * Consommation « X / Y » (`31,5 Mo / 5 Go`, `2 / 50 k`).
+ *
+ * PROMU depuis `miss-supaboss` (`formatUsage`) : quota et valeur formatés de
+ * la même façon, octets ou compteur selon la métrique. `null` affiche un
+ * tiret — la métrique n'a jamais été relevée, ce n'est pas zéro.
+ *
+ * @param {number | null} value
+ * @param {number} quota
+ * @param {{ bytes?: boolean, locale?: string }} [options]
+ */
+export function formatUsage(value, quota, options = {}) {
+  const { bytes = false, locale = defaultLocale } = options;
+  const fmt = bytes ? v => formatBytes(v, locale) : v => formatCount(v, locale);
+  const left = value === null ? '—' : fmt(value);
+  return `${left} / ${fmt(quota)}`;
+}
+
+/**
+ * Durée courte (`45 s`, `2 min 15 s`).
+ *
+ * PROMU depuis `miss-contraction` (`formatDuration`) : en dessous de deux
+ * minutes, les secondes seules restent plus lisibles que « 1 min 55 s ».
+ *
+ * @param {number} ms
+ */
+export function formatDuration(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return '';
+  const sec = Math.round(ms / 1000);
+  if (sec < 120) return `${sec} s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return s === 0 ? `${m} min` : `${m} min ${s} s`;
 }

@@ -175,3 +175,41 @@ export function createBackendSelector(config) {
     };
   };
 }
+
+/**
+ * Catégorise un message d'erreur backend/navigateur pour choisir le libellé
+ * à afficher : « vous n'avez pas le droit » ne se répare pas comme « le
+ * réseau est tombé ».
+ *
+ * PROMU depuis `mister-puzzle` (`classifyFirebaseError`) — les motifs
+ * couvrent Firebase, Supabase et les erreurs `fetch` du navigateur. Une
+ * classification par MESSAGE reste un filet : quand le SDK expose un code
+ * structuré, le lire d'abord.
+ *
+ * @param {string | null | undefined} message
+ * @returns {'permission' | 'network' | 'unknown'}
+ */
+export function classifyBackendError(message) {
+  if (!message) return 'unknown';
+  const m = String(message).toLowerCase();
+  if (
+    m.includes('permission_denied') ||
+    m.includes('permission denied') ||
+    m.includes('row-level security') ||
+    m.includes('unauthorized') ||
+    m.includes('403')
+  ) {
+    return 'permission';
+  }
+  if (
+    m.includes('network') ||
+    m.includes('failed to fetch') ||
+    m.includes('internet') ||
+    m.includes('offline') ||
+    m.includes('timeout') ||
+    m.includes('err_internet_disconnected')
+  ) {
+    return 'network';
+  }
+  return 'unknown';
+}

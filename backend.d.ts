@@ -74,3 +74,12 @@ export type SelectedBackend<T> = BackendCoverage & { backend: T };
 export declare function createBackendSelector<T extends object>(
   config: BackendSelectorConfig<T>
 ): (env?: Record<string, unknown>) => SelectedBackend<T>;
+
+/**
+ * Catégorise un message d'erreur backend/navigateur (Firebase, Supabase,
+ * `fetch`) pour choisir le libellé à afficher. Filet par MESSAGE : lire
+ * d'abord le code structuré du SDK quand il existe.
+ */
+export declare function classifyBackendError(
+  message: string | null | undefined
+): 'permission' | 'network' | 'unknown';

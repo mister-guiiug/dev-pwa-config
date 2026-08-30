@@ -439,6 +439,44 @@ globalThis.SHOWROOM_CATALOGUE = {
         en: 'Each card is a full link, not a clickable `div`: keyboard navigation and open-in-new-tab both work.',
       },
     },
+    {
+      id: 'SegmentedControl',
+      category: 'primitive',
+      covers: ['SegmentedControl'],
+      donts: {
+        fr: [
+          'Ne pas le réécrire à la main : mister-doc en portait CINQ variantes locales avant promotion — login, congé, thème, période, calendrier.',
+          'Ne pas s’en servir pour un choix de VALEUR de formulaire : il change une vue (`role="tablist"`). Une valeur se choisit avec des boutons radio.',
+        ],
+        en: [
+          'Don’t rewrite it by hand: mister-doc carried FIVE local variants before promotion — login, leave, theme, period, calendar.',
+          'Don’t use it to pick a form VALUE: it switches a view (`role="tablist"`). A value is picked with radio buttons.',
+        ],
+      },
+      a11y: {
+        fr: 'L’état actif est porté par `aria-selected`, pas par une classe : l’état accessible EST l’état visuel. Chaque segment est un vrai `<button>`, donc atteignable au clavier.',
+        en: 'The active state is carried by `aria-selected`, not a class: the accessible state IS the visual state. Each segment is a real `<button>`, hence keyboard-reachable.',
+      },
+    },
+    {
+      id: 'ConnectionBanner',
+      category: 'pwa',
+      covers: ['ConnectionBanner'],
+      donts: {
+        fr: [
+          'Ne pas retirer le délai : sans le débounce de 1,5 s, chaque micro-coupure fait clignoter le bandeau — c’est le défaut constaté avant la version de mister-qowa.',
+          'Ne pas lui faire dire plus que `navigator.onLine` : une interface active ne prouve pas que le serveur répond. Une connectivité applicative se passe via la prop `online`.',
+        ],
+        en: [
+          'Don’t remove the delay: without the 1.5 s debounce, every micro-drop makes the banner flash — the defect observed before mister-qowa’s version.',
+          'Don’t let it claim more than `navigator.onLine`: an active interface doesn’t prove the server answers. App-level connectivity goes through the `online` prop.',
+        ],
+      },
+      a11y: {
+        fr: '`role="status"` : l’apparition est annoncée sans interrompre — être hors ligne est un état, pas une alerte.',
+        en: '`role="status"`: its appearance is announced without interrupting — being offline is a state, not an alert.',
+      },
+    },
   ],
 
   /* ── Hooks et utilitaires ──────────────────────────────────────────────── *
@@ -688,6 +726,127 @@ globalThis.SHOWROOM_CATALOGUE = {
       dont: {
         fr: 'Ne pas y verser le dictionnaire métier de l’app : `createI18n` fabrique un contexte ISOLÉ, et celui-ci ne porte que la quinzaine de chaînes des composants.',
         en: 'Don’t pour the app’s domain dictionary into it: `createI18n` builds an ISOLATED context, and this one carries only the components’ fifteen-odd strings.',
+      },
+    },
+    {
+      id: 'useLongPress',
+      covers: ['useLongPress'],
+      signature:
+        'useLongPress(onLongPress, { onTap?, delayMs?, moveTolerancePx? }) → { isPressing, handlers }',
+      summary: {
+        fr: 'Appui long ET tap distingués, au doigt comme au clavier. Fusion de trois copies (miss-badminton, miss-lookhouse, mister-molkky).',
+        en: 'Long press AND tap told apart, by touch and by keyboard. Merges three copies (miss-badminton, miss-lookhouse, mister-molkky).',
+      },
+      dont: {
+        fr: 'Ne pas ajouter un `onClick` à côté : les `handlers` en posent déjà un, qui neutralise le clic né d’un appui long.',
+        en: 'Don’t add your own `onClick` next to it: the `handlers` already set one, which neutralises the click born of a long press.',
+      },
+    },
+    {
+      id: 'useFeedback',
+      covers: ['useFeedback'],
+      signature: 'useFeedback(events, { sound?, haptic? }) → trigger(event)',
+      summary: {
+        fr: 'Son et vibration groupés par ÉVÉNEMENT métier : la table est une prop, le socle ne connaît pas les noms de l’app.',
+        en: 'Sound and vibration grouped by app-level EVENT: the table is a prop, the base doesn’t know the app’s names.',
+      },
+      dont: {
+        fr: 'Ne pas jouer un son hors d’un geste utilisateur : iOS garde l’AudioContext suspendu tant qu’aucune interaction ne l’a repris.',
+        en: 'Don’t play a sound outside a user gesture: iOS keeps the AudioContext suspended until an interaction resumes it.',
+      },
+    },
+    {
+      id: 'useWakeLock',
+      covers: ['useWakeLock'],
+      signature: 'useWakeLock(active?) → void',
+      summary: {
+        fr: 'Écran maintenu allumé pendant une activité (match, partie), re-acquis au retour d’onglet, silencieux si l’API manque.',
+        en: 'Keeps the screen awake during an activity (match, game), re-acquired on tab return, silent when the API is missing.',
+      },
+      dont: {
+        fr: 'Ne pas le laisser actif en permanence : le verrou vide la batterie. `active` doit suivre l’activité réelle.',
+        en: 'Don’t leave it permanently on: the lock drains the battery. `active` must follow the actual activity.',
+      },
+    },
+    {
+      id: 'usePullToRefresh',
+      covers: ['usePullToRefresh'],
+      signature:
+        'usePullToRefresh({ onRefresh, enabled?, threshold? }) → { pulling, progress, refreshing }',
+      summary: {
+        fr: 'Tirer-pour-rafraîchir amorti, avec progression à afficher. Promu de mister-molkky, la version la plus complète du parc.',
+        en: 'Damped pull-to-refresh with a progress value to display. Promoted from mister-molkky, the most complete version in the fleet.',
+      },
+      dont: {
+        fr: 'Ne pas l’activer sur une page qui scrolle déjà nativement vers le haut : le geste entre en conflit avec celui du navigateur.',
+        en: 'Don’t enable it on a page that already overscrolls natively: the gesture conflicts with the browser’s own.',
+      },
+    },
+    {
+      id: 'useKeyboardShortcuts',
+      covers: ['useKeyboardShortcuts'],
+      signature: 'useKeyboardShortcuts(shortcuts, enabled?) → void',
+      summary: {
+        fr: 'Raccourcis globaux, inertes quand l’utilisateur écrit (champs, `contenteditable`, composition IME).',
+        en: 'Global shortcuts, inert while the user is typing (fields, `contenteditable`, IME composition).',
+      },
+      dont: {
+        fr: 'Ne pas y câbler des actions destructrices sans confirmation : un raccourci d’une touche part vite, et sans geste de rattrapage.',
+        en: 'Don’t wire destructive actions to it without confirmation: a one-key shortcut fires fast, with no recovery gesture.',
+      },
+    },
+    {
+      id: 'useShake',
+      covers: ['useShake', 'requestMotionPermission'],
+      signature:
+        'useShake(onShake, { enabled?, threshold?, cooldownMs? }) · requestMotionPermission()',
+      summary: {
+        fr: 'Détection de secousse (accéléromètre), promue de miss-dice. Sur iOS 13+, l’accès exige `requestMotionPermission` DANS un geste utilisateur.',
+        en: 'Shake detection (accelerometer), promoted from miss-dice. On iOS 13+, access requires `requestMotionPermission` INSIDE a user gesture.',
+      },
+      dont: {
+        fr: 'Ne pas en faire le seul déclencheur : tous les appareils n’ont pas de capteur, et l’utilisateur doit avoir un bouton équivalent.',
+        en: 'Don’t make it the only trigger: not every device has a sensor, and the user must have an equivalent button.',
+      },
+    },
+    {
+      id: 'useAsync',
+      covers: ['useAsync'],
+      signature: 'useAsync(fn, key) → { data, loading, error, reload }',
+      summary: {
+        fr: 'Chargement asynchrone minimal : erreur normalisée en `Error`, protection contre les mises à jour après démontage, `reload` manuel.',
+        en: 'Minimal async loading: error normalised to `Error`, protected against post-unmount updates, manual `reload`.',
+      },
+      dont: {
+        fr: 'Ne pas oublier `key` quand la requête dépend d’un identifiant : c’est son changement qui recharge, pas celui de `fn` (lue via une ref).',
+        en: 'Don’t forget `key` when the request depends on an id: its change is what reloads, not `fn`’s (read through a ref).',
+      },
+    },
+    {
+      id: 'useUndoableState',
+      covers: ['useUndoableState'],
+      signature:
+        'useUndoableState({ load?, save?, clear?, isFinal?, maxHistory? }) → { state, canUndo, start, apply, undo, reset }',
+      summary: {
+        fr: 'État avec annulation et persistance par ports injectés, promu du `useUndoableGame` de miss-dice. Un état final efface sa sauvegarde.',
+        en: 'State with undo and persistence through injected ports, promoted from miss-dice’s `useUndoableGame`. A final state erases its save.',
+      },
+      dont: {
+        fr: 'Ne pas attendre un historique persisté : seul l’état courant survit au rechargement, l’historique repart propre — c’est voulu.',
+        en: 'Don’t expect a persisted history: only the current state survives a reload, the history starts clean — by design.',
+      },
+    },
+    {
+      id: 'usePrefersHighContrast',
+      covers: ['usePrefersHighContrast'],
+      signature: 'usePrefersHighContrast() → boolean',
+      summary: {
+        fr: 'Respect de `prefers-contrast: more`, pour ce que le CSS ne peut pas ajuster seul.',
+        en: 'Honours `prefers-contrast: more`, for what CSS cannot adjust on its own.',
+      },
+      dont: {
+        fr: 'Ne pas confondre avec le contraste FORCÉ : `forced-colors` remplace les couleurs d’autorité, et `components.css` le rattrape déjà.',
+        en: 'Don’t confuse it with FORCED colours: `forced-colors` replaces colours outright, and `components.css` already handles that.',
       },
     },
   ],
