@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import type { ApplyUpdateOptions } from '../sw-update.js';
 import type { RegisterSW } from './use-update-prompt.js';
 
@@ -22,7 +22,7 @@ export interface UpdatePromptBannerProps {
   ) => void;
   /** Forme historique de `onRegisteredSW`, sans l'URL du script. */
   onRegistered?: (registration?: ServiceWorkerRegistration) => void;
-  title?: string;
+  title?: ReactNode;
   updateLabel?: string;
   updatingLabel?: string;
   snoozeLabel?: string;
