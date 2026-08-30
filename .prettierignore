@@ -10,3 +10,10 @@ package-lock.json
 # `test/showroom-metrics.test.mjs` compare le fichier octet pour octet à ce
 # qu'il produit. Le laisser à Prettier ferait diverger les deux à chaque nuit.
 showroom/metrics.js
+
+# Les worktrees éphémères des agents. Ce sont des COPIES DE TRAVAIL d'autres
+# sessions, sur leurs propres branches : leur contenu n'appartient pas à cette
+# copie, et Prettier n'a rien à y dire. Sans cette ligne, un `showroom/metrics.js`
+# engendré chez un voisin fait échouer le `format:check` d'ici — donc `validate`,
+# donc toute la chaîne — pour un fichier que ce dépôt ignore déjà en propre.
+.claude/worktrees/

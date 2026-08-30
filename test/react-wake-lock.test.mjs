@@ -148,6 +148,28 @@ test('le verrou est relâché au démontage', async () => {
   }
 });
 
+test('le cleanup débranche l’écouteur : le démontage rend le hook muet', async () => {
+  // `active` bascule à chaque cycle d'usage (une contraction, une partie) :
+  // l'effet se rejoue, et sans ce retrait chaque cycle laisserait un écouteur
+  // mort derrière lui. Un simple retour au premier plan déclencherait alors
+  // autant de demandes que de cycles déjà passés — sur un écran que plus
+  // personne ne veut garder allumé.
+  const env = setup();
+  try {
+    const view = await renderHook(() => useWakeLock(true));
+    await view.unmount();
+    assert.equal(env.requests, 1);
+
+    // Le démontage a relâché le sentinel : la garde `released !== false` laisse
+    // donc passer. Seul le `removeEventListener` retient encore la demande.
+    await view.act(() => env.setVisibility('visible'));
+
+    assert.equal(env.requests, 1, 'un hook démonté ne demande plus rien');
+  } finally {
+    env.dom.restore();
+  }
+});
+
 test('LA FUITE DE molkky : une demande EN VOL au démontage est relâchée à son arrivée', async () => {
   // Quitter la partie pendant que la demande est en vol laissait le verrou
   // acquis pour toujours dans la copie de molkky : l'écran de l'utilisateur
