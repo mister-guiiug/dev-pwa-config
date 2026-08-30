@@ -96,7 +96,37 @@ test('Sheet : Échap ferme', async () => {
   }
 });
 
-test('Sheet : un clic sur le fond ferme, un clic dans le panneau non', async () => {
+test('Sheet : un clic sur le VOILE ferme — le chemin réel du navigateur', async () => {
+  // LE BUG MESURÉ (mister-footcoach#25, mister-molkky#14). Le voile recouvre
+  // toute la racine : en navigateur, c'est LUI que le hit-testing désigne
+  // comme cible d'un clic dans le fond. jsdom n'en fait pas — dispatcher sur
+  // la racine, comme le faisait ce test, validait donc un chemin qu'aucun
+  // clic réel n'emprunte. Ici on dispatche sur le nœud du voile lui-même.
+  const dom = setupDom();
+  try {
+    let closed = 0;
+    const view = await mount(sheet({ onClose: () => (closed += 1) }));
+    const backdrop = view.container.querySelector(
+      '[data-dwc="sheet-backdrop"]'
+    );
+
+    await view.act(() =>
+      backdrop.dispatchEvent(
+        new window.MouseEvent('mousedown', { bubbles: true })
+      )
+    );
+    assert.equal(closed, 1, 'le clic reçu par le voile doit fermer');
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('Sheet : un clic reçu par la racine ferme toujours, un clic dans le panneau non', async () => {
+  // Chez mister-footcoach et mister-molkky, la rustine `pointer-events: none`
+  // posée sur le voile fait atterrir le clic sur la RACINE : cette topologie
+  // doit continuer de fermer. Et un mousedown né dans le panneau — qui bulle
+  // avec sa cible d'origine — ne doit toujours pas fermer.
   const dom = setupDom();
   try {
     let closed = 0;

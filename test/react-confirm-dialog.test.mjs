@@ -174,31 +174,66 @@ test('loading garde la boîte ouverte et bloque le double envoi', async () => {
   }
 });
 
-test('le fond ferme, sauf pendant une confirmation en cours', async () => {
+test('le fond ferme — clic reçu par le VOILE comme par la racine — mais pas le panneau', async () => {
+  // LE BUG MESURÉ (mister-footcoach#25, mister-molkky#14). Le voile recouvre
+  // toute la racine : en navigateur c'est LUI la cible d'un clic dans le
+  // fond, et la garde `target === currentTarget` seule ne fermait jamais.
+  // jsdom ne fait pas de hit-testing : ce test dispatche donc sur le nœud du
+  // voile lui-même — le chemin réel — ET sur la racine, où atterrit le clic
+  // chez les apps qui ont posé la rustine `pointer-events: none`.
   const dom = setupDom();
   try {
     let annule = 0;
     const view = await mount(
       h(ConfirmDialog, base({ onCancel: () => (annule += 1) }))
     );
+    const voile = view.container.querySelector('[data-dwc="confirm-backdrop"]');
+    await view.act(() =>
+      voile.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true }))
+    );
+    assert.equal(annule, 1, 'le clic reçu par le voile doit fermer');
+
     const racine = view.container.querySelector('[data-dwc="confirm"]');
     await view.act(() =>
       racine.dispatchEvent(
         new window.MouseEvent('mousedown', { bubbles: true })
       )
     );
-    assert.equal(annule, 1);
-    await view.unmount();
+    assert.equal(annule, 2, 'le clic reçu par la racine doit toujours fermer');
 
+    const panneau = view.container.querySelector('[data-dwc="confirm-panel"]');
+    await view.act(() =>
+      panneau.dispatchEvent(
+        new window.MouseEvent('mousedown', { bubbles: true })
+      )
+    );
+    assert.equal(annule, 2, 'un clic dans le panneau ne doit pas fermer');
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('le fond ne ferme pas pendant une confirmation en cours', async () => {
+  const dom = setupDom();
+  try {
+    let annule = 0;
     const occupe = await mount(
       h(ConfirmDialog, base({ loading: true, onCancel: () => (annule += 1) }))
+    );
+    // Sur le voile — le chemin réel : la garde `loading` doit s'y appliquer
+    // aussi, pas seulement au chemin historique par la racine.
+    await occupe.act(() =>
+      occupe.container
+        .querySelector('[data-dwc="confirm-backdrop"]')
+        .dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true }))
     );
     await occupe.act(() =>
       occupe.container
         .querySelector('[data-dwc="confirm"]')
         .dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true }))
     );
-    assert.equal(annule, 1, 'le fond a fermé pendant l’opération');
+    assert.equal(annule, 0, 'le fond a fermé pendant l’opération');
     await occupe.unmount();
   } finally {
     dom.restore();
@@ -286,9 +321,11 @@ test('en mono-action, Échap et le voile valent un « OK »', async () => {
       );
     });
     assert.equal(ok, 1, 'Échap n’a pas pris acte');
+    // Sur le nœud du voile lui-même : c'est lui que le navigateur désigne
+    // (voir « le fond ferme » ci-dessus) — pas la racine.
     await view.act(() =>
       view.container
-        .querySelector('[data-dwc="confirm"]')
+        .querySelector('[data-dwc="confirm-backdrop"]')
         .dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true }))
     );
     assert.equal(ok, 2, 'le voile n’a pas pris acte');

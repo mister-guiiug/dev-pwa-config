@@ -23,6 +23,19 @@ import { useDialogBehaviour } from './use-dialog.js';
  *  - scroll de fond verrouillé **par compteur**, restauré à sa valeur d'origine ;
  *  - `footer` optionnel, **épinglé** pendant que le corps défile.
  *
+ * LE CLIC SUR LE FOND ACCEPTE DEUX CIBLES — la racine ET le voile. Le voile
+ * (`[data-dwc="sheet-backdrop"]`) est un enfant qui recouvre toute la racine
+ * (`inset: 0` dans `components.css`) : en navigateur, c'est LUI que le
+ * hit-testing désigne comme cible d'un clic dans le fond. Une garde
+ * `target === currentTarget` seule ne fermait donc JAMAIS — invisible en
+ * jsdom, qui ne fait pas de hit-testing et laissait les tests dispatcher sur
+ * la racine, mais mesuré en vrai navigateur par deux apps pendant la campagne
+ * `components.css` (mister-footcoach#25, mister-molkky#14). Leur rustine —
+ * `pointer-events: none` sur le voile — fait au contraire atterrir le clic
+ * sur la racine : les deux topologies coexistent dans le parc et doivent
+ * fermer toutes les deux. Un mousedown né dans le panneau bulle avec sa cible
+ * d'origine — ni racine ni voile — et ne ferme toujours pas.
+ *
  * LIMITE. Le contenu de fond n'est pas rendu `inert` : la feuille n'utilise pas
  * de portail et ne peut donc pas neutraliser ses propres ancêtres sans risque.
  * `aria-modal` couvre les lecteurs d'écran modernes ; pour une neutralisation
@@ -44,6 +57,7 @@ export function Sheet(props = {}) {
   const close_ = closeLabel ?? labels.close;
 
   const panelRef = useRef(null);
+  const backdropRef = useRef(null);
   const titleId = useId();
 
   // Échap, piège de focus, restitution et verrou de scroll : voir
@@ -58,12 +72,21 @@ export function Sheet(props = {}) {
       className,
       'data-dwc': 'sheet',
       onMouseDown: event => {
-        // Uniquement le fond : un glisser-déposer terminé hors du panneau ne
-        // doit pas fermer la feuille.
-        if (event.target === event.currentTarget) close();
+        // Racine OU voile — les deux topologies mesurées, voir l'en-tête. La
+        // référence (et non l'attribut `data-dwc`) : seul NOTRE voile compte,
+        // pas un élément homonyme passé dans `children`. `mousedown` et non
+        // `click` : un glisser-déposer né dans le panneau et relâché sur le
+        // fond ne doit pas fermer la feuille.
+        const { target } = event;
+        if (target === event.currentTarget || target === backdropRef.current)
+          close();
       },
     },
-    h('div', { 'data-dwc': 'sheet-backdrop', 'aria-hidden': 'true' }),
+    h('div', {
+      ref: backdropRef,
+      'data-dwc': 'sheet-backdrop',
+      'aria-hidden': 'true',
+    }),
     h(
       'div',
       {
