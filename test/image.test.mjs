@@ -176,8 +176,80 @@ test('la descente s’arrête, et le bitmap est libéré même en échec', async
     [...paliers].sort((x, y) => y - x),
     'les paliers doivent décroître'
   );
-  assert.ok(paliers.at(-1) >= 200, 'la descente ne doit pas filer vers 1 px');
+  // Le plancher vaut 320 px et la boucle s'arrête APRÈS l'avoir franchi : un
+  // seul palier passe sous la barre, et c'est le dernier. Se contenter d'un
+  // « pas trop petit » laisserait passer un plancher déplacé à 40 px.
+  assert.equal(
+    paliers.filter(p => p <= 320).length,
+    1,
+    'un seul palier doit franchir le plancher de 320 px'
+  );
+  assert.ok(paliers.at(-1) <= 320, 'et ce palier doit être le dernier');
   assert.equal(b.closed(), 1, 'un bitmap non libéré retient sa mémoire');
+});
+
+test('compressImageToMaxBytes suit un maxDimension explicite', async () => {
+  // Le défaut est éprouvé plus haut ; reste à prouver que l'option est LUE.
+  // C'est précisément ce qui manquait quand le 2560 était écrit dans le corps
+  // de la fonction au lieu d'être une constante nommée.
+  const b = bench({ width: 4000, height: 3000, sizeFor: () => 10 });
+  await compressImageToMaxBytes(FILE, 1000, { ...b.seams, maxDimension: 800 });
+  assert.deepEqual(
+    { width: b.attempts[0].width, height: b.attempts[0].height },
+    fitWithin(4000, 3000, 800)
+  );
+});
+
+test('un blob de 0 octet ne passe pas pour « sous le budget »', async () => {
+  // `0 <= maxBytes` est vrai. Sans le garde `size > 0`, une surface vide
+  // serait livrée à l'utilisateur avec l'air d'un succès — un fichier .jpg
+  // que rien n'ouvre.
+  const b = bench({ width: 100, height: 100, sizeFor: () => 0 });
+  await assert.rejects(
+    compressImageToMaxBytes(FILE, 1000, b.seams),
+    /Impossible d’obtenir une image/
+  );
+  assert.equal(
+    b.attempts.length,
+    COMPRESS_QUALITIES.length,
+    'chaque qualité doit avoir été essayée et refusée'
+  );
+});
+
+test('un nom vide, absent ou réduit à son extension retombe sur « photo »', async () => {
+  const b = bench({ width: 100, height: 100, sizeFor: () => 10 });
+  // `.jpeg` compte : retirer l'extension d'un nom qui n'est QUE son extension
+  // ne laisse rien, et un fichier nommé `.jpg` serait caché sous Unix.
+  for (const name of ['', undefined, null, '.jpeg']) {
+    const out = await compressImageToMaxBytes({ ...FILE, name }, 1000, b.seams);
+    assert.equal(out.name, 'photo.jpg', `nom d’origine : ${String(name)}`);
+  }
+});
+
+test('un nom d’espaces donne « _ », pas le repli « photo »', async () => {
+  // Les séparateurs sont assainis AVANT le test de vacuité : trois espaces
+  // deviennent un `_`, qui est un tronc non vide. Comportement réel et sans
+  // danger — noté ici pour qu'on ne le prenne pas plus tard pour une
+  // régression du repli.
+  const b = bench({ width: 100, height: 100, sizeFor: () => 10 });
+  const out = await compressImageToMaxBytes(
+    { ...FILE, name: '   ' },
+    1000,
+    b.seams
+  );
+  assert.equal(out.name, '_.jpg');
+});
+
+test('un nom à rallonge est tronqué, extension retirée d’abord', async () => {
+  const b = bench({ width: 100, height: 100, sizeFor: () => 10 });
+  const out = await compressImageToMaxBytes(
+    { ...FILE, name: `${'a'.repeat(200)}.jpeg` },
+    1000,
+    b.seams
+  );
+  // 80 caractères comptés sur le tronc, pas sur le nom complet : tronquer
+  // avant de retirer l'extension laisserait un « .jpe » collé au bout.
+  assert.equal(out.name, `${'a'.repeat(80)}.jpg`);
 });
 
 test('une image illisible donne un message actionnable, pas une trace brute', async () => {
@@ -239,4 +311,31 @@ test('stripImageMetadata libère le bitmap même si le dessin échoue', async ()
 test('un ré-encodage refusé lève au lieu de rendre null', async () => {
   const b = bench({ width: 100, height: 100, sizeFor: () => null });
   await assert.rejects(stripImageMetadata({}, b.seams), /ré-encodage/);
+});
+
+test('stripImageMetadata suit ses options plutôt que ses défauts', async () => {
+  // Les trois défauts sont éprouvés juste au-dessus — mais un défaut testé ne
+  // prouve pas que l'option est LUE : une valeur codée en dur dans le corps
+  // passerait ces deux tests sans broncher. Il faut donc les faire diverger.
+  const b = bench({ width: 4000, height: 3000, sizeFor: () => 10 });
+  await stripImageMetadata(
+    {},
+    { ...b.seams, maxDimension: 512, type: 'image/png', quality: 0.4 }
+  );
+  assert.deepEqual(
+    { width: b.attempts[0].width, height: b.attempts[0].height },
+    fitWithin(4000, 3000, 512)
+  );
+  assert.equal(b.attempts[0].type, 'image/png');
+  assert.equal(b.attempts[0].quality, 0.4);
+});
+
+test('une bande 1 × 5000 traverse stripImageMetadata sans côté nul', async () => {
+  // Le plancher est prouvé sur `fitWithin`, mais c'est le CÂBLAGE qui avait
+  // lâché chez bac-sable : la géométrie était juste et la fonction appelait
+  // quand même `toBlob` sur un canvas de largeur 0, qui échoue en silence.
+  const b = bench({ width: 1, height: 5000, sizeFor: () => 10 });
+  await stripImageMetadata({}, b.seams);
+  assert.equal(b.attempts[0].width, 1, 'la largeur ne doit pas arrondir à 0');
+  assert.equal(b.attempts[0].height, IMAGE_MAX_DIMENSION);
 });
