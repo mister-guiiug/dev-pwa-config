@@ -4,11 +4,21 @@ import { useLabels } from './labels.js';
 /**
  * Barre de navigation basse — la coque de toutes les apps mobiles de la famille.
  *
- * PROMU, PAS INVENTÉ. **Sept apps sur seize** portent un `BottomNav.tsx` :
- * miss-contraction, miss-genius, miss-lookhouse, miss-supaboss, mister-cim10,
- * mister-doc, mister-footcoach (mister-puzzle a la même chose sous le nom
- * `Navbar`). Trois à six destinations, une icône, un libellé, un état actif :
- * la structure est identique partout, les défauts non.
+ * PROMU, PAS INVENTÉ. **Sept apps** portaient un `BottomNav.tsx` au relevé
+ * d'origine : miss-contraction, miss-genius, miss-lookhouse, miss-supaboss,
+ * mister-cim10, mister-doc, mister-footcoach. Trois à six destinations, une
+ * icône, un libellé, un état actif : la structure est identique partout, les
+ * défauts non.
+ *
+ * UNE HUITIÈME Y FIGURAIT À TORT, et il a fallu une migration pour s'en
+ * apercevoir. Cet en-tête affirmait « mister-puzzle a la même chose sous le nom
+ * `Navbar` ». **Faux** : son `Navbar.tsx` est un EN-TÊTE HAUT collant
+ * (`<header className="sticky top-0 …">`) — logo, progression, hamburger,
+ * menu de thème — et **il ne porte aucune destination**. L'app n'a d'ailleurs
+ * aucun routeur : deux écrans, choisis par le hash de l'URL. `BottomNav` exige
+ * une liste STATIQUE de routes ; puzzle n'en a pas, et n'en aura pas.
+ * L'affirmation venait d'une ressemblance de nom de fichier, jamais vérifiée —
+ * et elle a mis un dépôt sur une liste de migration pendant des semaines.
  *
  * QUATRE DÉFAUTS CONSTATÉS, corrigés ici :
  *
@@ -32,6 +42,20 @@ import { useLabels } from './labels.js';
  * `<a href>` ; `linkComponent` + `hrefProp` branchent un `Link` (`hrefProp="to"`).
  * L'état actif est calculé ici, jamais délégué : c'est lui qui portait le
  * défaut n° 2.
+ *
+ * DEUX PIÈGES D'ADOPTION, chacun payé DEUX FOIS (mister-cim10 puis
+ * mister-footcoach), donc écrits ici plutôt que redécouverts une troisième :
+ *
+ * - **Brancher `Link`, PAS `NavLink`.** `NavLink` redéclare son propre
+ *   `aria-current` APRÈS l'étalement des props : il y aurait alors deux sources
+ *   de vérité pour l'état actif, la nôtre et la sienne, et `end` ne lui est pas
+ *   transmis. Les deux apps ont tranché pour `Link`, indépendamment et pour la
+ *   même raison.
+ * - **`currentPath` est OBLIGATOIRE dès que le routeur a un `basename`.**
+ *   Le repli lit `window.location.pathname`, qui vaut `/mon-app/equipes` là où
+ *   les `href` valent `/equipes` : **aucun onglet ne serait actif** — et
+ *   seulement une fois déployé, jamais en développement. Passer
+ *   `useLocation().pathname`, qui est relatif au `basename`.
  *
  * Non stylé : cibler `[data-dwc="bottom-nav"]` et descendants.
  *
