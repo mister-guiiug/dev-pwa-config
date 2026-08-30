@@ -1,5 +1,97 @@
 # Changelog
 
+## 3.25.0
+
+### Minor Changes
+
+- c96ff88: `image` — le module est enfin testable, et deux défauts que trois adoptions ont
+  mis au jour sont corrigés.
+
+  **La même option, deux défauts différents.** `stripImageMetadata` lisait
+  `IMAGE_MAX_DIMENSION` (2048) quand `compressImageToMaxBytes` codait `2560` en
+  dur, sous le même nom d'option `maxDimension`. La divergence est désormais
+  **intentionnelle et nommée** : `IMAGE_COMPRESS_START_DIMENSION` est exportée, et
+  son en-tête dit pourquoi elle dépasse le plafond d'affichage — viser un budget
+  d'octets autorise à partir plus haut, et l'unifier silencieusement à 2048
+  dégraderait les photos de `miss-carbook`, dont la compression est promue ici. Un
+  test empêche qu'on les « corrige » en les rapprochant.
+
+  **Le DOM est isolé derrière deux coutures.** `render` et `encode` sont
+  injectables, et la géométrie devient une fonction pure exportée, `fitWithin`.
+  Ces fonctions n'avaient aucun test au-delà de leur partie pure — non par oubli,
+  mais parce que `createImageBitmap` est absent de jsdom : simuler un canvas
+  aurait donné des tests ne prouvant que leur propre bouchon. La décision — quelle
+  taille, quelle qualité, quand s'arrêter — se vérifie maintenant sans lui, en
+  18 tests. Le dessin reste hors de portée, et c'est écrit.
+
+  `fitWithin` publie les trois garanties qui étaient jusqu'ici implicites : jamais
+  d'agrandissement, plancher à 1 px sur chaque côté (une bande 1 × 5000 arrondit
+  sa petite dimension à 0, et un canvas de largeur nulle fait échouer `toBlob`
+  sans rien dire), rapport d'aspect conservé.
+
+  `compressImageToMaxBytes` accepte en outre une horloge `now`, pour que le
+  `lastModified` produit soit stable en test.
+
+  **En-tête corrigé.** Il affirmait que la contribution de `mister-puzzle` était
+  « couverte par les deux précédentes ». Sa migration (#15) a prouvé le
+  contraire : sa sortie doit être une **chaîne** (Firebase RTDB ne stocke pas de
+  binaire) et son budget se compte en **caractères de base64**, pas en octets. Le
+  dernier maillon reste légitimement chez elle.
+
+  Aucune rupture : les appels existants gardent leur comportement, les coutures
+  sont facultatives.
+
+### Patch Changes
+
+- 4dfc23e: La table « Exports npm » du README documente enfin **les 137 sous-chemins
+  publiés**, contre 62 auparavant. Les 75 manquants n'étaient pas des modules
+  mineurs : `security`, `markdown`, `similarity`, `haptics`, `audio`, `speech`,
+  `rate-limit`, `geocode-ban`, `image`, les trois transports `push/*`, sept hooks
+  React promus d'apps de la famille et quatre composants d'interface — dont 22
+  sans aucune mention ailleurs dans la page.
+
+  C'est la leçon `sparkline` à l'échelle du tiers du paquet : ce module est resté
+  inutilisé non parce qu'il manquait, mais parce qu'il était introuvable. Les
+  relevés d'adoption comptaient donc des doublons pour du code que les apps ne
+  pouvaient pas découvrir.
+
+  `test/package-surface.test.mjs` empêche la dérive de revenir : publier un
+  sous-chemin sans l'inscrire dans la table fait échouer `npm test`. Seule la
+  présence de la ligne est vérifiée, pas son contenu.
+
+  Le journal de campagne consigne par ailleurs ce que les quatre migrations
+  `ical` ont appris — dont la **limite du paquet** : il ne franchit pas la
+  frontière Deno, car GitHub Packages exige un jeton même en lecture et le
+  constructeur distant de Supabase ne l'a pas. Pour du code qui tourne chez
+  l'hébergeur, l'adoption utile est la référence écrite, pas l'import.
+
+- 6469c21: `react/use-wake-lock` a enfin ses tests, et les angles morts de la suite
+  deviennent des décisions déclarées.
+
+  **Ce que la campagne a payé pour l'apprendre.** Le hook a été promu de deux
+  apps, publié, et importé par personne pendant des semaines — sans qu'aucun test
+  ne l'ouvre jamais. Quand trois apps l'ont adopté le 30/08/2026, l'une d'elles
+  portait dans sa copie un défaut que le paquet corrigeait **sans le prouver** :
+  pas d'écoute de `visibilitychange`, donc l'écran s'éteignait en pleine
+  contraction après un simple aller-retour dans une autre app. Une autre laissait
+  fuir une demande de verrou encore en vol au démontage.
+
+  Le hook du paquet était juste sur les deux points ; rien ne garantissait qu'il
+  le reste. Huit tests le garantissent maintenant — la ré-acquisition au retour au
+  premier plan, le relâchement d'une demande arrivée après le démontage, le
+  silence quand l'API manque ou refuse, et le fait qu'inactif il ne demande rien
+  (c'est ce qui porte le réglage « garder l'écran allumé » des apps). Les deux
+  garanties centrales sont vérifiées **par mutation** : retirer la ligne
+  correspondante du hook fait tomber le test qui la nomme, et lui seul.
+
+  **Onze modules n'étaient ouverts par aucun test.** `test/package-surface.test.mjs`
+  les fait maintenant apparaître : chacun est inscrit dans une liste nommée avec
+  sa raison — API absente de Node (Web Audio, DeviceMotion, caméra, gestes
+  tactiles), enveloppe fine dont le socle est déjà testé, ou transport exigeant un
+  SDK complet. Publier un nouveau module sans test force désormais à venir écrire
+  la sienne. Un second test empêche l'inverse : une exemption qui survit au test
+  qu'on a fini par écrire cacherait la suivante.
+
 ## 3.24.0
 
 ### Minor Changes
