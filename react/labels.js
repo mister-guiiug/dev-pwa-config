@@ -37,6 +37,8 @@ export const LABELS = {
       confirm: 'Confirmer',
       cancel: 'Annuler',
       destructiveConfirm: 'Supprimer',
+      // Mode mono-action : le bouton prend acte, il ne « confirme » rien.
+      ok: 'OK',
     },
     toast: { close: 'Fermer la notification', region: 'Notifications' },
     error: { retry: 'Réessayer', close: 'Fermer' },
@@ -106,6 +108,7 @@ export const LABELS = {
       confirm: 'Confirm',
       cancel: 'Cancel',
       destructiveConfirm: 'Delete',
+      ok: 'OK',
     },
     toast: { close: 'Dismiss notification', region: 'Notifications' },
     error: { retry: 'Try again', close: 'Dismiss' },

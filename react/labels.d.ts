@@ -3,7 +3,13 @@ import type { FC, ReactNode } from 'react';
 /** Groupes de libellés portés par le paquet. */
 export interface LabelGroups {
   sheet: { close: string };
-  confirm: { confirm: string; cancel: string; destructiveConfirm: string };
+  confirm: {
+    confirm: string;
+    cancel: string;
+    destructiveConfirm: string;
+    /** Mode mono-action : le bouton prend acte, il ne « confirme » rien. */
+    ok: string;
+  };
   toast: { close: string; region: string };
   error: { retry: string; close: string };
   install: {

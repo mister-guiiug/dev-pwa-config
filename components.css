@@ -1191,6 +1191,13 @@
     color: var(--dwc-primary-contrast, Canvas);
   }
 
+  /* Mono-action (`cancelLabel: null`) : seul dans la rangée, le bouton la
+     prend en entier — le rendu des alertes que mister-puzzle et mister-cim10
+     dessinaient à la main. `:only-child` suffit : pas de nouvel attribut. */
+  [data-dwc='confirm-confirm']:only-child {
+    flex: 1;
+  }
+
   /* Destructif : la couleur ne porte pas seule le sens — le libellé passe à
      « Supprimer » côté composant. Elle le renforce, c'est tout. */
   [data-dwc='confirm'][data-destructive] [data-dwc='confirm-confirm'] {
