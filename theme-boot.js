@@ -76,13 +76,30 @@ export function themeBootSource(options = {}) {
       `localStorage.setItem(${key},o);break;}}}`
     : '';
 
+  // RIEN DE STOCKÉ : c'est `defaultTheme` qui tranche, PAS le système.
+  //
+  // Ce script résolvait toujours contre `prefers-color-scheme` en l'absence de
+  // valeur stockée, en ignorant le `defaultTheme` qu'on lui passait. Or
+  // `useTheme` le respecte, lui : une app déclarant `defaultTheme: 'light'`
+  // obtenait un premier rendu SOMBRE (système) puis un basculement en clair
+  // (React) — c'est-à-dire exactement le scintillement que ce script existe
+  // pour supprimer, causé par le script lui-même, et seulement chez les
+  // utilisateurs dont le système contredit le défaut de l'app.
+  //
+  // `system` continue de se résoudre par `prefers-color-scheme` : c'est ce que
+  // le mot veut dire, et c'est le défaut.
+  const resolveEmpty =
+    defaultTheme === 'light' || defaultTheme === 'dark'
+      ? JSON.stringify(defaultTheme)
+      : "(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')";
+
   return (
     '(function(){try{' +
     'var r=document.documentElement,' +
     `v=localStorage.getItem(${key});` +
     migrate +
     "var e=v==='light'||v==='dark'?v:" +
-    "(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');" +
+    `${resolveEmpty};` +
     apply +
     'r.style.colorScheme=e;' +
     // Un stockage refusé (navigation privée, cookies bloqués) ne doit pas

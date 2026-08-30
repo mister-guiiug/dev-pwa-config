@@ -2,8 +2,19 @@ import type { FC, ReactNode } from 'react';
 import type { FamilyTheme } from '../themes.js';
 
 export interface ThemeProviderProps {
-  /** Identifiant d'app du catalogue : sa palette peint les `--dwc-*`. */
+  /**
+   * Identifiant d'app du catalogue : sa palette peint les `--dwc-*`.
+   *
+   * Charge `themes.js` (22 ko, dix-sept palettes) de façon **paresseuse**,
+   * donc au prix d'une frame non peinte. Préférer `palette` quand on sait déjà
+   * laquelle on veut.
+   */
   appId?: string;
+  /**
+   * La palette, fournie directement — synchrone, et sans tirer le catalogue
+   * des seize autres apps. L'emporte sur `appId`.
+   */
+  palette?: FamilyTheme;
   children?: ReactNode;
   defaultTheme?: 'light' | 'dark' | 'system';
   storageKey?: string;

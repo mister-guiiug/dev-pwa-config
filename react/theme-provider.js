@@ -4,8 +4,8 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useState,
 } from 'react';
-import { themeById } from '../themes.js';
 import { useTheme } from './use-theme.js';
 
 /**
@@ -25,10 +25,18 @@ import { useTheme } from './use-theme.js';
  * il n'y a plus qu'un écrivain ; hors fournisseur, `ThemeToggle` garde son
  * comportement autonome.
  *
- * CE QUI EST PEINT. `appId` résout une palette du catalogue, dont les couleurs
- * sont posées en variables `--dwc-*` sur `<html>` à chaque changement de
- * schéma. Sans `appId`, rien n'est peint : `tokens.css` (ou l'app) garde la
- * main, et le fournisseur ne sert plus qu'à unifier l'état.
+ * CE QUI EST PEINT. Une palette — passée directement par `palette`, ou résolue
+ * du catalogue par `appId` — voit ses couleurs posées en variables `--dwc-*`
+ * sur `<html>` à chaque changement de schéma. Sans l'une ni l'autre, rien n'est
+ * peint : `tokens.css` (ou l'app) garde la main, et le fournisseur ne sert plus
+ * qu'à unifier l'état.
+ *
+ * **`palette` est le chemin à préférer.** `appId` charge `themes.js` — 22 ko,
+ * dix-sept palettes — de façon PARESSEUSE, ce qui coûte une frame non peinte au
+ * premier rendu. Le catalogue était auparavant importé statiquement : les
+ * quatre apps du parc qui montent ce fournisseur **sans passer aucun `appId`**
+ * l'embarquaient quand même, soit +15,6 ko bruts mesurés sur `miss-carbook`
+ * pour zéro variable peinte. Une adoption a payé pour qu'on s'en aperçoive.
  *
  * LA BARRE DU NAVIGATEUR SUIT AUSSI. Cinq apps sur quinze resynchronisent
  * `<meta name="theme-color">` au changement de thème ; les dix autres gardent
@@ -84,7 +92,7 @@ function setMetaThemeColor(color) {
 }
 
 /**
- * @param {{ appId?: string, children?: import('react').ReactNode,
+ * @param {{ appId?: string, palette?: object, children?: import('react').ReactNode,
  *   defaultTheme?: 'light'|'dark'|'system', storageKey?: string,
  *   attribute?: 'data-theme'|'class', paint?: boolean,
  *   legacyKeys?: string[], themeColor?: { light?: string, dark?: string } }} props
@@ -92,6 +100,7 @@ function setMetaThemeColor(color) {
 export function ThemeProvider(props = {}) {
   const {
     appId,
+    palette,
     children,
     defaultTheme = 'system',
     storageKey,
@@ -102,24 +111,60 @@ export function ThemeProvider(props = {}) {
   } = props;
 
   const state = useTheme({ defaultTheme, storageKey, attribute, legacyKeys });
-  const palette = useMemo(() => (appId ? themeById(appId) : null), [appId]);
+
+  // LE CATALOGUE NE VIENT PLUS AVEC LE FOURNISSEUR — il est chargé À LA
+  // DEMANDE. `themes.js` pèse 22 ko pour dix-sept palettes ; il était importé
+  // statiquement, donc embarqué par TOUTE app montant `ThemeProvider`, y
+  // compris — et c'était le cas des quatre du parc — celles qui ne passent
+  // aucun `appId` et pour lesquelles `themeById` rendait `null`. Mesuré à
+  // +15,6 ko bruts sur le paquet vendor de `miss-carbook`, pour zéro variable
+  // peinte.
+  //
+  // La palette peut aussi être passée DIRECTEMENT (`palette`), et c'est le
+  // chemin à préférer : synchrone, donc sans la frame non peinte que coûte le
+  // chargement paresseux, et sans tirer les seize autres palettes.
+  const [resolvedPalette, setResolvedPalette] = useState(palette ?? null);
 
   useEffect(() => {
-    if (!paint || !palette || typeof document === 'undefined') return;
+    if (palette) {
+      setResolvedPalette(palette);
+      return undefined;
+    }
+    if (!appId) {
+      setResolvedPalette(null);
+      return undefined;
+    }
+    let alive = true;
+    import('../themes.js')
+      .then(({ themeById }) => {
+        if (alive) setResolvedPalette(themeById(appId) ?? null);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [appId, palette]);
+
+  useEffect(() => {
+    if (!paint || !resolvedPalette || typeof document === 'undefined') return;
     // La palette peut n'avoir qu'un schéma : on retombe sur celui qu'elle a.
-    const scheme = palette[state.resolved] ?? palette.light ?? palette.dark;
+    const scheme =
+      resolvedPalette[state.resolved] ??
+      resolvedPalette.light ??
+      resolvedPalette.dark;
     if (!scheme) return;
     const root = document.documentElement;
     for (const [key, variable] of Object.entries(VARIABLES)) {
       if (scheme[key]) root.style.setProperty(variable, scheme[key]);
     }
-    if (palette.radius) root.style.setProperty('--dwc-radius', palette.radius);
-  }, [palette, state.resolved, paint]);
+    if (resolvedPalette.radius)
+      root.style.setProperty('--dwc-radius', resolvedPalette.radius);
+  }, [resolvedPalette, state.resolved, paint]);
 
   // La couleur explicite l'emporte ; sinon le fond de la palette, qui est
   // déjà la couleur que l'utilisateur voit derrière la barre.
-  const light = themeColor?.light ?? palette?.light?.bg;
-  const dark = themeColor?.dark ?? palette?.dark?.bg;
+  const light = themeColor?.light ?? resolvedPalette?.light?.bg;
+  const dark = themeColor?.dark ?? resolvedPalette?.dark?.bg;
 
   useEffect(() => {
     const color = state.resolved === 'dark' ? dark : light;
@@ -132,8 +177,8 @@ export function ThemeProvider(props = {}) {
   }, [state.resolved, light, dark]);
 
   const value = useMemo(
-    () => ({ ...state, appId: appId ?? null, palette }),
-    [state, appId, palette]
+    () => ({ ...state, appId: appId ?? null, palette: resolvedPalette }),
+    [state, appId, resolvedPalette]
   );
   return h(ThemeContext.Provider, { value }, children);
 }

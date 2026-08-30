@@ -11,6 +11,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createElement as h } from 'react';
 
 import {
@@ -67,6 +68,58 @@ test('le script de boot migre une ancienne clé, une seule fois', () => {
 test('sans legacyKeys, le script ne grossit pas d’un octet', () => {
   assert.doesNotMatch(themeBootSource(), /localStorage\.setItem/u);
   assert.match(themeBootSource({ legacyKeys: ['theme'] }), /setItem/u);
+});
+
+/**
+ * LE SCRIPT ANTI-FOUC CAUSAIT LE FOUC. Rien de stocké, il résolvait TOUJOURS
+ * contre `prefers-color-scheme` — en ignorant le `defaultTheme` qu'on lui
+ * passait. Or `useTheme` le respecte : une app déclarant `defaultTheme:
+ * 'light'` obtenait un premier rendu SOMBRE (système), puis un basculement en
+ * clair (React). Exactement le scintillement que ce script existe pour
+ * supprimer, causé par lui, et seulement chez les utilisateurs dont le système
+ * contredit le défaut de l'app — donc jamais chez celui qui l'a écrit.
+ *
+ * Constaté en migrant `miss-carbook` (#18).
+ */
+test('sans valeur stockée, c’est defaultTheme qui tranche — pas le système', () => {
+  const peint = source => {
+    let vu = null;
+    const root = {
+      setAttribute: (nom, valeur) => {
+        if (nom === 'data-theme') vu = valeur;
+      },
+      classList: { toggle: () => {} },
+      style: {},
+    };
+    new Function('document', 'localStorage', 'window', source)(
+      { documentElement: root },
+      { getItem: () => null, setItem: () => {} },
+      { matchMedia: () => ({ matches: true }) } // le système dit SOMBRE
+    );
+    return vu;
+  };
+
+  assert.equal(
+    peint(themeBootSource({ defaultTheme: 'light' })),
+    'light',
+    'le défaut de l’app doit l’emporter, sinon React le contredira au rendu suivant'
+  );
+  assert.equal(peint(themeBootSource({ defaultTheme: 'dark' })), 'dark');
+  assert.equal(
+    peint(themeBootSource({ defaultTheme: 'system' })),
+    'dark',
+    '`system` veut dire système : le comportement historique est conservé'
+  );
+  assert.equal(peint(themeBootSource()), 'dark', 'le défaut reste `system`');
+});
+
+test('une valeur stockée l’emporte toujours sur defaultTheme', () => {
+  const { store } = runBoot(
+    themeBootSource({ defaultTheme: 'light' }),
+    { [DEFAULT_STORAGE_KEY]: 'dark' },
+    false
+  );
+  assert.equal(store[DEFAULT_STORAGE_KEY], 'dark');
 });
 
 test('useTheme migre aussi, pour une app sans script de boot', async () => {
@@ -147,6 +200,75 @@ test('ThemeProvider pose une balise theme-color, et la retire au démontage', as
       document.head.querySelector('meta[data-dwc="theme-color"]'),
       null
     );
+  } finally {
+    dom.restore();
+  }
+});
+
+/**
+ * LE CATALOGUE NE DOIT PLUS VENIR AVEC LE FOURNISSEUR. `themes.js` pèse 22 ko
+ * pour dix-sept palettes ; il était importé STATIQUEMENT par
+ * `theme-provider.js`, donc embarqué par toute app qui monte le fournisseur —
+ * et les quatre du parc le montent **sans passer aucun `appId`**, pour lequel
+ * la résolution rendait `null`. +15,6 ko bruts mesurés sur `miss-carbook`, pour
+ * zéro variable peinte.
+ *
+ * Le test porte sur la SOURCE, parce que c'est la seule façon d'observer un
+ * import : une fois le module chargé, plus rien ne distingue un import
+ * statique d'un import paresseux déjà résolu.
+ */
+test('ThemeProvider n’importe pas le catalogue statiquement', () => {
+  const source = readFileSync(
+    new URL('../react/theme-provider.js', import.meta.url),
+    'utf8'
+  );
+  assert.doesNotMatch(
+    source,
+    /^import[^\n]*from\s+'\.\.\/themes\.js'/m,
+    'un import statique de themes.js réembarque 22 ko chez toute app qui monte le fournisseur'
+  );
+  assert.match(
+    source,
+    /import\(\s*'\.\.\/themes\.js'\s*\)/,
+    'la résolution par appId doit rester possible, mais paresseuse'
+  );
+});
+
+test('une palette passée directement peint sans toucher au catalogue', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(ThemeProvider, {
+        defaultTheme: 'dark',
+        storageKey: 'test_palette_directe',
+        palette: { dark: { primary: '#123456', bg: '#000000' } },
+      })
+    );
+    assert.equal(
+      document.documentElement.style.getPropertyValue('--dwc-primary'),
+      '#123456'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('sans appId ni palette, rien n’est peint', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(ThemeProvider, {
+        defaultTheme: 'dark',
+        storageKey: 'test_sans_palette',
+      })
+    );
+    assert.equal(
+      document.documentElement.style.getPropertyValue('--dwc-primary'),
+      '',
+      'le fournisseur seul unifie l’état ; c’est tokens.css ou l’app qui peint'
+    );
+    await view.unmount();
   } finally {
     dom.restore();
   }
