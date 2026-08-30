@@ -223,6 +223,135 @@ test('les libellés suivent le dictionnaire', async () => {
   }
 });
 
+test('cancelLabel: null — l’alerte à un bouton, focus sur l’action unique', async () => {
+  // Trois apps n'ont pas pu migrer leurs boîtes d'ALERTE pendant la campagne
+  // components.css, parce que le composant rendait toujours deux boutons :
+  // l'ErrorModal de mister-puzzle, le mode « alert » du DialogProvider de
+  // mister-cim10, la boîte d'erreur de miss-carbook. `null` — et non
+  // `undefined`, qui garde le repli « Annuler » — retire le bouton. Sans
+  // Annuler, le « choix sûr » n'existe plus : le focus va sur l'action
+  // unique, comme `window.alert`.
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(ConfirmDialog, {
+        open: true,
+        title: 'Sauvegarde impossible',
+        message: 'Vérifiez l’espace disponible.',
+        cancelLabel: null,
+        onConfirm() {},
+        // Pas d'`onCancel` : une alerte n'en a pas — la prop est optionnelle.
+      })
+    );
+    assert.equal(
+      view.container.querySelector('[data-dwc="confirm-cancel"]'),
+      null,
+      'le bouton Annuler est rendu malgré cancelLabel: null'
+    );
+    const bouton = view.container.querySelector('[data-dwc="confirm-confirm"]');
+    // Le défaut n'est plus « Confirmer » : une alerte ne confirme rien.
+    assert.equal(bouton.textContent, 'OK');
+    // Le rôle reste `alertdialog` : c'est LE rôle prévu pour une alerte.
+    assert.ok(
+      view.container.querySelector('[role="alertdialog"]'),
+      'le rôle alertdialog a disparu en mono-action'
+    );
+    assert.equal(document.activeElement, bouton);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('en mono-action, Échap et le voile valent un « OK »', async () => {
+  // Il n'y a qu'une issue : la prise d'acte. Échap et le clic dans le fond
+  // passent par `onConfirm` — et par sa garde `loading`, sinon la touche
+  // referait exactement ce que la garde du bouton empêche. `onCancel`, s'il
+  // est quand même fourni, est ignoré.
+  const dom = setupDom();
+  try {
+    let ok = 0;
+    let annule = 0;
+    const props = {
+      open: true,
+      title: 'Sauvegarde impossible',
+      cancelLabel: null,
+      onConfirm: () => (ok += 1),
+      onCancel: () => (annule += 1),
+    };
+    const view = await mount(h(ConfirmDialog, props));
+    await view.act(() => {
+      document.dispatchEvent(
+        new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+    });
+    assert.equal(ok, 1, 'Échap n’a pas pris acte');
+    await view.act(() =>
+      view.container
+        .querySelector('[data-dwc="confirm"]')
+        .dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true }))
+    );
+    assert.equal(ok, 2, 'le voile n’a pas pris acte');
+    assert.equal(annule, 0, 'onCancel a été appelé en mono-action');
+    await view.unmount();
+
+    const occupe = await mount(h(ConfirmDialog, { ...props, loading: true }));
+    await occupe.act(() => {
+      document.dispatchEvent(
+        new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+    });
+    assert.equal(ok, 2, 'Échap est passé malgré loading');
+    await occupe.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('mono-action : la prop l’emporte, puis le dictionnaire, puis « OK »', async () => {
+  // mister-puzzle affiche « Fermer », mister-cim10 son « OK » i18n : les trois
+  // niveaux de résolution valent aussi pour ce libellé-là.
+  const dom = setupDom();
+  try {
+    // `destructive` garde sa teinte (le crochet CSS), pas son mot : une
+    // alerte ne supprime rien, le défaut reste « OK ».
+    const defaut = await mount(
+      h(ConfirmDialog, base({ cancelLabel: null, destructive: true }))
+    );
+    assert.equal(
+      defaut.container.querySelector('[data-dwc="confirm-confirm"]')
+        .textContent,
+      'OK'
+    );
+    assert.ok(
+      defaut.container.querySelector('[data-dwc="confirm"][data-destructive]')
+    );
+    await defaut.unmount();
+
+    const explicite = await mount(
+      h(ConfirmDialog, base({ cancelLabel: null, confirmLabel: 'Fermer' }))
+    );
+    assert.equal(
+      explicite.container.querySelector('[data-dwc="confirm-confirm"]')
+        .textContent,
+      'Fermer'
+    );
+    await explicite.unmount();
+
+    const surcharge = await mount(
+      h(
+        LabelsProvider,
+        { locale: 'fr', overrides: { confirm: { ok: 'Compris' } } },
+        h(ConfirmDialog, base({ cancelLabel: null }))
+      )
+    );
+    assert.match(surcharge.container.innerHTML, />Compris</);
+    await surcharge.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
 test('fermée, elle ne rend rien et ne verrouille pas la page', async () => {
   const dom = setupDom();
   try {

@@ -34,11 +34,25 @@ import { useDialogBehaviour } from './use-dialog.js';
  * `loading` couvre ce cas : la boîte reste ouverte, les deux boutons deviennent
  * inertes et le titre porte `aria-busy`.
  *
+ * MODE MONO-ACTION (`cancelLabel: null`). Trois apps n'ont pas pu migrer leurs
+ * boîtes d'ALERTE pendant la campagne `components.css`, parce que le composant
+ * rendait inconditionnellement deux boutons : l'`ErrorModal` de mister-puzzle,
+ * le mode « alert » du `DialogProvider` de mister-cim10, et la boîte d'erreur
+ * de miss-carbook. `null` — et non `undefined`, qui garde le repli
+ * « Annuler » — retire le bouton Annuler : le rôle `alertdialog` est conservé
+ * (c'est le rôle d'une alerte), le focus initial va sur l'action unique, et
+ * Échap comme le voile valent un « OK » — ils passent par `onConfirm`, garde
+ * `loading` comprise. `onCancel` est alors ignoré, et le libellé par défaut
+ * devient « OK » : il n'y a rien à confirmer ni à supprimer, le bouton prend
+ * acte. Les détails techniques dépliables de miss-carbook (+ bouton copier)
+ * restent applicatifs : `children` les accueille, le composant ne les
+ * embarque pas.
+ *
  * Non stylé : cibler `[data-dwc="confirm"]` et descendants.
  *
  * @param {{ open: boolean, title: string, message?: import('react').ReactNode,
- *   confirmLabel?: string, cancelLabel?: string, destructive?: boolean,
- *   loading?: boolean, onConfirm: () => void, onCancel: () => void,
+ *   confirmLabel?: string, cancelLabel?: string | null, destructive?: boolean,
+ *   loading?: boolean, onConfirm: () => void, onCancel?: () => void,
  *   children?: import('react').ReactNode, className?: string }} props
  */
 export function ConfirmDialog(props = {}) {
@@ -59,21 +73,40 @@ export function ConfirmDialog(props = {}) {
   const labels = useLabels('confirm');
   const panelRef = useRef(null);
   const cancelRef = useRef(null);
+  const confirmRef = useRef(null);
   const titleId = useId();
   const bodyId = `${titleId}-body`;
 
+  // `null` — et non `undefined`, qui garde le repli « Annuler » — bascule en
+  // mono-action : l'alerte n'a qu'une issue, la prise d'acte.
+  const mono = cancelLabel === null;
+
+  // En mono-action, TOUT chemin de sortie est le « OK » : bouton, Échap,
+  // voile. La garde `loading` s'applique donc aussi à Échap, sinon la touche
+  // referait exactement ce que la garde du bouton empêche.
+  const acknowledge = () => {
+    if (loading) return;
+    if (typeof onConfirm === 'function') onConfirm();
+  };
+
   const close = useDialogBehaviour({
     open,
-    onClose: onCancel,
+    onClose: mono ? acknowledge : onCancel,
     panelRef,
-    initialFocusRef: cancelRef,
+    // Sans Annuler, le « choix sûr » n'existe plus : le focus va sur l'action
+    // unique — le comportement de `window.alert`.
+    initialFocusRef: mono ? confirmRef : cancelRef,
   });
 
   if (!open) return null;
 
   const body = children ?? message;
-  const confirmText =
-    confirmLabel ?? (destructive ? labels.destructiveConfirm : labels.confirm);
+  // En mono-action le défaut est « OK », même `destructive` : rien n'est
+  // supprimé par une alerte — `destructive` ne garde que sa teinte.
+  const twoActionText = destructive
+    ? labels.destructiveConfirm
+    : labels.confirm;
+  const confirmText = confirmLabel ?? (mono ? labels.ok : twoActionText);
 
   const action = (handler, kind, text, ref) =>
     h(
@@ -124,8 +157,10 @@ export function ConfirmDialog(props = {}) {
       h(
         'div',
         { 'data-dwc': 'confirm-actions' },
-        action(onCancel, 'cancel', cancelLabel ?? labels.cancel, cancelRef),
-        action(onConfirm, 'confirm', confirmText)
+        mono
+          ? null
+          : action(onCancel, 'cancel', cancelLabel ?? labels.cancel, cancelRef),
+        action(onConfirm, 'confirm', confirmText, confirmRef)
       )
     )
   );

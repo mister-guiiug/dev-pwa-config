@@ -437,7 +437,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/react`                       | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                                              |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt`     | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                                            |
 | `@mister-guiiug/dev-wpa-config/react/update-button`         | `.js` + `.d.ts` | `UpdateButton` : bouton « Forcer la mise à jour » des réglages, sans dépendance à vite-plugin-pwa                                                                                                                                                          |
-| `@mister-guiiug/dev-wpa-config/react/confirm-dialog`        | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone                                                                                                                                              |
+| `@mister-guiiug/dev-wpa-config/react/confirm-dialog`        | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone, `cancelLabel={null}` pour une alerte mono-action                                                                                            |
 | `@mister-guiiug/dev-wpa-config/react/toast`                 | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                                            |
 | `@mister-guiiug/dev-wpa-config/react/bottom-nav`            | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                                                  |
 | `@mister-guiiug/dev-wpa-config/react/labels`                | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés fr/en des composants du paquet (prop > contexte > français)                                                                                                                                                      |
@@ -1990,17 +1990,17 @@ plusieurs apps avaient déjà réécrit chacune de leur côté. L'API reprend le
 convergence ; la version partagée referme les trous d'accessibilité que chaque
 copie laissait passer.
 
-| Composant                                      | Réécrit dans                                                      | Ce que la version partagée garantit en plus                                                                                                                  |
-| ---------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Button`                                       | 4 apps, mêmes variantes `primary \| secondary \| ghost \| danger` | cible tactile 2,75 rem **à toutes les tailles**, `aria-busy` + désactivation pendant `loading` (anti double-clic), `type="button"` par défaut                |
-| `TextField` / `SelectField` / `TextAreaField`  | 3 apps (deux fichiers identiques à la variable près)              | `aria-describedby` référence l'aide **et** l'erreur, au lieu de faire disparaître l'aide                                                                     |
-| `Skeleton` / `SkeletonGroup`                   | 3 apps                                                            | barres `aria-hidden`, `role="status"` + `aria-busy` porté par le conteneur seul                                                                              |
-| `Sheet`                                        | 4 apps, ~20 écrans consommateurs                                  | piège de focus, focus **restitué** à la fermeture, scroll de fond restauré, safe-area iOS                                                                    |
-| `Stat`                                         | tableaux de bord de 10 apps                                       | `<dl>/<dt>/<dd>` relie le libellé à la valeur ; la tendance a une flèche **et** un libellé lu                                                                |
-| `Badge`                                        | 4 apps, couleurs ad hoc                                           | axe `tone` sémantique (`brand \| success \| warning \| danger \| info \| muted`) × `variant` (`soft \| outline`)                                             |
-| `ConfirmDialog`                                | 7 apps, sept fichiers différents                                  | `role="alertdialog"` nommé par son titre, focus initial sur **Annuler** (une app le posait sur la suppression), `loading` pour une confirmation asynchrone   |
-| `ToastProvider` / `ToastViewport` / `useToast` | 6 apps, six mécaniques                                            | régions vivantes montées en permanence et **sans rôle sur le message** (deux apps l'annonçaient deux fois), pile bornée, compte à rebours suspendu au survol |
-| `BottomNav`                                    | 7 apps                                                            | `<nav>` toujours nommé (3 ne l'étaient pas), onglet courant jamais distingué par la seule couleur (4 le faisaient), bouton « Plus » avec `aria-expanded`     |
+| Composant                                      | Réécrit dans                                                      | Ce que la version partagée garantit en plus                                                                                                                                                                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Button`                                       | 4 apps, mêmes variantes `primary \| secondary \| ghost \| danger` | cible tactile 2,75 rem **à toutes les tailles**, `aria-busy` + désactivation pendant `loading` (anti double-clic), `type="button"` par défaut                                                                                                                                   |
+| `TextField` / `SelectField` / `TextAreaField`  | 3 apps (deux fichiers identiques à la variable près)              | `aria-describedby` référence l'aide **et** l'erreur, au lieu de faire disparaître l'aide                                                                                                                                                                                        |
+| `Skeleton` / `SkeletonGroup`                   | 3 apps                                                            | barres `aria-hidden`, `role="status"` + `aria-busy` porté par le conteneur seul                                                                                                                                                                                                 |
+| `Sheet`                                        | 4 apps, ~20 écrans consommateurs                                  | piège de focus, focus **restitué** à la fermeture, scroll de fond restauré, safe-area iOS                                                                                                                                                                                       |
+| `Stat`                                         | tableaux de bord de 10 apps                                       | `<dl>/<dt>/<dd>` relie le libellé à la valeur ; la tendance a une flèche **et** un libellé lu                                                                                                                                                                                   |
+| `Badge`                                        | 4 apps, couleurs ad hoc                                           | axe `tone` sémantique (`brand \| success \| warning \| danger \| info \| muted`) × `variant` (`soft \| outline`)                                                                                                                                                                |
+| `ConfirmDialog`                                | 7 apps, sept fichiers différents                                  | `role="alertdialog"` nommé par son titre, focus initial sur **Annuler** (une app le posait sur la suppression), `loading` pour une confirmation asynchrone ; `cancelLabel={null}` bascule en **mono-action** (alerte) : focus sur l'action unique, Échap et voile valent « OK » |
+| `ToastProvider` / `ToastViewport` / `useToast` | 6 apps, six mécaniques                                            | régions vivantes montées en permanence et **sans rôle sur le message** (deux apps l'annonçaient deux fois), pile bornée, compte à rebours suspendu au survol                                                                                                                    |
+| `BottomNav`                                    | 7 apps                                                            | `<nav>` toujours nommé (3 ne l'étaient pas), onglet courant jamais distingué par la seule couleur (4 le faisaient), bouton « Plus » avec `aria-expanded`                                                                                                                        |
 
 ```tsx
 import {
@@ -2055,6 +2055,19 @@ toast.error('Envoi impossible'); // ne s'efface pas tout seul
   loading={suppression}
   onConfirm={supprimer}
   onCancel={fermer}
+/>;
+
+// Alerte mono-action, en remplacement de `window.alert` : `cancelLabel={null}`
+// (et non `undefined`) retire Annuler. Le focus va sur l'action unique, Échap
+// et le voile valent « OK » (`onConfirm`), le défaut du libellé devient « OK ».
+// Les détails techniques dépliables (façon miss-carbook) restent applicatifs :
+// les passer en `children`.
+<ConfirmDialog
+  open={erreur !== null}
+  title="Sauvegarde impossible"
+  message={erreur}
+  cancelLabel={null}
+  onConfirm={fermer}
 />;
 
 // Agnostique de routeur : `linkComponent` + `hrefProp` branchent react-router.
