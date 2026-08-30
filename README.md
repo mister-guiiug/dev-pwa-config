@@ -48,101 +48,156 @@ qu'elle **n'importe pas alors que le paquet le fournit**, parce qu'elle en garde
 une copie. C'est le seul chiffre qui mesure l'utilité de ce dépôt, et il n'était
 écrit nulle part.
 
-Ce qu'il montre, au relevé : la couche **outillage** est adoptée (`vitest-base`,
-l'observabilité, Playwright, les greffons Vite), la couche **interface** ne l'est
-pas encore. Les six primitives publiées le 10 août ne sont importées par aucune
-app, pendant que quatre à sept en portent une réimplémentation. Promouvoir un
-composant de plus ne sert à rien tant que ce second chiffre ne baisse pas.
+Ce qu'il montre, au relevé du 30 août : les deux couches sont adoptées. La
+couche **outillage** l'était déjà (`vitest-base`, l'observabilité, Playwright,
+les greffons Vite) ; la couche **interface** a suivi quand `components.css` —
+son prérequis, longtemps pris par trois apps sur dix-sept — est passé à
+quatorze. `ConfirmDialog` et `ErrorBoundary` sont maintenant importés par dix
+apps, `EmptyState` par sept, `Sheet` par six.
+
+Ce qui reste recopié dit où porter l'effort suivant : `UpdatePromptBanner` (8),
+`backup` et `links` (7 chacun). Ces trois-là ne se migrent pas à l'import — le
+premier et le deuxième attendent qu'un nom soit tranché ici (voir `CAMPAGNE.md`),
+le troisième se fait en une passe sur les sept apps.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-08-29 sur 17 dépôts, par `npm run adoption`._
+_Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 113 fichiers recopiés** dans 17 apps, sur 24 besoins distincts. Les pires : `applyUpdate` (8), `format` (8), `UpdatePromptBanner` (8).
+> **Dette d'adoption : 71 fichiers recopiés** dans 17 apps, sur 19 besoins distincts. Les pires : `UpdatePromptBanner` (8), `backup` (7), `links` (7).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
-| Export ou module                          | Importé par | Encore recopié dans |
-| ----------------------------------------- | ----------- | ------------------- |
-| `baseTestOptions`                         | 15 / 17     | —                   |
-| `FamilyApps`                              | 14 / 17     | —                   |
-| `definePwaPlaywrightConfig`               | 13 / 17     | —                   |
-| `initSentry`                              | 13 / 17     | —                   |
-| `installErrorReporter`                    | 13 / 17     | —                   |
-| `pwaSeoPlugin`                            | 13 / 17     | —                   |
-| `recordError`                             | 13 / 17     | —                   |
-| `cspPlugin`                               | 10 / 17     | —                   |
-| `expectNoA11yViolations`                  | 10 / 17     | —                   |
-| `ErrorBoundary`                           | 9 / 17      | 6 / 17              |
-| `createI18n`                              | 8 / 17      | —                   |
-| `coveragePreset`                          | 7 / 17      | —                   |
-| `useOnline`                               | 4 / 17      | 1 / 17              |
-| `EmptyState`                              | 3 / 17      | 5 / 17              |
-| `Sheet`                                   | 3 / 17      | 4 / 17              |
-| `Button`                                  | 3 / 17      | 2 / 17              |
-| `SelectField`                             | 3 / 17      | —                   |
-| `TextField`                               | 3 / 17      | —                   |
-| `ConfirmDialog`                           | 2 / 17      | 5 / 17              |
-| `AppFooter`                               | 2 / 17      | 4 / 17              |
-| `createTranslator`                        | 2 / 17      | —                   |
-| `repoUrl`                                 | 2 / 17      | —                   |
-| `TextAreaField`                           | 2 / 17      | —                   |
-| `UpdatePromptBanner`                      | 1 / 17      | 8 / 17              |
-| `useTheme`                                | 1 / 17      | 8 / 17              |
-| `BottomNav`                               | 1 / 17      | 7 / 17              |
-| `Badge`                                   | 1 / 17      | 2 / 17              |
-| `AppVersion`                              | 1 / 17      | —                   |
-| `BoundingBox`                             | 1 / 17      | —                   |
-| `clearErrorLog`                           | 1 / 17      | —                   |
-| `clusterByGrid`                           | 1 / 17      | —                   |
-| `clustersToMarkers`                       | 1 / 17      | —                   |
-| `Coordinates`                             | 1 / 17      | —                   |
-| `createChannel`                           | 1 / 17      | —                   |
-| `createLogger`                            | 1 / 17      | —                   |
-| `createMapLibreMapProvider`               | 1 / 17      | —                   |
-| `createStore`                             | 1 / 17      | —                   |
-| `distanceKm`                              | 1 / 17      | —                   |
-| `dumpAppState`                            | 1 / 17      | —                   |
-| `ErrorBanner`                             | 1 / 17      | —                   |
-| `formatDistance`                          | 1 / 17      | —                   |
-| `getErrorLog`                             | 1 / 17      | —                   |
-| `I18nPaths`                               | 1 / 17      | —                   |
-| `installCorrelation`                      | 1 / 17      | —                   |
-| `installObservability`                    | 1 / 17      | —                   |
-| `isClusterId`                             | 1 / 17      | —                   |
-| `isInBoundingBox`                         | 1 / 17      | —                   |
-| `isValidCoordinates`                      | 1 / 17      | —                   |
-| `isValidLatitude`                         | 1 / 17      | —                   |
-| `isValidLongitude`                        | 1 / 17      | —                   |
-| `LabelsProvider`                          | 1 / 17      | —                   |
-| `localRealtimeTransport`                  | 1 / 17      | —                   |
-| `mapCspDirectives`                        | 1 / 17      | —                   |
-| `mapTileRuntimeCaching`                   | 1 / 17      | —                   |
-| `ObservabilityBoundary`                   | 1 / 17      | —                   |
-| `osmRasterTiles`                          | 1 / 17      | —                   |
-| `prefetch`                                | 1 / 17      | —                   |
-| `resolveSeoPublicUrls`                    | 1 / 17      | —                   |
-| `rethrowWithState`                        | 1 / 17      | —                   |
-| `ShareButton`                             | 1 / 17      | —                   |
-| `SkeletonGroup`                           | 1 / 17      | —                   |
-| `UpdateButton`                            | 1 / 17      | —                   |
-| `useReducedMotion`                        | 1 / 17      | —                   |
-| `useUpdatePrompt`                         | 1 / 17      | —                   |
-| `versionPlugin`                           | 1 / 17      | —                   |
-| `VersionProvider`                         | 1 / 17      | —                   |
-| `applyUpdate`                             | 0 / 17      | 8 / 17              |
-| `format`                                  | 0 / 17      | 8 / 17              |
-| `backup`                                  | 0 / 17      | 7 / 17              |
-| `links`                                   | 0 / 17      | 7 / 17              |
-| `Toast`                                   | 0 / 17      | 6 / 17              |
-| `ThemeToggle`                             | 0 / 17      | 5 / 17              |
-| `share`                                   | 0 / 17      | 4 / 17              |
-| `useI18n`                                 | 0 / 17      | 4 / 17              |
-| `webVitals`                               | 0 / 17      | 4 / 17              |
-| `security`                                | 0 / 17      | 3 / 17              |
-| `Skeleton`                                | 0 / 17      | 3 / 17              |
-| `geo`                                     | 0 / 17      | 1 / 17              |
-| `TextField / SelectField / TextAreaField` | 0 / 17      | 1 / 17              |
+| Export ou module              | Importé par | Encore recopié dans |
+| ----------------------------- | ----------- | ------------------- |
+| `baseTestOptions`             | 16 / 17     | —                   |
+| `FamilyApps`                  | 14 / 17     | —                   |
+| `definePwaPlaywrightConfig`   | 13 / 17     | —                   |
+| `initSentry`                  | 13 / 17     | —                   |
+| `installErrorReporter`        | 13 / 17     | —                   |
+| `pwaSeoPlugin`                | 13 / 17     | —                   |
+| `recordError`                 | 12 / 17     | —                   |
+| `expectNoA11yViolations`      | 11 / 17     | —                   |
+| `ErrorBoundary`               | 10 / 17     | 4 / 17              |
+| `ConfirmDialog`               | 10 / 17     | 1 / 17              |
+| `cspPlugin`                   | 10 / 17     | —                   |
+| `coveragePreset`              | 8 / 17      | —                   |
+| `createI18n`                  | 8 / 17      | —                   |
+| `EmptyState`                  | 7 / 17      | 1 / 17              |
+| `useUpdatePrompt`             | 7 / 17      | —                   |
+| `Sheet`                       | 6 / 17      | 2 / 17              |
+| `useOnline`                   | 6 / 17      | —                   |
+| `Button`                      | 5 / 17      | —                   |
+| `dateSlug`                    | 5 / 17      | —                   |
+| `downloadText`                | 5 / 17      | —                   |
+| `BottomNav`                   | 4 / 17      | 4 / 17              |
+| `AppFooter`                   | 4 / 17      | 3 / 17              |
+| `Badge`                       | 4 / 17      | 1 / 17              |
+| `IconsProvider`               | 4 / 17      | —                   |
+| `SkeletonGroup`               | 4 / 17      | —                   |
+| `TextField`                   | 4 / 17      | —                   |
+| `createStore`                 | 3 / 17      | —                   |
+| `downloadJson`                | 3 / 17      | —                   |
+| `generateCode`                | 3 / 17      | —                   |
+| `initWebVitals`               | 3 / 17      | —                   |
+| `LabelsProvider`              | 3 / 17      | —                   |
+| `SelectField`                 | 3 / 17      | —                   |
+| `Skeleton`                    | 3 / 17      | —                   |
+| `Sparkline`                   | 3 / 17      | —                   |
+| `ToastProvider`               | 3 / 17      | —                   |
+| `useToast`                    | 3 / 17      | —                   |
+| `applyUpdate`                 | 2 / 17      | 6 / 17              |
+| `ALPHABETS`                   | 2 / 17      | —                   |
+| `BadgeTone`                   | 2 / 17      | —                   |
+| `buildPdf`                    | 2 / 17      | —                   |
+| `createSupabaseClientFactory` | 2 / 17      | —                   |
+| `createSyncQueue`             | 2 / 17      | —                   |
+| `createTranslator`            | 2 / 17      | —                   |
+| `downloadPdf`                 | 2 / 17      | —                   |
+| `lucideIconSet`               | 2 / 17      | —                   |
+| `normalizeCode`               | 2 / 17      | —                   |
+| `ObservabilityBoundary`       | 2 / 17      | —                   |
+| `PAGE`                        | 2 / 17      | —                   |
+| `PdfContent`                  | 2 / 17      | —                   |
+| `readJsonFile`                | 2 / 17      | —                   |
+| `repoUrl`                     | 2 / 17      | —                   |
+| `shareOrCopy`                 | 2 / 17      | —                   |
+| `SyncQueue`                   | 2 / 17      | —                   |
+| `SyncQueueEntry`              | 2 / 17      | —                   |
+| `TextAreaField`               | 2 / 17      | —                   |
+| `textWidth`                   | 2 / 17      | —                   |
+| `ThemeProvider`               | 2 / 17      | —                   |
+| `toCsv`                       | 2 / 17      | —                   |
+| `UpdatePromptBanner`          | 1 / 17      | 8 / 17              |
+| `useTheme`                    | 1 / 17      | 6 / 17              |
+| `ThemeToggle`                 | 1 / 17      | 3 / 17              |
+| `AppVersion`                  | 1 / 17      | —                   |
+| `BoundingBox`                 | 1 / 17      | —                   |
+| `buildXlsx`                   | 1 / 17      | —                   |
+| `clearErrorLog`               | 1 / 17      | —                   |
+| `clusterByGrid`               | 1 / 17      | —                   |
+| `clustersToMarkers`           | 1 / 17      | —                   |
+| `Coordinates`                 | 1 / 17      | —                   |
+| `createChannel`               | 1 / 17      | —                   |
+| `createIdb`                   | 1 / 17      | —                   |
+| `createLogger`                | 1 / 17      | —                   |
+| `createMapLibreMapProvider`   | 1 / 17      | —                   |
+| `createVersionedStore`        | 1 / 17      | —                   |
+| `distanceKm`                  | 1 / 17      | —                   |
+| `downloadBlob`                | 1 / 17      | —                   |
+| `downloadXlsx`                | 1 / 17      | —                   |
+| `dumpAppState`                | 1 / 17      | —                   |
+| `ErrorBanner`                 | 1 / 17      | —                   |
+| `formatCurrency`              | 1 / 17      | —                   |
+| `formatDateTime`              | 1 / 17      | —                   |
+| `formatDistance`              | 1 / 17      | —                   |
+| `formatNumber`                | 1 / 17      | —                   |
+| `getErrorLog`                 | 1 / 17      | —                   |
+| `I18nPaths`                   | 1 / 17      | —                   |
+| `IconComponent`               | 1 / 17      | —                   |
+| `installCorrelation`          | 1 / 17      | —                   |
+| `installObservability`        | 1 / 17      | —                   |
+| `isClusterId`                 | 1 / 17      | —                   |
+| `isInBoundingBox`             | 1 / 17      | —                   |
+| `isValidCoordinates`          | 1 / 17      | —                   |
+| `isValidLatitude`             | 1 / 17      | —                   |
+| `isValidLongitude`            | 1 / 17      | —                   |
+| `localRealtimeTransport`      | 1 / 17      | —                   |
+| `mapCspDirectives`            | 1 / 17      | —                   |
+| `mapTileRuntimeCaching`       | 1 / 17      | —                   |
+| `osmRasterTiles`              | 1 / 17      | —                   |
+| `PairingAlphabet`             | 1 / 17      | —                   |
+| `parseCsv`                    | 1 / 17      | —                   |
+| `parseDeepLink`               | 1 / 17      | —                   |
+| `prefetch`                    | 1 / 17      | —                   |
+| `qrToDataUrl`                 | 1 / 17      | —                   |
+| `qrToSvg`                     | 1 / 17      | —                   |
+| `RegisterSW`                  | 1 / 17      | —                   |
+| `resolveSeoPublicUrls`        | 1 / 17      | —                   |
+| `rethrowWithState`            | 1 / 17      | —                   |
+| `Rgb`                         | 1 / 17      | —                   |
+| `ShareButton`                 | 1 / 17      | —                   |
+| `supabaseConfig`              | 1 / 17      | —                   |
+| `SyncQueueOptions`            | 1 / 17      | —                   |
+| `ThemePreference`             | 1 / 17      | —                   |
+| `ToastViewport`               | 1 / 17      | —                   |
+| `UpdateButton`                | 1 / 17      | —                   |
+| `useInstallPrompt`            | 1 / 17      | —                   |
+| `useQrScanner`                | 1 / 17      | —                   |
+| `useReducedMotion`            | 1 / 17      | —                   |
+| `useThemeContext`             | 1 / 17      | —                   |
+| `UseUpdatePrompt`             | 1 / 17      | —                   |
+| `versionPlugin`               | 1 / 17      | —                   |
+| `VersionProvider`             | 1 / 17      | —                   |
+| `XlsxValue`                   | 1 / 17      | —                   |
+| `backup`                      | 0 / 17      | 7 / 17              |
+| `links`                       | 0 / 17      | 7 / 17              |
+| `format`                      | 0 / 17      | 5 / 17              |
+| `Toast`                       | 0 / 17      | 5 / 17              |
+| `useI18n`                     | 0 / 17      | 4 / 17              |
+| `share`                       | 0 / 17      | 2 / 17              |
+| `geo`                         | 0 / 17      | 1 / 17              |
+| `webVitals`                   | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
 
