@@ -339,6 +339,15 @@ export function formatBytes(bytes, locale = defaultLocale, digits = 1) {
  * `fmt.number(v)` sans jamais nommer de locale — et suit donc automatiquement
  * la langue choisie.
  *
+ * LA DEVISE LIÉE SURVIT AUX OPTIONS. `formatCurrency` reconnaît des options à
+ * la place de la devise ; `currency()` les lui transmettait telles quelles,
+ * donc à la place du code, et `formatCurrency` retombait sur son propre défaut
+ * `'EUR'` sans jamais voir la devise liée ici. Un `createFormatters(l, {
+ * currency: 'USD' })` rendait ses montants EN EUROS dès qu'on demandait un
+ * arrondi — le symbole mentait sur le montant, sans erreur ni avertissement.
+ * Les options sont donc reconnues à cette place, puis réappliquées PAR-DESSUS
+ * la devise liée : `{ currency: … }` dans les options l'emporte toujours.
+ *
  * @param {string} [locale] Étiquette BCP-47. Défaut : `getDefaultLocale()`.
  * @param {{ currency?: string }} [options] Devise de `currency()` (défaut EUR).
  */
@@ -346,7 +355,10 @@ export function createFormatters(locale = defaultLocale, options = {}) {
   const { currency = 'EUR' } = options;
   return {
     locale,
-    currency: (value, code = currency) => formatCurrency(value, locale, code),
+    currency: (value, code = currency, opts) =>
+      code && typeof code === 'object'
+        ? formatCurrency(value, locale, currency, { ...code, ...opts })
+        : formatCurrency(value, locale, code, opts),
     number: (value, opts) => formatNumber(value, locale, opts),
     percent: (value, digits) => formatPercentage(value, locale, digits),
     date: (value, opts) => formatDate(value, locale, opts),

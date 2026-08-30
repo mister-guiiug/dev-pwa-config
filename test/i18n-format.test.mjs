@@ -43,6 +43,42 @@ test('createFormatters capture la locale une fois', () => {
   assert.equal(fmt.locale, 'de-DE');
 });
 
+/**
+ * LA DEVISE LIÉE SURVIT AUX OPTIONS.
+ *
+ * `formatCurrency` reconnaît des options à la place de la devise depuis #100,
+ * et `fmt.currency` les lui transmettait telles quelles — donc à la place du
+ * code. `formatCurrency` retombait alors sur son propre défaut, `'EUR'`, sans
+ * jamais voir la devise que `createFormatters` avait liée : un montant en
+ * dollars s'affichait EN EUROS, sans erreur ni avertissement.
+ *
+ * C'est très exactement le défaut que ce module reproche aux copies qu'il
+ * remplace — une valeur fausse rendue avec aplomb — et le seul de la famille
+ * où le symbole affiché ment sur le montant.
+ */
+test('fmt.currency accepte des options SANS perdre la devise liée', () => {
+  const fmt = createFormatters('fr-FR', { currency: 'USD' });
+  // Le séparateur de milliers français est une espace FINE INSÉCABLE (U+202F),
+  // pas une espace ordinaire : d'où `\s` plutôt qu'un littéral.
+  // Le repère : sans options, la devise liée est bien posée.
+  assert.match(fmt.currency(1234), /^1\s234,00\s\$US$/u);
+  // Avec options, elle disparaissait au profit de l'euro.
+  const sansCentimes = fmt.currency(1234, { maximumFractionDigits: 0 });
+  assert.doesNotMatch(
+    sansCentimes,
+    /€/u,
+    'la devise liée ne doit pas virer à l’euro'
+  );
+  assert.match(sansCentimes, /^1\s234\s\$US$/u);
+  // La forme à trois arguments reste ouverte : code explicite, puis options.
+  assert.match(
+    fmt.currency(1234, 'GBP', { maximumFractionDigits: 0 }),
+    /^1\s234\s£GB$/u
+  );
+  // Et le code explicite seul continue de l'emporter sur la devise liée.
+  assert.match(fmt.currency(1234, 'GBP'), /^1\s234,00\s£GB$/u);
+});
+
 test('formatList retombe sur la virgule et ignore les trous', () => {
   assert.equal(formatList(['a', null, '', 'b'], 'fr-FR'), 'a et b');
   assert.equal(formatList([], 'fr-FR'), '');

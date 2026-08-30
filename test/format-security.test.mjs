@@ -319,3 +319,28 @@ test('la forme historique (valeur, locale, …) est intacte', () => {
   // Un tableau de locales reste une locale, pas des options.
   assert.match(formatDate('2026-01-12', ['en-GB', 'fr-FR']), /12 Jan 2026/u);
 });
+
+/**
+ * LA FORME QUE LA SIGNATURE ANNONCE. Les places 2 et 3 sont couvertes
+ * au-dessus ; la 4ᵉ — locale ET devise nommées, options par-dessus — ne
+ * l'était pas, alors que c'est la seule qu'un appelant devine en lisant le
+ * `.d.ts`. Un trou de couverture sur l'appel le plus probable.
+ */
+test('formatCurrency accepte les options en 4ᵉ position', () => {
+  assert.match(
+    formatCurrency(249000, 'fr-FR', 'EUR', { maximumFractionDigits: 0 }),
+    /^249.000\s*€$/u,
+    'un prix immobilier s’écrit « 249 000 € », pas « 249 000,00 € »'
+  );
+  // Les options ne débordent pas sur la devise nommée…
+  assert.equal(
+    formatCurrency(1234, 'en-GB', 'GBP', { maximumFractionDigits: 0 }),
+    '£1,234'
+  );
+  // …mais une devise passée DANS les options l'emporte : elles sont étalées
+  // en dernier, exactement comme `formatNumber` le fait de ses propres options.
+  assert.equal(
+    formatCurrency(1234, 'en-GB', 'GBP', { currency: 'USD' }),
+    'US$1,234.00'
+  );
+});
