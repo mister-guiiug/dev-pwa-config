@@ -1,14 +1,27 @@
-/** Montant monétaire (`1 234,50 €`). Vide si `amount` n'est pas fini. */
+/**
+ * Montant monétaire (`1 234,50 €`). Vide si `amount` n'est pas fini.
+ *
+ * Les options `Intl` se passent soit en 2ᵉ place (à la place de la locale),
+ * soit en 3ᵉ (à la place de la devise) — un prix sans centimes s'écrit donc
+ * `formatCurrency(1234, { maximumFractionDigits: 0 })`.
+ */
 export declare function formatCurrency(
   amount: number,
-  locale?: string,
-  currency?: string
+  locale?: string | string[] | Intl.NumberFormatOptions,
+  currency?: string | Intl.NumberFormatOptions,
+  options?: Intl.NumberFormatOptions
 ): string;
 
-/** Nombre avec séparateurs de milliers. */
+/**
+ * Nombre avec séparateurs de milliers.
+ *
+ * La 2ᵉ place accepte AUSSI les options : une locale est toujours une chaîne
+ * (ou un tableau), donc un objet à cette place ne peut être que des options.
+ * Elles étaient auparavant avalées en silence par `Intl`.
+ */
 export declare function formatNumber(
   value: number,
-  locale?: string,
+  locale?: string | string[] | Intl.NumberFormatOptions,
   options?: Intl.NumberFormatOptions
 ): string;
 
@@ -22,14 +35,14 @@ export declare function formatPercentage(
 /** Date courte (`12 août 2026`). */
 export declare function formatDate(
   date: Date | string | number,
-  locale?: string,
+  locale?: string | string[] | Intl.DateTimeFormatOptions,
   options?: Intl.DateTimeFormatOptions
 ): string;
 
 /** Date et heure (`12 août 2026, 14:05`). */
 export declare function formatDateTime(
   date: Date | string | number,
-  locale?: string,
+  locale?: string | string[] | Intl.DateTimeFormatOptions,
   options?: Intl.DateTimeFormatOptions
 ): string;
 

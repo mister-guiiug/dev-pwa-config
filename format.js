@@ -57,6 +57,35 @@ export function getDefaultLocale() {
 }
 
 /**
+ * LA DEUXIÈME PLACE EST LA LOCALE — et c'est le piège de ce module.
+ *
+ * Huit fonctions ont la forme `(valeur, locale, options)`. Écrire
+ * `formatNumber(1234, { maximumFractionDigits: 0 })` est pourtant le réflexe
+ * naturel, et c'est un appel SILENCIEUX : `Intl` accepte n'importe quoi comme
+ * `locales` sans lever, l'objet est traité comme une locale illisible, la
+ * locale par défaut reprend la main, et **les options sont perdues**. Aucune
+ * erreur, aucun avertissement, un format simplement inchangé.
+ *
+ * Une migration a rapporté ces appels comme « `formatDate` lève une
+ * TypeError » : elle ne lève pas, elle ignore — ce qui est pire, parce qu'un
+ * jet se corrige et qu'un silence se croit configuré.
+ *
+ * Une locale est TOUJOURS une chaîne ou un tableau de chaînes. Un objet à cette
+ * place ne peut donc être que des options : on les reconnaît plutôt que de les
+ * jeter. Non ambigu, et non cassant.
+ *
+ * @param {unknown} locale
+ * @param {object} options
+ * @returns {{ locale: string | string[], options: object }}
+ */
+function readLocaleArg(locale, options) {
+  if (locale && typeof locale === 'object' && !Array.isArray(locale)) {
+    return { locale: defaultLocale, options: { ...locale, ...options } };
+  }
+  return { locale: locale ?? defaultLocale, options };
+}
+
+/**
  * Fabriques `Intl` mémorisées.
  *
  * POURQUOI. Construire un `Intl.NumberFormat` coûte cher — c'est la raison
@@ -100,16 +129,29 @@ function toDate(value) {
 export function formatCurrency(
   amount,
   locale = defaultLocale,
-  currency = 'EUR'
+  currency = 'EUR',
+  options = {}
 ) {
   if (!Number.isFinite(amount)) return '';
-  return numberFormat(locale, { style: 'currency', currency }).format(amount);
+  // `currency` peut porter les options directement — c'est la forme que
+  // `miss-supaboss` réclamait pour afficher un prix sans centimes, et la seule
+  // qui reste lisible sur une fonction à quatre positions.
+  const opts =
+    currency && typeof currency === 'object'
+      ? { currency: 'EUR', ...currency, ...options }
+      : { currency, ...options };
+  const arg = readLocaleArg(locale, opts);
+  return numberFormat(arg.locale, {
+    style: 'currency',
+    ...arg.options,
+  }).format(amount);
 }
 
 /** Nombre avec séparateurs de milliers. */
 export function formatNumber(value, locale = defaultLocale, options = {}) {
   if (!Number.isFinite(value)) return '';
-  return numberFormat(locale, options).format(value);
+  const arg = readLocaleArg(locale, options);
+  return numberFormat(arg.locale, arg.options).format(value);
 }
 
 /**
@@ -132,21 +174,29 @@ export function formatPercentage(value, locale = defaultLocale, digits = 0) {
 export function formatDate(date, locale = defaultLocale, options = {}) {
   const value = toDate(date);
   if (!value) return '';
-  return dateFormat(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    ...options,
-  }).format(value);
+  const arg = readLocaleArg(locale, options);
+  // `dateStyle` / `timeStyle` sont EXCLUSIFS des composantes : `Intl` lève un
+  // « Invalid option » si on les mélange. Un appelant qui demande un style
+  // veut donc remplacer nos défauts, pas s'y ajouter — sans quoi la seule
+  // façon d'obtenir une date longue serait de ne pas passer par ce module.
+  const style = 'dateStyle' in arg.options || 'timeStyle' in arg.options;
+  return dateFormat(
+    arg.locale,
+    style
+      ? arg.options
+      : { year: 'numeric', month: 'short', day: 'numeric', ...arg.options }
+  ).format(value);
 }
 
 /** Date et heure (`12 août 2026, 14:05`). */
 export function formatDateTime(date, locale = defaultLocale, options = {}) {
-  return formatDate(date, locale, {
-    hour: '2-digit',
-    minute: '2-digit',
-    ...options,
-  });
+  const arg = readLocaleArg(locale, options);
+  const style = 'dateStyle' in arg.options || 'timeStyle' in arg.options;
+  return formatDate(
+    date,
+    arg.locale,
+    style ? arg.options : { hour: '2-digit', minute: '2-digit', ...arg.options }
+  );
 }
 
 /**
