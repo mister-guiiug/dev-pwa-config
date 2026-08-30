@@ -4,7 +4,7 @@ export interface ConfirmDialogProps {
   open: boolean;
   /** Étiquette la boîte (`aria-labelledby`). Toujours requis : sans lui, la
    *  boîte n'a pas de nom accessible — le défaut de mister-quota. */
-  title: string;
+  title: ReactNode;
   /** Décrit l'action (`aria-describedby`). `children` a la priorité. */
   message?: ReactNode;
   /** En mono-action, le défaut passe de « Confirmer » à « OK ». */

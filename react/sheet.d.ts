@@ -3,7 +3,7 @@ import type { FC, ReactNode } from 'react';
 export interface SheetProps {
   open: boolean;
   /** Sert de `aria-label` au dialogue et de titre visible. */
-  title: string;
+  title: ReactNode;
   onClose: () => void;
   /** Libellé accessible du bouton de fermeture. */
   closeLabel?: string;

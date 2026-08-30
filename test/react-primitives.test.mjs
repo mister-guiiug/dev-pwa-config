@@ -13,6 +13,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement as h } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { mount, setupDom } from './helpers/dom.mjs';
 
 import { Button } from '../react/button.js';
 import { TextField, SelectField, TextAreaField } from '../react/field.js';
@@ -20,6 +21,7 @@ import { Skeleton, SkeletonGroup } from '../react/skeleton.js';
 import { Sheet } from '../react/sheet.js';
 import { Stat } from '../react/stat.js';
 import { Badge } from '../react/badge.js';
+import { PwaInstallPrompt } from '../react/pwa-install-prompt.js';
 
 const render = (component, props, ...children) =>
   renderToStaticMarkup(h(component, props, ...children));
@@ -237,5 +239,76 @@ test('toutes les primitives acceptent une className de l’app', () => {
       /class="x"/,
       `${component.name} ignore className`
     );
+  }
+});
+
+/* ── Le titre est un NŒUD, pas une chaîne ──────────────────────────────── */
+
+/**
+ * DEUX MIGRATIONS ONT PERDU UNE ICÔNE POUR LA MÊME RAISON, le même jour :
+ * `miss-genius` sur le bandeau de mise à jour (une icône Sparkles), et
+ * `mister-doc` sur SIX dialogues (#44). Les deux ont écrit la même phrase dans
+ * leur rapport — « `title` est typé `string` ».
+ *
+ * L'élargir est sans risque là où le titre est rendu comme ENFANT. Il l'était
+ * partout… sauf dans `PwaInstallPrompt`, qui le passait aussi en `aria-label` :
+ * un nœud React y aurait donné **`[object Object]` comme nom accessible** de la
+ * région. C'est exactement le genre de régression qu'un élargissement de type
+ * fait passer sans une erreur de compilation. La bannière pointe désormais son
+ * titre rendu par `aria-labelledby`, ce qui marche pour les deux formes.
+ */
+test('un titre nœud est rendu, et ne fuit jamais dans un attribut', () => {
+  const titre = h('span', null, h('i', { 'aria-hidden': 'true' }, '✦'), 'Prêt');
+  const feuille = render(Sheet, { open: true, title: titre, onClose() {} });
+  assert.match(feuille, /Prêt/, 'le nœud doit être rendu');
+  assert.doesNotMatch(feuille, /\[object Object\]/);
+});
+
+/**
+ * `PwaInstallPrompt` ne rend RIEN tant que `beforeinstallprompt` n'a pas été
+ * émis — d'où le montage jsdom : un rendu statique donnerait une chaîne vide,
+ * et des assertions d'absence sur une chaîne vide passeraient toutes en ne
+ * prouvant rien. C'est le piège que ce fichier a failli poser.
+ */
+test('PwaInstallPrompt nomme sa région par le titre RENDU', async () => {
+  const dom = setupDom();
+  try {
+    const titre = h(
+      'span',
+      null,
+      h('i', { 'aria-hidden': 'true' }, '✦'),
+      'Prêt'
+    );
+    const view = await mount(h(PwaInstallPrompt, { title: titre }));
+    await view.act(() => {
+      const evt = new dom.window.Event('beforeinstallprompt');
+      evt.prompt = () => Promise.resolve();
+      evt.userChoice = Promise.resolve({ outcome: 'accepted' });
+      dom.window.dispatchEvent(evt);
+    });
+
+    const region = view.container.querySelector(
+      '[data-dwc="pwa-install-prompt"]'
+    );
+    assert.ok(region, 'la bannière doit être rendue après beforeinstallprompt');
+    assert.equal(
+      region.getAttribute('aria-label'),
+      null,
+      'un nœud en attribut donnerait [object Object]'
+    );
+
+    const id = region.getAttribute('aria-labelledby');
+    assert.ok(id, 'la région doit être nommée par référence');
+    // `CSS.escape` n'existe pas dans jsdom, et `useId` produit des « : » :
+    // on retrouve l'élément par balayage plutôt que par sélecteur.
+    const titreRendu = [...view.container.querySelectorAll('[id]')].find(
+      el => el.id === id
+    );
+    assert.ok(titreRendu, 'la référence doit pointer un élément existant');
+    assert.match(titreRendu.textContent, /Prêt/);
+
+    await view.unmount();
+  } finally {
+    dom.restore();
   }
 });

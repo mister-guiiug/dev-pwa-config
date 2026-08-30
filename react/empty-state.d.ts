@@ -2,7 +2,7 @@ import type { FC, ReactNode } from 'react';
 
 export interface EmptyStateProps {
   icon?: ReactNode;
-  title?: string;
+  title?: ReactNode;
   description?: string;
   /** Contenu riche : une liste, un lien, plusieurs paragraphes. */
   children?: ReactNode;

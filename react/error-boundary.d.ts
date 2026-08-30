@@ -18,7 +18,7 @@ export interface ErrorBoundaryProps {
   reference?: string;
   /** Ce qui précède la référence. Défaut : « Référence à communiquer ». */
   referenceLabel?: string;
-  title?: string;
+  title?: ReactNode;
   resetLabel?: string;
   backupLabel?: string;
 }

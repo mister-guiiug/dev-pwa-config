@@ -1,5 +1,5 @@
 import { useLabels } from './labels.js';
-import { createElement as h, useState } from 'react';
+import { createElement as h, useId, useState } from 'react';
 import { useInstallPrompt } from './use-install-prompt.js';
 
 function getStore(kind) {
@@ -27,6 +27,7 @@ export function PwaInstallPrompt(props = {}) {
   } = props;
 
   const labels = useLabels('install');
+  const titleId = useId();
   const title_ = title ?? labels.title;
   const description_ = description ?? labels.description;
 
@@ -57,10 +58,15 @@ export function PwaInstallPrompt(props = {}) {
       // Bannière passive, non modale : `region` (et non `dialog`, qui
       // promettrait à tort un piège de focus / une gestion d'échappement).
       role: 'region',
-      'aria-label': title_,
+      // `aria-labelledby` et NON `aria-label` : le titre peut être un nœud
+      // React (une icône suivie d'un libellé), et un nœud passé en attribut
+      // rendrait « [object Object] » comme nom accessible. Pointer le titre
+      // rendu marche pour les deux formes, et garde le nom synchronisé avec ce
+      // qui est réellement affiché.
+      'aria-labelledby': titleId,
       'data-dwc': 'pwa-install-prompt',
     },
-    h('p', { 'data-dwc': 'pwa-install-title' }, title_),
+    h('p', { id: titleId, 'data-dwc': 'pwa-install-title' }, title_),
     h('p', { 'data-dwc': 'pwa-install-desc' }, description_),
     h(
       'div',

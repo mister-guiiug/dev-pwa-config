@@ -284,7 +284,6 @@ const SANS_TEST_DIRECT = new Set([
   'react/use-prefetch', // la décision vit dans `prefetch.js`, lui testé
   // Enveloppes fines : elles ne décident de rien que leur socle ne décide déjà.
   'react/use-feedback', // table de l'app → `haptics` + `audio`, tous deux testés
-  'react/pwa-install-prompt', // rendu de `use-install-prompt`
   'react/sparkline', // rendu de `sparkline.js`, dont la géométrie est testée
   // Transport nécessitant un SDK complet ; ses jumeaux `local` et `supabase`
   // couvrent le contrat du port.
