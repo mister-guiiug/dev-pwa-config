@@ -285,7 +285,6 @@ const SANS_TEST_DIRECT = new Set([
   // Enveloppes fines : elles ne décident de rien que leur socle ne décide déjà.
   'react/use-feedback', // table de l'app → `haptics` + `audio`, tous deux testés
   'react/pwa-install-prompt', // rendu de `use-install-prompt`
-  'react/update-prompt-banner', // rendu de `use-update-prompt`, lui testé
   'react/sparkline', // rendu de `sparkline.js`, dont la géométrie est testée
   // Transport nécessitant un SDK complet ; ses jumeaux `local` et `supabase`
   // couvrent le contrat du port.

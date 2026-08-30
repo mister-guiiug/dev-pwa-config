@@ -24,6 +24,21 @@ export interface UseUpdatePromptOptions {
   snoozeKey?: string;
   /** Transmis à `applyUpdate` (plafonds, purge sélective, destination). */
   updateOptions?: ApplyUpdateOptions;
+  /**
+   * L'enregistrement du service worker a échoué. Sans ce rappel, la panne est
+   * indiscernable d'une app à jour : le bandeau ne s'affiche simplement jamais.
+   */
+  onRegisterError?: (error: unknown) => void;
+  /**
+   * Le service worker est enregistré. `registration.update()` permet une
+   * revérification périodique (`AppUpdates` la propose déjà en `checkEvery`).
+   */
+  onRegisteredSW?: (
+    swUrl: string,
+    registration?: ServiceWorkerRegistration
+  ) => void;
+  /** Forme historique de `onRegisteredSW`, sans l'URL du script. */
+  onRegistered?: (registration?: ServiceWorkerRegistration) => void;
 }
 
 export interface UseUpdatePrompt {

@@ -55,6 +55,10 @@
       "types": "./vitest-setup.d.ts",
       "default": "./vitest-setup.js"
     },
+    "./testing/pwa-register": {
+      "types": "./testing/pwa-register.d.ts",
+      "default": "./testing/pwa-register.js"
+    },
     "./apps-catalog": {
       "types": "./apps-catalog.d.ts",
       "default": "./apps-catalog.js"
@@ -565,6 +569,7 @@
     "vitest-base.d.ts",
     "vitest-setup.js",
     "vitest-setup.d.ts",
+    "testing",
     "apps-catalog.js",
     "apps-catalog.d.ts",
     "analytics.js",

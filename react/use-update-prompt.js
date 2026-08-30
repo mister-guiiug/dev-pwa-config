@@ -27,12 +27,33 @@ import { applyUpdate } from '../sw-update.js';
  * UN SEUL ENREGISTREMENT. `registerSW` pose des écouteurs : l'appeler deux fois
  * les double. Le hook mémorise la connexion PAR fonction injectée, ce qui
  * neutralise aussi le double effet de `StrictMode`.
+ *
+ * LES RAPPELS D'ENREGISTREMENT SONT TRANSMIS. `connect()` ne passait que
+ * `immediate`, `onNeedRefresh` et `onOfflineReady` : les trois autres rappels
+ * de vite-plugin-pwa étaient AVALÉS. Deux apps ont dû enrober `registerSW`
+ * dans une constante de module pour les récupérer — `mister-doc` sa
+ * journalisation d'échec d'enregistrement (sans elle, une panne
+ * d'enregistrement est indiscernable d'une app à jour), `mister-qowa` sa
+ * revérification horaire via `onRegisteredSW` ; `mister-cim10` posait
+ * `onRegistered` et `onRegisterError` hors de React, faute de pouvoir les
+ * donner au hook. `onRegisterError`, `onRegisteredSW` et `onRegistered` sont
+ * désormais des options.
+ *
+ * Ce sont les rappels du PREMIER crochet connecté qui font foi — même règle
+ * que `registerSW`, qui n'est appelé qu'une fois. Ils sont lus par
+ * l'intermédiaire d'une référence, donc toujours dans leur version du dernier
+ * rendu : une app peut les écrire en ligne sans ré-enregistrer quoi que ce
+ * soit.
  */
 
-/** @type {WeakMap<Function, { updateSW?: Function, needRefresh: boolean, offlineReady: boolean, listeners: Set<Function> }>} */
+/** @type {WeakMap<Function, { updateSW?: Function, needRefresh: boolean, offlineReady: boolean, listeners: Set<Function>, handlers: { current: object } }>} */
 const CONNECTIONS = new WeakMap();
 
-function connect(registerSW) {
+/**
+ * @param {Function} registerSW
+ * @param {{ current: { onRegisterError?: Function, onRegisteredSW?: Function, onRegistered?: Function } }} handlers
+ */
+function connect(registerSW, handlers) {
   const existing = CONNECTIONS.get(registerSW);
   if (existing) return existing;
 
@@ -41,12 +62,15 @@ function connect(registerSW) {
     needRefresh: false,
     offlineReady: false,
     listeners: new Set(),
+    handlers,
   };
   CONNECTIONS.set(registerSW, connection);
 
   const notify = () => {
     for (const listener of connection.listeners) listener();
   };
+  /** Le rappel de l'app, dans sa version la plus récente. */
+  const relay = name => connection.handlers.current?.[name];
   try {
     connection.updateSW = registerSW({
       immediate: true,
@@ -57,6 +81,15 @@ function connect(registerSW) {
       onOfflineReady() {
         connection.offlineReady = true;
         notify();
+      },
+      onRegistered(registration) {
+        relay('onRegistered')?.(registration);
+      },
+      onRegisteredSW(swUrl, registration) {
+        relay('onRegisteredSW')?.(swUrl, registration);
+      },
+      onRegisterError(error) {
+        relay('onRegisterError')?.(error);
       },
     });
   } catch {
@@ -89,6 +122,9 @@ function writeSnooze(key, until) {
  *   snoozeHours?: number,
  *   snoozeKey?: string,
  *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions,
+ *   onRegisterError?: (error: unknown) => void,
+ *   onRegisteredSW?: (swUrl: string, registration?: ServiceWorkerRegistration) => void,
+ *   onRegistered?: (registration?: ServiceWorkerRegistration) => void,
  * }} [options]
  */
 export function useUpdatePrompt(options = {}) {
@@ -97,6 +133,9 @@ export function useUpdatePrompt(options = {}) {
     snoozeHours = 0,
     snoozeKey = 'dwc_sw_update_snoozed_until',
     updateOptions,
+    onRegisterError,
+    onRegisteredSW,
+    onRegistered,
   } = options;
 
   const [needRefresh, setNeedRefresh] = useState(false);
@@ -112,9 +151,15 @@ export function useUpdatePrompt(options = {}) {
   const updateOptionsRef = useRef(updateOptions);
   updateOptionsRef.current = updateOptions;
 
+  // Même raison, pour les rappels d'enregistrement : le hook les relit au
+  // moment où le service worker parle, pas au moment où il s'enregistre. Une
+  // fonction écrite en ligne ne provoque donc aucun ré-enregistrement.
+  const handlersRef = useRef(null);
+  handlersRef.current = { onRegisterError, onRegisteredSW, onRegistered };
+
   useEffect(() => {
     if (typeof registerSW !== 'function') return undefined;
-    const connection = connect(registerSW);
+    const connection = connect(registerSW, handlersRef);
     const sync = () => {
       setNeedRefresh(connection.needRefresh);
       setOfflineReady(connection.offlineReady);
