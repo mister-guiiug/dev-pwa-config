@@ -17,11 +17,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   COMPRESS_QUALITIES,
+  IMAGE_ACCEPTED_TYPES,
   IMAGE_COMPRESS_START_DIMENSION,
   IMAGE_MAX_DIMENSION,
   compressImageToMaxBytes,
   fitWithin,
   stripImageMetadata,
+  validateImageFile,
 } from '../image.js';
 
 /* ── La géométrie ───────────────────────────────────────────────────────── */
@@ -48,6 +50,41 @@ test('fitWithin plancher à 1 px : une bande extrême ne donne pas un canvas nul
 
 test('fitWithin ne divise pas par zéro', () => {
   assert.deepEqual(fitWithin(0, 0, 2048), { width: 1, height: 1 });
+});
+
+/* ── Ce que le défaut refuse EXPRÈS ─────────────────────────────────────── */
+
+test('le défaut refuse le GIF que la compression sait pourtant lire', () => {
+  // L'écart a été relevé pendant l'adoption de `miss-carbook` (#16) :
+  // `compressImageToMaxBytes` documente le GIF (« deviennent une image fixe »)
+  // pendant que le validateur du MÊME fichier le refuse. Il est intentionnel —
+  // cette liste dit ce qu'une app accepte de RECEVOIR, pas ce que le module
+  // sait LIRE.
+  //
+  // Ce test existe pour empêcher qu'on « corrige » l'incohérence en ajoutant
+  // 'image/gif' au défaut : `bac-sable` appelle `validateImageFile(file)` SANS
+  // option, sous un `accept="image/jpeg,image/png,image/webp"` et un message
+  // qui annonce « Formats acceptés : JPEG, PNG, WebP ». Un défaut plus large
+  // lui ferait accepter en silence ce que son propre écran refuse.
+  assert.deepEqual(
+    [...IMAGE_ACCEPTED_TYPES],
+    ['image/jpeg', 'image/png', 'image/webp'],
+    'élargir le défaut change ce que TOUTES les apps acceptent : voir l’en-tête'
+  );
+  assert.equal(validateImageFile({ type: 'image/gif', size: 10 }), 'type');
+});
+
+test('la liste s’élargit au site d’appel, sans déplacer le défaut', () => {
+  // La couture que les deux apps utilisent : miss-carbook (GIF), mister-puzzle
+  // (GIF, AVIF, HEIC, HEIF). Sans elle, chacune reperdrait sa promesse écran.
+  const gif = { type: 'image/gif', size: 10 };
+  assert.equal(
+    validateImageFile(gif, {
+      acceptedTypes: [...IMAGE_ACCEPTED_TYPES, 'image/gif'],
+    }),
+    null
+  );
+  assert.equal(validateImageFile(gif), 'type', 'le défaut ne doit pas bouger');
 });
 
 /* ── Les deux constantes de dimension, et pourquoi elles diffèrent ──────── */
@@ -252,14 +289,22 @@ test('un nom à rallonge est tronqué, extension retirée d’abord', async () =
   assert.equal(out.name, `${'a'.repeat(80)}.jpg`);
 });
 
-test('une image illisible donne un message actionnable, pas une trace brute', async () => {
+test('une image illisible donne un message actionnable, qui ne promet aucun format refusé', async () => {
+  // Le message disait « Essayez un autre fichier (JPEG, PNG, WebP ou GIF) » :
+  // il annonçait à l'UTILISATEUR un format que le défaut de validation de ce
+  // module refuse. Ce module ne connaît pas la liste de son appelant — il ne
+  // peut nommer sans risque que le plancher, que toute app accepte.
   await assert.rejects(
     compressImageToMaxBytes(FILE, 1000, {
       decode: async () => {
         throw new Error('boom');
       },
     }),
-    /Essayez un autre fichier/
+    err => {
+      assert.match(err.message, /Essayez une photo JPEG ou PNG/);
+      assert.doesNotMatch(err.message, /GIF/);
+      return true;
+    }
   );
 });
 
