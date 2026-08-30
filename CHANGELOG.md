@@ -1,5 +1,49 @@
 # Changelog
 
+## 3.23.0
+
+### Minor Changes
+
+- 55bc947: `ConfirmDialog` : mode mono-action pour les alertes — `cancelLabel={null}`
+  (et non `undefined`, qui garde le repli « Annuler ») retire le bouton
+  Annuler. Le rôle `alertdialog` est conservé, le focus initial va sur
+  l'action unique, Échap et le voile valent un « OK » (`onConfirm`, garde
+  `loading` comprise), et le libellé par défaut devient « OK »
+  (`labels.confirm.ok`, surchargeable). `onCancel` devient optionnel ; en
+  deux-actions, rien ne change. Sous `components.css`, le bouton unique prend
+  toute la rangée (`:only-child`, aucun nouveau jeton).
+
+  Besoin remonté par trois apps pendant la campagne `components.css`, qui
+  n'avaient pas pu migrer leurs boîtes d'alerte face aux deux boutons
+  inconditionnels : l'`ErrorModal` de mister-puzzle, le mode « alert » du
+  `DialogProvider` de mister-cim10, et la boîte d'erreur de miss-carbook.
+  Les détails techniques dépliables de miss-carbook (+ bouton copier) restent
+  applicatifs : les passer en `children`.
+
+- 672a77e: `/pdf` : l'encodeur honore vraiment le WinAnsi que la fonte déclare. Le
+  texte passait en Latin-1 : tout point de code > 0xFF devenait « ? » — y
+  compris €, ’, “ ”, —, –, …, œ, ™, que CP1252 place pourtant sur les
+  positions 0x80–0x9F. Une table de transcodage Unicode → CP1252 couvre ces
+  27 caractères ; le reste (émoji, grec…) devient toujours « ? », et une
+  paire de substitution n'en produit qu'un seul.
+
+### Patch Changes
+
+- 4a2469f: `Sheet` et `ConfirmDialog` : le clic sur le voile ferme vraiment. Les deux
+  composants écoutaient le clic sur la racine avec une garde
+  `target === currentTarget`, mais le voile (`sheet-backdrop` /
+  `confirm-backdrop`) est un enfant qui recouvre toute la racine (`inset: 0`
+  dans `components.css`) : en navigateur, c'est LUI la cible du clic, la garde
+  échouait, et rien ne se fermait jamais. Invisible en jsdom — pas de
+  hit-testing, les tests dispatchaient sur la racine — le bug a été mesuré en
+  vrai navigateur par deux apps pendant la campagne `components.css`
+  (mister-footcoach#25, mister-molkky#14). Le gestionnaire accepte désormais
+  deux cibles, la racine OU le voile : les apps qui ont posé la rustine
+  `[data-dwc='sheet-backdrop'] { pointer-events: none; }` — chez elles le clic
+  traverse et atterrit sur la racine — ferment toujours, et pourront retirer
+  la rustine. Un clic dans le panneau ne ferme toujours pas ; la garde
+  `loading` du `ConfirmDialog` (deux-actions comme mono-action) est inchangée.
+
 ## 3.22.0
 
 ### Minor Changes
