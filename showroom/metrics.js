@@ -12,122 +12,122 @@
  * La vitrine n'affiche alors simplement aucune mesure.
  */
 globalThis.SHOWROOM_METRICS = {
-  "generatedAt": "2026-08-29T11:09:55.802Z",
+  "generatedAt": "2026-08-30T09:58:39.939Z",
   "repos": {
     "miss-carbook": {
-      "pushedAt": "2026-08-10T22:40:12Z",
+      "pushedAt": "2026-08-29T23:07:39Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-contraction": {
-      "pushedAt": "2026-08-10T22:39:18Z",
+      "pushedAt": "2026-08-30T09:35:28Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-genius": {
-      "pushedAt": "2026-08-10T22:38:36Z",
+      "pushedAt": "2026-08-30T09:35:05Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-uwh": {
-      "pushedAt": "2026-08-10T22:39:25Z",
+      "pushedAt": "2026-08-30T09:44:23Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-cim10": {
-      "pushedAt": "2026-08-10T22:40:22Z",
+      "pushedAt": "2026-08-29T23:00:58Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-footcoach": {
-      "pushedAt": "2026-08-10T22:55:20Z",
+      "pushedAt": "2026-08-29T23:08:18Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-puzzle": {
-      "pushedAt": "2026-08-10T22:39:51Z",
+      "pushedAt": "2026-08-30T09:52:41Z",
       "archived": false,
-      "openIssues": 0,
+      "openIssues": 1,
       "version": null,
       "releasedAt": null
     },
     "miss-ticket-pwa": {
-      "pushedAt": "2026-08-10T22:39:40Z",
+      "pushedAt": "2026-08-30T09:25:25Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-doc": {
-      "pushedAt": "2026-08-10T22:38:07Z",
+      "pushedAt": "2026-08-30T09:54:53Z",
       "archived": false,
-      "openIssues": 0,
+      "openIssues": 1,
       "version": null,
       "releasedAt": null
     },
     "miss-lookhouse": {
-      "pushedAt": "2026-08-09T17:28:21Z",
+      "pushedAt": "2026-08-30T09:35:41Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-badminton": {
-      "pushedAt": "2026-08-10T22:37:39Z",
+      "pushedAt": "2026-08-30T09:53:25Z",
       "archived": false,
-      "openIssues": 0,
+      "openIssues": 1,
       "version": null,
       "releasedAt": null
     },
     "miss-dice": {
-      "pushedAt": "2026-08-10T22:37:51Z",
+      "pushedAt": "2026-08-29T23:08:35Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-supaboss": {
-      "pushedAt": "2026-08-09T18:31:10Z",
+      "pushedAt": "2026-08-29T23:26:21Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-molkky": {
-      "pushedAt": "2026-08-10T22:38:21Z",
+      "pushedAt": "2026-08-30T09:53:54Z",
       "archived": false,
-      "openIssues": 0,
+      "openIssues": 1,
       "version": null,
       "releasedAt": null
     },
     "mister-qowa": {
-      "pushedAt": "2026-08-10T10:20:37Z",
+      "pushedAt": "2026-08-30T09:55:13Z",
       "archived": false,
-      "openIssues": 0,
+      "openIssues": 1,
       "version": null,
       "releasedAt": null
     },
     "mister-family-map": {
-      "pushedAt": "2026-08-29T07:14:31Z",
+      "pushedAt": "2026-08-29T17:29:35Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-quota": {
-      "pushedAt": "2026-05-15T22:34:43Z",
+      "pushedAt": "2026-08-30T09:06:24Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
