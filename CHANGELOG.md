@@ -1,5 +1,188 @@
 # Changelog
 
+## 3.24.0
+
+### Minor Changes
+
+- 985418c: **`./ical`** — l'agenda que quatre apps avaient écrit chacune de son côté.
+
+  `bac-sable` (le plus propre, et le seul testé), `mister-footcoach`,
+  `miss-uwh` et `mister-doc` engendrent tous du `.ics` (RFC 5545), et aucun de
+  la même façon : deux n'écrivent pas de `DTSTAMP` — propriété **obligatoire** ;
+  trois ne plient pas leurs lignes, le quatrième les plie en comptant les
+  caractères et coupe donc les accents en deux ; deux calculent un lendemain à
+  la main parce que le `DTEND` d'une journée entière est **exclusif** ; et
+  `mister-doc` recalcule un horodatage par événement, si bien qu'un fichier
+  engendré d'un seul coup en porte plusieurs.
+
+  L'union tranche ce qui divergeait. **La date choisit sa nature** : une date
+  ISO donne une journée entière, un horodatage sans décalage une heure
+  **flottante** (18 h reste 18 h pour le parent en déplacement), un `Date` un
+  **instant** UTC — écrire l'un pour l'autre décale l'agenda deux heures six
+  mois par an, et seulement chez ceux qui voyagent. Le pliage est celui de
+  `./vcard` : c'est le MÊME texte de RFC (§3.1 ici, §3.2 là), donc la même
+  fonction plutôt qu'une cinquième réécriture. `DTSTAMP` est unique pour tout le
+  fichier et **injectable**, comme dans `miss-uwh` — un export déterministe est
+  un export testable. `URL` n'est plus échappée : c'est une valeur URI, et `\,`
+  casse le lien. Et l'arithmétique d'une heure flottante se fait sur le cadran,
+  pas sur un instant : le `icalEnd` de `mister-footcoach` déplace d'une heure
+  une séance de 01 h 30 la nuit du changement d'heure, ce que la CI — en UTC —
+  ne peut pas voir.
+
+  Le flux d'abonnement de `mister-doc` est couvert (`METHOD`, `X-WR-TIMEZONE`,
+  `REFRESH-INTERVAL` **et** `X-PUBLISHED-TTL`, `CATEGORIES`, `TRANSP`), tout
+  comme le `STATUS` de `mister-footcoach` — un match annulé reste au calendrier,
+  barré. En revanche, pas de `RRULE`, pas de `VALARM`, pas de `VTIMEZONE` :
+  aucune des quatre n'en émet, la récurrence étant dépliée en amont par le
+  domaine.
+
+  Les quatre apps peuvent migrer : `bac-sable/src/shared/lib/ics.ts`,
+  `mister-footcoach/src/utils/ical.ts`,
+  `miss-uwh/src/features/export/icalExport.ts` et la partie génération de
+  `mister-doc/supabase/functions/calendar/index.ts` — leurs cas de test servent
+  de cas de test au module.
+
+- 2af307c: Promotion de fonctionnalités issues des apps de la famille (P0/P1/P2).
+
+  Nouveaux modules racine : `haptics` (API Vibration, patterns gradués),
+  `audio` (synthèse WebAudio, presets sonores), `speech` (synthèse vocale),
+  `image` (validation, suppression des métadonnées, compression sous budget),
+  `rate-limit` (limiteur côté client, horloge injectable), `geocode-ban`
+  (géocodage Base Adresse Nationale), `dates` (arithmétique pure, ISO local).
+
+  Nouveaux sous-chemins React : `use-long-press`, `use-feedback` (son +
+  vibration), `use-wake-lock`, `use-pull-to-refresh`, `use-keyboard-shortcuts`,
+  `use-shake`, `use-async`, `use-undoable-state`, `segmented-control`,
+  `connection-banner` (avec styles opt-in dans `components.css`).
+
+  Extensions : `format` gagne `formatCount`, `formatUsage`, `formatDuration` ;
+  `security` gagne `sanitizeUserText`, `sanitizeSingleLine`, `isSafeHttpUrl`
+  (et `sanitizeInput` retire désormais les caractères de contrôle) ; `backend`
+  gagne `classifyBackendError` ; `react/use-media-query` gagne
+  `usePrefersHighContrast`.
+
+- 01a8ca0: `/xlsx` : `buildXlsx` écrit plusieurs onglets, et l'en-tête du module cesse de
+  promettre une adoption impossible.
+
+  Le module se présentait comme le remplaçant du SheetJS-par-CDN de miss-uwh.
+  C'était faux, et la relecture du code cible l'a établi : `buildWorkbookSheets`
+  rend AU MOINS trois onglets — Bilan, Compte, Evolution —, 19 sur le jeu de
+  démonstration, 30 au maximum (un par catégorie mouvementée du référentiel
+  R1–R9 / D1–D13), là où `buildXlsx` codait en dur un `sheet1.xml`, un `<sheet>`,
+  un `Override` et un `Relationship`. Le bouton promet « Classeur Excel
+  multi-feuilles » : basculer, c'était livrer un onglet sur dix-neuf. La bascule
+  a été refusée pour cette raison (miss-uwh PR #54), et l'app est restée sur
+  SheetJS.
+
+  `buildXlsx` accepte donc une feuille **ou un tableau de feuilles**. Chaque
+  onglet a sa partie `xl/worksheets/sheetN.xml`, son `Override` de type de
+  contenu, sa relation `rIdN` et son `<sheet name sheetId r:id>` — quatre
+  numérotations qu'un test relit désormais ENSEMBLE, en suivant le chemin du
+  tableur, parce qu'aucune ne se vérifie seule. Le `rId` des styles suit le
+  nombre de feuilles (`rId{N+1}`) au lieu d'être figé à `rId2`, où il serait
+  entré en collision avec la deuxième feuille.
+
+  Deux ajustements que le classeur réel exigeait :
+  - **`header` devient facultatif.** Une feuille de bilan n'a pas d'en-tête au
+    sens du module : elle a un titre sur une cellule. Sans en-tête, les données
+    commencent en ligne 1.
+  - **Les lignes irrégulières sont des lignes.** Une ligne vide occupe sa ligne
+    (`<row r="7"/>`) au lieu de disparaître — sans quoi tout ce qui suit remonte
+    d'un cran ; une ligne d'une cellule reste d'une cellule ; une cellule absente
+    n'est pas émise, et les suivantes gardent leur colonne.
+
+  Les noms d'onglets sont maintenant **dédoublonnés** après assainissement
+  (suffixe ` 2`, ` 3`…, base retaillée pour tenir en 31 caractères) : Excel
+  compare sans la casse et refuse le classeur entier sur un doublon. Logique
+  reprise de `safeSheetName` (miss-uwh), qui la tenait déjà pour ses catégories.
+  La casse donnée par l'appelant est conservée.
+
+  Aucune rupture, au sens fort : `buildXlsx({ name, header, rows })` rend les
+  **mêmes octets** qu'en 3.23.0 — vérifié, et verrouillé par un test qui compare
+  l'objet seul au tableau d'un élément. `buildXlsx([])` rend un classeur d'un
+  onglet vide plutôt que de lever, comme `buildPdf([])` rend une page vide : un
+  classeur sans onglet ne s'ouvre pas.
+
+  Migration : miss-uwh bascule `xlsxExport.ts` dès cette version publiée — son
+  `buildWorkbookSheets` rend déjà des chaînes et des nombres, sans formule, ni
+  format, ni largeur de colonne. Son **import** de classeurs reste sur SheetJS :
+  le socle n'écrit que.
+
+### Patch Changes
+
+- f79f20f: Trois finitions relevées par la campagne d'adoption du 30 août. Chacune avait
+  obligé une migration à poser un contournement chez elle.
+
+  `components.css` réduisait le mouvement du seul `sheet-panel` sous
+  `prefers-reduced-motion`, alors que `confirm-panel` et `toast` portent la même
+  entrée `dwc-rise` : une alerte et un message surgissaient malgré le réglage
+  système. mister-puzzle (#14) avait dû reposer la règle côté app.
+
+  Le commentaire du mode mono-action de `ConfirmDialog` présentait le `flex: 1` du
+  bouton unique comme le rendu que mister-puzzle et mister-cim10 dessinaient à la
+  main. C'est faux pour mister-cim10, dont l'alerte était compacte et alignée à
+  droite — sa migration (#27) a dû poser un écart local. Le commentaire dit
+  désormais le vrai, et rappelle qu'une identité d'app se reprend en deux lignes
+  de CSS non « layered ».
+
+  Le `.d.ts` de l'écran de secours ne déclarait pas toutes les props réellement
+  acceptées : miss-supaboss (#30) avait dû passer la référence de corrélation en
+  spread commenté. Aucun changement de comportement, le type dit ce que le code
+  fait déjà.
+
+- eeba262: `realtime/supabase` : deux abonnements à la même table ne se marchent plus
+  dessus, et une tentative qui échoue ne fuit plus un canal.
+
+  Le transport nommait son canal `dwc:<schema>:<table>` — **sans le filtre**.
+  Trois comportements de `@supabase/realtime-js` 2.107.0 se combinaient alors en
+  un échec parfaitement muet : `RealtimeClient.channel(sujet)` REND le canal déjà
+  enregistré sous ce sujet au lieu d'en créer un ; `RealtimeChannel.subscribe()`
+  ne fait RIEN sur un canal qui n'est pas `closed` — pas d'erreur, pas de rappel ;
+  et `removeChannel()` est asynchrone, si bien que le canal sortant reste
+  enregistré, en état `leaving`, le temps de l'aller-retour serveur. Deux
+  abonnements à la même table avec des filtres différents — un fil de
+  commentaires par candidat et un journal par espace de travail, cas d'école —
+  recevaient donc le même canal : le second y greffait ses écouteurs, son
+  `subscribe()` ne faisait rien, la promesse de `connect()` ne se résolvait
+  **jamais**, et l'écran restait muet sans qu'aucune erreur ne le dise. Le
+  démontage-remontage de React dans un même commit produisait exactement le même
+  silence.
+
+  Le sujet porte maintenant le filtre — pour rester lisible dans une trace ou
+  dans `getChannels()` — **et** un numéro monotone, interne au module, renouvelé
+  à chaque tentative : la lisibilité et l'unicité sont deux besoins distincts, et
+  deux abonnements rigoureusement identiques doivent coexister aussi.
+  `channelName` remplace la part lisible sans figer le sujet, sans quoi un nom en
+  dur réintroduirait la collision.
+
+  Second défaut, même diagnostic : une tentative qui échouait **avant**
+  `SUBSCRIBED` ne donnait aucune poignée de fermeture à l'appelant — il ne
+  pouvait donc pas nettoyer, et le canal restait dans `client.channels` pour
+  toujours, un de plus à chaque montage (deux par montage en développement).
+  `CHANNEL_ERROR`, `TIMED_OUT`, une levée pendant l'abonnement, et désormais un
+  `CLOSED` mort-né — qui laissait jusqu'ici la promesse en suspens pour toujours,
+  sans erreur ni tentative suivante — retirent le canal du client avant de
+  rejeter.
+
+  Diagnostic établi pendant la migration de miss-carbook (mister-guiiug/miss-carbook#14),
+  qui a dû contourner côté app : un client factice qui suffixait le sujet d'un
+  compteur de module et gardait un `Set` de canaux orphelins à refermer au
+  démontage. Ce contournement peut être retiré de `useRealtimeTable.ts` dès cette
+  version publiée — le socle tient les deux garanties.
+
+  En revanche, `catchUp` n'applique **toujours pas** le `filter` de l'abonnement,
+  et ce n'est pas corrigé ici : le rattrapage interroge la table sur la seule
+  colonne curseur, et réappliquer un filtre PostgREST demanderait d'en interpréter
+  la grammaire (`eq`, `in`, `neq`…) pour un résultat qui resterait approximatif.
+  La limite est en revanche écrite noir sur blanc — en-tête du module, `.d.ts` et
+  README —, parce qu'elle est un piège de sécurité **fonctionnelle** : là où la
+  RLS laisse passer plusieurs espaces, le rattrapage fait entrer des lignes d'un
+  autre espace que celui écouté, sans erreur, et seulement au retour d'une veille.
+
+  Les tests posent un client Supabase factice fidèle aux trois comportements
+  ci-dessus — un faux complaisant validerait le bogue au lieu de le montrer.
+  Six d'entre eux échouaient sur le code précédent.
+
 ## 3.23.0
 
 ### Minor Changes
