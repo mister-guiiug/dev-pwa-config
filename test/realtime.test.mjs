@@ -396,3 +396,291 @@ test('local : repli sur l’évènement `storage` sans BroadcastChannel', async 
 
   assert.deepEqual(recus, [{ x: 1 }]);
 });
+
+/* ── Le transport Supabase : le nommage des canaux ─────────────────────── */
+
+/**
+ * Un client Supabase factice FIDÈLE aux trois comportements de
+ * `@supabase/realtime-js` 2.107.0 qui font tout le problème. Un faux
+ * complaisant — un `channel()` qui crée toujours, un `subscribe()` qui marche
+ * toujours — validerait le bogue au lieu de le montrer.
+ */
+function fakeSupabase() {
+  /** Sujet → canal, comme `client.channels`. */
+  const registered = new Map();
+  const leaving = [];
+
+  class FakeChannel {
+    constructor(topic) {
+      this.topic = topic;
+      this.state = 'closed';
+      this.bindings = [];
+      this.callback = null;
+    }
+    on(type, filter, handler) {
+      this.bindings.push({ type, filter, handler });
+      return this;
+    }
+    subscribe(callback) {
+      // (2) `subscribe()` est un NO-OP sur un canal qui n'est pas `closed` :
+      // pas d'erreur, pas de rappel, rien. C'est ce silence qui laisse la
+      // promesse de `connect()` en suspens pour toujours.
+      if (this.state !== 'closed') return this;
+      this.state = 'joining';
+      this.callback = callback;
+      return this;
+    }
+    /** Le serveur répond enfin. */
+    ack(status = 'SUBSCRIBED') {
+      this.state = status === 'SUBSCRIBED' ? 'joined' : 'errored';
+      this.callback?.(status);
+    }
+    /** Un changement arrive sur ce canal-ci. */
+    emit(payload) {
+      for (const { handler } of this.bindings) handler(payload);
+    }
+  }
+
+  return {
+    get channels() {
+      return [...registered.values()];
+    },
+    channel(topic) {
+      // (1) le client REND le canal déjà enregistré sous ce sujet, au lieu
+      // d'en créer un second.
+      const existing = registered.get(topic);
+      if (existing) return existing;
+      const created = new FakeChannel(topic);
+      registered.set(topic, created);
+      return created;
+    },
+    removeChannel(channel) {
+      // (3) le retrait est ASYNCHRONE : le canal reste enregistré, en
+      // `leaving`, le temps de l'aller-retour serveur.
+      channel.state = 'leaving';
+      leaving.push(channel);
+      return Promise.resolve('ok');
+    },
+    /** L'aller-retour aboutit : le client oublie enfin les canaux sortants. */
+    flushRemovals() {
+      for (const channel of leaving) {
+        if (registered.get(channel.topic) === channel) {
+          registered.delete(channel.topic);
+        }
+        channel.state = 'closed';
+      }
+      leaving.length = 0;
+    },
+    from() {
+      throw new Error('aucun rattrapage attendu dans ce test');
+    },
+  };
+}
+
+const EN_SUSPENS = Symbol('promesse jamais résolue');
+
+/**
+ * Attendre une promesse SANS risquer de pendre : le bogue d'origine laisse
+ * `connect()` en suspens pour toujours, et un test qui pend ne dit rien.
+ */
+function within(promise, ms = 50) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(EN_SUSPENS), ms);
+    timer.unref?.();
+    promise.then(
+      value => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      error => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
+
+test('supabase : deux filtres sur la MÊME table, deux canaux distincts', async () => {
+  // Le cas d'école : un fil de commentaires par candidat et un journal par
+  // espace de travail. Avec un sujet `dwc:<schema>:<table>`, le second
+  // abonnement recevait le canal du premier — ses écouteurs s'y greffaient et
+  // son `subscribe()` ne faisait rien.
+  const { supabaseRealtimeTransport } = await import('../realtime/supabase.js');
+  const client = fakeSupabase();
+
+  const commentaires = supabaseRealtimeTransport({
+    client,
+    table: 'comments',
+    filter: 'candidate_id=eq.1',
+  });
+  const journal = supabaseRealtimeTransport({
+    client,
+    table: 'comments',
+    filter: 'workspace_id=eq.7',
+  });
+
+  const recusA = [];
+  const recusB = [];
+  const pA = commentaires.connect({
+    onMessage: m => recusA.push(m),
+    onError: () => {},
+  });
+  const pB = journal.connect({
+    onMessage: m => recusB.push(m),
+    onError: () => {},
+  });
+
+  assert.equal(client.channels.length, 2, 'deux abonnements = deux canaux');
+  const [canalA, canalB] = client.channels;
+  canalA.ack();
+  canalB.ack();
+
+  const abonnementA = await within(pA);
+  const abonnementB = await within(pB);
+  assert.notEqual(
+    abonnementA,
+    EN_SUSPENS,
+    'le premier abonnement doit aboutir'
+  );
+  assert.notEqual(abonnementB, EN_SUSPENS, 'le second aussi — c’est le bogue');
+
+  // Chacun n'écoute QUE son canal : un écouteur greffé sur celui du voisin
+  // ferait entrer les commentaires d'un candidat dans le journal de l'espace.
+  canalA.emit({ eventType: 'INSERT', new: { id: 'a' } });
+  assert.deepEqual(recusA, [{ eventType: 'INSERT', new: { id: 'a' } }]);
+  assert.deepEqual(recusB, [], 'le journal ne doit rien avoir reçu');
+});
+
+test('supabase : le sujet nomme le filtre, et reste unique', async () => {
+  const { supabaseRealtimeTransport } = await import('../realtime/supabase.js');
+  const client = fakeSupabase();
+  const transport = supabaseRealtimeTransport({
+    client,
+    table: 'comments',
+    filter: 'candidate_id=eq.1',
+  });
+
+  void transport.connect({ onMessage: () => {}, onError: () => {} });
+  void transport.connect({ onMessage: () => {}, onError: () => {} });
+  const sujets = client.channels.map(c => c.topic);
+
+  // Lisible en débogage : le schéma, la table, le filtre. Et un numéro, parce
+  // que deux abonnements RIGOUREUSEMENT identiques doivent coexister aussi.
+  for (const sujet of sujets) {
+    assert.match(sujet, /^dwc:public:comments:candidate_id=eq\.1#\d+$/, sujet);
+  }
+  assert.equal(new Set(sujets).size, 2, `sujets en collision : ${sujets}`);
+});
+
+test('supabase : `channelName` renomme le sujet sans le figer', async () => {
+  const { supabaseRealtimeTransport } = await import('../realtime/supabase.js');
+  const client = fakeSupabase();
+  const transport = supabaseRealtimeTransport({
+    client,
+    table: 'comments',
+    channelName: 'carbook:fil-candidat',
+  });
+
+  void transport.connect({ onMessage: () => {}, onError: () => {} });
+  void transport.connect({ onMessage: () => {}, onError: () => {} });
+  const sujets = client.channels.map(c => c.topic);
+
+  assert.match(sujets[0], /^carbook:fil-candidat#\d+$/);
+  assert.equal(
+    new Set(sujets).size,
+    2,
+    'un nom donné par l’appelant ne doit pas réintroduire la collision'
+  );
+});
+
+test('supabase : démonter puis remonter aussitôt rouvre VRAIMENT', async () => {
+  // Le démontage-remontage de React dans le même commit : `removeChannel()`
+  // étant asynchrone, le canal sortant est encore enregistré quand le second
+  // montage demande le sien.
+  const { supabaseRealtimeTransport } = await import('../realtime/supabase.js');
+  const client = fakeSupabase();
+  const transport = supabaseRealtimeTransport({ client, table: 'comments' });
+
+  const p1 = transport.connect({ onMessage: () => {}, onError: () => {} });
+  const [premier] = client.channels;
+  premier.ack();
+  const abonnement = await within(p1);
+  assert.notEqual(abonnement, EN_SUSPENS);
+
+  abonnement.close();
+  assert.equal(premier.state, 'leaving', 'le retrait n’est pas immédiat');
+
+  const p2 = transport.connect({ onMessage: () => {}, onError: () => {} });
+  const second = client.channels.find(c => c !== premier);
+  assert.ok(second, 'le remontage doit ouvrir un canal NEUF');
+  second.ack();
+  assert.notEqual(
+    await within(p2),
+    EN_SUSPENS,
+    'le second montage reste muet, sans la moindre erreur'
+  );
+});
+
+test('supabase : un échec avant SUBSCRIBED ne laisse pas de canal orphelin', async () => {
+  // Sans poignée de fermeture, l'appelant ne PEUT pas nettoyer : le canal
+  // reste dans `client.channels` pour toujours, un par montage.
+  const { supabaseRealtimeTransport } = await import('../realtime/supabase.js');
+  const client = fakeSupabase();
+  const transport = supabaseRealtimeTransport({ client, table: 'places' });
+
+  const promesse = transport.connect({
+    onMessage: () => {},
+    onError: () => {},
+  });
+  const [canal] = client.channels;
+  canal.ack('CHANNEL_ERROR');
+
+  await assert.rejects(within(promesse), /CHANNEL_ERROR/);
+  assert.equal(canal.state, 'leaving', 'le canal doit avoir été RETIRÉ');
+  client.flushRemovals();
+  assert.deepEqual(client.channels, [], 'aucun canal orphelin');
+});
+
+test('supabase : un canal mort-né ne laisse pas la promesse en suspens', async () => {
+  // `CLOSED` avant `SUBSCRIBED` : sans ce cas, l'appelant attendrait un
+  // évènement qui ne viendra plus — ni erreur, ni reconnexion.
+  const { supabaseRealtimeTransport } = await import('../realtime/supabase.js');
+  const client = fakeSupabase();
+  const transport = supabaseRealtimeTransport({ client, table: 'places' });
+
+  const promesse = transport.connect({
+    onMessage: () => {},
+    onError: () => {},
+  });
+  client.channels[0].ack('CLOSED');
+
+  await assert.rejects(within(promesse), /CLOSED/);
+  client.flushRemovals();
+  assert.deepEqual(client.channels, [], 'aucun canal orphelin');
+});
+
+test('supabase : une coupure APRÈS coup se signale, sans double fermeture', async () => {
+  const { supabaseRealtimeTransport } = await import('../realtime/supabase.js');
+  const client = fakeSupabase();
+  const transport = supabaseRealtimeTransport({ client, table: 'places' });
+
+  const erreurs = [];
+  const promesse = transport.connect({
+    onMessage: () => {},
+    onError: e => erreurs.push(e),
+  });
+  const [canal] = client.channels;
+  canal.ack();
+  const abonnement = await within(promesse);
+
+  canal.ack('CHANNEL_ERROR');
+  assert.equal(erreurs.length, 1, 'la coupure établie passe par `onError`');
+  assert.equal(abonnement.alive(), false, 'et `alive()` le dit');
+
+  // Le port ferme alors lui-même ; un `CLOSED` de courtoisie ne doit pas
+  // rouvrir le dossier.
+  abonnement.close();
+  abonnement.close();
+  canal.ack('CLOSED');
+  assert.equal(erreurs.length, 1, 'aucun signalement après la fermeture');
+});
