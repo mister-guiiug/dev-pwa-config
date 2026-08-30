@@ -24,8 +24,13 @@ export interface LabelGroups {
     updating: string;
     snooze: string;
     dismiss: string;
+    /** Seconde sortie du mode `secondaryActions: 'both'`, distincte de `snooze`. */
+    ignore: string;
     force: string;
     forceHint: string;
+    /** Message « prêt hors ligne », rendu par le bandeau sur `showOfflineReady`. */
+    offlineReady: string;
+    offlineReadyOk: string;
   };
   footer: { source: string; sponsor: string };
   share: { label: string; copied: string; failed: string };

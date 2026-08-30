@@ -14,6 +14,21 @@
  *    `prefers-reduced-motion`, les media queries…),
  *  - des mocks des modules virtuels `virtual:pwa-register` de vite-plugin-pwa
  *    (sinon l'import échoue hors build Vite).
+ *
+ * CES MOCKS-LÀ NE SUFFISENT PAS À TESTER UN BANDEAU DE MISE À JOUR, et c'est
+ * le piège le plus recopié du parc. `vi.mock` agit à l'EXÉCUTION ; un module
+ * source qui écrit `import { registerSW } from 'virtual:pwa-register'` est
+ * refusé bien avant, à la transformation (« Failed to resolve import
+ * "virtual:pwa-register" »), parce que ce module virtuel n'existe que dans un
+ * build servi par vite-plugin-pwa. Il faut alors un FICHIER, désigné par
+ * `resolve.alias` dans `vitest.config.ts` :
+ *
+ *   import { pwaRegisterAlias } from '@mister-guiiug/dev-wpa-config/vitest-base';
+ *   resolve: { alias: { ...pwaRegisterAlias } }
+ *
+ * Le double ainsi posé est PILOTABLE (`swStub.needRefresh()`), là où les mocks
+ * ci-dessous sont muets — ils prouvent qu'un composant se monte, jamais qu'un
+ * bandeau peut s'afficher. Voir `testing/pwa-register`.
  */
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';

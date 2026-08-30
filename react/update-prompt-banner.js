@@ -1,4 +1,4 @@
-import { createElement as h } from 'react';
+import { createElement as h, useState } from 'react';
 import { useUpdatePrompt } from './use-update-prompt.js';
 import { useLabels } from './labels.js';
 import { useAppUpdates } from './app-updates.js';
@@ -14,35 +14,87 @@ import { useAppUpdates } from './app-updates.js';
  *
  * Non stylé : cibler `[data-dwc="update-banner"]`.
  *
- * CE QU'IL NE REND PAS, ET POURQUOI. `useUpdatePrompt` expose `offlineReady`,
- * et aucun composant du paquet ne l'affiche. Une seule app du parc montre ce
- * message — `miss-genius`, avec son `OfflineReadyNotice` : une icône, un texte
- * traduit, un bouton « OK », et une précédence (la mise à jour l'emporte sur le
- * « prêt hors ligne »). Le socle promeut ce que PLUSIEURS apps ont écrit
- * chacune de leur côté ; ici il n'y a pas de convergence à recueillir, rien
- * qu'une intention. Le jour où une deuxième app l'écrit, les deux copies
- * diront ce qui doit être partagé et ce qui tient à l'une d'elles.
+ * DEUX SORTIES, SUR DEMANDE. `secondaryActions: 'both'` rend le report ET
+ * l'écartement pour la session, au lieu du seul report. `mister-puzzle` offrait
+ * les deux — « Plus tard (24 h) », persisté, et « Ignorer », le temps de la
+ * session — et a dû abandonner le second en migrant : le socle n'en rendait
+ * qu'un. Le mode par défaut reste `'auto'`, et il ne bouge pas d'un pixel.
+ *
+ * LE « PRÊT HORS LIGNE », SUR DEMANDE AUSSI. `useUpdatePrompt` expose
+ * `offlineReady` depuis toujours, et rien ne l'affichait : `miss-genius` gardait
+ * pour ça un `OfflineReadyNotice` local. `showOfflineReady` le fait rendre ici,
+ * avec la précédence que cette app avait écrite — tant qu'une version attend,
+ * le message hors ligne s'efface. Les deux messages ne se chevauchent jamais.
  *
  * @param {{ registerSW?: Function, snoozeHours?: number, snoozeKey?: string,
- *   title?: string, updateLabel?: string, updatingLabel?: string,
- *   snoozeLabel?: string, dismissLabel?: string, className?: string,
+ *   secondaryActions?: 'auto'|'both', showOfflineReady?: boolean,
+ *   title?: import('react').ReactNode, updateLabel?: string,
+ *   updatingLabel?: string, snoozeLabel?: string, dismissLabel?: string,
+ *   ignoreLabel?: string, offlineReadyTitle?: import('react').ReactNode,
+ *   offlineReadyLabel?: string, className?: string,
  *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions }} props
  */
 function Banner(props) {
   const {
     snoozeHours = 0,
+    secondaryActions = 'auto',
+    showOfflineReady = false,
     title,
     updateLabel,
     updatingLabel,
     snoozeLabel,
     dismissLabel,
+    ignoreLabel,
+    offlineReadyTitle,
+    offlineReadyLabel,
     className,
   } = props;
 
   const labels = useLabels('update');
   const { visible, updating, update, snooze, dismiss } = props;
-  if (!visible) return null;
 
+  // `offlineReady` et `needRefresh` viennent de l'ÉTAT du hook, versé sur les
+  // mêmes props : c'est pourquoi l'interrupteur s'appelle `showOfflineReady` et
+  // non `offlineReady`, qui serait écrasé par l'état à chaque rendu.
+  const { offlineReady, needRefresh } = props;
+  const [offlineDismissed, setOfflineDismissed] = useState(false);
+
+  if (!visible) {
+    // La mise à jour L'EMPORTE : dès qu'une version attend, le message hors
+    // ligne se tait — même si le bandeau est écarté ou reporté. C'est la
+    // précédence de `miss-genius`, dont ce bloc est la promotion.
+    if (!showOfflineReady || !offlineReady || needRefresh || offlineDismissed)
+      return null;
+
+    return h(
+      'div',
+      {
+        className,
+        role: 'status',
+        'aria-live': 'polite',
+        'data-dwc': 'offline-ready',
+      },
+      h(
+        'span',
+        { 'data-dwc': 'offline-ready-title' },
+        offlineReadyTitle ?? labels.offlineReady
+      ),
+      h(
+        'button',
+        {
+          type: 'button',
+          onClick: () => setOfflineDismissed(true),
+          'data-dwc': 'offline-ready-dismiss',
+        },
+        offlineReadyLabel ?? labels.offlineReadyOk
+      )
+    );
+  }
+
+  // Sans report à offrir, `'both'` n'a pas de second bouton à rendre : il ne
+  // reste que l'écartement, soit exactement ce que fait `'auto'`. Deux boutons
+  // qui écartent tous deux pour la session ne diraient rien de plus.
+  const bothExits = secondaryActions === 'both' && snoozeHours > 0;
   const secondaryLabel =
     snoozeHours > 0
       ? (snoozeLabel ?? labels.snooze)
@@ -72,6 +124,12 @@ function Banner(props) {
         ? (updatingLabel ?? labels.updating)
         : (updateLabel ?? labels.update)
     ),
+    // `update-banner-dismiss` DÉSIGNE TOUJOURS LE MÊME BOUTON : celui de
+    // toujours, à sa place de toujours, avec son action de toujours (le report
+    // dès que `snoozeHours > 0`, malgré son nom). `'both'` n'en change ni le
+    // libellé ni le comportement — il AJOUTE seulement le suivant. Deux apps
+    // habillent ce sélecteur dans leur CSS ; opter pour deux sorties ne doit
+    // rien leur décoiffer.
     h(
       'button',
       {
@@ -80,7 +138,18 @@ function Banner(props) {
         'data-dwc': 'update-banner-dismiss',
       },
       secondaryLabel
-    )
+    ),
+    bothExits
+      ? h(
+          'button',
+          {
+            type: 'button',
+            onClick: dismiss,
+            'data-dwc': 'update-banner-ignore',
+          },
+          ignoreLabel ?? labels.ignore
+        )
+      : null
   );
 }
 

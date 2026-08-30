@@ -55,9 +55,16 @@ export const LABELS = {
       updating: 'Mise à jour…',
       snooze: 'Plus tard',
       dismiss: 'Plus tard',
+      // `snooze` et `dismiss` disent tous deux « Plus tard » : chacun est SEUL
+      // à l'écran, et c'est bien ce qu'ils font. `ignore` n'existe que pour le
+      // mode à deux sorties, où les deux boutons se côtoient — deux « Plus
+      // tard » côte à côte ne diraient plus lequel persiste.
+      ignore: 'Ignorer',
       force: 'Forcer la mise à jour',
       forceHint:
         'Vide le cache de l’application et recharge. Vos données sont conservées.',
+      offlineReady: 'L’application fonctionne maintenant hors ligne.',
+      offlineReadyOk: 'OK',
     },
     footer: { source: 'Code source', sponsor: 'M’offrir un café' },
     share: {
@@ -125,8 +132,11 @@ export const LABELS = {
       updating: 'Updating…',
       snooze: 'Later',
       dismiss: 'Later',
+      ignore: 'Dismiss',
       force: 'Force update',
       forceHint: 'Clears the app cache and reloads. Your data is kept.',
+      offlineReady: 'The app now works offline.',
+      offlineReadyOk: 'OK',
     },
     footer: { source: 'Source code', sponsor: 'Buy me a coffee' },
     share: {
