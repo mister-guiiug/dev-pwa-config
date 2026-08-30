@@ -1437,6 +1437,75 @@
     font-size: var(--text-fluid-sm, 0.9rem);
   }
 
+  /* ── SegmentedControl ─────────────────────────────────────────────────── *
+   * Onglets « pilule » : le conteneur porte le fond en retrait, le segment
+   * actif est marqué par `aria-selected` — l'état accessible EST l'état
+   * visuel, il n'y a pas de classe à synchroniser.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='segmented'] {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: 999px;
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+  }
+
+  [data-dwc='segmented'][data-full-width] {
+    display: flex;
+    width: 100%;
+  }
+
+  [data-dwc='segmented'][data-full-width] > [data-dwc='segmented-tab'] {
+    flex: 1;
+  }
+
+  [data-dwc='segmented-tab'] {
+    font: inherit;
+    min-height: 2.25rem;
+    padding-inline: 0.9rem;
+    border: none;
+    border-radius: 999px;
+    background: none;
+    color: var(--dwc-text-soft, GrayText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+    cursor: pointer;
+  }
+
+  [data-dwc='segmented'][data-size='sm'] > [data-dwc='segmented-tab'] {
+    min-height: 1.9rem;
+    padding-inline: 0.7rem;
+  }
+
+  [data-dwc='segmented-tab'][aria-selected='true'] {
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    box-shadow: 0 1px 2px color-mix(in srgb, CanvasText 20%, transparent);
+  }
+
+  /* ── ConnectionBanner ─────────────────────────────────────────────────── *
+   * Ton « avertissement », pas « erreur » : être hors ligne est un état,
+   * pas une faute. Le composant ne se rend qu'après son délai anti-
+   * clignotement — aucune animation à neutraliser ici.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='connection-banner'] {
+    display: block;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--dwc-warning, light-dark(#b45309, #fbbf24));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+    background: color-mix(
+      in srgb,
+      var(--dwc-warning, light-dark(#b45309, #fbbf24)) 14%,
+      var(--dwc-surface, Canvas)
+    );
+    color: var(--dwc-text, CanvasText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+    text-align: center;
+  }
+
   /* ── Animations ────────────────────────────────────────────────────────── */
 
   @keyframes dwc-spin {

@@ -9,7 +9,7 @@ export declare function escapeHtml(input: string): string;
 /** Échappe les caractères spéciaux d'une expression régulière. */
 export declare function escapeRegex(text: string): string;
 
-/** Rogne, plafonne la longueur, échappe. */
+/** Contrôles invisibles retirés, rogne, plafonne la longueur, échappe. */
 export declare function sanitizeInput(
   input: string,
   maxLength?: number
@@ -41,3 +41,22 @@ export declare function maskPhone(phone: string): string;
  * secret, avant journalisation. Récursif, profondeur bornée.
  */
 export declare function redact<T>(value: T, extraKeys?: string[]): unknown;
+
+/**
+ * Normalise un texte utilisateur SANS l'échapper — pour le stocker tel quel
+ * (React échappera à l'affichage). Contrôles et caractères bidi invisibles
+ * retirés, fins de ligne normalisées, longueur plafonnée.
+ */
+export declare function sanitizeUserText(
+  raw: unknown,
+  maxLength: number
+): string;
+
+/** Variante une seule ligne, espaces normalisés (noms, titres). */
+export declare function sanitizeSingleLine(
+  raw: unknown,
+  maxLength: number
+): string;
+
+/** `true` si l'URL est absolue et en http(s) — jamais `javascript:` ni `data:`. */
+export declare function isSafeHttpUrl(raw: unknown): boolean;

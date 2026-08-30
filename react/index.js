@@ -15,6 +15,7 @@ export {
   useMediaQuery,
   useReducedMotion,
   usePrefersDark,
+  usePrefersHighContrast,
 } from './use-media-query.js';
 export { useOnline } from './use-online.js';
 export { useActionGuard, resolveGuard } from './use-action-guard.js';
@@ -60,3 +61,13 @@ export {
   useIcon,
   DEFAULT_ICONS,
 } from './icons-context.js';
+export { useLongPress } from './use-long-press.js';
+export { useFeedback } from './use-feedback.js';
+export { useWakeLock } from './use-wake-lock.js';
+export { usePullToRefresh } from './use-pull-to-refresh.js';
+export { useKeyboardShortcuts } from './use-keyboard-shortcuts.js';
+export { useShake, requestMotionPermission } from './use-shake.js';
+export { useAsync } from './use-async.js';
+export { useUndoableState } from './use-undoable-state.js';
+export { SegmentedControl } from './segmented-control.js';
+export { ConnectionBanner } from './connection-banner.js';

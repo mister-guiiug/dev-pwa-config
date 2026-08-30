@@ -235,6 +235,34 @@
       "types": "./web-vitals.d.ts",
       "default": "./web-vitals.js"
     },
+    "./haptics": {
+      "types": "./haptics.d.ts",
+      "default": "./haptics.js"
+    },
+    "./audio": {
+      "types": "./audio.d.ts",
+      "default": "./audio.js"
+    },
+    "./speech": {
+      "types": "./speech.d.ts",
+      "default": "./speech.js"
+    },
+    "./image": {
+      "types": "./image.d.ts",
+      "default": "./image.js"
+    },
+    "./rate-limit": {
+      "types": "./rate-limit.d.ts",
+      "default": "./rate-limit.js"
+    },
+    "./geocode-ban": {
+      "types": "./geocode-ban.d.ts",
+      "default": "./geocode-ban.js"
+    },
+    "./dates": {
+      "types": "./dates.d.ts",
+      "default": "./dates.js"
+    },
     "./react": {
       "types": "./react/index.d.ts",
       "default": "./react/index.js"
@@ -427,6 +455,46 @@
       "types": "./react/version.d.ts",
       "default": "./react/version.js"
     },
+    "./react/use-long-press": {
+      "types": "./react/use-long-press.d.ts",
+      "default": "./react/use-long-press.js"
+    },
+    "./react/use-feedback": {
+      "types": "./react/use-feedback.d.ts",
+      "default": "./react/use-feedback.js"
+    },
+    "./react/use-wake-lock": {
+      "types": "./react/use-wake-lock.d.ts",
+      "default": "./react/use-wake-lock.js"
+    },
+    "./react/use-pull-to-refresh": {
+      "types": "./react/use-pull-to-refresh.d.ts",
+      "default": "./react/use-pull-to-refresh.js"
+    },
+    "./react/use-keyboard-shortcuts": {
+      "types": "./react/use-keyboard-shortcuts.d.ts",
+      "default": "./react/use-keyboard-shortcuts.js"
+    },
+    "./react/use-shake": {
+      "types": "./react/use-shake.d.ts",
+      "default": "./react/use-shake.js"
+    },
+    "./react/use-async": {
+      "types": "./react/use-async.d.ts",
+      "default": "./react/use-async.js"
+    },
+    "./react/use-undoable-state": {
+      "types": "./react/use-undoable-state.d.ts",
+      "default": "./react/use-undoable-state.js"
+    },
+    "./react/segmented-control": {
+      "types": "./react/segmented-control.d.ts",
+      "default": "./react/segmented-control.js"
+    },
+    "./react/connection-banner": {
+      "types": "./react/connection-banner.d.ts",
+      "default": "./react/connection-banner.js"
+    },
     "./vitest-browser-base": {
       "types": "./vitest-browser-base.d.ts",
       "default": "./vitest-browser-base.js"
@@ -577,6 +645,20 @@
     "vcard.d.ts",
     "geo.js",
     "geo.d.ts",
+    "haptics.js",
+    "haptics.d.ts",
+    "audio.js",
+    "audio.d.ts",
+    "speech.js",
+    "speech.d.ts",
+    "image.js",
+    "image.d.ts",
+    "rate-limit.js",
+    "rate-limit.d.ts",
+    "geocode-ban.js",
+    "geocode-ban.d.ts",
+    "dates.js",
+    "dates.d.ts",
     "backup.js",
     "backup.d.ts",
     "versioned-store.js",

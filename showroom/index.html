@@ -1110,6 +1110,40 @@
         </p>
         <div data-snippet="Sheet"></div>
 
+        <h3 class="sr-subtitle">SegmentedControl — onglets « pilule »</h3>
+        <div
+          data-dwc="segmented"
+          role="tablist"
+          aria-label="Période"
+          data-size="md"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-dwc="segmented-tab"
+          >
+            Jour
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-dwc="segmented-tab"
+          >
+            Semaine
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-dwc="segmented-tab"
+          >
+            Mois
+          </button>
+        </div>
+        <div data-snippet="SegmentedControl"></div>
+
         <h3 class="sr-subtitle" data-i18n="primitives.h37">
           Bac à sable — composer et copier
         </h3>
@@ -1285,6 +1319,10 @@
             <summary data-i18n="composants.summary3">Sélecteurs CSS</summary>
             <div>
               <div data-snippet="SyncStatusBadge"></div>
+              <div data-snippet="ConnectionBanner"></div>
+              <div data-dwc="connection-banner" role="status">
+                Hors ligne — reconnexion…
+              </div>
               <ul class="sr-selectors">
                 <li>
                   <code

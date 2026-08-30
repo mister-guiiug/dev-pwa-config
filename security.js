@@ -33,6 +33,17 @@ const HTML_ESCAPES = {
 };
 
 /**
+ * Contrôles C0/C1 (sauf `\n` et `\t`) + caractères de direction invisibles
+ * (spoofing bidi : un nom de fichier « ‮gpj.exe » s'affiche « exe.jpg‮ »).
+ * PROMU depuis `bac-sable` (mister-family-map).
+ */
+const CONTROL_CHARS = new RegExp(
+  '[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F-\\u009F' +
+    '\\u200E\\u200F\\u202A-\\u202E]',
+  'g'
+);
+
+/**
  * Échappe les caractères qui ont un sens en HTML.
  *
  * CE QUE ÇA FAIT : rend une chaîne sûre à INSÉRER COMME TEXTE, y compris dans
@@ -55,9 +66,16 @@ export function escapeRegex(text) {
  * Le plafond évite qu'un champ libre serve de vecteur de déni de service au
  * stockage local ou à une requête.
  */
+/**
+ * Nettoie une saisie utilisateur : contrôles invisibles retirés, rogne,
+ * plafonne la longueur, échappe. Le plafond évite qu'un champ libre serve de
+ * vecteur de déni de service au stockage local ou à une requête.
+ */
 export function sanitizeInput(input, maxLength = 1000) {
   if (typeof input !== 'string') return '';
-  return escapeHtml(input.trim().slice(0, maxLength));
+  return escapeHtml(
+    input.replace(CONTROL_CHARS, '').trim().slice(0, maxLength)
+  );
 }
 
 /**
@@ -180,4 +198,47 @@ export function redact(value, extraKeys = []) {
     return out;
   };
   return walk(value, 0);
+}
+
+/* ── Promotions du 30/08/2026 (bac-sable / mister-family-map) ────────── */
+
+/**
+ * Normalise un texte utilisateur SANS l'échapper — pour le STOCKER tel quel
+ * (React échappera à l'affichage). Contrôles invisibles retirés, fins de
+ * ligne normalisées, espaces de fin de ligne rognés, longueur plafonnée.
+ * `sanitizeInput`, lui, ÉCHAPPE : il sert aux chaînes construites à la main.
+ *
+ * @param {string} raw
+ * @param {number} maxLength
+ */
+export function sanitizeUserText(raw, maxLength) {
+  return String(raw ?? '')
+    .replace(CONTROL_CHARS, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim()
+    .slice(0, maxLength);
+}
+
+/**
+ * Variante une seule ligne, espaces normalisés (noms, communes, titres).
+ * @param {string} raw
+ * @param {number} maxLength
+ */
+export function sanitizeSingleLine(raw, maxLength) {
+  return sanitizeUserText(raw, maxLength).replace(/\s+/g, ' ');
+}
+
+/**
+ * Une URL « publiable » : http(s) uniquement — jamais `javascript:` ni
+ * `data:`. Complète `isValidHttpsUrl`, qui refuse aussi le http simple.
+ * @param {string} raw
+ */
+export function isSafeHttpUrl(raw) {
+  try {
+    const url = new URL(String(raw ?? ''));
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
 }

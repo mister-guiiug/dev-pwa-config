@@ -102,4 +102,24 @@ export declare function createFormatters(
     values: readonly unknown[],
     options?: Intl.ListFormatOptions
   ) => string;
+  count: (value: number) => string;
+  usage: (
+    value: number | null,
+    quota: number,
+    options?: { bytes?: boolean }
+  ) => string;
+  duration: (ms: number) => string;
 };
+
+/** Compteur compact (`1,2 k`, `50 k`, `1,3 M`). */
+export declare function formatCount(value: number, locale?: string): string;
+
+/** Consommation « X / Y » (`31,5 Mo / 5 Go`, `2 / 50 k`). `null` → tiret. */
+export declare function formatUsage(
+  value: number | null,
+  quota: number,
+  options?: { bytes?: boolean; locale?: string }
+): string;
+
+/** Durée courte (`45 s`, `2 min 15 s`). */
+export declare function formatDuration(ms: number): string;
