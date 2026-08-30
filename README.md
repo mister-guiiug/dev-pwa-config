@@ -1197,8 +1197,10 @@ downloadPdf(buildPdf([page]), 'compteurs-juillet.pdf');
 ```
 
 Une page par `PdfContent` ; `buildPdf([])` rend une page vide plutôt qu'un
-binaire invalide. Le texte est encodé WinAnsi : hors Latin-1 (`€`, `’`, `œ`…),
-le caractère devient `?`. Pas d'images, pas de compression, pas d'autres
+binaire invalide. Le texte est encodé WinAnsi (CP1252) : Latin-1, **plus** la
+ponctuation typographique et quelques lettres transcodées sur 0x80–0x9F (`€`,
+`’`, `“ ”`, `—`, `–`, `…`, `œ`, `™`…). Hors de là (émoji, grec…), le
+caractère devient `?`. Pas d'images, pas de compression, pas d'autres
 fontes — des tableaux qui s'ouvrent et s'impriment partout.
 
 ### Export Excel (`@mister-guiiug/dev-wpa-config/xlsx`)

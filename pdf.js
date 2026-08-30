@@ -33,8 +33,10 @@
  * CE QUE ÇA N'EST PAS : une bibliothèque PDF. A4 portrait uniquement, pas
  * d'images, pas de compression, pas de fontes embarquées — Helvetica et
  * Helvetica-Bold sont deux des quatorze fontes standard que tout lecteur doit
- * fournir. Le texte est encodé WinAnsi : un caractère hors Latin-1 (€, ’, œ…)
- * devient « ? ».
+ * fournir. Le texte est encodé WinAnsi (CP1252) : Latin-1, PLUS la ponctuation
+ * typographique et quelques lettres que CP1252 place sur 0x80–0x9F (€, ’,
+ * “ ”, —, –, …, œ, ™…), transcodées par table. Tout autre caractère (émoji,
+ * grec…) devient « ? ».
  */
 import { downloadBlob } from './download.js';
 
@@ -91,6 +93,46 @@ export function textWidth(str, size) {
   for (const ch of str) em += glyphEm(ch);
   return em * size;
 }
+
+/**
+ * Points de code Unicode > 0xFF qui EXISTENT en WinAnsi. CP1252 n'est pas
+ * Latin-1 : les positions 0x80–0x9F, des contrôles jamais imprimés en
+ * Latin-1, y portent la ponctuation typographique et quelques lettres — les
+ * 27 entrées ci-dessous, dans l'ordre des octets (cinq positions restent
+ * indéfinies : 0x81, 0x8D, 0x8F, 0x90, 0x9D). Tout autre point > 0xFF n'a
+ * pas d'octet et devient « ? ».
+ *
+ * @type {Record<number, number>}
+ */
+const WINANSI = {
+  0x20ac: 0x80, // €
+  0x201a: 0x82, // ‚
+  0x0192: 0x83, // ƒ
+  0x201e: 0x84, // „
+  0x2026: 0x85, // …
+  0x2020: 0x86, // †
+  0x2021: 0x87, // ‡
+  0x02c6: 0x88, // ˆ
+  0x2030: 0x89, // ‰
+  0x0160: 0x8a, // Š
+  0x2039: 0x8b, // ‹
+  0x0152: 0x8c, // Œ
+  0x017d: 0x8e, // Ž
+  0x2018: 0x91, // ‘
+  0x2019: 0x92, // ’
+  0x201c: 0x93, // “
+  0x201d: 0x94, // ”
+  0x2022: 0x95, // •
+  0x2013: 0x96, // –
+  0x2014: 0x97, // —
+  0x02dc: 0x98, // ˜
+  0x2122: 0x99, // ™
+  0x0161: 0x9a, // š
+  0x203a: 0x9b, // ›
+  0x0153: 0x9c, // œ
+  0x017e: 0x9e, // ž
+  0x0178: 0x9f, // Ÿ
+};
 
 /** Flux de contenu d'une page (repère haut-gauche). Une instance = une page. */
 export class PdfContent {
@@ -161,7 +203,9 @@ export class PdfContent {
 
   /**
    * Littéral chaîne PDF : encodage WinAnsi + échappement de « ( ) \ » — les
-   * trois seuls caractères qui terminent ou piègent un littéral.
+   * trois seuls caractères qui terminent ou piègent un littéral. L'itération
+   * se fait par POINTS DE CODE : un émoji (paire de substitution) rend un
+   * seul « ? », pas un par moitié.
    *
    * @param {string} str
    */
@@ -169,7 +213,7 @@ export class PdfContent {
     this.#ops.push(0x28); // (
     for (const ch of str) {
       let c = ch.codePointAt(0) ?? 0x3f;
-      if (c > 0xff) c = 0x3f; // hors WinAnsi → « ? »
+      if (c > 0xff) c = WINANSI[c] ?? 0x3f; // sans position WinAnsi → « ? »
       if (c === 0x28 || c === 0x29 || c === 0x5c) this.#ops.push(0x5c);
       this.#ops.push(c);
     }
