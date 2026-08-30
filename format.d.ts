@@ -1,9 +1,13 @@
 /**
  * Montant monétaire (`1 234,50 €`). Vide si `amount` n'est pas fini.
  *
- * Les options `Intl` se passent soit en 2ᵉ place (à la place de la locale),
- * soit en 3ᵉ (à la place de la devise) — un prix sans centimes s'écrit donc
- * `formatCurrency(1234, { maximumFractionDigits: 0 })`.
+ * Les options `Intl` se passent en 2ᵉ place (à la place de la locale), en 3ᵉ
+ * (à la place de la devise) ou en 4ᵉ, locale et devise nommées — un prix sans
+ * centimes s'écrit donc `formatCurrency(1234, { maximumFractionDigits: 0 })`
+ * comme `formatCurrency(1234, 'fr-FR', 'EUR', { maximumFractionDigits: 0 })`.
+ *
+ * Elles sont étalées EN DERNIER : `{ currency: 'USD' }` dans les options
+ * l'emporte sur la devise nommée en 3ᵉ place.
  */
 export declare function formatCurrency(
   amount: number,
@@ -92,13 +96,22 @@ export declare function formatList(
   options?: Intl.ListFormatOptions
 ): string;
 
-/** Les mêmes fonctions, la locale déjà posée. */
+/**
+ * Les mêmes fonctions, la locale déjà posée.
+ *
+ * `currency()` accepte les options à la place du code, ou après lui : la
+ * devise liée à la fabrique survit dans les deux cas.
+ */
 export declare function createFormatters(
   locale?: string,
   options?: { currency?: string }
 ): {
   locale: string;
-  currency: (value: number, code?: string) => string;
+  currency: (
+    value: number,
+    code?: string | Intl.NumberFormatOptions,
+    options?: Intl.NumberFormatOptions
+  ) => string;
   number: (value: number, options?: Intl.NumberFormatOptions) => string;
   percent: (value: number, digits?: number) => string;
   date: (
