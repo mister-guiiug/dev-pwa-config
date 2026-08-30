@@ -1,5 +1,80 @@
 # Changelog
 
+## 3.22.0
+
+### Minor Changes
+
+- 4234789: Appairage : codes courts + QR, promus de mister-qowa, mister-molkky et
+  miss-ticket-pwa. `/pairing` (pur) : alphabets nommés (`numeric`,
+  `crockford32` avec correction des confusions, `antiConfusion`),
+  `generateCode` (aléa crypto injectable, tirage par rejet sans biais),
+  `normalizeCode` (les confusions ne sortent plus de l'alphabet), et
+  `buildDeepLink`/`parseDeepLink` pour les liens `schéma:action?clé=valeur`.
+  `/qr` : `qrToDataUrl`/`qrToSvg` par la peer optionnelle `qrcode`, chargée
+  paresseusement, erreur explicite si elle manque.
+  `/react/use-qr-scanner` : le cycle de vie caméra de la peer optionnelle
+  `qr-scanner` — câblage dans un effet, arrêt et destruction garantis.
+- de552ba: Authentification : le port `auth/` et ses adaptateurs, promus de cinq implémentations Supabase Auth indépendantes — mister-doc (la référence MFA : assurance aal1/aal2, enrôlement TOTP, erreurs traduites), miss-uwh (needsMfa + purge locale à la déconnexion), miss-lookhouse et miss-carbook (le même câblage getSession/onAuthStateChange recopié, drapeaux de montage contre la réponse périmée), mister-molkky (session anonyme avec repli silencieux quand le projet la désactive), et l'adaptateur local de bac-sable qui prouve le contrat en quatre méthodes.
+  - `auth/` : machine d'état de session (`loading` → `signed-out` | `signed-in` | `needs-mfa`), hydratations numérotées (une réponse périmée ne s'applique jamais), lecture MFA best-effort (l'échec hors-ligne ne verrouille pas), aucune notion de rôle métier (voir `react/use-action-guard`).
+  - `auth/supabase` : adaptateur v2 à client injecté (peer optionnelle) — mot de passe, lien magique/OTP, inscription avec `needsConfirmation`, anonyme avec le repli de molkky, erreurs rendues `{ code, message }`.
+  - `auth/mfa` : TOTP fidèle à `mister-doc/backend/mfa.ts` — enrôlement (qr_code/secret/uri tels que Supabase les donne, nettoyage des facteurs abandonnés), défi, facteurs. Pas de codes de récupération : ceux de doc sont des RPC applicatives, pas une API Supabase.
+  - `auth/errors-fr` : carte française des erreurs, fusion doc (sous-chaînes) + carbook (codes stables), repli configurable.
+  - `react/use-auth` (useSyncExternalStore, sans Provider) et `react/auth-gate` (garde non stylée loading/fallback/mfa/children, avec le `bypass` du mode local : la sécurité réelle est la RLS).
+
+- f9677c3: `components.css` : habiller les graphiques minuscules, et faire de la frontière d'erreur montée à la racine un vrai écran de secours.
+
+  **`[data-dwc='sparkline' | 'bars' | 'gauge']`** — les composants de `/react/sparkline` rendent la géométrie, jamais la couleur : sans habillage, les barres (hauteur en %) et la jauge s'effondrent faute de boîte. L'habillage pose les dimensions par défaut, l'encre de marque via `currentColor` (recolorer = une règle `color` de l'app), et rend l'alternative textuelle de `describeSeries` lue-mais-pas-vue sans dépendre d'un utilitaire `sr-only` que l'app a pu purger. En contraste forcé, barres et jauge — qui n'existaient que par leurs aplats, comme le squelette — reçoivent l'encre système.
+
+  **`[data-dwc='error-boundary']` à la racine** — trois apps (mister-footcoach, miss-carbook, mister-puzzle) recopient le même bloc, à l'octet près : l'écran blanc évité doit être un **écran** centré, pas une bannière perdue en haut de page. La règle `:where(#root) > …` reprend leurs choix (plein écran, centré, cadre et fond de danger retirés — pleine page, ils crieraient plus fort que le message) sans toucher au rendu de la frontière posée au milieu d'une page. La référence à citer au support (`error-boundary-reference`) est enfin habillée : discrète, et copiable d'un geste (`user-select: all`).
+
+  Tout reste dans le contrat : `@layer components`, les quinze variables `--dwc-*` et rien d'autre, un repli sur chaque `var()` — les garde-fous de `test/components-css.test.mjs` en témoignent.
+
+- 58ec7f9: `createI18n` : `storageKey` devient optionnel (défaut `'dwc_locale'`).
+
+  Le constat vient de deux copies locales du module (mister-cim10, miss-ticket-pwa) : trois lignes d'écart, dont la seule réelle est la clé localStorage. Une clé obligatoire n'était donc pas une protection, c'était le dernier prétexte à copier.
+
+  Le défaut suit la convention des clés du paquet (`dwc_theme`, `dwc_app_version`, `dwc_error_log`). Les apps de la famille partagent une même origine GitHub Pages, donc un même `localStorage` : sous la clé partagée, la langue choisie suit l'utilisateur d'une app à l'autre — et une valeur étrangère aux `locales` de l'app est ignorée, comme avant. Pour isoler une app, ou pour reprendre une copie locale **sans perdre le choix déjà stocké**, on passe sa clé (motif famille : `'<app>_locale'`) ; c'est documenté dans le type et le JSDoc.
+
+  Aucune rupture : `storageKey` était requis par le type, les huit apps déjà sur le module le passent donc toutes explicitement, et le défaut ne joue qu'en son absence. Un test le verrouille : la clé par défaut est lue au démarrage et écrite au changement de langue.
+
+- a679fbf: Exports PDF et Excel — promus de mister-doc, où ils tournent en production.
+
+  **`./pdf`** — `mister-doc/src/lib/pdf.ts` fabriquait déjà un vrai binaire `application/pdf` sans bibliothèque : A4 portrait, Helvetica, repère haut-gauche comme à l'écran, et surtout une table `xref` dont les offsets sont relevés sur les octets réellement écrits — ce qui rend le fichier ouvrable par les lecteurs stricts, pas seulement les tolérants. Deux changements à la promotion : `downloadPdf` passe par `downloadBlob` (`./download`), et `buildPdf([])` rend une page vide au lieu de lever — le repli que les deux consommateurs d'origine recopiaient chacun.
+
+  **`./xlsx`** — `mister-doc/src/lib/xlsx.ts` et ses tests : un vrai classeur Office Open XML (archive ZIP « stored », CRC32 calculé, parties XML minimales, date figée donc export déterministe), avec des cellules numériques réellement typées — donc sommables — et l'en-tête en gras. C'est le fichier que l'utilisateur demande quand il dit « en Excel », et que le CSV `excel-fr` ne remplace pas.
+
+  Qui attend ces modules : miss-contraction pour l'export du suivi à présenter à la maternité, mister-cim10 pour ses relevés de codage, mister-footcoach pour l'export RGPD des données des joueuses, et miss-uwh — qui produit son bilan comptable en chargeant SheetJS par CDN, et pourra s'en passer.
+
+- af36a2d: Persistance versionnée et IndexedDB : les deux moitiés du stockage local que le parc réécrivait.
+
+  **`./versioned-store`** — PROMU des jumeaux `miss-uwh` et `miss-genius` (enveloppe versionnée + `runMigrations` indexé par version source + validation zod, copiés-collés à la virgule près), avec l'idée qui leur manquait, prise à `miss-badminton` : une copie de côté AVANT toute transformation. La règle du module est unique : version d'après, donnée invalide, JSON tronqué — l'original est copié sous `{clé}.backup-…` (clés déterministes, donc bornées) avant le repli sur le seed. C'est l'inverse exact du contre-exemple `miss-lookhouse`, où une version inconnue JETAIT les données. La validation est injectée (`schema.parse`) — le socle ne prend pas la dépendance zod ; les migrations ne transforment que la donnée, le magasin tient le compte des versions, et une migration réussie est persistée pour ne tourner qu'une fois. S'appuie sur `createStore` de `./storage`, se compose avec `./backup` (l'enveloppe et ses copies partent en valeurs brutes).
+
+  **`./idb`** — PROMU de `mister-molkky` (les deux object-stores : `kv` pour les valeurs, `blobs` pour les avatars), `miss-badminton` (`onblocked` : une mise à niveau bloquée par un autre onglet se dégrade au lieu d'attendre pour toujours) et `mister-doc` (best-effort : toute erreur avalée, jamais bloquant) — le même wrapper réécrit CINQ fois. Même philosophie que `./storage` : lire rend le `fallback`, écrire rend `false`, rien ne lève jamais — y compris quand `open` LÈVE (navigation privée Firefox) ou qu'une valeur refuse le clonage structuré. `available()` éprouve une vraie ouverture, pas la présence de l'API ; les écritures attendent `transaction.oncomplete`, le commit qui promet la durabilité ; et le nom de base est l'isolation, comme le préfixe de `createStore` — seize apps partagent l'origine. Testé contre une implémentation réelle (`fake-indexeddb`), pas un mock du wrapper.
+
+- d485571: Synchro : la fabrique de client Supabase, et la file d'écritures hors-ligne qui manquait au socle.
+
+  **`./supabase-client`** — PROMU de **5 apps** (miss-uwh, miss-lookhouse, mister-molkky, mister-doc, bac-sable) qui réécrivent la même fabrique avec de petites divergences — et c'est dans les divergences que sont les défauts. La doctrine anti-écran-blanc d'abord : « l'init au chargement du module tuait l'app avant `createRoot()` », commentaire retrouvé **mot pour mot** dans miss-carbook et mister-puzzle, sur deux backends. Ici rien ne s'exécute à l'import : configuration jugée par `missingConfig` (`./backend`, `SUPABASE_ENV_KEYS` se passe tel quel à un `requires`), SDK (~120 Ko, peer optionnelle) importé dynamiquement au premier `getClient()` — c'est la **promesse** qui est gardée, deux appels concurrents ne créent qu'un client —, options `auth` passables (`persistSession`, `flowType: 'pkce'`…), et `fetch` corrélé optionnel via `./correlation` (le motif du bac-sable).
+
+  **`./sync-queue`** — le chemin **montant**, absent du socle (`realtime/` ne couvre que la descente). PROMU de miss-uwh (la référence : file persistante, drain sérialisé, backoff + jitter, lettres mortes) ; la copie de miss-lookhouse, « inspirée du syncQueue de miss-uwh », avait **perdu le retrait exponentiel** en route — la preuve que ça devait monter au socle — et mister-puzzle montrait le même besoin côté Firebase : le module est agnostique, `process` injecté. Le `Store` (`./storage`) injecté est la source de vérité, relu à chaque tour ; retrait par identifiant, jamais `slice(1)` ; lettre morte au lieu d'une tête bloquante (`defaultShouldRetry` de `react/net` fait la politique) ; rejeu auto-programmé via `backoffDelay` de `./realtime` — réutilisé, pas dupliqué ; fusion par entité (`keyOf`) ; plafond visible (`enqueue` rend `null`).
+
+  `react/use-offline-queue` reste la variante React ; son en-tête renvoie désormais vers `sync-queue` (comportement inchangé).
+
+### Patch Changes
+
+- ffa6da0: Déclarer les peers optionnelles que le code promettait déjà : `@sentry/react` et `firebase`.
+
+  `react/observability.js` lazy-importe `@sentry/react` et se documente « peer optionnelle » depuis sa promotion ; `realtime/firebase.js` et `push/firebase.js` ouvrent sur « Peer OPTIONNEL : `firebase` ». Aucun des trois n'était déclaré dans `package.json` : un `npm ls`, un audit de graphe ou un outil de renouvellement ne pouvaient pas savoir que ces modules attendent quelque chose — ni dans quelle plage.
+
+  `@sentry/react` entre en `>=8.0.0` (le module n'appelle que `init` et `captureException`, stables depuis longtemps ; les apps mesurées sont en `^8.45.0`) et `firebase` en `>=9.0.0` (l'API injectée — `onSnapshot`, `getToken` — est la forme modulaire de la v9 ; les apps sont en `^11`/`^12`). Les deux sont `optional: true` : rien n'est installé ni exigé chez qui n'utilise pas ces transports.
+
+  `firebase` est déclaré bien que jamais importé par le paquet — les objets sont **injectés** (`onSnapshot`, `messaging`, `getToken`…), précisément pour que le paquet ne décide pas de la version à la place de l'app. La déclaration optionnelle ne change rien à ça : elle dit seulement, au bon endroit, la plage avec laquelle ces adaptateurs savent travailler.
+
+- b68c407: README : documenter `sparkline` et `secure-storage`, et nommer le piège `formatPercentage`.
+
+  Deux modules publiés n'avaient **aucune** section dans « Utilisation » — zéro occurrence de `sparkline` (et `/react/sparkline`) comme de `secure-storage` dans tout le README. Un module qu'on ne trouve pas dans la doc est un module qu'on recopie : chacun reçoit sa section au format des voisines — quoi, API, exemple, limites. Celle de `sparkline` montre `describeSeries` (l'alternative textuelle, rédigée en français) ; celle de `secure-storage` reprend les avertissements de l'en-tête du module, parce qu'un coffre qui tait ce qu'il ne protège pas est pire qu'aucun coffre : pas de parade au XSS actif, et phrase oubliée = données irrécupérables.
+
+  Le guide de migration gagne le piège `formatPercentage` : le socle attend une **proportion** (`0,42` → « 42 % », convention `Intl`), les copies locales attendaient l'échelle 0–100 (cas réel : `miss-contraction`). Le remplacement à l'identique compile, puis affiche « 4 200 % » — le guide donne le grep, les deux corrections, et le symptôme qui trahit un appel oublié.
+
 ## 3.21.1
 
 ### Patch Changes
