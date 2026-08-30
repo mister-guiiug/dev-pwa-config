@@ -1192,8 +1192,15 @@
   }
 
   /* Mono-action (`cancelLabel: null`) : seul dans la rangée, le bouton la
-     prend en entier — le rendu des alertes que mister-puzzle et mister-cim10
-     dessinaient à la main. `:only-child` suffit : pas de nouvel attribut. */
+     prend en entier — le rendu de l'`ErrorModal` de mister-puzzle, dont
+     l'action unique était déjà pleine largeur. `:only-child` suffit : pas de
+     nouvel attribut.
+     CE N'EST PAS UN RENDU UNIVERSEL. L'alerte de mister-cim10 était au
+     contraire COMPACTE et alignée à droite (`justify-content: flex-end` de la
+     rangée + `min-width: 86px`), comme la confirmation à deux boutons juste à
+     côté ; sa migration (#27) a donc dû reposer l'écart chez elle. C'est une
+     identité d'app, pas un défaut : `flex: 0 0 auto; min-width: …` en CSS non
+     « layered » reprend la main en deux lignes. */
   [data-dwc='confirm-confirm']:only-child {
     flex: 1;
   }
@@ -1558,11 +1565,17 @@
   }
 
   /* Le mouvement est un confort, jamais une information : on le retire quand
-     l'utilisateur l'a demandé, sans rien casser d'autre. */
+     l'utilisateur l'a demandé, sans rien casser d'autre.
+     LA LISTE DOIT SUIVRE `dwc-rise`. Elle ne couvrait que `sheet-panel`, alors
+     que `confirm-panel` et `toast` portent la MÊME entrée : une alerte et un
+     message surgissaient donc toujours, réglage ignoré. Relevé par la
+     migration de mister-puzzle (#14), qui a dû reposer la règle chez elle. */
   @media (prefers-reduced-motion: reduce) {
     [data-dwc='button-spinner'],
     [data-dwc='skeleton'],
-    [data-dwc='sheet-panel'] {
+    [data-dwc='sheet-panel'],
+    [data-dwc='confirm-panel'],
+    [data-dwc='toast'] {
       animation-duration: 0.001ms;
       animation-iteration-count: 1;
     }
