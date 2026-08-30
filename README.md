@@ -437,6 +437,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/react`                       | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                                              |
 | `@mister-guiiug/dev-wpa-config/react/use-update-prompt`     | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                                            |
 | `@mister-guiiug/dev-wpa-config/react/update-button`         | `.js` + `.d.ts` | `UpdateButton` : bouton « Forcer la mise à jour » des réglages, sans dépendance à vite-plugin-pwa                                                                                                                                                          |
+| `@mister-guiiug/dev-wpa-config/react/use-wake-lock`         | `.js` + `.d.ts` | `useWakeLock` : garde l'écran allumé, réacquiert au retour de visibilité, ne lève jamais si l'API manque                                                                                                                                                   |
 | `@mister-guiiug/dev-wpa-config/react/confirm-dialog`        | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone, `cancelLabel={null}` pour une alerte mono-action                                                                                            |
 | `@mister-guiiug/dev-wpa-config/react/toast`                 | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                                            |
 | `@mister-guiiug/dev-wpa-config/react/bottom-nav`            | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                                                  |
@@ -1056,6 +1057,12 @@ bonne volonté : tout est confiné dans `@layer components`, chaque
 contrat documenté. Un quatrième test impose la **cible tactile de 2,75 rem** à
 toutes les commandes — c'est le principal intérêt d'une base partagée, une
 taille `sm` locale finissant toujours par passer sous le seuil.
+
+Le mouvement est un confort : les **trois** entrées de panneau (`sheet-panel`,
+`confirm-panel`, `toast`) et les deux animations continues (`skeleton`,
+`button-spinner`) se réduisent sous `prefers-reduced-motion: reduce`. La liste
+n'en couvrait que `sheet-panel` jusqu'à la migration de mister-puzzle, qui a dû
+reposer la règle chez elle pour son alerte.
 
 #### Contraste forcé et impression
 
@@ -1982,6 +1989,37 @@ réécrit. Une app sans i18n garde `'fr-FR'`, exactement comme avant.
 > `1,4 Mo` figé) et sépare le nombre de l'unité par une espace fine insécable —
 > le même séparateur que `formatNumber` produit déjà pour les milliers. Une
 > comparaison de chaînes écrite avec une espace ordinaire échoue donc.
+
+#### Garder l'écran allumé (`useWakeLock`)
+
+Un chronomètre de contractions, une manche de mölkky : l'utilisateur regarde
+sans toucher, et l'écran s'éteint. **Deux apps** avaient écrit le hook chacune
+de leur côté — et aucune des deux copies n'était complète.
+
+```tsx
+import { useWakeLock } from '@mister-guiiug/dev-wpa-config/react/use-wake-lock';
+
+// Le branchement sur le réglage reste APPLICATIF : composez vous-même.
+const { supported, held } = useWakeLock(reglages.ecranAllume && enCours);
+
+{
+  supported && <Toggle checked={reglages.ecranAllume} />;
+}
+```
+
+| Ce qui manquait                          | Où                                                    |
+| ---------------------------------------- | ----------------------------------------------------- |
+| Réacquisition au retour de visibilité    | miss-contraction — le verrou saute en arrière-plan    |
+| Libération de la **bonne** sentinelle    | mister-molkky — l'ancienne restait en fermeture       |
+| État exposé (`supported` / `held`)       | les deux — impossible de masquer un réglage inopérant |
+| Indépendance vis-à-vis du store de l'app | mister-molkky lisait `useSettingsStore` dans le hook  |
+
+Le navigateur **relâche d'autorité** le verrou dès que l'onglet passe en
+arrière-plan : c'est le piège classique, et c'est pour ça que le hook écoute
+`visibilitychange` et redemande au retour. Il libère au démontage comme à la
+retombée d'`active`, et **ne lève jamais** : API absente (Firefox, iOS avant
+16.4), permission refusée ou geste utilisateur manquant se lisent dans l'état
+renvoyé, pas dans un `try/catch` côté app.
 
 ### Primitives d'interface
 
