@@ -351,13 +351,39 @@ Ce qui reste, par ordre de valeur :
    (`legacyKeys` est là pour ça, et `miss-badminton` puis `mister-cim10` en
    donnent le modèle — les deux y ont tué leur `matchMedia` inversé au
    passage), le second un fournisseur et des dictionnaires.
-4. **`applyUpdate` (6 blocages) et `backup` (7) — un besoin, huit noms.** La
-   même fonction « forcer la mise à jour » s'appelle `forceUpdate`,
-   `forceAppUpdate`, `forceSwUpdate`, `reloadApp` ou `registerServiceWorker`
-   selon le dépôt, et `backup` bloque sur sept jeux de symboles distincts. Ce
-   n'est pas « ajouter cinq exports » : c'est trancher un nom, comme `danger`
-   contre `destructive` l'a été pour `ConfirmDialog`. À faire dans ce dépôt, en
-   lisant d'abord les copies.
+4. ~~**`applyUpdate` (6 blocages) et `backup` (7) — un besoin, huit noms.**~~
+   **Ce diagnostic était faux, et une enquête l'a démonté le 30/08/2026 en
+   lisant les treize copies.** Il n'y a ni huit noms ni sept jeux de symboles :
+   deux rôles et quatre noms. `registerServiceWorker()` porte **le même nom
+   dans les six apps** ; seul le bouton « forcer » varie (`forceAppUpdate`,
+   `forceSwUpdate`, `reloadApp`, ou rien du tout dans deux apps). Et
+   `forceUpdate` n'existe **nulle part** dans le parc — c'était une ligne morte
+   de la table du relevé.
+
+   Le vrai obstacle n'est pas le nommage, c'est le **comportement** : cinq apps
+   sur six portent une désinscription de service worker en développement que le
+   socle n'a pas, cinq injectent leur bandeau **avant le montage de React** (donc
+   hors du contexte i18n), et les libellés du paquet ne parlent que `fr` et `en`
+   — adopter tel quel ferait retomber en français les **sept** locales de
+   `miss-contraction`, les six de `miss-dice` et l'espagnol de `miss-badminton`.
+
+   Côté `backup`, six des sept blocages sont des **faux positifs** : le relevé
+   guettait un fichier nommé `storage.ts`, un nom si générique que trois des
+   sept étaient déjà des façades sur le socle et deux ne contenaient aucune
+   sauvegarde. **Un seul dépôt duplique vraiment `./backup`** (`mister-cim10`),
+   et il ne peut pas l'adopter en l'état : ses quinze clés n'ont aucun préfixe
+   commun, alors que tout le module est bâti sur l'invariant « préfixe =
+   identité d'app ». Quant aux quatre vraies sauvegardes du parc, elles
+   exportent **la donnée validée et migrable**, pas la carte brute de
+   `localStorage` : `./backup` serait un recul pour elles, et c'est _cela_ — pas
+   ses noms — qui explique ses **zéro adoptants**.
+
+   L'ordre de bataille qui en sort : `mister-cim10` d'abord côté `applyUpdate`
+   (seule app sans purge dev à sauver, sans locale à rattraper, un seul
+   appelant — sa PR devient le brief des cinq autres), et côté sauvegarde une
+   seule migration réelle, `miss-uwh` vers **`versioned-store`** et non vers
+   `backup`.
+
 5. **`UpdatePromptBanner` (8) et `Toast` (5)** restent les deux plus gros
    postes du relevé, maintenant que la couche interface est habillée partout.
 6. **`mister-tv-webos` n'est même pas un dépôt git.** Aucune PR n'y est
@@ -381,8 +407,32 @@ tenir un outil de campagne.
 - `console-audit.mjs` proposait `createLogger('src\features')` sous Windows,
   faute de découper sur les deux séparateurs.
 
-Un quatrième, relevé le 30/08/2026, ne concerne pas l'outillage de campagne mais
-la suite de tests du paquet lui-même — et c'est le plus instructif.
+Trois autres, relevés le 30/08/2026 dans le même outil, penchaient tous du côté
+**pessimiste** — le sens qu'on ne soupçonne jamais, parce qu'un chiffre trop
+gros ressemble à du travail qui reste, pas à une panne d'instrument.
+
+- **Neuf besoins sur vingt-six étaient INACQUITTABLES par construction.**
+  L'acquittement exigeait que l'app importe un symbole portant **le nom du
+  besoin** — or `links`, `backup`, `format`, `Toast`, `share`, `geo`,
+  `webVitals`, `security` et `useI18n` ne sont le nom d'aucun export du paquet.
+  Sept apps pouvaient migrer `links` à la perfection et rester comptées en dette
+  **pour toujours**. Chaque besoin déclare maintenant ses symboles libérateurs,
+  et `test/adoption-equivalents.test.mjs` les confronte à la surface publique
+  réelle : une clé ne peut plus redevenir immortelle en silence.
+- **Une façade était comptée comme un doublon.** Un fichier qui porte le nom
+  guetté mais qui importe déjà le paquet est une adoption en cours, pas une
+  réécriture. Trois des sept `storage.ts` du parc étaient dans ce cas.
+- **Le prérequis n'était pas mesuré du tout.** Le balayage s'arrêtait aux
+  fichiers JavaScript, donc `components.css` — sans lequel un composant migré
+  s'affiche **nu** — n'apparaissait dans aucun relevé. La campagne citait
+  « quatorze sur dix-sept » sans qu'aucune donnée du dépôt ne l'étaye ; deux
+  migrations l'ont relevé le même jour. Le CSS est désormais lu, et le chiffre
+  se vérifie (les trois manquantes sont bien `miss-contraction`, `miss-dice` et
+  `mister-quota`). **Un prérequis qu'on ne mesure pas est un prérequis qu'on
+  croit acquis.**
+
+Un dernier, le même jour, ne concerne pas l'outillage de campagne mais la suite
+de tests du paquet lui-même — et c'est le plus instructif.
 
 - **`jsdom` ne fait pas de hit-testing.** Les tests de `Sheet` et de
   `ConfirmDialog` vérifiaient « le clic sur le fond ferme » en dispatchant
