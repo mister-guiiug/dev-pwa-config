@@ -41,7 +41,13 @@ export const EQUIVALENTS = {
     ],
     symbols: ['ToastProvider', 'ToastViewport', 'useToast'],
   },
-  BottomNav: { files: ['BottomNav.tsx', 'Navbar.tsx'] },
+  // `Navbar.tsx` a été retiré le 30/08/2026 : il n'existe QUE dans
+  // mister-puzzle, et son fichier est un en-tête HAUT collant sans aucune
+  // destination — l'app n'a même pas de routeur. La règle produisait donc
+  // 100 % de faux positifs, et l'en-tête de `react/bottom-nav.js` propageait
+  // l'erreur en affirmant « mister-puzzle a la même chose sous le nom
+  // Navbar ». Une ressemblance de nom de fichier n'est pas une équivalence.
+  BottomNav: { files: ['BottomNav.tsx'] },
   ThemeToggle: { files: ['ThemeToggle.tsx'] },
   UpdatePromptBanner: { files: ['UpdatePrompt.tsx', 'UpdateBanner.tsx'] },
   applyUpdate: {
