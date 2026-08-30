@@ -337,9 +337,12 @@ n'est fini que quand l'app qui l'a demandé l'a rejoué.
 
 Ce qui reste, par ordre de valeur :
 
-1. **Les promotions restantes** : iCalendar (quatre implémentations : bac-sable,
-   footcoach, uwh, doc), compression d'image avec retrait EXIF (trois : bac-sable,
-   carbook, puzzle), wake lock (deux : contraction, molkky).
+1. ~~**Les promotions restantes** : iCalendar, compression d'image avec retrait
+   EXIF, wake lock.~~ **Faites le jour même** — `ical`, `image` et
+   `react/use-wake-lock` sont dans la 3.24.0. Ce qui reste n'est plus de la
+   promotion mais de l'**adoption** : trois apps pour `image` (bac-sable,
+   carbook, puzzle), trois pour le wake lock (dice, molkky, contraction). Pour
+   `ical`, voir la section du bas : les quatre sont passées.
 2. **`links` — sept apps, sept fois la même ligne.** `SPONSOR_URL` migre tel
    quel, `REPO_URL` devient `repoUrl('<id-app>')`. Aucune ne migre seule ;
    toutes migrent en une passe.
@@ -393,3 +396,92 @@ la suite de tests du paquet lui-même — et c'est le plus instructif.
   l'utilisateur — un clic à un endroit, pas un `dispatchEvent` sur un nœud —
   elle se vérifie une fois pour de bon dans un navigateur, et la migration qui
   adopte le composant est le bon moment pour le faire.
+
+Un cinquième, le même jour, explique une part du chiffre que toutes les
+campagnes cherchaient à faire baisser.
+
+- **Le paquet documentait 62 de ses 137 sous-chemins.** La table « Exports npm »
+  du README — l'index que lit quiconque cherche « est-ce que ça existe déjà ? » —
+  en ignorait **75**, dont **22 sans aucune mention ailleurs dans la page** :
+  `security`, `markdown`, `similarity`, `haptics`, `audio`, `speech`,
+  `rate-limit`, `geocode-ban`, `image`, les trois transports `push/*`,
+  `SegmentedControl`, `ConnectionBanner`, `SyncStatusBadge`, `Field`, et sept
+  hooks React promus d'apps de la famille. La leçon sparkline n'était pas une
+  anecdote : c'était **un tiers du paquet**. Les relevés d'adoption comptaient
+  donc des doublons pour du code que les apps ne pouvaient pas découvrir — et
+  chaque promotion sans ligne de README naissait invisible. La table est
+  complétée (137/137), et `test/package-surface.test.mjs` fait désormais échouer
+  `npm test` sur tout sous-chemin publié qui n'y figure pas. Le contenu de la
+  ligne reste au jugement de l'auteur ; seule sa **présence** est vérifiée —
+  parce qu'un garde-fou qu'on peut satisfaire sans réfléchir vaut mieux qu'un
+  garde-fou qu'on contourne.
+
+## L'iCalendar, ou ce qu'une promotion révèle des quatre copies
+
+Le module `ical` est le cas d'école de la campagne : **quatre réécritures
+indépendantes de la RFC 5545**, aucune complète, chacune juste sur un point que
+les trois autres rataient. La promotion a réuni les quatre bonnes réponses ;
+les migrations qui ont suivi ont montré ce que chaque app y gagnait — et le
+compte n'est pas symétrique.
+
+- **La journée entière partait un jour trop tôt** chez `bac-sable`. Le jour
+  civil était lu en **UTC** : une fête du 19 septembre saisie à Paris
+  (`2026-09-19T00:00+02:00`, soit le 18 à 22 h UTC) s'exportait « les 18 et
+  19 ». Les **deux bornes** fausses, et seulement à l'est de Greenwich — donc
+  invisible pour qui teste depuis Londres ou une CI en UTC.
+- **`DTSTAMP` était purement absent** de `mister-footcoach`, alors que la
+  §3.6.1 l'impose. Et son `X-WR-CALNAME` atteignait **102 octets sur une seule
+  ligne** pour une équipe au nom long et accentué. Le pliage du socle compte les
+  octets mais itère par point de code : il coupe entre deux lettres, jamais au
+  milieu d'un `é`.
+- **Son arithmétique de durée sautait une heure** la nuit du changement
+  d'heure : `new Date(y, m, d, h, min + durée)` passe par le calendrier local,
+  là où le socle fait le calcul sur le cadran (`Date.UTC`). Une CI en UTC ne
+  pouvait pas le voir.
+
+**La nature de la date ne se devine pas, elle se déduit de l'affichage.**
+Instant UTC ou heure murale flottante : les deux apps ont tranché en sens
+inverse, et les deux ont raison. `bac-sable` garde l'instant UTC parce que ses
+pages affichent déjà en `toLocaleString`, donc dans le fuseau du **lecteur** —
+un `.ics` flottant contredirait la page qui vient de l'engendrer.
+`mister-footcoach` garde l'heure flottante parce qu'un entraînement à 18 h est à
+18 h, point ; il refuse même le `X-WR-TIMEZONE` que le socle propose, car le
+poser ferait reconvertir cette heure. Le critère n'est pas « qu'est-ce qui est
+plus correct », c'est **« qu'est-ce que l'app montre déjà à l'écran »**.
+
+### La limite du socle : il ne franchit pas la frontière Deno
+
+`mister-doc` est la seule des quatre à **ne pas** avoir migré, et son refus
+délimite le périmètre du paquet pour toutes les apps à backend Supabase. Tout
+son RFC 5545 vit dans une **Edge Function** (Deno) ; le navigateur n'en écrit
+pas une ligne, le bouton « Télécharger le .ics » est un lien vers ce flux.
+
+Quatre obstacles, dont trois vérifiés en commande :
+
+1. `@mister-guiiug/dev-wpa-config` est **404 sur npmjs** et **401 sans jeton sur
+   GitHub Packages** — qui exige un jeton même en lecture, même pour un dépôt
+   public.
+2. Le déploiement se fait par `supabase functions deploy --use-api` : c'est
+   **l'infrastructure Supabase** qui résout les spécifieurs `npm:`, sans nos
+   identifiants. C'est pourquoi la fonction `push` peut importer
+   `npm:web-push` — lui est public.
+3. Le `.npmrc` par fonction que Supabase prévoit pour un registre privé devrait
+   porter le jeton **en clair dans un dépôt public**.
+4. Décisif : le workflow de déploiement se déclenche sur
+   `paths: supabase/functions/**`. **Changer une ligne d'import redéploierait
+   les fonctions et rejouerait les migrations SQL** — un effet de bord sans
+   rapport avec le bénéfice recherché.
+
+Une échappatoire existe — le dépôt étant public, les modules sont servis en
+`application/javascript` par le CDN GitHub, donc importables par URL — et elle a
+été **écartée sciemment** : elle troque un registre contre un tiers dans la
+chaîne d'approvisionnement d'un point d'entrée qui lit en `service_role`, et
+elle bute de toute façon sur l'obstacle 4.
+
+**Ce qu'il faut en retenir** : le socle est un paquet de **navigateur et de
+build**. Pour du code qui tourne chez l'hébergeur, l'adoption utile n'est pas
+l'import mais la **référence** — la PR se réduit alors à écrire la décision
+là où le prochain lecteur la trouvera, pour qu'il ne refasse pas l'analyse. Les
+deux défauts que le socle nomme chez `mister-doc` (`DTSTAMP` recalculé à chaque
+évènement, lignes non pliées) restent donc en place, **documentés** au lieu
+d'être corrigés. C'est un résultat, pas un abandon.
