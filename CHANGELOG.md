@@ -1,5 +1,199 @@
 # Changelog
 
+## 3.26.0
+
+### Minor Changes
+
+- 418a9e2: `format` — les options passées à la place de la locale ne sont plus avalées.
+
+  **Le piège.** Huit fonctions ont la forme `(valeur, locale, options)`, mais
+  `formatNumber(1234, { maximumFractionDigits: 0 })` est le réflexe naturel — et
+  c'était un appel **silencieux** : `Intl` accepte n'importe quoi comme `locales`
+  sans lever, l'objet passait pour une locale illisible, la locale par défaut
+  reprenait la main, et **les options disparaissaient**. Aucune erreur, un format
+  simplement inchangé, et un appelant convaincu d'avoir configuré quelque chose.
+
+  Une locale est toujours une chaîne (ou un tableau de chaînes) : un objet à cette
+  place ne peut être que des options. Elles sont désormais reconnues. Non ambigu,
+  non cassant — la forme historique est verrouillée par un test, tableau de
+  locales compris.
+
+  **`formatCurrency` gagne des options.** Il n'en acceptait aucune : afficher un
+  prix sans centimes était **impossible** sans réimplémenter la fonction. C'est ce
+  que `miss-supaboss` demandait.
+
+  **`dateStyle` et `timeStyle` remplacent les composantes** au lieu de s'y
+  ajouter. `Intl` lève « Invalid option » quand ils côtoient `year`/`month`/`day`,
+  que ce module posait par défaut : demander une date longue faisait donc échouer
+  l'appel. Une migration l'avait rapporté comme « ça lève une TypeError » — le
+  diagnostic était juste, la cause était ailleurs.
+
+  Les deux correctifs sont vérifiés par mutation : retirer la reconnaissance ou
+  l'exclusion fait tomber le test qui la nomme.
+
+- e87fba6: Les manques que la vague des bandeaux de mise à jour a nommés. Huit apps ont
+  migré vers `react/update-prompt-banner` le 30/08/2026 ; chacune a laissé derrière
+  elle une ligne qu'elle a dû écrire à la main. Quatre sont comblées, toutes
+  promues d'un code déjà éprouvé dans les apps. La cinquième est refusée, et c'est
+  écrit.
+
+  **`testing/pwa-register` — le double de `virtual:pwa-register`, PILOTABLE.** Le
+  plus gros doublon du parc : **douze dépôts** portent ce fichier écrit à la main,
+  sous trois noms différents, plus les douze `resolve.alias` qui vont avec. Le
+  `vi.mock` de `vitest-setup` ne suffit pas — il agit à l'exécution, quand Vite a
+  déjà refusé de transformer le module importateur — et il faut donc un vrai
+  fichier. Mais les douze copies sont **muettes** : un `registerSW` qui n'appelle
+  jamais `onNeedRefresh` prouve qu'un composant se monte, jamais qu'un bandeau peut
+  s'afficher. C'est par ce trou qu'une app a vécu des mois avec une bannière montée
+  sans `registerSW`, donc structurellement incapable d'apparaître, et c'est
+  pourquoi les huit tests de bannière écrits pendant la vague ont tous dû
+  refabriquer un double pilotable par-dessus le double muet — de quatre façons
+  différentes.
+
+  Le double publié pilote (`swStub.needRefresh()`), et il **lève** quand personne
+  n'a injecté `registerSW` : la panne silencieuse devient un message. Son
+  `reset()` renouvelle l'**identité** de `registerSW`, faute de quoi la `WeakMap`
+  de `useUpdatePrompt` — qui existe pour ne pas doubler les écouteurs sous
+  `StrictMode` — garderait `needRefresh` d'un test au suivant. C'est le piège que
+  huit migrations ont rencontré chacune de leur côté.
+
+  **`unregisterServiceWorkers` — la désinscription de développement.** Cinq apps
+  la portent dans leur `register-sw.ts`, avec les mêmes lignes : sans elle, un
+  worker resté d'une session précédente sert du cache périmé pendant qu'on code.
+  Trois défauts communs aux cinq copies sont corrigés. Leur `.catch()` ne couvre
+  que `getRegistrations()`, pas les `unregister()` lancés dans le `forEach` : une
+  seule désinscription qui échoue devient un **rejet non capté**, pendant le
+  démarrage de l'app. Aucune ne plafonne cette `getRegistrations()`, la même qui
+  peut bloquer plusieurs secondes sur iOS en mode autonome. Et aucune ne rend rien,
+  donc rien ne s'observe. La CONDITION (`import.meta.env.DEV`) reste dans l'app :
+  ce paquet est aussi lu par `node --test`, qui n'a pas `import.meta.env`.
+
+  **Les rappels d'enregistrement ne sont plus avalés.** `connect()` ne transmettait
+  que `immediate`, `onNeedRefresh` et `onOfflineReady` : `mister-doc` et
+  `mister-qowa` ont dû enrober `registerSW` dans une constante de module pour
+  récupérer, l'un sa journalisation d'échec — sans laquelle une panne
+  d'enregistrement est indiscernable d'une app à jour — l'autre sa revérification
+  horaire. `onRegisterError`, `onRegisteredSW` et `onRegistered` sont désormais des
+  options de `useUpdatePrompt`, de `UpdatePromptBanner` et d'`AppUpdates`. Elles
+  sont lues à travers une référence : une fonction écrite en ligne ne
+  ré-enregistre rien.
+
+  **`snoozeKey` devient une prop.** `mister-puzzle` a dû verser son report en cours
+  dans la clé du socle au chargement de son module, sinon la migration oubliait
+  tout report actif — et le bandeau revenait aussitôt chez qui avait justement
+  demandé le silence.
+
+  **Un défaut trouvé en chemin.** `AppUpdates` lisait `snoozeHours` pour calculer
+  son état, mais ne le passait pas au bandeau : celui-ci retombait sur `0`, donc
+  sur « écarter pour la session ». Le report que le fournisseur tenait n'était
+  atteignable par **aucun clic**.
+
+  **Ce qui est refusé : rien ne rend `offlineReady`.** Le hook l'expose, aucun
+  composant ne l'affiche, et une seule app du parc montre ce message. Le socle
+  promeut ce que plusieurs apps ont convergé à écrire ; ici il n'y a pas de
+  convergence à recueillir, rien qu'une intention. Le motif est écrit dans
+  l'en-tête d'`update-prompt-banner` : le jour où une deuxième app l'écrit, les
+  deux copies diront ce qui doit être partagé.
+
+  `react/update-prompt-banner` sort de `SANS_TEST_DIRECT` : il a maintenant ses
+  tests. Six garanties sont vérifiées **par mutation** — retirer la ligne fait
+  tomber le test qui la nomme.
+
+- 162d914: Thème — deux défauts que trois adoptions ont fait tomber le même jour.
+
+  **Le script anti-FOUC causait le FOUC.** Sans valeur stockée, `themeBootSource`
+  résolvait **toujours** contre `prefers-color-scheme`, en ignorant le
+  `defaultTheme` qu'on lui passait. Or `useTheme` le respecte, lui : une app
+  déclarant `defaultTheme: 'light'` obtenait un premier rendu **sombre** (le
+  système), puis un basculement en clair (React) — exactement le scintillement que
+  ce script existe pour supprimer, causé par le script lui-même. Et seulement chez
+  les utilisateurs dont le système contredit le défaut de l'app, donc jamais chez
+  celui qui l'a écrit. `system` continue de se résoudre par le système : c'est ce
+  que le mot veut dire, et c'est le défaut.
+
+  **Le catalogue de palettes n'est plus embarqué de force.** `theme-provider.js`
+  importait statiquement `themes.js` — 22 ko, dix-sept palettes — alors que les
+  **quatre** apps du parc qui montent `ThemeProvider` ne passent **aucun `appId`**,
+  pour lequel la résolution rendait `null`. +15,6 ko bruts mesurés sur
+  `miss-carbook`, pour zéro variable peinte. La résolution par `appId` devient
+  paresseuse, et une nouvelle prop **`palette`** permet de fournir la palette
+  directement : synchrone, sans frame non peinte, et sans tirer les seize autres.
+
+  Aucune rupture : `appId` continue de fonctionner, `palette` l'emporte quand les
+  deux sont donnés. Cinq tests, dont un qui interdit le retour de l'import
+  statique — la source est la seule façon d'observer un import, un module chargé
+  ne distinguant plus le statique du paresseux résolu.
+
+- 231f7e9: `title` accepte un nœud React, et la bannière d'installation ne peut plus
+  nommer sa région `[object Object]`.
+
+  **Deux migrations ont perdu une icône le même jour, pour la même raison** :
+  `miss-genius` sur le bandeau de mise à jour (une icône Sparkles), `mister-doc`
+  sur **six** dialogues. Les deux rapports contenaient la même phrase — « `title`
+  est typé `string` ». Il s'élargit à `ReactNode` sur `Sheet`, `ConfirmDialog`,
+  `EmptyState`, `ErrorBoundary`, `UpdatePromptBanner` et `PwaInstallPrompt`.
+
+  **Et un piège que l'élargissement aurait ouvert en silence.** Le titre est rendu
+  comme ENFANT partout — sauf dans `PwaInstallPrompt`, qui le passait AUSSI en
+  `aria-label`. Un nœud React y aurait donné **`[object Object]` comme nom
+  accessible** de la région, sans la moindre erreur de compilation. La bannière
+  pointe désormais son titre rendu par `aria-labelledby`, ce qui marche pour les
+  deux formes et garde le nom synchronisé avec ce qui est affiché.
+
+  Vérifié par mutation : remettre `aria-label` fait tomber le test qui le nomme.
+  Le test monte la bannière dans jsdom et émet `beforeinstallprompt`, faute de
+  quoi le composant rend `null` — et des assertions d'absence sur une chaîne vide
+  passeraient toutes en ne prouvant rien.
+
+### Patch Changes
+
+- 7cd2656: `react/bottom-nav` — l'en-tête disait faux sur une app, et taisait deux pièges
+  d'adoption.
+
+  **Le faux.** Il affirmait que « mister-puzzle a la même chose sous le nom
+  `Navbar` ». Vérification faite en migrant : son `Navbar.tsx` est un **en-tête
+  haut collant** — logo, progression, hamburger, menu de thème — et **ne porte
+  aucune destination**. L'app n'a d'ailleurs aucun routeur : deux écrans, choisis
+  par le hash de l'URL. `BottomNav` exige une liste statique de routes ; puzzle
+  n'en a pas. L'affirmation venait d'une ressemblance de nom de fichier, jamais
+  vérifiée, et elle a maintenu un dépôt sur une liste de migration pendant des
+  semaines.
+
+  Le relevé d'adoption portait la même erreur : `Navbar.tsx` est retiré de la
+  table des équivalences, où il ne produisait que des faux positifs — un seul
+  dépôt du parc porte ce nom, et c'est celui-là.
+
+  **Les deux tacites**, chacun payé deux fois (mister-cim10, puis
+  mister-footcoach) avant d'être écrit :
+  - **brancher `Link`, pas `NavLink`** — `NavLink` redéclare son propre
+    `aria-current` **après** l'étalement des props, ce qui donne deux sources de
+    vérité pour l'état actif ; et `end` ne lui est pas transmis ;
+  - **`currentPath` est obligatoire dès que le routeur a un `basename`** — le
+    repli lit `window.location.pathname`, qui vaut `/mon-app/equipes` là où les
+    `href` valent `/equipes` : **aucun onglet ne serait actif**, et seulement une
+    fois déployé, jamais en développement.
+
+- fc0593c: `components.css` — un même jeton ne porte plus deux replis différents.
+
+  `--text-fluid-xs` retombait sur `0.8rem` à huit endroits et sur `0.75rem` sur
+  les onglets de `BottomNav`. Sans conséquence pour les seize apps qui importent
+  le preset — la variable y est définie — mais **une app qui ne le prend pas ne
+  voit QUE les replis**, et obtenait donc deux tailles pour une seule intention.
+
+  Le cas n'est pas théorique : `mister-quota`, en Electron sans Tailwind, vient de
+  prendre la feuille seule. Sa migration a d'ailleurs montré que le motif
+  d'abstention de cette app ne tenait pas — `components.css` ne contient ni
+  `@apply`, ni `@tailwind`, ni `theme()`, et tous ses sélecteurs sont portés par
+  `[data-dwc="…"]`, donc sans collision possible. Le README le dit maintenant, et
+  précise que la feuille lit **huit variables de l'échelle fluide en plus des
+  quinze jetons du contrat**, toutes avec repli.
+
+  `test/components-css.test.mjs` garde la cohérence — sur les replis **scalaires**
+  seulement. Les replis de couleur imbriquent `light-dark()`, `color-mix()` ou un
+  second `var()` : les comparer demande un analyseur, pas une expression
+  rationnelle, et une expression rationnelle qui les tronque comparerait des
+  valeurs fausses. Un garde-fou étroit et exact vaut mieux qu'un large et menteur.
+
 ## 3.25.0
 
 ### Minor Changes
