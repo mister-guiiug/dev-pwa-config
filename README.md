@@ -55,18 +55,19 @@ son prérequis, longtemps pris par trois apps sur dix-sept — est passé à
 quatorze. `ConfirmDialog` et `ErrorBoundary` sont maintenant importés par dix
 apps, `EmptyState` par sept, `Sheet` par six.
 
-`UpdatePromptBanner` (8 copies) et `links` (7) — les deux plus gros postes du
-matin — sont **à zéro**. Ce qui reste demande autre chose qu'un import :
-`applyUpdate` (6) et `useTheme` (6) exigent de migrer un état ou un
-enregistrement de service worker, `useI18n` (4) un fournisseur et des
+**Six postes sont passés à zéro** en deux jours : `UpdatePromptBanner` (8
+copies), `links` (7), `format` (5), `Toast`, `ThemeToggle`, `ErrorBoundary`.
+Ce qui reste demande autre chose qu'un import — `applyUpdate` (6) suppose de
+reprendre un enregistrement de service worker **et** la désinscription de
+développement que cinq apps ont écrite ; `useI18n` (4) un fournisseur et des
 dictionnaires.
 
-**Le chiffre a baissé de 71 à 46 pour DEUX raisons, et il faut les séparer.**
-En rejouant l'ancienne règle sur l'état d'aujourd'hui, on obtient **58** :
-treize doublons ont donc été réellement éliminés par les migrations, et douze de
-plus étaient **invisibles à l'instrument** — neuf besoins qu'il ne savait pas
-acquitter, et trois façades qu'il comptait comme des réécritures (voir
-`CAMPAGNE.md`).
+**Le chiffre est passé de 71 à 23, et il faut séparer les causes.** En rejouant
+l'ancienne règle sur un état intermédiaire, on obtenait 58 là où la nouvelle
+disait 46 : douze doublons étaient donc **invisibles à l'instrument** — neuf
+besoins qu'il ne savait pas acquitter, trois façades qu'il comptait comme des
+réécritures. Le reste de la baisse est du travail réel. Confondre les deux
+attribuerait à la campagne ce que personne n'a fait (voir `CAMPAGNE.md`).
 
 **Et il SOUS-ESTIME encore la dette.** Il compte les copies d'un catalogue de
 besoins **déjà nommés** : une app qui réécrit quelque chose que le catalogue
@@ -81,7 +82,7 @@ c'est ainsi que ces quatre modules sont nés.
 
 _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 46 fichiers recopiés** dans 17 apps, sur 17 besoins distincts. Les pires : `applyUpdate` (6), `useTheme` (6), `backup` (4).
+> **Dette d'adoption : 23 fichiers recopiés** dans 17 apps, sur 10 besoins distincts. Les pires : `applyUpdate` (6), `useI18n` (4), `backup` (3).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -93,38 +94,49 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `initSentry`                  | 13 / 17     | —                   |
 | `installErrorReporter`        | 13 / 17     | —                   |
 | `pwaSeoPlugin`                | 13 / 17     | —                   |
+| `ConfirmDialog`               | 12 / 17     | —                   |
 | `recordError`                 | 12 / 17     | —                   |
-| `ConfirmDialog`               | 11 / 17     | 1 / 17              |
 | `expectNoA11yViolations`      | 11 / 17     | —                   |
-| `ErrorBoundary`               | 10 / 17     | 1 / 17              |
 | `cspPlugin`                   | 10 / 17     | —                   |
-| `repoUrl`                     | 9 / 17      | —                   |
-| `UpdatePromptBanner`          | 9 / 17      | —                   |
+| `ErrorBoundary`               | 10 / 17     | —                   |
+| `repoUrl`                     | 10 / 17     | —                   |
+| `Sheet`                       | 8 / 17      | 1 / 17              |
 | `coveragePreset`              | 8 / 17      | —                   |
 | `createI18n`                  | 8 / 17      | —                   |
-| `Sheet`                       | 7 / 17      | 2 / 17              |
+| `UpdatePromptBanner`          | 8 / 17      | —                   |
 | `EmptyState`                  | 7 / 17      | 1 / 17              |
+| `ThemeProvider`               | 7 / 17      | —                   |
+| `BottomNav`                   | 6 / 17      | 1 / 17              |
+| `IconsProvider`               | 6 / 17      | —                   |
 | `SPONSOR_URL`                 | 6 / 17      | —                   |
 | `useOnline`                   | 6 / 17      | —                   |
+| `useThemeContext`             | 6 / 17      | —                   |
+| `AppFooter`                   | 5 / 17      | 2 / 17              |
 | `Button`                      | 5 / 17      | —                   |
 | `dateSlug`                    | 5 / 17      | —                   |
 | `downloadText`                | 5 / 17      | —                   |
-| `BottomNav`                   | 4 / 17      | 4 / 17              |
-| `AppFooter`                   | 4 / 17      | 3 / 17              |
-| `Badge`                       | 4 / 17      | 1 / 17              |
-| `IconsProvider`               | 4 / 17      | —                   |
+| `LabelsProvider`              | 5 / 17      | —                   |
+| `Badge`                       | 4 / 17      | —                   |
+| `formatNumber`                | 4 / 17      | —                   |
+| `lucideIconSet`               | 4 / 17      | —                   |
+| `setDefaultLocale`            | 4 / 17      | —                   |
 | `SkeletonGroup`               | 4 / 17      | —                   |
 | `TextField`                   | 4 / 17      | —                   |
 | `createStore`                 | 3 / 17      | —                   |
 | `downloadJson`                | 3 / 17      | —                   |
+| `formatDateTime`              | 3 / 17      | —                   |
 | `generateCode`                | 3 / 17      | —                   |
+| `getDefaultLocale`            | 3 / 17      | —                   |
 | `initWebVitals`               | 3 / 17      | —                   |
-| `LabelsProvider`              | 3 / 17      | —                   |
-| `RegisterSW`                  | 3 / 17      | —                   |
+| `ObservabilityBoundary`       | 3 / 17      | —                   |
 | `SelectField`                 | 3 / 17      | —                   |
+| `shareOrCopy`                 | 3 / 17      | —                   |
 | `Skeleton`                    | 3 / 17      | —                   |
 | `Sparkline`                   | 3 / 17      | —                   |
+| `ThemePreference`             | 3 / 17      | —                   |
+| `ThemeToggle`                 | 3 / 17      | —                   |
 | `ToastProvider`               | 3 / 17      | —                   |
+| `ToastViewport`               | 3 / 17      | —                   |
 | `useToast`                    | 3 / 17      | —                   |
 | `useUpdatePrompt`             | 3 / 17      | —                   |
 | `useWakeLock`                 | 3 / 17      | —                   |
@@ -138,29 +150,31 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `createSupabaseClientFactory` | 2 / 17      | —                   |
 | `createSyncQueue`             | 2 / 17      | —                   |
 | `createTranslator`            | 2 / 17      | —                   |
+| `createVersionedStore`        | 2 / 17      | —                   |
 | `downloadPdf`                 | 2 / 17      | —                   |
 | `downloadXlsx`                | 2 / 17      | —                   |
+| `formatDate`                  | 2 / 17      | —                   |
+| `formatRelativeTime`          | 2 / 17      | —                   |
 | `ICAL_MIME`                   | 2 / 17      | —                   |
 | `IcalEvent`                   | 2 / 17      | —                   |
-| `lucideIconSet`               | 2 / 17      | —                   |
+| `isValidCoordinates`          | 2 / 17      | —                   |
 | `normalizeCode`               | 2 / 17      | —                   |
-| `ObservabilityBoundary`       | 2 / 17      | —                   |
 | `PAGE`                        | 2 / 17      | —                   |
 | `PdfContent`                  | 2 / 17      | —                   |
 | `readJsonFile`                | 2 / 17      | —                   |
-| `shareOrCopy`                 | 2 / 17      | —                   |
+| `RegisterSW`                  | 2 / 17      | —                   |
 | `SyncQueue`                   | 2 / 17      | —                   |
 | `SyncQueueEntry`              | 2 / 17      | —                   |
 | `TextAreaField`               | 2 / 17      | —                   |
 | `textWidth`                   | 2 / 17      | —                   |
-| `ThemeProvider`               | 2 / 17      | —                   |
 | `toCsv`                       | 2 / 17      | —                   |
 | `toIcalendar`                 | 2 / 17      | —                   |
 | `validateImageFile`           | 2 / 17      | —                   |
-| `useTheme`                    | 1 / 17      | 6 / 17              |
-| `ThemeToggle`                 | 1 / 17      | 3 / 17              |
+| `useTheme`                    | 1 / 17      | 3 / 17              |
 | `appById`                     | 1 / 17      | —                   |
+| `AppUpdates`                  | 1 / 17      | —                   |
 | `AppVersion`                  | 1 / 17      | —                   |
+| `BottomNavItem`               | 1 / 17      | —                   |
 | `BoundingBox`                 | 1 / 17      | —                   |
 | `ChannelStatus`               | 1 / 17      | —                   |
 | `clearErrorLog`               | 1 / 17      | —                   |
@@ -171,15 +185,15 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `createLogger`                | 1 / 17      | —                   |
 | `createMapLibreMapProvider`   | 1 / 17      | —                   |
 | `createPushClient`            | 1 / 17      | —                   |
-| `createVersionedStore`        | 1 / 17      | —                   |
+| `currentAppUrl`               | 1 / 17      | —                   |
 | `distanceKm`                  | 1 / 17      | —                   |
 | `downloadBlob`                | 1 / 17      | —                   |
 | `dumpAppState`                | 1 / 17      | —                   |
 | `ErrorBanner`                 | 1 / 17      | —                   |
 | `formatCurrency`              | 1 / 17      | —                   |
-| `formatDateTime`              | 1 / 17      | —                   |
 | `formatDistance`              | 1 / 17      | —                   |
-| `formatNumber`                | 1 / 17      | —                   |
+| `formatPercentage`            | 1 / 17      | —                   |
+| `formatUsage`                 | 1 / 17      | —                   |
 | `getErrorLog`                 | 1 / 17      | —                   |
 | `I18nPaths`                   | 1 / 17      | —                   |
 | `IconComponent`               | 1 / 17      | —                   |
@@ -188,7 +202,6 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `installObservability`        | 1 / 17      | —                   |
 | `isClusterId`                 | 1 / 17      | —                   |
 | `isInBoundingBox`             | 1 / 17      | —                   |
-| `isValidCoordinates`          | 1 / 17      | —                   |
 | `isValidLatitude`             | 1 / 17      | —                   |
 | `isValidLongitude`            | 1 / 17      | —                   |
 | `localRealtimeTransport`      | 1 / 17      | —                   |
@@ -210,32 +223,27 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `rethrowWithState`            | 1 / 17      | —                   |
 | `Rgb`                         | 1 / 17      | —                   |
 | `ShareButton`                 | 1 / 17      | —                   |
+| `ShareResult`                 | 1 / 17      | —                   |
 | `STATUS`                      | 1 / 17      | —                   |
 | `stripImageMetadata`          | 1 / 17      | —                   |
 | `SupabaseChange`              | 1 / 17      | —                   |
 | `supabaseConfig`              | 1 / 17      | —                   |
 | `supabaseRealtimeTransport`   | 1 / 17      | —                   |
 | `SyncQueueOptions`            | 1 / 17      | —                   |
-| `ThemePreference`             | 1 / 17      | —                   |
-| `ToastViewport`               | 1 / 17      | —                   |
 | `unescapeText`                | 1 / 17      | —                   |
 | `unfoldLines`                 | 1 / 17      | —                   |
 | `UpdateButton`                | 1 / 17      | —                   |
 | `useInstallPrompt`            | 1 / 17      | —                   |
 | `useQrScanner`                | 1 / 17      | —                   |
 | `useReducedMotion`            | 1 / 17      | —                   |
-| `useThemeContext`             | 1 / 17      | —                   |
 | `UseUpdatePrompt`             | 1 / 17      | —                   |
 | `versionPlugin`               | 1 / 17      | —                   |
 | `VersionProvider`             | 1 / 17      | —                   |
 | `XlsxSheet`                   | 1 / 17      | —                   |
 | `XlsxValue`                   | 1 / 17      | —                   |
-| `backup`                      | 0 / 17      | 4 / 17              |
-| `format`                      | 0 / 17      | 4 / 17              |
 | `useI18n`                     | 0 / 17      | 4 / 17              |
-| `share`                       | 0 / 17      | 2 / 17              |
-| `Toast`                       | 0 / 17      | 2 / 17              |
-| `geo`                         | 0 / 17      | 1 / 17              |
+| `backup`                      | 0 / 17      | 3 / 17              |
+| `share`                       | 0 / 17      | 1 / 17              |
 | `webVitals`                   | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
