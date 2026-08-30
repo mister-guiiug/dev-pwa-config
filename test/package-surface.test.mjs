@@ -255,3 +255,94 @@ test('tout sous-chemin publié figure dans la table « Exports npm »', () => {
     `ces sous-chemins sont publiés mais introuvables dans le README : ${absents.join(', ')} — une app ne peut pas adopter ce qu'elle ne voit pas`
   );
 });
+
+/* ── Et ce qu'aucun test n'ouvre jamais ─────────────────────────────────── */
+
+/**
+ * CE QUE LA CAMPAGNE A PAYÉ POUR APPRENDRE. `react/use-wake-lock` a été promu
+ * de deux apps, publié, et importé par personne pendant des semaines — sans
+ * qu'aucun test ne l'ouvre jamais. Quand trois apps l'ont enfin adopté le
+ * 30/08/2026, `miss-contraction` (#20) portait dans sa copie un défaut que le
+ * paquet corrigeait sans le prouver : pas d'écoute de `visibilitychange`, donc
+ * l'écran s'éteignait en pleine contraction après un aller-retour dans une
+ * autre app. Le hook du paquet était juste ; rien ne garantissait qu'il le
+ * reste. Il a maintenant ses tests.
+ *
+ * Ce garde-fou ne rend pas les tests obligatoires — il rend l'ABSENCE
+ * DÉLIBÉRÉE. Chaque module listé ci-dessous est une décision assumée, avec sa
+ * raison. Publier un nouveau module sans test force à venir écrire la sienne,
+ * plutôt qu'à laisser un trou que personne ne compte.
+ */
+const SANS_TEST_DIRECT = new Set([
+  // Impossible à éprouver utilement dans Node : l'API n'y existe pas, et la
+  // simuler ne prouverait que le bouchon (voir `test/image.test.mjs`).
+  'audio', // Web Audio : oscillateurs et enveloppes
+  'react/use-shake', // DeviceMotion + autorisation iOS
+  'react/use-qr-scanner', // caméra, via une peer optionnelle
+  'react/use-pull-to-refresh', // gestes tactiles et amorti élastique
+  'react/use-install-prompt', // `beforeinstallprompt`, jamais émis hors navigateur
+  'react/use-prefetch', // la décision vit dans `prefetch.js`, lui testé
+  // Enveloppes fines : elles ne décident de rien que leur socle ne décide déjà.
+  'react/use-feedback', // table de l'app → `haptics` + `audio`, tous deux testés
+  'react/pwa-install-prompt', // rendu de `use-install-prompt`
+  'react/update-prompt-banner', // rendu de `use-update-prompt`, lui testé
+  'react/sparkline', // rendu de `sparkline.js`, dont la géométrie est testée
+  // Transport nécessitant un SDK complet ; ses jumeaux `local` et `supabase`
+  // couvrent le contrat du port.
+  'realtime/firebase',
+  // Fichier de setup, exécuté par toute la suite Vitest des apps.
+  'vitest-setup',
+]);
+
+test('tout module JS publié est ouvert par un test, ou déclaré sans', () => {
+  const sources = readdirSync(at('test'))
+    .filter(name => name.endsWith('.mjs'))
+    .map(name => readFileSync(at(`test/${name}`), 'utf8'))
+    .join('\n');
+
+  const jamaisOuverts = Object.entries(PKG.exports)
+    .filter(([subpath]) => subpath !== '.' && !subpath.includes('*'))
+    .filter(([, target]) => {
+      const file = typeof target === 'string' ? target : (target.default ?? '');
+      return file.endsWith('.js') && !sources.includes(`..${file.slice(1)}`);
+    })
+    .map(([subpath]) => subpath.slice(2))
+    .filter(name => !SANS_TEST_DIRECT.has(name))
+    // Les configs sont vérifiées par `configs.test.mjs`, qui les charge par
+    // leur sous-chemin et non par un import relatif.
+    .filter(
+      name =>
+        !/^(eslint|prettier|commitlint|lint-staged|tsconfig|vitest|playwright|tailwind)/.test(
+          name
+        )
+    )
+    .sort();
+
+  assert.deepEqual(
+    jamaisOuverts,
+    [],
+    `aucun test n'ouvre ces modules : ${jamaisOuverts.join(', ')} — leur écrire un test, ou les inscrire dans SANS_TEST_DIRECT avec la raison`
+  );
+});
+
+test('SANS_TEST_DIRECT ne garde pas d’entrée périmée', () => {
+  // Une exemption qui survit au test qu'on a fini par écrire cache la
+  // prochaine : la liste doit rester exacte dans les DEUX sens.
+  const publies = new Set(
+    Object.keys(PKG.exports)
+      .filter(subpath => subpath !== '.' && !subpath.includes('*'))
+      .map(subpath => subpath.slice(2))
+  );
+  const sources = readdirSync(at('test'))
+    .filter(name => name.endsWith('.mjs'))
+    .map(name => readFileSync(at(`test/${name}`), 'utf8'))
+    .join('\n');
+
+  for (const name of SANS_TEST_DIRECT) {
+    assert.ok(publies.has(name), `${name} n'est plus publié : à retirer`);
+    assert.ok(
+      !sources.includes(`../${name}.js`),
+      `${name} est désormais testé : à retirer de SANS_TEST_DIRECT`
+    );
+  }
+});
