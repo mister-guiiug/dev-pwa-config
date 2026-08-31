@@ -85,7 +85,7 @@ c'est ainsi que ces quatre modules sont nés.
 
 _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 17 fichiers recopiés** dans 17 apps, sur 9 besoins distincts. Les pires : `useI18n` (4), `backup` (3), `useTheme` (3).
+> **Dette d'adoption : 6 fichiers recopiés** dans 17 apps, sur 4 besoins distincts. Les pires : `backup` (3), `AppFooter` (1), `BottomNav` (1).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -99,49 +99,50 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `pwaSeoPlugin`                | 13 / 17     | —                   |
 | `ConfirmDialog`               | 12 / 17     | —                   |
 | `recordError`                 | 12 / 17     | —                   |
+| `createI18n`                  | 11 / 17     | —                   |
 | `expectNoA11yViolations`      | 11 / 17     | —                   |
+| `repoUrl`                     | 11 / 17     | —                   |
 | `cspPlugin`                   | 10 / 17     | —                   |
 | `ErrorBoundary`               | 10 / 17     | —                   |
-| `repoUrl`                     | 10 / 17     | —                   |
-| `Sheet`                       | 8 / 17      | 1 / 17              |
+| `Sheet`                       | 9 / 17      | —                   |
 | `coveragePreset`              | 8 / 17      | —                   |
-| `createI18n`                  | 8 / 17      | —                   |
+| `EmptyState`                  | 8 / 17      | —                   |
+| `LabelsProvider`              | 8 / 17      | —                   |
+| `ThemeProvider`               | 8 / 17      | —                   |
 | `UpdatePromptBanner`          | 8 / 17      | —                   |
-| `EmptyState`                  | 7 / 17      | 1 / 17              |
-| `LabelsProvider`              | 7 / 17      | —                   |
-| `ThemeProvider`               | 7 / 17      | —                   |
+| `SPONSOR_URL`                 | 7 / 17      | —                   |
+| `useThemeContext`             | 7 / 17      | —                   |
+| `AppFooter`                   | 6 / 17      | 1 / 17              |
 | `BottomNav`                   | 6 / 17      | 1 / 17              |
 | `IconsProvider`               | 6 / 17      | —                   |
-| `SPONSOR_URL`                 | 6 / 17      | —                   |
 | `useOnline`                   | 6 / 17      | —                   |
-| `useThemeContext`             | 6 / 17      | —                   |
-| `AppFooter`                   | 5 / 17      | 2 / 17              |
 | `AppUpdates`                  | 5 / 17      | —                   |
 | `Button`                      | 5 / 17      | —                   |
 | `dateSlug`                    | 5 / 17      | —                   |
 | `downloadText`                | 5 / 17      | —                   |
 | `swStub`                      | 5 / 17      | —                   |
+| `ThemePreference`             | 5 / 17      | —                   |
 | `unregisterServiceWorkers`    | 5 / 17      | —                   |
 | `applyUpdate`                 | 4 / 17      | —                   |
 | `Badge`                       | 4 / 17      | —                   |
 | `formatNumber`                | 4 / 17      | —                   |
+| `initWebVitals`               | 4 / 17      | —                   |
 | `lucideIconSet`               | 4 / 17      | —                   |
 | `RegisterSW`                  | 4 / 17      | —                   |
 | `setDefaultLocale`            | 4 / 17      | —                   |
+| `shareOrCopy`                 | 4 / 17      | —                   |
 | `SkeletonGroup`               | 4 / 17      | —                   |
 | `TextField`                   | 4 / 17      | —                   |
 | `createStore`                 | 3 / 17      | —                   |
+| `createTranslator`            | 3 / 17      | —                   |
 | `downloadJson`                | 3 / 17      | —                   |
 | `formatDateTime`              | 3 / 17      | —                   |
 | `generateCode`                | 3 / 17      | —                   |
 | `getDefaultLocale`            | 3 / 17      | —                   |
-| `initWebVitals`               | 3 / 17      | —                   |
 | `ObservabilityBoundary`       | 3 / 17      | —                   |
 | `SelectField`                 | 3 / 17      | —                   |
-| `shareOrCopy`                 | 3 / 17      | —                   |
 | `Skeleton`                    | 3 / 17      | —                   |
 | `Sparkline`                   | 3 / 17      | —                   |
-| `ThemePreference`             | 3 / 17      | —                   |
 | `ThemeToggle`                 | 3 / 17      | —                   |
 | `ToastProvider`               | 3 / 17      | —                   |
 | `ToastViewport`               | 3 / 17      | —                   |
@@ -156,13 +157,14 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `createChannel`               | 2 / 17      | —                   |
 | `createSupabaseClientFactory` | 2 / 17      | —                   |
 | `createSyncQueue`             | 2 / 17      | —                   |
-| `createTranslator`            | 2 / 17      | —                   |
 | `createVersionedStore`        | 2 / 17      | —                   |
+| `currentAppUrl`               | 2 / 17      | —                   |
 | `downloadPdf`                 | 2 / 17      | —                   |
 | `downloadXlsx`                | 2 / 17      | —                   |
 | `formatCurrency`              | 2 / 17      | —                   |
 | `formatDate`                  | 2 / 17      | —                   |
 | `formatRelativeTime`          | 2 / 17      | —                   |
+| `I18nPaths`                   | 2 / 17      | —                   |
 | `ICAL_MIME`                   | 2 / 17      | —                   |
 | `IcalEvent`                   | 2 / 17      | —                   |
 | `isValidCoordinates`          | 2 / 17      | —                   |
@@ -181,8 +183,8 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `toCsv`                       | 2 / 17      | —                   |
 | `toIcalendar`                 | 2 / 17      | —                   |
 | `UpdateButton`                | 2 / 17      | —                   |
+| `useTheme`                    | 2 / 17      | —                   |
 | `validateImageFile`           | 2 / 17      | —                   |
-| `useTheme`                    | 1 / 17      | 3 / 17              |
 | `appById`                     | 1 / 17      | —                   |
 | `AppVersion`                  | 1 / 17      | —                   |
 | `BottomNavItem`               | 1 / 17      | —                   |
@@ -196,7 +198,6 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `createLogger`                | 1 / 17      | —                   |
 | `createMapLibreMapProvider`   | 1 / 17      | —                   |
 | `createPushClient`            | 1 / 17      | —                   |
-| `currentAppUrl`               | 1 / 17      | —                   |
 | `distanceKm`                  | 1 / 17      | —                   |
 | `downloadBlob`                | 1 / 17      | —                   |
 | `dumpAppState`                | 1 / 17      | —                   |
@@ -205,7 +206,7 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `formatPercentage`            | 1 / 17      | —                   |
 | `formatUsage`                 | 1 / 17      | —                   |
 | `getErrorLog`                 | 1 / 17      | —                   |
-| `I18nPaths`                   | 1 / 17      | —                   |
+| `I18nApi`                     | 1 / 17      | —                   |
 | `IconComponent`               | 1 / 17      | —                   |
 | `IMAGE_ACCEPTED_TYPES`        | 1 / 17      | —                   |
 | `installCorrelation`          | 1 / 17      | —                   |
@@ -229,6 +230,7 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `PushTransport`               | 1 / 17      | —                   |
 | `qrToDataUrl`                 | 1 / 17      | —                   |
 | `qrToSvg`                     | 1 / 17      | —                   |
+| `ResolvedTheme`               | 1 / 17      | —                   |
 | `resolveSeoPublicUrls`        | 1 / 17      | —                   |
 | `rethrowWithState`            | 1 / 17      | —                   |
 | `Rgb`                         | 1 / 17      | —                   |
@@ -239,10 +241,12 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `supabaseConfig`              | 1 / 17      | —                   |
 | `supabaseRealtimeTransport`   | 1 / 17      | —                   |
 | `SyncQueueOptions`            | 1 / 17      | —                   |
+| `themeBootSource`             | 1 / 17      | —                   |
 | `unescapeText`                | 1 / 17      | —                   |
 | `unfoldLines`                 | 1 / 17      | —                   |
 | `useAppUpdates`               | 1 / 17      | —                   |
 | `useInstallPrompt`            | 1 / 17      | —                   |
+| `useLabels`                   | 1 / 17      | —                   |
 | `useQrScanner`                | 1 / 17      | —                   |
 | `useReducedMotion`            | 1 / 17      | —                   |
 | `versionPlugin`               | 1 / 17      | —                   |
@@ -250,10 +254,8 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `vibrate`                     | 1 / 17      | —                   |
 | `XlsxSheet`                   | 1 / 17      | —                   |
 | `XlsxValue`                   | 1 / 17      | —                   |
-| `useI18n`                     | 0 / 17      | 4 / 17              |
 | `backup`                      | 0 / 17      | 3 / 17              |
-| `share`                       | 0 / 17      | 1 / 17              |
-| `webVitals`                   | 0 / 17      | 1 / 17              |
+| `useI18n`                     | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
 

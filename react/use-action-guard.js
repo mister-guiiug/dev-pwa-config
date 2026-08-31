@@ -98,8 +98,20 @@ export function useActionGuard(options = {}) {
 
   // `checks` arrive souvent en littéral, donc avec une identité neuve à
   // chaque rendu : la dépendance porte sur son CONTENU.
+  //
+  // `message` EN FAIT PARTIE, et il en était absent. Un motif qui suit la
+  // langue sans passer par `LabelsProvider` restait alors figé dans la langue
+  // précédente : même `code`, même `blocked`, donc même signature, donc aucun
+  // recalcul. Les trois apps du lot hors-connexion (mister-qowa, mister-molkky,
+  // mister-puzzle) ont contourné ça le même jour, deux en recalculant le motif
+  // hors du hook. Un contournement que trois apps trouvent séparément est un
+  // défaut d'ici, pas une particularité de chacune.
   const fingerprint = JSON.stringify(
-    (options.checks ?? []).map(check => [check.code, check.blocked])
+    (options.checks ?? []).map(check => [
+      check.code,
+      check.blocked,
+      check.message,
+    ])
   );
 
   return useMemo(
