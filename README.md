@@ -2162,8 +2162,21 @@ déjà ce nom sur les mêmes props, et l'écraserait à chaque rendu.
 
 **Ne pas enregistrer du tout** ne demande aucune API : `registerSW` est
 facultatif, et le hook s'en passe (`needRefresh` reste faux, `update()` et
-`forceUpdate()` restent utilisables). Le motif tient en une expression —
-`registerSW={import.meta.env.PROD ? registerSW : undefined}`.
+`forceUpdate()` restent utilisables).
+
+⚠️ **Mais ne posez PAS `registerSW={import.meta.env.PROD ? registerSW : undefined}`** —
+ce motif, que cette page recommandait, ne protège de rien et coûte cher. En
+développement, `vite-plugin-pwa` sert déjà un patron **entièrement inerte**
+(`dist/client/dev/register.js` : `registerSW()` rend une fonction asynchrone
+vide, et rien n'est enregistré), sauf si l'app active `devOptions` — ce
+qu'aucune app du parc ne fait. Le garde est donc redondant en production comme
+en développement.
+
+Et il nuit : **Vitest pose `PROD` à faux**, donc le câblage réel devient
+intestable, et deux apps (`miss-badminton`, `miss-dice`) ont dû intercaler un
+composant qui reprend `registerSW` en prop pour contourner un garde superflu.
+Relevé en migrant `mister-cim10` et `miss-ticket-pwa`. Ne le remettre que si
+l'app active vraiment `devOptions`.
 
 En développement, c'est plutôt l'inverse qu'on veut : **désinscrire** le worker
 d'une session précédente, qui sert du cache périmé pendant qu'on code. Cinq apps
