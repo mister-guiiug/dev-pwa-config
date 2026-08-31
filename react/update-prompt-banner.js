@@ -169,6 +169,7 @@ function StandaloneBanner(props) {
     snoozeKey: props.snoozeKey,
     updateOptions: props.updateOptions,
     onRegisterError: props.onRegisterError,
+    onNeedReload: props.onNeedReload,
     onRegisteredSW: props.onRegisteredSW,
     onRegistered: props.onRegistered,
   });

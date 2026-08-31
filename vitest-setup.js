@@ -133,6 +133,24 @@ vi.mock('virtual:pwa-register/react', () => ({
   }),
 }));
 
-vi.mock('virtual:pwa-register', () => ({
-  registerSW: () => () => {},
-}));
+/*
+ * LE MUET NE DOIT PAS ÉCRASER LE PILOTABLE. Ce `vi.mock` est résolu À TRAVERS
+ * le `resolve.alias` : une app qui suit la doc ci-dessus et pointe
+ * `virtual:pwa-register` vers `testing/pwa-register` désigne donc le MÊME
+ * module, et la fabrique muette l'écrasait — `swStub` devenait introuvable
+ * (« No "swStub" export is defined on the "virtual:pwa-register" mock »), et
+ * l'app retombait sur le faux témoin que ce double existe pour supprimer.
+ * Relevé par `mister-molkky` (#18) en suivant la documentation à la lettre.
+ *
+ * On tente donc d'abord le module réel : s'il se résout, c'est qu'un alias le
+ * désigne, et on le rend tel quel. Sinon — aucun alias, module virtuel absent
+ * hors build Vite — on retombe sur le muet, qui reste le bon défaut pour une
+ * app qui ne teste pas son bandeau.
+ */
+vi.mock('virtual:pwa-register', async importOriginal => {
+  try {
+    return await importOriginal();
+  } catch {
+    return { registerSW: () => () => {} };
+  }
+});

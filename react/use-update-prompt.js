@@ -51,7 +51,7 @@ const CONNECTIONS = new WeakMap();
 
 /**
  * @param {Function} registerSW
- * @param {{ current: { onRegisterError?: Function, onRegisteredSW?: Function, onRegistered?: Function } }} handlers
+ * @param {{ current: { onRegisterError?: Function, onRegisteredSW?: Function, onRegistered?: Function, onNeedReload?: Function } }} handlers
  */
 function connect(registerSW, handlers) {
   const existing = CONNECTIONS.get(registerSW);
@@ -91,6 +91,17 @@ function connect(registerSW, handlers) {
       onRegisterError(error) {
         relay('onRegisterError')?.(error);
       },
+      // LE SEUL RAPPEL DU MODE `autoUpdate`, et il change ce que le plugin
+      // fait. En `registerType: 'autoUpdate'`, `vite-plugin-pwa` n'appelle
+      // JAMAIS `onNeedRefresh` — sa branche `auto` n'a que celui-ci — et il
+      // recharge la page tout seul… SAUF si on le fournit. Le passer rend donc
+      // la main à l'app : c'est le seul moyen de différer un rechargement qui
+      // tomberait au mauvais moment. Relayé comme les autres, jamais posé
+      // d'office : sans rappel de l'app, `relay` rend `undefined` et le
+      // comportement automatique du plugin est intact.
+      onNeedReload() {
+        relay('onNeedReload')?.();
+      },
     });
   } catch {
     // Un enregistrement raté ne doit pas casser le rendu : l'app reste
@@ -122,6 +133,7 @@ function writeSnooze(key, until) {
  *   snoozeHours?: number,
  *   snoozeKey?: string,
  *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions,
+ *   onNeedReload?: () => void,
  *   onRegisterError?: (error: unknown) => void,
  *   onRegisteredSW?: (swUrl: string, registration?: ServiceWorkerRegistration) => void,
  *   onRegistered?: (registration?: ServiceWorkerRegistration) => void,
@@ -136,6 +148,7 @@ export function useUpdatePrompt(options = {}) {
     onRegisterError,
     onRegisteredSW,
     onRegistered,
+    onNeedReload,
   } = options;
 
   const [needRefresh, setNeedRefresh] = useState(false);
@@ -155,7 +168,12 @@ export function useUpdatePrompt(options = {}) {
   // moment où le service worker parle, pas au moment où il s'enregistre. Une
   // fonction écrite en ligne ne provoque donc aucun ré-enregistrement.
   const handlersRef = useRef(null);
-  handlersRef.current = { onRegisterError, onRegisteredSW, onRegistered };
+  handlersRef.current = {
+    onRegisterError,
+    onRegisteredSW,
+    onRegistered,
+    onNeedReload,
+  };
 
   useEffect(() => {
     if (typeof registerSW !== 'function') return undefined;
