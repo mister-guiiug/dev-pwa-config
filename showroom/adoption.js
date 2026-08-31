@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-08-31T22:04:26.565Z',
+  generatedAt: '2026-08-31T22:12:40.337Z',
   measured: 17,
   total: 17,
   apps: {
@@ -95,7 +95,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-carbook': {
       symbols: [
@@ -164,7 +164,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-contraction': {
       symbols: [
@@ -229,7 +229,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'BottomNav.tsx',
         },
       ],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-dice': {
       symbols: [
@@ -294,7 +294,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-genius': {
       symbols: [
@@ -361,7 +361,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-lookhouse': {
       symbols: [
@@ -420,7 +420,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -487,7 +487,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -545,7 +545,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'miss-uwh': {
       symbols: [
@@ -634,7 +634,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/xlsx',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-cim10': {
       symbols: [
@@ -710,7 +710,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-doc': {
       symbols: [
@@ -794,7 +794,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/xlsx',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-family-map': {
       symbols: [
@@ -880,7 +880,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -953,7 +953,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-molkky': {
       symbols: [
@@ -1037,7 +1037,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -1086,7 +1086,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-qowa': {
       symbols: [
@@ -1139,7 +1139,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
     'mister-quota': {
       symbols: [
@@ -1159,7 +1159,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/toast',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:04:26.565Z',
+      measuredAt: '2026-08-31T22:12:40.337Z',
     },
   },
   bySymbol: {
