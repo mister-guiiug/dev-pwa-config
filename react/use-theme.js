@@ -34,9 +34,12 @@ function applyTheme(resolved, attribute) {
 /**
  * Lit la préférence stockée, en migrant depuis d'anciennes clés au besoin.
  *
- * SIX CLÉS distinctes ont été mesurées dans la famille (`'theme'` ×4,
- * `'lh_theme'`, `'mc-theme'`, `'mister-doc:theme'`, `'mister_puzzle_theme'`)
- * face au `'dwc_theme'` du paquet. Sans cette lecture de repli, adopter le
+ * HUIT CLÉS distinctes ont été mesurées dans la famille (`'theme'` ×4,
+ * `'lh_theme'`, `'mb_theme'`, `'mc_theme'`, `'mm_theme'`,
+ * `'mister-doc:theme'`, `'mister_puzzle_theme'`) face au `'dwc_theme'` du
+ * paquet. La liste annonçait `'mc-theme'` (tiret) là où l'app écrit
+ * `'mc_theme'` (souligné) : s'y fier posait un `legacyKeys` inopérant, donc
+ * exactement la perte que ce repli existe pour empêcher. Sans cette lecture de repli, adopter le
  * hook perd le choix de l'utilisateur — silencieusement, et une seule fois,
  * donc sans que personne ne remonte le bug.
  */

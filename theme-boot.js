@@ -19,13 +19,23 @@
  * les deux divergent et le flash revient par la bande.
  *
  * LA MIGRATION DE CLÉ, sans quoi ce module casse ce qu'il vient réparer.
- * Mesure sur les seize apps : **six clés de stockage distinctes** — `'theme'`
- * (quatre apps), `'lh_theme'`, `'mc-theme'`, `'mister-doc:theme'`,
- * `'mister_puzzle_theme'` — et le paquet arrive avec `'dwc_theme'`. Adopter ce
- * script sans passer `storageKey` orpheline SILENCIEUSEMENT la préférence de
- * chaque utilisateur déjà installé : il retrouve le thème système, sans rien
- * avoir demandé. `legacyKeys` lit les anciennes clés une fois, réécrit sous la
- * neuve, et le problème ne se pose plus jamais.
+ * Mesure sur les seize apps : **huit clés de stockage distinctes** — `'theme'`
+ * (quatre apps), `'lh_theme'`, `'mb_theme'`, `'mc_theme'`, `'mm_theme'`,
+ * `'mister-doc:theme'`, `'mister_puzzle_theme'` — et le paquet arrive avec
+ * `'dwc_theme'`.
+ *
+ * Adopter ce script sans passer `storageKey` orpheline SILENCIEUSEMENT la
+ * préférence de chaque utilisateur déjà installé : il retrouve le thème
+ * système, sans rien avoir demandé. `legacyKeys` lit les anciennes clés une
+ * fois, réécrit sous la neuve, et le problème ne se pose plus jamais.
+ *
+ * CETTE LISTE A ÉTÉ FAUSSE, et c'est instructif : elle annonçait `'mc-theme'`
+ * avec un TIRET là où `miss-contraction` écrit `'mc_theme'` avec un SOULIGNÉ.
+ * Une migration qui s'y serait fiée aurait posé un `legacyKeys` inopérant et
+ * perdu la préférence de chaque utilisatrice — exactement le bug que ce
+ * paragraphe existe pour empêcher. Il manquait aussi `'mb_theme'` et
+ * `'mm_theme'`. Relevé en migrant l'app (#26). Une liste de valeurs mesurées se
+ * REVÉRIFIE quand on s'en sert : c'est de la donnée, pas de la prose.
  *
  * SANS DÉPENDANCE. Rend une chaîne ; l'injection est le travail de l'appelant.
  */
