@@ -1,5 +1,69 @@
 # Changelog
 
+## 3.28.0
+
+### Minor Changes
+
+- 73aae28: Deux défauts que la migration `sw-update` de six apps a fait tomber. Tous deux
+  rendaient MUET quelque chose qui devait parler.
+
+  **Le mode `autoUpdate` n'avait aucune histoire — trois apps sur dix-sept y
+  sont.** `vite-plugin-pwa` se coupe en deux sur `registerType` : la branche
+  `prompt` est le **seul** appelant d'`onNeedRefresh`, la branche `auto` n'appelle
+  qu'`onNeedReload`. `connect()` ne passait pas ce dernier, si bien qu'en
+  `autoUpdate` le bandeau du paquet ne pouvait **jamais** s'allumer : une app qui
+  adoptait `UpdatePromptBanner` y posait un composant invisible.
+
+  Le fournir change en outre ce que fait le plugin — sa documentation dit « useful
+  to fully control the reload flow » : sans rappel il recharge seul, avec il rend
+  la main. C'est le seul moyen de différer un rechargement qui tomberait au
+  mauvais moment ; `miss-contraction`, qu'on utilise pendant un accouchement, est
+  exactement dans ce cas. Le relais reste **optionnel** (`?.`), sans quoi le
+  simple fait de passer par ce paquet désactiverait le rechargement automatique
+  pour tout le monde — c'est ce que le second test verrouille.
+
+  **Le double de test muet écrasait le pilotable.** `vitest-setup` posait un
+  `vi.mock('virtual:pwa-register')` inconditionnel, résolu **à travers** le
+  `resolve.alias` que la documentation de `testing/pwa-register` prescrit : les
+  deux désignaient le même module, et le muet gagnait. Une app qui suivait la doc
+  à la lettre obtenait donc `No "swStub" export is defined on the
+"virtual:pwa-register" mock`, puis retombait sur le faux témoin que ce double
+  existe pour supprimer. Relevé par `mister-molkky` (#18), qui a dû ajouter un
+  `vi.unmock` dans chaque fichier de test.
+
+  La fabrique tente désormais le module réel d'abord : s'il se résout, c'est qu'un
+  alias le désigne et on le rend tel quel ; sinon on retombe sur le muet, qui
+  reste le bon défaut pour une app qui ne teste pas son bandeau. **Vérifié de bout
+  en bout** sur la suite de `mister-molkky` — ses quatre tests passent sans le
+  `vi.unmock`, et échouent sur le message d'origine dès qu'on remet l'ancienne
+  version.
+
+### Patch Changes
+
+- 601a20c: Deux choses que ce paquet affirmait et que `vite-plugin-pwa` contredit. Les
+  deux ont été trouvées en migrant, pas en relisant.
+
+  **`onRegistered` était mort, et silencieusement.** Le plugin écrit
+  `if (onRegisteredSW) onRegisteredSW(…); else onRegistered?.(…)` — or `connect()`
+  lui passait **toujours** un `onRegisteredSW`. Le rappel déprécié n'avait donc
+  aucune chance d'être appelé, et le relais ajouté pour lui ne servait à rien :
+  une app qui migrait son `onRegistered` vers ce hook perdait sa journalisation
+  d'enregistrement sans un mot. La règle du plugin est désormais reproduite un
+  cran plus haut — le moderne s'il est fourni, l'ancien sinon, jamais les deux.
+  Vérifié par mutation.
+
+  **Le motif `registerSW={import.meta.env.PROD ? registerSW : undefined}` ne
+  protège de rien, et le README ne le recommande plus.** En développement,
+  `vite-plugin-pwa` sert déjà un patron **entièrement inerte**
+  (`dist/client/dev/register.js` : `registerSW()` rend une fonction asynchrone
+  vide, rien n'est enregistré), sauf si l'app active `devOptions` — ce qu'aucune
+  app du parc ne fait.
+
+  Et il nuit : **Vitest pose `PROD` à faux**, donc le câblage réel devient
+  intestable. Deux apps ont dû intercaler un composant qui reprend `registerSW`
+  en prop pour contourner un garde superflu. La page dit maintenant de ne pas le
+  poser, et pourquoi.
+
 ## 3.27.0
 
 ### Minor Changes
