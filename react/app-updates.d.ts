@@ -10,6 +10,13 @@ export interface AppUpdatesProps {
   /** Clé localStorage du report (défaut `dwc_sw_update_snoozed_until`). */
   snoozeKey?: string;
   /** L'enregistrement du service worker a échoué : une panne qui, sinon, est muette. */
+  /**
+   * Le SEUL rappel du mode `registerType: 'autoUpdate'` — et le fournir change
+   * ce que fait `vite-plugin-pwa` : sans lui il recharge la page tout seul,
+   * avec lui il rend la main. C'est le seul moyen de différer un rechargement
+   * qui tomberait au mauvais moment. En mode `prompt`, il n'est jamais appelé.
+   */
+  onNeedReload?: () => void;
   onRegisterError?: (error: unknown) => void;
   /** Le service worker est enregistré ; `registration` sert à le revérifier. */
   onRegisteredSW?: (
@@ -39,6 +46,7 @@ export interface AppUpdatesProps {
     | 'onRegisterError'
     | 'onRegisteredSW'
     | 'onRegistered'
+    | 'onNeedReload'
   >;
   updateOptions?: ApplyUpdateOptions;
   children?: ReactNode;

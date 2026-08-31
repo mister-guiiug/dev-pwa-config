@@ -48,6 +48,7 @@ export function parseInterval(value) {
  *   checkEvery?: string|number, banner?: boolean,
  *   bannerProps?: object, children?: import('react').ReactNode,
  *   updateOptions?: import('../sw-update.js').ApplyUpdateOptions,
+ *   onNeedReload?: () => void,
  *   onRegisterError?: (error: unknown) => void,
  *   onRegisteredSW?: (swUrl: string, registration?: ServiceWorkerRegistration) => void,
  *   onRegistered?: (registration?: ServiceWorkerRegistration) => void }} props
@@ -63,6 +64,7 @@ export function AppUpdates(props = {}) {
     children,
     updateOptions,
     onRegisterError,
+    onNeedReload,
     onRegisteredSW,
     onRegistered,
   } = props;
@@ -76,6 +78,7 @@ export function AppUpdates(props = {}) {
     snoozeKey,
     updateOptions,
     onRegisterError,
+    onNeedReload,
     onRegisteredSW,
     onRegistered,
   });

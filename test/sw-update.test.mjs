@@ -7,6 +7,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createElement as h } from 'react';
 
 import { setupDom, mount, renderHook } from './helpers/dom.mjs';
@@ -1140,4 +1141,63 @@ test('les libellés du bouton de partage suivent la locale', async () => {
   } finally {
     dom.restore();
   }
+});
+
+/**
+ * LE MODE `autoUpdate` N'AVAIT AUCUNE HISTOIRE — trois apps sur dix-sept y sont.
+ *
+ * `vite-plugin-pwa` se coupe en deux sur `registerType` : la branche `prompt`
+ * est le SEUL appelant d'`onNeedRefresh`, la branche `auto` n'appelle
+ * qu'`onNeedReload`. `connect()` ne passait pas ce dernier, si bien qu'en
+ * `autoUpdate` le bandeau du paquet ne pouvait **jamais** s'allumer — et qu'une
+ * app adoptant `UpdatePromptBanner` y posait un composant invisible.
+ *
+ * Le fournir change en outre ce que fait le plugin : sa documentation dit
+ * « called when the service worker has taken control and the page would
+ * normally reload — useful to fully control the reload flow ». Sans rappel, il
+ * recharge seul ; avec, il rend la main. C'est le seul moyen de différer un
+ * rechargement qui tomberait au mauvais moment — `miss-contraction`, qu'on
+ * utilise pendant un accouchement, est précisément dans ce cas.
+ *
+ * Constaté en migrant `miss-contraction` (#23).
+ */
+test('onNeedReload est transmis : le mode autoUpdate cesse d’être muet', async () => {
+  const env = setupSw();
+  try {
+    const rechargements = [];
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        onNeedReload: () => rechargements.push('appelé'),
+      })
+    );
+
+    assert.equal(
+      typeof state.options.onNeedReload,
+      'function',
+      'sans ce rappel, vite-plugin-pwa recharge seul et l’app ne sait rien'
+    );
+    await view.act(() => state.options.onNeedReload());
+    assert.deepEqual(rechargements, ['appelé']);
+
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('sans rappel de l’app, onNeedReload ne fait rien — le plugin garde la main', () => {
+  // Le relais ne DOIT PAS poser un rappel vide : le fournir suffit à
+  // désactiver le rechargement automatique du plugin. Une app qui n'en veut
+  // pas garderait alors une page qui ne se recharge plus, sans rien demander.
+  const source = readFileSync(
+    new URL('../react/use-update-prompt.js', import.meta.url),
+    'utf8'
+  );
+  assert.match(
+    source,
+    /onNeedReload\(\)\s*\{\s*relay\('onNeedReload'\)\?\.\(\);\s*\}/,
+    'le relais doit rester optionnel (`?.`), sinon le comportement du plugin change pour tout le monde'
+  );
 });

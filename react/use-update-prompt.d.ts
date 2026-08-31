@@ -9,6 +9,13 @@ export type RegisterSW = (options?: {
     swUrl: string,
     registration?: ServiceWorkerRegistration
   ) => void;
+  /**
+   * Le SEUL rappel du mode `registerType: 'autoUpdate'` — et le fournir change
+   * ce que fait `vite-plugin-pwa` : sans lui il recharge la page tout seul,
+   * avec lui il rend la main. C'est le seul moyen de différer un rechargement
+   * qui tomberait au mauvais moment. En mode `prompt`, il n'est jamais appelé.
+   */
+  onNeedReload?: () => void;
   onRegisterError?: (error: unknown) => void;
 }) => (reloadPage?: boolean) => Promise<void>;
 
