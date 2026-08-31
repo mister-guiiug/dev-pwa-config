@@ -12,23 +12,32 @@
  *    exister sans `getItem`/`setItem` opérationnels → tests de persistance KO),
  *  - un stub `window.matchMedia` (absent de jsdom — casse `useTheme`,
  *    `prefers-reduced-motion`, les media queries…),
- *  - des mocks des modules virtuels `virtual:pwa-register` de vite-plugin-pwa
- *    (sinon l'import échoue hors build Vite).
+ *  - un mock de `virtual:pwa-register/react` (`useRegisterSW`), le seul des deux
+ *    modules virtuels de vite-plugin-pwa qui se mocke utilement ici.
  *
- * CES MOCKS-LÀ NE SUFFISENT PAS À TESTER UN BANDEAU DE MISE À JOUR, et c'est
- * le piège le plus recopié du parc. `vi.mock` agit à l'EXÉCUTION ; un module
+ * IL N'Y A PAS DE MOCK DE `virtual:pwa-register`, ET C'EST DÉLIBÉRÉ. Il y en a
+ * eu un, muet, pendant longtemps ; il ne pouvait pas rendre le service qu'on
+ * lui prêtait, et il en détruisait un autre.
+ *
+ * Il ne pouvait pas aider, parce que `vi.mock` agit à l'EXÉCUTION : un module
  * source qui écrit `import { registerSW } from 'virtual:pwa-register'` est
- * refusé bien avant, à la transformation (« Failed to resolve import
- * "virtual:pwa-register" »), parce que ce module virtuel n'existe que dans un
- * build servi par vite-plugin-pwa. Il faut alors un FICHIER, désigné par
- * `resolve.alias` dans `vitest.config.ts` :
+ * refusé bien avant, à la TRANSFORMATION (« Failed to resolve import
+ * "virtual:pwa-register" »), ce module virtuel n'existant que dans un build
+ * servi par vite-plugin-pwa. Un mock ne rattrape jamais ça — il faut un
+ * FICHIER, désigné par `resolve.alias` dans `vitest.config.ts` :
  *
  *   import { pwaRegisterAlias } from '@mister-guiiug/dev-wpa-config/vitest-base';
  *   resolve: { alias: { ...pwaRegisterAlias } }
  *
- * Le double ainsi posé est PILOTABLE (`swStub.needRefresh()`), là où les mocks
- * ci-dessous sont muets — ils prouvent qu'un composant se monte, jamais qu'un
- * bandeau peut s'afficher. Voir `testing/pwa-register`.
+ * Et il détruisait, parce qu'une fois cet alias posé le spécificateur
+ * `virtual:pwa-register` désigne le FICHIER `testing/pwa-register` : le mock se
+ * résolvait à travers l'alias, tombait sur le double pilotable et l'écrasait
+ * (« No "swStub" export is defined on the "virtual:pwa-register" mock »).
+ * Suivre la documentation rendait donc le double inutilisable, et l'app
+ * retombait sur le faux témoin muet que ce double existe pour supprimer.
+ *
+ * `test/pwa-register-stub.test.mjs` verrouille cette absence : aucun mock d'ici
+ * ne doit porter sur un spécificateur capté par `pwaRegisterAlias`.
  */
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
@@ -125,6 +134,17 @@ if (
   });
 }
 
+/*
+ * `virtual:pwa-register/react`, lui, se mocke sans dommage. `pwaRegisterAlias`
+ * le capte pourtant aussi — les alias Vite en forme de chaîne remplacent un
+ * PRÉFIXE — mais le mène à un sous-chemin du double qui n'existe pas : il
+ * n'écrase donc rien. C'est là toute la différence entre les deux, et c'est la
+ * règle que verrouille `test/pwa-register-stub.test.mjs`.
+ *
+ * Aucune app du parc n'importe `useRegisterSW` ; toutes passent `registerSW` à
+ * `useUpdatePrompt`. Celle qui voudrait le piloter devra fournir son propre
+ * double, sous une entrée d'alias plus spécifique placée AVANT celle-ci.
+ */
 vi.mock('virtual:pwa-register/react', () => ({
   useRegisterSW: () => ({
     needRefresh: [false, () => {}],
@@ -132,25 +152,3 @@ vi.mock('virtual:pwa-register/react', () => ({
     updateServiceWorker: () => Promise.resolve(),
   }),
 }));
-
-/*
- * LE MUET NE DOIT PAS ÉCRASER LE PILOTABLE. Ce `vi.mock` est résolu À TRAVERS
- * le `resolve.alias` : une app qui suit la doc ci-dessus et pointe
- * `virtual:pwa-register` vers `testing/pwa-register` désigne donc le MÊME
- * module, et la fabrique muette l'écrasait — `swStub` devenait introuvable
- * (« No "swStub" export is defined on the "virtual:pwa-register" mock »), et
- * l'app retombait sur le faux témoin que ce double existe pour supprimer.
- * Relevé par `mister-molkky` (#18) en suivant la documentation à la lettre.
- *
- * On tente donc d'abord le module réel : s'il se résout, c'est qu'un alias le
- * désigne, et on le rend tel quel. Sinon — aucun alias, module virtuel absent
- * hors build Vite — on retombe sur le muet, qui reste le bon défaut pour une
- * app qui ne teste pas son bandeau.
- */
-vi.mock('virtual:pwa-register', async importOriginal => {
-  try {
-    return await importOriginal();
-  } catch {
-    return { registerSW: () => () => {} };
-  }
-});

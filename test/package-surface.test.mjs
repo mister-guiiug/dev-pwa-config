@@ -288,8 +288,6 @@ const SANS_TEST_DIRECT = new Set([
   // Transport nécessitant un SDK complet ; ses jumeaux `local` et `supabase`
   // couvrent le contrat du port.
   'realtime/firebase',
-  // Fichier de setup, exécuté par toute la suite Vitest des apps.
-  'vitest-setup',
 ]);
 
 test('tout module JS publié est ouvert par un test, ou déclaré sans', () => {

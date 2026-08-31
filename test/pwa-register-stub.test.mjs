@@ -11,13 +11,20 @@
  * il pilote, il LÈVE quand personne n'a injecté `registerSW`, et il se
  * réinitialise assez profondément pour que le report d'un test ne fuie pas dans
  * le suivant.
+ *
+ * Le dernier éprouve autre chose : que `vitest-setup` LAISSE VIVRE ce double.
+ * Deux fonctionnalités publiées du socle se sont neutralisées pendant des
+ * semaines — voir son en-tête.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { registerHooks } from 'node:module';
 import { createElement as h } from 'react';
 
 import { setupDom, mount, renderHook } from './helpers/dom.mjs';
 import { registerSW, swStub } from '../testing/pwa-register.js';
+import { pwaRegisterAlias } from '../vitest-base.js';
 import { UpdatePromptBanner } from '../react/update-prompt-banner.js';
 import { useUpdatePrompt } from '../react/use-update-prompt.js';
 
@@ -159,4 +166,99 @@ test('l’updateSW rendu note ses appels, comme celui de vite-plugin-pwa', async
     swStub.reset();
     dom.restore();
   }
+});
+
+/**
+ * Les spécificateurs que `vitest-setup` passe à `vi.mock`, RÉELLEMENT relevés.
+ *
+ * On charge le fichier pour de bon, avec `vitest` et jest-dom remplacés par des
+ * doubles en mémoire (`registerHooks`, synchrone et dans ce thread). Une
+ * relecture du source à l'expression régulière raterait un mock déplacé dans un
+ * helper ou construit dynamiquement ; ici, seul compte ce qui est enregistré.
+ */
+async function mocksDeVitestSetup() {
+  const releve = [];
+  globalThis.__dwcMocks = releve;
+  const sources = new Map([
+    [
+      'vitest',
+      'export const vi = { mock: (chemin) => globalThis.__dwcMocks.push(chemin) };',
+    ],
+    ['@testing-library/jest-dom/vitest', 'export {};'],
+  ]);
+  const hooks = registerHooks({
+    resolve: (spec, ctx, suite) =>
+      sources.has(spec)
+        ? { url: `dwc-double:${spec}`, shortCircuit: true }
+        : suite(spec, ctx),
+    load: (url, ctx, suite) =>
+      url.startsWith('dwc-double:')
+        ? {
+            format: 'module',
+            source: sources.get(url.slice('dwc-double:'.length)),
+            shortCircuit: true,
+          }
+        : suite(url, ctx),
+  });
+  try {
+    await import('../vitest-setup.js');
+  } finally {
+    hooks.deregister();
+    delete globalThis.__dwcMocks;
+  }
+  return releve;
+}
+
+/**
+ * Ce qu'un spécificateur devient une fois l'alias de test posé.
+ *
+ * Les alias Vite en forme de CHAÎNE remplacent un PRÉFIXE, pas un nom complet :
+ * `virtual:pwa-register/react` passe donc aussi par l'entrée, et devient un
+ * chemin qui n'existe pas. C'est toute la différence entre les deux mocks.
+ */
+function cibleParAlias(spec) {
+  for (const [cle, fichier] of Object.entries(pwaRegisterAlias)) {
+    if (spec.startsWith(cle)) return fichier + spec.slice(cle.length);
+  }
+  return null;
+}
+
+/** Les mocks qui, à travers l'alias, tombent sur un VRAI fichier — et l'écrasent. */
+function ombresSurUnFichierReel(specs) {
+  return specs.filter(spec => {
+    const cible = cibleParAlias(spec);
+    return cible !== null && existsSync(cible);
+  });
+}
+
+test('vitest-setup ne mocke rien que l’alias de test fasse tomber sur un fichier réel', async () => {
+  // LE DÉFAUT QUE CE TEST REND IMPOSSIBLE À REPRODUIRE. Deux fonctionnalités
+  // publiées se neutralisaient : la doc de `testing/pwa-register` prescrit un
+  // `resolve.alias`, et `vitest-setup` posait un `vi.mock` sur le spécificateur
+  // que cet alias capte. Même module, donc — et le mock muet écrasait le double
+  // pilotable (« No "swStub" export is defined on the "virtual:pwa-register"
+  // mock »). Suivre la documentation rendait la fonctionnalité inutilisable.
+  //
+  // La règle n'est pas « pas de mock » : `virtual:pwa-register/react` en garde
+  // un, sans dommage, parce que l'alias le mène à un chemin inexistant. Ce qui
+  // est interdit, c'est de mocker un spécificateur qui, une fois l'alias
+  // appliqué, désigne un fichier QUI EXISTE.
+  const mocks = await mocksDeVitestSetup();
+
+  assert.deepEqual(
+    ombresSurUnFichierReel(mocks),
+    [],
+    'un mock de vitest-setup écrase un fichier réel désigné par pwaRegisterAlias'
+  );
+
+  // La garde a des dents : le spécificateur d'hier serait bien rattrapé.
+  assert.deepEqual(ombresSurUnFichierReel(['virtual:pwa-register']), [
+    'virtual:pwa-register',
+  ]);
+
+  // …et elle n'est pas vide de sens : l'alias mène bien au double pilotable.
+  const cible = cibleParAlias('virtual:pwa-register');
+  assert.ok(existsSync(cible), 'pwaRegisterAlias ne désigne aucun fichier');
+  const { swStub: pilote } = await import(`file://${cible}`);
+  assert.equal(typeof pilote?.needRefresh, 'function');
 });

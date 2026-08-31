@@ -543,7 +543,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 | `@mister-guiiug/dev-wpa-config/tsconfig-node`                | `.json`         | tsconfig pour `vite.config.ts`, `vitest.config.ts`, `scripts/*.mjs` (`types: ["node"]`)                                                                                                                                                                    |
 | `@mister-guiiug/dev-wpa-config/tsconfig-strict-plus`         | `.json`         | Durcissement TS **opt-in** : `noPropertyAccessFromIndexSignature` + `noImplicitOverride` + `exactOptionalPropertyTypes` (par-dessus la base stricte)                                                                                                       |
 | `@mister-guiiug/dev-wpa-config/vitest-base`                  | `.js` + `.d.ts` | `baseTestOptions` (jsdom + globals + setupFiles + passWithNoTests) + `coveragePreset` (reporters `lcov`/`json-summary`) + `recommendedThresholds` + **`pwaRegisterAlias`** (l'alias `resolve.alias` que 10 dépôts écrivaient à la main)                    |
-| `@mister-guiiug/dev-wpa-config/vitest-setup`                 | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mocks `virtual:pwa-register`) — à importer depuis `src/test/setup.ts`. Ces mocks **ne suffisent pas** à monter un bandeau : voir `pwaRegisterAlias`                                                   |
+| `@mister-guiiug/dev-wpa-config/vitest-setup`                 | `.js`           | Setup Vitest partagé (jest-dom + stub `matchMedia` + mock `virtual:pwa-register/react`) — à importer depuis `src/test/setup.ts`. Ne mocke **pas** `virtual:pwa-register` : pour celui-là, poser `pwaRegisterAlias`                                         |
 | `@mister-guiiug/dev-wpa-config/testing/pwa-register`         | `.js` + `.d.ts` | `registerSW` + `swStub` : le double **pilotable** de `virtual:pwa-register`, à désigner via `pwaRegisterAlias` — 12 dépôts l'écrivaient à la main, muet                                                                                                    |
 | `@mister-guiiug/dev-wpa-config/apps-catalog`                 | `.js` + `.d.ts` | Catalogue unique de la famille (`FAMILY_APPS`, `otherApps`, `appById`, `sortApps`, `filterApps`, `countBy`, `SPONSOR_URL`, helpers `repoUrl`/`pagesUrl`) — **données pures, sans React**                                                                   |
 | `@mister-guiiug/dev-wpa-config/react`                        | `.js` + `.d.ts` | Hooks & composants PWA : `useLocalStorage`, `useInstallPrompt`, `useTheme`, `useMediaQuery`/`useReducedMotion`/`usePrefersDark`, `PwaInstallPrompt`, `AppFooter`, `FamilyApps` (peer `react`)                                                              |
@@ -2232,18 +2232,26 @@ await applyUpdate({
 ```
 
 > En test (jsdom), importer `@mister-guiiug/dev-wpa-config/vitest-setup` depuis
-> `src/test/setup.ts` fournit les mocks `virtual:pwa-register` + `matchMedia`.
+> `src/test/setup.ts` fournit le stub `matchMedia` et le mock
+> `virtual:pwa-register/react`. Pour `virtual:pwa-register` lui-même, c'est
+> `pwaRegisterAlias` qu'il faut poser — voir juste en dessous.
 
 ##### Prouver que le bandeau PEUT s'afficher
 
-Le `vi.mock` de `vitest-setup` **ne suffit pas** : il agit à l'exécution, quand
-Vite a déjà refusé de transformer le module importateur — `virtual:pwa-register`
+Un `vi.mock` **ne peut pas** servir ici : il agit à l'exécution, quand Vite a
+déjà refusé de transformer le module importateur — `virtual:pwa-register`
 n'existe que dans un build servi par vite-plugin-pwa. Il faut un fichier,
 désigné par `resolve.alias`. Douze dépôts l'écrivaient à la main, et tous les
 douze étaient **muets** : un `registerSW` qui n'appelle jamais `onNeedRefresh`
 prouve qu'un composant se monte, jamais qu'un bandeau peut apparaître. C'est ce
 trou qui a laissé une app vivre des mois avec une bannière montée sans
 `registerSW`, donc structurellement incapable de s'afficher.
+
+`vitest-setup` a longtemps posé un `vi.mock('virtual:pwa-register')` muet, qui
+ne pouvait rendre aucun de ces services et qui **écrasait** le double une fois
+l'alias posé (« No "swStub" export is defined on the "virtual:pwa-register"
+mock »). Il est retiré depuis la 3.29.0 : les suites qui portaient un
+`vi.unmock('virtual:pwa-register')` de contournement peuvent le supprimer.
 
 ```ts
 // vitest.config.ts
