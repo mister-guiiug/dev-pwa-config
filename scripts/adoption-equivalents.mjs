@@ -57,7 +57,41 @@ export const EQUIVALENTS = {
     files: ['register-sw.ts'],
     symbols: ['applyUpdate', 'hardNavigate', 'AppUpdates'],
   },
-  useTheme: { files: ['useTheme.ts', 'theme.ts'] },
+  // `theme.ts` EST UN HOMONYME — le troisième de la même famille, après
+  // `Navbar.tsx` (retiré ci-dessus) et `storage.ts` (documenté ci-dessous).
+  //
+  // MESURE DU 31/08/2026, sur les copies de travail : la règle comptait DEUX
+  // doublons, et l'un des deux n'en était pas un. Le `src/theme.ts` de
+  // miss-lookhouse ne réimplémente rien — ce sont TROIS CONSTANTES
+  // (`THEME_STORAGE_KEY`, `THEME_LEGACY_KEYS`, `THEME_COLOR`) lues par trois
+  // endroits qui doivent rester d'accord et dont deux ne se voient pas l'un
+  // l'autre : `ThemeProvider` dans `App.tsx`, le script anti-FOUC
+  // d'`index.html`, et le test qui vérifie que les deux lisent les mêmes clés.
+  // Cette app a MIGRÉ son thème ; le fichier est ce que la migration a laissé.
+  //
+  // MAIS LA LIGNE DE FICHIERS RESTE, contrairement à `Navbar.tsx` : le second
+  // compte est un VRAI doublon — miss-contraction, 89 lignes de
+  // `getStoredThemePreference` / `getResolvedTheme` / `applyTheme` /
+  // `persistTheme`, sans un seul import du paquet. Retirer `theme.ts` de la
+  // liste éteindrait une dette réelle.
+  //
+  // CE QUI MANQUAIT EST L'ACQUITTEMENT. `useTheme` est bien un export du
+  // paquet — la règle échappait donc au défaut n°1 du 30/08 — mais une app qui
+  // adopte le thème monte `ThemeProvider` et lit `useThemeContext` : elle
+  // n'appelle JAMAIS `useTheme`, qui monterait une SECONDE instance à côté du
+  // fournisseur. Le seul symbole libérateur implicite était donc exactement
+  // celui que la bonne migration n'utilise pas.
+  //
+  // La règle de la FAÇADE (30/08) ne pouvait pas rattraper ce cas : elle
+  // acquitte le fichier qui importe lui-même le paquet — c'est ce qui sauve
+  // déjà `src/react/hooks/useTheme.ts` de miss-dice — alors qu'ici le fichier
+  // guetté ne contient que des constantes, et que l'adoption se lit AILLEURS,
+  // dans `App.tsx`. La leçon des trois cas est la même : un nom de fichier ne
+  // dit pas ce qu'un fichier fait ; seul l'import dit ce qu'une app a adopté.
+  useTheme: {
+    files: ['useTheme.ts', 'theme.ts'],
+    symbols: ['useTheme', 'ThemeProvider', 'useThemeContext'],
+  },
   useOnline: { files: ['useOnline.ts'] },
   // `useI18n` n'est pas exporté : il naît de la fabrique `createI18n`.
   useI18n: { files: ['useI18n.ts'], symbols: ['createI18n'] },
