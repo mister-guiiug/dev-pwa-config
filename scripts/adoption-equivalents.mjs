@@ -111,15 +111,40 @@ export const EQUIVALENTS = {
     files: ['share.ts'],
     symbols: ['shareOrCopy', 'copyToClipboard', 'currentAppUrl'],
   },
-  // LA CORRESPONDANCE LA PLUS FAIBLE DE LA TABLE, mesurée le 30/08/2026 :
-  // `storage.ts` est un nom trop générique. Sur les sept dépôts qu'il touchait,
-  // UN SEUL dupliquait vraiment `./backup` (mister-cim10) ; trois étaient des
-  // façades important déjà le socle — désormais acquittées par la règle
-  // ci-dessous — et deux nommaient de la persistance métier sans aucune
-  // sauvegarde. La ligne est conservée pour le vrai positif, mais son bruit
-  // est connu : ne pas lire son compte comme une dette de sauvegarde.
+  // `storage.ts` A ÉTÉ RETIRÉ LE 31/08/2026, et c'est la première entrée de la
+  // table qui se détecte PAR LE CODE au lieu du nom de fichier.
+  //
+  // La ligne était déjà signalée le 30/08 comme la correspondance la plus
+  // faible : sur les sept `storage.ts` du parc, un seul doublait vraiment
+  // `./backup`. Elle était « conservée pour le vrai positif ». Ce vrai positif
+  // était mister-cim10 — et il a migré : son `src/lib/storage.ts` importe
+  // aujourd'hui `@mister-guiiug/dev-wpa-config/backup`.
+  //
+  // Il ne restait donc que le bruit, vérifié fichier par fichier :
+  //   · `mister-molkky/src/storage.ts` — un adaptateur `Storage` à repli
+  //     mémoire pour `zustand/persist`. Ni export, ni restauration, ni format.
+  //   · `miss-contraction/src/storage.ts` — de la persistance métier
+  //     (`loadRecords`, `saveSettings`, `loadActiveStart`). Aucune sauvegarde.
+  //
+  // Cent pour cent de faux positifs, exactement comme `Navbar.tsx` avant elle.
+  //
+  // MAIS SUPPRIMER LA LIGNE AURAIT PERDU LE RAPPEL. `exports` la remplace sans
+  // ce coût : une app double `backup` quand elle écrit son propre
+  // `createBackup`, où qu'il soit. Zéro détection sur le parc au 31/08 — donc
+  // le même chiffre que la suppression, en gardant ce que la suppression
+  // jetait. C'est la leçon des trois homonymes, appliquée au lieu d'être
+  // seulement écrite.
+  //
+  // `backup.ts` N'EST PAS UN MEILLEUR NOM DE FICHIER : le seul du parc est
+  // `mister-doc/src/backend/backup.ts`, un client d'API d'administration qui
+  // appelle un serveur. Le guetter n'aurait fait que déplacer le faux positif.
   backup: {
-    files: ['storage.ts'],
+    exports: [
+      'createBackup',
+      'restoreBackup',
+      'downloadBackup',
+      'restoreBackupFile',
+    ],
     symbols: [
       'createBackup',
       'restoreBackup',
