@@ -82,11 +82,20 @@ function connect(registerSW, handlers) {
         connection.offlineReady = true;
         notify();
       },
-      onRegistered(registration) {
-        relay('onRegistered')?.(registration);
-      },
+      // `onRegistered` ÉTAIT MORT, et silencieusement. `vite-plugin-pwa`
+      // écrit `if (onRegisteredSW) onRegisteredSW(…); else onRegistered?.(…)`
+      // — or nous lui passons TOUJOURS un `onRegisteredSW` (celui-ci), donc
+      // son `onRegistered` n'avait aucune chance d'être appelé. Une app qui
+      // migrait son `onRegistered` vers ce hook perdait sa journalisation
+      // d'enregistrement sans un mot. Relevé en migrant `mister-cim10` (#28).
+      //
+      // On reproduit donc la règle du plugin UN CRAN PLUS HAUT : le rappel
+      // moderne s'il est fourni, l'ancien sinon. Jamais les deux — c'est la
+      // sémantique que l'app connaît déjà.
       onRegisteredSW(swUrl, registration) {
-        relay('onRegisteredSW')?.(swUrl, registration);
+        const moderne = relay('onRegisteredSW');
+        if (moderne) moderne(swUrl, registration);
+        else relay('onRegistered')?.(registration);
       },
       onRegisterError(error) {
         relay('onRegisterError')?.(error);

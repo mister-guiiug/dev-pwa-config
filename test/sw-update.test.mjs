@@ -1201,3 +1201,63 @@ test('sans rappel de l’app, onNeedReload ne fait rien — le plugin garde la m
     'le relais doit rester optionnel (`?.`), sinon le comportement du plugin change pour tout le monde'
   );
 });
+
+/**
+ * `onRegistered` ÉTAIT MORT, et silencieusement.
+ *
+ * `vite-plugin-pwa` écrit `if (onRegisteredSW) onRegisteredSW(…); else
+ * onRegistered?.(…)` (`dist/client/build/register.js`) — or `connect()` lui
+ * passait TOUJOURS un `onRegisteredSW`. Le rappel déprécié n'avait donc aucune
+ * chance d'être appelé : une app qui migrait son `onRegistered` vers ce hook
+ * perdait sa journalisation d'enregistrement **sans un mot**, et le relais
+ * ajouté pour elle ne servait à rien.
+ *
+ * Relevé en migrant `mister-cim10` (#28), qui posait exactement ce rappel.
+ */
+test('onRegistered est appelé quand l’app n’a pas d’onRegisteredSW', async () => {
+  const env = setupSw();
+  try {
+    const vus = [];
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        onRegistered: registration => vus.push(registration),
+      })
+    );
+    await view.act(() => state.options.onRegisteredSW('/sw.js', { id: 1 }));
+    assert.deepEqual(
+      vus,
+      [{ id: 1 }],
+      'le rappel déprécié doit rester joignable'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+test('le rappel moderne l’emporte, et l’ancien ne double pas', async () => {
+  // C'est la règle du plugin, reproduite un cran plus haut : l'un OU l'autre,
+  // jamais les deux — sans quoi une app qui passe les deux verrait sa
+  // journalisation dupliquée en adoptant le paquet.
+  const env = setupSw();
+  try {
+    const modernes = [];
+    const anciens = [];
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        onRegisteredSW: (url, reg) => modernes.push([url, reg]),
+        onRegistered: reg => anciens.push(reg),
+      })
+    );
+    await view.act(() => state.options.onRegisteredSW('/sw.js', { id: 2 }));
+    assert.equal(modernes.length, 1);
+    assert.deepEqual(anciens, [], 'l’ancien ne doit pas doubler le moderne');
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
