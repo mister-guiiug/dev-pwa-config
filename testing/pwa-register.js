@@ -8,12 +8,19 @@
  * miss-genius, miss-supaboss, miss-uwh, mister-doc, mister-family-map,
  * mister-footcoach, mister-molkky, mister-puzzle, mister-qowa.
  *
- * POURQUOI L'ALIAS, alors que `vitest-setup` pose déjà un
- * `vi.mock('virtual:pwa-register')`. Parce que le mock agit à L'EXÉCUTION,
+ * POURQUOI UN ALIAS, ET PAS UN `vi.mock`. Parce qu'un mock agit à L'EXÉCUTION,
  * quand Vite a déjà refusé de transformer le module importateur : le module
  * virtuel n'existe que dans un build servi par vite-plugin-pwa, et hors de là
  * il est irrésolvable. Le test échoue à la résolution, avant d'avoir rien
  * éprouvé. Il faut donc un FICHIER, désigné par `resolve.alias`.
+ *
+ * `vitest-setup` a longtemps posé un `vi.mock('virtual:pwa-register')` muet.
+ * Il n'a jamais pu rendre ce service — un mock ne rattrape pas un échec de
+ * transformation — mais il en cassait un autre : une fois l'alias posé, ce
+ * spécificateur désigne CE FICHIER, et le mock l'écrasait. Suivre la
+ * documentation ci-dessous rendait donc ce double inutilisable (« No "swStub"
+ * export is defined on the "virtual:pwa-register" mock »). Il est retiré ; il
+ * n'y a plus de `vi.unmock('virtual:pwa-register')` à écrire dans les suites.
  *
  * CE QUE LES DOUZE COPIES RATENT TOUTES : elles sont MUETTES. Un
  * `registerSW` qui n'appelle jamais `onNeedRefresh` prouve qu'un composant se
