@@ -18,15 +18,20 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-08-30T22:24:55.827Z',
+  generatedAt: '2026-08-31T16:56:02.332Z',
   measured: 17,
   total: 17,
   apps: {
     'miss-badminton': {
       symbols: [
+        'AppUpdates',
         'ConfirmDialog',
         'ErrorBoundary',
         'FamilyApps',
+        'LABELS',
+        'LabelOverrides',
+        'LabelsProvider',
+        'RegisterSW',
         'SPONSOR_URL',
         'Sheet',
         'Sparkline',
@@ -46,9 +51,14 @@ globalThis.SHOWROOM_ADOPTION = {
         'pwaSeoPlugin',
         'readJsonFile',
         'recordError',
+        'registerSW',
         'repoUrl',
+        'swStub',
+        'unregisterServiceWorkers',
+        'useAppUpdates',
         'useOnline',
         'useThemeContext',
+        'useUpdatePrompt',
       ],
       subpaths: [
         '/apps-catalog',
@@ -58,21 +68,22 @@ globalThis.SHOWROOM_ADOPTION = {
         '/playwright-a11y',
         '/playwright-base',
         '/react',
+        '/react/app-updates',
         '/react/confirm-dialog',
+        '/react/labels',
         '/react/observability',
         '/react/sheet',
         '/react/sparkline',
         '/react/use-online',
+        '/react/use-update-prompt',
+        '/sw-update',
         '/tailwind-preset.css',
+        '/testing/pwa-register',
         '/vite-csp',
         '/vite-pwa-base',
         '/vitest-base',
       ],
       duplicates: [
-        {
-          exported: 'applyUpdate',
-          file: 'register-sw.ts',
-        },
         {
           exported: 'share',
           file: 'share.ts',
@@ -82,7 +93,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'useI18n.ts',
         },
       ],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-carbook': {
       symbols: [
@@ -109,6 +120,7 @@ globalThis.SHOWROOM_ADOPTION = {
         'installErrorReporter',
         'pwaSeoPlugin',
         'recordError',
+        'stripImageMetadata',
         'supabaseRealtimeTransport',
         'useOnline',
         'useThemeContext',
@@ -139,7 +151,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-contraction': {
       symbols: [
@@ -147,6 +159,7 @@ globalThis.SHOWROOM_ADOPTION = {
         'FamilyApps',
         'PAGE',
         'PdfContent',
+        'applyUpdate',
         'baseTestOptions',
         'buildPdf',
         'dateSlug',
@@ -158,15 +171,19 @@ globalThis.SHOWROOM_ADOPTION = {
         'pwaSeoPlugin',
         'recordError',
         'textWidth',
+        'unregisterServiceWorkers',
         'useWakeLock',
+        'vibrate',
       ],
       subpaths: [
         '/download',
+        '/haptics',
         '/pdf',
         '/playwright-base',
         '/react',
         '/react/observability',
         '/react/use-wake-lock',
+        '/sw-update',
         '/tailwind-preset.css',
         '/vite-pwa-base',
         '/vitest-base',
@@ -176,10 +193,6 @@ globalThis.SHOWROOM_ADOPTION = {
         {
           exported: 'AppFooter',
           file: 'AppFooter.tsx',
-        },
-        {
-          exported: 'applyUpdate',
-          file: 'register-sw.ts',
         },
         {
           exported: 'backup',
@@ -202,11 +215,16 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-dice': {
       symbols: [
+        'AppUpdates',
         'FamilyApps',
+        'LABELS',
+        'LabelOverrides',
+        'LabelsProvider',
+        'RegisterSW',
         'SPONSOR_URL',
         'baseTestOptions',
         'coveragePreset',
@@ -219,8 +237,11 @@ globalThis.SHOWROOM_ADOPTION = {
         'pagesUrl',
         'pwaSeoPlugin',
         'recordError',
+        'registerSW',
         'repoUrl',
         'shareOrCopy',
+        'swStub',
+        'unregisterServiceWorkers',
         'useWakeLock',
       ],
       subpaths: [
@@ -229,18 +250,19 @@ globalThis.SHOWROOM_ADOPTION = {
         '/playwright-a11y',
         '/playwright-base',
         '/react',
+        '/react/app-updates',
+        '/react/labels',
         '/react/observability',
+        '/react/use-update-prompt',
         '/react/use-wake-lock',
         '/share',
+        '/sw-update',
+        '/testing/pwa-register',
         '/vite-csp',
         '/vite-pwa-base',
         '/vitest-base',
       ],
       duplicates: [
-        {
-          exported: 'applyUpdate',
-          file: 'register-sw.ts',
-        },
         {
           exported: 'Sheet',
           file: 'Sheet.tsx',
@@ -254,7 +276,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'useTheme.ts',
         },
       ],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-genius': {
       symbols: [
@@ -315,7 +337,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-lookhouse': {
       symbols: [
@@ -335,6 +357,7 @@ globalThis.SHOWROOM_ADOPTION = {
         'createStore',
         'createSupabaseClientFactory',
         'createSyncQueue',
+        'formatCurrency',
         'formatDate',
         'formatNumber',
         'formatRelativeTime',
@@ -369,7 +392,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'theme.ts',
         },
       ],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -429,7 +452,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -454,6 +477,8 @@ globalThis.SHOWROOM_ADOPTION = {
         'pwaSeoPlugin',
         'recordError',
         'repoUrl',
+        'swStub',
+        'unregisterServiceWorkers',
         'useOnline',
         'useThemeContext',
       ],
@@ -468,17 +493,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/icons-lucide',
         '/react/observability',
         '/react/use-online',
+        '/sw-update',
+        '/testing/pwa-register',
         '/vite-csp',
         '/vite-pwa-base',
         '/vitest-base',
       ],
-      duplicates: [
-        {
-          exported: 'applyUpdate',
-          file: 'register-sw.ts',
-        },
-      ],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      duplicates: [],
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'miss-uwh': {
       symbols: [
@@ -557,10 +579,11 @@ globalThis.SHOWROOM_ADOPTION = {
         '/xlsx',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-cim10': {
       symbols: [
+        'AppUpdates',
         'BottomNav',
         'ConfirmDialog',
         'ErrorBoundary',
@@ -568,6 +591,7 @@ globalThis.SHOWROOM_ADOPTION = {
         'LabelsProvider',
         'ThemeProvider',
         'ThemeToggle',
+        'UpdateButton',
         'baseTestOptions',
         'createI18n',
         'dateSlug',
@@ -578,6 +602,7 @@ globalThis.SHOWROOM_ADOPTION = {
         'installErrorReporter',
         'pwaSeoPlugin',
         'recordError',
+        'swStub',
         'toCsv',
       ],
       subpaths: [
@@ -587,13 +612,16 @@ globalThis.SHOWROOM_ADOPTION = {
         '/playwright-a11y',
         '/playwright-base',
         '/react',
+        '/react/app-updates',
         '/react/bottom-nav',
         '/react/confirm-dialog',
         '/react/i18n',
         '/react/labels',
         '/react/observability',
         '/react/theme-toggle',
+        '/react/update-button',
         '/tailwind-preset.css',
+        '/testing/pwa-register',
         '/vite-pwa-base',
         '/vitest-base',
       ],
@@ -601,10 +629,6 @@ globalThis.SHOWROOM_ADOPTION = {
         {
           exported: 'AppFooter',
           file: 'AppFooter.tsx',
-        },
-        {
-          exported: 'applyUpdate',
-          file: 'register-sw.ts',
         },
         {
           exported: 'backup',
@@ -615,7 +639,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'web-vitals.ts',
         },
       ],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-doc': {
       symbols: [
@@ -687,7 +711,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/xlsx',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-family-map': {
       symbols: [
@@ -766,7 +790,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -786,7 +810,6 @@ globalThis.SHOWROOM_ADOPTION = {
         'Sheet',
         'ToastProvider',
         'UpdatePromptBanner',
-        'UseUpdatePrompt',
         'baseTestOptions',
         'coveragePreset',
         'createI18n',
@@ -802,7 +825,6 @@ globalThis.SHOWROOM_ADOPTION = {
         'repoUrl',
         'toIcalendar',
         'useToast',
-        'useUpdatePrompt',
       ],
       subpaths: [
         '/apps-catalog',
@@ -831,12 +853,13 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-molkky': {
       symbols: [
         'ALPHABETS',
         'AppFooter',
+        'AppUpdates',
         'ConfirmDialog',
         'ErrorBoundary',
         'FamilyApps',
@@ -849,6 +872,7 @@ globalThis.SHOWROOM_ADOPTION = {
         'Sparkline',
         'ThemePreference',
         'ThemeProvider',
+        'applyUpdate',
         'baseTestOptions',
         'coveragePreset',
         'cspPlugin',
@@ -866,6 +890,8 @@ globalThis.SHOWROOM_ADOPTION = {
         'recordError',
         'repoUrl',
         'shareOrCopy',
+        'swStub',
+        'unregisterServiceWorkers',
         'useOnline',
         'useQrScanner',
         'useThemeContext',
@@ -880,6 +906,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/playwright-base',
         '/qr',
         '/react',
+        '/react/app-updates',
         '/react/confirm-dialog',
         '/react/icons-context',
         '/react/icons-lucide',
@@ -892,16 +919,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/use-qr-scanner',
         '/react/use-wake-lock',
         '/share',
+        '/sw-update',
         '/tailwind-preset.css',
+        '/testing/pwa-register',
         '/vite-csp',
         '/vite-pwa-base',
         '/vitest-base',
       ],
       duplicates: [
-        {
-          exported: 'applyUpdate',
-          file: 'register-sw.ts',
-        },
         {
           exported: 'backup',
           file: 'storage.ts',
@@ -911,7 +936,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'useI18n.ts',
         },
       ],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -950,7 +975,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-qowa': {
       symbols: [
@@ -994,7 +1019,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
     'mister-quota': {
       symbols: [
@@ -1013,10 +1038,17 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/toast',
       ],
       duplicates: [],
-      measuredAt: '2026-08-30T22:24:55.827Z',
+      measuredAt: '2026-08-31T16:56:02.332Z',
     },
   },
   bySymbol: {
+    AppUpdates: [
+      'miss-badminton',
+      'miss-dice',
+      'mister-cim10',
+      'mister-molkky',
+      'mister-qowa',
+    ],
     ConfirmDialog: [
       'miss-badminton',
       'miss-carbook',
@@ -1058,6 +1090,23 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-footcoach',
       'mister-molkky',
       'mister-puzzle',
+    ],
+    LABELS: ['miss-badminton', 'miss-dice'],
+    LabelOverrides: ['miss-badminton', 'miss-dice'],
+    LabelsProvider: [
+      'miss-badminton',
+      'miss-dice',
+      'miss-ticket-pwa',
+      'miss-uwh',
+      'mister-cim10',
+      'mister-doc',
+      'mister-molkky',
+    ],
+    RegisterSW: [
+      'miss-badminton',
+      'miss-dice',
+      'mister-doc',
+      'mister-footcoach',
     ],
     SPONSOR_URL: [
       'miss-badminton',
@@ -1217,6 +1266,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-molkky',
       'mister-puzzle',
     ],
+    registerSW: ['miss-badminton', 'miss-dice'],
     repoUrl: [
       'miss-badminton',
       'miss-dice',
@@ -1229,6 +1279,21 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-molkky',
       'mister-qowa',
     ],
+    swStub: [
+      'miss-badminton',
+      'miss-dice',
+      'miss-ticket-pwa',
+      'mister-cim10',
+      'mister-molkky',
+    ],
+    unregisterServiceWorkers: [
+      'miss-badminton',
+      'miss-contraction',
+      'miss-dice',
+      'miss-ticket-pwa',
+      'mister-molkky',
+    ],
+    useAppUpdates: ['miss-badminton'],
     useOnline: [
       'miss-badminton',
       'miss-carbook',
@@ -1245,6 +1310,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-doc',
       'mister-molkky',
     ],
+    useUpdatePrompt: ['miss-badminton', 'miss-carbook', 'miss-genius'],
     ChannelStatus: ['miss-carbook'],
     EmptyState: [
       'miss-carbook',
@@ -1281,16 +1347,23 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-footcoach',
     ],
     initWebVitals: ['miss-carbook', 'miss-contraction', 'mister-puzzle'],
+    stripImageMetadata: ['miss-carbook', 'mister-puzzle'],
     supabaseRealtimeTransport: ['miss-carbook'],
     useToast: ['miss-carbook', 'mister-doc', 'mister-footcoach'],
-    useUpdatePrompt: ['miss-carbook', 'miss-genius', 'mister-footcoach'],
     validateImageFile: ['miss-carbook', 'mister-puzzle'],
     PAGE: ['miss-contraction', 'mister-doc'],
     PdfContent: ['miss-contraction', 'mister-doc'],
+    applyUpdate: [
+      'miss-contraction',
+      'miss-genius',
+      'miss-uwh',
+      'mister-molkky',
+    ],
     buildPdf: ['miss-contraction', 'mister-doc'],
     downloadPdf: ['miss-contraction', 'mister-doc'],
     textWidth: ['miss-contraction', 'mister-doc'],
     useWakeLock: ['miss-contraction', 'miss-dice', 'mister-molkky'],
+    vibrate: ['miss-contraction'],
     coveragePreset: [
       'miss-dice',
       'miss-supaboss',
@@ -1334,7 +1407,6 @@ globalThis.SHOWROOM_ADOPTION = {
     ],
     SelectField: ['miss-genius', 'miss-uwh', 'mister-family-map'],
     TextField: ['miss-genius', 'miss-uwh', 'mister-doc', 'mister-family-map'],
-    applyUpdate: ['miss-genius', 'miss-uwh'],
     createVersionedStore: ['miss-genius', 'miss-uwh'],
     formatNumber: ['miss-genius', 'miss-lookhouse', 'miss-uwh', 'mister-quota'],
     getDefaultLocale: ['miss-genius', 'miss-lookhouse', 'miss-supaboss'],
@@ -1366,6 +1438,7 @@ globalThis.SHOWROOM_ADOPTION = {
     createStore: ['miss-lookhouse', 'miss-uwh', 'mister-family-map'],
     createSupabaseClientFactory: ['miss-lookhouse', 'miss-uwh'],
     createSyncQueue: ['miss-lookhouse', 'miss-uwh'],
+    formatCurrency: ['miss-lookhouse', 'mister-quota'],
     formatDate: ['miss-lookhouse', 'miss-uwh'],
     formatRelativeTime: ['miss-lookhouse', 'miss-supaboss'],
     isValidCoordinates: ['miss-lookhouse', 'mister-family-map'],
@@ -1392,13 +1465,6 @@ globalThis.SHOWROOM_ADOPTION = {
     formatUsage: ['miss-supaboss'],
     useTheme: ['miss-supaboss'],
     ALPHABETS: ['miss-ticket-pwa', 'mister-molkky'],
-    LabelsProvider: [
-      'miss-ticket-pwa',
-      'miss-uwh',
-      'mister-cim10',
-      'mister-doc',
-      'mister-molkky',
-    ],
     generateCode: ['miss-ticket-pwa', 'mister-molkky', 'mister-qowa'],
     lucideIconSet: [
       'miss-ticket-pwa',
@@ -1416,11 +1482,11 @@ globalThis.SHOWROOM_ADOPTION = {
     toIcalendar: ['miss-uwh', 'mister-footcoach'],
     unescapeText: ['miss-uwh'],
     unfoldLines: ['miss-uwh'],
+    UpdateButton: ['mister-cim10', 'mister-family-map'],
     downloadBlob: ['mister-cim10'],
     toCsv: ['mister-cim10', 'mister-qowa'],
     PushSupport: ['mister-doc'],
     PushTransport: ['mister-doc'],
-    RegisterSW: ['mister-doc', 'mister-footcoach'],
     Rgb: ['mister-doc'],
     XlsxValue: ['mister-doc'],
     createPushClient: ['mister-doc'],
@@ -1432,7 +1498,6 @@ globalThis.SHOWROOM_ADOPTION = {
     Coordinates: ['mister-family-map'],
     ErrorBanner: ['mister-family-map'],
     ShareButton: ['mister-family-map'],
-    UpdateButton: ['mister-family-map'],
     VersionProvider: ['mister-family-map'],
     clusterByGrid: ['mister-family-map'],
     clustersToMarkers: ['mister-family-map'],
@@ -1455,31 +1520,19 @@ globalThis.SHOWROOM_ADOPTION = {
     rethrowWithState: ['mister-family-map'],
     versionPlugin: ['mister-family-map'],
     BottomNavItem: ['mister-footcoach'],
-    UseUpdatePrompt: ['mister-footcoach'],
     PairingAlphabet: ['mister-molkky'],
     normalizeCode: ['mister-molkky', 'mister-qowa'],
     qrToDataUrl: ['mister-molkky'],
     useQrScanner: ['mister-molkky'],
     IMAGE_ACCEPTED_TYPES: ['mister-puzzle'],
     resolveSeoPublicUrls: ['mister-puzzle'],
-    stripImageMetadata: ['mister-puzzle'],
-    AppUpdates: ['mister-qowa'],
     ShareResult: ['mister-qowa'],
     currentAppUrl: ['mister-qowa'],
     parseCsv: ['mister-qowa'],
     qrToSvg: ['mister-qowa'],
     useInstallPrompt: ['mister-qowa'],
-    formatCurrency: ['mister-quota'],
   },
   byDuplicate: {
-    applyUpdate: [
-      'miss-badminton',
-      'miss-contraction',
-      'miss-dice',
-      'miss-ticket-pwa',
-      'mister-cim10',
-      'mister-molkky',
-    ],
     share: ['miss-badminton'],
     useI18n: [
       'miss-badminton',

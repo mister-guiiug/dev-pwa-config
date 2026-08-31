@@ -56,14 +56,16 @@ son prérequis, longtemps pris par trois apps sur dix-sept — est passé à
 quinze. `ConfirmDialog` et `ErrorBoundary` sont maintenant importés par dix
 apps, `EmptyState` par sept, `Sheet` par six.
 
-**Six postes sont passés à zéro** en deux jours : `UpdatePromptBanner` (8
-copies), `links` (7), `format` (5), `Toast`, `ThemeToggle`, `ErrorBoundary`.
-Ce qui reste demande autre chose qu'un import — `applyUpdate` (6) suppose de
-reprendre un enregistrement de service worker **et** la désinscription de
-développement que cinq apps ont écrite ; `useI18n` (4) un fournisseur et des
-dictionnaires.
+**Sept postes sont passés à zéro** en deux jours : `UpdatePromptBanner` (8
+copies), `links` (7), `applyUpdate` (6), `format` (5), `Toast`, `ThemeToggle`,
+`ErrorBoundary`. Le dernier, `applyUpdate`, était le plus coûteux : il ne
+supposait pas un import mais de reprendre un enregistrement de service worker,
+la désinscription de développement que cinq apps avaient écrite, et — pour trois
+d'entre elles — de trancher ce que `registerType: 'autoUpdate'` permet
+réellement. Ce qui reste demande la même chose : `useI18n` (4) un fournisseur et
+des dictionnaires, `useTheme` (3) un état à déplacer.
 
-**Le chiffre est passé de 71 à 23, et il faut séparer les causes.** En rejouant
+**Le chiffre est passé de 71 à 17, et il faut séparer les causes.** En rejouant
 l'ancienne règle sur un état intermédiaire, on obtenait 58 là où la nouvelle
 disait 46 : douze doublons étaient donc **invisibles à l'instrument** — neuf
 besoins qu'il ne savait pas acquitter, trois façades qu'il comptait comme des
@@ -81,9 +83,9 @@ c'est ainsi que ces quatre modules sont nés.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
+_Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 23 fichiers recopiés** dans 17 apps, sur 10 besoins distincts. Les pires : `applyUpdate` (6), `useI18n` (4), `backup` (3).
+> **Dette d'adoption : 17 fichiers recopiés** dans 17 apps, sur 9 besoins distincts. Les pires : `useI18n` (4), `backup` (3), `useTheme` (3).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -106,6 +108,7 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `createI18n`                  | 8 / 17      | —                   |
 | `UpdatePromptBanner`          | 8 / 17      | —                   |
 | `EmptyState`                  | 7 / 17      | 1 / 17              |
+| `LabelsProvider`              | 7 / 17      | —                   |
 | `ThemeProvider`               | 7 / 17      | —                   |
 | `BottomNav`                   | 6 / 17      | 1 / 17              |
 | `IconsProvider`               | 6 / 17      | —                   |
@@ -113,13 +116,17 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `useOnline`                   | 6 / 17      | —                   |
 | `useThemeContext`             | 6 / 17      | —                   |
 | `AppFooter`                   | 5 / 17      | 2 / 17              |
+| `AppUpdates`                  | 5 / 17      | —                   |
 | `Button`                      | 5 / 17      | —                   |
 | `dateSlug`                    | 5 / 17      | —                   |
 | `downloadText`                | 5 / 17      | —                   |
-| `LabelsProvider`              | 5 / 17      | —                   |
+| `swStub`                      | 5 / 17      | —                   |
+| `unregisterServiceWorkers`    | 5 / 17      | —                   |
+| `applyUpdate`                 | 4 / 17      | —                   |
 | `Badge`                       | 4 / 17      | —                   |
 | `formatNumber`                | 4 / 17      | —                   |
 | `lucideIconSet`               | 4 / 17      | —                   |
+| `RegisterSW`                  | 4 / 17      | —                   |
 | `setDefaultLocale`            | 4 / 17      | —                   |
 | `SkeletonGroup`               | 4 / 17      | —                   |
 | `TextField`                   | 4 / 17      | —                   |
@@ -141,7 +148,6 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `useToast`                    | 3 / 17      | —                   |
 | `useUpdatePrompt`             | 3 / 17      | —                   |
 | `useWakeLock`                 | 3 / 17      | —                   |
-| `applyUpdate`                 | 2 / 17      | 6 / 17              |
 | `ALPHABETS`                   | 2 / 17      | —                   |
 | `BadgeTone`                   | 2 / 17      | —                   |
 | `buildPdf`                    | 2 / 17      | —                   |
@@ -154,26 +160,30 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `createVersionedStore`        | 2 / 17      | —                   |
 | `downloadPdf`                 | 2 / 17      | —                   |
 | `downloadXlsx`                | 2 / 17      | —                   |
+| `formatCurrency`              | 2 / 17      | —                   |
 | `formatDate`                  | 2 / 17      | —                   |
 | `formatRelativeTime`          | 2 / 17      | —                   |
 | `ICAL_MIME`                   | 2 / 17      | —                   |
 | `IcalEvent`                   | 2 / 17      | —                   |
 | `isValidCoordinates`          | 2 / 17      | —                   |
+| `LabelOverrides`              | 2 / 17      | —                   |
+| `LABELS`                      | 2 / 17      | —                   |
 | `normalizeCode`               | 2 / 17      | —                   |
 | `PAGE`                        | 2 / 17      | —                   |
 | `PdfContent`                  | 2 / 17      | —                   |
 | `readJsonFile`                | 2 / 17      | —                   |
-| `RegisterSW`                  | 2 / 17      | —                   |
+| `registerSW`                  | 2 / 17      | —                   |
+| `stripImageMetadata`          | 2 / 17      | —                   |
 | `SyncQueue`                   | 2 / 17      | —                   |
 | `SyncQueueEntry`              | 2 / 17      | —                   |
 | `TextAreaField`               | 2 / 17      | —                   |
 | `textWidth`                   | 2 / 17      | —                   |
 | `toCsv`                       | 2 / 17      | —                   |
 | `toIcalendar`                 | 2 / 17      | —                   |
+| `UpdateButton`                | 2 / 17      | —                   |
 | `validateImageFile`           | 2 / 17      | —                   |
 | `useTheme`                    | 1 / 17      | 3 / 17              |
 | `appById`                     | 1 / 17      | —                   |
-| `AppUpdates`                  | 1 / 17      | —                   |
 | `AppVersion`                  | 1 / 17      | —                   |
 | `BottomNavItem`               | 1 / 17      | —                   |
 | `BoundingBox`                 | 1 / 17      | —                   |
@@ -191,7 +201,6 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `downloadBlob`                | 1 / 17      | —                   |
 | `dumpAppState`                | 1 / 17      | —                   |
 | `ErrorBanner`                 | 1 / 17      | —                   |
-| `formatCurrency`              | 1 / 17      | —                   |
 | `formatDistance`              | 1 / 17      | —                   |
 | `formatPercentage`            | 1 / 17      | —                   |
 | `formatUsage`                 | 1 / 17      | —                   |
@@ -226,20 +235,19 @@ _Relevé du 2026-08-30 sur 17 dépôts, par `npm run adoption`._
 | `ShareButton`                 | 1 / 17      | —                   |
 | `ShareResult`                 | 1 / 17      | —                   |
 | `STATUS`                      | 1 / 17      | —                   |
-| `stripImageMetadata`          | 1 / 17      | —                   |
 | `SupabaseChange`              | 1 / 17      | —                   |
 | `supabaseConfig`              | 1 / 17      | —                   |
 | `supabaseRealtimeTransport`   | 1 / 17      | —                   |
 | `SyncQueueOptions`            | 1 / 17      | —                   |
 | `unescapeText`                | 1 / 17      | —                   |
 | `unfoldLines`                 | 1 / 17      | —                   |
-| `UpdateButton`                | 1 / 17      | —                   |
+| `useAppUpdates`               | 1 / 17      | —                   |
 | `useInstallPrompt`            | 1 / 17      | —                   |
 | `useQrScanner`                | 1 / 17      | —                   |
 | `useReducedMotion`            | 1 / 17      | —                   |
-| `UseUpdatePrompt`             | 1 / 17      | —                   |
 | `versionPlugin`               | 1 / 17      | —                   |
 | `VersionProvider`             | 1 / 17      | —                   |
+| `vibrate`                     | 1 / 17      | —                   |
 | `XlsxSheet`                   | 1 / 17      | —                   |
 | `XlsxValue`                   | 1 / 17      | —                   |
 | `useI18n`                     | 0 / 17      | 4 / 17              |
