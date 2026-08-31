@@ -1,5 +1,136 @@
 # Changelog
 
+## 3.29.0
+
+### Minor Changes
+
+- e5e6964: **`vitest-setup` ne mocke plus `virtual:pwa-register` du tout.** La 3.28.0 avait
+  rendu ce mock conditionnel — il tentait le module réel avant de retomber sur un
+  stub muet — ce qui suffisait à débloquer les apps mais laissait la cause en
+  place. Le repli n'était pas seulement inutile : il était **inatteignable**.
+
+  Un `vi.mock` agit à l'exécution ; un module source qui écrit
+  `import { registerSW } from 'virtual:pwa-register'` est refusé bien avant, à la
+  **transformation** (`Failed to resolve import "virtual:pwa-register"`), ce
+  module virtuel n'existant que dans un build servi par vite-plugin-pwa. Pour que
+  la fabrique du mock soit seulement appelée, il faut donc que le spécificateur se
+  résolve — c'est-à-dire qu'un `resolve.alias` le désigne — et dans ce cas
+  `importOriginal()` réussit toujours. La branche muette ne pouvait s'exécuter que
+  si le double lui-même levait à l'évaluation, où elle aurait **masqué** l'erreur.
+
+  Ce qu'il faisait, en revanche, était réel : une fois `pwaRegisterAlias` posé, le
+  spécificateur désigne le FICHIER `testing/pwa-register`, et le mock l'écrasait
+  (`No "swStub" export is defined on the "virtual:pwa-register" mock`). Suivre la
+  documentation rendait la fonctionnalité documentée inutilisable, et l'app
+  retombait sur le faux témoin muet que ce double existe pour supprimer. Relevé
+  par `mister-molkky` (#18), `miss-badminton` (#19) et `miss-dice` (#9), qui ont
+  tous dû écrire un `vi.unmock('virtual:pwa-register')` en tête de chaque fichier
+  de test. **Ce contournement peut être supprimé.**
+
+  **Rien ne régresse dans le parc**, et c'est vérifié plutôt que supposé.
+  Quinze des dix-sept apps posent l'alias : pour elles le mock n'était déjà plus
+  qu'un passe-plat. Les deux autres ne peuvent pas en dépendre — `miss-lookhouse`
+  n'importe jamais le module virtuel, et le seul importateur de `miss-contraction`
+  (`src/main.tsx`) n'est atteint par aucun test. Une épreuve sous Vitest 4 donne
+  les quatre cases : **avec** alias, les tests passent avec comme sans le mock
+  (liaison vivante de `registerSW` comprise, donc `swStub.reset()` continue de
+  renouveler l'identité) ; **sans** alias, ils échouent à la résolution dans les
+  deux cas, avec le même message.
+
+  `virtual:pwa-register/react` garde son mock : `pwaRegisterAlias` le capte aussi
+  (les alias Vite s'appliquent par préfixe) mais le mène à un chemin inexistant,
+  donc il n'écrase rien. C'est exactement la règle que verrouille le nouveau test
+  de `test/pwa-register-stub.test.mjs` — non pas « pas de mock », mais « aucun
+  mock dont l'alias fasse un fichier QUI EXISTE ». Il relève les appels réellement
+  enregistrés en chargeant `vitest-setup` avec un faux `vitest`, plutôt que de
+  relire le source, et il échoue bien dès qu'on remet l'ancien mock.
+
+### Patch Changes
+
+- 7a3cc22: `Button` et `useActionGuard` composent enfin.
+
+  `useActionGuard` rend `disabledProps: { 'aria-disabled': true }` — c'est le
+  motif que son en-tête documente. `ButtonProps` **retirait** `aria-disabled` de
+  son type, au motif que `loading` le pose. Les deux modules du paquet ne
+  composaient donc pas, et `mister-doc` (#45) a dû retomber sur `disabled` natif,
+  qui retire le bouton du parcours clavier et empêche donc de **découvrir** le
+  motif du blocage — exactement ce que le hook existe pour éviter.
+
+  Pire, l'habillage suivait la même faille : `components.css` ne stylait que
+  `:disabled`. Un bouton gardé avait donc **l'air actif tout en étant inerte**,
+  le pire des deux mondes. C'est ce qui a fait retomber `bac-sable` (#23) sur
+  `disabled` natif à son tour.
+
+  Les deux raisons de bloquer se cumulent maintenant : le clic est neutralisé
+  dans les deux cas, le focus est conservé dans les deux cas, et les deux sont
+  habillées pareil — y compris dans le bloc de contraste forcé, où l'opacité ne
+  signifie rien et où `GrayText` est le signal attendu.
+
+- 90e9d3c: La liste des clés de thème de la famille était **fausse**, et c'est celle qu'on
+  recopie dans `legacyKeys`.
+
+  `theme-boot` et `react/use-theme` annonçaient tous deux `'mc-theme'` avec un
+  **tiret**, là où `miss-contraction` écrit `'mc_theme'` avec un **souligné**. Une
+  migration qui s'y serait fiée aurait posé un `legacyKeys` inopérant et perdu la
+  préférence de chaque utilisatrice — exactement le bug que ces deux paragraphes
+  existent pour empêcher.
+
+  Il manquait aussi `'mb_theme'` et `'mm_theme'` : la mesure annonçait six clés,
+  il y en a **huit**.
+
+  Relevé en migrant `miss-contraction` (#26), qui a lu son propre code plutôt que
+  la liste. Une liste de valeurs mesurées se revérifie quand on s'en sert : c'est
+  de la donnée, pas de la prose.
+
+- 5d1675d: Deux défauts que l'adoption du hors-connexion par trois apps a fait tomber le
+  même jour.
+
+  **`useActionGuard` gardait un motif figé.** Sa mémoïsation porte sur une
+  signature du contenu de `checks` — parce qu'ils arrivent en littéral, donc avec
+  une identité neuve à chaque rendu. Mais cette signature ne retenait que
+  `[code, blocked]` : **`message` en était absent**. Une app dont les motifs
+  suivent la langue sans passer par `LabelsProvider` gardait donc le texte de la
+  langue précédente, indéfiniment — même `code`, même `blocked`, donc aucun
+  recalcul.
+
+  `mister-qowa`, `mister-molkky` et `mister-puzzle` l'ont contourné le même jour,
+  deux d'entre elles en recalculant le motif hors du hook. Un contournement que
+  trois apps trouvent séparément est un défaut du paquet, pas une particularité
+  de chacune. Le test le reproduit **au re-rendu du même composant** : un montage
+  neuf repart avec une mémoïsation vide et ne prouverait rien.
+
+  **`ConnectionBanner` désalignait une icône.** `components.css` le posait en
+  `display: block` avec `text-align: center`. Or son `label` accepte un nœud
+  React, et la copie dont il est promu y passait une icône **suivie** d'un texte :
+  l'icône se posait sur la ligne de base, et l'app devait remettre un
+  `flex items-center justify-center gap-2` par-dessus. Il est désormais centré en
+  `flex` — pour un enfant textuel unique, le cas de toutes les autres apps, le
+  rendu est identique.
+
+- ecd0d1d: `web-vitals` — l'en-tête affirmait une panne qui n'existait pas, et cette
+  affirmation servait de justification d'adoption.
+
+  Il écrivait qu'`onFID` avait été « RETIRÉ en v4.0 », que l'appel levait un
+  `TypeError: onFID is not a function`, et que les quatre apps concernées
+  « croient mesurer cinq métriques, en mesurent UNE ».
+
+  **C'est faux.** `onFID` a été **déprécié** en v4 et retiré en **v5.0.0** ; les
+  quatre verrous résolvent `web-vitals@4.2.4`, qui l'exporte toujours. Vérifié
+  deux fois en migrant `mister-cim10` (#29) — `typeof onFID === 'function'` sous
+  Node, et en rejouant la séquence exacte dans un navigateur :
+  `registered: ['CLS','FID','FCP','LCP','TTFB']`, `threw: null`.
+
+  **Le vrai défaut était ailleurs**, et il ne se voyait pas dans les imports. Le
+  `getRating` de ces copies porte un `case 'CLS'` puis un `default: return 'good'`
+  : **quatre métriques sur cinq étaient notées « bonnes » quelle que soit leur
+  valeur**, un LCP à dix secondes compris. Une mesure fausse coûte plus qu'une
+  mesure absente, parce qu'on s'y fie.
+
+  Le remplacement `onFID` → `onINP` reste juste — FID est sortie des Core Web
+  Vitals en mars 2024, et ces copies ne relevaient jamais INP. C'est son motif qui
+  était faux. `CAMPAGNE.md` et la table des exports du README sont corrigés en
+  conséquence : l'erreur y avait été recopiée.
+
 ## 3.28.0
 
 ### Minor Changes
