@@ -22,11 +22,11 @@ import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
+import { PKG_NAME, isConsumerDir, planUpdates } from './migrate-plan.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SELF_ROOT = join(__dirname, '..');
 const PARENT_DIR = join(SELF_ROOT, '..');
-const PKG_NAME = '@mister-guiiug/dev-wpa-config';
 
 const selfPkg = JSON.parse(
   readFileSync(join(SELF_ROOT, 'package.json'), 'utf8')
@@ -36,60 +36,39 @@ const peers = selfPkg.peerDependencies ?? {};
 const args = process.argv.slice(2);
 const WRITE = args.includes('--write') || args.includes('--install');
 const INSTALL = args.includes('--install');
+
+/**
+ * LES PEERS NE SUIVENT PLUS PAR DÉFAUT — c'est désormais `--peers` qui les
+ * demande.
+ *
+ * Aligner les peers paraît anodin tant que le parc est homogène. Il ne l'est
+ * pas : `mister-quota`, seule app Electron, est restée sur React 18, Vite 5,
+ * TypeScript 5, Vitest 2 et ESLint 8. Un simple « aligne le plancher du
+ * socle » y proposait donc **cinq montées majeures** — une migration de cadre
+ * complète, dans le même geste et sans la nommer.
+ *
+ * Deux intentions distinctes méritent deux drapeaux : monter le paquet est
+ * mécanique et sûr, monter les peers est un chantier qui se décide.
+ */
+const PEERS = args.includes('--peers');
 const versionArg = args.find(a => !a.startsWith('--'));
 const TARGET = `^${(versionArg ?? selfPkg.version).replace(/^[\^~]/, '')}`;
 
 const readJson = p => JSON.parse(readFileSync(p, 'utf8'));
-
-/** Le consommateur déclare-t-il ce paquet ? Renvoie [section, range] ou null. */
-function findDep(pkg, name) {
-  for (const section of ['dependencies', 'devDependencies']) {
-    if (pkg[section]?.[name] != null) return [section, pkg[section][name]];
-  }
-  return null;
-}
-
-/** Borne basse majeure d'un range semver simple (`^1.2.3` → 1, `0.469.0` → 0). */
-function majorOf(range) {
-  const m = String(range).match(/(\d+)\./);
-  return m ? Number(m[1]) : null;
-}
 
 /** Découvre les dossiers consommateurs (frères) qui dépendent du paquet. */
 function discoverConsumers() {
   return readdirSync(PARENT_DIR)
     .filter(d => {
       const p = join(PARENT_DIR, d, 'package.json');
-      if (d === 'dev-wpa-config' || !existsSync(p)) return false;
+      if (!existsSync(p)) return false;
       try {
-        return findDep(readJson(p), PKG_NAME) != null;
+        return isConsumerDir(d, readJson(p));
       } catch {
         return false;
       }
     })
     .sort();
-}
-
-function planUpdates(pkg) {
-  const updates = [];
-
-  // 1. Le paquet lui-même → version cible.
-  const own = findDep(pkg, PKG_NAME);
-  if (own && own[1] !== TARGET) {
-    updates.push({ section: own[0], name: PKG_NAME, from: own[1], to: TARGET });
-  }
-
-  // 2. Peers déclarés dont la majeure ne correspond pas à celle exigée.
-  for (const [name, peerRange] of Object.entries(peers)) {
-    const dep = findDep(pkg, name);
-    if (!dep) continue;
-    const want = majorOf(peerRange);
-    const have = majorOf(dep[1]);
-    if (want != null && have != null && have < want) {
-      updates.push({ section: dep[0], name, from: dep[1], to: peerRange });
-    }
-  }
-  return updates;
 }
 
 const consumers = discoverConsumers();
@@ -103,7 +82,7 @@ for (const name of consumers) {
   const root = join(PARENT_DIR, name);
   const pkgPath = join(root, 'package.json');
   const pkg = readJson(pkgPath);
-  const updates = planUpdates(pkg);
+  const updates = planUpdates(pkg, { target: TARGET, peers, withPeers: PEERS });
 
   if (updates.length === 0) {
     console.log(`✓  ${name} : déjà à jour`);
