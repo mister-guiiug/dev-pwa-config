@@ -676,11 +676,20 @@
     color: var(--dwc-primary-contrast, Canvas);
   }
 
-  [data-dwc='button']:hover:not(:disabled) {
+  [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
     filter: brightness(1.08);
   }
 
-  [data-dwc='button']:disabled {
+  /*
+   * LES DEUX FAÇONS D'ÊTRE BLOQUÉ, habillées pareil. Seul `:disabled` l'était,
+   * alors que ce bouton bloque AUSSI par `aria-disabled` — pour `loading`, et
+   * depuis peu pour le `disabledProps` de `react/use-action-guard`. Un bouton
+   * gardé avait donc l'air ACTIF tout en étant inerte : le pire des deux
+   * mondes, et exactement ce qui a fait retomber `bac-sable` (#23) sur
+   * `disabled` natif, qui vole le focus et empêche de découvrir le motif.
+   */
+  [data-dwc='button']:disabled,
+  [data-dwc='button'][aria-disabled='true'] {
     opacity: 0.45;
     filter: none;
     cursor: not-allowed;
@@ -1629,7 +1638,7 @@
     /* `filter` n'est pas forcé : `brightness()` viendrait délaver une palette
        que l'utilisateur a précisément choisie. La paire système prévue pour
        la mise en évidence dit la même chose, en respectant son réglage. */
-    [data-dwc='button']:hover:not(:disabled) {
+    [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
       filter: none;
       background: Highlight;
       color: HighlightText;
@@ -1638,7 +1647,8 @@
     /* `opacity` n'est pas forcé non plus : le bouton désactivé resterait à
        pleine couleur système sous 45 % d'opacité, donc lisible et trompeur.
        `GrayText` est le signal que les technologies d'assistance attendent. */
-    [data-dwc='button']:disabled {
+    [data-dwc='button']:disabled,
+    [data-dwc='button'][aria-disabled='true'] {
       opacity: 1;
       color: GrayText;
       border-color: GrayText;

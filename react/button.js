@@ -54,6 +54,7 @@ export function Button(props = {}) {
     iconOnly = false,
     type = 'button',
     disabled,
+    'aria-disabled': ariaDisabled,
     children,
     className,
     ...rest
@@ -63,6 +64,16 @@ export function Button(props = {}) {
   // lui, passe par `aria-disabled` pour ne pas voler le focus.
   const isDisabled = disabled === true;
   const isBusy = loading === true;
+
+  // L'APPELANT PEUT AUSSI BLOQUER. Le type retirait `aria-disabled`, au motif
+  // que `loading` le pose : deux modules du paquet ne composaient donc pas.
+  // `useActionGuard` rend précisément `disabledProps: { 'aria-disabled': true }`,
+  // et l'étaler sur ce bouton était refusé par `tsc` — `mister-doc` (#45) a dû
+  // retomber sur `disabled` natif, qui vole le focus, plus un motif en
+  // `role="status"` à côté. Les deux raisons se cumulent maintenant : le clic
+  // est neutralisé dans les deux cas, et le focus reste dans les deux cas.
+  const isBlocked = ariaDisabled === true || ariaDisabled === 'true';
+  const inert = isBusy || isBlocked;
 
   if (isDev() && iconOnly && !rest['aria-label'] && !rest['aria-labelledby']) {
     console.warn(
@@ -77,11 +88,12 @@ export function Button(props = {}) {
       type,
       className,
       disabled: isDisabled,
-      'aria-disabled': isBusy ? 'true' : undefined,
+      'aria-disabled': inert ? 'true' : undefined,
       onClick: event => {
-        // Un bouton occupé ne doit pas pouvoir être re-déclenché : les apps qui
-        // n'affichaient qu'un spinner laissaient passer le double-clic.
-        if (isBusy) {
+        // Un bouton occupé — ou bloqué par un garde — ne doit pas pouvoir être
+        // déclenché : les apps qui n'affichaient qu'un spinner laissaient
+        // passer le double-clic.
+        if (inert) {
           event.preventDefault();
           event.stopPropagation();
           return;

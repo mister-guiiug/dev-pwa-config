@@ -10,10 +10,16 @@ export type ButtonVariant =
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonBaseProps
-  extends Omit<
-    ButtonHTMLAttributes<HTMLButtonElement>,
-    'aria-busy' | 'aria-disabled'
-  > {
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-busy'> {
+  /**
+   * Bloque le bouton SANS lui voler le focus — le clic est neutralisé ici.
+   *
+   * Prévu pour recevoir `disabledProps` de `react/use-action-guard`, qui rend
+   * exactement `{ 'aria-disabled': true }`. Le type l'omettait, au motif que
+   * `loading` le pose : les deux modules ne composaient donc pas, et une app a
+   * dû retomber sur `disabled` natif. Les deux raisons se cumulent.
+   */
+  'aria-disabled'?: boolean | 'true' | 'false';
   variant?: ButtonVariant;
   size?: ButtonSize;
   /**
