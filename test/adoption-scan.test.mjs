@@ -4,7 +4,7 @@
  * exercer : le point d'entrée de `measure-adoption.mjs` balaie dix-sept dépôts
  * dès qu'on le charge, donc aucun test ne pouvait l'importer.
  *
- * LES DEUX DÉFAUTS, mesurés sur les copies de travail :
+ * LES TROIS DÉFAUTS, mesurés sur les copies de travail :
  *
  *   1. `.claude` — les worktrees d'agent étaient comptés comme du code d'app.
  *      98 fichiers source sous `miss-contraction/.claude`, 298 sous
@@ -13,11 +13,18 @@
  *      worktree, donc dans aucune version de l'app.
  *   2. `storage.ts` — la détection de `backup` par nom de fichier était devenue
  *      cent pour cent faux positifs, son seul vrai positif ayant migré.
+ *   3. Les FORMES D'IMPORT — le relevé ne connaissait que l'import nommé et le
+ *      `@import` CSS. Sept sous-chemins étaient comptés à ZÉRO consommateur
+ *      alors qu'ils en avaient dix à seize : `/prettier`, `/vitest-setup`,
+ *      `/tsconfig-app-react`, `/tsconfig-node`, `/lint-staged`,
+ *      `/eslint-react`, `/commitlint`.
  *
- * Le premier pouvait aussi mentir DANS L'AUTRE SENS : un worktree qui importe
- * le paquet ajoute ses symboles à ceux de l'app, et acquitte donc un besoin que
- * `main` ne couvre pas. Vérifié le 31/08 — aucune app n'était dans ce cas ce
- * jour-là, mais rien ne l'empêchait.
+ * LES TROIS SENS DE L'ERREUR, et ils comptent tous. Le premier défaut mentait
+ * en PESSIMISTE (une dette qui n'existe pas), et pouvait mentir en FLATTEUR (un
+ * worktree qui importe le paquet acquitte un besoin que `main` ne couvre pas —
+ * vérifié le 31/08, aucune app n'était dans ce cas, mais rien ne l'empêchait).
+ * Le troisième faisait passer pour MORTE la couche la plus adoptée du socle,
+ * c'est-à-dire décidait à tort de ce qu'il fallait promouvoir ensuite.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,8 +36,11 @@ import {
   IGNORED_DIRS,
   PACKAGE,
   EXPORT_RE,
+  SCANNED,
   findDuplicates,
   indexByName,
+  scanFile,
+  tsconfigSubpaths,
   walk,
 } from '../scripts/adoption-scan.mjs';
 import { EQUIVALENTS } from '../scripts/adoption-equivalents.mjs';
@@ -201,4 +211,128 @@ test('une VRAIE réimplémentation de la sauvegarde est toujours vue', () => {
     trouves.filter(d => d.exported === 'backup').map(d => d.file),
     ['src/lib/export.ts']
   );
+});
+
+/* ── Les formes d'import que le relevé ne voyait pas ────────────────────── */
+
+/**
+ * TROISIÈME DÉFAUT, mesuré le 31/08/2026 : le relevé ne connaissait que
+ * l'import NOMMÉ et le `@import` CSS. Or la couche outillage — la plus adoptée
+ * du socle — ne s'importe presque jamais comme ça. Sept sous-chemins étaient
+ * comptés à ZÉRO consommateur alors qu'ils en avaient dix à seize.
+ *
+ * Le README affirmait « la couche outillage est adoptée » : c'était vrai, et
+ * l'instrument affichait zéro. Un module qu'on ne sait pas mesurer passe pour
+ * mort — et c'est ce chiffre qui décide quoi promouvoir ensuite.
+ */
+
+test('la réexportation compte : c’est la forme d’un prettier.config', () => {
+  const lu = scanFile(
+    'prettier.config.js',
+    `export { default } from '${PACKAGE}/prettier';`
+  );
+  assert.deepEqual(lu.subpaths, ['/prettier']);
+  assert.deepEqual(lu.symbols, [], 'aucun nom à lire dans `{ default }`');
+});
+
+test('l’import pour effet de bord compte : c’est la forme d’un setup.ts', () => {
+  const lu = scanFile('setup.ts', `import '${PACKAGE}/vitest-setup';`);
+  assert.deepEqual(lu.subpaths, ['/vitest-setup']);
+});
+
+test('l’import par défaut compte : c’est la forme d’un eslint.config', () => {
+  const lu = scanFile(
+    'eslint.config.js',
+    `import base from '${PACKAGE}/eslint-react';\nexport default base;`
+  );
+  assert.deepEqual(lu.subpaths, ['/eslint-react']);
+});
+
+test('l’import nommé rend toujours ses symboles ET son sous-chemin', () => {
+  const lu = scanFile(
+    'App.tsx',
+    `import { Button, type ButtonProps } from '${PACKAGE}/react/button';`
+  );
+  assert.deepEqual(lu.symbols, ['Button', 'ButtonProps']);
+  assert.deepEqual(lu.subpaths, ['/react/button', '/react/button']);
+});
+
+test('la recherche ne franchit ni ligne ni chaîne voisine', () => {
+  // Sans la borne, la recherche part d'un `import` quelconque et avale son
+  // voisin jusqu'à trouver le nom du paquet — le défaut déjà payé sur
+  // `IMPORT_RE`, qui rendait « 185 symboles » dont `useState`.
+  const lu = scanFile(
+    'App.tsx',
+    `import { useState } from 'react';\nimport '${PACKAGE}/vitest-setup';`
+  );
+  assert.deepEqual(lu.subpaths, ['/vitest-setup']);
+  assert.deepEqual(lu.symbols, [], 'useState n’est pas un export du socle');
+});
+
+/* ── Les tsconfig, et le piège de miss-dice ─────────────────────────────── */
+
+test('un tsconfig compte ce dont il HÉRITE, chaîne ou tableau', () => {
+  assert.deepEqual(
+    tsconfigSubpaths(`{ "extends": "${PACKAGE}/tsconfig-app-react" }`),
+    ['/tsconfig-app-react']
+  );
+  assert.deepEqual(
+    tsconfigSubpaths(
+      `{ "extends": ["./base.json", "${PACKAGE}/tsconfig-node"] }`
+    ),
+    ['/tsconfig-node']
+  );
+});
+
+test('un tsconfig qui CITE le paquet sans l’étendre ne compte pas', () => {
+  // miss-dice a recopié le contenu au lieu de l'étendre, en expliquant
+  // pourquoi : « Inlined from @mister-guiiug/dev-wpa-config/tsconfig-app ».
+  // Chercher le nom du paquet n'importe où compterait cette app comme
+  // adoptante alors qu'elle a fait exactement l'inverse.
+  const dice = `{
+    "compilerOptions": {
+      // === Inlined from ${PACKAGE}/tsconfig-app ===
+      "target": "ES2025",
+      // === Inlined from ${PACKAGE}/tsconfig-app-react ===
+      "jsx": "react-jsx"
+    }
+  }`;
+  assert.deepEqual(tsconfigSubpaths(dice), []);
+  assert.deepEqual(scanFile('tsconfig.app.json', dice).subpaths, []);
+});
+
+test('citer le paquet AILLEURS que dans `extends` n’est pas en hériter', () => {
+  // Le cas précédent passait pour une mauvaise raison — mutation faite : les
+  // commentaires de miss-dice ne sont pas entre guillemets, si bien que la
+  // seule exigence de guillemets suffisait à les écarter. C'est ICI que
+  // l'ancrage sur `extends` se prouve : la référence est bien une chaîne JSON,
+  // et elle ne dit pourtant rien d'un héritage.
+  const ailleurs = `{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+      "types": ["${PACKAGE}/types"],
+      "paths": { "@socle/*": ["${PACKAGE}/*"] }
+    }
+  }`;
+  assert.deepEqual(tsconfigSubpaths(ailleurs), []);
+});
+
+test('un tsconfig n’apporte ni symbole ni déclaration', () => {
+  const lu = scanFile(
+    'tsconfig.json',
+    `{ "extends": "${PACKAGE}/tsconfig-node" }`
+  );
+  assert.deepEqual(lu.symbols, []);
+  assert.deepEqual(lu.declares, []);
+});
+
+test('le balayage ouvre les tsconfig, et rien d’autre en JSON', () => {
+  for (const nom of ['tsconfig.json', 'tsconfig.app.json', 'jsconfig.json']) {
+    assert.ok(SCANNED.test(nom), `${nom} devrait être lu`);
+  }
+  // Un `package-lock.json` de PWA pèse plusieurs mégaoctets et cite le paquet
+  // des dizaines de fois sans jamais dire ce que l'app en fait.
+  for (const nom of ['package.json', 'package-lock.json', 'data.json']) {
+    assert.equal(SCANNED.test(nom), false, `${nom} ne devrait pas être lu`);
+  }
 });

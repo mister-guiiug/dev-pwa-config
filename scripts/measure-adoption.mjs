@@ -64,7 +64,7 @@
  * Non publié (absent de `files`) : outil de développement du dépôt.
  */
 import { readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { basename, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
 import { EQUIVALENTS } from './adoption-equivalents.mjs';
@@ -74,12 +74,9 @@ import {
   mergeAdoption,
 } from './adoption-merge.mjs';
 import {
-  CSS_IMPORT_RE,
-  EXPORT_RE,
-  GENERATED,
-  IMPORT_RE,
   findDuplicates,
   indexByName,
+  scanFile,
   walk,
 } from './adoption-scan.mjs';
 
@@ -117,27 +114,12 @@ function measureApp(appDir) {
     } catch {
       continue;
     }
-    // Un test qui exporte un utilitaire n'est pas une réimplémentation, comme
-    // pour la détection par nom de fichier plus bas.
-    if (!GENERATED.test(file)) {
-      for (const match of source.matchAll(EXPORT_RE)) {
-        if (!declares.has(match[1])) declares.set(match[1], file);
-      }
-    }
-    for (const match of source.matchAll(IMPORT_RE)) {
-      subpaths.add(match[2] || '/');
-      for (const raw of match[1].split(',')) {
-        const name = raw
-          .replace(/\btype\b/g, '')
-          .split(' as ')[0]
-          .trim();
-        if (name) symbols.add(name);
-      }
-    }
-    // Une feuille de style n'apporte aucun symbole : seul son sous-chemin
-    // compte, et c'est justement lui qui manquait au relevé.
-    for (const match of source.matchAll(CSS_IMPORT_RE)) {
-      subpaths.add(match[1] || '/');
+    const lu = scanFile(basename(file), source);
+    for (const nom of lu.symbols) symbols.add(nom);
+    for (const sp of lu.subpaths) subpaths.add(sp);
+    // Le PREMIER fichier qui déclare un nom est celui qu'on montrera.
+    for (const nom of lu.declares) {
+      if (!declares.has(nom)) declares.set(nom, file);
     }
   }
 
