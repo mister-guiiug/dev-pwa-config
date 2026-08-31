@@ -83,19 +83,47 @@ test('aucun besoin n’est acquitté par un symbole trop générique', () => {
   );
 });
 
-test('chaque besoin guette au moins un nom de fichier', () => {
+test('chaque besoin guette quelque chose — un fichier ou un export', () => {
   for (const [besoin, regle] of Object.entries(EQUIVALENTS)) {
+    const fichiers = regle.files ?? [];
+    const exports = regle.exports ?? [];
     assert.ok(
-      Array.isArray(regle.files) && regle.files.length > 0,
-      `${besoin} ne guette aucun fichier : il ne comptera jamais rien`
+      fichiers.length > 0 || exports.length > 0,
+      `${besoin} ne guette ni fichier ni export : il ne comptera jamais rien`
     );
-    for (const nom of regle.files) {
+    for (const nom of fichiers) {
       assert.match(
         nom,
         /\.(ts|tsx|js|jsx)$/,
         `${besoin} guette « ${nom} », qui n'est pas un nom de fichier source`
       );
     }
+    for (const nom of exports) {
+      assert.doesNotMatch(
+        nom,
+        /[./]/,
+        `${besoin} guette l'export « ${nom} », qui ressemble à un chemin`
+      );
+    }
+  }
+});
+
+/**
+ * Détecter par `exports` sans acquitter par `symbols` produirait une dette
+ * INEXTINGUIBLE : l'app migre, son `createBackup` local disparaît… mais si la
+ * détection portait sur un nom qu'aucun import ne libère, le compte ne
+ * bougerait jamais. C'est le défaut n°1 du 30/08, sous une autre forme.
+ */
+test('un besoin détecté par ses exports sait aussi s’acquitter', () => {
+  for (const [besoin, regle] of Object.entries(EQUIVALENTS)) {
+    if (!regle.exports?.length) continue;
+    const libres = new Set(regle.symbols ?? [besoin]);
+    const orphelins = regle.exports.filter(nom => !libres.has(nom));
+    assert.deepEqual(
+      orphelins,
+      [],
+      `${besoin} se détecte sur ${orphelins.join(', ')} mais aucun import ne l'en libère`
+    );
   }
 });
 

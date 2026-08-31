@@ -63,8 +63,8 @@
  *
  * Non publié (absent de `files`) : outil de développement du dépôt.
  */
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { basename, join } from 'node:path';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
 import { EQUIVALENTS } from './adoption-equivalents.mjs';
@@ -73,63 +73,15 @@ import {
   indexAdoption,
   mergeAdoption,
 } from './adoption-merge.mjs';
-
-const IGNORED_DIRS = new Set([
-  'node_modules',
-  '.git',
-  'dist',
-  'build',
-  'coverage',
-  'playwright-report',
-  'test-results',
-]);
-
-const SOURCE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|css)$/;
-const GENERATED = /\.(test|spec)\./;
-
-/**
- * LE CSS COMPTE, et il ne comptait pas. Le balayage s'arrêtait aux fichiers
- * JavaScript, si bien que `components.css` — LE PRÉREQUIS de toute la couche
- * interface, celui sans lequel un composant migré s'affiche NU — n'était visible
- * dans aucun relevé. La campagne citait « quatorze apps sur dix-sept » sans
- * qu'aucune donnée du dépôt ne l'étaye ; deux migrations l'ont relevé le même
- * jour, en constatant que la table `CONSUMED` du catalogue n'en portait pas
- * trace pour des apps qui l'importent depuis longtemps.
- *
- * Un prérequis qu'on ne mesure pas est un prérequis qu'on croit acquis.
- */
-const CSS_IMPORT_RE =
-  /@import\s+['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
-
-const PACKAGE = '@mister-guiiug/dev-wpa-config';
-
-/**
- * Imports du paquet, y compris multiligne — c'est la forme que produit Prettier
- * dès deux symboles, et une expression mono-ligne les rate tous.
- *
- * `[^{}]*` interdit de traverser une AUTRE paire d'accolades : sans cette
- * restriction, la recherche part d'un `import {` quelconque et avale les
- * imports voisins jusqu'à trouver le nom du paquet. Défaut constaté sur le
- * premier jet de ce relevé, qui rendait « 185 symboles » dont `useState`.
- */
-const IMPORT_RE =
-  /import\s+(?:type\s+)?\{([^{}]*)\}\s*from\s*['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
-
-function walk(dir, out = []) {
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return out;
-  }
-  for (const entry of entries) {
-    if (IGNORED_DIRS.has(entry.name)) continue;
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) walk(full, out);
-    else if (SOURCE.test(entry.name)) out.push(full);
-  }
-  return out;
-}
+import {
+  CSS_IMPORT_RE,
+  EXPORT_RE,
+  GENERATED,
+  IMPORT_RE,
+  findDuplicates,
+  indexByName,
+  walk,
+} from './adoption-scan.mjs';
 
 /** Racine où trouver les dépôts des apps, ou `null` si aucune ne s'y trouve. */
 function findRoot(explicit) {
@@ -155,6 +107,8 @@ function measureApp(appDir) {
   const files = walk(appDir);
   const symbols = new Set();
   const subpaths = new Set();
+  /** Ce que l'app déclare elle-même → le fichier qui le déclare. */
+  const declares = new Map();
 
   for (const file of files) {
     let source;
@@ -162,6 +116,13 @@ function measureApp(appDir) {
       source = readFileSync(file, 'utf8');
     } catch {
       continue;
+    }
+    // Un test qui exporte un utilitaire n'est pas une réimplémentation, comme
+    // pour la détection par nom de fichier plus bas.
+    if (!GENERATED.test(file)) {
+      for (const match of source.matchAll(EXPORT_RE)) {
+        if (!declares.has(match[1])) declares.set(match[1], file);
+      }
     }
     for (const match of source.matchAll(IMPORT_RE)) {
       subpaths.add(match[2] || '/');
@@ -180,55 +141,24 @@ function measureApp(appDir) {
     }
   }
 
-  // Doublons : un fichier local porte le nom déclaré équivalent, et l'app
-  // n'importe pas le symbole correspondant. Les tests sont écartés — un
-  // `Button.test.tsx` n'est pas une réimplémentation.
-  //
-  // `basename` et pas `slice(lastIndexOf('/'))` : `join` sépare avec `\` sous
-  // Windows, où la découpe manuelle rendait le CHEMIN ENTIER. Aucun nom ne
-  // correspondait alors à la table, et le relevé annonçait zéro doublon —
-  // c'est-à-dire une dette éteinte, sur une machine qui ne l'avait pas payée.
-  //
-  // DEUX DÉFAUTS SYMÉTRIQUES, mesurés le 30/08/2026 — et celui-ci penchait dans
-  // l'autre sens, le PESSIMISTE : il faisait migrer ce qui n'avait pas à l'être.
-  //
-  // 1. L'acquittement testait `symbols.has(exported)`, c'est-à-dire exigeait que
-  //    l'app importe un symbole portant le NOM DU BESOIN. Or neuf des vingt-six
-  //    clés — `links`, `backup`, `format`, `Toast`, `share`, `geo`, `webVitals`,
-  //    `security`, `useI18n` — ne sont le nom d'AUCUN export du paquet : elles
-  //    étaient donc inacquittables par construction. Une app pouvait migrer
-  //    parfaitement et rester comptée en dette pour toujours. Chaque besoin
-  //    déclare maintenant ses `symbols` libérateurs.
-  // 2. Un fichier qui porte le nom guetté mais qui IMPORTE DÉJÀ LE PAQUET n'est
-  //    pas un doublon : c'est une façade, donc une adoption. Trois des sept
-  //    `storage.ts` du parc étaient dans ce cas.
-  const sourceFile = new Map();
-  for (const file of files) {
-    if (GENERATED.test(file)) continue;
-    const name = basename(file);
-    if (!sourceFile.has(name)) sourceFile.set(name, file);
-  }
-  const duplicates = [];
-  for (const [exported, rule] of Object.entries(EQUIVALENTS)) {
-    const libres = rule.symbols ?? [exported];
-    if (libres.some(name => symbols.has(name))) continue;
-    const hit = rule.files.find(name => sourceFile.has(name));
-    if (!hit) continue;
-    // La façade : le fichier existe encore, mais il délègue au paquet.
-    let contenu = '';
-    try {
-      contenu = readFileSync(sourceFile.get(hit), 'utf8');
-    } catch {
-      /* illisible : on retombe sur le comptage par nom */
-    }
-    if (contenu.includes(PACKAGE)) continue;
-    duplicates.push({ exported, file: hit });
-  }
+  // Les doublons se décident dans `adoption-scan.mjs`, avec leurs trois règles
+  // et l'ordre qui les sépare. Ici, seul le passage des chemins : le relevé est
+  // lu par un humain, et un chemin absolu de ma machine n'y apprend rien.
+  const duplicates = findDuplicates(
+    {
+      symbols,
+      sourceFile: indexByName(files),
+      declares,
+      read: file => readFileSync(file, 'utf8'),
+      toPath: file => relative(appDir, file).split(sep).join('/'),
+    },
+    EQUIVALENTS
+  );
 
   return {
     symbols: [...symbols].sort(),
     subpaths: [...subpaths].sort(),
-    duplicates: duplicates.sort((a, b) => a.exported.localeCompare(b.exported)),
+    duplicates,
   };
 }
 
