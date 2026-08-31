@@ -319,9 +319,18 @@ des noms ; seule la lecture compare des API.
 **Ce que la campagne a trouvé en chemin.** Douze bugs, dont aucun n'était
 cherché :
 
-- `web-vitals` **silencieusement cassé dans trois apps** — leur copie appelait
-  `onFID`, retiré de la v4 : l'exception tombait dans un `catch` et seul CLS
-  était mesuré. Le module du socle documentait déjà la panne ;
+- `web-vitals` **faux dans quatre apps** — mais pas pour la raison qu'on a
+  cru pendant deux jours. Cette page a écrit, et plusieurs PR ont repris,
+  qu'`onFID` était « retiré de la v4 », que l'appel levait et que seul CLS
+  était mesuré. **C'est faux** : `onFID` est déprécié en v4 et retiré en v5, et
+  les verrous résolvent la 4.2.4, qui l'exporte. Vérifié sous Node ET au
+  navigateur en migrant `mister-cim10` (#29) : les cinq métriques étaient bien
+  relevées. Le vrai défaut ne se voyait pas dans les imports mais dans
+  `getRating` — un `case 'CLS'` puis un `default: return 'good'`, donc **quatre
+  métriques sur cinq notées « bonnes » quelle que soit leur valeur**, un LCP à
+  dix secondes compris. Une mesure fausse coûte plus qu'une mesure absente,
+  parce qu'on s'y fie. L'en-tête du module portait l'erreur, et lui servait de
+  justification d'adoption ;
 - `matchMedia` **inversé** dans deux apps (`prefers-color-scheme: light` avec
   repli sombre) : démarrage en sombre dès que la requête est inévaluable ;
 - la **corruption silencieuse des codes de partie** de molkky, dont la
