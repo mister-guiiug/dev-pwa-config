@@ -55,6 +55,27 @@ test('Button : disabled explicite respecté sans loading', () => {
   assert.doesNotMatch(html, /aria-busy/);
 });
 
+/**
+ * DEUX MODULES DU PAQUET QUI NE COMPOSAIENT PAS. `useActionGuard` rend
+ * `disabledProps: { 'aria-disabled': true }` — c'est le motif que son en-tête
+ * documente — et `ButtonProps` RETIRAIT `aria-disabled` de son type, au motif
+ * que `loading` le pose. L'étaler sur ce bouton était donc refusé par `tsc`, et
+ * `mister-doc` (#45) a dû retomber sur `disabled` natif, qui vole le focus,
+ * plus un motif affiché à côté en `role="status"`.
+ *
+ * Les deux raisons de bloquer se cumulent maintenant, et le clic est neutralisé
+ * dans les deux cas.
+ */
+test('Button : un aria-disabled de l’appelant bloque, sans voler le focus', () => {
+  const html = render(Button, { 'aria-disabled': true }, 'Supprimer');
+  assert.match(html, /aria-disabled="true"/);
+  assert.doesNotMatch(
+    html,
+    /\sdisabled(=|\s|>)/,
+    '`disabled` natif retirerait le bouton du parcours clavier'
+  );
+});
+
 test('Button : block et iconOnly sont des marqueurs, pas des classes', () => {
   const html = render(Button, { block: true, iconOnly: true, size: 'sm' }, '×');
   assert.match(html, /data-block=""/);
