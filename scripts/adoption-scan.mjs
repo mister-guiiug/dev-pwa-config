@@ -54,6 +54,16 @@ export const IGNORED_DIRS = new Set([
 /** Le CSS compte : `components.css` est le prérequis de la couche interface. */
 export const SOURCE = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|css)$/;
 
+/**
+ * Les fichiers que le balayage ouvre : les sources, plus les `tsconfig*.json`.
+ *
+ * Le JSON n'est PAS ouvert en bloc, et c'est délibéré : un `package-lock.json`
+ * de PWA pèse plusieurs mégaoctets, cite le paquet des dizaines de fois, et
+ * n'apprend rien que `package.json` ne dise mieux.
+ */
+export const SCANNED =
+  /(\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|css)|^(ts|js)config[\w.-]*\.json)$/;
+
 /** Un `Button.test.tsx` n'est pas une réimplémentation de `Button`. */
 export const GENERATED = /\.(test|spec)\./;
 
@@ -77,6 +87,70 @@ export const CSS_IMPORT_RE =
   /@import\s+['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
 
 /**
+ * TOUTES LES AUTRES FORMES — et elles cachaient la couche la plus adoptée du
+ * socle.
+ *
+ * Le relevé ne connaissait que l'import NOMMÉ et le `@import` CSS. Or la
+ * couche outillage ne s'importe presque jamais comme ça : un `prettier.config`
+ * réexporte, un `setup.ts` importe pour l'effet de bord, un `eslint.config`
+ * prend un défaut. Mesure du 31/08/2026 sur les dix-sept dépôts — sept
+ * sous-chemins comptés à ZÉRO consommateur, alors que :
+ *
+ *   `/prettier`           15 apps   `export { default } from …`
+ *   `/vitest-setup`       15 apps   `import '…'` (effet de bord)
+ *   `/tsconfig-app-react` 15 apps   `"extends"` en JSON
+ *   `/tsconfig-node`      15 apps   `"extends"` en JSON
+ *   `/lint-staged`        14 apps   réexportation
+ *   `/eslint-react`       10 apps   réexportation
+ *   `/commitlint`          3 apps   réexportation
+ *
+ * Le README affirmait « la couche outillage est adoptée » : c'était vrai, et
+ * l'instrument affichait zéro. Un module qu'on ne sait pas mesurer passe pour
+ * mort — et c'est le raisonnement qui décide quoi promouvoir ensuite.
+ *
+ * Ces formes n'apportent AUCUN SYMBOLE, seulement leur sous-chemin : il n'y a
+ * pas de liste de noms à lire dans `import '…'` ni dans un `"extends"`. Une
+ * réexportation nommée (`export { X } from …`) en apporte un, et c'est bien
+ * une consommation de `X` — l'import nommé la couvre déjà.
+ *
+ * `[^'"()\n]*?` interdit de franchir une ligne ou une autre chaîne : sans
+ * cette borne, la recherche part d'un `import` quelconque et avale le voisin.
+ * Les imports nommés multilignes restent l'affaire d'`IMPORT_RE`.
+ */
+export const SPECIFIER_RE =
+  /(?:import|export)\s*[^'"()\n]*?['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
+
+/** Les seuls JSON qu'on ouvre : un `package-lock` ne dit rien et pèse lourd. */
+export const TSCONFIG_FILE = /^(?:ts|js)config[\w.-]*\.json$/;
+
+/**
+ * Les configurations TypeScript dont un `tsconfig` HÉRITE VRAIMENT.
+ *
+ * L'ANCRAGE SUR `extends` N'EST PAS UNE PRÉCAUTION DE STYLE. `miss-dice` cite
+ * `@mister-guiiug/dev-wpa-config/tsconfig-app` deux fois dans son
+ * `tsconfig.app.json` — dans des COMMENTAIRES : « Inlined from … ». L'app a
+ * recopié le contenu au lieu de l'étendre, en expliquant pourquoi (les
+ * sous-chemins publiés étaient par moments irrésolvables en CI). Chercher le
+ * nom du paquet n'importe où dans le fichier compterait cette app comme
+ * adoptante alors qu'elle a fait exactement l'inverse.
+ *
+ * Un `tsconfig` accepte les commentaires : on ne peut pas `JSON.parse`. On lit
+ * donc la VALEUR de `extends` — chaîne ou tableau — et rien d'autre.
+ */
+export function tsconfigSubpaths(source) {
+  const trouves = [];
+  const cle = /"extends"\s*:\s*(\[[^\]]*\]|"[^"]*")/g;
+  for (const match of String(source).matchAll(cle)) {
+    for (const ref of match[1].matchAll(
+      /"@mister-guiiug\/dev-wpa-config([^"]*)"/g
+    )) {
+      trouves.push(ref[1] || '/');
+    }
+  }
+  return trouves;
+}
+
+/**
  * Ce qu'un fichier DÉCLARE lui-même — le seul détecteur de doublon qui regarde
  * le code plutôt que l'étiquette.
  *
@@ -93,6 +167,51 @@ export const CSS_IMPORT_RE =
 export const EXPORT_RE =
   /export\s+(?:async\s+)?(?:function\s*\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g;
 
+/**
+ * Ce qu'UN fichier apprend au relevé.
+ *
+ * `symbols` — ce que l'app importe nommément ; `subpaths` — les modules
+ * qu'elle consomme, quelle que soit la forme ; `declares` — ce qu'elle écrit
+ * elle-même, donc ce qu'elle pourrait recopier.
+ *
+ * @param {string} name Le nom de fichier seul : il décide de la lecture.
+ * @param {string} source
+ */
+export function scanFile(name, source) {
+  // Un `tsconfig` n'est pas du JavaScript : il n'a ni import ni déclaration,
+  // et son seul renseignement est ce dont il HÉRITE.
+  if (TSCONFIG_FILE.test(name)) {
+    return { symbols: [], subpaths: tsconfigSubpaths(source), declares: [] };
+  }
+
+  const symbols = [];
+  const subpaths = [];
+  const declares = [];
+
+  for (const match of source.matchAll(IMPORT_RE)) {
+    subpaths.push(match[2] || '/');
+    for (const raw of match[1].split(',')) {
+      const nom = raw
+        .replace(/\btype\b/g, '')
+        .split(' as ')[0]
+        .trim();
+      if (nom) symbols.push(nom);
+    }
+  }
+  for (const match of source.matchAll(CSS_IMPORT_RE))
+    subpaths.push(match[1] || '/');
+  for (const match of source.matchAll(SPECIFIER_RE))
+    subpaths.push(match[1] || '/');
+
+  // Un test qui exporte un utilitaire n'est pas une réimplémentation — même
+  // règle que pour la détection par nom de fichier.
+  if (!GENERATED.test(name)) {
+    for (const match of source.matchAll(EXPORT_RE)) declares.push(match[1]);
+  }
+
+  return { symbols, subpaths, declares };
+}
+
 /** Tous les fichiers source d'un dépôt, worktrees et artefacts exclus. */
 export function walk(dir, out = []) {
   let entries;
@@ -105,7 +224,7 @@ export function walk(dir, out = []) {
     if (IGNORED_DIRS.has(entry.name)) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) walk(full, out);
-    else if (SOURCE.test(entry.name)) out.push(full);
+    else if (SCANNED.test(entry.name)) out.push(full);
   }
   return out;
 }

@@ -85,7 +85,7 @@ c'est ainsi que ces quatre modules sont nés.
 
 _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 6 fichiers recopiés** dans 17 apps, sur 4 besoins distincts. Les pires : `backup` (3), `AppFooter` (1), `BottomNav` (1).
+> **Dette d'adoption : 2 fichiers recopiés** dans 17 apps, sur 2 besoins distincts. Les pires : `AppFooter` (1), `BottomNav` (1).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -104,18 +104,20 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `repoUrl`                     | 11 / 17     | —                   |
 | `cspPlugin`                   | 10 / 17     | —                   |
 | `ErrorBoundary`               | 10 / 17     | —                   |
+| `useActionGuard`              | 10 / 17     | —                   |
+| `ConnectionBanner`            | 9 / 17      | —                   |
 | `Sheet`                       | 9 / 17      | —                   |
 | `coveragePreset`              | 8 / 17      | —                   |
 | `EmptyState`                  | 8 / 17      | —                   |
 | `LabelsProvider`              | 8 / 17      | —                   |
 | `ThemeProvider`               | 8 / 17      | —                   |
 | `UpdatePromptBanner`          | 8 / 17      | —                   |
+| `useOnline`                   | 8 / 17      | —                   |
 | `SPONSOR_URL`                 | 7 / 17      | —                   |
 | `useThemeContext`             | 7 / 17      | —                   |
 | `AppFooter`                   | 6 / 17      | 1 / 17              |
 | `BottomNav`                   | 6 / 17      | 1 / 17              |
 | `IconsProvider`               | 6 / 17      | —                   |
-| `useOnline`                   | 6 / 17      | —                   |
 | `AppUpdates`                  | 5 / 17      | —                   |
 | `Button`                      | 5 / 17      | —                   |
 | `dateSlug`                    | 5 / 17      | —                   |
@@ -125,6 +127,8 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `unregisterServiceWorkers`    | 5 / 17      | —                   |
 | `applyUpdate`                 | 4 / 17      | —                   |
 | `Badge`                       | 4 / 17      | —                   |
+| `createStore`                 | 4 / 17      | —                   |
+| `downloadJson`                | 4 / 17      | —                   |
 | `formatNumber`                | 4 / 17      | —                   |
 | `initWebVitals`               | 4 / 17      | —                   |
 | `lucideIconSet`               | 4 / 17      | —                   |
@@ -133,9 +137,7 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `shareOrCopy`                 | 4 / 17      | —                   |
 | `SkeletonGroup`               | 4 / 17      | —                   |
 | `TextField`                   | 4 / 17      | —                   |
-| `createStore`                 | 3 / 17      | —                   |
 | `createTranslator`            | 3 / 17      | —                   |
-| `downloadJson`                | 3 / 17      | —                   |
 | `formatDateTime`              | 3 / 17      | —                   |
 | `generateCode`                | 3 / 17      | —                   |
 | `getDefaultLocale`            | 3 / 17      | —                   |
@@ -149,6 +151,7 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `useToast`                    | 3 / 17      | —                   |
 | `useUpdatePrompt`             | 3 / 17      | —                   |
 | `useWakeLock`                 | 3 / 17      | —                   |
+| `ActionGuardResult`           | 2 / 17      | —                   |
 | `ALPHABETS`                   | 2 / 17      | —                   |
 | `BadgeTone`                   | 2 / 17      | —                   |
 | `buildPdf`                    | 2 / 17      | —                   |
@@ -187,6 +190,8 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `validateImageFile`           | 2 / 17      | —                   |
 | `appById`                     | 1 / 17      | —                   |
 | `AppVersion`                  | 1 / 17      | —                   |
+| `BACKUP_FORMAT`               | 1 / 17      | —                   |
+| `BACKUP_VERSION`              | 1 / 17      | —                   |
 | `BottomNavItem`               | 1 / 17      | —                   |
 | `BoundingBox`                 | 1 / 17      | —                   |
 | `ChannelStatus`               | 1 / 17      | —                   |
@@ -194,6 +199,7 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `clusterByGrid`               | 1 / 17      | —                   |
 | `clustersToMarkers`           | 1 / 17      | —                   |
 | `Coordinates`                 | 1 / 17      | —                   |
+| `createBackup`                | 1 / 17      | —                   |
 | `createIdb`                   | 1 / 17      | —                   |
 | `createLogger`                | 1 / 17      | —                   |
 | `createMapLibreMapProvider`   | 1 / 17      | —                   |
@@ -230,8 +236,11 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `PushTransport`               | 1 / 17      | —                   |
 | `qrToDataUrl`                 | 1 / 17      | —                   |
 | `qrToSvg`                     | 1 / 17      | —                   |
+| `readRaw`                     | 1 / 17      | —                   |
+| `removeKey`                   | 1 / 17      | —                   |
 | `ResolvedTheme`               | 1 / 17      | —                   |
 | `resolveSeoPublicUrls`        | 1 / 17      | —                   |
+| `restoreBackup`               | 1 / 17      | —                   |
 | `rethrowWithState`            | 1 / 17      | —                   |
 | `Rgb`                         | 1 / 17      | —                   |
 | `ShareButton`                 | 1 / 17      | —                   |
@@ -252,10 +261,9 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `versionPlugin`               | 1 / 17      | —                   |
 | `VersionProvider`             | 1 / 17      | —                   |
 | `vibrate`                     | 1 / 17      | —                   |
+| `writeRaw`                    | 1 / 17      | —                   |
 | `XlsxSheet`                   | 1 / 17      | —                   |
 | `XlsxValue`                   | 1 / 17      | —                   |
-| `backup`                      | 0 / 17      | 3 / 17              |
-| `useI18n`                     | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
 
