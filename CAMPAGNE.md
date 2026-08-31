@@ -613,3 +613,102 @@ migrant.
 
 Le repérage tient en une commande : chercher un script de build qui recopie du
 `src/` vers `supabase/functions/`.
+
+## Le passage du 31/08/2026 — l'instrument mentait dans les trois sens
+
+La dette affichait **cinq** doublons. Trois n'existaient pas, et en cherchant
+pourquoi, un troisième défaut est apparu — plus lourd que les deux premiers,
+parce qu'il ne faussait pas la dette : il effaçait l'adoption.
+
+### 1. Les worktrees d'agent comptaient comme du code d'app
+
+`.claude` n'était pas dans la liste des dossiers ignorés. Le balayage
+descendait dans les worktrees : 298 fichiers source sous
+`mister-footcoach/.claude`, 116 sous `mister-qowa`, 98 sous
+`miss-contraction`. Du code de branches non fusionnées, parfois abandonnées.
+
+miss-contraction était comptée en dette sur `useI18n` pour un fichier qui
+n'existe que là — donc dans aucune version de l'app.
+
+**Le tort symétrique est le dangereux** : un worktree qui importe le paquet
+ajoute ses symboles à ceux de l'app, et acquitte donc un besoin que `main` ne
+couvre pas. Une migration en cours d'écriture se compte alors comme faite.
+Mesuré le jour même : aucune app n'était dans ce cas, mais rien ne l'empêchait.
+
+### 2. `storage.ts` était devenu cent pour cent faux positifs
+
+La ligne était signalée depuis le 30/08 comme la plus faible de la table,
+« conservée pour le vrai positif ». Ce vrai positif — mister-cim10 — avait
+migré entre-temps. Il ne restait que le bruit.
+
+**La supprimer aurait perdu le rappel.** `backup` se détecte maintenant par ce
+que l'app _déclare_ (`exports: ['createBackup', …]`) plutôt que par le nom de
+ses fichiers : zéro détection sur le parc, donc le même chiffre que la
+suppression, sans jeter ce que la suppression jetait.
+
+C'est la leçon des trois homonymes — `Navbar.tsx`, `theme.ts`, `storage.ts` —
+enfin appliquée au lieu d'être seulement écrite en commentaire : **un nom de
+fichier ne dit pas ce qu'un fichier fait.**
+
+### 3. Sept modules passaient pour morts
+
+Le relevé ne connaissait que l'import **nommé** et le `@import` CSS. Or la
+couche outillage ne s'importe presque jamais comme ça.
+
+| sous-chemin           | compté | vrai    | forme                     |
+| --------------------- | ------ | ------- | ------------------------- |
+| `/prettier`           | 0      | 16 / 17 | `export { default } from` |
+| `/eslint-react`       | 0      | 16 / 17 | réexportation             |
+| `/vitest-setup`       | 0      | 15 / 17 | `import '…'`              |
+| `/tsconfig-app-react` | 0      | 15 / 17 | `"extends"`               |
+| `/tsconfig-node`      | 0      | 15 / 17 | `"extends"`               |
+| `/lint-staged`        | 0      | 14 / 17 | réexportation             |
+| `/commitlint`         | 0      | 3 / 17  | réexportation             |
+
+Ce README affirme depuis le premier jour « la couche outillage est adoptée ».
+C'était vrai, et l'instrument affichait zéro. **Un module qu'on ne sait pas
+mesurer passe pour mort** — et c'est ce chiffre qui décide quoi promouvoir
+ensuite.
+
+La lecture des `tsconfig` est ancrée sur `extends`, pas sur le nom du paquet :
+`miss-dice` le citait deux fois dans des _commentaires_, ayant recopié le
+contenu au lieu de l'étendre.
+
+### Ce que la séance laisse comme méthode
+
+**Corriger un instrument dans les deux sens, ou pas du tout.** Les deux
+premiers défauts faisaient baisser la dette de 5 à 2 sans qu'une app ait
+migré ; le troisième fait monter l'adoption de sept sous-chemins, également
+sans qu'une ligne d'app change. Un instrument qu'on ne corrige que dans le sens
+flatteur n'est pas un instrument.
+
+**Ce qui décide se sépare de ce qui s'exécute.** Les trois défauts vivaient
+dans du code que rien ne pouvait exercer : le point d'entrée de
+`measure-adoption.mjs` balaie dix-sept dépôts dès qu'on le charge. Le balayage
+est parti dans `scripts/adoption-scan.mjs` — troisième application de la même
+séparation, après `adoption-equivalents.mjs` et `migrate-plan.mjs`.
+
+**La mutation ne sert que si elle s'applique.** Deux fois dans la séance, une
+mutation n'a rien cassé : une fois parce que le motif ne correspondait plus au
+fichier reformaté, une fois parce que le test passait _pour une mauvaise
+raison_ — le cas `miss-dice` était écarté par l'exigence de guillemets, pas par
+l'ancrage sur `extends` qu'il prétendait prouver. Vérifier que le fichier a
+changé, puis que le bon test tombe.
+
+### Une copie ne dérive pas au hasard
+
+`miss-dice` était la seule app à avoir inliné les `tsconfig` du socle, en
+justifiant que « the family projects flatten them locally ». Quinze apps sur
+dix-sept les étendaient. La copie avait perdu **dix options** :
+`verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `isolatedModules`,
+`noUnusedLocals`… toutes des options de _strictesse_.
+
+**Une copie dérive vers le moins exigeant, parce que c'est le sens où rien ne
+résiste.** Personne n'avait désactivé ces dix contrôles : ils avaient
+simplement cessé d'arriver. Le retour au socle a coûté zéro erreur —
+`tsc -b --force` après suppression du cache, avec `tsc --showConfig` pour
+vérifier que les options étaient bien redevenues actives.
+
+C'est le meilleur argument de la campagne, et il ne se voit qu'en migrant : le
+coût d'une copie n'est pas ce qu'elle duplique, c'est ce qu'elle cesse de
+recevoir.
