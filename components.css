@@ -1499,7 +1499,19 @@
    * ────────────────────────────────────────────────────────────────────── */
 
   [data-dwc='connection-banner'] {
-    display: block;
+    /*
+     * `flex` centré plutôt que `block` + `text-align`. Le `label` accepte un
+     * nœud React, et la copie dont ce composant est promu (mister-qowa) y
+     * passait une icône SUIVIE d'un texte : en `block`, l'icône se posait sur
+     * la ligne de base au lieu d'être centrée avec le texte, et l'app devait
+     * remettre un `flex items-center justify-center gap-2` par-dessus. Pour un
+     * enfant textuel unique — le cas de toutes les autres apps — le rendu est
+     * identique : un seul enfant en ligne, centré.
+     */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border: 1px solid var(--dwc-warning, light-dark(#b45309, #fbbf24));
     border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);

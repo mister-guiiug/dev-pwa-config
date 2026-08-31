@@ -89,3 +89,48 @@ test('exiger le réseau sans le perdre ne bloque pas', () => {
   const garde = resolveGuard({ online: true }, { isOnline: true });
   assert.equal(garde.allowed, true);
 });
+
+/**
+ * LE MOTIF RESTAIT FIGÉ QUAND LE MESSAGE CHANGEAIT.
+ *
+ * `useActionGuard` mémoïse sur une SIGNATURE du contenu de `checks` — parce
+ * qu'ils arrivent en littéral, donc avec une identité neuve à chaque rendu.
+ * Mais cette signature ne retenait que `[code, blocked]` : **`message` en était
+ * absent**. Une app dont les motifs suivent la langue sans passer par
+ * `LabelsProvider` gardait donc le texte de la langue précédente, indéfiniment.
+ *
+ * Les trois apps du lot hors-connexion (mister-qowa, mister-molkky,
+ * mister-puzzle) l'ont contourné le même jour — deux en recalculant le motif
+ * hors du hook, la troisième en s'appuyant sur un `LabelsProvider` déjà monté.
+ * Un contournement que trois apps trouvent séparément est un défaut du socle.
+ */
+test('la signature retient le MESSAGE, pas seulement le code et l’état', async () => {
+  const { createElement: h } = await import('react');
+  const { setupDom, mount } = await import('./helpers/dom.mjs');
+  const { useActionGuard } = await import('../react/use-action-guard.js');
+  const dom = setupDom();
+  try {
+    // Le défaut n'apparaît qu'au RE-RENDU du même composant : un montage neuf
+    // repart avec une mémoïsation vide, et le test passerait sans rien prouver.
+    const vus = [];
+    function Sonde({ message }) {
+      vus.push(
+        useActionGuard({ checks: [{ code: 'admin', blocked: true, message }] })
+          .reason
+      );
+      return null;
+    }
+
+    const vue = await mount(h(Sonde, { message: 'Réservé aux référents' }));
+    await vue.rerender(h(Sonde, { message: 'Reserved for referents' }));
+
+    assert.equal(
+      vus.at(-1),
+      'Reserved for referents',
+      'sans le message dans la signature, le motif reste dans la langue précédente'
+    );
+    await vue.unmount();
+  } finally {
+    dom.restore();
+  }
+});
