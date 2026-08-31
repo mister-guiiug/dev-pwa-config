@@ -22,10 +22,12 @@ mister-guiiug/
 ```
 
 Depuis `dev-wpa-config/`, mettre chaque app sur la dernière version du paquet
-(peers alignés, `npm install` par app) :
+(`npm install` par app). **Seule la ligne du paquet bouge** — voir les
+gardes-fous plus bas pour `--peers` et l'exclusion des miroirs :
 
 ```bash
-node scripts/migrate-consumers.mjs --install
+node scripts/migrate-consumers.mjs            # essai à blanc, rien n'est écrit
+node scripts/migrate-consumers.mjs --install  # applique, puis installe
 ```
 
 ## Le prérequis, avant tout le reste
@@ -177,7 +179,42 @@ le but de la campagne.
 - il refuse un composant tant que l'app n'a pas pris le prérequis
   `components.css` ;
 - une app à la fois, `verify` vert avant de passer à la suivante — et le vert
-  ne prouve que la compilation : l'écran, lui, se regarde.
+  ne prouve que la compilation : l'écran, lui, se regarde ;
+- **`migrate-consumers.mjs` ne monte QUE le paquet.** Aligner aussi les
+  `peerDependencies` se demande par `--peers` : sur `mister-quota`, seule app
+  Electron du parc et restée en arrière, un simple « aligne le plancher »
+  proposait cinq montées majeures — React, Vite, TypeScript, Vitest, ESLint.
+  Les miroirs (`mister-family-map`) sont exclus de la découverte : une écriture
+  y serait interdite, et un `npm run mirror` suivant l'écraserait en silence.
+
+### Le piège de `npm install` après une montée de version
+
+Rencontré **par trois agents indépendamment** le 31/08/2026, en alignant les
+dix-sept planchers sur la 3.29.0. Il vaut d'être écrit parce qu'il fait valider
+du code périmé **sans rien signaler**.
+
+Après un `npm install --package-lock-only`, un `npm install` ordinaire répond
+« up to date », écrit bien la nouvelle version dans
+`node_modules/.package-lock.json` — et **laisse les fichiers de l'ancienne
+version sur le disque**. La validation qui suit teste donc le code d'avant en
+croyant tester celui d'après. L'un des trois s'en est aperçu tard.
+
+Le remède est de forcer la réextraction :
+
+```bash
+rm -rf node_modules/@mister-guiiug/dev-wpa-config && npm install
+# ou, plus simplement quand le verrou est déjà bon :
+npm ci
+```
+
+Attention toutefois : sur un dépôt dont le `.npmrc` épingle `os=linux`
+(`mister-footcoach`), un `npm ci` remplace les binaires natifs win32 par ceux de
+Linux. Retirer le seul dossier du paquet et réinstaller avec `--os=win32`
+préserve l'existant — et le verrou commité reste identique à l'octet près, car
+`os=linux` n'affecte que l'installation, pas ce qui est écrit.
+
+**Vérifier la version sur le DISQUE, pas dans le verrou**, avant de conclure
+qu'une validation prouve quelque chose.
 
 ## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
 
