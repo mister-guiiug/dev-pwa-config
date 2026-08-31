@@ -1,5 +1,163 @@
 # Changelog
 
+## 3.27.0
+
+### Minor Changes
+
+- 5e4a628: `update-prompt-banner` / `vitest-base` — la seconde sortie, le « prêt hors
+  ligne », et l'alias que dix dépôts recopiaient.
+
+  Une relecture des trois adoptions du bandeau (miss-carbook #17, miss-genius #14,
+  mister-puzzle #16) a listé cinq manques. **Deux étaient déjà comblés** par la
+  vague précédente et ne sont rappelés ici que pour clore le compte : `snoozeKey`
+  est une prop du bandeau et d'`AppUpdates` depuis la 3.26.0 (#95), et `title`
+  accepte un `ReactNode` depuis la même version (#99) — l'icône Sparkles que
+  miss-genius avait perdue est donc reposable sans rien attendre. Restaient trois
+  manques réels.
+
+  **1. UNE SEULE SORTIE.** `mister-puzzle` offrait « Plus tard (24 h) », persistée,
+  ET « Ignorer », le temps de la session. Le bandeau n'en rendait qu'une, et la
+  migration a fait disparaître la seconde : `secondaryActions="both"` la rend.
+
+  Le bouton historique NE BOUGE PAS. `[data-dwc="update-banner-dismiss"]` désigne
+  toujours le même bouton, à la même place, avec la même action ; `'both'` ne fait
+  qu'ajouter le suivant sous `[data-dwc="update-banner-ignore"]`. Deux apps
+  habillent ce sélecteur dans leur CSS (miss-carbook, miss-genius) : opter pour
+  deux sorties ne leur décoiffe rien. Sans report à offrir (`snoozeHours` à 0),
+  `'both'` se comporte exactement comme `'auto'` — deux boutons qui écartent tous
+  deux pour la session ne diraient rien de plus.
+
+  Un libellé était nécessaire : `update.snooze` et `update.dismiss` valent TOUS
+  DEUX « Plus tard » (« Later » en anglais). Chacun est juste tant qu'il est seul à
+  l'écran ; côte à côte, ils ne diraient plus lequel persiste. D'où `update.ignore`
+  (« Ignorer » / « Dismiss »), ajouté **sans toucher** aux deux autres : aucune app
+  existante ne change d'affichage.
+
+  **2. RIEN NE RENDAIT `offlineReady`.** Le hook l'expose depuis toujours ;
+  `miss-genius` gardait pour ça un `OfflineReadyNotice` à elle. `showOfflineReady`
+  le fait rendre par le bandeau, avec la précédence que cette app avait écrite :
+  tant qu'une version attend, le message hors ligne se tait — y compris une fois le
+  bandeau de mise à jour écarté, sans quoi l'écartement ferait surgir l'autre.
+
+  Le relevé du 31/08/2026 dit qu'UNE SEULE app du parc affiche ce message ; les
+  cinq autres qui touchent `offlineReady` ont un `onOfflineReady() {}` vide ou un
+  `console.log`. La 3.26.0 avait refusé le composant pour cette raison. Ce qui
+  change l'arbitrage, ce n'est pas le décompte — c'est la forme retenue : une prop
+  sur le bandeau existant, sans nouveau composant ni nouveau fichier, dont le coût
+  est nul pour les seize apps qui ne la posent pas.
+
+  L'interrupteur ne s'appelle pas `offlineReady` : l'état du hook porte déjà ce nom
+  sur les mêmes props, et l'écraserait à chaque rendu.
+
+  **3. LE STUB ÉTAIT PUBLIÉ, PAS L'ALIAS.** `testing/pwa-register` existe depuis la
+  3.26.0, mais le poser demandait encore de recopier un
+  `fileURLToPath(import.meta.resolve(…))` — et cette forme-là fait résoudre un
+  sous-chemin d'export depuis le `vitest.config.ts` de l'app, ce qui échoue sous un
+  gestionnaire de paquets qui n'aplatit pas `node_modules` et sous les runtimes où
+  `import.meta.resolve` est asynchrone. `vitest-base` exporte désormais
+  `pwaRegisterAlias`, qui résout depuis le paquet :
+
+  ```ts
+  resolve: { alias: { ...pwaRegisterAlias } }
+  ```
+
+  Vérifié dans les deux sens sur une app jetable, paquet installé depuis son
+  tarball : avec l'alias, un module source qui écrit
+  `import { registerSW } from 'virtual:pwa-register'` se monte et le bandeau
+  s'affiche ; sans lui, et malgré le `vi.mock` de `vitest-setup`, le test meurt sur
+  `Failed to resolve import "virtual:pwa-register"`. Ce piège est maintenant décrit
+  en tête de `vitest-setup` — là où on le rencontre, et non dans un chapitre plus
+  loin.
+
+  Deux pièges documentés au passage : l'alias va dans `vitest.config.ts` et JAMAIS
+  dans `vite.config.ts` (le build servirait le double aux navigateurs, et l'app
+  n'enregistrerait plus aucun service worker) ; et `virtual:pwa-register/react`
+  n'est pas couvert alors que l'entrée le capte quand même, les alias Vite
+  s'appliquant par préfixe. Aucune app du parc ne l'importe.
+
+- 655f7d7: `format` — la devise liée à `createFormatters` survit enfin aux options.
+
+  **Le défaut.** `formatCurrency` reconnaît des options à la place de la devise
+  depuis #100. `createFormatters(…).currency` les lui transmettait telles quelles,
+  donc à cette place — et `formatCurrency` retombait alors sur son propre défaut,
+  `'EUR'`, sans jamais voir la devise que la fabrique avait liée :
+
+  ```js
+  const fmt = createFormatters('fr-FR', { currency: 'USD' });
+  fmt.currency(1234); // « 1 234,00 $US »
+  fmt.currency(1234, { maximumFractionDigits: 0 }); // « 1 234 € »  ← USD perdu
+  ```
+
+  Un montant en dollars s'affichait EN EUROS. Aucune erreur, aucun avertissement,
+  le symbole ment simplement sur le montant — c'est très exactement le défaut que
+  ce module reproche aux copies qu'il remplace, et le seul de la famille où le
+  silence produit une valeur fausse plutôt qu'un format inchangé.
+
+  Les options sont désormais reconnues à cette place, puis réappliquées PAR-DESSUS
+  la devise liée. `{ currency: … }` passé dans les options l'emporte toujours,
+  comme partout ailleurs dans le module.
+
+  **`currency()` gagne une 3ᵉ place.** `fmt.currency(1234, 'GBP', { … })` : un
+  code explicite ET des options. La forme était ignorée en silence, faute d'être
+  transmise.
+
+  **Ce que le `.d.ts` taisait.** La signature annonçait `code?: string`, si bien
+  que la forme qui marchait déjà au runtime était refusée à la compilation
+  (`TS2345`). Elle accepte maintenant les deux places, et la prose de
+  `formatCurrency` mentionne enfin sa 4ᵉ position — locale et devise nommées,
+  options par-dessus — que seule la signature laissait deviner et qu'aucun test ne
+  couvrait.
+
+  Correctif vérifié par mutation : rétablir la transmission directe fait tomber le
+  test qui nomme la devise liée.
+
+### Patch Changes
+
+- 52ab159: `similarity` — l'en-tête dit désormais qu'une de ses deux provenances ne pourra
+  jamais l'importer.
+
+  Le cœur métier de `miss-lookhouse` (`src/domain/`, dont son anti-doublons) est
+  **recopié vers des Supabase Edge Functions** par un script de build. Ce code
+  tourne donc aussi sous Deno, qui ne sait pas résoudre un paquet publié sur un
+  registre privé — la limite déjà constatée chez `mister-doc`, mais qui porte ici
+  sur **tout un dossier** : `scoring`, `similarity`, `clustering`, `priceHistory`,
+  `normalize`, `text` et `imageHash` sont dans le même cas.
+
+  Le corollaire mérite d'être écrit plutôt que redécouvert : un module tiré d'un
+  code qui franchit la frontière Deno est un module que son donneur ne récupérera
+  pas. Ça ne l'invalide pas — l'autre provenance l'importe — mais ça se sait
+  d'avance, et ça évite d'inscrire une app dans un lot d'adoption qu'elle ne peut
+  pas tenir.
+
+- 04b4639: `image` — décoder n'est pas accepter, et c'est enfin écrit.
+
+  **L'écart.** `compressImageToMaxBytes` documente le GIF (« les GIF animés
+  deviennent une image fixe ») pendant que `IMAGE_ACCEPTED_TYPES`, dans le MÊME
+  fichier, le refuse. L'adoption de `miss-carbook` (#16) l'a relevé : le module
+  sait traiter un format que son propre validateur rejette par défaut.
+
+  **L'arbitrage : le défaut ne bouge pas.** Élargir la liste ici la changerait pour
+  tout le monde. `bac-sable` appelle `validateImageFile(file)` **sans option**,
+  sous un `accept="image/jpeg,image/png,image/webp"` et un message qui annonce
+  « Formats acceptés : JPEG, PNG, WebP » — un défaut plus permissif lui ferait
+  accepter en silence ce que son propre écran refuse, et la régression partirait
+  telle quelle vers le miroir public `mister-family-map`. `mister-puzzle`, lui,
+  liste déjà `'image/gif'` explicitement : le défaut élargi ne lui apporterait
+  qu'un doublon. Une régression réelle contre zéro gain.
+
+  Ce qui manquait n'était donc pas la permission, c'était la RAISON. Elle est
+  maintenant dans l'en-tête de `image.js`, dans `image.d.ts` — la surface que les
+  trois apps TypeScript lisent réellement dans leur éditeur, et qui ne disait rien
+  — et dans un test qui empêche qu'on « corrige » l'incohérence en déplaçant le
+  défaut.
+
+  **Un correctif au passage.** Le message d'échec de lecture disait « Essayez un
+  autre fichier (JPEG, PNG, WebP ou GIF) » : il PROMETTAIT à l'utilisateur final un
+  format que le défaut de ce module refuse, et qu'une app comme `bac-sable` refuse
+  à l'écran. Ce module ne connaît pas la liste de son appelant ; il ne nomme plus
+  que le plancher, que toute app accepte par construction — « Essayez une photo
+  JPEG ou PNG. »
+
 ## 3.26.0
 
 ### Minor Changes
