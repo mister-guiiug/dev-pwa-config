@@ -12,108 +12,108 @@
  * La vitrine n'affiche alors simplement aucune mesure.
  */
 globalThis.SHOWROOM_METRICS = {
-  "generatedAt": "2026-08-31T10:55:24.811Z",
+  "generatedAt": "2026-09-01T09:26:48.937Z",
   "repos": {
     "miss-carbook": {
-      "pushedAt": "2026-08-30T22:54:01Z",
+      "pushedAt": "2026-09-01T06:35:28Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-contraction": {
-      "pushedAt": "2026-08-31T06:44:49Z",
+      "pushedAt": "2026-08-31T21:01:40Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-genius": {
-      "pushedAt": "2026-08-30T21:25:44Z",
+      "pushedAt": "2026-09-01T06:35:38Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-uwh": {
-      "pushedAt": "2026-08-30T21:50:47Z",
+      "pushedAt": "2026-09-01T06:34:11Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-cim10": {
-      "pushedAt": "2026-08-31T06:45:13Z",
+      "pushedAt": "2026-08-31T21:01:47Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-footcoach": {
-      "pushedAt": "2026-08-30T22:47:27Z",
+      "pushedAt": "2026-09-01T06:35:46Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-puzzle": {
-      "pushedAt": "2026-08-30T20:42:00Z",
+      "pushedAt": "2026-09-01T06:34:47Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-ticket-pwa": {
-      "pushedAt": "2026-08-30T21:42:13Z",
+      "pushedAt": "2026-08-31T21:03:45Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-doc": {
-      "pushedAt": "2026-08-30T22:02:02Z",
+      "pushedAt": "2026-09-01T06:36:15Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-lookhouse": {
-      "pushedAt": "2026-08-30T23:19:15Z",
+      "pushedAt": "2026-08-31T21:29:26Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-badminton": {
-      "pushedAt": "2026-08-31T06:45:02Z",
+      "pushedAt": "2026-08-31T21:01:26Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-dice": {
-      "pushedAt": "2026-08-30T20:26:12Z",
+      "pushedAt": "2026-08-31T22:21:57Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "miss-supaboss": {
-      "pushedAt": "2026-08-30T21:41:43Z",
+      "pushedAt": "2026-09-01T06:36:06Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-molkky": {
-      "pushedAt": "2026-08-31T06:45:29Z",
+      "pushedAt": "2026-08-31T21:04:00Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
       "releasedAt": null
     },
     "mister-qowa": {
-      "pushedAt": "2026-08-30T22:46:00Z",
+      "pushedAt": "2026-09-01T06:35:57Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
@@ -127,7 +127,7 @@ globalThis.SHOWROOM_METRICS = {
       "releasedAt": null
     },
     "mister-quota": {
-      "pushedAt": "2026-08-30T21:42:25Z",
+      "pushedAt": "2026-08-31T21:03:58Z",
       "archived": false,
       "openIssues": 0,
       "version": null,
