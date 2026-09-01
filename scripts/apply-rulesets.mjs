@@ -26,25 +26,71 @@ import { FAMILY_APPS, GITHUB_OWNER } from '../apps-catalog.js';
 const OWNER = GITHUB_OWNER;
 const SELF = 'dev-wpa-config';
 
-/** Le socle, le dépôt d'organisation, puis les seize apps du catalogue. */
-const REPOS = [SELF, '.github', ...FAMILY_APPS.map(app => app.id)];
+/**
+ * MIROIRS : `main` y arrive par `git push --force`, jamais par une PR.
+ *
+ * `mister-family-map` est publié depuis le dépôt privé `bac-sable` par
+ * `npm run mirror`, qui fait littéralement
+ * `git push --force <remote> refs/heads/main:refs/heads/main`. Le ruleset
+ * standard le casserait DEUX FOIS : `non_fast_forward` refuse le forçage, et
+ * la règle `pull_request` refuse tout push direct. On n'y protège donc que
+ * contre la SUPPRESSION — la relecture, elle, a lieu sur la source.
+ */
+const MIRRORS = new Set(['mister-family-map']);
 
-/** Checks exigés, par dépôt. Un contexte qui ne s'exécute jamais bloque tout. */
+/**
+ * Le socle, puis les dix-sept dépôts du catalogue.
+ *
+ * `.github` A ÉTÉ RETIRÉ : le dépôt n'existe pas (404). Son entrée produisait
+ * une croix au milieu d'une sortie verte, avalée par le `try` — le même défaut
+ * que celui corrigé le 01/09 sur les noms de dépôt.
+ */
+const REPOS = [SELF, ...FAMILY_APPS.map(app => app.id)];
+
+/**
+ * Checks exigés, par dépôt. UN CONTEXTE QUI NE S'EXÉCUTE JAMAIS BLOQUE TOUT :
+ * la PR reste éternellement « en attente », et personne ne peut la débloquer
+ * sans toucher au ruleset. Chaque nom ci-dessous est relevé sur les
+ * `check-runs` réels de `main`, pas deviné.
+ *
+ * LE PRÉFIXE `ci / ` EST INDISPENSABLE, ET IL MANQUAIT. Les seize apps
+ * appellent le workflow réutilisable depuis un job nommé `ci` : GitHub
+ * enregistre donc `ci / Format · Lint · Type · Test · Build`. Exiger
+ * `Format · Lint · Type · Test · Build` tout court, comme ce fichier le
+ * faisait, aurait gelé toutes leurs PR — exactement la panne que son propre
+ * en-tête décrit. Le socle, lui, définit ses jobs en ligne : ses contextes
+ * n'ont pas de préfixe, et c'était déjà juste.
+ *
+ * `mister-quota` a sa propre CI : une matrice Node, et un job `package
+ * desktop` conditionné à `refs/tags/v*` — donc JAMAIS exécuté sur une PR. Il
+ * est délibérément absent de la liste.
+ */
 const CHECKS = {
   [SELF]: ['In-repo config parse', 'Consumer subpath resolution'],
-  '.github': [],
-  default: ['Format · Lint · Type · Test · Build'],
+  'mister-quota': [
+    'typecheck · test · build (20.x)',
+    'typecheck · test · build (22.x)',
+  ],
+  default: ['ci / Format · Lint · Type · Test · Build'],
 };
 
 function rulesetFor(repo) {
   const contexts = CHECKS[repo] ?? CHECKS.default;
-  return {
+  const base = {
     name: 'Protect main',
     target: 'branch',
     enforcement: 'active',
     conditions: {
       ref_name: { include: ['~DEFAULT_BRANCH'], exclude: [] },
     },
+  };
+
+  // Un miroir n'accueille pas de PR : il reçoit un `push --force` depuis sa
+  // source. On garde la seule règle qui ne gêne pas la publication.
+  if (MIRRORS.has(repo)) return { ...base, rules: [{ type: 'deletion' }] };
+
+  return {
+    ...base,
     rules: [
       { type: 'deletion' },
       { type: 'non_fast_forward' },
@@ -140,9 +186,16 @@ function gh(path, method = 'GET', body = null) {
 for (const repo of targets) {
   const path = `repos/${OWNER}/${repo}/rulesets`;
   const ruleset = rulesetFor(repo);
-  const contexts = CHECKS[repo] ?? CHECKS.default;
+  // Le journal dit ce que le ruleset FAIT : annoncer des checks à un miroir
+  // qui n'en reçoit aucun, c'est se mentir à soi-même dans une sortie verte.
+  const miroir = MIRRORS.has(repo);
+  const contexts = miroir ? [] : (CHECKS[repo] ?? CHECKS.default);
   console.log(`\n→ ${OWNER}/${repo}`);
-  console.log(`  · checks exigés : ${contexts.join(', ') || 'aucun'}`);
+  console.log(
+    miroir
+      ? '  · MIROIR : suppression bloquée seulement (le push --force doit passer)'
+      : `  · checks exigés : ${contexts.join(', ') || 'aucun'}`
+  );
   try {
     const list = JSON.parse(gh(path) ?? '[]');
     const existing = list.find(r => r.name === ruleset.name);
