@@ -43,6 +43,7 @@ import {
 } from '../apps-catalog.js';
 import { FAMILY_THEMES } from '../themes.js';
 import { SUBPATHS } from './adopt-plan.mjs';
+import { EQUIVALENTS } from './adoption-equivalents.mjs';
 
 const root = new URL('../', import.meta.url);
 const at = path => fileURLToPath(new URL(path, root));
@@ -219,6 +220,32 @@ export function adoptionDebtMarkdown(debt, measured) {
 }
 
 /**
+ * Les apps qui ont ADOPTÉ un besoin — par la même règle que l'acquittement.
+ *
+ * LE DÉFAUT N°1 DU 30/08, QUI SURVIVAIT ICI. Le tableau cherchait un symbole
+ * portant le NOM DU BESOIN. Or dix des vingt-sept clés ne sont le nom d'aucun
+ * export : `testing/pwa-register`, `backup`, `format`, `Toast`, `links`,
+ * `useI18n`, `share`, `geo`, `webVitals`, `security`. Leur colonne « Importé
+ * par » affichait donc **zéro par construction**, quel que soit le nombre
+ * d'apps ayant migré.
+ *
+ * Le cas qui l'a révélé : `testing/pwa-register`, annoncé `0 / 17` alors que
+ * CINQ apps importent `swStub` — c'est-à-dire cinq migrations réussies,
+ * affichées comme n'existant pas, dans le document qui sert à convaincre.
+ *
+ * Le relevé avait été corrigé le 30/08 ; le document qu'il alimente, non. Une
+ * règle d'acquittement ne vaut que si tout ce qui la lit l'applique.
+ */
+function adopters(adoption, name) {
+  const liberateurs = EQUIVALENTS[name]?.symbols;
+  if (!liberateurs?.length) return adoption.bySymbol?.[name] ?? [];
+  // Une app compte une fois, même si elle importe deux symboles libérateurs.
+  return [
+    ...new Set(liberateurs.flatMap(nom => adoption.bySymbol?.[nom] ?? [])),
+  ];
+}
+
+/**
  * Ce que les apps importent vraiment, et ce qu'elles recopient encore.
  *
  * Le README présentait chaque export comme la manière de faire, sans jamais
@@ -238,7 +265,7 @@ export function adoptionTable(adoption) {
   const rows = [...names]
     .map(name => ({
       name,
-      used: (adoption.bySymbol?.[name] ?? []).length,
+      used: adopters(adoption, name).length,
       copied: (adoption.byDuplicate?.[name] ?? []).length,
     }))
     .sort(
