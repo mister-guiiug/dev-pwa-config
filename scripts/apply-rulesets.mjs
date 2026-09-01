@@ -39,6 +39,37 @@ const SELF = 'dev-wpa-config';
 const MIRRORS = new Set(['mister-family-map']);
 
 /**
+ * CONTOURNEMENT : le rôle admin, et SEULEMENT à travers une pull request.
+ *
+ * `bypass_mode: 'pull_request'` et non `'always'`, parce que les deux ne
+ * rendent pas la même chose :
+ *
+ *   `always`       — le porteur du rôle peut aussi POUSSER DIRECTEMENT sur
+ *                    `main`. C'est précisément le trou que ce ruleset existe
+ *                    pour fermer.
+ *   `pull_request` — tout continue de passer par une PR ; le porteur peut en
+ *                    revanche fusionner sans attendre qu'un check soit vert ou
+ *                    qu'un fil de discussion soit résolu.
+ *
+ * Le commentaire de la règle `pull_request` ci-dessous dit ce que ce ruleset
+ * garantit : « qu'aucun commit n'atterrit sur main sans passer par une PR ».
+ * Le mode `pull_request` préserve exactement cette garantie-là, et lève la
+ * seule gêne réelle — une PR bloquée par un check en attente ou un fil laissé
+ * ouvert par un robot de relecture.
+ *
+ * `actor_id: 5` est le rôle ADMIN (1 lecture, 2 triage, 3 écriture,
+ * 4 maintenance, 5 admin). Les dépôts appartiennent à un compte utilisateur,
+ * pas à une organisation : `Team` et `OrganizationAdmin` n'y existent pas.
+ *
+ * LE MIROIR N'EN REÇOIT PAS. Sa seule règle est `deletion` ; un contournement
+ * n'y servirait qu'à supprimer `main`, ce que personne ne veut faire par
+ * accident.
+ */
+const BYPASS = [
+  { actor_id: 5, actor_type: 'RepositoryRole', bypass_mode: 'pull_request' },
+];
+
+/**
  * Le socle, puis les dix-sept dépôts du catalogue.
  *
  * `.github` A ÉTÉ RETIRÉ : le dépôt n'existe pas (404). Son entrée produisait
@@ -91,6 +122,7 @@ function rulesetFor(repo) {
 
   return {
     ...base,
+    bypass_actors: BYPASS,
     rules: [
       { type: 'deletion' },
       { type: 'non_fast_forward' },
