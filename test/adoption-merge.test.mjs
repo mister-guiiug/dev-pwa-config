@@ -108,3 +108,58 @@ test('les index sont triés — le fichier engendré ne bouge pas sans raison', 
   assert.deepEqual(bySymbol.Button, ['alpha', 'zeta']);
   assert.deepEqual(byDuplicate.backup, ['alpha', 'zeta']);
 });
+
+/* ── Le tableau du README, et le défaut n°1 qui y survivait ─────────────── */
+
+/**
+ * `adoptionTable` cherchait un symbole portant LE NOM DU BESOIN. Or dix des
+ * vingt-sept clés ne sont le nom d'aucun export — `testing/pwa-register`,
+ * `backup`, `format`, `Toast`, `links`, `useI18n`, `share`, `geo`,
+ * `webVitals`, `security`. Leur colonne « Importé par » affichait donc ZÉRO par
+ * construction, quel que soit le nombre d'apps ayant migré.
+ *
+ * Le relevé avait été corrigé le 30/08 ; le document qu'il alimente, non. Le
+ * cas qui l'a révélé le 01/09 : `testing/pwa-register` annoncé `0 / 17` alors
+ * que CINQ apps importent `swStub` — cinq migrations réussies, affichées comme
+ * n'existant pas, dans le document qui sert à convaincre.
+ */
+test('le tableau compte les adoptants par les symboles LIBÉRATEURS', async () => {
+  const { adoptionTable } = await import('../scripts/sync-generated.mjs');
+
+  const releve = {
+    measured: 17,
+    generatedAt: '2026-09-01T00:00:00.000Z',
+    bySymbol: {
+      // Personne n'importe un symbole nommé « testing/pwa-register » : ce
+      // n'est le nom d'aucun export. L'adoption se lit sur `swStub`.
+      swStub: ['miss-dice', 'mister-molkky', 'mister-cim10'],
+      pwaRegisterAlias: ['miss-dice', 'miss-badminton'],
+    },
+    byDuplicate: { 'testing/pwa-register': ['miss-uwh', 'mister-doc'] },
+  };
+
+  const ligne = adoptionTable(releve)
+    .split('\n')
+    .find(l => l.startsWith('| `testing/pwa-register`'));
+
+  // Quatre apps distinctes : miss-dice importe les DEUX symboles et ne doit
+  // compter qu'une fois.
+  assert.match(ligne, /\| 4 \/ 17 \|/, `ligne obtenue : ${ligne}`);
+  assert.match(ligne, /\| 2 \/ 17 \|/);
+});
+
+test('un besoin sans symboles déclarés se compte encore par son nom', () => {
+  // La règle par défaut reste : `Button` est le nom d'un export, et c'est lui
+  // qu'on compte. Le correctif n'est pas censé la déplacer.
+  return import('../scripts/sync-generated.mjs').then(({ adoptionTable }) => {
+    const ligne = adoptionTable({
+      measured: 17,
+      generatedAt: '2026-09-01T00:00:00.000Z',
+      bySymbol: { Button: ['miss-dice', 'mister-molkky'] },
+      byDuplicate: {},
+    })
+      .split('\n')
+      .find(l => l.startsWith('| `Button`'));
+    assert.match(ligne, /\| 2 \/ 17 \|/, `ligne obtenue : ${ligne}`);
+  });
+});

@@ -83,9 +83,9 @@ c'est ainsi que ces quatre modules sont nés.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
+_Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 2 fichiers recopiés** dans 17 apps, sur 2 besoins distincts. Les pires : `AppFooter` (1), `BottomNav` (1).
+> **Dette d'adoption : 11 fichiers recopiés** dans 17 apps, sur 3 besoins distincts. Les pires : `testing/pwa-register` (9), `AppFooter` (1), `BottomNav` (1).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -105,8 +105,10 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `cspPlugin`                   | 10 / 17     | —                   |
 | `ErrorBoundary`               | 10 / 17     | —                   |
 | `useActionGuard`              | 10 / 17     | —                   |
+| `useTheme`                    | 10 / 17     | —                   |
 | `ConnectionBanner`            | 9 / 17      | —                   |
 | `Sheet`                       | 9 / 17      | —                   |
+| `applyUpdate`                 | 8 / 17      | —                   |
 | `coveragePreset`              | 8 / 17      | —                   |
 | `EmptyState`                  | 8 / 17      | —                   |
 | `LabelsProvider`              | 8 / 17      | —                   |
@@ -118,6 +120,7 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `AppFooter`                   | 6 / 17      | 1 / 17              |
 | `BottomNav`                   | 6 / 17      | 1 / 17              |
 | `IconsProvider`               | 6 / 17      | —                   |
+| `testing/pwa-register`        | 5 / 17      | 9 / 17              |
 | `AppUpdates`                  | 5 / 17      | —                   |
 | `Button`                      | 5 / 17      | —                   |
 | `dateSlug`                    | 5 / 17      | —                   |
@@ -125,7 +128,6 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `swStub`                      | 5 / 17      | —                   |
 | `ThemePreference`             | 5 / 17      | —                   |
 | `unregisterServiceWorkers`    | 5 / 17      | —                   |
-| `applyUpdate`                 | 4 / 17      | —                   |
 | `Badge`                       | 4 / 17      | —                   |
 | `createStore`                 | 4 / 17      | —                   |
 | `downloadJson`                | 4 / 17      | —                   |
@@ -186,7 +188,6 @@ _Relevé du 2026-08-31 sur 17 dépôts, par `npm run adoption`._
 | `toCsv`                       | 2 / 17      | —                   |
 | `toIcalendar`                 | 2 / 17      | —                   |
 | `UpdateButton`                | 2 / 17      | —                   |
-| `useTheme`                    | 2 / 17      | —                   |
 | `validateImageFile`           | 2 / 17      | —                   |
 | `appById`                     | 1 / 17      | —                   |
 | `AppVersion`                  | 1 / 17      | —                   |

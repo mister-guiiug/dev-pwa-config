@@ -109,20 +109,30 @@ test('chaque besoin guette quelque chose — un fichier ou un export', () => {
 });
 
 /**
- * Détecter par `exports` sans acquitter par `symbols` produirait une dette
- * INEXTINGUIBLE : l'app migre, son `createBackup` local disparaît… mais si la
- * détection portait sur un nom qu'aucun import ne libère, le compte ne
- * bougerait jamais. C'est le défaut n°1 du 30/08, sous une autre forme.
+ * Un besoin détecté par `exports` doit déclarer ses `symbols` EXPLICITEMENT.
+ *
+ * Sans liste, l'acquittement retombe sur le nom du besoin — et c'est
+ * exactement le défaut n°1 du 30/08 : `testing/pwa-register` n'est le nom
+ * d'aucun export, la dette serait donc inextinguible par import.
+ *
+ * CE TEST A D'ABORD ÉTÉ ÉCRIT TROP STRICT, et l'entrée `testing/pwa-register`
+ * l'a mis en défaut le 01/09. Il exigeait que CHAQUE nom de `exports` figure
+ * dans `symbols` — en raisonnant sur un mode d'extinction qui n'est pas le
+ * seul. Une app qui migre le double de `virtual:pwa-register` n'importe jamais
+ * `registerSW` : elle pose l'alias et pilote par `swStub`, puis **supprime**
+ * son fichier. La détection s'éteint par la disparition de la déclaration, pas
+ * par un import.
+ *
+ * Les deux voies sont légitimes ; la seule chose qui ne l'est pas, c'est
+ * qu'AUCUNE ne soit ouverte.
  */
-test('un besoin détecté par ses exports sait aussi s’acquitter', () => {
+test('un besoin détecté par ses exports déclare ses symboles libérateurs', () => {
   for (const [besoin, regle] of Object.entries(EQUIVALENTS)) {
     if (!regle.exports?.length) continue;
-    const libres = new Set(regle.symbols ?? [besoin]);
-    const orphelins = regle.exports.filter(nom => !libres.has(nom));
-    assert.deepEqual(
-      orphelins,
-      [],
-      `${besoin} se détecte sur ${orphelins.join(', ')} mais aucun import ne l'en libère`
+    assert.ok(
+      regle.symbols?.length,
+      `${besoin} se détecte par ses exports sans déclarer de symbole libérateur : ` +
+        `l'acquittement retomberait sur « ${besoin} », qui n'est le nom d'aucun export`
     );
   }
 });

@@ -152,6 +152,34 @@ export const EQUIVALENTS = {
       'restoreBackupFile',
     ],
   },
+  // LE PLUS GROS DOUBLON DU PARC — et la table ne le comptait pas.
+  //
+  // L'en-tête de `testing/pwa-register.js` le dit noir sur blanc depuis sa
+  // promotion : DOUZE dépôts portaient ce double écrit à la main, sous trois
+  // noms de fichier différents. Aucune ligne ne le mesurait ici, si bien que la
+  // plus grosse duplication connue du parc n'a jamais figuré dans le chiffre
+  // qu'on publie.
+  //
+  // Il n'a pas été trouvé à la main : `scripts/adoption-candidates.mjs` compare
+  // ce que les apps DÉCLARENT à ce que le paquet EXPORTE, et l'a sorti en tête
+  // avec neuf apps. La table est écrite à la main ; ce qu'elle ignore ne l'est
+  // pas, et une table de vingt-six entrées ne couvre pas cent trente-huit
+  // sous-chemins.
+  //
+  // ACQUITTEMENT PAR `swStub` ET `pwaRegisterAlias`, pas par `registerSW` : une
+  // app qui migre n'importe jamais `registerSW` du paquet — elle pose l'alias
+  // dans `vitest.config.ts` et pilote le double par `swStub`. C'est le défaut
+  // n°1 du 30/08 qu'on éviterait de justesse en y pensant.
+  'testing/pwa-register': {
+    files: [
+      'pwa-register-stub.ts',
+      'stub-pwa-register.ts',
+      'pwa-mock.ts',
+      'pwa-register-stub.js',
+    ],
+    exports: ['registerSW'],
+    symbols: ['swStub', 'pwaRegisterAlias', 'PWA_REGISTER_STUB'],
+  },
   geo: {
     files: ['geo.ts'],
     symbols: ['distanceKm', 'isValidCoordinates', 'formatDistance'],

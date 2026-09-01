@@ -35,6 +35,7 @@ export const SUBPATHS = {
   useOnline: 'react/use-online',
   useTheme: 'react/use-theme',
   applyUpdate: 'sw-update',
+  'testing/pwa-register': 'testing/pwa-register',
   backup: 'storage',
   format: 'format',
   geo: 'geo',

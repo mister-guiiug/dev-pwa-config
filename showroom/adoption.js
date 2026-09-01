@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-08-31T22:23:55.845Z',
+  generatedAt: '2026-09-01T06:16:40.439Z',
   measured: 17,
   total: 17,
   apps: {
@@ -95,7 +95,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-carbook': {
       symbols: [
@@ -163,8 +163,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
         '/web-vitals',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-contraction': {
       symbols: [
@@ -229,7 +235,7 @@ globalThis.SHOWROOM_ADOPTION = {
           file: 'BottomNav.tsx',
         },
       ],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-dice': {
       symbols: [
@@ -296,7 +302,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-genius': {
       symbols: [
@@ -362,8 +368,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-lookhouse': {
       symbols: [
@@ -422,7 +434,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -488,8 +500,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -547,7 +565,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'miss-uwh': {
       symbols: [
@@ -635,8 +653,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
         '/xlsx',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-cim10': {
       symbols: [
@@ -712,7 +736,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-doc': {
       symbols: [
@@ -795,8 +819,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
         '/xlsx',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-family-map': {
       symbols: [
@@ -881,8 +911,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -954,8 +990,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-mock.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-molkky': {
       symbols: [
@@ -1039,7 +1081,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -1087,8 +1129,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
         '/web-vitals',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-qowa': {
       symbols: [
@@ -1140,8 +1188,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/tsconfig-node',
         '/vitest-base',
       ],
-      duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      duplicates: [
+        {
+          exported: 'testing/pwa-register',
+          file: 'src/test/pwa-register-stub.ts',
+          declares: 'registerSW',
+        },
+      ],
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
     'mister-quota': {
       symbols: [
@@ -1161,7 +1215,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/toast',
       ],
       duplicates: [],
-      measuredAt: '2026-08-31T22:23:55.845Z',
+      measuredAt: '2026-09-01T06:16:40.439Z',
     },
   },
   bySymbol: {
@@ -1730,6 +1784,17 @@ globalThis.SHOWROOM_ADOPTION = {
     useInstallPrompt: ['mister-qowa'],
   },
   byDuplicate: {
+    'testing/pwa-register': [
+      'miss-carbook',
+      'miss-genius',
+      'miss-supaboss',
+      'miss-uwh',
+      'mister-doc',
+      'mister-family-map',
+      'mister-footcoach',
+      'mister-puzzle',
+      'mister-qowa',
+    ],
     AppFooter: ['miss-contraction'],
     BottomNav: ['miss-contraction'],
   },
