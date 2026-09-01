@@ -29,8 +29,18 @@ export interface BottomNavProps {
   /** Au-delà, les destinations restantes passent sous un bouton « Plus » (5). */
   maxVisible?: number;
   moreLabel?: string;
-  /** `'a'` par défaut ; passer `Link` de react-router avec `hrefProp="to"`. */
-  linkComponent?: string | ComponentType<Record<string, unknown>>;
+  /**
+   * `'a'` par défaut ; passer `Link` de react-router avec `hrefProp="to"`.
+   *
+   * `ComponentType<any>` ET NON `ComponentType<Record<string, unknown>>` : le
+   * second refuse tout composant à prop OBLIGATOIRE, donc précisément `Link`
+   * et son `to` — l'usage que cette ligne documente. Cinq apps portaient la
+   * même conversion, avec le même commentaire : « c'est l'usage documenté du
+   * socle ». Un type qui interdit ce que sa propre documentation recommande
+   * est un défaut du type, pas des cinq apps.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- voir ci-dessus
+  linkComponent?: string | ComponentType<any>;
   hrefProp?: string;
   onNavigate?: (item: BottomNavItem) => void;
   className?: string;

@@ -21,6 +21,12 @@ export interface AppFooterProps {
    */
   links?: ReactNode;
   /**
+   * Rendu EN DERNIER, sous les liens et le numéro. Pour ce que `version` ne
+   * sait pas rendre — un identifiant de déploiement qui porte des métadonnées
+   * de build, une mention légale, une date.
+   */
+  after?: ReactNode;
+  /**
    * Affiche le numéro de version sous les liens. `true` pour les réglages par
    * défaut (le `repoUrl` du pied de page sert de lien vers la release), ou les
    * options d'`AppVersion`.
