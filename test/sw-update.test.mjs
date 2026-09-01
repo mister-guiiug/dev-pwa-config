@@ -36,6 +36,13 @@ function fakeServiceWorker(options = {}) {
     // Un vrai `ServiceWorkerRegistration` porte toujours une portée ; c'est
     // elle qui dit quelle URL le SERVEUR sait servir.
     scope = 'https://exemple.test/',
+    // LES VOISINES. `getRegistrations()` rend les registrations de toute
+    // l'ORIGINE, pas de l'app : seize apps de la famille partagent
+    // `mister-guiiug.github.io`. Sans ce réglage, aucun test n'exerçait ce cas.
+    voisines = [],
+    // `false` retire NOTRE registration : l'app n'a pas (ou plus) de worker,
+    // mais les voisines en ont.
+    inscrite = true,
   } = options;
   const listeners = new Set();
   const journal = [];
@@ -61,15 +68,28 @@ function fakeServiceWorker(options = {}) {
       return Promise.resolve(true);
     },
   };
+  const desVoisines = voisines.map(portee => ({
+    scope: portee,
+    waiting: null,
+    update: () => Promise.resolve(),
+    unregister() {
+      journal.push(`unregister-voisine:${portee}`);
+      return Promise.resolve(true);
+    },
+  }));
+  const toutes = inscrite ? [...desVoisines, registration] : desVoisines;
+
   return {
     journal,
     sw: {
       addEventListener: (_type, fn) => listeners.add(fn),
       removeEventListener: (_type, fn) => listeners.delete(fn),
       getRegistration: () =>
-        hangs ? new Promise(() => {}) : Promise.resolve(registration),
+        hangs
+          ? new Promise(() => {})
+          : Promise.resolve(inscrite ? registration : undefined),
       getRegistrations: () =>
-        hangs ? new Promise(() => {}) : Promise.resolve([registration]),
+        hangs ? new Promise(() => {}) : Promise.resolve(toutes),
     },
   };
 }
@@ -1259,5 +1279,208 @@ test('le rappel moderne l’emporte, et l’ancien ne double pas', async () => {
     await view.unmount();
   } finally {
     env.restore();
+  }
+});
+
+/* ── Seize apps, une seule origine ──────────────────────────────────────── */
+
+/**
+ * LE DÉFAUT SIGNALÉ EN USAGE, le 01/09/2026 : « si on ouvre plusieurs apps et
+ * qu'on clique sur forcer la mise à jour, des fois on bascule sur la page
+ * d'accueil d'une AUTRE app que celle en cours ».
+ *
+ * LA CAUSE. Seize apps de la famille sont publiées sous
+ * `https://mister-guiiug.github.io/<app>/` — **une seule origine**. Or
+ * `getRegistrations()` et `caches.keys()` portent sur l'ORIGINE, pas sur
+ * l'app : depuis miss-dice, on voit les workers et les caches des quinze
+ * autres. Trois conséquences, toutes reproduites ci-dessous.
+ *
+ * Aucun test ne montait plus d'une registration : le cas ne pouvait pas
+ * apparaître. C'est le même angle mort que les homonymes de la table
+ * d'adoption — ce qu'on ne met pas en scène, on ne le voit pas.
+ */
+
+test('« Forcer » ne renvoie JAMAIS vers la page d’accueil d’une voisine', async () => {
+  // L'app courante n'a plus de worker — parce qu'une voisine l'a désinscrit
+  // (défaut n°2 ci-dessous), ou parce qu'il n'est pas encore installé. Les
+  // voisines, elles, en ont.
+  const env = setupSw({
+    hard: true,
+    url: 'https://exemple.test/miss-dice/reglages',
+    inscrite: false,
+    voisines: [
+      'https://exemple.test/miss-carbook/',
+      'https://exemple.test/mister-molkky/',
+    ],
+  });
+  try {
+    const cibles = [];
+    await applyUpdate({
+      hard: true,
+      navigate: cible => {
+        cibles.push(cible);
+        return true;
+      },
+    });
+
+    for (const voisine of ['miss-carbook', 'mister-molkky']) {
+      assert.ok(
+        !cibles[0].includes(voisine),
+        `on a navigué chez ${voisine} : c'est le symptôme signalé — ` +
+          `cible obtenue « ${cibles[0]} »`
+      );
+    }
+    assert.match(
+      cibles[0],
+      /\/miss-dice\//,
+      'faute de portée connue, on reste chez soi'
+    );
+  } finally {
+    env.restore();
+  }
+});
+
+test('la portée d’une voisine ne sert jamais de repli', async () => {
+  // Le cœur du défaut : `couvrantes[0] ?? scopes[0]`. Quand aucune portée ne
+  // couvre la page, la seconde branche rendait une registration ARBITRAIRE de
+  // l'origine — c'est-à-dire une autre app.
+  const env = setupSw({
+    url: 'https://exemple.test/miss-dice/',
+    inscrite: false,
+    voisines: ['https://exemple.test/mister-puzzle/'],
+  });
+  try {
+    const cibles = [];
+    await applyUpdate({
+      hard: true,
+      navigate: cible => {
+        cibles.push(cible);
+        return true;
+      },
+    });
+    assert.ok(!cibles[0].includes('mister-puzzle'), cibles[0]);
+  } finally {
+    env.restore();
+  }
+});
+
+test('la portée la PLUS SPÉCIFIQUE gagne encore, voisines comprises', async () => {
+  // La règle utile ne doit pas disparaître avec le correctif : une voisine
+  // inscrite à la racine couvre la page elle aussi, et ne doit pas l'emporter.
+  const env = setupSw({
+    url: 'https://exemple.test/miss-dice/reglages',
+    scope: 'https://exemple.test/miss-dice/',
+    voisines: ['https://exemple.test/'],
+  });
+  try {
+    const cibles = [];
+    await applyUpdate({
+      hard: true,
+      navigate: cible => {
+        cibles.push(cible);
+        return true;
+      },
+    });
+    assert.match(cibles[0], /^https:\/\/exemple\.test\/miss-dice\/\?_t=/);
+  } finally {
+    env.restore();
+  }
+});
+
+test('désinscrire ne touche PAS les workers des apps voisines', async () => {
+  // Une app qui se réinitialise ne doit pas emporter la capacité hors ligne
+  // des quinze autres. C'est ce qui, ensuite, fait basculer la voisine sur la
+  // page d'accueil d'une troisième.
+  const env = setupSw({
+    url: 'https://exemple.test/miss-dice/reglages',
+    scope: 'https://exemple.test/miss-dice/',
+    voisines: [
+      'https://exemple.test/miss-carbook/',
+      'https://exemple.test/mister-molkky/',
+    ],
+  });
+  try {
+    const tombes = await unregisterServiceWorkers();
+    assert.equal(tombes, 1, 'seul le worker de CETTE app doit tomber');
+    assert.deepEqual(
+      env.journal.filter(l => l.startsWith('unregister-voisine')),
+      [],
+      'aucune voisine ne doit être désinscrite'
+    );
+  } finally {
+    env.restore();
+  }
+});
+
+test('purger n’efface pas le précache des apps voisines', async () => {
+  // Workbox nomme ses caches `workbox-precache-v2-<portée>` : le nom d'une
+  // voisine contient sa portée, et c'est ce qui permet de l'épargner. Workbox
+  // lui-même filtre sur `self.registration.scope` en interne ; ce module ne le
+  // faisait pas.
+  const env = setupSw({
+    url: 'https://exemple.test/miss-dice/reglages',
+    scope: 'https://exemple.test/miss-dice/',
+    voisines: ['https://exemple.test/miss-carbook/'],
+    cacheNames: [
+      'workbox-precache-v2-https://exemple.test/miss-dice/',
+      'workbox-precache-v2-https://exemple.test/miss-carbook/',
+      'donnees-app',
+    ],
+  });
+  try {
+    await applyUpdate({ hard: true, navigate: () => true });
+    assert.ok(
+      env.caches.remaining.has(
+        'workbox-precache-v2-https://exemple.test/miss-carbook/'
+      ),
+      'le précache de la voisine doit survivre'
+    );
+    assert.ok(
+      !env.caches.remaining.has(
+        'workbox-precache-v2-https://exemple.test/miss-dice/'
+      ),
+      'le nôtre, lui, doit bien être purgé'
+    );
+  } finally {
+    env.restore();
+  }
+});
+
+test('une portée illisible ne protège pas : le doute désinscrit', async () => {
+  // Une portée absente, vide ou d'un type inattendu ne prouve pas qu'on a
+  // affaire à une voisine — seulement qu'on ne sait pas. Laisser en place un
+  // worker qu'on n'a pas su lire, ce serait rendre au bouton « Forcer » le
+  // défaut qu'il existe pour corriger. On n'épargne QUE ce qu'on peut prouver
+  // étranger : une portée bien formée qui ne couvre pas la page.
+  const journal = [];
+  const registration = (scope, nom) => ({
+    ...(scope === undefined ? {} : { scope }),
+    unregister() {
+      journal.push(nom);
+      return Promise.resolve(true);
+    },
+  });
+  const dom = setupDom({ url: 'https://exemple.test/miss-dice/' });
+  Object.defineProperty(globalThis.navigator, 'serviceWorker', {
+    value: {
+      getRegistrations: () =>
+        Promise.resolve([
+          registration(undefined, 'sans-portee'),
+          registration('', 'portee-vide'),
+          registration('https://exemple.test/miss-dice/', 'la-notre'),
+          registration('https://exemple.test/miss-carbook/', 'la-voisine'),
+        ]),
+    },
+    configurable: true,
+  });
+  try {
+    assert.equal(await unregisterServiceWorkers(), 3);
+    assert.deepEqual(journal.sort(), [
+      'la-notre',
+      'portee-vide',
+      'sans-portee',
+    ]);
+  } finally {
+    dom.restore();
   }
 });
