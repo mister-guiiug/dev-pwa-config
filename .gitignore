@@ -4,3 +4,8 @@ node_modules
 *.tmp
 .idea
 .vscode/.history
+
+# Copies complètes du dépôt, créées par les agents lancés en `isolation:
+# worktree`. Elles étaient masquées par `.git/info/exclude`, qui est LOCAL :
+# invisible à `git status` sur cette machine, et absent partout ailleurs.
+.claude/worktrees/

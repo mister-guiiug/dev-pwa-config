@@ -171,3 +171,47 @@ test('les tsconfig partagés sont du JSON valide et utilisables en extends', () 
     );
   }
 });
+
+/**
+ * L'ANGLE MORT `.claude/worktrees`, vérifié par l'API d'ESLint elle-même.
+ *
+ * Relire le tableau `globalIgnores` ne prouverait rien : ce qui compte est ce
+ * qu'ESLint FAIT du chemin, et le résultat doit traverser `eslint-react` — les
+ * seize apps de la famille n'importent que celle-là. Un ignore posé dans la
+ * base mais perdu à la composition serait un correctif imaginaire.
+ *
+ * Les deux contre-exemples valent autant que le cas : sans eux, un ignore trop
+ * large — `.claude` en entier, ou `**` — passerait le test en éteignant le
+ * lint. Ils sont écrits en `.ts` À DESSEIN : le premier jet interrogeait
+ * `.claude/settings.json`, qu'ESLint 9 déclare ignoré pour une tout autre
+ * raison (aucun bloc `files` ne le matche), ce qui aurait fait échouer le test
+ * sur une propriété qu'il ne mesurait pas.
+ */
+test('`.claude/worktrees` est ignoré, et le reste du dépôt ne l’est pas', async () => {
+  const { ESLint } = await import('eslint');
+
+  for (const nom of ['eslint-base.js', 'eslint-react.js']) {
+    const baseConfig = (await import(`../${nom}`)).default;
+    const eslint = new ESLint({
+      overrideConfigFile: true,
+      baseConfig,
+      cwd: root,
+    });
+
+    assert.equal(
+      await eslint.isPathIgnored('.claude/worktrees/xyz/src/App.tsx'),
+      true,
+      `${nom} : la copie du dépôt sous .claude/worktrees doit être ignorée`
+    );
+    assert.equal(
+      await eslint.isPathIgnored('src/App.tsx'),
+      false,
+      `${nom} : le code de l'app doit rester analysé`
+    );
+    assert.equal(
+      await eslint.isPathIgnored('.claude/skills/helper.ts'),
+      false,
+      `${nom} : l'ignore ne doit pas déborder sur tout .claude`
+    );
+  }
+});
