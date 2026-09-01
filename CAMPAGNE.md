@@ -712,3 +712,69 @@ vérifier que les options étaient bien redevenues actives.
 C'est le meilleur argument de la campagne, et il ne se voit qu'en migrant : le
 coût d'une copie n'est pas ce qu'elle duplique, c'est ce qu'elle cesse de
 recevoir.
+
+## Le tri des candidats du 01/09/2026
+
+`scripts/adoption-candidates.mjs` a sorti **57 noms** que les apps déclarent et
+que le paquet exporte déjà. Voici ce qu'ils sont devenus, pour que personne ne
+refasse l'analyse. **Un tiers seulement était une vraie duplication.**
+
+### Ce qui a été migré
+
+| nom                               | apps      | verdict                                                             |
+| --------------------------------- | --------- | ------------------------------------------------------------------- |
+| `registerSW`                      | 9         | **doublon** — le plus gros du parc, jamais compté ; neuf migrations |
+| `dates` (5 fns)                   | bac-sable | **doublon** — identiques au caractère près                          |
+| `createRateLimiter`               | bac-sable | **doublon** — identique ligne pour ligne                            |
+| `sanitize*` (3 fns)               | bac-sable | **doublon** — identiques, plus une coercition                       |
+| `nameSimilarity`, `normalizeName` | bac-sable | **doublon** — identiques                                            |
+
+Le cas `bac-sable` mérite d'être retenu : **ce dépôt est la source d'au moins
+trois modules du socle** — `dates`, `rate-limit`, `similarity` le nomment dans
+leur en-tête — et n'avait jamais réadopté ce qu'il avait donné. Le code est
+parti, la copie est restée, et les deux ont vécu côte à côte pendant des mois.
+
+### Ce qui est un HOMONYME, et pas une dette
+
+- **`useAuth` (6 apps)** — six contrats différents sous un seul nom.
+  miss-carbook et miss-ticket-pwa câblent leur SDK en direct (Supabase pour
+  l'une, Firebase pour l'autre) ; miss-lookhouse et mister-footcoach exposent
+  un contexte ; miss-uwh y ajoute dix rôles de club et le TOTP ; mister-doc une
+  fiche médecin, un aperçu admin et la MFA. Le `useAuth(client)` du socle est
+  un instantané sur un port injecté — **aucun des six ne l'est**, même si tous
+  pourraient être bâtis dessus.
+- **`addDays` de mister-footcoach** — prend et rend une **chaîne ISO**, là où
+  le socle prend et rend une `Date`. Même nom, signature incompatible.
+- **`CATEGORIES` de miss-dice** — le tableau de score du yahtzee, sans rapport
+  avec le catalogue d'apps.
+
+### Ce qui est un doublon RÉEL mais qu'on ne fait pas, et pourquoi
+
+- **`AuthGate` (4 apps)** — celui de miss-uwh est structurellement identique à
+  celui du socle : `bypass`, `loading`, `fallback`, `mfa`, `children`, un pour
+  un. Mais il dépend du `useAuth` de l'app, donc l'adopter entraîne **tout le
+  port `/auth`** et son adaptateur. Ce n'est pas un échange mécanique, c'est
+  une refonte de la couche d'authentification, app par app.
+- **`useAsync` de bac-sable** — le socle rend `error: Error | null`, la copie
+  `string | null`. Une dizaine de sites d'appel passent `state.error`
+  directement à `<ErrorBanner message={…}/>`.
+- **`resolveBackendKind` de bac-sable** — le socle prend un second argument
+  `kinds` et rend `string`, pas `'local' | 'supabase'`.
+- **`toISODate` et `addDays` de mister-doc** — identiques au socle, mais douze
+  lignes dans un module de 253 dont tout le reste est du métier (fériés
+  français, quadrimestres, semaines ISO). Son `fromISODate` diffère
+  volontairement : il rend toujours une `Date` là où le socle rend `null` sur
+  une entrée invalide. Migrer imposerait un traitement du `null` à huit sites
+  d'appel, **pour un cas qui ne peut pas se produire** — toutes les entrées
+  sont des clés ISO internes ou une colonne `date` de Supabase.
+
+### La leçon
+
+Le balayage automatique trouve ce que la table à la main ne peut pas trouver —
+il a sorti en tête la plus grosse duplication connue du dépôt, que personne ne
+mesurait. Mais **il ne décide rien** : sur les cinq noms les plus partagés,
+deux étaient des homonymes et un troisième était un vrai doublon qu'il vaut
+mieux ne pas payer maintenant.
+
+Un outil qui propose et un humain qui tranche, ce n'est pas un demi-outil :
+c'est le seul montage qui ne fabrique pas de fausses dettes.
