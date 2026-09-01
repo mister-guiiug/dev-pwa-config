@@ -1,5 +1,110 @@
 # Changelog
 
+## 3.32.1
+
+### Patch Changes
+
+- 602cfb9: `apply-rulesets` n'assemble plus de ligne de commande
+
+  CodeQL le signalait depuis le 24/08 (`js/indirect-command-line-injection`,
+  alerte 8, gravité moyenne) : le nom de dépôt venu de `process.argv` descendait
+  jusqu'à `execSync`, en traversant une chaîne de commande.
+
+  ```
+  node scripts/apply-rulesets.mjs 'x; commande'
+  ```
+
+  `execSync` reçoit une ligne de commande, donc un interpréteur : tout ce qui s'y
+  retrouve peut en sortir. `execFileSync` prend un exécutable et un **tableau**
+  d'arguments, passés tels quels au processus — il n'y a plus de chaîne à
+  découper, donc plus rien à échapper. **La classe entière de défaut disparaît**,
+  pas seulement ce cas-ci.
+
+  L'outil valide en outre son argument contre le catalogue. Ce n'est pas la
+  correction — c'en est une seconde, utile à autre chose : une faute de frappe
+  partait jusqu'ici en requête et rendait un 404 attrapé par le `try`, donc un
+  `✗` au milieu d'une sortie verte. C'est exactement la panne que l'en-tête du
+  script raconte — `miss-ticket` pour `miss-ticket-pwa` — et elle laissait croire
+  un ruleset appliqué.
+
+  Outillage de développement du dépôt : rien de publié ne change.
+
+- 5e8f896: ESLint ignore `.claude/worktrees`
+
+  Un agent lancé en `isolation: worktree` checkoute **l'arbre entier du dépôt**
+  sous `.claude/worktrees/<nom>/`. Personne ne le voit : git masque le dossier
+  par `.git/info/exclude`, donc `git status` reste vide. ESLint, lui, ne lit pas
+  `.gitignore` — il descend dedans et lint la copie.
+
+  Le résultat est un angle mort exact :
+
+  ```
+  $ git status          # rien à signaler
+  $ npm run lint        # ✖ 65 problems (47 errors, 18 warnings)
+  ```
+
+  Sur `miss-contraction`, **les 47 erreurs venaient toutes de la copie** : son
+  propre code en avait zéro. On cherche longtemps un défaut dans du code qu'on ne
+  lit pas. Quatre dépôts de la famille en traînaient cinq, pour 2,3 Go.
+
+  L'ignore est étroit à dessein. `.claude` en entier couperait aussi ce qu'un
+  dépôt y écrit à la main et versionne — `launch.json`, `skills/` — alors que
+  seul `worktrees` est engendré par la machine. `test/configs.test.mjs` le
+  vérifie par l'API d'ESLint, à travers `eslint-react` (la seule config que les
+  apps importent), et refuse un ignore qui déborderait.
+
+  Prettier n'a pas besoin de ce correctif : depuis la 3.x il honore `.gitignore`.
+  Une ligne `.claude/worktrees/` **versionnée** dans le `.gitignore` de chaque
+  dépôt le couvre, et rend au passage visible ce que `.git/info/exclude` cachait.
+
+- 966a5b0: `apply-rulesets` exigeait un check qui n'existe pas
+
+  Trois défauts, trouvés en relevant les `check-runs` réels des dix-neuf dépôts
+  avant d'appliquer quoi que ce soit.
+
+  **Le préfixe `ci / ` manquait.** Les seize apps appellent le workflow
+  réutilisable depuis un job nommé `ci` : GitHub enregistre donc
+  `ci / Format · Lint · Type · Test · Build`. Le script exigeait
+  `Format · Lint · Type · Test · Build` tout court — un contexte qui n'est jamais
+  rapporté sous ce nom. Appliqué tel quel, il aurait **gelé toutes les PR des
+  seize apps**, sans recours autre que modifier le ruleset. C'est exactement la
+  panne que l'en-tête du script décrit, et qu'il portait encore.
+
+  **`mister-family-map` est un MIROIR.** `npm run mirror` y fait littéralement
+  `git push --force <remote> refs/heads/main:refs/heads/main`. Le ruleset
+  standard le casserait deux fois : `non_fast_forward` refuse le forçage, la
+  règle `pull_request` refuse le push direct. Il ne reçoit donc plus que la règle
+  `deletion` — la relecture a lieu sur sa source, `bac-sable`.
+
+  **`mister-quota` a sa propre CI.** Une matrice Node (`20.x`, `22.x`), et un job
+  `package desktop` conditionné à `refs/tags/v*`, donc jamais exécuté sur une PR.
+  Exiger celui-là aurait produit le même gel.
+
+  `.github` est retiré de la liste : le dépôt n'existe pas (404), et son entrée
+  produisait une croix avalée par le `try` — au milieu d'une sortie verte.
+
+  Outillage de développement du dépôt : rien de publié ne change.
+
+- a0e80b6: `apply-rulesets` : contournement admin, à travers une PR seulement
+
+  Le ruleset s'appliquait à tout le monde, administrateurs compris — aucune PR ne
+  pouvait être fusionnée tant qu'un check restait en attente ou qu'un fil de
+  discussion ouvert par un robot de relecture n'était pas résolu.
+
+  Le rôle admin peut désormais contourner, avec `bypass_mode: 'pull_request'` et
+  non `'always'`. Les deux ne rendent pas la même chose :
+  - `always` — le porteur peut aussi **pousser directement sur `main`**. C'est
+    précisément le trou que ce ruleset existe pour fermer.
+  - `pull_request` — tout continue de passer par une PR ; le porteur peut en
+    revanche fusionner sans attendre.
+
+  Le commentaire de la règle dit ce que le ruleset garantit : « qu'aucun commit
+  n'atterrit sur `main` sans passer par une PR ». Le mode `pull_request` préserve
+  exactement cette garantie, et ne lève que la gêne.
+
+  Le miroir n'en reçoit pas : sa seule règle est `deletion`, et un contournement
+  n'y servirait qu'à supprimer `main`.
+
 ## 3.32.0
 
 ### Minor Changes
