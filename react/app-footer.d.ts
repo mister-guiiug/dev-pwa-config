@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import type { AppVersionProps } from './app-version.js';
 
 export interface AppFooterProps {
@@ -9,6 +9,17 @@ export interface AppFooterProps {
   sourceLabel?: string;
   sponsorLabel?: string;
   className?: string;
+  /**
+   * Rendu EN PREMIER, avant les liens — la seule position qu'aucune autre prop
+   * n'atteint. Pour un avertissement, une mention légale, une note.
+   */
+  children?: ReactNode;
+  /**
+   * Liens de l'app, rendus avec ceux du socle. C'est ici que passe un `Link`
+   * de routeur : ce composant ne dépend d'aucun routeur et ne peut pas en
+   * fabriquer un, mais il peut en accueillir.
+   */
+  links?: ReactNode;
   /**
    * Affiche le numéro de version sous les liens. `true` pour les réglages par
    * défaut (le `repoUrl` du pied de page sert de lien vers la release), ou les

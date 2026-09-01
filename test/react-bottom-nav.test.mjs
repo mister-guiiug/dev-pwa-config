@@ -270,3 +270,110 @@ test('onNavigate reçoit l’élément choisi et referme le tiroir', async () =>
     dom.restore();
   }
 });
+
+/* ── Les deux manques qu'une app avait nommés ───────────────────────────── */
+
+/**
+ * miss-contraction a REFUSÉ de migrer, et a écrit pourquoi dans son propre
+ * `BottomNav.tsx`. Sa dernière ligne est une demande : « À DEMANDER AU SOCLE
+ * si la migration doit un jour aboutir : un emplacement libre en fin de barre
+ * (`trailing`), et une accroche d'habillage par élément. »
+ *
+ * Les deux tests ci-dessous montent exactement sa barre : quatre destinations,
+ * un appel maternité en bouton d'action, et une cinquième cellule qui n'est pas
+ * une destination du tout.
+ */
+
+test('`trailing` accueille une cellule qui n’est PAS une destination', async () => {
+  // La cinquième cellule de miss-contraction est un `<button>` qui ouvre le
+  // tiroir de l'app, avec `aria-expanded` et `aria-controls`. Le bouton
+  // « Plus » interne lui ressemble mais fait autre chose : il déplie SON
+  // tiroir d'onglets en surnombre. Même balisage, autre mécanique.
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(BottomNav, {
+        items: ITEMS,
+        currentPath: '/',
+        trailing: h(
+          'button',
+          {
+            type: 'button',
+            'aria-expanded': false,
+            'aria-controls': 'app-drawer',
+            className: 'menu',
+          },
+          'Menu'
+        ),
+      })
+    );
+    const bouton = view.container.querySelector('button.menu');
+    assert.ok(bouton, 'le bouton de l’app doit être rendu');
+    assert.equal(bouton.getAttribute('aria-controls'), 'app-drawer');
+    assert.equal(
+      bouton.closest('nav')?.getAttribute('data-dwc'),
+      'bottom-nav',
+      'il doit être DANS le repère, sinon il sort de la barre'
+    );
+    // En dernier : une cellule d'action se lit après les destinations.
+    assert.equal(
+      view.container.querySelector('nav').lastElementChild,
+      bouton,
+      'la cellule libre se rend en fin de barre'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('un élément peut porter son propre habillage', async () => {
+  // L'appel maternité de miss-contraction est un bouton d'action, pas un
+  // onglet : gros disque en relief, libellé masqué visuellement. `key` ne
+  // descend pas dans le DOM, et un sélecteur sur le `href` ne tiendrait pas —
+  // les chemins sont traduits dans sept langues.
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(BottomNav, {
+        currentPath: '/',
+        items: [
+          { href: '/', label: 'Accueil' },
+          { href: '/maternite', label: 'Appeler', className: 'cta' },
+        ],
+      })
+    );
+    const cta = view.container.querySelector('.cta');
+    assert.ok(cta, 'la classe de l’élément doit atteindre le DOM');
+    assert.equal(cta.getAttribute('href'), '/maternite');
+    assert.equal(
+      view.container.querySelectorAll('.cta').length,
+      1,
+      'elle ne doit habiller QUE cet élément'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('sans `trailing` ni `className`, la barre ne change pas', async () => {
+  // Six apps importent déjà cette barre : les deux ajouts sont additifs, et
+  // c'est ce test qui l'exige.
+  const dom = setupDom();
+  try {
+    const view = await mount(h(BottomNav, { items: ITEMS, currentPath: '/' }));
+    const nav = view.container.querySelector('nav');
+    assert.equal(nav.children.length, ITEMS.length);
+    for (const lien of nav.querySelectorAll('a')) {
+      assert.equal(
+        lien.getAttribute('class'),
+        null,
+        'aucune classe ne doit apparaître quand l’app n’en demande pas'
+      );
+    }
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
