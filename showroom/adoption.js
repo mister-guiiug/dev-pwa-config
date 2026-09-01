@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-09-01T06:39:51.111Z',
+  generatedAt: '2026-09-01T13:21:02.633Z',
   measured: 17,
   total: 17,
   apps: {
@@ -95,7 +95,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-carbook': {
       symbols: [
@@ -165,10 +165,12 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-contraction': {
       symbols: [
+        'AppFooter',
+        'BottomNav',
         'EmptyState',
         'ErrorBoundary',
         'FamilyApps',
@@ -205,6 +207,8 @@ globalThis.SHOWROOM_ADOPTION = {
         '/playwright-base',
         '/prettier',
         '/react',
+        '/react/app-footer',
+        '/react/bottom-nav',
         '/react/empty-state',
         '/react/labels',
         '/react/observability',
@@ -220,17 +224,8 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
         '/web-vitals',
       ],
-      duplicates: [
-        {
-          exported: 'AppFooter',
-          file: 'AppFooter.tsx',
-        },
-        {
-          exported: 'BottomNav',
-          file: 'BottomNav.tsx',
-        },
-      ],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      duplicates: [],
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-dice': {
       symbols: [
@@ -297,7 +292,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-genius': {
       symbols: [
@@ -365,7 +360,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-lookhouse': {
       symbols: [
@@ -424,7 +419,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -492,7 +487,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -550,7 +545,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'miss-uwh': {
       symbols: [
@@ -640,7 +635,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/xlsx',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-cim10': {
       symbols: [
@@ -716,7 +711,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-doc': {
       symbols: [
@@ -801,7 +796,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/xlsx',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-family-map': {
       symbols: [
@@ -893,7 +888,7 @@ globalThis.SHOWROOM_ADOPTION = {
           declares: 'registerSW',
         },
       ],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -967,7 +962,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-molkky': {
       symbols: [
@@ -1051,7 +1046,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -1101,7 +1096,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-qowa': {
       symbols: [
@@ -1155,7 +1150,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
     'mister-quota': {
       symbols: [
@@ -1175,7 +1170,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/toast',
       ],
       duplicates: [],
-      measuredAt: '2026-09-01T06:39:51.111Z',
+      measuredAt: '2026-09-01T13:21:02.633Z',
     },
   },
   bySymbol: {
@@ -1557,6 +1552,24 @@ globalThis.SHOWROOM_ADOPTION = {
     ],
     useToast: ['miss-carbook', 'mister-doc', 'mister-footcoach'],
     validateImageFile: ['miss-carbook', 'mister-puzzle'],
+    AppFooter: [
+      'miss-contraction',
+      'miss-genius',
+      'miss-lookhouse',
+      'miss-uwh',
+      'mister-cim10',
+      'mister-molkky',
+      'mister-qowa',
+    ],
+    BottomNav: [
+      'miss-contraction',
+      'miss-genius',
+      'miss-lookhouse',
+      'miss-supaboss',
+      'mister-cim10',
+      'mister-doc',
+      'mister-footcoach',
+    ],
     PAGE: ['miss-contraction', 'mister-doc'],
     PdfContent: ['miss-contraction', 'mister-doc'],
     ResolvedTheme: ['miss-contraction'],
@@ -1595,22 +1608,6 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-qowa',
     ],
     pagesUrl: ['miss-dice'],
-    AppFooter: [
-      'miss-genius',
-      'miss-lookhouse',
-      'miss-uwh',
-      'mister-cim10',
-      'mister-molkky',
-      'mister-qowa',
-    ],
-    BottomNav: [
-      'miss-genius',
-      'miss-lookhouse',
-      'miss-supaboss',
-      'mister-cim10',
-      'mister-doc',
-      'mister-footcoach',
-    ],
     Button: [
       'miss-genius',
       'miss-uwh',
@@ -1754,8 +1751,6 @@ globalThis.SHOWROOM_ADOPTION = {
     useInstallPrompt: ['mister-qowa'],
   },
   byDuplicate: {
-    AppFooter: ['miss-contraction'],
-    BottomNav: ['miss-contraction'],
     'testing/pwa-register': ['mister-family-map'],
   },
 };

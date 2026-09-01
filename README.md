@@ -85,7 +85,7 @@ c'est ainsi que ces quatre modules sont nés.
 
 _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 3 fichiers recopiés** dans 17 apps, sur 3 besoins distincts. Les pires : `AppFooter` (1), `BottomNav` (1), `testing/pwa-register` (1).
+> **Dette d'adoption : 1 fichiers recopiés** dans 17 apps, sur 1 besoins distincts. Les pires : `testing/pwa-register` (1).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -117,10 +117,10 @@ _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 | `ThemeProvider`               | 8 / 17      | —                   |
 | `UpdatePromptBanner`          | 8 / 17      | —                   |
 | `useOnline`                   | 8 / 17      | —                   |
+| `AppFooter`                   | 7 / 17      | —                   |
+| `BottomNav`                   | 7 / 17      | —                   |
 | `SPONSOR_URL`                 | 7 / 17      | —                   |
 | `useThemeContext`             | 7 / 17      | —                   |
-| `AppFooter`                   | 6 / 17      | 1 / 17              |
-| `BottomNav`                   | 6 / 17      | 1 / 17              |
 | `IconsProvider`               | 6 / 17      | —                   |
 | `AppUpdates`                  | 5 / 17      | —                   |
 | `Button`                      | 5 / 17      | —                   |
