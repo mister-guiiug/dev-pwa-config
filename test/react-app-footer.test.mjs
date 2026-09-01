@@ -145,3 +145,78 @@ test('sans `children` ni `links`, le pied de page ne change pas', async () => {
     dom.restore();
   }
 });
+
+/**
+ * `after` — LE TROISIÈME EMPLACEMENT, ET IL A FALLU UNE MIGRATION POUR LE
+ * VOIR. La 3.31.0 ajoutait `children` et `links` en pensant couvrir le pied de
+ * page de miss-contraction, tableau de besoins à l'appui. La migration a buté
+ * sur son quatrième élément.
+ *
+ * Son numéro n'est pas `version` mais `deploymentVersion`, de la forme
+ * `1.2.3+1756…`, et `AppVersion` passe par `formatVersion`, qui SUPPRIME le
+ * `+buildId` — or c'est lui, et lui seul, qui permet de vérifier qu'un
+ * déploiement a pris. Aucune combinaison de `children` et `links` ne place un
+ * paragraphe en dernier, et un `order` CSS aurait menti à l'ordre de lecture.
+ *
+ * Deux emplacements conçus depuis un tableau de besoins en couvraient trois
+ * sur quatre. C'est en migrant qu'on l'a su.
+ */
+test('`after` rend en dernier ce que `version` ne sait pas rendre', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(
+        AppFooter,
+        {
+          links: h('a', { href: '/a-propos' }, 'À propos et version'),
+          after: h('p', { className: 'deploiement' }, '1.2.3+1756abc'),
+        },
+        h('p', { className: 'disclaimer' }, 'Ne remplace pas un avis médical.')
+      )
+    );
+    const footer = view.container.querySelector('[data-dwc="app-footer"]');
+    const deploiement = footer.querySelector('.deploiement');
+
+    assert.ok(deploiement, 'le paragraphe de l’app doit être rendu');
+    assert.equal(
+      footer.lastElementChild,
+      deploiement,
+      'en DERNIER : c’est toute la raison d’être de cet emplacement'
+    );
+    // Et le `+buildId` survit, là où `AppVersion` l'aurait mangé.
+    assert.match(deploiement.textContent, /\+1756abc$/);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('le pied de page de miss-contraction, ses quatre éléments dans l’ordre', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(
+        AppFooter,
+        {
+          links: h('a', { href: '/a-propos' }, 'À propos et version'),
+          after: h('p', { className: 'version' }, '1.2.3+1756abc'),
+        },
+        h('p', { className: 'disclaimer' }, 'Ne remplace pas un avis médical.')
+      )
+    );
+    const footer = view.container.querySelector('[data-dwc="app-footer"]');
+    assert.deepEqual(
+      [...footer.children].map(
+        noeud =>
+          noeud.className ||
+          noeud.getAttribute('data-dwc') ||
+          noeud.getAttribute('href')
+      ),
+      ['disclaimer', '/a-propos', 'footer-sponsor', 'version'],
+      'avertissement, lien interne, sponsor, numéro de déploiement'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
