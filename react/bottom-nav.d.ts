@@ -34,10 +34,16 @@ export interface BottomNavProps {
    *
    * `ComponentType<any>` ET NON `ComponentType<Record<string, unknown>>` : le
    * second refuse tout composant à prop OBLIGATOIRE, donc précisément `Link`
-   * et son `to` — l'usage que cette ligne documente. Cinq apps portaient la
+   * et son `to` — l'usage que cette ligne documente. SEPT apps portaient la
    * même conversion, avec le même commentaire : « c'est l'usage documenté du
    * socle ». Un type qui interdit ce que sa propre documentation recommande
-   * est un défaut du type, pas des cinq apps.
+   * est un défaut du type, pas des sept apps.
+   *
+   * « Cinq » a été annoncé d'abord — dans le changeset de la 3.32.0 et dans
+   * les PR qui l'accompagnaient — sur la foi d'un relevé tronqué par un
+   * `head -8` lu sans être vérifié. mister-doc et mister-footcoach
+   * manquaient. Le chiffre ne change pas la conclusion ; un compte annoncé se
+   * vérifie quand même.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- voir ci-dessus
   linkComponent?: string | ComponentType<any>;
