@@ -20,7 +20,7 @@
  *   node scripts/apply-rulesets.mjs miss-carbook    # repo unique
  *   node scripts/apply-rulesets.mjs --dry-run       # preview sans modif
  */
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { FAMILY_APPS, GITHUB_OWNER } from '../apps-catalog.js';
 
 const OWNER = GITHUB_OWNER;
@@ -81,21 +81,57 @@ function rulesetFor(repo) {
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const onlyRepo = args.find(a => !a.startsWith('--'));
+
+/**
+ * UN NOM DE DÉPÔT SE CHOISIT DANS LE CATALOGUE, il ne s'invente pas.
+ *
+ * Deux raisons, et la seconde n'était pas la première trouvée. La visible :
+ * une faute de frappe partait en requête et rendait un 404 attrapé par le
+ * `try`, donc un `✗` au milieu d'une sortie par ailleurs verte — c'est
+ * exactement la panne que l'en-tête raconte (`miss-ticket` pour
+ * `miss-ticket-pwa`), et elle laissait croire un ruleset appliqué.
+ *
+ * La sérieuse : cet argument descendait jusqu'à une commande. Le `gh` du
+ * dessous ne construit plus de chaîne — c'est là le vrai correctif — mais un
+ * outil qui n'accepte que des valeurs connues ne dépend pas de cette
+ * promesse-là.
+ */
+if (onlyRepo && !REPOS.includes(onlyRepo)) {
+  console.error(
+    `Dépôt inconnu : « ${onlyRepo} ».
+Ceux du catalogue : ${REPOS.join(', ')}`
+  );
+  process.exit(1);
+}
+
 const targets = onlyRepo ? [onlyRepo] : REPOS;
 
+/**
+ * Appelle `gh` SANS PASSER PAR UN SHELL.
+ *
+ * `execSync` reçoit une ligne de commande, donc un interpréteur : tout ce qui
+ * s'y retrouve — ici le nom de dépôt venu de `process.argv` — peut en sortir.
+ * `node scripts/apply-rulesets.mjs 'x/../../y; commande'` exécutait ce qui
+ * suivait le point-virgule. CodeQL l'a signalé
+ * (`js/indirect-command-line-injection`, alerte 8), et il avait raison même
+ * pour un outil qu'un seul mainteneur lance à la main : la ligne de commande
+ * ne devrait jamais être le format de transport d'un argument.
+ *
+ * `execFileSync` prend un exécutable et un TABLEAU d'arguments, passés tels
+ * quels au processus. Il n'y a plus de chaîne à découper, donc plus rien à
+ * échapper — la classe entière de défaut disparaît, pas seulement ce cas-ci.
+ */
 function gh(path, method = 'GET', body = null) {
-  const flags = ['-X', method];
-  if (body) {
-    flags.push('-H', 'Content-Type: application/json');
-    flags.push('--input', '-');
-  }
-  const cmd = `gh api ${flags.join(' ')} ${path}`;
+  const argv = ['api', '-X', method];
+  if (body) argv.push('-H', 'Content-Type: application/json', '--input', '-');
+  argv.push(path);
+
   if (DRY_RUN && method !== 'GET') {
-    console.log(`[dry-run] ${cmd}`);
+    console.log(`[dry-run] gh ${argv.join(' ')}`);
     if (body) console.log(`         body: ${JSON.stringify(body, null, 2)}`);
     return null;
   }
-  return execSync(cmd, {
+  return execFileSync('gh', argv, {
     input: body ? JSON.stringify(body) : undefined,
     encoding: 'utf8',
   });
