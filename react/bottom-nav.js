@@ -38,6 +38,29 @@ import { useLabels } from './labels.js';
  *    a le même motif, les pose tous les deux. C'est la version de
  *    miss-contraction qui est reprise.
  *
+ * `trailing` ET `item.className` : LES DEUX MANQUES QU'UNE APP A NOMMÉS EN
+ * REFUSANT DE MIGRER. L'en-tête de son `BottomNav.tsx` les décrit, et sa
+ * dernière ligne est une demande explicite : « À DEMANDER AU SOCLE si la
+ * migration doit un jour aboutir : un emplacement libre en fin de barre
+ * (`trailing`), et une accroche d'habillage par élément. » La voici.
+ *
+ *   `trailing` — UNE CELLULE QUI N'EST PAS UNE DESTINATION. La cinquième de
+ *   miss-contraction est un `<button>` qui ouvre le tiroir de l'app, avec
+ *   `aria-expanded` et `aria-controls`, et qui s'allume aussi sur les routes
+ *   que ce tiroir contient. Ce composant ne prend que des `items` à `href`.
+ *   Son propre bouton « Plus » ressemble au sien mais fait autre chose : il
+ *   déplie SON tiroir d'onglets en surnombre. Même balisage, autre mécanique —
+ *   d'où l'emplacement libre plutôt qu'un détournement.
+ *
+ *   `item.className` — `key` NE DESCEND PAS DANS LE DOM. Son appel maternité
+ *   est un bouton d'action, pas un onglet : gros disque en relief, libellé
+ *   masqué visuellement. Tous les `items` étaient rendus à l'identique, sans
+ *   aucune accroche par élément, et un sélecteur sur le `href` ne tiendrait pas
+ *   — les chemins sont traduits dans sept langues.
+ *
+ * Les deux sont ADDITIFS : les six apps qui importent déjà cette barre ne
+ * changent pas d'un pixel.
+ *
  * AGNOSTIQUE DE ROUTEUR. Le paquet ne dépend pas de react-router. Par défaut un
  * `<a href>` ; `linkComponent` + `hrefProp` branchent un `Link` (`hrefProp="to"`).
  * L'état actif est calculé ici, jamais délégué : c'est lui qui portait le
@@ -84,6 +107,7 @@ export function BottomNav(props = {}) {
     hrefProp = 'href',
     onNavigate,
     className,
+    trailing,
   } = props;
 
   const labels = useLabels('nav');
@@ -129,6 +153,11 @@ export function BottomNav(props = {}) {
       {
         key: item.key ?? item.href,
         [hrefProp]: item.href,
+        // `key` NE DESCEND PAS DANS LE DOM : une app qui veut habiller un
+        // onglet en particulier n'avait aucune prise. Un sélecteur sur le
+        // `href` ne remplace pas ce crochet — miss-contraction traduit ses
+        // chemins dans sept langues.
+        className: item.className,
         'aria-current': current ? 'page' : undefined,
         'data-dwc': `bottom-nav-${place}`,
         'data-current': current ? '' : undefined,
@@ -194,6 +223,8 @@ export function BottomNav(props = {}) {
           { id: moreId, hidden: !moreOpen, 'data-dwc': 'bottom-nav-drawer' },
           hidden.map(item => link(item, 'drawer-item'))
         )
-      : null
+      : null,
+    // En dernier, DANS le repère : une cellule qui n'est pas une destination.
+    trailing ?? null
   );
 }

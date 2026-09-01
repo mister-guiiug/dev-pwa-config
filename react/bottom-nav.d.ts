@@ -12,6 +12,12 @@ export interface BottomNavItem {
   badgeLabel?: string;
   /** Correspondance exacte du chemin (implicite pour `/`). */
   end?: boolean;
+  /**
+   * Habillage de CET élément. `key` ne descend pas dans le DOM, et un sélecteur
+   * sur le `href` ne tient pas quand les chemins sont traduits : c'est la seule
+   * accroche pour distinguer un bouton d'action d'un onglet ordinaire.
+   */
+  className?: string;
 }
 
 export interface BottomNavProps {
@@ -28,6 +34,12 @@ export interface BottomNavProps {
   hrefProp?: string;
   onNavigate?: (item: BottomNavItem) => void;
   className?: string;
+  /**
+   * Emplacement libre en fin de barre, DANS le repère `<nav>` : une cellule qui
+   * n'est pas une destination — bouton de tiroir, action d'urgence. Le bouton
+   * « Plus » interne reste réservé aux `items` en surnombre.
+   */
+  trailing?: ReactNode;
 }
 
 /** Barre de navigation basse, agnostique de routeur. */
