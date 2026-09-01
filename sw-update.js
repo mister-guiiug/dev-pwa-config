@@ -60,26 +60,41 @@ function bustedUrl(base) {
 }
 
 /**
- * La portée du service worker qui contrôle cette page — c'est-à-dire la seule
- * URL dont on sait que le SERVEUR sait la servir.
+ * Les portées inscrites sur l'origine, triées en « la nôtre » et « les autres ».
  *
- * POURQUOI C'EST NÉCESSAIRE. Une app monopage déployée sur un hébergement
- * statique (GitHub Pages, pour les seize apps de la famille) n'a de fichier
- * qu'à sa racine : `/mister-family-map/profil` n'existe pas côté serveur. Cette
- * route ne répond que parce que le service worker la rattrape par son
- * `navigateFallback`. Purger le worker DÉTRUIT donc ce qui rendait l'URL
- * courante joignable — et recharger cette même URL juste après renvoie un 404.
+ * UNE ORIGINE, SEIZE APPS. `getRegistrations()` et `caches.keys()` portent sur
+ * l'ORIGINE, pas sur l'application. Les seize apps de la famille sont publiées
+ * sous `https://mister-guiiug.github.io/<app>/` : depuis miss-dice, on voit les
+ * workers et les caches des quinze autres, et on peut les détruire.
  *
- * Le défaut a été reproduit sur un serveur statique sans repli : « Forcer la
- * mise à jour » depuis `/profil` menait à `/profil?_t=…` et à la page 404 de
- * l'hébergeur. Il ne se voit pas en développement, où `vite preview` sert
- * `index.html` pour n'importe quel chemin.
+ * POURQUOI LA NÔTRE EST NÉCESSAIRE. Une app monopage sur hébergement statique
+ * n'a de fichier qu'à sa racine : `/mister-family-map/profil` n'existe pas côté
+ * serveur. Cette route ne répond que parce que le service worker la rattrape
+ * par son `navigateFallback`. Purger le worker DÉTRUIT donc ce qui rendait
+ * l'URL courante joignable — et recharger cette même URL juste après renvoie un
+ * 404. Reproduit sur un serveur statique sans repli : « Forcer la mise à jour »
+ * depuis `/profil` menait à `/profil?_t=…` et à la page 404 de l'hébergeur.
+ * Invisible en développement, où `vite preview` sert `index.html` partout.
  *
- * La portée est relevée AVANT la désinscription, faute de quoi il n'y a plus
- * rien à lire. À portées multiples, la plus SPÉCIFIQUE qui couvre la page
+ * POURQUOI LES AUTRES SONT NÉCESSAIRES. Parce qu'il faut savoir ce qu'on ne
+ * doit PAS toucher. Workbox nomme ses caches `workbox-precache-v2-<portée>` et
+ * filtre lui-même sur `self.registration.scope` ; ce module ne le faisait pas.
+ *
+ * `couvrantes[0] ?? scopes[0]` : LE DÉFAUT SIGNALÉ EN USAGE le 01/09/2026.
+ * Quand aucune portée ne couvre la page — l'app n'a pas encore installé son
+ * worker, ou une voisine vient de le désinscrire — la seconde branche rendait
+ * une registration ARBITRAIRE de l'origine. `applyUpdate` naviguait alors vers
+ * `bustedUrl(portée d'une autre app)`, c'est-à-dire vers **la page d'accueil
+ * d'une app voisine**. Mot pour mot le symptôme rapporté : « des fois on
+ * bascule sur la page d'accueil d'une autre app que celle en cours ».
+ *
+ * Ne rien trouver rend maintenant `''`, et l'appelant reste chez lui.
+ *
+ * Les portées sont relevées AVANT la désinscription, faute de quoi il n'y a
+ * plus rien à lire. À portées multiples, la plus SPÉCIFIQUE qui couvre la page
  * l'emporte — c'est celle qui la contrôle.
  */
-async function controllingScope(sw, timeoutMs) {
+async function readScopes(sw, timeoutMs) {
   try {
     const registrations = await withTimeout(
       Promise.resolve(sw.getRegistrations?.()).catch(() => undefined),
@@ -88,15 +103,35 @@ async function controllingScope(sw, timeoutMs) {
     const scopes = (registrations ?? [])
       .map(registration => registration?.scope)
       .filter(scope => typeof scope === 'string' && scope !== '');
-    if (scopes.length === 0) return '';
+    if (scopes.length === 0) return { scope: '', foreign: [] };
+
     const here = globalThis.location?.href ?? '';
     const couvrantes = scopes
       .filter(scope => here.startsWith(scope))
       .sort((a, b) => b.length - a.length);
-    return couvrantes[0] ?? scopes[0];
+    const scope = couvrantes[0] ?? '';
+    return { scope, foreign: scopes.filter(other => other !== scope) };
   } catch {
-    return '';
+    return { scope: '', foreign: [] };
   }
+}
+
+/**
+ * Cette registration est-elle la NÔTRE, c'est-à-dire pas celle d'une voisine ?
+ *
+ * LE DOUTE PROFITE À LA DÉSINSCRIPTION. Une portée illisible — absente, vide,
+ * d'un type inattendu — ne prouve pas qu'on a affaire à une autre app ; elle
+ * prouve seulement qu'on ne sait pas. Laisser en place un worker qu'on n'a pas
+ * su lire, c'est reproduire le défaut que ce module existe pour corriger : un
+ * bouton « Forcer » qui ne force rien.
+ *
+ * On n'épargne donc QUE ce qu'on peut prouver étranger : une portée bien
+ * formée qui ne couvre pas la page courante. Une voisine en a toujours une.
+ */
+function estNotre(registration) {
+  const scope = registration?.scope;
+  if (typeof scope !== 'string' || scope === '') return true;
+  return (globalThis.location?.href ?? '').startsWith(scope);
 }
 
 /**
@@ -173,6 +208,17 @@ function awaitControllerChange(ms) {
  * 3. **Rien à observer.** `void` : ni l'appelant ni un test ne peut savoir si
  *    quelque chose a été désinscrit. On rend le compte.
  *
+ * QUATRIÈME DÉFAUT, celui de ce module et pas des copies, signalé en usage le
+ * 01/09/2026 : « tous les service workers » voulait dire **ceux de toute
+ * l'origine**. Les seize apps de la famille partagent
+ * `mister-guiiug.github.io` : réinitialiser miss-dice emportait la capacité
+ * hors ligne des quinze autres, sans que rien ne le dise. Seules les
+ * registrations qui COUVRENT LA PAGE COURANTE sont désinscrites.
+ *
+ * Le repli de développement n'y perd rien : un worker resté d'une session
+ * précédente y a la même portée que la page (même origine, même base). Un
+ * worker de portée différente ne contrôlait de toute façon pas cette page.
+ *
  * LA CONDITION RESTE DANS L'APP. Ce paquet est aussi consommé par
  * `node --test` : il ne peut pas lire `import.meta.env`. Le motif à écrire
  * côté app est donc :
@@ -197,9 +243,13 @@ export async function unregisterServiceWorkers(options = {}) {
       timeoutMs
     );
     if (!registrations?.length) return 0;
+    // Les nôtres seulement : celles des apps voisines de la même origine ne
+    // nous regardent pas, et les désinscrire les casse en silence.
+    const miennes = registrations.filter(estNotre);
+    if (!miennes.length) return 0;
     const results = await withTimeout(
       Promise.all(
-        registrations.map(registration =>
+        miennes.map(registration =>
           // Le `catch` est PAR désinscription : c'est ce qui manque aux cinq
           // copies, où un seul échec devient un rejet non capté.
           Promise.resolve(registration?.unregister?.()).catch(() => false)
@@ -215,16 +265,29 @@ export async function unregisterServiceWorkers(options = {}) {
   }
 }
 
-/** Désinscrit les service workers et vide le Cache Storage. */
-async function purge(keepCache, timeoutMs) {
+/**
+ * Désinscrit les service workers de CETTE app et vide SON Cache Storage.
+ *
+ * `caches.keys()` porte sur l'origine : depuis miss-dice, on voit les caches
+ * des quinze autres apps de la famille. Workbox nomme les siens
+ * `workbox-precache-v2-<portée>` — sa propre routine de nettoyage filtre
+ * d'ailleurs sur `self.registration.scope`. On épargne donc tout cache dont le
+ * nom porte la portée d'une voisine.
+ *
+ * Le filtre est négatif à dessein : un cache que l'app a créé elle-même sous un
+ * nom quelconque (`donnees-app`) ne porte aucune portée, et reste purgé comme
+ * avant. C'est `keepCache` qui existe pour l'épargner, pas ce filtre.
+ */
+async function purge(keepCache, timeoutMs, foreign = []) {
   await unregisterServiceWorkers({ timeoutMs });
   const store = globalThis.caches;
   if (store?.keys) {
     try {
       const keys = await store.keys();
+      const estVoisin = key => foreign.some(scope => key.includes(scope));
       await Promise.all(
         keys
-          .filter(key => !keepCache(key))
+          .filter(key => !keepCache(key) && !estVoisin(key))
           .map(key => store.delete(key).catch(() => false))
       );
     } catch {
@@ -319,13 +382,13 @@ export async function applyUpdate(options = {}) {
     }
   }
 
-  // La portée se lit AVANT la désinscription : après, il n'y a plus rien à
-  // lire. `reloadTo` reste souverain quand l'app a imposé sa destination.
-  if (!reloadTo) {
-    const scope = await controllingScope(sw, timeoutMs);
-    if (scope) target = bustedUrl(scope);
-  }
+  // Les portées se lisent AVANT la désinscription : après, il n'y a plus rien
+  // à lire. La nôtre décide où revenir ; celles des voisines, ce qu'il ne faut
+  // pas effacer. `reloadTo` reste souverain quand l'app a imposé sa
+  // destination — mais les voisines restent protégées dans tous les cas.
+  const { scope, foreign } = await readScopes(sw, timeoutMs);
+  if (!reloadTo && scope) target = bustedUrl(scope);
 
-  await withTimeout(purge(keepCache, timeoutMs), timeoutMs);
+  await withTimeout(purge(keepCache, timeoutMs, foreign), timeoutMs);
   return finish('purged');
 }
