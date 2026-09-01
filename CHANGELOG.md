@@ -1,5 +1,179 @@
 # Changelog
 
+## 3.31.0
+
+### Minor Changes
+
+- 7eb2cc2: `AppFooter` et `BottomNav` : répondre aux deux refus argumentés
+
+  Deux apps de la famille refusaient de migrer, et **avaient écrit pourquoi dans
+  leur propre fichier**. Ce sont les deux dernières dettes du relevé, et les deux
+  seules argumentées. Leurs demandes sont ici.
+
+  **`AppFooter` gagne `children` et `links`.** L'en-tête de
+  `miss-contraction/src/react/components/layout/AppFooter.tsx` dresse le tableau :
+  sur ses quatre éléments, le pied de page du socle n'en couvrait qu'un.
+  - `children`, rendu EN PREMIER — l'avertissement médical n'avait aucun
+    emplacement. Le remplacer l'aurait sorti du repère de pied de page, et
+    l'imbriquer était interdit (`<footer>` ne peut pas descendre d'un `<footer>`).
+    Sur une app qu'on ouvre pendant un accouchement, « cet outil ne remplace pas
+    un avis médical » n'est pas décoratif : c'était un blocage complet.
+  - `links` — son lien « À propos » est un `Link` de routeur vers `/a-propos`,
+    quand `repoUrl` rend un `<a target=_blank>` vers GitHub. Ce composant ne
+    dépend d'aucun routeur et ne peut pas en fabriquer un, mais il peut en
+    accueillir.
+
+  **`BottomNav` gagne `trailing` et `item.className`.** La dernière ligne de son
+  `BottomNav.tsx` est une demande textuelle : « À DEMANDER AU SOCLE si la
+  migration doit un jour aboutir : un emplacement libre en fin de barre
+  (`trailing`), et une accroche d'habillage par élément. »
+  - `trailing` — sa cinquième cellule n'est pas une destination : c'est un
+    `<button>` qui ouvre le tiroir de l'app. Le bouton « Plus » interne lui
+    ressemble mais fait autre chose (il déplie _son_ tiroir d'onglets en
+    surnombre) : même balisage, autre mécanique.
+  - `item.className` — son appel maternité est un bouton d'action, pas un onglet.
+    `key` ne descend pas dans le DOM, et un sélecteur sur le `href` ne tiendrait
+    pas : les chemins sont traduits dans sept langues.
+
+  Les quatre ajouts sont **additifs** : les six apps qui importent déjà ces
+  composants ne changent pas d'un pixel, et un test l'exige pour chacun. Sept
+  tests neufs, quatre garanties vérifiées par mutation.
+
+### Patch Changes
+
+- 81f86fe: Le plus gros doublon du parc n'était pas compté
+
+  `testing/pwa-register.js` annonce dans son en-tête, depuis sa promotion, qu'il
+  répond au **plus gros doublon du parc** : douze dépôts portaient ce double de
+  `virtual:pwa-register` écrit à la main, sous trois noms de fichier différents.
+
+  `EQUIVALENTS` n'avait aucune ligne pour lui. La plus grosse duplication connue
+  du dépôt n'a donc jamais figuré dans le chiffre qu'on publie.
+
+  **Il n'a pas été trouvé à la main.** `scripts/adoption-candidates.mjs`, ajouté
+  ici, compare ce que les apps _déclarent_ à ce que le paquet _exporte_ — et l'a
+  sorti en tête, avec neuf apps. La table est écrite à la main, entrée par
+  entrée ; c'est sa force et c'est son plafond : vingt-six besoins pour cent
+  trente-huit sous-chemins. Ce qu'elle ignore, personne ne le voit.
+
+  L'outil sort du bruit par construction — `CATEGORIES` y apparaît pour le
+  tableau de score du yahtzee de miss-dice. Sa sortie est une liste de choses à
+  aller lire, pas un relevé.
+
+  **Et le défaut n°1 survivait dans le README.** `adoptionTable` cherchait un
+  symbole portant le _nom du besoin_ : dix des vingt-sept clés n'étant le nom
+  d'aucun export, leur colonne « Importé par » affichait zéro par construction.
+  `testing/pwa-register` s'annonçait `0 / 17` alors que cinq apps importent
+  `swStub` — cinq migrations réussies, affichées comme n'existant pas, dans le
+  document qui sert à convaincre. Deux autres lignes étaient fausses au passage :
+  `useTheme` (2 → 10) et `applyUpdate` (4 → 8).
+
+  Une règle d'acquittement ne vaut que si tout ce qui la lit l'applique.
+
+  La dette passe de 2 à **11**, et c'est le but : elle était fausse à 2.
+
+  Rien de publié ne change : outillage de développement du dépôt.
+
+- 19819cc: Relevé d'adoption : trois des cinq dettes restantes n'existaient pas
+
+  Le relevé annonçait cinq doublons. En les ouvrant un par un, **trois étaient
+  des artefacts de l'instrument** — et l'un d'eux révèle un défaut qui pouvait
+  aussi mentir dans l'autre sens.
+
+  **`.claude` n'était pas ignoré.** Le balayage descendait dans les worktrees
+  d'agent : 98 fichiers source sous `miss-contraction/.claude`, 298 sous
+  `mister-footcoach`, 116 sous `mister-qowa` — du code de branches non
+  fusionnées. miss-contraction était comptée en dette sur `useI18n` pour un
+  `src/hooks/useI18n.ts` qui n'existe que là, donc dans aucune version de l'app.
+  Le tort symétrique est le dangereux : un worktree qui importe le paquet
+  ACQUITTE un besoin que `main` ne couvre pas. Vérifié — aucune app n'était dans
+  ce cas ce jour-là, mais rien ne l'en empêchait.
+
+  **`storage.ts` était devenu cent pour cent faux positifs.** La ligne était déjà
+  signalée comme la plus faible de la table, « conservée pour le vrai positif ».
+  Ce vrai positif était mister-cim10 — et il a migré. Restaient un adaptateur
+  `Storage` pour `zustand/persist` (mister-molkky) et de la persistance métier
+  (miss-contraction), ni l'un ni l'autre n'étant une sauvegarde.
+
+  La supprimer aurait perdu le rappel. Le besoin `backup` se détecte désormais
+  par ce que l'app **déclare** (`exports: ['createBackup', …]`) plutôt que par le
+  nom de ses fichiers : zéro détection sur le parc — le même chiffre que la
+  suppression, sans jeter ce qu'elle jetait. C'est la leçon des trois homonymes
+  (`Navbar.tsx`, `theme.ts`, `storage.ts`) appliquée au lieu d'être seulement
+  écrite.
+
+  **Les formes d'import : sept modules passaient pour morts.** Le relevé ne
+  connaissait que l'import nommé et le `@import` CSS. Or la couche outillage ne
+  s'importe presque jamais comme ça — un `prettier.config` réexporte, un
+  `setup.ts` importe pour l'effet de bord, un `tsconfig` hérite en JSON. Sept
+  sous-chemins étaient comptés à ZÉRO consommateur :
+
+  | sous-chemin           | vrai compte | forme                     |
+  | --------------------- | ----------- | ------------------------- |
+  | `/prettier`           | 16 / 17     | `export { default } from` |
+  | `/eslint-react`       | 16 / 17     | réexportation             |
+  | `/vitest-setup`       | 15 / 17     | `import '…'`              |
+  | `/tsconfig-app-react` | 15 / 17     | `"extends"`               |
+  | `/tsconfig-node`      | 15 / 17     | `"extends"`               |
+  | `/lint-staged`        | 14 / 17     | réexportation             |
+  | `/commitlint`         | 3 / 17      | réexportation             |
+
+  Le README affirmait « la couche outillage est adoptée » : c'était vrai, et
+  l'instrument affichait zéro. Un module qu'on ne sait pas mesurer passe pour
+  mort — et c'est ce chiffre qui décide quoi promouvoir ensuite.
+
+  La lecture des `tsconfig` est ancrée sur `extends`, pas sur le nom du paquet :
+  `miss-dice` le cite deux fois dans des **commentaires** (« Inlined from … »),
+  ayant recopié le contenu au lieu de l'étendre. Le compter serait exactement
+  l'inverse de la vérité.
+
+  Le balayage vit maintenant dans `scripts/adoption-scan.mjs`, testable — comme
+  `adoption-equivalents.mjs` et `migrate-plan.mjs` avant lui. Les trois défauts
+  corrigés ici vivaient dans du code que rien ne pouvait exercer.
+
+  Rien de publié ne change : outillage de développement du dépôt.
+
+- c761c3c: « Forcer la mise à jour » pouvait emmener chez la voisine, et casser les quinze autres
+
+  Défaut signalé en usage : « si on ouvre plusieurs apps et qu'on clique sur
+  forcer la mise à jour, des fois on bascule sur la page d'accueil d'une **autre
+  app** que celle en cours ».
+
+  **La cause tient en une ligne de spécification.** Les seize apps de la famille
+  sont publiées sous `https://mister-guiiug.github.io/<app>/` — **une seule
+  origine**. Or `getRegistrations()` et `caches.keys()` portent sur l'origine, pas
+  sur l'application : depuis miss-dice, on voit les service workers et les caches
+  des quinze autres, et on peut les détruire.
+
+  Trois conséquences, toutes reproduites par des tests avant d'être corrigées.
+
+  **1. On naviguait chez la voisine.** `controllingScope` finissait par
+  `couvrantes[0] ?? scopes[0]`. Quand aucune portée ne couvre la page — le worker
+  n'est pas encore installé, ou une voisine vient de le désinscrire — la seconde
+  branche rendait une registration **arbitraire** de l'origine. `applyUpdate`
+  naviguait alors vers `bustedUrl(portée d'une autre app)`. Le test rend
+  littéralement `https://exemple.test/miss-carbook/?_t=…` depuis une page de
+  miss-dice. Ne rien trouver rend maintenant `''`, et on reste chez soi.
+
+  **2. On désinscrivait toute l'origine.** « Désinscrit tous les service
+  workers » voulait dire _ceux des seize apps_. Réinitialiser miss-dice emportait
+  la capacité hors ligne des quinze autres, en silence — et c'est ce qui produit
+  ensuite la situation du point 1 chez la voisine. Seules les registrations qui
+  couvrent la page courante sont désinscrites.
+
+  **3. On effaçait le précache des voisines.** Workbox nomme ses caches
+  `workbox-precache-v2-<portée>` et sa propre routine de nettoyage filtre sur
+  `self.registration.scope` ; ce module ne le faisait pas. Tout cache dont le nom
+  porte la portée d'une voisine est désormais épargné.
+
+  **Le doute profite à la désinscription.** Une portée illisible ne prouve pas
+  qu'on a affaire à une autre app, seulement qu'on ne sait pas — on n'épargne que
+  ce qu'on peut prouver étranger. Laisser en place un worker qu'on n'a pas su
+  lire rendrait au bouton le défaut qu'il existe pour corriger.
+
+  Aucun changement d'API. Cinq tests neufs, quatre garanties vérifiées par
+  mutation.
+
 ## 3.30.0
 
 ### Minor Changes
