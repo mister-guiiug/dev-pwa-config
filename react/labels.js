@@ -1,9 +1,20 @@
 import { createContext, createElement, useContext, useMemo } from 'react';
 
 /**
- * Libellés des composants du paquet, en français et en anglais.
+ * Libellés des composants du paquet, en sept langues : `fr`, `en`, `es`,
+ * `de`, `it`, `pt`, `nl`.
  *
- * LE PROBLÈME. Onze libellés étaient codés en dur en français dans six
+ * DEUX LANGUES NE SUFFISAIENT PAS, et le repli était SILENCIEUX. Jusqu'au
+ * 02/09/2026 ce fichier ne portait que `fr` et `en`, et toute autre locale
+ * retombait sur le français sans erreur ni avertissement. Or la famille en
+ * parle sept : `miss-contraction` (7), `miss-dice` (6), `mister-qowa` (5),
+ * `miss-badminton` (3). Huit fichiers-pont dans sept apps — `AppUpdatesProvider`
+ * × 2, `AppLabelsProvider`, `SocleLabels`, `SocleProviders`,
+ * `SocleLabelsBridge`, `useNetworkGuard` × 2 — n'existaient que pour surcharger
+ * ce que le socle ne savait pas dire. Les cinq dictionnaires ci-dessous sont
+ * rapatriés de ces apps : ce n'était pas un chantier de traduction.
+ *
+ * LE PROBLÈME D'ORIGINE. Onze libellés étaient codés en dur en français dans six
  * composants (`'Fermer'`, `'Réessayer'`, `'Plus tard'`…). Tous étaient
  * surchargeables par prop — mais aucun pont n'existait avec `createI18n`, que
  * huit apps utilisent : chacune recâblait donc les mêmes onze chaînes, à la
@@ -177,9 +188,391 @@ export const LABELS = {
     },
     nav: { label: 'Main navigation', current: 'Current page', more: 'More' },
   },
+  es: {
+    sheet: { close: 'Cerrar' },
+    confirm: {
+      confirm: 'Confirmar',
+      cancel: 'Cancelar',
+      destructiveConfirm: 'Eliminar',
+      ok: 'OK',
+    },
+    toast: { close: 'Cerrar la notificación', region: 'Notificaciones' },
+    error: { retry: 'Reintentar', close: 'Cerrar' },
+    install: {
+      title: 'Instalar la aplicación',
+      description:
+        'Añade esta aplicación a tu pantalla de inicio: acceso rápido, sin conexión.',
+      install: 'Instalar',
+      dismiss: 'Más tarde',
+    },
+    update: {
+      title: 'Actualización disponible',
+      update: 'Recargar',
+      updating: 'Actualizando…',
+      snooze: 'Más tarde',
+      dismiss: 'Más tarde',
+      ignore: 'Ignorar',
+      force: 'Forzar la actualización',
+      forceHint:
+        'Vacía la caché de la aplicación y recarga. Tus datos se conservan.',
+      offlineReady: 'La aplicación ya funciona sin conexión.',
+      offlineReadyOk: 'OK',
+    },
+    footer: { source: 'Código fuente', sponsor: 'Invítame a un café' },
+    share: {
+      label: 'Compartir',
+      copied: 'Enlace copiado',
+      failed: 'No se pudo compartir',
+    },
+    version: {
+      label: 'Versión',
+      updated: 'Actualizado a la versión {version}',
+      available: 'Versión {version} disponible',
+      built: 'Compilada el {date}',
+      release: 'Notas de la versión',
+    },
+    apps: {
+      repo: 'Código fuente de {app}',
+      source: 'Código fuente',
+      sponsor: 'Invítame a un café',
+      otherApps: 'Nuestras otras aplicaciones',
+    },
+    maturity: { alpha: 'Alfa', beta: 'Beta', stable: 'Estable' },
+    sync: {
+      synced: 'Sincronizado',
+      pending: 'Pendiente',
+      offline: 'Sin conexión',
+      error: 'Error',
+    },
+    guard: {
+      offline: 'No disponible sin conexión',
+      readonly: 'Datos no sincronizados — acción no disponible',
+    },
+    theme: {
+      label: 'Tema',
+      light: 'claro',
+      dark: 'oscuro',
+      system: 'del sistema',
+      next: 'Tema: {current}. Activar el tema {next}.',
+    },
+    nav: {
+      label: 'Navegación principal',
+      current: 'Página actual',
+      more: 'Más',
+    },
+  },
+  de: {
+    sheet: { close: 'Schließen' },
+    confirm: {
+      confirm: 'Bestätigen',
+      cancel: 'Abbrechen',
+      destructiveConfirm: 'Löschen',
+      ok: 'OK',
+    },
+    toast: {
+      close: 'Benachrichtigung schließen',
+      region: 'Benachrichtigungen',
+    },
+    error: { retry: 'Erneut versuchen', close: 'Schließen' },
+    install: {
+      title: 'App installieren',
+      description:
+        'Füge diese App deinem Startbildschirm hinzu: schneller Zugriff, auch offline.',
+      install: 'Installieren',
+      dismiss: 'Später',
+    },
+    update: {
+      title: 'Neue Version verfügbar',
+      update: 'Neu laden',
+      updating: 'Wird aktualisiert…',
+      snooze: 'Später',
+      dismiss: 'Später',
+      ignore: 'Ignorieren',
+      force: 'Aktualisierung erzwingen',
+      forceHint:
+        'Leert den Cache der App und lädt neu. Deine Daten bleiben erhalten.',
+      offlineReady: 'Die App funktioniert jetzt auch offline.',
+      offlineReadyOk: 'OK',
+    },
+    footer: { source: 'Quellcode', sponsor: 'Spendier mir einen Kaffee' },
+    share: {
+      label: 'Teilen',
+      copied: 'Link kopiert',
+      failed: 'Teilen nicht möglich',
+    },
+    version: {
+      label: 'Version',
+      updated: 'Aktualisiert auf Version {version}',
+      available: 'Version {version} verfügbar',
+      built: 'Erstellt am {date}',
+      release: 'Versionshinweise',
+    },
+    apps: {
+      repo: 'Quellcode von {app}',
+      source: 'Quellcode',
+      sponsor: 'Spendier mir einen Kaffee',
+      otherApps: 'Unsere anderen Apps',
+    },
+    maturity: { alpha: 'Alpha', beta: 'Beta', stable: 'Stabil' },
+    sync: {
+      synced: 'Synchronisiert',
+      pending: 'Ausstehend',
+      offline: 'Offline',
+      error: 'Fehler',
+    },
+    guard: {
+      offline: 'Offline nicht verfügbar',
+      readonly: 'Daten nicht synchronisiert — Aktion nicht verfügbar',
+    },
+    // Les thèmes sont des noms, pas des adjectifs : l'allemand décline
+    // l'adjectif selon l'article, et « {next} » ne peut pas se décliner.
+    theme: {
+      label: 'Design',
+      light: 'Hell',
+      dark: 'Dunkel',
+      system: 'System',
+      next: 'Design: {current}. Design {next} aktivieren.',
+    },
+    nav: { label: 'Hauptnavigation', current: 'Aktuelle Seite', more: 'Mehr' },
+  },
+  it: {
+    sheet: { close: 'Chiudi' },
+    confirm: {
+      confirm: 'Conferma',
+      cancel: 'Annulla',
+      destructiveConfirm: 'Elimina',
+      ok: 'OK',
+    },
+    toast: { close: 'Chiudi la notifica', region: 'Notifiche' },
+    error: { retry: 'Riprova', close: 'Chiudi' },
+    install: {
+      title: 'Installa l’app',
+      description:
+        'Aggiungi questa app alla schermata Home: accesso rapido, anche offline.',
+      install: 'Installa',
+      dismiss: 'Più tardi',
+    },
+    update: {
+      title: 'Aggiornamento disponibile',
+      update: 'Ricarica',
+      updating: 'Aggiornamento…',
+      snooze: 'Più tardi',
+      dismiss: 'Più tardi',
+      ignore: 'Ignora',
+      force: 'Forza l’aggiornamento',
+      forceHint:
+        'Svuota la cache dell’app e ricarica. I tuoi dati vengono conservati.',
+      offlineReady: 'L’app ora funziona anche offline.',
+      offlineReadyOk: 'OK',
+    },
+    footer: { source: 'Codice sorgente', sponsor: 'Offrimi un caffè' },
+    share: {
+      label: 'Condividi',
+      copied: 'Link copiato',
+      failed: 'Condivisione non riuscita',
+    },
+    version: {
+      label: 'Versione',
+      updated: 'Aggiornato alla versione {version}',
+      available: 'Versione {version} disponibile',
+      built: 'Compilata il {date}',
+      release: 'Note di rilascio',
+    },
+    apps: {
+      repo: 'Codice sorgente di {app}',
+      source: 'Codice sorgente',
+      sponsor: 'Offrimi un caffè',
+      otherApps: 'Le nostre altre app',
+    },
+    maturity: { alpha: 'Alfa', beta: 'Beta', stable: 'Stabile' },
+    sync: {
+      synced: 'Sincronizzato',
+      pending: 'In attesa',
+      offline: 'Offline',
+      error: 'Errore',
+    },
+    guard: {
+      offline: 'Non disponibile offline',
+      readonly: 'Dati non sincronizzati — azione non disponibile',
+    },
+    theme: {
+      label: 'Tema',
+      light: 'chiaro',
+      dark: 'scuro',
+      system: 'di sistema',
+      next: 'Tema: {current}. Attiva il tema {next}.',
+    },
+    nav: {
+      label: 'Navigazione principale',
+      current: 'Pagina corrente',
+      more: 'Altro',
+    },
+  },
+  // Portugais européen (« aplicação », « ecrã », « ligação ») : c'est la
+  // variante que `miss-contraction` sert déjà.
+  pt: {
+    sheet: { close: 'Fechar' },
+    confirm: {
+      confirm: 'Confirmar',
+      cancel: 'Cancelar',
+      destructiveConfirm: 'Eliminar',
+      ok: 'OK',
+    },
+    toast: { close: 'Fechar a notificação', region: 'Notificações' },
+    error: { retry: 'Tentar novamente', close: 'Fechar' },
+    install: {
+      title: 'Instalar a aplicação',
+      description:
+        'Adicione esta aplicação ao ecrã inicial: acesso rápido, mesmo sem ligação.',
+      install: 'Instalar',
+      dismiss: 'Mais tarde',
+    },
+    update: {
+      title: 'Atualização disponível',
+      update: 'Recarregar',
+      updating: 'A atualizar…',
+      snooze: 'Mais tarde',
+      dismiss: 'Mais tarde',
+      ignore: 'Ignorar',
+      force: 'Forçar a atualização',
+      forceHint:
+        'Limpa a cache da aplicação e recarrega. Os seus dados são conservados.',
+      offlineReady: 'A aplicação já funciona sem ligação.',
+      offlineReadyOk: 'OK',
+    },
+    footer: { source: 'Código-fonte', sponsor: 'Pague-me um café' },
+    share: {
+      label: 'Partilhar',
+      copied: 'Ligação copiada',
+      failed: 'Não foi possível partilhar',
+    },
+    version: {
+      label: 'Versão',
+      updated: 'Atualizado para a versão {version}',
+      available: 'Versão {version} disponível',
+      built: 'Compilada em {date}',
+      release: 'Notas da versão',
+    },
+    apps: {
+      repo: 'Código-fonte de {app}',
+      source: 'Código-fonte',
+      sponsor: 'Pague-me um café',
+      otherApps: 'As nossas outras aplicações',
+    },
+    maturity: { alpha: 'Alfa', beta: 'Beta', stable: 'Estável' },
+    sync: {
+      synced: 'Sincronizado',
+      pending: 'Pendente',
+      offline: 'Sem ligação',
+      error: 'Erro',
+    },
+    guard: {
+      offline: 'Indisponível sem ligação',
+      readonly: 'Dados não sincronizados — ação indisponível',
+    },
+    theme: {
+      label: 'Tema',
+      light: 'claro',
+      dark: 'escuro',
+      system: 'do sistema',
+      next: 'Tema: {current}. Ativar o tema {next}.',
+    },
+    nav: {
+      label: 'Navegação principal',
+      current: 'Página atual',
+      more: 'Mais',
+    },
+  },
+  nl: {
+    sheet: { close: 'Sluiten' },
+    confirm: {
+      confirm: 'Bevestigen',
+      cancel: 'Annuleren',
+      destructiveConfirm: 'Verwijderen',
+      ok: 'OK',
+    },
+    toast: { close: 'Melding sluiten', region: 'Meldingen' },
+    error: { retry: 'Opnieuw proberen', close: 'Sluiten' },
+    install: {
+      title: 'App installeren',
+      description:
+        'Zet deze app op je beginscherm: snel bij de hand, ook offline.',
+      install: 'Installeren',
+      dismiss: 'Later',
+    },
+    update: {
+      title: 'Update beschikbaar',
+      update: 'Herladen',
+      updating: 'Bijwerken…',
+      snooze: 'Later',
+      dismiss: 'Later',
+      ignore: 'Negeren',
+      force: 'Update forceren',
+      forceHint:
+        'Wist de cache van de app en laadt opnieuw. Je gegevens blijven bewaard.',
+      offlineReady: 'De app werkt nu ook offline.',
+      offlineReadyOk: 'OK',
+    },
+    footer: { source: 'Broncode', sponsor: 'Trakteer me op een koffie' },
+    share: {
+      label: 'Delen',
+      copied: 'Link gekopieerd',
+      failed: 'Delen is mislukt',
+    },
+    version: {
+      label: 'Versie',
+      updated: 'Bijgewerkt naar versie {version}',
+      available: 'Versie {version} beschikbaar',
+      built: 'Gebouwd op {date}',
+      release: 'Releaseopmerkingen',
+    },
+    apps: {
+      repo: 'Broncode van {app}',
+      source: 'Broncode',
+      sponsor: 'Trakteer me op een koffie',
+      otherApps: 'Onze andere apps',
+    },
+    maturity: { alpha: 'Alfa', beta: 'Bèta', stable: 'Stabiel' },
+    sync: {
+      synced: 'Gesynchroniseerd',
+      pending: 'In afwachting',
+      offline: 'Offline',
+      error: 'Fout',
+    },
+    guard: {
+      offline: 'Niet beschikbaar offline',
+      readonly: 'Gegevens niet gesynchroniseerd — actie niet beschikbaar',
+    },
+    // « Overschakelen naar {next} » plutôt que « het {next}e thema » : le
+    // néerlandais fléchit l'adjectif, et « {next} » ne se fléchit pas.
+    theme: {
+      label: 'Thema',
+      light: 'licht',
+      dark: 'donker',
+      system: 'systeem',
+      next: 'Thema: {current}. Overschakelen naar {next}.',
+    },
+    nav: { label: 'Hoofdnavigatie', current: 'Huidige pagina', more: 'Meer' },
+  },
 };
 
 export const DEFAULT_LOCALE = 'fr';
+
+/**
+ * Le dictionnaire d'une locale, ou `null`.
+ *
+ * `pt-BR`, `de-CH`, `es-419` : une étiquette régionale retombe sur sa langue
+ * avant de retomber sur le français — `createI18n` passe parfois l'étiquette
+ * complète, et « pt-BR → français » serait le même repli silencieux que ce
+ * fichier vient de fermer.
+ */
+export function labelsFor(locale) {
+  if (typeof locale !== 'string' || !locale) return null;
+  const exact = LABELS[locale] ?? LABELS[locale.toLowerCase()];
+  if (exact) return exact;
+  const language = locale.toLowerCase().split(/[-_]/)[0];
+  return LABELS[language] ?? null;
+}
 
 const LabelsContext = createContext(null);
 
@@ -205,7 +598,7 @@ export function LabelsProvider(props = {}) {
   const value = useMemo(() => {
     // Une locale inconnue retombe sur le français plutôt que sur un objet vide :
     // un libellé manquant est un bouton sans nom accessible.
-    const base = LABELS[locale] ?? LABELS[DEFAULT_LOCALE];
+    const base = labelsFor(locale) ?? LABELS[DEFAULT_LOCALE];
     return overrides ? mergeLabels(base, overrides) : base;
   }, [locale, overrides]);
   return createElement(LabelsContext.Provider, { value }, children);

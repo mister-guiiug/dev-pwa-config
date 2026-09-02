@@ -67,11 +67,20 @@ export type LabelOverrides = {
   [G in keyof LabelGroups]?: Partial<LabelGroups[G]>;
 };
 
-/** Dictionnaire complet, indexé par locale (`fr` et `en` fournis). */
+/**
+ * Dictionnaire complet, indexé par locale. Sept fournies : `fr`, `en`, `es`,
+ * `de`, `it`, `pt`, `nl` — les langues que la famille parle.
+ */
 export declare const LABELS: Record<string, LabelGroups>;
 
 /** Locale de repli : le français, ce que les composants codaient en dur. */
 export declare const DEFAULT_LOCALE: string;
+
+/**
+ * Le dictionnaire d'une locale, ou `null` si aucune ne convient. Une étiquette
+ * régionale (`pt-BR`, `de-CH`) retombe sur sa langue avant de rendre `null`.
+ */
+export declare function labelsFor(locale: string): LabelGroups | null;
 
 /** Fusionne un jeu de libellés avec des surcharges, groupe par groupe. */
 export declare function mergeLabels(
@@ -80,7 +89,10 @@ export declare function mergeLabels(
 ): LabelGroups;
 
 export interface LabelsProviderProps {
-  /** `'fr'` par défaut ; une locale inconnue retombe sur le français. */
+  /**
+   * `'fr'` par défaut. Une étiquette régionale retombe sur sa langue
+   * (`pt-BR` → `pt`) ; une locale inconnue, sur le français.
+   */
   locale?: string;
   /** Remplace des libellés sans changer de langue. */
   overrides?: LabelOverrides;

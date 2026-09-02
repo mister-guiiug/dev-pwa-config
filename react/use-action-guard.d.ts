@@ -9,6 +9,12 @@ export interface GuardCheck {
 export interface ActionGuardOptions {
   /** Exiger le réseau (via `useOnline`). */
   online?: boolean;
+  /**
+   * Motif affiché quand `online` bloque. Défaut : le libellé `guard.offline`
+   * du paquet — sept langues, mais pas celle d'une app qui écrit son i18n à
+   * la main sans `LabelsProvider`.
+   */
+  offlineMessage?: string;
   /** Vérifications ordonnées : le premier motif bloquant est celui affiché. */
   checks?: readonly GuardCheck[];
 }
