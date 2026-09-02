@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-09-02T16:41:13.877Z',
+  generatedAt: '2026-09-02T16:50:28.575Z',
   measured: 17,
   total: 17,
   apps: {
@@ -107,7 +107,7 @@ globalThis.SHOWROOM_ADOPTION = {
             'FullscreenToggle est le bouton, pas le hook — il reste à l’app',
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-carbook': {
       symbols: [
@@ -190,7 +190,7 @@ globalThis.SHOWROOM_ADOPTION = {
             'TopBar tient la recherche de dossier, le menu de compte et la bascule de thème',
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-contraction': {
       symbols: [
@@ -257,7 +257,7 @@ globalThis.SHOWROOM_ADOPTION = {
       ],
       duplicates: [],
       kept: [],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-dice': {
       symbols: [
@@ -333,7 +333,7 @@ globalThis.SHOWROOM_ADOPTION = {
             "l'app a son design maison et n'importe pas components.css : le repli du socle y serait nu",
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-genius': {
       symbols: [
@@ -377,6 +377,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/download',
         '/eslint-react',
         '/format',
+        '/id',
         '/lint-staged',
         '/logger',
         '/playwright-a11y',
@@ -406,15 +407,9 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [
-        {
-          exported: 'id',
-          file: 'src/shared/lib/id.ts',
-          declares: 'createId',
-        },
-      ],
+      duplicates: [],
       kept: [],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-lookhouse': {
       symbols: [
@@ -486,7 +481,7 @@ globalThis.SHOWROOM_ADOPTION = {
             "LoginScreen porte le choix du backend (local ou Supabase) avant même l'identification",
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -569,7 +564,7 @@ globalThis.SHOWROOM_ADOPTION = {
           reason: 'LoginScreen porte le mode démo, qui se choisit sans compte',
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -634,7 +629,7 @@ globalThis.SHOWROOM_ADOPTION = {
       ],
       duplicates: [],
       kept: [],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'miss-uwh': {
       symbols: [
@@ -695,6 +690,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/eslint-react',
         '/format',
         '/ical',
+        '/id',
         '/lint-staged',
         '/logger',
         '/playwright-a11y',
@@ -728,13 +724,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
         '/xlsx',
       ],
-      duplicates: [
-        {
-          exported: 'id',
-          file: 'src/shared/lib/id.ts',
-          declares: 'createId',
-        },
-      ],
+      duplicates: [],
       kept: [
         {
           exported: 'AppHeader',
@@ -761,7 +751,7 @@ globalThis.SHOWROOM_ADOPTION = {
             "élévation AAL2 pour les rôles sensibles du club, sur l'i18n de l'app",
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-cim10': {
       symbols: [
@@ -846,7 +836,7 @@ globalThis.SHOWROOM_ADOPTION = {
             "compose un slogan depuis la route, le store de réglages et l'i18n, et porte l'avertissement médical dismissible — le socle rend un titre et des actions",
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-doc': {
       symbols: [
@@ -961,7 +951,7 @@ globalThis.SHOWROOM_ADOPTION = {
             "parcours de récupération propre à l'app (codes de secours, passkey)",
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-family-map': {
       symbols: [
@@ -1059,7 +1049,7 @@ globalThis.SHOWROOM_ADOPTION = {
         },
       ],
       kept: [],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -1160,7 +1150,7 @@ globalThis.SHOWROOM_ADOPTION = {
           reason: "LoginPage porte l'invitation par lien d'équipe",
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-molkky': {
       symbols: [
@@ -1214,6 +1204,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/components.css',
         '/download',
         '/eslint-react',
+        '/id',
         '/lint-staged',
         '/logger',
         '/pairing',
@@ -1249,13 +1240,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [
-        {
-          exported: 'id',
-          file: 'src/schemas.ts',
-          declares: 'newId',
-        },
-      ],
+      duplicates: [],
       kept: [
         {
           exported: 'PageContainer',
@@ -1268,7 +1253,7 @@ globalThis.SHOWROOM_ADOPTION = {
             'FullscreenToggle est le bouton, pas le hook — il reste à l’app',
         },
       ],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -1323,7 +1308,7 @@ globalThis.SHOWROOM_ADOPTION = {
       ],
       duplicates: [],
       kept: [],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-qowa': {
       symbols: [
@@ -1384,7 +1369,7 @@ globalThis.SHOWROOM_ADOPTION = {
       ],
       duplicates: [],
       kept: [],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
     'mister-quota': {
       symbols: [
@@ -1408,7 +1393,7 @@ globalThis.SHOWROOM_ADOPTION = {
       ],
       duplicates: [],
       kept: [],
-      measuredAt: '2026-09-02T16:41:13.877Z',
+      measuredAt: '2026-09-02T16:50:28.575Z',
     },
   },
   bySymbol: {
@@ -2031,7 +2016,7 @@ globalThis.SHOWROOM_ADOPTION = {
     useInstallPrompt: ['mister-qowa'],
   },
   byDuplicate: {
-    id: ['miss-genius', 'miss-uwh', 'mister-family-map', 'mister-molkky'],
+    id: ['mister-family-map'],
     'testing/pwa-register': ['mister-family-map'],
   },
 };
