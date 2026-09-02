@@ -169,8 +169,10 @@ contrat le plus complet et le plus d'importateurs. Habillage dans
 
 Le besoin est le plus banal qui soit — un identifiant court préfixé, ou un
 UUID v4 avec repli quand `crypto.randomUUID` manque — et **le socle le
-réécrit lui-même trois fois** : `security.js`, `sync-queue.js`,
-`react/use-offline-queue.js` portent chacun leur repli `randomUUID`.
+réécrivait lui-même deux fois** : `sync-queue.js` et
+`react/use-offline-queue.js` portaient chacun leur repli `randomUUID`
+(`security.js`, compté d'abord comme une troisième copie, n'en était pas
+une : son commentaire évoquait `randomUUID`, son code ne l'a jamais appelé).
 
 **La forme.** `id` : `createId(prefix?)` et `createUuid()`, promus de
 `miss-uwh` (le seul à avoir le repli v4 complet). Les trois copies internes
@@ -297,13 +299,18 @@ Chacune tient dans une prop ou dix lignes. Elles sont dans le code des apps,
 signées.
 
 - **`image` : accepter le GIF** — `miss-carbook` garde sa propre liste MIME
-  « candidat à une évolution du socle » (`IMAGE_ACCEPTED_TYPES` n'a pas le
-  GIF, que l'app promet à l'écran).
+  « candidat à une évolution du socle ». **Déjà tranché, et en sens inverse** :
+  l'en-tête d'`IMAGE_ACCEPTED_TYPES` explique pourquoi la liste est un
+  plancher (« l'élargir ici changerait ce que TOUTES les apps acceptent ; on
+  l'élargit donc au site d'appel »). La demande de carbook et la réponse du
+  socle sont écrites chacune de leur côté sans se voir — la réponse est la
+  bonne, c'est le commentaire de carbook qui doit la citer.
 - **`realtime/supabase` : refermer les canaux orphelins** — `miss-carbook`
   (`useRealtimeTable`) tient un `Set` de canaux « dont le socle n'a jamais reçu
-  la poignée de fermeture » : une souscription qui échoue avant `SUBSCRIBED`
-  n'en produit pas, et personne ne la referme. C'est plus un défaut qu'un
-  manque.
+  la poignée de fermeture ». **Déjà exaucé en 3.24.0** : le transport refermé
+  lui-même tout canal qui échoue avant `SUBSCRIBED` (« FERMETURE GARANTIE »,
+  dans son en-tête). Le `Set` de carbook est un contournement d'un défaut qui
+  n'existe plus — une PR d'adoption, comme les trois de la moitié périmée.
 - **`Badge` : un axe de taille** — `mister-doc` n'a pas migré ses pastilles
   parce que `size="xs"` « n'a pas d'équivalent ».
 - **`react/use-fullscreen`** — `badminton` (62 l.) et `molkky` (44 l.) ont le
@@ -400,3 +407,29 @@ un défaut en production.
 
 Aucune des quatre sources ne voyait les trois autres. Le prochain relevé les
 prendra toutes.
+
+## État au soir du 02/09/2026
+
+Les dix chantiers ont été instruits le jour même, en dix PR sur le socle —
+une par chantier, toutes fusionnées en 3.33.0. L'adoption par les apps est
+le pas suivant, et il ne se fait pas tout seul (voir « L'autre moitié »).
+
+| #   | chantier                                    | PR                                                               | ce qui est entré                                                                                                       |
+| --- | ------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 1   | Repli SPA `404.html`                        | [#145](https://github.com/mister-guiiug/dev-wpa-config/pull/145) | `spaFallbackPlugin()` + la copie dans `pwa-deploy.yml` — les quatre apps sont couvertes dès que `v3` suit              |
+| 2   | Libellés en sept langues                    | [#146](https://github.com/mister-guiiug/dev-wpa-config/pull/146) | `es` `de` `it` `pt` `nl`, `labelsFor` (`pt-BR` → `pt`), `offlineMessage` sur `useActionGuard`                          |
+| 3   | `react/card`                                | [#147](https://github.com/mister-guiiug/dev-wpa-config/pull/147) | `Card` + `CardHeader`, `[data-dwc="card"]`, fiche showroom                                                             |
+| 4   | `id`                                        | [#148](https://github.com/mister-guiiug/dev-wpa-config/pull/148) | `createId`, `createUuid`, `isUuid` — et les deux copies internes importent d'ici                                       |
+| 5   | Workflows réutilisables                     | [#149](https://github.com/mister-guiiug/dev-wpa-config/pull/149) | `cleanup-runs` appelable, `pwa-supabase-migrate`, `pwa-worker-deploy`, le keepalive enfin documenté                    |
+| 6   | `react/app-header` + `react/page-container` | [#150](https://github.com/mister-guiiug/dev-wpa-config/pull/150) | l'en-tête, le conteneur, le rôle d'icône `back`, « Retour » en sept langues                                            |
+| 7   | La couche auth                              | [#151](https://github.com/mister-guiiug/dev-wpa-config/pull/151) | `AuthProvider` / `useAuthContext`, `LoginForm`, `MfaChallenge` — non contrôlés, lus par `FormData`                     |
+| 8   | `format`                                    | [#152](https://github.com/mister-guiiug/dev-wpa-config/pull/152) | `formatSigned`, `decimals`, `'auto'` sur le pourcentage, `{ never }` — et `null` n'est plus 1970                       |
+| 9   | `pwa-bundle-budget`                         | [#153](https://github.com/mister-guiiug/dev-wpa-config/pull/153) | un bin, deux mesures, le budget dans `package.json`                                                                    |
+| 10  | Les petites demandes                        | cette PR                                                         | `Badge` `size`, `useFullscreen`, `cn` — et deux demandes déjà tranchées (GIF : non ; canaux orphelins : depuis 3.24.0) |
+
+Ce que la journée a corrigé dans ce document même : le socle ne recopiait pas
+son repli `randomUUID` trois fois mais deux (la troisième était un
+commentaire périmé), et deux des « petites demandes » avaient déjà leur
+réponse dans le code du socle — l'une par une décision écrite, l'autre par
+un correctif livré. La liste de souhaits des apps se lit avec le CHANGELOG à
+côté.

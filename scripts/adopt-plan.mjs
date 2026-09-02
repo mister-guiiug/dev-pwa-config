@@ -31,6 +31,7 @@ export const SUBPATHS = {
   AuthProvider: 'react/auth-provider',
   LoginForm: 'react/login-form',
   MfaChallenge: 'react/mfa-challenge',
+  useFullscreen: 'react/use-fullscreen',
   Sheet: 'react/sheet',
   Skeleton: 'react/skeleton',
   Stat: 'react/stat',

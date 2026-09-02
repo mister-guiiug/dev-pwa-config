@@ -275,6 +275,10 @@
       "types": "./id.d.ts",
       "default": "./id.js"
     },
+    "./cn": {
+      "types": "./cn.d.ts",
+      "default": "./cn.js"
+    },
     "./react": {
       "types": "./react/index.d.ts",
       "default": "./react/index.js"
@@ -503,6 +507,10 @@
       "types": "./react/use-wake-lock.d.ts",
       "default": "./react/use-wake-lock.js"
     },
+    "./react/use-fullscreen": {
+      "types": "./react/use-fullscreen.d.ts",
+      "default": "./react/use-fullscreen.js"
+    },
     "./react/use-pull-to-refresh": {
       "types": "./react/use-pull-to-refresh.d.ts",
       "default": "./react/use-pull-to-refresh.js"
@@ -702,6 +710,8 @@
     "dates.d.ts",
     "id.js",
     "id.d.ts",
+    "cn.js",
+    "cn.d.ts",
     "backup.js",
     "backup.d.ts",
     "versioned-store.js",

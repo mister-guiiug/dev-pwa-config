@@ -42,6 +42,7 @@ export * from './icons-context';
 export * from './use-long-press';
 export * from './use-feedback';
 export * from './use-wake-lock';
+export * from './use-fullscreen';
 export * from './use-pull-to-refresh';
 export * from './use-keyboard-shortcuts';
 export * from './use-shake';

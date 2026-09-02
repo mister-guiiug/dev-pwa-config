@@ -822,6 +822,20 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'useFullscreen',
+      covers: ['useFullscreen'],
+      signature:
+        'useFullscreen() → { supported, active, enter(), exit(), toggle() }',
+      summary: {
+        fr: 'Le plein écran natif : l’état (suit `fullscreenchange`) et les gestes, qui ne lèvent jamais. Promu des boutons de badminton et molkky — le bouton, lui, reste à l’app.',
+        en: 'Native fullscreen: the state (follows `fullscreenchange`) and the gestures, which never throw. Promoted from the badminton and molkky buttons — the button itself stays in the app.',
+      },
+      dont: {
+        fr: 'Ne pas rendre un bouton quand `supported` est faux : un bouton qui ne peut rien faire n’a rien à faire à l’écran — badminton le masquait, molkky le rendait `null`.',
+        en: 'Don’t render a button when `supported` is false: a button that cannot do anything has no business on screen — badminton hid it, molkky rendered `null`.',
+      },
+    },
+    {
       id: 'useLabels',
       covers: [
         'useLabels',
