@@ -261,8 +261,11 @@ export function indexByName(files) {
  *    en restant comptée en dette pour toujours.
  * 2. LA DÉTECTION PAR LE CODE (`exports`), qui regarde ce que l'app déclare.
  * 3. LA DÉTECTION PAR L'ÉTIQUETTE (`files`), avec la règle de la FAÇADE : un
- *    fichier qui porte le nom guetté mais qui IMPORTE DÉJÀ LE PAQUET n'est pas
- *    un doublon, c'est une adoption. Trois des sept `storage.ts` du parc.
+ *    fichier qui porte le nom guetté mais qui DÉLÈGUE CE BESOIN au paquet —
+ *    importe un de ses symboles libérateurs, ou réexporte depuis le paquet —
+ *    n'est pas un doublon, c'est une adoption. Trois des sept `storage.ts` du
+ *    parc. Importer autre chose du paquet ne compte pas : sinon un en-tête
+ *    écrit à la main qui prend `Button` au socle passerait pour adopté.
  *
  * @param {{ symbols: Set<string>, sourceFile: Map<string,string>,
  *   declares: Map<string,string>, read?: (path: string) => string,
@@ -270,6 +273,26 @@ export function indexByName(files) {
  * @param {Record<string, { files?: string[], exports?: string[],
  *   symbols?: string[] }>} equivalents
  */
+/** `export * from` / `export { … } from` le paquet : une réexportation. */
+const REEXPORT_RE = new RegExp(
+  String.raw`export\s+(?:\*|\{[^}]*\})\s+from\s+['"]` + PACKAGE
+);
+
+/**
+ * Le fichier délègue CE besoin au paquet : il réexporte depuis le paquet, ou
+ * importe nommément un des symboles qui acquittent le besoin.
+ *
+ * @param {string} name Nom du fichier (décide de la lecture).
+ * @param {string} contenu
+ * @param {string[]} libres Les symboles qui acquittent le besoin.
+ */
+export function estFacade(name, contenu, libres) {
+  if (!contenu.includes(PACKAGE)) return false;
+  if (REEXPORT_RE.test(contenu)) return true;
+  const { symbols } = scanFile(name, contenu);
+  return symbols.some(symbol => libres.includes(symbol));
+}
+
 export function findDuplicates(state, equivalents) {
   const {
     symbols,
@@ -305,7 +328,13 @@ export function findDuplicates(state, equivalents) {
     } catch {
       /* illisible : on retombe sur le comptage par nom */
     }
-    if (contenu.includes(PACKAGE)) continue;
+    // FAÇADE : le fichier délègue CE besoin au paquet — il importe l'un de ses
+    // symboles libérateurs, ou réexporte depuis le paquet. Importer n'importe
+    // quoi d'autre du socle n'acquitte rien : l'`AppHeader.tsx` de miss-uwh
+    // importe `Button` du paquet et reste un en-tête écrit à la main. La règle
+    // disait « importe le paquet » : le 02/09/2026, quatre en-têtes sur six et
+    // trois formulaires de connexion sur quatre passaient pour adoptés.
+    if (estFacade(hit, contenu, libres)) continue;
 
     duplicates.push({ exported, file: hit });
   }

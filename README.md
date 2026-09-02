@@ -88,6 +88,12 @@ d'importateurs (zéro : un cadavre) et pour chaque groupe sa similarité (1,00 :
 une copie). Le tri qui en est sorti — dix chantiers classés, et ce qu'on ne
 fait pas — est dans `GISEMENTS.md`.
 
+`node scripts/probe-sites.mjs` lit les seize sites PUBLIÉS (manifeste, CSP,
+Open Graph, repli 404, poids du JS initial) ; `node scripts/dead-exports.mjs`
+relève les exports que personne n'appelle. Ce que ces sondes ont trouvé le
+02/09/2026 — Renovate jamais actif, une app non installable, un relevé
+d'adoption qui comptait 19 copies pour 34 — est classé dans `PARC.md`.
+
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
 _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._

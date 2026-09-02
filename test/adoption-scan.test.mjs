@@ -138,6 +138,50 @@ test('une façade n’est pas un doublon : elle délègue au paquet', () => {
   assert.deepEqual(trouves, [], 'un fichier qui importe le paquet est adopté');
 });
 
+test('importer AUTRE CHOSE du paquet n’acquitte pas : l’en-tête de miss-uwh', () => {
+  // `AppHeader.tsx` prend `Button` au socle et reste un en-tête écrit à la
+  // main. La règle « importe le paquet » le comptait adopté : le 02/09/2026,
+  // quatre en-têtes sur six et trois formulaires sur quatre passaient ainsi.
+  const trouves = findDuplicates(
+    etat({
+      fichiers: {
+        'AppHeader.tsx': `import { Button } from '${PACKAGE}/react/button';
+export function AppHeader() { return null; }`,
+      },
+    }),
+    { AppHeader: { files: ['AppHeader.tsx'] } }
+  );
+  assert.deepEqual(trouves, [{ exported: 'AppHeader', file: 'AppHeader.tsx' }]);
+});
+
+test('importer le symbole libérateur, ou réexporter, acquitte — même sous un nom homonyme', () => {
+  const importe = findDuplicates(
+    etat({
+      fichiers: {
+        'AppHeader.tsx': `import { AppHeader as Socle } from '${PACKAGE}/react/app-header';
+export function AppHeader(props) { return Socle(props); }`,
+      },
+    }),
+    { AppHeader: { files: ['AppHeader.tsx'], symbols: ['AppHeader'] } }
+  );
+  assert.deepEqual(importe, []);
+
+  const reexporte = findDuplicates(
+    etat({
+      fichiers: {
+        'pwa-register-stub.ts': `export { registerSW, swStub } from '${PACKAGE}/testing/pwa-register';`,
+      },
+    }),
+    {
+      'testing/pwa-register': {
+        files: ['pwa-register-stub.ts'],
+        symbols: ['swStub', 'pwaRegisterAlias'],
+      },
+    }
+  );
+  assert.deepEqual(reexporte, [], 'une réexportation est une façade');
+});
+
 test('un fichier homonyme qui n’importe rien reste un doublon', () => {
   const trouves = findDuplicates(
     etat({ fichiers: { 'Button.tsx': 'export const Button = () => null;' } }),
