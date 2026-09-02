@@ -127,3 +127,26 @@ export function SystemIcon() {
     h('path', { d: 'M8 21h8M12 17v4' })
   );
 }
+
+/**
+ * Chevron vers la gauche : le retour d'`AppHeader`.
+ * @param {{ size?: number }} [props]
+ */
+export function BackIcon(props = {}) {
+  const { size = 20 } = props;
+  return h(
+    'svg',
+    {
+      width: size,
+      height: size,
+      viewBox: '0 0 24 24',
+      'aria-hidden': 'true',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+    },
+    h('path', { d: 'm15 18-6-6 6-6' })
+  );
+}

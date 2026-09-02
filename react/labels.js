@@ -115,6 +115,8 @@ export const LABELS = {
       next: 'Thème : {current}. Activer le thème {next}.',
     },
     nav: {
+      // Le retour d'`AppHeader` : un lien ou un bouton, qui porte un nom.
+      back: 'Retour',
       label: 'Navigation principale',
       current: 'Page actuelle',
       more: 'Plus',
@@ -186,7 +188,12 @@ export const LABELS = {
       system: 'system',
       next: 'Theme: {current}. Switch to the {next} theme.',
     },
-    nav: { label: 'Main navigation', current: 'Current page', more: 'More' },
+    nav: {
+      back: 'Back',
+      label: 'Main navigation',
+      current: 'Current page',
+      more: 'More',
+    },
   },
   es: {
     sheet: { close: 'Cerrar' },
@@ -256,6 +263,7 @@ export const LABELS = {
       next: 'Tema: {current}. Activar el tema {next}.',
     },
     nav: {
+      back: 'Volver',
       label: 'Navegación principal',
       current: 'Página actual',
       more: 'Más',
@@ -333,7 +341,12 @@ export const LABELS = {
       system: 'System',
       next: 'Design: {current}. Design {next} aktivieren.',
     },
-    nav: { label: 'Hauptnavigation', current: 'Aktuelle Seite', more: 'Mehr' },
+    nav: {
+      back: 'Zurück',
+      label: 'Hauptnavigation',
+      current: 'Aktuelle Seite',
+      more: 'Mehr',
+    },
   },
   it: {
     sheet: { close: 'Chiudi' },
@@ -403,6 +416,7 @@ export const LABELS = {
       next: 'Tema: {current}. Attiva il tema {next}.',
     },
     nav: {
+      back: 'Indietro',
       label: 'Navigazione principale',
       current: 'Pagina corrente',
       more: 'Altro',
@@ -478,6 +492,7 @@ export const LABELS = {
       next: 'Tema: {current}. Ativar o tema {next}.',
     },
     nav: {
+      back: 'Voltar',
       label: 'Navegação principal',
       current: 'Página atual',
       more: 'Mais',
@@ -552,7 +567,12 @@ export const LABELS = {
       system: 'systeem',
       next: 'Thema: {current}. Overschakelen naar {next}.',
     },
-    nav: { label: 'Hoofdnavigatie', current: 'Huidige pagina', more: 'Meer' },
+    nav: {
+      back: 'Terug',
+      label: 'Hoofdnavigatie',
+      current: 'Huidige pagina',
+      more: 'Meer',
+    },
   },
 };
 

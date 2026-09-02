@@ -10,6 +10,8 @@ export * from './use-offline-queue';
 export * from './net';
 export * from './pwa-install-prompt';
 export * from './app-footer';
+export * from './app-header';
+export * from './page-container';
 export * from './family-apps';
 export * from './error-boundary';
 export * from './empty-state';

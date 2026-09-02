@@ -1,5 +1,6 @@
 import { createContext, createElement as h, useContext } from 'react';
 import {
+  BackIcon,
   CloseIcon,
   CoffeeIcon,
   ExternalLinkIcon,
@@ -40,6 +41,8 @@ export const DEFAULT_ICONS = {
   repo: GithubIcon,
   sponsor: CoffeeIcon,
   external: ExternalLinkIcon,
+  // Le retour d'`AppHeader` — le huitième rôle, ajouté le 02/09/2026.
+  back: BackIcon,
 };
 
 const IconsContext = createContext(DEFAULT_ICONS);
@@ -50,7 +53,7 @@ const IconsContext = createContext(DEFAULT_ICONS);
 export function IconsProvider(props = {}) {
   const { icons, children } = props;
   // Fusion et non remplacement : une app qui ne fournit que `close` garde les
-  // replis pour les six autres rôles.
+  // replis pour les sept autres rôles.
   const value = icons ? { ...DEFAULT_ICONS, ...icons } : DEFAULT_ICONS;
   return h(IconsContext.Provider, { value }, children);
 }
