@@ -1,5 +1,293 @@
 # Changelog
 
+## 3.33.0
+
+### Minor Changes
+
+- 2733cc1: `react/app-header` et `react/page-container` — le troisième côté du cadre, et
+  le conteneur de vue
+
+  Le socle avait `BottomNav` et `AppFooter`. Il n'avait pas l'en-tête. Neuf
+  apps en ont un — `AppHeader` (genius, supaboss, uwh, cim10), `Header` (doc,
+  ticket-pwa), `TopBar` (footcoach, carbook), `Navbar` (puzzle) — dont le
+  contenu est métier mais la mise en page identique : `<header>` collant, zone
+  sûre iOS, fond translucide, filet, un titre, une rangée d'actions.
+
+  **`AppHeader`** ne rend que ça, sur le contrat du `TopBar` de footcoach :
+  `title` (un vrai `h1` — `mister-cim10` le rendait en `<p>` hors de l'accueil,
+  et la page perdait son titre pour un lecteur d'écran), `leading`, `actions`,
+  `children` sous la rangée, et le retour : un **lien** quand il a une
+  destination (`backHref`, par le `linkComponent` du routeur), un **bouton**
+  quand il n'a qu'une action (`onBack`), nommé « Retour » dans les sept langues
+  du dictionnaire (`nav.back`) et dessiné par le nouveau rôle `back`
+  d'`IconsProvider`.
+
+  **`PageContainer`**, promu de badminton et molkky : centré, borné à un palier
+  (`sm` 28 rem → `xl` 64 rem, `full`), zones sûres comprises — celle du bas
+  surtout, sans laquelle le dernier bouton d'une vue colle à la barre d'onglets.
+
+  `components.css` habille les deux ; le showroom porte leurs fiches ; la table
+  d'équivalences compte `AppHeader.tsx`, `TopBar.tsx` et `PageContainer.tsx` —
+  pas `Header.tsx`, qui désigne deux choses différentes selon l'app.
+
+- 38bd4f3: La couche auth : `react/auth-provider`, `react/login-form`, `react/mfa-challenge`
+
+  Le socle avait le **port** (`auth/index`, `auth/supabase`, `auth/mfa`,
+  `auth/errors-fr`), un instantané React (`react/use-auth`) et une garde
+  (`react/auth-gate`). Aucune des six apps n'avait adopté `useAuth`, et
+  `CAMPAGNE.md` notait que migrer `AuthGate` entraînerait « tout le port ». Vu
+  depuis les apps, il manquait trois pièces — et elles les avaient toutes
+  écrites, chacune de son côté :
+
+  | pièce                                                    | exemplaires                                      |
+  | -------------------------------------------------------- | ------------------------------------------------ |
+  | un contexte `signIn` / `signOut` / `session` / `loading` | uwh 161 l., footcoach 62, doc 218, lookhouse 119 |
+  | un formulaire e-mail + mot de passe                      | uwh 64, footcoach 58, doc 166, lookhouse 170     |
+  | un défi MFA                                              | uwh 60, doc 142                                  |
+
+  **`AuthProvider` / `useAuthContext`** — le contrat de footcoach, le plus
+  simple, rebâti sur le port : le client est créé une fois par adaptateur, les
+  actions rendent `{ ok, error }` et jamais une exception, la session arrive par
+  l'évènement du service. Sans adaptateur : mode local, `signed-out`, chaque
+  action rend `{ ok: false, error: { code: 'local-mode' } }`.
+
+  **`LoginForm`** — présentationnel : `onSubmit({ email, password })`, `busy`,
+  `error` (une chaîne déjà traduite, dans un `role="alert"` à part), `mode`
+  `signin` / `signup`, et deux emplacements pour ce qui diffère entre les apps :
+  `children` (des champs de plus) et `footer` (passkey, mot de passe oublié).
+
+  **`MfaChallenge`** — promu de mister-doc : TOTP avec le clavier numérique et
+  `one-time-code`, code de secours et déconnexion **seulement** si l'appelant
+  les fournit.
+
+  Le dictionnaire gagne le groupe `auth` — quatorze libellés, sept langues.
+  `components.css` habille les deux formulaires ; le showroom porte leurs
+  fiches ; la table d'équivalences compte `AuthContext.tsx`, `LoginPage.tsx`,
+  `LoginScreen.tsx` et `MfaChallenge.tsx`.
+
+- 9a0dbe9: `pwa-bundle-budget` — un budget de bundle pour les seize apps
+
+  `miss-uwh` (`check-bundle-budget.mjs`, 60 l.) additionne le poids **gzip**
+  de tout le JS émis et échoue au-delà d'un total ; `mister-qowa`
+  (`check-bundle.mjs`, 25 l.) borne le poids **brut** du chunk principal. Deux
+  mesures pour la même intention — et le commentaire d'uwh raconte trois
+  montées de version où la mesure a changé une décision. Deux apps sur seize
+  l'avaient ; les quatorze autres grossissent sans le savoir.
+
+  Un bin, comme `pwa-icons` :
+
+  ```json
+  "scripts": { "build": "tsc -b && vite build && pwa-bundle-budget" },
+  "bundleBudget": { "totalGzipKb": 255, "mainChunkKb": 300 }
+  ```
+
+  Les deux mesures sont gardées, parce qu'elles ne disent pas la même chose :
+  le total gzip est ce que l'utilisateur télécharge, le chunk principal ce
+  qu'il attend avant le premier rendu. Le budget se lit dans `package.json` —
+  il doit être relu dans une PR, pas dans un script `npm` que personne
+  n'ouvre — et un budget sans aucune borne n'échoue jamais en silence : il le
+  dit. Tous les dépassements sont rendus d'un coup.
+
+  `measureBundle`, `checkBudget` et `readBudget` sont exportés et testés ; le
+  script ne mesure rien quand on l'importe.
+
+- 95df13c: `format` : les quatre règles que cinq apps réécrivaient par-dessus
+
+  Le module est adopté — genius, uwh, lookhouse, supaboss, quota l'importent.
+  Chacune garde pourtant un `format.ts` de 50 à 80 lignes, et chacune explique
+  en en-tête ce qu'elle y ajoute. Quatre règles, dont une écrite deux fois :
+  - **`formatSigned(value, options)`** — « + » explicite, signe moins
+    typographique (U+2212, qu'`Intl` ne produit pas), et un mot pour zéro.
+    `miss-uwh` (`formatSignedEuro`) et `miss-genius` (`formatDelta`) l'avaient
+    chacune écrite ; elles diffèrent sur zéro — rien pour un solde nul, « = »
+    pour un delta nul —, d'où `zero`. En devise (`currency`), en nombre, ou par
+    un rendu injecté (`format: abs => …`).
+  - **`decimals`** sur `formatNumber` et `formatCurrency` — un mot pour
+    `minimumFractionDigits` + `maximumFractionDigits`. C'est le réglage du club
+    qu'uwh honorait dans `formatEuro`, et que `formatCurrency` ne prenait pas.
+  - **`formatPercentage(…, 'auto')`** — une décimale sous 10 %, aucune
+    au-dessus : la règle de supaboss (« 7,5 % » lisible, « 42 % » sans faux
+    « ,0 »). Des options en 2ᵉ place aussi : `{ decimals: 'auto' }`.
+  - **`formatRelativeTime(date, { never })`** — un mot pour une date absente,
+    parce qu'une mesure jamais faite n'est pas « il y a 0 seconde »
+    (supaboss). Au passage, `null` et `undefined` sont une absence : l'ancienne
+    forme les convertissait en 1970 et rendait « il y a 56 ans ». Les formes
+    positionnelles historiques ne bougent pas.
+
+  La date courte numérique de supaboss (`30/08/2026 16:05`) était déjà là :
+  `formatDateTime(d, { dateStyle: 'short', timeStyle: 'short' })`.
+
+- 25e88db: `id` — `createId`, `createUuid`, `isUuid`
+
+  Le besoin le plus banal qui soit, et **deux cent cinquante sites d'appel** dans
+  quatre apps : `miss-uwh` (`createId` + `createUuid`, 99), `mister-footcoach`
+  (75), `bac-sable` (`newId`, 46), `miss-genius` (`createId`, 30 — la copie de
+  celui d'uwh, à la lettre). Et le paquet le réécrivait lui-même : `sync-queue`
+  et `react/use-offline-queue` portaient chacun leur `newId()` avec le même
+  repli sur `crypto.randomUUID`. Les deux importent désormais d'ici.
+
+  `createUuid` est celui d'uwh, le seul des quatre à avoir le repli v4
+  **complet** — bits de version et de variante posés, ce qu'une colonne `uuid`
+  Postgres exige. `createId(prefix)` rend `id_3f9a2c1b`. `isUuid` valide la
+  forme.
+
+  Ce qui n'est PAS promu : `genId` de footcoach (compteur + horodatage, une
+  autre promesse) et `generateSecureId` de `security`, qui est un jeton
+  imprévisible sans repli — son commentaire, qui évoquait `randomUUID`, était
+  périmé et le dit maintenant.
+
+- 10e3f9a: Les libellés du socle en sept langues, et `offlineMessage` sur `useActionGuard`
+
+  `react/labels` ne portait que `fr` et `en`, et **retombait en silence sur le
+  français** pour toute autre locale. Or la famille en parle sept :
+  `miss-contraction` (7), `miss-dice` (6), `mister-qowa` (5), `miss-badminton`
+  (3). Huit fichiers-pont dans sept apps — `AppUpdatesProvider` × 2 (le même
+  fichier à 82 %), `AppLabelsProvider`, `SocleLabels`, `SocleProviders`,
+  `SocleLabelsBridge`, `useNetworkGuard` × 2 — n'existaient que pour surcharger
+  ce que le socle ne savait pas dire. `miss-badminton` surchargeait jusqu'au
+  français « pour que le repli devienne inatteignable ».
+
+  Les 54 libellés existent désormais en `es`, `de`, `it`, `pt` et `nl`, avec la
+  terminologie déjà en production dans ces apps (« Más tarde », « Neu laden »,
+  « Riprova », « Tentar novamente », « Herladen »). Le test de parité couvre les
+  sept dictionnaires : une clé absente dans l'un d'eux fait échouer `npm test`.
+
+  **`labelsFor(locale)`** : une étiquette régionale retombe sur sa langue avant
+  de retomber sur le français — `pt-BR` donne du portugais, ce que
+  `createI18n` peut transmettre tel quel.
+
+  **`useActionGuard({ online: true, offlineMessage })`** : le motif « hors
+  ligne » ne pouvait venir que des libellés du paquet. `mister-puzzle` et
+  `mister-qowa` enveloppaient le hook dans un `useNetworkGuard` de trente à
+  cinquante lignes pour lui redonner sa phrase — et puzzle, qui écrit son i18n
+  à la main sans `LabelsProvider`, ne peut être servi par aucune langue de plus.
+  Une prop, comme `message` sur une vérification injectée.
+
+- 18599fc: Les petites demandes écrites dans les apps : `Badge` `size`, `useFullscreen`, `cn`
+
+  Le tri de `GISEMENTS.md` a relevé, dans les commentaires des apps, ce que le
+  socle ne leur donnait pas. Trois demandes tiennent chacune dans dix lignes :
+  - **`Badge` gagne un axe de taille** — `xs` / `sm` / `md` (`md` est l'ancien
+    et seul rendu). `mister-doc` gardait ses pastilles de calendrier hors du
+    paquet parce que « `size="xs"` n'a pas d'équivalent : le socle n'a pas d'axe
+    de taille ».
+  - **`react/use-fullscreen`** — le plein écran natif : `supported`, `active`
+    (suit `fullscreenchange`), `enter` / `exit` / `toggle` qui ne lèvent jamais.
+    `miss-badminton` (62 l.) et `mister-molkky` (44 l.) portaient le même bouton ;
+    le paquet promeut le hook, le bouton reste à l'app.
+  - **`cn`** — joint des classes (chaînes, tableaux, objets `{ classe:
+condition }`). `miss-genius` et `miss-uwh` en portaient la même copie de
+    cinq lignes, à la lettre.
+
+  Deux autres demandes de la même liste avaient **déjà leur réponse** dans le
+  socle, et sont documentées comme telles dans `GISEMENTS.md` : le GIF dans
+  `IMAGE_ACCEPTED_TYPES` est refusé par une décision écrite dans le module
+  même (la liste est un plancher, on l'élargit au site d'appel), et les canaux
+  temps réel orphelins sont refermés depuis 3.24.0 — le contournement de
+  carbook survit à un défaut qui n'existe plus.
+
+- 7482ff3: `pwa-doctor` — la checklist du parc, lue sur un dépôt. Un lint voit le code ;
+  il ne voit pas qu'un manifeste est lié à la racine de l'origine (l'app ne
+  s'installe pas), qu'un `renovate.json` étend un préréglage inexistant, qu'une
+  app routée par chemin n'a pas de `404.html`. Ce bin lit le dépôt (fichiers du
+  gabarit), les workflows (Lighthouse, nettoyage, keep-alive Supabase, e2e,
+  `@v3`) et le build (`dist/` : manifeste sous le site, PNG 512, maskable, `id`,
+  langue, icône iOS, `theme-color` par schéma, CSP, Open Graph, canonique,
+  `404.html`), et rend trois verdicts — défaut, dette, info — avec le geste à
+  chaque ligne. Code 1 sur un défaut ; `--strict` refuse aussi les dettes. Les
+  lectures pures d'un site (`scripts/site-readers.mjs`) sont publiées avec lui.
+- 42c9af9: `react/card` — `Card` et `CardHeader`, la surface que dix apps avaient
+
+  Le socle avait `Button`, `Field`, `Badge`, `Sheet`, `Stat`… et pas de carte.
+  Dix apps sur dix-sept en avaient une, aucune du paquet : `Card.tsx` dans
+  `miss-genius` et `miss-uwh` — **le même fichier**, au préfixe de variable
+  près (`--mg-surface` contre `--uwh-surface`) —, dans `mister-footcoach`
+  (avec `CardHeader`, 23 importateurs) et `mister-qowa` ; et une classe `.card`
+  écrite à la main dans six feuilles de style de plus.
+
+  Le contrat est celui de footcoach, le plus complet : `Card` (`as`, `padding`)
+  et `CardHeader` (`title`, `subtitle`, `action`, `as` pour le niveau de titre).
+  `components.css` l'habille sous `[data-dwc="card"]` sur `--dwc-surface`,
+  `--dwc-border`, `--dwc-radius` — exactement les variables que les copies
+  nommaient chacune à sa façon.
+
+  Une carte est une surface, pas un contrôle : l'action va dans `action`, sur
+  un élément focusable, jamais en `onClick` sur le `div`. Quatre tests, une
+  fiche au showroom, une entrée dans la table d'équivalences.
+
+- 6ede81d: Repli SPA `404.html` — `spaFallbackPlugin()` et le déploiement réutilisable
+
+  GitHub Pages n'a pas de repli SPA : rafraîchir `/miss-contraction/a-propos`,
+  ou ouvrir un lien partagé, sert sa page « File not found », pas l'app. Mesuré
+  le 02/09/2026 sur les sites publiés : **quatre apps à routage par chemin**
+  (contraction, footcoach, badminton, family-map) étaient dans ce cas, et trois
+  autres (carbook, molkky, dice) avaient chacune écrit la même correction chez
+  elles — le plugin de dice et celui de molkky sont identiques à la ligne près.
+
+  Deux réponses, pour deux chemins de déploiement :
+  - **`pwa-deploy.yml`** copie `index.html` en `404.html` après le build, s'il
+    manque. Les apps déployées par le workflow réutilisable sont couvertes **sans
+    changer une ligne**, dès que `v3` suit cette version.
+  - **`spaFallbackPlugin()`** dans `vite-pwa-base`, pour `vite preview`, un autre
+    hébergeur ou un déploiement écrit à la main — et pour que carbook, molkky et
+    dice retirent leur copie.
+
+  Inoffensif pour une app qui route par `#` : GitHub ne voit jamais le chemin,
+  le fichier ne sert jamais. Le service worker masquait déjà le défaut après la
+  première visite ; il restait entier pour un lien ouvert à froid.
+
+### Patch Changes
+
+- c72903a: Le relevé d'adoption ne prend plus un fichier pour une façade parce qu'il
+  importe n'importe quoi du socle : il faut qu'il importe un symbole LIBÉRATEUR
+  du besoin, ou réexporte depuis le paquet. L'`AppHeader.tsx` de miss-uwh, qui
+  prend `Button` au socle et reste un en-tête écrit à la main, passait pour
+  adopté — avec quatorze autres copies. Le relevé passe de 19 à 34.
+
+  Deux sondes de dépôt (non publiées) : `scripts/probe-sites.mjs` lit les sites
+  publiés (manifeste, CSP, Open Graph, repli 404, poids du JS initial) ;
+  `scripts/dead-exports.mjs` relève les exports que personne n'appelle. Leurs
+  trouvailles du 02/09/2026 sont classées dans `PARC.md`.
+
+- 7a9af4a: Renovate hébergé par le socle. Aucun des dix-huit dépôts n'avait jamais reçu
+  une PR de Renovate : treize apps étendaient un préréglage dans un dépôt
+  `.github` qui n'existe pas, et l'application n'était pas installée. Le
+  préréglage vit désormais dans `renovate/default.json` (les apps l'étendent par
+  `github>mister-guiiug/dev-wpa-config//renovate/default.json`), et
+  `.github/workflows/renovate.yml` fait tourner Renovate auto-hébergé le samedi
+  matin sur tous les dépôts du compte qui portent une configuration — jamais le
+  miroir `mister-family-map`. Il faut un secret `RENOVATE_TOKEN` ; sans lui le
+  workflow le dit et s'arrête.
+- 8c6194b: Trois workflows réutilisables de plus — `cleanup-runs`, `pwa-supabase-migrate`, `pwa-worker-deploy`
+
+  `.github/workflows` est le dossier le plus recopié de la famille, et le mieux
+  outillé pour ne pas l'être : `pwa-ci`, `pwa-deploy`, `pwa-lighthouse` sont
+  appelables et adoptés partout. Restaient trois trous, mesurés le 02/09/2026 :
+  - **`cleanup-runs.yml` — 73 lignes, douze copies identiques.** Le socle avait
+    le même fichier, mais en `workflow_dispatch` seulement : chaque dépôt devait
+    l'héberger. Il déclare `workflow_call` ; une copie tombe à dix lignes. Les
+    entrées passent par `env:` au lieu d'être interpolées dans le JavaScript.
+  - **`pwa-supabase-migrate.yml` — quatre copies, 35 à 143 lignes**
+    (lookhouse, uwh, doc, carbook) autour de la même paire `supabase link` +
+    `supabase db push`, avec la même concurrence « on ne coupe pas une migration
+    en vol ». Une fois, avec le déploiement optionnel des Edge Functions.
+  - **`pwa-worker-deploy.yml` — deux copies** (genius, supaboss) du même
+    `wrangler deploy`, avec la même décision : sans secret Cloudflare, on
+    n'échoue pas, le Worker est optionnel.
+
+  Et un rappel que le README ne portait pas : **`pwa-supabase-keepalive.yml`
+  existait, réutilisable, et aucune des huit apps Supabase ne l'appelait** —
+  `miss-carbook` dort depuis le 29/08 et ne se déploie plus. Il figure
+  désormais dans la table des workflows, à côté de la migration.
+
+  `test/workflows.test.mjs` verrouille ce qu'un appelant est en droit
+  d'attendre : `workflow_call` déclaré, actions référencées par `@v3` (un
+  chemin relatif vise le checkout de l'appelant), jamais `secrets: inherit`,
+  et le `404.html` du déploiement Pages écrit entre le build et l'artefact.
+
+  Outillage de la famille, hors paquet npm : les apps le reçoivent quand `v3`
+  suit cette version.
+
 ## 3.32.1
 
 ### Patch Changes
