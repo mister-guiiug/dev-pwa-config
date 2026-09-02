@@ -249,6 +249,14 @@ globalThis.SHOWROOM_I18N = {
     'composants.p23':
       'Centred, capped at a width tier, iOS safe areas included — the bottom one above all, without which the last button of a view sticks to the tab bar. Promoted from badminton and molkky.',
     'composants.summary16': 'CSS selectors',
+    'composants.h55': 'LoginForm',
+    'composants.p24':
+      'Four apps had the same screen: two fields, one button, one translated error. The form is presentational — the caller signs in and passes back <code>busy</code> and <code>error</code>; <code>children</code> and <code>footer</code> hold the rest (sign-up, passkey, forgotten password).',
+    'composants.summary17': 'CSS selectors',
+    'composants.h56': 'MfaChallenge',
+    'composants.p25':
+      'The TOTP step at sign-in, promoted from mister-doc and miss-uwh: numeric keyboard, the received code offered by the OS, a recovery path and a sign-out only when the caller provides them.',
+    'composants.summary18': 'CSS selectors',
     'composants.h52': 'ThemeToggle',
     'composants.p19':
       'Five apps have one. This one cycles through the <em>three</em> states of <code>useTheme</code>: a two-state toggle makes “system” unreachable.',

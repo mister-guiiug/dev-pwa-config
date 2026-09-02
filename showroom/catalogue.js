@@ -371,6 +371,44 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'LoginForm',
+      category: 'shell',
+      covers: ['LoginForm'],
+      donts: {
+        fr: [
+          'Ne pas accrocher « identifiants invalides » au champ mot de passe : l’erreur concerne les deux champs, et `miss-uwh` la posait sur le seul mot de passe. Elle est rendue à part, dans un `role="alert"`.',
+          'Ne pas mettre `autocomplete="email"` sur l’identifiant : un gestionnaire de mots de passe cherche `username` pour proposer le compte enregistré.',
+        ],
+        en: [
+          'Don’t attach “invalid credentials” to the password field: the error concerns both fields, and `miss-uwh` put it on the password alone. It is rendered apart, in a `role="alert"`.',
+          'Don’t set `autocomplete="email"` on the identifier: a password manager looks for `username` to offer the saved account.',
+        ],
+      },
+      a11y: {
+        fr: 'Deux champs labellisés par `TextField`, une erreur annoncée par `role="alert"`, un bouton qui dit `aria-busy` pendant la connexion et ignore la seconde soumission. Le titre est un vrai `h1` : c’est la page.',
+        en: 'Two fields labelled by `TextField`, an error announced by `role="alert"`, a button that says `aria-busy` while signing in and ignores the second submission. The title is a real `h1`: it is the page.',
+      },
+    },
+    {
+      id: 'MfaChallenge',
+      category: 'shell',
+      covers: ['MfaChallenge'],
+      donts: {
+        fr: [
+          'Ne pas laisser l’utilisateur sans sortie : sans téléphone ni codes de secours, il doit pouvoir se déconnecter plutôt que rester devant un champ. `onSignOut` rend le bouton ; `mister-doc` l’avait compris.',
+          'Ne pas proposer la voie de secours sans la fournir : les codes de secours sont des RPC applicatives, pas une API Supabase Auth. Le bouton n’existe que si `onRecover` est là.',
+        ],
+        en: [
+          'Don’t leave the user without an exit: with neither phone nor recovery codes, they must be able to sign out rather than sit in front of a field. `onSignOut` renders the button; `mister-doc` had understood that.',
+          'Don’t offer the recovery path without providing it: recovery codes are application RPCs, not a Supabase Auth API. The button only exists when `onRecover` is given.',
+        ],
+      },
+      a11y: {
+        fr: '`inputmode="numeric"` ouvre le bon clavier, `autocomplete="one-time-code"` fait proposer le code reçu par iOS et Android, et la longueur attendue est déclarée (`minlength`, `maxlength`).',
+        en: '`inputmode="numeric"` opens the right keyboard, `autocomplete="one-time-code"` lets iOS and Android offer the received code, and the expected length is declared (`minlength`, `maxlength`).',
+      },
+    },
+    {
       id: 'BottomNav',
       category: 'shell',
       covers: ['BottomNav'],
@@ -767,6 +805,20 @@ globalThis.SHOWROOM_CATALOGUE = {
       dont: {
         fr: 'Ne pas y placer une icône porteuse de sens : `Icon` est décorative (`aria-hidden`). Une icône qui informe se pose à la main, avec son nom accessible.',
         en: 'Don’t put a meaningful icon in it: `Icon` is decorative (`aria-hidden`). An informative icon is placed by hand, with its own accessible name.',
+      },
+    },
+    {
+      id: 'useAuthContext',
+      covers: ['AuthProvider', 'useAuthContext'],
+      signature:
+        '<AuthProvider adapter onEvent> · useAuthContext() → { status, user, session, ready, signIn, signUp, signOut, … }',
+      summary: {
+        fr: "Le contexte qui tient le client du port `auth` et expose les actions — ce qui manquait entre le port et les écrans, et que quatre apps recopiaient. Sans adaptateur : mode local, `signed-out`, chaque action rend `{ ok: false, error: { code: 'local-mode' } }`.",
+        en: "The context that holds the `auth` port client and exposes the actions — what was missing between the port and the screens, and what four apps copied. Without an adapter: local mode, `signed-out`, every action returns `{ ok: false, error: { code: 'local-mode' } }`.",
+      },
+      dont: {
+        fr: 'Ne pas recréer l’adaptateur à chaque rendu : le client est construit une fois par adaptateur. Le mémoriser au niveau module, ou dans un `useMemo`.',
+        en: 'Don’t re-create the adapter on every render: the client is built once per adapter. Memoise it at module level, or in a `useMemo`.',
       },
     },
     {

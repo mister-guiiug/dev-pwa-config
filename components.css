@@ -1493,6 +1493,51 @@
     max-width: none;
   }
 
+  /* ── LoginForm & MfaChallenge ──────────────────────────────────────────── *
+   * Deux formulaires d'un seul écran : une colonne, des champs espacés, une
+   * erreur qui se voit, des boutons pleine largeur. L'app pose la carte ou
+   * la page autour.
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='login-form'],
+  [data-dwc='mfa-challenge'] {
+    display: grid;
+    gap: var(--spacing-fluid-sm, 0.75rem);
+  }
+
+  [data-dwc='login-form-title'],
+  [data-dwc='mfa-challenge-title'] {
+    margin: 0;
+    font-size: var(--text-fluid-xl, 1.35rem);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  [data-dwc='mfa-challenge-hint'] {
+    margin: 0;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='login-form-error'],
+  [data-dwc='mfa-challenge-error'] {
+    margin: 0;
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: color-mix(
+      in srgb,
+      var(--dwc-danger, light-dark(#b91c1c, #fb7185)) 12%,
+      transparent
+    );
+    color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  [data-dwc='login-form-footer'] {
+    font-size: var(--text-fluid-sm, 0.9rem);
+    text-align: center;
+  }
+
   /* ── BottomNav ─────────────────────────────────────────────────────────── *
    * L'onglet actif n'est JAMAIS distingué par la seule couleur : le composant
    * pose `aria-current`, ajoute un texte lu, et l'habillage ci-dessous y

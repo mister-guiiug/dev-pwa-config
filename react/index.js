@@ -80,3 +80,6 @@ export { useAsync } from './use-async.js';
 export { useUndoableState } from './use-undoable-state.js';
 export { SegmentedControl } from './segmented-control.js';
 export { ConnectionBanner } from './connection-banner.js';
+export { AuthProvider, useAuthContext } from './auth-provider.js';
+export { LoginForm } from './login-form.js';
+export { MfaChallenge } from './mfa-challenge.js';

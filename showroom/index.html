@@ -1772,6 +1772,186 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
+            <h4 data-i18n="composants.h55">LoginForm</h4>
+            <p data-i18n="composants.p24">
+              Quatre apps avaient le même écran : deux champs, un bouton, une
+              erreur traduite. Le formulaire est présentationnel — l’appelant
+              fait <code>signIn</code> et redonne <code>busy</code> et
+              <code>error</code> ; <code>children</code> et <code>footer</code>
+              portent le reste (inscription, passkey, mot de passe oublié).
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <form
+              data-dwc="login-form"
+              data-mode="signin"
+              onsubmit="return false"
+              style="max-width: 24rem"
+            >
+              <p
+                data-dwc="login-form-title"
+                style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem"
+              >
+                Connexion
+              </p>
+              <div data-dwc="field">
+                <label data-dwc="field-label" for="lf-email"
+                  >Adresse e-mail</label
+                >
+                <input
+                  data-dwc="field-control"
+                  id="lf-email"
+                  type="email"
+                  autocomplete="username"
+                  value="tresorier@club.fr"
+                />
+              </div>
+              <div data-dwc="field">
+                <label data-dwc="field-label" for="lf-password"
+                  >Mot de passe</label
+                >
+                <input
+                  data-dwc="field-control"
+                  id="lf-password"
+                  type="password"
+                  autocomplete="current-password"
+                  value="••••••••"
+                />
+              </div>
+              <p role="alert" data-dwc="login-form-error">
+                Identifiants invalides.
+              </p>
+              <button
+                type="submit"
+                data-dwc="button"
+                data-variant="primary"
+                data-size="md"
+                data-block
+              >
+                Se connecter
+              </button>
+              <div data-dwc="login-form-footer">
+                <a href="#composants">Mot de passe oublié ?</a>
+              </div>
+            </form>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary17">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="LoginForm"></div>
+              <ul class="sr-selectors">
+                <li>
+                  <code
+                    >[data-dwc="login-form"][data-mode="signin|signup"]</code
+                  >
+                </li>
+                <li><code>[data-dwc="login-form-title"]</code></li>
+                <li><code>[data-dwc="login-form-error"]</code></li>
+                <li><code>[data-dwc="login-form-footer"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4 data-i18n="composants.h56">MfaChallenge</h4>
+            <p data-i18n="composants.p25">
+              L’étape TOTP au login, promue de mister-doc et miss-uwh : clavier
+              numérique, code reçu proposé par le système, voie de secours et
+              déconnexion seulement quand l’appelant les fournit.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <form
+              data-dwc="mfa-challenge"
+              data-mode="totp"
+              onsubmit="return false"
+              style="max-width: 24rem"
+            >
+              <p
+                data-dwc="mfa-challenge-title"
+                style="
+                  font-size: 1.25rem;
+                  font-weight: 700;
+                  margin: 0 0 0.25rem;
+                "
+              >
+                Vérification en deux étapes
+              </p>
+              <p data-dwc="mfa-challenge-hint">
+                Saisissez le code de votre application d’authentification.
+              </p>
+              <div data-dwc="field">
+                <label data-dwc="field-label" for="mfa-code"
+                  >Code à 6 chiffres</label
+                >
+                <input
+                  data-dwc="field-control"
+                  id="mfa-code"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  minlength="6"
+                  maxlength="6"
+                  value="123456"
+                />
+              </div>
+              <button
+                type="submit"
+                data-dwc="button"
+                data-variant="primary"
+                data-size="md"
+                data-block
+              >
+                Vérifier
+              </button>
+              <button
+                type="button"
+                data-dwc="button"
+                data-variant="ghost"
+                data-size="md"
+                data-block
+              >
+                Utiliser un code de secours
+              </button>
+              <button
+                type="button"
+                data-dwc="button"
+                data-variant="secondary"
+                data-size="md"
+                data-block
+              >
+                Se déconnecter
+              </button>
+            </form>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary18">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="MfaChallenge"></div>
+              <ul class="sr-selectors">
+                <li>
+                  <code
+                    >[data-dwc="mfa-challenge"][data-mode="totp|recovery"]</code
+                  >
+                </li>
+                <li><code>[data-dwc="mfa-challenge-hint"]</code></li>
+                <li><code>[data-dwc="mfa-challenge-error"]</code></li>
+                <li>
+                  <code>[data-dwc="mfa-challenge"] [data-action="switch"]</code>
+                </li>
+                <li>
+                  <code
+                    >[data-dwc="mfa-challenge"] [data-action="sign-out"]</code
+                  >
+                </li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
             <h4 data-i18n="composants.h52">ThemeToggle</h4>
             <p data-i18n="composants.p19">
               Cinq apps en ont un. Celui-ci parcourt les <em>trois</em> états de
