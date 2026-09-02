@@ -19,21 +19,21 @@ Trois sondes nouvelles, chacune laissée sous forme d'instrument pour que la mes
 
 Le rendement est le nombre d'apps ou d'utilisateurs touchés, rapporté au coût. Les chantiers 1 à 3 sont des défauts — quelqu'un en souffre aujourd'hui. Les autres sont des dettes.
 
-| #   | Chantier                                          | Mesure du 02/09                                                                                           | Où                        | Coût   |
-| --- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------- | ------ |
-| 1   | Réveiller Renovate                                | 0 PR jamais ouverte sur 18 dépôts ; 13 configs étendent un dépôt inexistant ; supabase-js de 2.45 à 2.112 | compte GitHub + 13 apps   | faible |
-| 2   | Rendre les apps installables                      | ticket-pwa : manifeste 404 ; lookhouse : aucun PNG ; `lang: en` ×3 ; sans `id` ×6 ; sans maskable ×3      | 8 apps                    | faible |
-| 3   | La dette d'adoption réelle : 34 copies, pas 19    | AppHeader 6, id 5, LoginForm 5, ErrorBoundary 3, Card 3, AuthProvider 3, MfaChallenge 2…                  | 12 apps (après la 3.33.0) | moyen  |
-| 4   | `pwa-doctor` : la checklist du parc en un `bin`   | Chaque défaut de cette page a été trouvé à la main ; aucun ne l'aurait été deux fois                      | socle                     | moyen  |
-| 5   | Poids initial : carbook 432 kB, budgets partout   | `charts` 94 kB et `supabase` 50 kB préchargés au démarrage ; `pwa-bundle-budget` a 0 adoptant             | carbook, puis 15 apps     | faible |
-| 6   | SEO et partage : quatre sites sans `pwaSeoPlugin` | ¬og:image ¬canonical ¬sitemap : lookhouse, supaboss, qowa (+ family-map sans og:image) ; CSP absente ×2   | 4 apps                    | faible |
-| 7   | Repli 404 : quatre apps routées par chemin        | badminton, contraction, footcoach, family-map servent la page 404 de GitHub sur un lien profond           | livré par `v3` (3.33.0)   | nul    |
-| 8   | Les deux dépôts hors socle : lookhouse et qowa    | ¬lighthouse ¬cleanup ¬renovate ¬editorconfig (+ ¬a11y pour lookhouse, ¬nvmrc)                             | 2 apps (+ supaboss)       | faible |
-| 9   | Locale figée : 88 `fr-FR` en dur                  | carbook 28, uwh 17, bac-sable 9, contraction 8, footcoach 6                                               | 15 apps                   | moyen  |
-| 10  | Code mort : 64 exports morts, 104 superflus       | doc 10, contraction 9, molkky 8, uwh 7, footcoach 6 ; le motif `*_LABELS` jamais lu                       | 15 apps                   | faible |
-| 11  | Journal : 38 `console.error/warn` orphelins       | `createLogger` a un adoptant sur dix-sept                                                                 | 13 apps                   | moyen  |
-| 12  | Densité de tests : carbook 5 par kloc sur 25 kloc | badminton 5,6 ; supaboss 5,7 — contre contraction 47 et footcoach 39                                      | 3 apps                    | élevé  |
-| 13  | `autoUpdate` : recharger en pleine saisie         | contraction, lookhouse, ticket-pwa                                                                        | 3 apps                    | faible |
+| #   | Chantier                                          | Mesure du 02/09                                                                                                                                                | Où                                                                             | Coût   |
+| --- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------ |
+| 1   | Réveiller Renovate                                | 0 PR jamais ouverte sur 18 dépôts ; 13 configs étendent un dépôt inexistant ; supabase-js de 2.45 à 2.112                                                      | compte GitHub + 13 apps                                                        | faible |
+| 2   | Rendre les apps installables                      | ticket-pwa : manifeste 404 ; lookhouse : aucun PNG ; `lang: en` ×3 ; sans `id` ×6 ; sans maskable ×3                                                           | 8 apps                                                                         | faible |
+| 3   | La dette d'adoption réelle : 34 copies, pas 19    | AppHeader 6, id 5, LoginForm 5, ErrorBoundary 3, Card 3, AuthProvider 3, MfaChallenge 2…                                                                       | 12 apps (après la 3.33.0)                                                      | moyen  |
+| 4   | `pwa-doctor` : la checklist du parc en un `bin`   | Chaque défaut de cette page a été trouvé à la main ; aucun ne l'aurait été deux fois                                                                           | socle                                                                          | moyen  |
+| 5   | Poids                                             | **Fait.** carbook : 432 → 146 kB de JS initial gzip ; `bundleBudget` posé sur les dix-sept dépôts, mesure du jour + 10 %, `pwa-bundle-budget` branché au build | Le budget de carbook (505) reste indicatif tant que son déploiement est bloqué |
+| 6   | SEO et partage : quatre sites sans `pwaSeoPlugin` | ¬og:image ¬canonical ¬sitemap : lookhouse, supaboss, qowa (+ family-map sans og:image) ; CSP absente ×2                                                        | 4 apps                                                                         | faible |
+| 7   | Repli 404 : quatre apps routées par chemin        | badminton, contraction, footcoach, family-map servent la page 404 de GitHub sur un lien profond                                                                | livré par `v3` (3.33.0)                                                        | nul    |
+| 8   | Les deux dépôts hors socle : lookhouse et qowa    | ¬lighthouse ¬cleanup ¬renovate ¬editorconfig (+ ¬a11y pour lookhouse, ¬nvmrc)                                                                                  | 2 apps (+ supaboss)                                                            | faible |
+| 9   | Locale figée : 88 `fr-FR` en dur                  | carbook 28, uwh 17, bac-sable 9, contraction 8, footcoach 6                                                                                                    | 15 apps                                                                        | moyen  |
+| 10  | Code mort : 64 exports morts, 104 superflus       | doc 10, contraction 9, molkky 8, uwh 7, footcoach 6 ; le motif `*_LABELS` jamais lu                                                                            | 15 apps                                                                        | faible |
+| 11  | Journal : 38 `console.error/warn` orphelins       | `createLogger` a un adoptant sur dix-sept                                                                                                                      | 13 apps                                                                        | moyen  |
+| 12  | Densité de tests : carbook 5 par kloc sur 25 kloc | badminton 5,6 ; supaboss 5,7 — contre contraction 47 et footcoach 39                                                                                           | 3 apps                                                                         | élevé  |
+| 13  | `autoUpdate` : recharger en pleine saisie         | contraction, lookhouse, ticket-pwa                                                                                                                             | 3 apps                                                                         | faible |
 
 Non retenus, parce que rien ne le réclame : le JSON-LD (1/16), `llms.txt` (1/16), `version.json` (1/16 — inoffensif sans `react/version`), `SECURITY.md` et `CONTRIBUTING.md` (0/17 : le parc est à un seul mainteneur), le `<meta name="color-scheme">` (1/16).
 
@@ -231,6 +231,32 @@ migrate`, et la migration répond `project is paused` — un administrateur doit
 réveiller le projet depuis le tableau de bord Supabase. Le site public est
 donc celui du 28/08 : ni le `id` du manifeste, ni l'icône iOS, ni les 146 kB
 n'y sont encore.
+
+### Les budgets de poids, en un tableau
+
+Mesuré le 02/09/2026 par `pwa-bundle-budget` sur un build de production, tout
+le JS émis, gzip. Le budget est la mesure plus environ 10 % : il doit signaler
+une régression, pas le bruit d'une montée de dépendance.
+
+| App              | Mesuré | Budget |     | App               | Mesuré | Budget |
+| ---------------- | -----: | -----: | --- | ----------------- | -----: | -----: |
+| mister-quota     |     64 |     75 |     | mister-molkky     |    204 |    225 |
+| miss-dice        |    110 |    125 |     | mister-doc        |    233 |    260 |
+| mister-cim10     |    130 |    145 |     | miss-contraction  |    244 |    270 |
+| miss-supaboss    |    161 |    180 |     | miss-lookhouse    |    247 |    275 |
+| mister-footcoach |    177 |    195 |     | miss-uwh          |    258 |    262 |
+| miss-genius      |    195 |    215 |     | mister-puzzle     |    288 |    320 |
+| miss-badminton   |    201 |    225 |     | miss-ticket-pwa   |    300 |    330 |
+|                  |        |        |     | mister-qowa       |    396 |    435 |
+|                  |        |        |     | miss-carbook      |    458 |    505 |
+|                  |        |        |     | mister-family-map |    613 |    675 |
+
+Deux apps gardent leur intention d'origine plutôt que la règle des 10 % :
+miss-uwh sa marge de 3 kB, choisie après trois recalibrages documentés, et
+mister-qowa son plafond sur le chunk principal brut (`app-*.js`, 300 kB), qui
+mesure ce qu'on attend avant le premier rendu. Leurs deux scripts maison sont
+retirés : c'est d'eux que le socle avait promu le bin, et ils en étaient
+restés les seuls porteurs.
 
 ### Ce que l'adoption a appris
 
