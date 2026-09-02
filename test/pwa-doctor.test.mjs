@@ -154,6 +154,64 @@ test('le manifeste en anglais sur une page en français est un défaut', async (
   );
 });
 
+test('secrets et variables : ce que Vite copie dans le bundle n’est pas un secret', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/main.tsx': `const u = import.meta.env.VITE_SUPABASE_URL;
+const k = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const d = import.meta.env.VITE_SENTRY_DSN;`,
+      '.env.example': 'VITE_SUPABASE_URL=\n# VITE_SENTRY_DSN= (facultatif)\n',
+      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
+    secrets: inherit
+    with:
+      build-env: |
+        VITE_SUPABASE_URL=\${{ secrets.VITE_SUPABASE_URL }}`,
+    },
+    root => {
+      const report = diagnose(root);
+      const dettes = ids(report, 'dette');
+
+      assert.ok(
+        dettes.includes('secrets-inherit'),
+        'inherit donne tout le trousseau'
+      );
+      assert.ok(
+        dettes.includes('vite-en-secret'),
+        'une VITE_* en secret n’est pas protégée : Vite la copie dans le bundle'
+      );
+
+      // `.env.example` existe et documente URL et DSN (même en commentaire),
+      // mais pas ANON_KEY : c'est elle, et elle seule, qui doit être signalée.
+      const manque = report.findings.find(
+        f => f.id === 'env-example-incomplet'
+      );
+      assert.ok(manque, '.env.example incomplet');
+      assert.match(manque.message, /VITE_SUPABASE_ANON_KEY/);
+      assert.doesNotMatch(
+        manque.message,
+        /VITE_SENTRY_DSN/,
+        'documentée en commentaire'
+      );
+      assert.doesNotMatch(manque.message, /VITE_SUPABASE_URL/);
+    }
+  );
+});
+
+test('sans .env.example du tout, la dette dit lesquelles documenter', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-y' },
+      'src/main.tsx': 'const u = import.meta.env.VITE_BACKEND;',
+    },
+    root => {
+      const manque = diagnose(root).findings.find(f => f.id === 'env-example');
+      assert.ok(manque);
+      assert.match(manque.fix, /VITE_BACKEND/);
+    }
+  );
+});
+
 test('le conforme : silence complet — la définition exécutable de « conforme au parc »', async () => {
   const html = `<!doctype html><html lang="fr"><head>
     <meta name="viewport" content="width=device-width, initial-scale=1">

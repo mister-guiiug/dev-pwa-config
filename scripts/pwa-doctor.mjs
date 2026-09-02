@@ -263,6 +263,34 @@ export function diagnose(dir) {
         'passer en @v3 (étiquette flottante déplacée à chaque release)'
       );
     }
+
+    // `secrets: inherit` donne au workflow appelé TOUT le trousseau du dépôt,
+    // alors qu'il déclare exactement ce dont il a besoin.
+    const herites = workflows.filter(w => /secrets:\s*inherit/.test(w.text));
+    if (herites.length) {
+      dette(
+        'secrets-inherit',
+        `secrets: inherit dans ${herites.map(w => basename(w.rel)).join(', ')} — le workflow appelé reçoit tout le trousseau`,
+        'nommer les secrets un par un (README § Secrets et variables)'
+      );
+    }
+
+    // Une VITE_* rangée en secret n'est pas protégée : Vite la copie dans le
+    // bundle. Le secret masque les journaux, pas la valeur.
+    const publiques = [
+      ...new Set(
+        (wfText.match(/secrets\.(VITE_[A-Z0-9_]+)/g) ?? []).map(m =>
+          m.replace('secrets.', '')
+        )
+      ),
+    ];
+    if (publiques.length) {
+      dette(
+        'vite-en-secret',
+        `${publiques.join(', ')} en secret alors que Vite les copie dans le bundle`,
+        'les passer en vars — un secret masque les journaux, pas la valeur'
+      );
+    }
   }
 
   /* ── 3. La source ─────────────────────────────────────────────────────── */
@@ -295,6 +323,37 @@ export function diagnose(dir) {
   ) {
     dette('csp', 'pas de Content-Security-Policy', 'cspPlugin() de vite-csp');
   }
+  // Toute VITE_* que le code lit doit figurer dans `.env.example` : c'est la
+  // seule documentation qu'un nouveau venu lira.
+  const lues = [
+    ...new Set(
+      (srcText.match(/import\.meta\.env\.(VITE_[A-Z0-9_]+)/g) ?? []).map(m =>
+        m.replace('import.meta.env.', '')
+      )
+    ),
+  ].sort();
+  if (lues.length) {
+    const exemple = readText(root, '.env.example');
+    if (!exemple) {
+      dette(
+        'env-example',
+        `${lues.length} VITE_* lues par le code, pas de .env.example`,
+        `le créer avec : ${lues.slice(0, 4).join(', ')}${lues.length > 4 ? '…' : ''}`
+      );
+    } else {
+      const absentes = lues.filter(
+        name => !new RegExp(`^\\s*#?\\s*${name}\\b`, 'm').test(exemple)
+      );
+      if (absentes.length) {
+        dette(
+          'env-example-incomplet',
+          `.env.example ne documente pas ${absentes.join(', ')}`,
+          'une ligne par variable, avec ce à quoi elle sert'
+        );
+      }
+    }
+  }
+
   const figees = count(srcText, /['"]fr-FR['"]/g);
   if (figees) {
     info(
