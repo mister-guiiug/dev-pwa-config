@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useOnline } from './use-online.js';
 import { retryableQuery } from './net.js';
-
-let fallbackCounter = 0;
-function newId() {
-  const c = globalThis.crypto;
-  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
-  fallbackCounter += 1;
-  return `q_${fallbackCounter}`;
-}
+// Le repli `randomUUID` vivait ici en copie ; il est dans `id.js` désormais.
+import { createUuid as newId } from '../id.js';
 
 /**
  * Le stockage est la source de vérité, jamais l'état React : `flush` et

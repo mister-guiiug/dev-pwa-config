@@ -18,7 +18,7 @@
 export const SUBPATHS = {
   Badge: 'react/badge',
   Card: 'react/card',
-  CardHeader: 'react/card',
+  id: 'id',
   BottomNav: 'react/bottom-nav',
   Button: 'react/button',
   ConfirmDialog: 'react/confirm-dialog',
@@ -83,6 +83,8 @@ export const EXPORTED_TYPES = {
     'InitWebVitalsOptions',
   ],
   'react/field': ['TextFieldProps', 'SelectFieldProps', 'TextAreaFieldProps'],
+  'react/card': ['CardProps', 'CardHeaderProps'],
+  id: ['UuidSource'],
 };
 
 /** Les symboles réellement exportés par chaque sous-chemin. */
@@ -103,6 +105,8 @@ export const EXPORTS = {
     'FAMILY_APPS',
   ],
   'react/field': ['TextField', 'SelectField', 'TextAreaField'],
+  'react/card': ['Card', 'CardHeader'],
+  id: ['createId', 'createUuid', 'isUuid'],
   'sw-update': ['applyUpdate', 'hardNavigate'],
   storage: [
     'createStore',

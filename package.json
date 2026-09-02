@@ -271,6 +271,10 @@
       "types": "./dates.d.ts",
       "default": "./dates.js"
     },
+    "./id": {
+      "types": "./id.d.ts",
+      "default": "./id.js"
+    },
     "./react": {
       "types": "./react/index.d.ts",
       "default": "./react/index.js"
@@ -674,6 +678,8 @@
     "geocode-ban.d.ts",
     "dates.js",
     "dates.d.ts",
+    "id.js",
+    "id.d.ts",
     "backup.js",
     "backup.d.ts",
     "versioned-store.js",

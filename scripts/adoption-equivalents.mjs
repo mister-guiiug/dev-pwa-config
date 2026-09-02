@@ -30,6 +30,13 @@ export const EQUIVALENTS = {
   // un `Card.tsx` local acquitte les deux, et n'importer que l'un des deux
   // n'est pas une adoption finie.
   Card: { files: ['Card.tsx'], symbols: ['Card', 'CardHeader'] },
+  // `genId` de footcoach (compteur + horodatage) promet autre chose que
+  // l'aléa et n'est PAS un doublon : il n'est pas dans `exports`.
+  id: {
+    files: ['id.ts'],
+    exports: ['createId', 'createUuid', 'newId'],
+    symbols: ['createId', 'createUuid'],
+  },
   Skeleton: { files: ['Skeleton.tsx'] },
   EmptyState: { files: ['EmptyState.tsx'] },
   ErrorBoundary: { files: ['ErrorBoundary.tsx'] },
