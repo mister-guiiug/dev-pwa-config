@@ -24,10 +24,18 @@
  * d'entrée (`main.tsx`, `App.tsx`, le service worker) ne déclarent rien qu'on
  * puisse juger : personne ne les importe, c'est leur rôle.
  *
+ * LES CONSOMMATEURS HORS `src/` COMPTENT. miss-lookhouse copie `src/domain`
+ * et une partie de `src/ingestion` dans ses Edge Functions Deno
+ * (`supabase/functions/_shared/core`) : `collectSite` n'avait aucun
+ * importateur dans `src/` et faisait tourner la collecte côté serveur. Les
+ * fichiers de `supabase/functions`, `functions`, `server`, `scripts` et `e2e`
+ * sont donc lus comme CITATIONS (ils ne déclarent rien qu'on juge) — le
+ * workflow « Edge core sync » l'a appris à l'outil le 02/09/2026.
+ *
  * CE QUE L'OUTIL NE VOIT PAS. Un symbole nommé dans une chaîne (`lazy(() =>
  * import('./x'))` importe un fichier, pas un nom) ou consommé par un outil
- * externe (un `manifest`, un script de build) passera pour mort. Le verdict
- * se lit, il ne s'exécute pas.
+ * externe qui ne vit pas dans ces dossiers (un `manifest`, un script de
+ * build) passera pour mort. Le verdict se lit, il ne s'exécute pas.
  *
  * Non publié (absent de `files`) : outillage de développement du dépôt.
  */
@@ -60,7 +68,9 @@ export function findDeadExports(files) {
   const dead = [];
   const unused = [];
   for (const file of corpus) {
-    if (file.test || ENTRY_POINTS.test(file.rel)) continue;
+    if (file.test || file.citationOnly || ENTRY_POINTS.test(file.rel)) {
+      continue;
+    }
     for (const name of scanFile(basename(file.rel), file.source).declares) {
       if (name === 'default' || name.length < 3) continue;
       total++;
@@ -77,12 +87,29 @@ export function findDeadExports(files) {
   return { total, dead, unused };
 }
 
-/** Lit `src/` d'une app et rend son verdict. */
+/** Dossiers lus comme citations seulement : ils consomment, ils ne déclarent rien qu'on juge. */
+export const CITATION_ROOTS = [
+  'supabase/functions/',
+  'functions/',
+  'server/',
+  'scripts/',
+  'e2e/',
+];
+
+/** Lit `src/` d'une app (et ses consommateurs hors `src/`) et rend son verdict. */
 export function scanApp(dir) {
   const files = walk(dir)
     .map(path => ({ path, rel: relative(dir, path).split(sep).join('/') }))
-    .filter(f => f.rel.startsWith('src/'))
-    .map(f => ({ rel: f.rel, source: readFileSync(f.path, 'utf8') }));
+    .filter(
+      f =>
+        f.rel.startsWith('src/') ||
+        CITATION_ROOTS.some(root => f.rel.startsWith(root))
+    )
+    .map(f => ({
+      rel: f.rel,
+      source: readFileSync(f.path, 'utf8'),
+      citationOnly: !f.rel.startsWith('src/'),
+    }));
   return findDeadExports(files);
 }
 
