@@ -45,14 +45,8 @@
  */
 import { backoffDelay } from './realtime/index.js';
 import { defaultShouldRetry } from './react/net.js';
-
-let fallbackCounter = 0;
-function newId() {
-  const c = globalThis.crypto;
-  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
-  fallbackCounter += 1;
-  return `q_${Date.now().toString(36)}_${fallbackCounter}`;
-}
+// Le repli `randomUUID` vivait ici en copie ; il est dans `id.js` désormais.
+import { createUuid as newId } from './id.js';
 
 function messageOf(error) {
   return error instanceof Error ? error.message : String(error);

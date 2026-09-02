@@ -79,9 +79,10 @@ export function sanitizeInput(input, maxLength = 1000) {
 }
 
 /**
- * Identifiant aléatoire imprévisible (128 bits, hexadécimal).
- * `crypto.randomUUID` quand il existe, sinon `getRandomValues` —
- * jamais `Math.random`, qui n'est pas imprévisible.
+ * Jeton aléatoire imprévisible (128 bits, hexadécimal), par `getRandomValues`
+ * — jamais `Math.random`, qui n'est pas imprévisible, et jamais de repli :
+ * sans Web Crypto, on refuse. Pour un IDENTIFIANT d'entité, qui n'est pas un
+ * secret et peut se replier, voir `id.js`.
  */
 export function generateSecureId() {
   const crypto = globalThis.crypto;
