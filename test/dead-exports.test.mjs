@@ -49,6 +49,28 @@ test('le mot entier compte : « orphan » dans « orphanCousin » ne ressuscite 
   );
 });
 
+test('un consommateur hors src/ (Edge Function, serveur) tient l’export en vie sans être jugé', () => {
+  // miss-lookhouse : `collectSite` n'avait aucun importateur dans src/ et
+  // faisait tourner la collecte dans une Edge Function Deno (copie du cœur).
+  const { dead, total } = findDeadExports([
+    ...files,
+    {
+      rel: 'supabase/functions/_shared/collect.ts',
+      source: `import { orphanCousin } from '../../../src/lib/shadow';\nexport function handler() { return orphanCousin; }`,
+      citationOnly: true,
+    },
+  ]);
+  assert.ok(
+    !dead.some(d => d.name === 'orphanCousin'),
+    'cité par la fonction Edge'
+  );
+  assert.equal(
+    total,
+    5,
+    '`handler` n’est pas jugé : le fichier ne fait que citer'
+  );
+});
+
 test('les points d’entrée ne sont pas jugés, et les tests ne déclarent rien', () => {
   assert.ok(ENTRY_POINTS.test('src/main.tsx'));
   assert.ok(ENTRY_POINTS.test('src/App.tsx'));
