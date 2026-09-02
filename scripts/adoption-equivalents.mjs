@@ -47,6 +47,14 @@ export const EQUIVALENTS = {
   // un nom. Une ressemblance de nom de fichier n'est pas une équivalence.
   AppHeader: { files: ['AppHeader.tsx', 'TopBar.tsx'] },
   PageContainer: { files: ['PageContainer.tsx'] },
+  // `LoginScreen.tsx` de miss-supaboss est une saisie de jeton d'API, pas un
+  // formulaire e-mail + mot de passe : un homonyme, à écarter à la lecture.
+  AuthProvider: {
+    files: ['AuthContext.tsx'],
+    symbols: ['AuthProvider', 'useAuthContext'],
+  },
+  LoginForm: { files: ['LoginPage.tsx', 'LoginScreen.tsx'] },
+  MfaChallenge: { files: ['MfaChallenge.tsx'] },
   ConfirmDialog: { files: ['ConfirmDialog.tsx'] },
   Toast: {
     files: [

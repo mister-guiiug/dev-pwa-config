@@ -180,4 +180,39 @@ import { Link } from 'react-router-dom';
 <PageContainer as="main" width="lg">
   …
 </PageContainer>`,
+
+  LoginForm: `import { AuthProvider, useAuthContext } from '@mister-guiiug/dev-wpa-config/react';
+import { LoginForm } from '@mister-guiiug/dev-wpa-config/react/login-form';
+import { frAuthError } from '@mister-guiiug/dev-wpa-config/auth/errors-fr';
+
+{/* Présentationnel : l'appelant fait signIn et redonne busy + error. */}
+function LoginPage() {
+  const { signIn } = useAuthContext();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  return (
+    <LoginForm
+      busy={busy}
+      error={error}
+      onSubmit={async ({ email, password }) => {
+        setBusy(true);
+        const res = await signIn(email, password);
+        setBusy(false);
+        setError(res.ok ? null : frAuthError(res.error));
+      }}
+      footer={<a href="/mot-de-passe-oublie">Mot de passe oublié ?</a>}
+    />
+  );
+}`,
+
+  MfaChallenge: `import { MfaChallenge } from '@mister-guiiug/dev-wpa-config/react/mfa-challenge';
+
+{/* La voie de secours et la déconnexion n'existent que si on les donne. */}
+<MfaChallenge
+  busy={busy}
+  error={error}
+  onVerify={code => mfa.challengeTotp(code)}
+  onRecover={code => recoverWithBackupCode(code)}
+  onSignOut={signOut}
+/>`,
 };

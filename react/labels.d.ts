@@ -60,6 +60,22 @@ export interface LabelGroups {
     next: string;
   };
   nav: { label: string; current: string; more: string; back: string };
+  auth: {
+    title: string;
+    signUpTitle: string;
+    email: string;
+    password: string;
+    signIn: string;
+    signUp: string;
+    mfaTitle: string;
+    mfaHint: string;
+    mfaCode: string;
+    mfaRecoveryCode: string;
+    mfaVerify: string;
+    mfaRecovery: string;
+    mfaUseApp: string;
+    signOut: string;
+  };
 }
 
 /** Surcharges partielles, groupe par groupe. */

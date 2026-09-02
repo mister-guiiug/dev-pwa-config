@@ -451,6 +451,18 @@
       "types": "./react/auth-gate.d.ts",
       "default": "./react/auth-gate.js"
     },
+    "./react/auth-provider": {
+      "types": "./react/auth-provider.d.ts",
+      "default": "./react/auth-provider.js"
+    },
+    "./react/login-form": {
+      "types": "./react/login-form.d.ts",
+      "default": "./react/login-form.js"
+    },
+    "./react/mfa-challenge": {
+      "types": "./react/mfa-challenge.d.ts",
+      "default": "./react/mfa-challenge.js"
+    },
     "./react/use-route-breadcrumbs": {
       "types": "./react/use-route-breadcrumbs.d.ts",
       "default": "./react/use-route-breadcrumbs.js"
