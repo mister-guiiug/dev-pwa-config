@@ -837,3 +837,13 @@ l'importe.**
   sous contraste renforcé réel si Chrome l'accepte encore en alias — la sonde
   par `mediaText` ne tranche pas, ce Chrome ne normalise pas les requêtes
   invalides.
+
+## Le sens inverse — 02/09/2026
+
+Tout ce document mesure l'adoption : ce que le paquet exporte et que les apps
+recopient. La question symétrique — **ce que plusieurs apps écrivent et que le
+paquet n'a pas** — a désormais son instrument, `scripts/promotion-candidates.mjs`,
+et son tri : `GISEMENTS.md`. Dix chantiers classés par rendement, dont un
+défaut mesuré en production (quatre apps servent la page 404 de GitHub sur un
+lien profond) et une liste de souhaits que les apps avaient écrite dans leurs
+propres commentaires, sans que personne ne la lise.

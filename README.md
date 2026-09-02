@@ -81,6 +81,13 @@ un nom du catalogue. Le relevé mesure la migration de ce qu'on sait déjà
 partagé ; il ne découvre rien. Ce qui découvre, c'est de lire les apps — et
 c'est ainsi que ces quatre modules sont nés.
 
+**Le sens inverse a son instrument depuis le 02/09/2026.**
+`node scripts/promotion-candidates.mjs` sort ce que plusieurs apps écrivent et
+que le paquet n'exporte pas, avec pour chaque exemplaire son nombre
+d'importateurs (zéro : un cadavre) et pour chaque groupe sa similarité (1,00 :
+une copie). Le tri qui en est sorti — dix chantiers classés, et ce qu'on ne
+fait pas — est dans `GISEMENTS.md`.
+
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
 _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
