@@ -241,6 +241,14 @@ globalThis.SHOWROOM_I18N = {
     'composants.p18':
       'Seven apps out of sixteen have one. The current tab is never told apart by colour alone: <code>aria-current</code>, a rule, and a “Current page” that is read but not seen.',
     'composants.summary11': 'CSS selectors',
+    'composants.h53': 'AppHeader',
+    'composants.p22':
+      'Nine apps have a header. The title IS the page’s <code>h1</code>; the back control is a link when it has a destination, a button when it only has an action — named “Back” in seven languages.',
+    'composants.summary15': 'CSS selectors',
+    'composants.h54': 'PageContainer',
+    'composants.p23':
+      'Centred, capped at a width tier, iOS safe areas included — the bottom one above all, without which the last button of a view sticks to the tab bar. Promoted from badminton and molkky.',
+    'composants.summary16': 'CSS selectors',
     'composants.h52': 'ThemeToggle',
     'composants.p19':
       'Five apps have one. This one cycles through the <em>three</em> states of <code>useTheme</code>: a two-state toggle makes “system” unreachable.',

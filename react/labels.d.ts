@@ -59,7 +59,7 @@ export interface LabelGroups {
     system: string;
     next: string;
   };
-  nav: { label: string; current: string; more: string };
+  nav: { label: string; current: string; more: string; back: string };
 }
 
 /** Surcharges partielles, groupe par groupe. */

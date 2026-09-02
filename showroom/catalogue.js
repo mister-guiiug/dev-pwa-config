@@ -335,6 +335,42 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'AppHeader',
+      category: 'shell',
+      covers: ['AppHeader'],
+      donts: {
+        fr: [
+          'Ne pas rendre le titre dans un `<p>` hors de l’accueil pour ne garder qu’un `h1` par app : c’est ce que faisait `mister-cim10`, et la page perdait son titre pour un lecteur d’écran. Le titre de l’en-tête EST le titre de la page ; `as` sert quand elle en a déjà un.',
+          'Ne pas brancher `NavLink` sur `linkComponent` : il redéclare `aria-current` après l’étalement des props. `Link`, avec `hrefProp="to"` — le piège payé deux fois sur `BottomNav`.',
+        ],
+        en: [
+          'Don’t render the title in a `<p>` outside the home page to keep a single `h1` per app: that is what `mister-cim10` did, and the page lost its title for a screen reader. The header title IS the page title; `as` is for when it already has one.',
+          'Don’t plug `NavLink` into `linkComponent`: it redeclares `aria-current` after the props are spread. `Link`, with `hrefProp="to"` — the pitfall paid twice on `BottomNav`.',
+        ],
+      },
+      a11y: {
+        fr: 'Le retour porte son nom (« Retour », sept langues) et une cible de 2,75 rem ; il est un lien quand il a une destination, un bouton quand il n’a qu’une action. La zone sûre iOS est prise sur le `padding-top` du `<header>`, pas volée au titre.',
+        en: 'The back control carries its name (“Back”, seven languages) and a 2.75 rem target; it is a link when it has a destination, a button when it only has an action. The iOS safe area is taken on the `<header>`’s `padding-top`, not stolen from the title.',
+      },
+    },
+    {
+      id: 'PageContainer',
+      category: 'shell',
+      covers: ['PageContainer'],
+      donts: {
+        fr: [
+          'Ne pas recopier `calc(env(safe-area-inset-bottom) + …)` dans chaque vue : `miss-badminton` et `mister-molkky` portaient chacune un `PageContainer` pour ça, et les vues qui l’oubliaient collaient à la barre du bas.',
+        ],
+        en: [
+          'Don’t copy `calc(env(safe-area-inset-bottom) + …)` into every view: `miss-badminton` and `mister-molkky` each carried a `PageContainer` for that, and the views that forgot it stuck to the bottom bar.',
+        ],
+      },
+      a11y: {
+        fr: 'Aucun rôle, aucune sémantique : une largeur et des marges. `as="main"` quand il est la région principale — une seule par page.',
+        en: 'No role, no semantics: a width and margins. `as="main"` when it is the main region — one per page.',
+      },
+    },
+    {
       id: 'BottomNav',
       category: 'shell',
       covers: ['BottomNav'],

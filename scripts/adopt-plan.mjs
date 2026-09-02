@@ -26,6 +26,8 @@ export const SUBPATHS = {
   ErrorBanner: 'react/error-banner',
   ErrorBoundary: 'react/error-boundary',
   AppFooter: 'react/app-footer',
+  AppHeader: 'react/app-header',
+  PageContainer: 'react/page-container',
   Sheet: 'react/sheet',
   Skeleton: 'react/skeleton',
   Stat: 'react/stat',

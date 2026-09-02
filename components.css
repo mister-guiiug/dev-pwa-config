@@ -1379,6 +1379,120 @@
     cursor: pointer;
   }
 
+  /* ── AppHeader ─────────────────────────────────────────────────────────── *
+   * Le troisième côté du cadre. Neuf apps écrivaient cette mise en page :
+   * collant, zone sûre iOS sur le padding du <header>, fond translucide,
+   * filet en bas, un titre qui se tronque, une rangée d'actions.
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='app-header'] {
+    position: relative;
+    z-index: 30;
+    padding-top: env(safe-area-inset-top, 0px);
+    border-bottom: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    background: color-mix(in srgb, var(--dwc-surface, Canvas) 92%, transparent);
+    color: var(--dwc-text, CanvasText);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  [data-dwc='app-header'][data-sticky] {
+    position: sticky;
+    top: 0;
+  }
+
+  [data-dwc='app-header-row'] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 3.25rem;
+    padding: 0.5rem max(env(safe-area-inset-right, 0px), 1rem) 0.5rem
+      max(env(safe-area-inset-left, 0px), 1rem);
+  }
+
+  [data-dwc='app-header-title'] {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: var(--text-fluid-lg, 1.125rem);
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [data-dwc='app-header-leading'],
+  [data-dwc='app-header-actions'] {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* Le retour : cible de 2,75 rem, sans bord, dans la couleur du texte —
+     un lien comme un bouton. */
+  [data-dwc='app-header-back'] {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    margin-inline-start: -0.5rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  [data-dwc='app-header-back']:focus-visible {
+    outline: 2px solid var(--dwc-primary, CanvasText);
+    outline-offset: 2px;
+  }
+
+  [data-dwc='app-header-extra'] {
+    padding: 0 max(env(safe-area-inset-right, 0px), 1rem) 0.5rem
+      max(env(safe-area-inset-left, 0px), 1rem);
+  }
+
+  /* ── PageContainer ─────────────────────────────────────────────────────── *
+   * Centré, borné à un palier, zones sûres comprises — celle du bas surtout,
+   * sans laquelle le dernier bouton d'une vue colle à la barre d'onglets.
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='page-container'] {
+    width: 100%;
+    margin-inline: auto;
+    padding: var(--spacing-fluid-md, 1rem)
+      max(env(safe-area-inset-right, 0px), 1rem)
+      calc(var(--spacing-fluid-lg, 1.5rem) + env(safe-area-inset-bottom, 0px))
+      max(env(safe-area-inset-left, 0px), 1rem);
+  }
+
+  [data-dwc='page-container'][data-padding='none'] {
+    padding: 0;
+  }
+
+  [data-dwc='page-container'][data-width='sm'] {
+    max-width: 28rem;
+  }
+  [data-dwc='page-container'][data-width='md'] {
+    max-width: 36rem;
+  }
+  [data-dwc='page-container'][data-width='lg'] {
+    max-width: 48rem;
+  }
+  [data-dwc='page-container'][data-width='xl'] {
+    max-width: 64rem;
+  }
+  [data-dwc='page-container'][data-width='full'] {
+    max-width: none;
+  }
+
   /* ── BottomNav ─────────────────────────────────────────────────────────── *
    * L'onglet actif n'est JAMAIS distingué par la seule couleur : le composant
    * pose `aria-current`, ajoute un texte lu, et l'habillage ci-dessous y

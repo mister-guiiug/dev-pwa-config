@@ -154,4 +154,30 @@ import { REPO_URL, SPONSOR_URL } from './links';
   sort="maturity"
   max={3}
 />`,
+
+  AppHeader: `import { AppHeader } from '@mister-guiiug/dev-wpa-config/react';
+import { Link } from 'react-router-dom';
+
+{/* Le titre EST le h1 de la page. Le retour est un lien quand il a une
+    destination — par le Link du routeur, jamais NavLink. */}
+<AppHeader
+  title={t('finances.title')}
+  backHref="/finances"
+  linkComponent={Link}
+  hrefProp="to"
+  actions={<ThemeToggle />}
+/>
+
+{/* Sans destination : un bouton. \`children\` va SOUS la rangée du titre. */}
+<AppHeader title="Réglages" onBack={() => navigate(-1)}>
+  <p>Vos données restent sur cet appareil.</p>
+</AppHeader>`,
+
+  PageContainer: `import { PageContainer } from '@mister-guiiug/dev-wpa-config/react';
+
+{/* Centré, borné à un palier, zones sûres iOS comprises — celle du bas
+    surtout, sans laquelle le dernier bouton colle à la barre d'onglets. */}
+<PageContainer as="main" width="lg">
+  …
+</PageContainer>`,
 };

@@ -14,7 +14,8 @@ export type IconRole =
   | 'system'
   | 'repo'
   | 'sponsor'
-  | 'external';
+  | 'external'
+  | 'back';
 
 export type IconSet = Partial<Record<IconRole, IconComponent>> &
   Record<string, IconComponent | undefined>;

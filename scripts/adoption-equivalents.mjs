@@ -42,6 +42,11 @@ export const EQUIVALENTS = {
   ErrorBoundary: { files: ['ErrorBoundary.tsx'] },
   ErrorBanner: { files: ['ErrorBanner.tsx'] },
   AppFooter: { files: ['AppFooter.tsx'] },
+  // `Header.tsx` n'y est PAS : chez ticket-pwa c'est une barre de navigation
+  // complète avec menu utilisateur, chez doc un en-tête — deux choses sous
+  // un nom. Une ressemblance de nom de fichier n'est pas une équivalence.
+  AppHeader: { files: ['AppHeader.tsx', 'TopBar.tsx'] },
+  PageContainer: { files: ['PageContainer.tsx'] },
   ConfirmDialog: { files: ['ConfirmDialog.tsx'] },
   Toast: {
     files: [

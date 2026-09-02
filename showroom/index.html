@@ -1658,6 +1658,120 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
+            <h4 data-i18n="composants.h53">AppHeader</h4>
+            <p data-i18n="composants.p22">
+              Neuf apps ont un en-tête. Le titre EST le <code>h1</code> de la
+              page ; le retour est un lien quand il a une destination, un bouton
+              quand il n’a qu’une action — nommé « Retour » en sept langues.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <header data-dwc="app-header" style="position: relative">
+              <div data-dwc="app-header-row">
+                <a
+                  href="#composants"
+                  data-dwc="app-header-back"
+                  aria-label="Retour"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </a>
+                <p data-dwc="app-header-title" style="font-size: 1.125rem">
+                  Trésorerie
+                </p>
+                <div data-dwc="app-header-actions">
+                  <button
+                    type="button"
+                    data-dwc="button"
+                    data-variant="ghost"
+                    data-size="sm"
+                    aria-label="Thème"
+                  >
+                    ☾
+                  </button>
+                </div>
+              </div>
+              <div data-dwc="app-header-extra">
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 0.85rem;
+                    color: var(--dwc-text-soft);
+                  "
+                >
+                  Saison 2025 – 2026 · 128 adhérents
+                </p>
+              </div>
+            </header>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary15">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="AppHeader"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="app-header"][data-sticky]</code></li>
+                <li><code>[data-dwc="app-header-row"]</code></li>
+                <li><code>[data-dwc="app-header-back"]</code></li>
+                <li><code>[data-dwc="app-header-leading"]</code></li>
+                <li><code>[data-dwc="app-header-title"]</code></li>
+                <li><code>[data-dwc="app-header-actions"]</code></li>
+                <li><code>[data-dwc="app-header-extra"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4 data-i18n="composants.h54">PageContainer</h4>
+            <p data-i18n="composants.p23">
+              Centré, borné à un palier de largeur, zones sûres iOS comprises —
+              celle du bas surtout, sans laquelle le dernier bouton d’une vue
+              colle à la barre d’onglets. Promu de badminton et molkky.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div
+              data-dwc="page-container"
+              data-width="sm"
+              style="outline: 1px dashed var(--dwc-border)"
+            >
+              <p style="margin: 0">
+                <code>width="sm"</code> — 28 rem, centré, marges sûres.
+              </p>
+            </div>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary16">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="PageContainer"></div>
+              <ul class="sr-selectors">
+                <li>
+                  <code
+                    >[data-dwc="page-container"][data-width="sm|md|lg|xl|full"]</code
+                  >
+                </li>
+                <li>
+                  <code>[data-dwc="page-container"][data-padding="none"]</code>
+                </li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
             <h4 data-i18n="composants.h52">ThemeToggle</h4>
             <p data-i18n="composants.p19">
               Cinq apps en ont un. Celui-ci parcourt les <em>trois</em> états de

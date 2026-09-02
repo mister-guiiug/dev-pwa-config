@@ -29,6 +29,8 @@ export { useOfflineMutationQueue } from './use-offline-queue.js';
 export { retryableQuery } from './net.js';
 export { PwaInstallPrompt } from './pwa-install-prompt.js';
 export { AppFooter } from './app-footer.js';
+export { AppHeader } from './app-header.js';
+export { PageContainer } from './page-container.js';
 export { FamilyApps } from './family-apps.js';
 export { ErrorBoundary } from './error-boundary.js';
 export { EmptyState } from './empty-state.js';

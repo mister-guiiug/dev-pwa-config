@@ -287,6 +287,14 @@
       "types": "./react/app-footer.d.ts",
       "default": "./react/app-footer.js"
     },
+    "./react/app-header": {
+      "types": "./react/app-header.d.ts",
+      "default": "./react/app-header.js"
+    },
+    "./react/page-container": {
+      "types": "./react/page-container.d.ts",
+      "default": "./react/page-container.js"
+    },
     "./react/app-updates": {
       "types": "./react/app-updates.d.ts",
       "default": "./react/app-updates.js"
