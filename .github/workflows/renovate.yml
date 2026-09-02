@@ -1,0 +1,75 @@
+# Renovate AUTO-HÉBERGÉ pour toute la famille.
+#
+# POURQUOI. Le 02/09/2026, aucun des dix-huit dépôts n'avait jamais reçu une PR
+# de Renovate : treize `renovate.json` étendaient un préréglage dans un dépôt
+# `.github` qui n'existe pas, et l'application Mend n'était pas installée. Ce
+# workflow fait tourner Renovate DEPUIS LE SOCLE, sur tous les dépôts du compte
+# qui portent un `renovate.json` (`requireConfig: required`) — jamais le miroir
+# `mister-family-map` (exclu dans `renovate/self-hosted.json`).
+#
+# CE QU'IL FAUT : un secret `RENOVATE_TOKEN` sur ce dépôt — un jeton classique
+# du propriétaire avec `repo`, `workflow` et `read:packages` (le socle est sur
+# GitHub Packages). Sans lui, le workflow le dit et s'arrête : rien ne casse.
+#
+# Le samedi à 04:00 UTC (06:00 CEST / 05:00 CET), dans la fenêtre « before 7am
+# on saturday » du préréglage — sinon Renovate ne ferait rien. `--dry-run`
+# depuis Actions → « Run workflow » pour voir ce qu'il ferait.
+name: Renovate
+
+on:
+  schedule:
+    - cron: '0 4 * * 6'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Lister ce que Renovate ferait, sans rien ouvrir'
+        type: boolean
+        default: false
+      log-level:
+        description: 'Niveau de journal'
+        type: choice
+        options: [info, debug]
+        default: info
+
+permissions:
+  contents: read
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Jeton présent ?
+        id: token
+        env:
+          TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::RENOVATE_TOKEN absent : Renovate ne tourne pas (README § Renovate)."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mode
+        if: steps.token.outputs.present == 'true'
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+          LEVEL: ${{ inputs.log-level }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then echo "RENOVATE_DRY_RUN=full" >> "$GITHUB_ENV"; fi
+          echo "LOG_LEVEL=${LEVEL:-info}" >> "$GITHUB_ENV"
+
+      - name: Renovate
+        if: steps.token.outputs.present == 'true'
+        uses: renovatebot/github-action@v46.2.5
+        with:
+          configurationFile: renovate/self-hosted.json
+          token: ${{ secrets.RENOVATE_TOKEN }}
+        env:
+          RENOVATE_SECRETS: '{"RENOVATE_TOKEN":"${{ secrets.RENOVATE_TOKEN }}"}'

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate AUTO-HÉBERGÉ, lancé par .github/workflows/renovate.yml sur tous les dépôts du compte. Les règles sont dans default.json ; ici, seulement QUELS dépôts et COMMENT.",
+  "platform": "github",
+  "autodiscover": true,
+  "autodiscoverFilter": [
+    "mister-guiiug/*",
+    "!mister-guiiug/mister-family-map",
+    "!mister-guiiug/miss-ticket"
+  ],
+  "onboarding": false,
+  "requireConfig": "required",
+  "gitAuthor": "renovate[bot] <renovate@users.noreply.github.com>",
+  "hostRules": [
+    {
+      "matchHost": "npm.pkg.github.com",
+      "hostType": "npm",
+      "token": "{{ secrets.RENOVATE_TOKEN }}"
+    }
+  ]
+}

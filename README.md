@@ -759,6 +759,30 @@ Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VS
 | [`templates/e2e/a11y.spec.ts`](./templates/e2e/a11y.spec.ts)                       | `<projet>/e2e/a11y.spec.ts`             | Adapter les routes/zones ; `npm i -D @axe-core/playwright`                                  |
 | [`templates/changesets/config.json`](./templates/changesets/config.json)           | `<projet>/.changeset/config.json`       | Adapter `access` (restricted vs public)                                                     |
 
+## Renovate — hébergé par le socle
+
+Le 02/09/2026, aucun des dix-huit dépôts n'avait jamais reçu une PR de
+Renovate : treize `renovate.json` étendaient un préréglage dans un dépôt
+`.github` qui n'existe pas, et l'application Mend n'était pas installée. Depuis,
+tout vit ici :
+
+| Fichier                          | Rôle                                                                                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `renovate/default.json`          | Le PRÉRÉGLAGE : `config:recommended`, tableau de bord, samedi avant 7 h (Paris), mineures et patchs npm groupés, actions groupées, le socle dans une PR à part, sans attendre |
+| `renovate/self-hosted.json`      | QUELS dépôts : tous ceux du compte qui portent un `renovate.json` — jamais le miroir `mister-family-map`                                                                      |
+| `.github/workflows/renovate.yml` | QUAND : le samedi 04:00 UTC (dans la fenêtre du préréglage), ou à la main avec `dry-run`. Muet sans le secret                                                                 |
+
+Une app étend le préréglage en une ligne :
+
+```json
+{ "extends": ["github>mister-guiiug/dev-wpa-config//renovate/default.json"] }
+```
+
+Ce qu'il faut UNE fois, au propriétaire : un secret `RENOVATE_TOKEN` sur ce
+dépôt — jeton classique avec `repo`, `workflow` et `read:packages` (le socle est
+sur GitHub Packages). Si l'application Mend est installée un jour, désactiver
+le workflow : les deux ne doivent pas tourner ensemble.
+
 ## Nettoyage de l'historique Actions
 
 [`templates/github-workflows/cleanup-runs.yml`](./templates/github-workflows/cleanup-runs.yml) —
