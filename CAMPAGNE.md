@@ -778,3 +778,62 @@ mieux ne pas payer maintenant.
 
 Un outil qui propose et un humain qui tranche, ce n'est pas un demi-outil :
 c'est le seul montage qui ne fabrique pas de fausses dettes.
+
+## Le second tri du 02/09/2026
+
+La dette mesurée est retombée à **un seul doublon** — le `pwa-register-stub` de
+`mister-family-map`, qui s'éteindra au prochain `npm run mirror` puisque
+`bac-sable`, sa source, l'a déjà retiré. Le balayage, lui, sort encore
+**54 noms**. Voici ce qu'ils sont, pour que personne ne refasse l'analyse.
+
+### `mister-molkky` n'avait rien réadopté non plus
+
+Le cas `bac-sable` n'était pas isolé. **Cinq modules du socle nomment
+`mister-molkky` dans leur en-tête** — `react/use-keyboard-shortcuts`,
+`react/use-pull-to-refresh`, `react/use-feedback`, `react/use-long-press` et
+`audio`. L'app importait déjà vingt-trois sous-chemins du socle, **aucun de ces
+cinq**.
+
+C'est le même schéma, et il mérite d'être nommé : **une app qui donne un module
+ne le réadopte pas toute seule.** Rien ne l'y ramène — le code est parti, la
+copie marche, personne ne repasse. Il faut aller le chercher.
+
+Deux ont été migrés (contrats identiques, socle strictement meilleur : gardes
+`contenteditable` et IME, abonnements tenus par une ref au lieu d'être refaits
+à chaque rendu). Les deux autres suivent ci-dessous.
+
+### Le balayage ne distingue pas un doublon d'un cadavre
+
+`useLongPress` de `mister-molkky` sortait comme doublon à migrer. **Zéro import
+dans tout le dépôt** : du code mort. La bonne action n'était pas de migrer,
+c'était de supprimer.
+
+C'est un mode d'échec en plus de l'homonymie, et il est plus sournois : un
+homonyme se voit en lisant la signature, un cadavre demande de compter les
+sites d'appel. **Le premier réflexe devant un candidat : chercher qui
+l'importe.**
+
+### Ce qui reste, et ce que ça coûte
+
+| candidat               | apps              | verdict                                                                                                                                                                                                                                                     |
+| ---------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useFeedback`          | molkky, badminton | doublon réel, **entraîne l'audio** — la version du socle prend ses sons dans son module `audio` (`TonePresetName`), la copie appelle son `playSound` local                                                                                                  |
+| `usePullToRefresh`     | puzzle            | **contrat différent** : rend `{pullDistance, refreshing, threshold}` en pixels là où le socle rend `progress` ∈ [0,1] ; et supprime le défilement natif par `preventDefault` sur un `touchmove` non passif, quand le socle bascule `overscroll-behavior`    |
+| `useAccessibility.tsx` | carbook, puzzle   | **copie littérale entre deux apps** (206 et 208 lignes, quatre écarts). Le socle n'en couvre que la moitié : `useFocusTrap`, `useEscape`, l'annonceur ; `useAutoFocus`, `useFocusRestore`, `useIconButtonProps`, `useAccessibleLink` n'ont pas d'équivalent |
+| `ErrorBoundary`        | uwh, doc, dice    | doublon réel, **mais les trois branchent déjà `recordError`** : la migration gagne la référence de corrélation et quarante lignes, pas une correction                                                                                                       |
+
+### Deux défauts trouvés en lisant, pas en mesurant
+
+- **`mister-puzzle` a corrigé un défaut que `miss-carbook` porte encore.** Dans
+  la copie de `carbook`, `usePrefersReducedMotion` et `usePrefersHighContrast`
+  démarrent à `useState(false)` et se corrigent dans un effet : **le premier
+  rendu affirme donc que l'utilisateur ne demande rien**, et une animation part
+  avant d'être coupée. `puzzle` initialise depuis `matchMedia().matches`. Le
+  `useMediaQuery` du socle fait pareil — c'est un argument de plus pour
+  l'adopter.
+- **Les deux apps interrogent `(prefers-contrast: high)`**, le socle
+  `(prefers-contrast: more)`. La liste de valeurs de Media Queries Level 5 est
+  `no-preference | less | more | custom` : `high` n'y est pas. Reste à vérifier
+  sous contraste renforcé réel si Chrome l'accepte encore en alias — la sonde
+  par `mediaText` ne tranche pas, ce Chrome ne normalise pas les requêtes
+  invalides.
