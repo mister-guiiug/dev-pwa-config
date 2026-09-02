@@ -858,6 +858,18 @@ Mise en place (**un caller par projet Supabase**) :
 3. Secrets requis : `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (anon =
    publique, jamais la `service_role`).
 
+**L'étape 1 conditionne les deux autres, et c'est le piège.** Un caller posé
+sans la table répond `HTTP 404` : le ping échoue, le projet continue de
+s'endormir, et rien ne distingue ce cas d'une panne réseau. Le 02/09/2026, deux
+dépôts avaient le caller et les secrets sans la table — le garde-fou ne gardait
+rien. **Vérifier après la mise en place**, sans attendre le cron :
+
+```bash
+gh workflow run supabase-keepalive.yml --repo <owner>/<app>
+```
+
+Le run doit finir vert avec `Supabase keep-alive OK (SELECT keep_alive → 200)`.
+
 Note : un cron GitHub est désactivé après 60 j sans commit sur le dépôt (les
 commits Renovate suffisent ; sinon relancer via `workflow_dispatch`).
 
