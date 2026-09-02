@@ -1,5 +1,5 @@
-// `scripts/probe-sites.mjs` — les lectures pures de la sonde. Le réseau ne se
-// teste pas ; ce qu'on fait d'une réponse, si.
+// `scripts/site-readers.mjs` — les lectures pures de la sonde des sites et de
+// `pwa-doctor`. Le réseau ne se teste pas ; ce qu'on fait d'une réponse, si.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -8,7 +8,7 @@ import {
   isAppShell,
   manifestSummary,
   resolveUrl,
-} from '../scripts/probe-sites.mjs';
+} from '../scripts/site-readers.mjs';
 
 const HTML = `<!doctype html>
 <html lang="fr">
@@ -84,7 +84,7 @@ test('manifestSummary : 512, maskable, id, lang — et « any » n’est pas un 
   assert.equal(ok.screenshots, 1);
   assert.equal(ok.shortcuts, 0);
 
-  // miss-lookhouse : deux SVG `any`, aucun PNG — Lighthouse veut 192 et 512.
+  // miss-lookhouse : deux SVG `any`, aucun PNG — iOS n'en fera pas une icône.
   const svg = manifestSummary(
     JSON.stringify({
       icons: [
@@ -94,6 +94,7 @@ test('manifestSummary : 512, maskable, id, lang — et « any » n’est pas un 
     })
   );
   assert.equal(svg.has512, false);
+  assert.equal(svg.hasAny, true, 'un vectoriel couvre toutes les tailles');
   assert.equal(svg.hasPng, false);
   assert.equal(svg.maskable, true);
   assert.equal(svg.hasId, false);

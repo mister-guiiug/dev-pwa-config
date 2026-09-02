@@ -708,10 +708,40 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 
 ## Bin
 
-| Commande            | Rôle                                                                                                                                                                                                                                |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pwa-icons`         | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable`                                                                                           |
-| `pwa-bundle-budget` | Refuse un build qui dépasse `bundleBudget` (`totalGzipKb` : tout le JS gzip ; `mainChunkKb` : le chunk principal, brut) lu dans `package.json`. Ex. `"build": "vite build && pwa-bundle-budget"` — promu de miss-uwh et mister-qowa |
+| Commande            | Rôle                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pwa-icons`         | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable`                                                                                                                                                                                                                 |
+| `pwa-bundle-budget` | Refuse un build qui dépasse `bundleBudget` (`totalGzipKb` : tout le JS gzip ; `mainChunkKb` : le chunk principal, brut) lu dans `package.json`. Ex. `"build": "vite build && pwa-bundle-budget"` — promu de miss-uwh et mister-qowa                                                                                                                       |
+| `pwa-doctor`        | Lit UN dépôt et dit ce qui manque à la checklist du parc — fichiers du gabarit, workflows, et le build (`dist/` : manifeste lié sous le site, PNG 512, `id`, langue, icône iOS, CSP, `404.html`). Trois verdicts (défaut, dette, info), le geste à chaque ligne, code 1 sur un défaut (`--strict` : aussi sur une dette). Ex. `"postbuild": "pwa-doctor"` |
+
+### À quoi sert `pwa-doctor`
+
+Un lint voit le code ; il ne voit pas qu'un manifeste est lié à la racine de
+l'origine (404 en production, l'app ne s'installe pas), qu'un `renovate.json`
+étend un préréglage dans un dépôt inexistant (Renovate ne fait rien, en
+silence), qu'une app routée par chemin n'a pas de `404.html` (un lien profond
+sert la page 404 de GitHub). Ce sont des défauts de CONFORMITÉ AU PARC : ils
+vivent entre le dépôt, le build et l'hébergeur, et le 02/09/2026 on les a tous
+trouvés à la main ([PARC.md](PARC.md)). `pwa-doctor` les cherche en une
+seconde, hors ligne, sur un dépôt :
+
+1. **le dépôt** — `.editorconfig`, `.nvmrc`, `.gitattributes` en LF,
+   `renovate.json` sur le préréglage du socle, `.lighthouserc.json`, une spec
+   a11y si Playwright est là, un `bundleBudget` ;
+2. **les workflows** — Lighthouse, `cleanup-runs`, le keep-alive Supabase si
+   l'app en dépend, les e2e en CI, les références au socle en `@v3` ;
+3. **le build** (`dist/`, après `vite build`) — `lang`, le lien du manifeste
+   sous le site, PNG 192/512 et maskable, `id`, la langue du manifeste égale à
+   celle de la page, l'icône iOS, `theme-color` par schéma, CSP, Open Graph,
+   canonique, `404.html` quand l'app route par chemin.
+
+Trois verdicts : **défaut** (quelqu'un en souffre aujourd'hui), **dette** (le
+socle a la réponse, l'app ne l'a pas prise), **info** (une mesure : locales
+figées, `console.*`). Chaque ligne dit le geste qui la fait disparaître, pas un
+score. En CI, `pwa-doctor --strict` après le build refuse toute dette ; en
+local, `npx pwa-doctor` suffit. Il ne mesure ni le poids (`pwa-bundle-budget`)
+ni ce que l'hébergeur sert vraiment (`scripts/probe-sites.mjs`, sur le site
+publié).
 
 ## Reusable workflows GitHub Actions
 

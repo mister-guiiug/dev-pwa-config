@@ -63,7 +63,7 @@ Non retenus, parce que rien ne le réclame : le JSON-LD (1/16), `llms.txt` (1/16
 | App            | Défaut                                                                                                                                                                               |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | ticket-pwa     | `<link rel="manifest" href="/manifest.json">` : la racine de l'ORIGINE, 404. Le fichier existe sous `/miss-ticket-pwa/manifest.json`. **Pas installable.** Pas d'icône iOS non plus. |
-| lookhouse      | Deux icônes SVG `sizes: any`, aucun PNG 192/512 : Lighthouse refuse l'installabilité ; pas de captures                                                                               |
+| lookhouse      | Deux icônes SVG `sizes: any`, aucun PNG : iOS et les lanceurs Android n'en font pas une icône ; pas de captures                                                                      |
 | cim10          | `lang: en` sur une app française ; pas de `maskable` ; pas d'`id`                                                                                                                    |
 | footcoach      | `lang: en` ; pas d'`id`                                                                                                                                                              |
 | puzzle         | `lang: en` ; pas de `maskable` ; pas d'`id`                                                                                                                                          |
