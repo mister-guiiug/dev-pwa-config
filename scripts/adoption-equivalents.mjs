@@ -82,7 +82,14 @@ export const EQUIVALENTS = {
   // Navbar ». Une ressemblance de nom de fichier n'est pas une équivalence.
   BottomNav: { files: ['BottomNav.tsx'] },
   ThemeToggle: { files: ['ThemeToggle.tsx'] },
-  UpdatePromptBanner: { files: ['UpdatePrompt.tsx', 'UpdateBanner.tsx'] },
+  // `AppUpdates` acquitte : il ENREGISTRE le service worker et rend le bandeau
+  // lui-même. Un `UpdatePrompt.tsx` qui l'importe est une façade — c'est même
+  // l'adoption la plus complète, celle de mister-qowa, qui a donné `checkEvery`
+  // au socle. Sans cette ligne, le relevé la comptait en dette.
+  UpdatePromptBanner: {
+    files: ['UpdatePrompt.tsx', 'UpdateBanner.tsx'],
+    symbols: ['UpdatePromptBanner', 'AppUpdates'],
+  },
   applyUpdate: {
     // `forceUpdate.ts` figurait ici et n'existe dans AUCUN dépôt du parc :
     // une ligne morte, qui donnait l'illusion que la table couvrait deux
@@ -219,3 +226,77 @@ export const EQUIVALENTS = {
   },
   webVitals: { files: ['web-vitals.ts'], symbols: ['initWebVitals', 'rate'] },
 };
+
+/**
+ * CE QU'UNE APP GARDE À ELLE, ET POURQUOI.
+ *
+ * Le relevé compte un doublon dès qu'un fichier porte le nom guetté. C'est la
+ * bonne règle par défaut — mais elle ne sait pas lire un RÔLE. Le
+ * `AppHeader.tsx` de mister-cim10 compose un slogan à partir de la route, du
+ * store de réglages et de l'i18n ; celui du socle rend un titre et des
+ * actions. Même nom, autre métier : l'adopter casserait l'app.
+ *
+ * Sans cette table, chaque campagne d'adoption refait le même tri, retrouve
+ * les mêmes faux positifs, et le chiffre de dette ne descend jamais — il
+ * mesure alors le travail impossible autant que le travail restant.
+ *
+ * LA RÈGLE D'ENTRÉE EST STRICTE : on n'inscrit ici que ce qu'on a LU et
+ * décidé, avec la raison. Une garde sans raison est un oubli déguisé, et le
+ * test `adoption-equivalents.test.mjs` la refuse. Une garde se relit : le jour
+ * où le socle apprend ce que l'app fait en plus, on la retire.
+ *
+ * @type {Record<string, string>} clé `app:Besoin` → raison, en une phrase.
+ */
+export const GARDES = {
+  'mister-cim10:AppHeader':
+    "compose un slogan depuis la route, le store de réglages et l'i18n, et porte l'avertissement médical dismissible — le socle rend un titre et des actions",
+  'miss-supaboss:AppHeader':
+    "porte l'état de synchronisation de la flotte, le mode démo et sa confirmation de sortie — de l'interface métier, pas une mise en page",
+  'miss-carbook:AppHeader':
+    'TopBar tient la recherche de dossier, le menu de compte et la bascule de thème',
+  'mister-footcoach:AppHeader':
+    'TopBar tient la navigation par équipe et le sélecteur de saison',
+  'miss-badminton:PageContainer':
+    "réserve en haut la hauteur du bouton menu (72 px) et ajoute un palier « 2xl » que le socle n'a pas",
+  'mister-molkky:PageContainer':
+    "porte l'animation d'entrée de vue (`mm-view-enter`), que le socle ne connaît pas",
+  'miss-badminton:useFullscreen':
+    'FullscreenToggle est le bouton, pas le hook — il reste à l’app',
+  'mister-molkky:useFullscreen':
+    'FullscreenToggle est le bouton, pas le hook — il reste à l’app',
+  'miss-uwh:ErrorBoundary':
+    "deux niveaux de repli (`app` et `route`) et l'export de la sauvegarde locale depuis l'écran de crash",
+  'mister-doc:Badge':
+    'décline un ton CHROMATIQUE métier (teal/indigo pour jour et nuit, sky pour les HNC) là où le socle décline six intentions sémantiques — décision écrite dans le fichier',
+  'miss-uwh:AuthProvider': 'tient les rôles du club et leurs politiques RLS',
+  'mister-doc:AuthProvider':
+    'tient les passkeys et le rattachement au service hospitalier',
+  'mister-footcoach:AuthProvider':
+    "expose `useAuth` avec le rattachement à l'équipe",
+  'miss-uwh:MfaChallenge':
+    "élévation AAL2 pour les rôles sensibles du club, sur l'i18n de l'app",
+  'mister-doc:MfaChallenge':
+    "parcours de récupération propre à l'app (codes de secours, passkey)",
+  'miss-lookhouse:LoginForm':
+    "LoginScreen porte le choix du backend (local ou Supabase) avant même l'identification",
+  'miss-supaboss:LoginForm':
+    'LoginScreen porte le mode démo, qui se choisit sans compte',
+  'miss-uwh:LoginForm':
+    "LoginPage enchaîne sur l'onboarding du club quand le compte est neuf",
+  'mister-doc:LoginForm': 'LoginPage propose la passkey avant le mot de passe',
+  'mister-footcoach:LoginForm':
+    "LoginPage porte l'invitation par lien d'équipe",
+  'miss-uwh:AppHeader':
+    "porte le retour contextuel (lanceur ou lentille), le chip de saison, la recherche et le compteur d'alertes — c'est l'exemple qui a montré qu'importer `Button` du socle n'acquitte pas un en-tête",
+  'miss-dice:ErrorBoundary':
+    "l'app a son design maison et n'importe pas components.css : le repli du socle y serait nu",
+  'mister-doc:ErrorBoundary':
+    "écran de repli propre à l'app (pictogramme, recharge) ; seule la remontée d'erreur vient du socle, et elle est déjà importée",
+  'mister-footcoach:id':
+    'genId est un compteur horodaté, pas un aléa — il promet un ordre que createId ne donne pas',
+};
+
+/** La garde d'une app pour un besoin, ou `undefined`. */
+export function garde(appId, exported) {
+  return GARDES[`${appId}:${exported}`];
+}

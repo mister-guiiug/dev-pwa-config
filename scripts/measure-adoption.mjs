@@ -67,7 +67,7 @@ import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
-import { EQUIVALENTS } from './adoption-equivalents.mjs';
+import { EQUIVALENTS, garde } from './adoption-equivalents.mjs';
 import {
   coverageVerdict,
   indexAdoption,
@@ -126,8 +126,13 @@ function measureApp(appDir) {
   // Les doublons se décident dans `adoption-scan.mjs`, avec leurs trois règles
   // et l'ordre qui les sépare. Ici, seul le passage des chemins : le relevé est
   // lu par un humain, et un chemin absolu de ma machine n'y apprend rien.
+  /** Ce que cette app garde à elle, avec la raison (adoption-equivalents). */
+  const kept = [];
   const duplicates = findDuplicates(
     {
+      appId: basename(appDir),
+      garde,
+      onKept: g => kept.push(g),
       symbols,
       sourceFile: indexByName(files),
       declares,
@@ -141,6 +146,9 @@ function measureApp(appDir) {
     symbols: [...symbols].sort(),
     subpaths: [...subpaths].sort(),
     duplicates,
+    // Les besoins que l'app garde à elle, avec leur raison : ce ne sont pas
+    // des dettes, et le relevé doit pouvoir le montrer plutôt que de les taire.
+    kept: kept.sort((a, b) => a.exported.localeCompare(b.exported)),
   };
 }
 
@@ -298,4 +306,18 @@ const dups = Object.entries(byDuplicate)
 console.log('\nRECOPIÉ PLUTÔT QU’IMPORTÉ :');
 for (const [symbol, count] of dups) {
   console.log(`  ${String(count).padStart(3)}  ${symbol}`);
+}
+
+// LES GARDES SE MONTRENT. Une décision qu'on ne voit plus redevient un oubli :
+// le chiffre de dette baisse quand une app adopte, et AUSSI quand elle garde —
+// la seconde baisse doit rester lisible, avec sa raison.
+const gardes = Object.entries(merged).flatMap(([appId, m]) =>
+  (m.kept ?? []).map(g => ({ appId, ...g }))
+);
+if (gardes.length > 0) {
+  console.log(`\nGARDÉ DÉLIBÉRÉMENT — ${gardes.length} :`);
+  for (const { appId, exported, reason } of gardes) {
+    console.log(`  ${appId} · ${exported}`);
+    console.log(`      ${reason}`);
+  }
 }

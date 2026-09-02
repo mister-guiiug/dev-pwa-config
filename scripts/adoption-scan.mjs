@@ -267,7 +267,14 @@ export function indexByName(files) {
  *    parc. Importer autre chose du paquet ne compte pas : sinon un en-tête
  *    écrit à la main qui prend `Button` au socle passerait pour adopté.
  *
- * @param {{ symbols: Set<string>, sourceFile: Map<string,string>,
+ * Une GARDE — un besoin que l'app garde à elle, avec sa raison écrite — sort
+ * du décompte. Le retour reste un TABLEAU NU de doublons : les gardes passent
+ * par `onKept`, parce qu'accrocher une propriété au tableau casserait tous les
+ * `deepEqual` qui le comparent.
+ *
+ * @param {{ appId?: string, garde?: (appId: string, exported: string) => string|undefined,
+ *   onKept?: (garde: { exported: string, reason: string }) => void,
+ *   symbols: Set<string>, sourceFile: Map<string,string>,
  *   declares: Map<string,string>, read?: (path: string) => string,
  *   toPath?: (path: string) => string }} state
  * @param {Record<string, { files?: string[], exports?: string[],
@@ -295,6 +302,9 @@ export function estFacade(name, contenu, libres) {
 
 export function findDuplicates(state, equivalents) {
   const {
+    appId,
+    garde = () => undefined,
+    onKept = () => {},
     symbols,
     sourceFile,
     declares,
@@ -306,6 +316,14 @@ export function findDuplicates(state, equivalents) {
   for (const [exported, rule] of Object.entries(equivalents)) {
     const libres = rule.symbols ?? [exported];
     if (libres.some(name => symbols.has(name))) continue;
+
+    // GARDE : l'app garde ce besoin à elle, et la raison est écrite dans
+    // `adoption-equivalents.mjs`. Ce n'est pas une dette, c'est une décision.
+    const raison = appId ? garde(appId, exported) : undefined;
+    if (raison) {
+      onKept({ exported, reason: raison });
+      continue;
+    }
 
     // Le chemin relevé est celui du vrai coupable, pas le nom guetté : c'est
     // la seule forme de la détection qui indique où aller regarder.
