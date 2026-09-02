@@ -21,6 +21,7 @@ export * from './skeleton';
 export * from './sheet';
 export * from './stat';
 export * from './badge';
+export * from './card';
 export * from './confirm-dialog';
 export * from './toast';
 export * from './bottom-nav';

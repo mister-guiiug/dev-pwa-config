@@ -26,6 +26,10 @@ export const EQUIVALENTS = {
   Sheet: { files: ['Sheet.tsx', 'Modal.tsx'] },
   Stat: { files: ['Stat.tsx', 'StatCard.tsx'] },
   Badge: { files: ['Badge.tsx'] },
+  // `CardHeader` est déclaré dans le même fichier que `Card` chez footcoach :
+  // un `Card.tsx` local acquitte les deux, et n'importer que l'un des deux
+  // n'est pas une adoption finie.
+  Card: { files: ['Card.tsx'], symbols: ['Card', 'CardHeader'] },
   Skeleton: { files: ['Skeleton.tsx'] },
   EmptyState: { files: ['EmptyState.tsx'] },
   ErrorBoundary: { files: ['ErrorBoundary.tsx'] },

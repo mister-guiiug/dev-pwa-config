@@ -53,6 +53,25 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'Card',
+      category: 'primitive',
+      covers: ['Card', 'CardHeader'],
+      donts: {
+        fr: [
+          'Ne pas recoder la surface avec des couleurs en dur : les copies de miss-genius et miss-uwh ne différaient que par `--mg-surface` contre `--uwh-surface` — c’est exactement la variable que `--dwc-surface` unifie.',
+          'Ne pas rendre toute la carte cliquable par un `onClick` sur le `div` : sans rôle ni focus, seule la souris y accède. L’action se pose sur un élément focusable à l’intérieur (`CardHeader` `action`), ou la carte devient un vrai lien avec `as="a"`.',
+        ],
+        en: [
+          'Don’t re-code the surface with hard-coded colours: the miss-genius and miss-uwh copies differed only by `--mg-surface` versus `--uwh-surface` — exactly the variable `--dwc-surface` unifies.',
+          'Don’t make the whole card clickable with an `onClick` on the `div`: with no role and no focus, only the mouse reaches it. The action goes on a focusable element inside (`CardHeader` `action`), or the card becomes a real link with `as="a"`.',
+        ],
+      },
+      a11y: {
+        fr: 'Une carte n’a pas de rôle : c’est une surface. `CardHeader` rend un vrai titre (`h3` par défaut, `as` pour le niveau) pour que la structure du document survive à la mise en page — un lecteur d’écran navigue de carte en carte par les titres.',
+        en: 'A card has no role: it is a surface. `CardHeader` renders a real heading (`h3` by default, `as` for the level) so the document outline survives the layout — a screen reader moves from card to card by headings.',
+      },
+    },
+    {
       id: 'Badge',
       category: 'primitive',
       covers: ['Badge'],

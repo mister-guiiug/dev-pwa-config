@@ -295,6 +295,10 @@
       "types": "./react/badge.d.ts",
       "default": "./react/badge.js"
     },
+    "./react/card": {
+      "types": "./react/card.d.ts",
+      "default": "./react/card.js"
+    },
     "./react/bottom-nav": {
       "types": "./react/bottom-nav.d.ts",
       "default": "./react/bottom-nav.js"
