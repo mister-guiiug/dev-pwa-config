@@ -80,9 +80,32 @@ export function getDefaultLocale() {
  */
 function readLocaleArg(locale, options) {
   if (locale && typeof locale === 'object' && !Array.isArray(locale)) {
-    return { locale: defaultLocale, options: { ...locale, ...options } };
+    return {
+      locale: defaultLocale,
+      options: withDecimals({ ...locale, ...options }),
+    };
   }
-  return { locale: locale ?? defaultLocale, options };
+  return { locale: locale ?? defaultLocale, options: withDecimals(options) };
+}
+
+/**
+ * `decimals: 2` au lieu de `minimumFractionDigits: 2, maximumFractionDigits:
+ * 2`. C'est la règle que `miss-uwh` gardait dans son `formatEuro` — le club
+ * choisit ses décimales (0 à 3) dans ses réglages — et que `formatCurrency`
+ * ne prenait pas en un mot. Les deux options `Intl` restent acceptées, et
+ * l'emportent si elles sont là.
+ */
+function withDecimals(options) {
+  if (!options || typeof options !== 'object' || !('decimals' in options)) {
+    return options;
+  }
+  const { decimals, ...rest } = options;
+  if (!Number.isInteger(decimals) || decimals < 0) return rest;
+  return {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+    ...rest,
+  };
 }
 
 /**
@@ -161,11 +184,56 @@ export function formatNumber(value, locale = defaultLocale, options = {}) {
  */
 export function formatPercentage(value, locale = defaultLocale, digits = 0) {
   if (!Number.isFinite(value)) return '';
-  return numberFormat(locale, {
+  // Des options en 2ᵉ place, comme partout ailleurs : `{ decimals: 'auto' }`.
+  let tag = locale;
+  let wanted = digits;
+  if (locale && typeof locale === 'object' && !Array.isArray(locale)) {
+    tag = defaultLocale;
+    wanted = locale.decimals ?? locale.digits ?? digits;
+  }
+  // `'auto'` : une décimale sous 10 %, aucune au-dessus — la règle que
+  // `miss-supaboss` gardait dans son `formatPercent` (« 7,5 % » lisible,
+  // « 42 % » sans faux « ,0 »). Le seuil se lit sur la valeur affichée.
+  const count =
+    wanted === 'auto' ? (Math.abs(value) * 100 < 10 ? 1 : 0) : wanted;
+  return numberFormat(tag, {
     style: 'percent',
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
+    minimumFractionDigits: count,
+    maximumFractionDigits: count,
   }).format(value);
+}
+
+/**
+ * Un nombre SIGNÉ : « + » explicite, signe moins typographique (U+2212, ce
+ * qu'`Intl` ne produit pas — `signDisplay` donne un trait d'union), et un
+ * mot pour zéro si on le veut.
+ *
+ * PROMU, PAS INVENTÉ. `miss-uwh` (`formatSignedEuro`) et `miss-genius`
+ * (`formatDelta`) avaient chacune écrit cette règle : la convention
+ * comptable pour l'une, le delta d'une moyenne pour l'autre. Deux copies du
+ * même geste, à six mois d'écart. Elles diffèrent sur zéro — rien pour un
+ * solde nul, « = » pour un delta nul — d'où l'option.
+ *
+ * @param {number} value
+ * @param {{ format?: (abs: number) => string, zero?: string,
+ *   locale?: string | string[], plus?: boolean } & Intl.NumberFormatOptions} [options]
+ *   `format` rend la valeur ABSOLUE (défaut : `formatNumber`, avec les
+ *   options `Intl` restantes — `decimals`, `currency`…). `zero` remplace le
+ *   rendu d'un zéro (« = »). `plus: false` retire le « + ».
+ */
+export function formatSigned(value, options = {}) {
+  if (!Number.isFinite(value)) return '';
+  const { format, zero, locale, plus = true, ...intl } = options;
+  const render =
+    format ??
+    (abs =>
+      'currency' in intl || intl.style === 'currency'
+        ? formatCurrency(abs, locale, { style: 'currency', ...intl })
+        : formatNumber(abs, locale, intl));
+  if (value === 0) return zero ?? render(0);
+  const body = render(Math.abs(value));
+  if (value < 0) return `\u2212${body}`;
+  return plus ? `+${body}` : body;
 }
 
 /* ── Dates ─────────────────────────────────────────────────────────────── */
@@ -214,11 +282,25 @@ export function formatRelativeTime(
   locale = defaultLocale,
   now = Date.now()
 ) {
-  const value = toDate(date);
-  if (!value) return '';
-  const reference = now instanceof Date ? now.getTime() : now;
+  // Des options en 2ᵉ place : `{ never, locale, now }`. `never` est le mot
+  // pour « jamais » — `miss-supaboss` le gardait dans son `formatRelative`,
+  // parce qu'une mesure jamais faite n'est pas « il y a 0 seconde ».
+  let tag = locale;
+  let reference = now;
+  let never = '';
+  if (locale && typeof locale === 'object' && !Array.isArray(locale)) {
+    tag = locale.locale ?? defaultLocale;
+    reference = locale.now ?? now;
+    never = locale.never ?? '';
+  }
+  // `null` et `undefined` sont une ABSENCE, pas 1970 : `new Date(null)` vaut
+  // l'époque, et l'ancienne forme rendait « il y a 56 ans » pour une mesure
+  // jamais faite. C'est exactement le cas que `never` nomme.
+  const value = date === null || date === undefined ? null : toDate(date);
+  if (!value) return never;
+  reference = reference instanceof Date ? reference.getTime() : reference;
   const seconds = Math.round((value.getTime() - reference) / 1000);
-  const rtf = relativeFormat(locale, { numeric: 'auto' });
+  const rtf = relativeFormat(tag, { numeric: 'auto' });
 
   const units = [
     ['year', 31_536_000],

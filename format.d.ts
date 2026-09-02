@@ -11,9 +11,12 @@
  */
 export declare function formatCurrency(
   amount: number,
-  locale?: string | string[] | Intl.NumberFormatOptions,
-  currency?: string | Intl.NumberFormatOptions,
-  options?: Intl.NumberFormatOptions
+  locale?:
+    | string
+    | string[]
+    | (Intl.NumberFormatOptions & { decimals?: number }),
+  currency?: string | (Intl.NumberFormatOptions & { decimals?: number }),
+  options?: Intl.NumberFormatOptions & { decimals?: number }
 ): string;
 
 /**
@@ -25,15 +28,43 @@ export declare function formatCurrency(
  */
 export declare function formatNumber(
   value: number,
-  locale?: string | string[] | Intl.NumberFormatOptions,
-  options?: Intl.NumberFormatOptions
+  locale?:
+    | string
+    | string[]
+    | (Intl.NumberFormatOptions & { decimals?: number }),
+  options?: Intl.NumberFormatOptions & { decimals?: number }
 ): string;
 
-/** Pourcentage à partir d'une PROPORTION (0,42 → « 42 % »). */
+/**
+ * Pourcentage à partir d'une PROPORTION (0,42 → « 42 % »). `'auto'` : une
+ * décimale sous 10 %, aucune au-dessus. Des options en 2ᵉ place :
+ * `formatPercentage(0.075, { decimals: 'auto' })`.
+ */
 export declare function formatPercentage(
   value: number,
-  locale?: string,
-  digits?: number
+  locale?: string | { decimals?: number | 'auto'; digits?: number | 'auto' },
+  digits?: number | 'auto'
+): string;
+
+export interface SignedOptions extends Intl.NumberFormatOptions {
+  /** Rend la valeur ABSOLUE. Défaut : `formatNumber` avec les options restantes. */
+  format?: (abs: number) => string;
+  /** Remplace le rendu d'un zéro (« = », ou « — »). */
+  zero?: string;
+  locale?: string | string[];
+  /** `false` retire le « + » ; le moins (U+2212) reste. */
+  plus?: boolean;
+  /** `decimals: 2` ⇔ `minimumFractionDigits: 2, maximumFractionDigits: 2`. */
+  decimals?: number;
+}
+
+/**
+ * Nombre signé : « + » explicite, moins typographique (U+2212), un mot pour
+ * zéro. `formatSigned(-12.5, { currency: 'EUR' })` → « −12,50 € ».
+ */
+export declare function formatSigned(
+  value: number,
+  options?: SignedOptions
 ): string;
 
 /** Date courte (`12 août 2026`). */
@@ -50,10 +81,14 @@ export declare function formatDateTime(
   options?: Intl.DateTimeFormatOptions
 ): string;
 
-/** Temps relatif (`il y a 3 jours`). `now` rend la fonction testable. */
+/**
+ * Temps relatif (`il y a 3 jours`). `now` rend la fonction testable. Des
+ * options en 2ᵉ place : `{ never }` est rendu pour une date absente ou
+ * illisible — « jamais » plutôt que « il y a 0 seconde ».
+ */
 export declare function formatRelativeTime(
-  date: Date | string | number,
-  locale?: string,
+  date: Date | string | number | null | undefined,
+  locale?: string | { locale?: string; now?: Date | number; never?: string },
   now?: Date | number
 ): string;
 
