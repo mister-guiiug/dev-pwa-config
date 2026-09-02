@@ -69,13 +69,13 @@ test('checkBudget : les deux bornes, tous les dépassements d’un coup', async 
     assert.equal(both.problems.length, 2);
     assert.match(both.problems[0], /total gzip .* > budget 1 kB/);
     assert.match(both.problems[1], /index-Ab12Cd34\.js : 40 kB > budget 1 kB/);
-    // Le chunk principal se reconnaît par son motif, redéfinissable.
+    // Le chunk principal se reconnaît par son préfixe, redéfinissable.
     assert.equal(
-      checkBudget(m, { mainChunkKb: 100, mainChunk: '^vendor-' }).main.name,
+      checkBudget(m, { mainChunkKb: 100, mainChunk: 'vendor-' }).main.name,
       'vendor-Ef56Gh78.js'
     );
     assert.match(
-      checkBudget(m, { mainChunkKb: 100, mainChunk: '^app-' }).problems[0],
+      checkBudget(m, { mainChunkKb: 100, mainChunk: 'app-' }).problems[0],
       /chunk principal introuvable/
     );
     // Aucune borne : ce n'est pas un succès silencieux.
@@ -87,13 +87,13 @@ test('readBudget : package.json d’abord, la ligne de commande par-dessus', asy
   await withDist(async root => {
     writeFileSync(
       join(root, 'package.json'),
-      JSON.stringify({ bundleBudget: { totalGzipKb: 255, mainChunk: '^app-' } })
+      JSON.stringify({ bundleBudget: { totalGzipKb: 255, mainChunk: 'app-' } })
     );
     assert.deepEqual(readBudget(root), {
       dir: 'dist/assets',
       totalGzipKb: 255,
       mainChunkKb: undefined,
-      mainChunk: '^app-',
+      mainChunk: 'app-',
     });
     const cli = readBudget(root, [
       '--main-chunk-kb',
