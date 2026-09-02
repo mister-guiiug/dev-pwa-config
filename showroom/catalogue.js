@@ -716,12 +716,18 @@ globalThis.SHOWROOM_CATALOGUE = {
     },
     {
       id: 'useLabels',
-      covers: ['useLabels', 'LabelsProvider', 'mergeLabels', 'LABELS'],
+      covers: [
+        'useLabels',
+        'LabelsProvider',
+        'mergeLabels',
+        'labelsFor',
+        'LABELS',
+      ],
       signature:
-        'useLabels(groupe) → Record<string, string> · <LabelsProvider locale overrides>',
+        'useLabels(groupe) → Record<string, string> · <LabelsProvider locale overrides> · labelsFor(locale)',
       summary: {
-        fr: 'Les libellés des composants du paquet, en français et en anglais. Trois niveaux : la prop l’emporte, puis le contexte, puis le français.',
-        en: 'The package components’ labels, in French and English. Three levels: the prop wins, then the context, then French.',
+        fr: 'Les libellés des composants du paquet, en sept langues (fr, en, es, de, it, pt, nl — `pt-BR` retombe sur `pt`). Trois niveaux : la prop l’emporte, puis le contexte, puis le français.',
+        en: 'The package components’ labels, in seven languages (fr, en, es, de, it, pt, nl — `pt-BR` falls back to `pt`). Three levels: the prop wins, then the context, then French.',
       },
       dont: {
         fr: 'Ne pas y verser le dictionnaire métier de l’app : `createI18n` fabrique un contexte ISOLÉ, et celui-ci ne porte que la quinzaine de chaînes des composants.',

@@ -43,7 +43,13 @@ export { Badge } from './badge.js';
 export { ConfirmDialog } from './confirm-dialog.js';
 export { ToastProvider, ToastViewport, useToast } from './toast.js';
 export { BottomNav } from './bottom-nav.js';
-export { LabelsProvider, useLabels, mergeLabels, LABELS } from './labels.js';
+export {
+  LabelsProvider,
+  useLabels,
+  mergeLabels,
+  labelsFor,
+  LABELS,
+} from './labels.js';
 export { useUpdatePrompt } from './use-update-prompt.js';
 export { UpdatePromptBanner } from './update-prompt-banner.js';
 export { UpdateButton } from './update-button.js';

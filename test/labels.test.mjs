@@ -21,6 +21,7 @@ import {
   LABELS,
   DEFAULT_LOCALE,
   LabelsProvider,
+  labelsFor,
   mergeLabels,
   useLabels,
 } from '../react/labels.js';
@@ -36,8 +37,26 @@ const paths = dictionary =>
     )
     .sort();
 
-test('français et anglais portent exactement les mêmes clés', () => {
-  assert.deepEqual(paths(LABELS.en), paths(LABELS.fr));
+test('les sept langues portent exactement les mêmes clés', () => {
+  // Les langues que la famille parle : contraction en a sept, dice six,
+  // qowa cinq. Une clé absente dans l'une d'elles est un repli silencieux
+  // sur le français — le défaut que ce dictionnaire vient de fermer.
+  assert.deepEqual(Object.keys(LABELS).sort(), [
+    'de',
+    'en',
+    'es',
+    'fr',
+    'it',
+    'nl',
+    'pt',
+  ]);
+  for (const locale of Object.keys(LABELS)) {
+    assert.deepEqual(
+      paths(LABELS[locale]),
+      paths(LABELS.fr),
+      `${locale} n'a pas les mêmes clés que fr`
+    );
+  }
   // Et aucune valeur vide : une chaîne vide passerait la comparaison de clés
   // tout en laissant un bouton muet.
   for (const [locale, dictionary] of Object.entries(LABELS)) {
@@ -73,6 +92,42 @@ test('le repli est le français, y compris pour une locale inconnue', async () =
     dom.restore();
   }
   assert.equal(DEFAULT_LOCALE, 'fr');
+});
+
+test('une locale de la famille est servie, et une étiquette régionale retombe sur sa langue', async () => {
+  const dom = setupDom();
+  try {
+    // `miss-badminton` surchargeait ses libellés « pour que le repli devienne
+    // inatteignable » : l'espagnol arrivait en français. Plus maintenant.
+    const es = await mount(
+      h(
+        LabelsProvider,
+        { locale: 'es' },
+        h(ErrorBanner, { message: 'Vaya', onRetry() {} })
+      )
+    );
+    assert.match(es.container.innerHTML, />Reintentar</);
+    await es.unmount();
+
+    // `createI18n` passe parfois l'étiquette complète : `pt-BR` doit donner
+    // du portugais, pas le français par défaut.
+    const ptBr = await mount(
+      h(
+        LabelsProvider,
+        { locale: 'pt-BR' },
+        h(ErrorBanner, { message: 'Ops', onRetry() {} })
+      )
+    );
+    assert.match(ptBr.container.innerHTML, />Tentar novamente</);
+    await ptBr.unmount();
+  } finally {
+    dom.restore();
+  }
+
+  assert.equal(labelsFor('de-CH'), LABELS.de);
+  assert.equal(labelsFor('NL'), LABELS.nl, 'la casse ne compte pas');
+  assert.equal(labelsFor('kl'), null, 'inconnue : null, le provider choisit');
+  assert.equal(labelsFor(''), null);
 });
 
 test('les trois niveaux se classent : prop > contexte > défaut', async () => {

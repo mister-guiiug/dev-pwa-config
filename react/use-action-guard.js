@@ -40,12 +40,14 @@ import { useOnline } from './use-online.js';
  * La décision seule, sans React — exportée pour les tests et les gardes hors
  * composant (une commande clavier, un raccourci).
  *
- * @param {{ online?: boolean, checks?: Array<{ code: string, blocked: boolean,
- *   message?: string }> }} options
+ * @param {{ online?: boolean, offlineMessage?: string,
+ *   checks?: Array<{ code: string, blocked: boolean, message?: string }> }}
+ *   options `offlineMessage` remplace le libellé du paquet pour le motif
+ *   « hors ligne », comme `message` le fait pour une vérification injectée.
  * @param {{ isOnline: boolean, labels?: Record<string, string> }} context
  */
 export function resolveGuard(options = {}, context = {}) {
-  const { online = false, checks = [] } = options;
+  const { online = false, checks = [], offlineMessage } = options;
   const { isOnline = true, labels = {} } = context;
 
   let reasonCode = null;
@@ -53,7 +55,13 @@ export function resolveGuard(options = {}, context = {}) {
 
   if (online && !isOnline) {
     reasonCode = 'offline';
-    reason = labels.offline ?? 'Indisponible hors ligne';
+    // `offlineMessage` D'ABORD, comme `message` sur une vérification injectée.
+    // Le motif « hors ligne » ne pouvait venir que des libellés du paquet :
+    // `mister-puzzle` et `mister-qowa` ont chacune écrit un `useNetworkGuard`
+    // de trente à cinquante lignes qui enveloppe ce hook pour lui redonner
+    // sa phrase — puzzle écrit son i18n à la main, sans `LabelsProvider`, et
+    // aucune langue de plus dans le dictionnaire ne l'aurait aidée.
+    reason = offlineMessage ?? labels.offline ?? 'Indisponible hors ligne';
   } else {
     for (const check of checks) {
       if (!check?.blocked) continue;
@@ -89,8 +97,9 @@ export function resolveGuard(options = {}, context = {}) {
 /**
  * Le hook : `resolveGuard` branché sur `useOnline` et les libellés.
  *
- * @param {{ online?: boolean, checks?: Array<{ code: string, blocked: boolean,
- *   message?: string }> }} [options]
+ * @param {{ online?: boolean, offlineMessage?: string,
+ *   checks?: Array<{ code: string, blocked: boolean, message?: string }> }}
+ *   [options]
  */
 export function useActionGuard(options = {}) {
   const isOnline = useOnline();
@@ -117,6 +126,6 @@ export function useActionGuard(options = {}) {
   return useMemo(
     () => resolveGuard(options, { isOnline, labels }),
     // Dépendances : le CONTENU de `checks` (via fingerprint), pas son identité.
-    [options.online, fingerprint, isOnline, labels]
+    [options.online, options.offlineMessage, fingerprint, isOnline, labels]
   );
 }

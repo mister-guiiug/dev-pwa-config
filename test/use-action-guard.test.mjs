@@ -134,3 +134,29 @@ test('la signature retient le MESSAGE, pas seulement le code et l’état', asyn
     dom.restore();
   }
 });
+
+test('offlineMessage remplace le libellé du paquet pour le motif « hors ligne »', () => {
+  // `mister-puzzle` écrit son i18n à la main, sans `LabelsProvider` : le seul
+  // moyen de dire « hors ligne » dans sa langue était d'envelopper le hook.
+  const garde = resolveGuard(
+    { online: true, offlineMessage: 'Sin conexión: esto necesita red.' },
+    { isOnline: false, labels: { offline: 'Indisponible hors ligne' } }
+  );
+  assert.equal(garde.reasonCode, 'offline', 'le code ne change pas');
+  assert.equal(garde.reason, 'Sin conexión: esto necesita red.');
+
+  // Absent : le libellé du paquet, comme avant.
+  assert.equal(
+    resolveGuard(
+      { online: true },
+      { isOnline: false, labels: { offline: 'X' } }
+    ).reason,
+    'X'
+  );
+  // En ligne : aucun motif, quel que soit le message fourni.
+  assert.equal(
+    resolveGuard({ online: true, offlineMessage: 'Y' }, { isOnline: true })
+      .reason,
+    null
+  );
+});
