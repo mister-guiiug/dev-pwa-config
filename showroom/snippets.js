@@ -51,6 +51,22 @@ globalThis.SHOWROOM_SNIPPETS = {
 <Badge tone="success">À jour</Badge>
 <Badge tone="warning" variant="outline">En attente</Badge>`,
 
+  Card: `import { Card, CardHeader } from '@mister-guiiug/dev-wpa-config/react';
+
+{/* Une surface, pas un contrôle : l'action va dans \`action\`, jamais sur la
+    carte entière. \`as\` pour article / section / a / li. */}
+<Card as="article">
+  <CardHeader
+    title="Cotisations 2026"
+    subtitle="12 adhérents en retard"
+    action={<Button size="sm" onClick={relancer}>Relancer</Button>}
+  />
+  <p>…</p>
+</Card>
+
+{/* \`padding={false}\` : un contenu qui touche les bords (image, liste). */}
+<Card padding={false}><img src={photo} alt="" /></Card>`,
+
   Stat: `import { Stat } from '@mister-guiiug/dev-wpa-config/react';
 
 {/* \`trendLabel\` est lu par les lecteurs d'écran : la couleur et la flèche

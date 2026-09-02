@@ -186,6 +186,9 @@ globalThis.SHOWROOM_I18N = {
       'The matrices show chosen combinations; the one you need may not be among them. Set the props below: the preview follows, and the React call to copy is rewritten with them — <em>including</em> the accessibility attributes they entail.',
     'primitives.p12':
       'The DOM generated here is hand-written, as everywhere on this page — the showroom does not ship React. It is the <strong>same markup</strong> the component produces, dressed by the package’s real <code>components.css</code>; but it is the code snippet, not the preview, that is authoritative.',
+    'primitives.h3card': 'Card — the surface ten apps had',
+    'primitives.pcard':
+      'A card is a surface, not a control: the action goes into <code>action</code> (a focusable element inside), never on the whole card. <code>CardHeader</code> renders a real heading so the document outline survives the layout.',
 
     /* ── Application components ───────────────────────────────────────── */
     'composants.h21': 'Application components',

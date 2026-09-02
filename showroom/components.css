@@ -971,6 +971,77 @@
     white-space: nowrap;
   }
 
+  /* ── Card ──────────────────────────────────────────────────────────────── *
+   * Dix apps avaient une carte ; les deux copies de genius et uwh ne
+   * différaient que par le nom de la variable de surface. Ce bloc est ce
+   * qu'elles écrivaient toutes : fond, filet, rayon, padding — sur les jetons
+   * `--dwc-*`, que l'app teinte où elle veut.
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='card'] {
+    display: block;
+    padding: var(--spacing-fluid-md, 1rem);
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    box-shadow: var(--dwc-shadow, none);
+  }
+
+  /* Le contenu touche les bords ; le rayon est conservé par `overflow`. */
+  [data-dwc='card'][data-padding='none'] {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Une carte-lien ou une carte-bouton garde la couleur du texte : le lien
+     bleu souligné sur toute une surface est ce que les copies évitaient à
+     la main. Le focus, lui, reste visible. */
+  a[data-dwc='card'],
+  button[data-dwc='card'] {
+    color: inherit;
+    text-decoration: none;
+    text-align: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  a[data-dwc='card']:focus-visible,
+  button[data-dwc='card']:focus-visible {
+    outline: 2px solid var(--dwc-primary, CanvasText);
+    outline-offset: 2px;
+  }
+
+  [data-dwc='card-header'] {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  [data-dwc='card-heading'] {
+    min-width: 0;
+  }
+
+  [data-dwc='card-title'] {
+    margin: 0;
+    font-size: var(--text-fluid-base, 1rem);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  [data-dwc='card-subtitle'] {
+    margin: 0.15rem 0 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='card-action'] {
+    flex: none;
+  }
+
   /* ── Sparkline, BarChart & Gauge ───────────────────────────────────────── *
    * Les composants (`/react/sparkline`) rendent la géométrie, jamais la
    * couleur : tout leur tracé passe par `currentColor`. L'habillage pose donc

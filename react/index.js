@@ -40,6 +40,7 @@ export { Skeleton, SkeletonGroup } from './skeleton.js';
 export { Sheet } from './sheet.js';
 export { Stat } from './stat.js';
 export { Badge } from './badge.js';
+export { Card, CardHeader } from './card.js';
 export { ConfirmDialog } from './confirm-dialog.js';
 export { ToastProvider, ToastViewport, useToast } from './toast.js';
 export { BottomNav } from './bottom-nav.js';

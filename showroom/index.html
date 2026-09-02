@@ -1054,6 +1054,57 @@
         </p>
         <div data-snippet="Stat"></div>
 
+        <h3 class="sr-subtitle" data-i18n="primitives.h3card">
+          Card — la surface que dix apps avaient
+        </h3>
+        <div class="sr-row">
+          <article data-dwc="card" style="flex: 1 1 16rem">
+            <div data-dwc="card-header">
+              <div data-dwc="card-heading">
+                <h4 data-dwc="card-title">Cotisations 2026</h4>
+                <p data-dwc="card-subtitle">12 adhérents en retard</p>
+              </div>
+              <div data-dwc="card-action">
+                <button
+                  type="button"
+                  data-dwc="button"
+                  data-variant="secondary"
+                  data-size="sm"
+                >
+                  Relancer
+                </button>
+              </div>
+            </div>
+            <p style="margin: 0">
+              Le clic est sur le bouton, pas sur la carte : le clavier et le
+              lecteur d’écran y accèdent.
+            </p>
+          </article>
+          <article data-dwc="card" data-padding="none" style="flex: 1 1 12rem">
+            <div
+              aria-hidden="true"
+              style="
+                height: 5rem;
+                background: color-mix(
+                  in srgb,
+                  var(--dwc-primary) 18%,
+                  var(--dwc-surface)
+                );
+              "
+            ></div>
+            <p style="margin: 0; padding: var(--spacing-fluid-md, 1rem)">
+              <code>padding=&#123;false&#125;</code> : l’image touche les bords.
+            </p>
+          </article>
+        </div>
+        <p class="sr-note" data-i18n="primitives.pcard">
+          Une carte est une surface, pas un contrôle : l’action va dans
+          <code>action</code> (un élément focusable à l’intérieur), jamais sur
+          la carte entière. <code>CardHeader</code> rend un vrai titre, pour que
+          la structure du document survive à la mise en page.
+        </p>
+        <div data-snippet="Card"></div>
+
         <h3 class="sr-subtitle" data-i18n="primitives.h35">
           Skeleton — chargement
         </h3>

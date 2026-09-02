@@ -17,6 +17,8 @@
  */
 export const SUBPATHS = {
   Badge: 'react/badge',
+  Card: 'react/card',
+  CardHeader: 'react/card',
   BottomNav: 'react/bottom-nav',
   Button: 'react/button',
   ConfirmDialog: 'react/confirm-dialog',
