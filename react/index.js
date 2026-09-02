@@ -73,6 +73,7 @@ export {
 export { useLongPress } from './use-long-press.js';
 export { useFeedback } from './use-feedback.js';
 export { useWakeLock } from './use-wake-lock.js';
+export { useFullscreen } from './use-fullscreen.js';
 export { usePullToRefresh } from './use-pull-to-refresh.js';
 export { useKeyboardShortcuts } from './use-keyboard-shortcuts.js';
 export { useShake, requestMotionPermission } from './use-shake.js';

@@ -1128,6 +1128,19 @@
     white-space: nowrap;
   }
 
+  /* L'axe de taille demandé par mister-doc pour ses pastilles de calendrier :
+     `md` est l'ancien rendu, `xs` tient dans une case de 1,5 rem. */
+  [data-dwc='badge'][data-size='sm'] {
+    padding: 0.1rem 0.45rem;
+    font-size: var(--text-fluid-2xs, 0.72rem);
+  }
+  [data-dwc='badge'][data-size='xs'] {
+    gap: 0.2rem;
+    padding: 0 0.35rem;
+    font-size: 0.68rem;
+    line-height: 1.4;
+  }
+
   [data-dwc='badge'][data-tone='brand'] {
     --_dwc-tone: var(--dwc-primary, CanvasText);
   }

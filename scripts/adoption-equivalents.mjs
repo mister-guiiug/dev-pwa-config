@@ -55,6 +55,15 @@ export const EQUIVALENTS = {
   },
   LoginForm: { files: ['LoginPage.tsx', 'LoginScreen.tsx'] },
   MfaChallenge: { files: ['MfaChallenge.tsx'] },
+  // Le paquet promeut le HOOK ; un `FullscreenToggle.tsx` local qui ne
+  // l'importe pas recopie encore l'écoute de `fullscreenchange`.
+  useFullscreen: {
+    files: ['FullscreenToggle.tsx'],
+    symbols: ['useFullscreen'],
+  },
+  // `cn` n'y est PAS : deux lettres, c'est un symbole trop court pour acquitter
+  // sans ambiguïté (le relevé refuse sous quatre), et cinq lignes ne sont pas
+  // une dette à mesurer.
   ConfirmDialog: { files: ['ConfirmDialog.tsx'] },
   Toast: {
     files: [

@@ -19,13 +19,18 @@ import { createElement as h } from 'react';
  * Non stylé : cibler `[data-dwc="badge"][data-tone][data-variant]`.
  *
  * @param {{ tone?: 'brand'|'success'|'warning'|'danger'|'info'|'muted',
- *   variant?: 'soft'|'outline', icon?: import('react').ReactNode,
+ *   variant?: 'soft'|'outline', size?: 'xs'|'sm'|'md',
+ *   icon?: import('react').ReactNode,
  *   children?: import('react').ReactNode, className?: string }} props
  */
 export function Badge(props = {}) {
   const {
     tone = 'muted',
     variant = 'soft',
+    // `size` : `mister-doc` gardait ses pastilles de calendrier hors du paquet
+    // parce que « `size="xs"` n'a pas d'équivalent : le socle n'a pas d'axe
+    // de taille ». Trois paliers ; `md` est l'ancien et seul rendu.
+    size = 'md',
     icon,
     children,
     className,
@@ -40,6 +45,7 @@ export function Badge(props = {}) {
       'data-dwc': 'badge',
       'data-tone': tone,
       'data-variant': variant,
+      'data-size': size,
     },
     icon ? h('span', { 'aria-hidden': 'true' }, icon) : null,
     children

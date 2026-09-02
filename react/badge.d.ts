@@ -14,10 +14,14 @@ export type BadgeTone =
  */
 export type BadgeVariant = 'soft' | 'outline';
 
+/** `md` est le rendu historique ; `xs` pour les pastilles d'un calendrier. */
+export type BadgeSize = 'xs' | 'sm' | 'md';
+
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   /** Intention sémantique, pas une couleur. */
   tone?: BadgeTone;
   variant?: BadgeVariant;
+  size?: BadgeSize;
   icon?: ReactNode;
   children?: ReactNode;
 }
