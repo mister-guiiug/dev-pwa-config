@@ -26,7 +26,7 @@
  *   bundleBudget.dir           dossier des assets (défaut `dist/assets`)
  *   bundleBudget.totalGzipKb   plafond du total gzip de tout le JS
  *   bundleBudget.mainChunkKb   plafond du chunk principal (brut, comme qowa)
- *   bundleBudget.mainChunk     motif du chunk principal (défaut : `^(index|app|main)[.-]`)
+ *   bundleBudget.mainChunk     préfixe du chunk principal (ex. `app-` ; défaut : index-, app-, main-)
  *
  * Publié comme bin `pwa-bundle-budget` — la mécanique de `pwa-icons`.
  */
@@ -36,7 +36,20 @@ import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 const DEFAULT_DIR = 'dist/assets';
-const DEFAULT_MAIN_CHUNK = '^(index|app|main)[.-]';
+/**
+ * Le chunk principal se reconnaît par un PRÉFIXE, pas une expression
+ * régulière : CodeQL a signalé (`js/regex-injection`) qu'un motif venu de la
+ * ligne de commande construisait un `RegExp` — et un préfixe dit tout ce
+ * qu'il y a à dire d'un nom de fichier Vite (`index-Ab12Cd34.js`).
+ */
+const DEFAULT_MAIN_PREFIXES = ['index', 'app', 'main'];
+const isMainChunk = prefix =>
+  prefix
+    ? file => file.name.startsWith(prefix)
+    : file =>
+        DEFAULT_MAIN_PREFIXES.some(
+          p => file.name.startsWith(`${p}-`) || file.name.startsWith(`${p}.`)
+        );
 
 /**
  * Mesure les fichiers JS d'un dossier : poids brut et gzip, du plus lourd au
@@ -74,11 +87,12 @@ export function measureBundle(dir) {
  *
  * @param {ReturnType<typeof measureBundle>} measure
  * @param {{ totalGzipKb?: number, mainChunkKb?: number, mainChunk?: string }} budget
+ *   `mainChunk` est un PRÉFIXE de nom de fichier (`app-`).
  * @returns {{ ok: boolean, problems: string[], main: { name: string, rawKb: number } | null }}
  */
 export function checkBudget(measure, budget = {}) {
   const problems = [];
-  const { totalGzipKb, mainChunkKb, mainChunk = DEFAULT_MAIN_CHUNK } = budget;
+  const { totalGzipKb, mainChunkKb, mainChunk } = budget;
 
   if (Number.isFinite(totalGzipKb) && measure.totalGzipKb > totalGzipKb) {
     problems.push(
@@ -88,11 +102,10 @@ export function checkBudget(measure, budget = {}) {
 
   let main = null;
   if (Number.isFinite(mainChunkKb)) {
-    const pattern = new RegExp(mainChunk);
-    main = measure.files.find(file => pattern.test(file.name)) ?? null;
+    main = measure.files.find(isMainChunk(mainChunk)) ?? null;
     if (!main) {
       problems.push(
-        `chunk principal introuvable (motif ${mainChunk}) — préciser bundleBudget.mainChunk`
+        `chunk principal introuvable (préfixe ${mainChunk ?? DEFAULT_MAIN_PREFIXES.join('|')}) — préciser bundleBudget.mainChunk`
       );
     } else if (main.rawKb > mainChunkKb) {
       problems.push(
