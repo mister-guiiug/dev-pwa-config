@@ -700,9 +700,10 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 
 ## Bin
 
-| Commande    | Rôle                                                                                                                                      |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `pwa-icons` | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable` |
+| Commande            | Rôle                                                                                                                                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pwa-icons`         | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable`                                                                                           |
+| `pwa-bundle-budget` | Refuse un build qui dépasse `bundleBudget` (`totalGzipKb` : tout le JS gzip ; `mainChunkKb` : le chunk principal, brut) lu dans `package.json`. Ex. `"build": "vite build && pwa-bundle-budget"` — promu de miss-uwh et mister-qowa |
 
 ## Reusable workflows GitHub Actions
 

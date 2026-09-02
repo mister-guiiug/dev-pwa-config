@@ -581,7 +581,8 @@
     "./components.css": "./components.css"
   },
   "bin": {
-    "pwa-icons": "./scripts/generate-pwa-icons.mjs"
+    "pwa-icons": "./scripts/generate-pwa-icons.mjs",
+    "pwa-bundle-budget": "./scripts/check-bundle-budget.mjs"
   },
   "files": [
     "eslint-base.js",
@@ -649,6 +650,7 @@
     "tokens.css",
     "components.css",
     "scripts/generate-pwa-icons.mjs",
+    "scripts/check-bundle-budget.mjs",
     "storage.js",
     "storage.d.ts",
     "secure-storage.js",
