@@ -19,6 +19,11 @@ create policy "anon read keep_alive"
   to anon
   using (true);
 
--- Une ligne de seed (optionnelle : le SELECT compte comme activité même vide).
-insert into public.keep_alive default values
-on conflict do nothing;
+-- Une ligne de départ (le SELECT compterait comme activité même à vide, mais
+-- une table peuplée rend le ping lisible depuis le dashboard).
+-- `on conflict do nothing` ne rendait PAS cet insert idempotent : une clé
+-- primaire `identity` ne conflicte jamais, donc rejouer le fichier ajoutait une
+-- ligne à chaque fois. La condition, elle, tient.
+insert into public.keep_alive (pinged_at)
+select now()
+where not exists (select 1 from public.keep_alive);
