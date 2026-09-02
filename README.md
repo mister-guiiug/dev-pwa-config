@@ -98,7 +98,7 @@ d'adoption qui comptait 19 copies pour 34 — est classé dans `PARC.md`.
 
 _Relevé du 2026-09-02 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 5 fichiers recopiés** dans 17 apps, sur 2 besoins distincts. Les pires : `id` (4), `testing/pwa-register` (1).
+> **Dette d'adoption : 2 fichiers recopiés** dans 17 apps, sur 2 besoins distincts. Les pires : `id` (1), `testing/pwa-register` (1).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
@@ -285,7 +285,7 @@ _Relevé du 2026-09-02 sur 17 dépôts, par `npm run adoption`._
 | `writeRaw`                    | 1 / 17      | —                   |
 | `XlsxSheet`                   | 1 / 17      | —                   |
 | `XlsxValue`                   | 1 / 17      | —                   |
-| `id`                          | 0 / 17      | 4 / 17              |
+| `id`                          | 0 / 17      | 1 / 17              |
 
 <!-- ADOPTION:FIN -->
 

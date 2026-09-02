@@ -209,21 +209,21 @@ Rien n'est publié dans le paquet : trois outils de dépôt et un document. La 3
 La 3.33.0 est publiée, les dix-sept apps sont sur `^3.33.0`, et aucune PR
 n'est restée ouverte.
 
-| #   | Chantier            | Fait                                                                                                                                                    | Reste                                                                                          |
-| --- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 1   | Renovate            | Préréglage `renovate/default.json` + `renovate.yml` auto-hébergé (#157) ; les dix-sept apps l'étendent                                                  | Le secret `RENOVATE_TOKEN` sur le socle — sans lui le workflow le dit et s'arrête              |
-| 2   | Installabilité      | Vérifié en production sur les seize sites : manifeste sous le site, PNG 512 et maskable, `id`, `lang: fr`, icône iOS partout sauf carbook (non déployé) | Captures pour lookhouse, qowa, family-map                                                      |
-| 3   | Dette d'adoption    | Règle de façade corrigée (#156) : le relevé dit 34 copies, et les modules qui les remplacent sont publiés                                               | L'adoption elle-même, app par app (`npm run adopt-plan -- <app>`)                              |
-| 4   | `pwa-doctor`        | Bin publié (#158, #159) ; il a servi de contrôle après chaque correction                                                                                | Le poser en `postbuild --strict` app par app                                                   |
-| 5   | Poids               | carbook : 432 → 146 kB de JS initial gzip                                                                                                               | Le mesuré en production attend le déblocage de carbook ; budgets `bundleBudget` sur les autres |
-| 6   | SEO et partage      | Vérifié en production : Open Graph et canonique sur lookhouse, supaboss, qowa ; `theme-color` par schéma sur quinze sites ; CSP partout sauf family-map | `og:image` pour family-map (miroir)                                                            |
-| 7   | Repli 404           | `v3` déplacé par la publication : badminton, contraction et footcoach servent la coquille sur un lien profond (mesuré)                                  | family-map : le miroir n'a pas été régénéré depuis le 29/08                                    |
-| 8   | Dépôts hors gabarit | lookhouse, qowa, supaboss remis sur le gabarit ; puzzle : e2e en CI, quatre tests réparés et deux en `fixme` documenté                                  | Keep-alive sur uwh, doc, footcoach, lookhouse : il leur manque les secrets `VITE_SUPABASE_*`   |
-| 9   | Locale figée        | 71 appels dans dix apps passent par `getDefaultLocale()`                                                                                                | —                                                                                              |
-| 10  | Code mort           | 50 exports morts retirés, 6 fichiers supprimés, une centaine dé-exportés                                                                                | —                                                                                              |
-| 11  | Journal             | 36 `console.error/warn` passent par `createLogger` dans treize apps                                                                                     | —                                                                                              |
-| 12  | Tests carbook       | `scoringAlgorithm.test.ts`, 14 cas                                                                                                                      | Le reste du moteur (assistant, synchronisation)                                                |
-| 13  | `autoUpdate`        | contraction, lookhouse, ticket-pwa en `prompt` + `AppUpdates` du socle                                                                                  | —                                                                                              |
+| #   | Chantier            | Fait                                                                                                                                                                               | Reste                                                                                          |
+| --- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 1   | Renovate            | Préréglage `renovate/default.json` + `renovate.yml` auto-hébergé (#157) ; les dix-sept apps l'étendent                                                                             | Le secret `RENOVATE_TOKEN` sur le socle — sans lui le workflow le dit et s'arrête              |
+| 2   | Installabilité      | Vérifié en production sur les seize sites : manifeste sous le site, PNG 512 et maskable, `id`, `lang: fr`, icône iOS partout sauf carbook (non déployé)                            | Captures pour lookhouse, qowa, family-map                                                      |
+| 3   | Dette d'adoption    | **Fait.** 34 copies triées : 8 adoptées (`Card` dans trois apps, 48 imports ; les identifiants dans quatre), 24 gardées avec leur raison écrite (`GARDES`, #163). Dette réelle : 0 | Le miroir family-map en compte encore 2, à régénérer depuis bac-sable                          |
+| 4   | `pwa-doctor`        | Bin publié (#158, #159) ; il a servi de contrôle après chaque correction                                                                                                           | Le poser en `postbuild --strict` app par app                                                   |
+| 5   | Poids               | carbook : 432 → 146 kB de JS initial gzip                                                                                                                                          | Le mesuré en production attend le déblocage de carbook ; budgets `bundleBudget` sur les autres |
+| 6   | SEO et partage      | Vérifié en production : Open Graph et canonique sur lookhouse, supaboss, qowa ; `theme-color` par schéma sur quinze sites ; CSP partout sauf family-map                            | `og:image` pour family-map (miroir)                                                            |
+| 7   | Repli 404           | `v3` déplacé par la publication : badminton, contraction et footcoach servent la coquille sur un lien profond (mesuré)                                                             | family-map : le miroir n'a pas été régénéré depuis le 29/08                                    |
+| 8   | Dépôts hors gabarit | lookhouse, qowa, supaboss remis sur le gabarit ; puzzle : e2e en CI, quatre tests réparés et deux en `fixme` documenté                                                             | Keep-alive sur uwh, doc, footcoach, lookhouse : il leur manque les secrets `VITE_SUPABASE_*`   |
+| 9   | Locale figée        | 71 appels dans dix apps passent par `getDefaultLocale()`                                                                                                                           | —                                                                                              |
+| 10  | Code mort           | 50 exports morts retirés, 6 fichiers supprimés, une centaine dé-exportés                                                                                                           | —                                                                                              |
+| 11  | Journal             | 36 `console.error/warn` passent par `createLogger` dans treize apps                                                                                                                | —                                                                                              |
+| 12  | Tests carbook       | `scoringAlgorithm.test.ts`, 14 cas                                                                                                                                                 | Le reste du moteur (assistant, synchronisation)                                                |
+| 13  | `autoUpdate`        | contraction, lookhouse, ticket-pwa en `prompt` + `AppUpdates` du socle                                                                                                             | —                                                                                              |
 
 **Le seul défaut de production qui subsiste, et qui ne se corrige pas d'ici :**
 miss-carbook ne se déploie plus depuis le 29/08. Son `deploy.yml` a `needs:
@@ -232,9 +232,24 @@ réveiller le projet depuis le tableau de bord Supabase. Le site public est
 donc celui du 28/08 : ni le `id` du manifeste, ni l'icône iOS, ni les 146 kB
 n'y sont encore.
 
-Ce que la journée a appris à l'outillage : la règle de façade (§ 3), les
-citations hors `src/` (§ 10), et qu'un heredoc de ce poste mange les
-antislashs — les codemods s'écrivent dans des fichiers, pas en ligne de
+### Ce que l'adoption a appris
+
+Le relevé comptait un doublon dès qu'un fichier portait le nom guetté. Sur
+trente-quatre copies, **vingt-quatre n'étaient pas des dettes** : le
+`AppHeader.tsx` de mister-cim10 compose un slogan depuis la route et le store
+de réglages, celui de miss-supaboss porte l'état de synchronisation de la
+flotte, le `Badge` de mister-doc décline un ton chromatique métier là où le
+socle décline six intentions sémantiques. Même nom, autre rôle — j'en ai
+adopté trois avant de m'en apercevoir, et je les ai rendus.
+
+La leçon n'est pas « le relevé se trompe » : il fait ce qu'un relevé peut
+faire. C'est qu'un chiffre de dette sans moyen d'inscrire un refus mesure
+aussi le travail impossible, et ne descend jamais. D'où `GARDES` : une raison
+écrite par ligne, un test qui refuse celles qui n'expliquent rien, et un
+relevé qui les AFFICHE au lieu de les taire.
+
+Le reste de la journée a appris : la règle de façade (§ 3), les citations hors
+`src/` (§ 10), et qu'un heredoc de ce poste mange les antislashs — les codemods s'écrivent dans des fichiers, pas en ligne de
 commande. Et qu'un test peut figer une limite plutôt qu'un contrat : trois
 apps affirmaient « le socle ne livre que fr et en », ce qui a rendu leur CI
 rouge le jour où la limite est tombée.
