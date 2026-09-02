@@ -9,49 +9,90 @@
  * on APLATIT avant de chercher — la première version de la sonde, écrite en
  * shell ligne à ligne, comptait zéro `viewport` sur seize sites pour cette
  * seule raison.
+ *
+ * PAS DE REGEX SUR LE DOCUMENT ENTIER. Un motif comme `<meta[^>]*name=` sur un
+ * HTML fourni de l'extérieur est polynomial (CodeQL `js/polynomial-redos`) :
+ * les balises sont découpées par un balayage linéaire (`tags`), et chaque
+ * test porte sur UNE balise, courte, par `includes`.
  */
 
-/** Compte les occurrences d'un motif dans un HTML aplati. */
-const count = (html, re) => (html.match(re) ?? []).length;
+/** Les balises d'un HTML, dans l'ordre — balayage linéaire, sans regex. */
+export function tags(source) {
+  const html = String(source);
+  const out = [];
+  let i = 0;
+  for (;;) {
+    const start = html.indexOf('<', i);
+    if (start === -1) break;
+    const end = html.indexOf('>', start);
+    if (end === -1) break;
+    out.push(html.slice(start, end + 1));
+    i = end + 1;
+  }
+  return out;
+}
 
-/** Ce qu'`index.html` déclare — sur un HTML APLATI (les balises s'étalent). */
+/** Une balise aplatie, en minuscules pour les tests, telle quelle pour lire. */
+const flatten = tag => tag.replace(/\s+/g, ' ');
+
+/** La valeur d'un attribut `name="…"` d'une balise (déjà aplatie). */
+function attr(tag, name) {
+  const key = `${name}="`;
+  const at = tag.indexOf(key);
+  if (at === -1) return null;
+  const from = at + key.length;
+  const to = tag.indexOf('"', from);
+  return to === -1 ? null : tag.slice(from, to);
+}
+
+const is = (tag, name) => tag.toLowerCase().startsWith(`<${name} `);
+const has = (tag, needle) => tag.toLowerCase().includes(needle.toLowerCase());
+
+/** Ce qu'`index.html` déclare. */
 export function htmlMarkers(source) {
-  const html = String(source).replace(/\s+/g, ' ');
-  const attr = (re, name) => {
-    const tag = html.match(re)?.[0] ?? '';
-    return tag.match(new RegExp(`${name}="([^"]*)"`))?.[1] ?? null;
-  };
+  const all = tags(source).map(flatten);
+  const metas = all.filter(t => is(t, 'meta'));
+  const links = all.filter(t => is(t, 'link'));
+  const named = name => metas.filter(t => has(t, `name="${name}"`));
+  const html = all.find(t => is(t, 'html')) ?? '';
+  const theme = named('theme-color');
+  const text = String(source).replace(/\s+/g, ' ');
+  const titleAt = text.toLowerCase().indexOf('<title>');
+  const titleEnd = titleAt === -1 ? -1 : text.indexOf('<', titleAt + 7);
   return {
-    lang: attr(/<html[^>]*>/i, 'lang'),
-    title: html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() ?? null,
-    viewport: count(html, /<meta[^>]*name="viewport"/gi) > 0,
-    description: count(html, /<meta[^>]*name="description"/gi) > 0,
-    themeColor: count(html, /<meta[^>]*name="theme-color"/gi),
-    themeColorMedia: count(html, /<meta[^>]*name="theme-color"[^>]*media=/gi),
-    colorScheme: count(html, /<meta[^>]*name="color-scheme"/gi) > 0,
-    csp: count(html, /http-equiv="Content-Security-Policy"/gi) > 0,
-    appleTouchIcon: count(html, /rel="apple-touch-icon"/gi) > 0,
-    ogImage: count(html, /property="og:image"/gi) > 0,
-    canonical: count(html, /rel="canonical"/gi) > 0,
-    jsonLd: count(html, /application\/ld\+json/gi) > 0,
-    noscript: count(html, /<noscript/gi) > 0,
-    manifest: attr(/<link[^>]*rel="manifest"[^>]*>/i, 'href'),
-    scripts: initialScripts(html),
+    lang: attr(html, 'lang'),
+    title:
+      titleAt === -1 || titleEnd === -1
+        ? null
+        : text.slice(titleAt + 7, titleEnd).trim(),
+    viewport: named('viewport').length > 0,
+    description: named('description').length > 0,
+    themeColor: theme.length,
+    themeColorMedia: theme.filter(t => has(t, ' media=')).length,
+    colorScheme: named('color-scheme').length > 0,
+    csp: metas.some(t => has(t, 'http-equiv="Content-Security-Policy"')),
+    appleTouchIcon: links.some(t => has(t, 'rel="apple-touch-icon"')),
+    ogImage: metas.some(t => has(t, 'property="og:image"')),
+    canonical: links.some(t => has(t, 'rel="canonical"')),
+    jsonLd: all.some(t => is(t, 'script') && has(t, 'application/ld+json')),
+    noscript: all.some(t => t.toLowerCase().startsWith('<noscript')),
+    manifest: attr(links.find(t => has(t, 'rel="manifest"')) ?? '', 'href'),
+    scripts: initialScripts(source),
   };
 }
 
 /** Les scripts chargés au démarrage : modules et `modulepreload`. */
 export function initialScripts(source) {
-  const html = String(source).replace(/\s+/g, ' ');
   const out = [];
-  for (const m of html.matchAll(
-    /<script[^>]*type="module"[^>]*src="([^"]+)"/gi
-  ))
-    out.push(m[1]);
-  for (const m of html.matchAll(
-    /<link[^>]*rel="modulepreload"[^>]*href="([^"]+)"/gi
-  ))
-    out.push(m[1]);
+  for (const tag of tags(source).map(flatten)) {
+    if (is(tag, 'script') && has(tag, 'type="module"')) {
+      const src = attr(tag, 'src');
+      if (src) out.push(src);
+    } else if (is(tag, 'link') && has(tag, 'rel="modulepreload"')) {
+      const href = attr(tag, 'href');
+      if (href) out.push(href);
+    }
+  }
   return [...new Set(out)];
 }
 
@@ -92,7 +133,8 @@ export function resolveUrl(href, base) {
 
 /** Le repli SPA : la coquille de l'app, ou la page 404 de GitHub ? */
 export function isAppShell(body) {
-  return /id="(root|app)"/.test(String(body));
+  const text = String(body);
+  return text.includes('id="root"') || text.includes('id="app"');
 }
 
 /**
@@ -101,10 +143,12 @@ export function isAppShell(body) {
  * les scripts initiaux : c'est Vite qui les a préfixés avec `base`.
  */
 export function sitePrefix(markers) {
-  const absolus = (markers.scripts ?? []).filter(s => s.startsWith('/'));
-  for (const s of absolus) {
-    const m = s.match(/^(\/[^/]+\/)assets\//);
-    if (m) return m[1];
+  for (const s of markers.scripts ?? []) {
+    if (!s.startsWith('/')) continue;
+    const second = s.indexOf('/', 1);
+    if (second === -1) continue;
+    const prefix = s.slice(0, second + 1);
+    if (s.startsWith(`${prefix}assets/`)) return prefix;
   }
   return '/';
 }
