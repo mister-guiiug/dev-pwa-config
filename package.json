@@ -590,7 +590,8 @@
   },
   "bin": {
     "pwa-icons": "./scripts/generate-pwa-icons.mjs",
-    "pwa-bundle-budget": "./scripts/check-bundle-budget.mjs"
+    "pwa-bundle-budget": "./scripts/check-bundle-budget.mjs",
+    "pwa-doctor": "./scripts/pwa-doctor.mjs"
   },
   "files": [
     "eslint-base.js",
@@ -717,7 +718,9 @@
     "versioned-store.js",
     "versioned-store.d.ts",
     "idb.js",
-    "idb.d.ts"
+    "idb.d.ts",
+    "scripts/pwa-doctor.mjs",
+    "scripts/site-readers.mjs"
   ],
   "peerDependencies": {
     "@axe-core/playwright": "^4.8.0",
