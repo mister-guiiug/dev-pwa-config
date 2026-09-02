@@ -1,0 +1,94 @@
+# Reusable workflow — déploiement d'un Cloudflare Worker (`wrangler deploy`).
+#
+# DEUX COPIES EN UNE. `miss-genius` (54 l., le proxy Pronote dans `worker/`)
+# et `miss-supaboss` (39 l., le proxy CORS dans `proxy/`) écrivaient le même
+# workflow, avec la même décision : sans secret Cloudflare, on N'ÉCHOUE PAS —
+# le Worker est optionnel, la CI ne doit pas rougir pour un secret que le
+# fork d'un contributeur n'a pas.
+#
+# Usage côté consumer (.github/workflows/deploy-worker.yml) :
+#
+#   name: Deploy worker
+#   on:
+#     push:
+#       branches: [main]
+#       paths: ['worker/**']
+#     workflow_dispatch:
+#   permissions:
+#     contents: read
+#   jobs:
+#     deploy:
+#       uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-worker-deploy.yml@v3
+#       secrets:
+#         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+#         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+#       with:
+#         working-directory: worker
+#
+# `CLOUDFLARE_ACCOUNT_ID` n'est requis que si le jeton couvre plusieurs
+# comptes ; sinon wrangler l'infère (ou `account_id` dans `wrangler.toml`).
+name: Reusable Worker deploy
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: 'Dossier du Worker (celui de wrangler.toml)'
+        type: string
+        required: false
+        default: '.'
+      node-version:
+        type: string
+        required: false
+        default: '22'
+      dry-run-first:
+        description: 'Valider le bundling (`wrangler deploy --dry-run`) avant de déployer'
+        type: boolean
+        required: false
+        default: true
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        description: 'Jeton d’API Cloudflare (Workers Scripts: Edit). Absent : déploiement ignoré, sans échec.'
+        required: false
+      CLOUDFLARE_ACCOUNT_ID:
+        description: 'Identifiant du compte — requis seulement si le jeton couvre plusieurs comptes'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+
+      # Le bundling se valide sans jeton : un fork sans secret voit quand même
+      # un Worker qui ne compile plus.
+      - name: Dry-run build
+        if: ${{ inputs.dry-run-first }}
+        run: npx wrangler deploy --dry-run --outdir=.wrangler-dryrun
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN absent — déploiement du Worker ignoré (le bundling a été validé). Définissez le secret puis relancez."
+            exit 0
+          fi
+          npx wrangler deploy

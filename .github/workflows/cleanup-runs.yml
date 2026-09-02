@@ -1,6 +1,33 @@
-# Nettoyage manuel de l'historique GitHub Actions de ce dépôt.
-# Ne conserve que les N runs les plus récents PAR workflow (défaut 3).
-# Actions → « Cleanup workflow runs » → « Run workflow ».
+# Nettoyage de l'historique GitHub Actions : ne conserve que les N runs les
+# plus récents PAR workflow (défaut 3).
+#
+# RÉUTILISABLE depuis le 02/09/2026. Ce fichier existait en DOUZE copies
+# identiques (73 lignes chacune) dans les apps de la famille, parce qu'il
+# n'était appelable qu'à la main (`workflow_dispatch`) : chaque dépôt devait
+# donc l'héberger. `workflow_call` ramène chaque copie à dix lignes :
+#
+#   # <app>/.github/workflows/cleanup-runs.yml
+#   name: Cleanup workflow runs
+#   on:
+#     workflow_dispatch:
+#       inputs:
+#         keep: { description: 'Runs à conserver par workflow', type: string, default: '3' }
+#         dry-run: { description: 'Lister sans supprimer', type: boolean, default: false }
+#   permissions:
+#     actions: write   # le workflow appelé ne peut pas s'accorder plus que l'appelant
+#     contents: read
+#   jobs:
+#     cleanup:
+#       uses: mister-guiiug/dev-wpa-config/.github/workflows/cleanup-runs.yml@v3
+#       with:
+#         keep: ${{ inputs.keep }}
+#         dry-run: ${{ inputs.dry-run }}
+#
+# Un workflow réutilisable s'exécute dans le contexte de l'APPELANT :
+# `context.repo` et `GITHUB_TOKEN` sont ceux du dépôt qui appelle, et c'est
+# bien son historique qui est élagué — pas celui du socle.
+#
+# Ici même, dans ce dépôt : Actions → « Cleanup workflow runs » → « Run workflow ».
 name: Cleanup workflow runs
 
 on:
@@ -13,6 +40,18 @@ on:
       dry-run:
         description: 'Lister sans supprimer'
         type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      keep:
+        description: 'Nombre de runs à conserver par workflow'
+        type: string
+        required: false
+        default: '3'
+      dry-run:
+        description: 'Lister sans supprimer'
+        type: boolean
+        required: false
         default: false
 
 permissions:
@@ -29,10 +68,15 @@ jobs:
     steps:
       - name: Prune old workflow runs
         uses: actions/github-script@v7
+        env:
+          # Passés via env: (jamais interpolés dans le script) — un `keep`
+          # venu d'un appelant ne doit pas pouvoir écrire du JavaScript.
+          KEEP: ${{ inputs.keep }}
+          DRY_RUN: ${{ inputs.dry-run }}
         with:
           script: |
-            const keep = Math.max(1, parseInt(`${{ inputs.keep }}`, 10) || 3);
-            const dryRun = `${{ inputs.dry-run }}` === 'true';
+            const keep = Math.max(1, parseInt(process.env.KEEP, 10) || 3);
+            const dryRun = process.env.DRY_RUN === 'true';
             const { owner, repo } = context.repo;
 
             const runs = await github.paginate(

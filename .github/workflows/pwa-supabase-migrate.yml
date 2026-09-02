@@ -1,0 +1,129 @@
+# Reusable workflow — migrations Supabase (`supabase link` + `supabase db push`).
+#
+# QUATRE COPIES EN UNE. `miss-lookhouse` (35 l.), `miss-uwh` (62 l.),
+# `mister-doc` (143 l., avec le déploiement des Edge Functions) et
+# `miss-carbook` (en ligne dans `deploy.yml`, avec `needs: migrate` — ce qui
+# bloque son déploiement quand le projet est en pause) écrivaient chacune le
+# même workflow autour de la composite action `supabase-migrate`. Le voici
+# une fois, avec ce que les quatre avaient compris séparément :
+#
+#   - forward-only : `db push` ne joue que les migrations non appliquées, le
+#     rejeu est sûr ;
+#   - JAMAIS deux pushs concurrents, et on ne coupe pas un run en cours — une
+#     migration interrompue en plein vol est le pire des états ;
+#   - les secrets manquants se disent en clair, pas en `Error: link failed`.
+#
+# Usage côté consumer (.github/workflows/supabase-migrate.yml) :
+#
+#   name: Supabase migrations
+#   on:
+#     push:
+#       branches: [main]
+#       paths: ['supabase/migrations/**', 'supabase/functions/**']
+#     workflow_dispatch:
+#   permissions:
+#     contents: read
+#   jobs:
+#     migrate:
+#       uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-migrate.yml@v3
+#       secrets:
+#         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+#         SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+#         SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+#       with:
+#         deploy-functions: true   # si supabase/functions/ existe
+#
+# ⚠ Ne PAS déclarer `concurrency` côté appelant : ce workflow porte le sien
+# (groupe `supabase-migrate`, sans annulation), et le répéter provoque
+# l'interblocage « deadlock was detected for concurrency group ».
+#
+# UN PROJET FREE S'ENDORT AU BOUT DE SEPT JOURS, et `supabase link` répond
+# alors « project is paused » : rien à migrer, rien à déployer, tant qu'un
+# humain ne l'a pas réveillé depuis le tableau de bord. Le paquet publie
+# `pwa-supabase-keepalive.yml` pour l'en empêcher — le 02/09/2026, aucune
+# des huit apps Supabase ne l'appelait, et `miss-carbook` dormait depuis
+# le 29/08. Les deux se posent ensemble.
+name: Reusable Supabase migrate
+
+on:
+  workflow_call:
+    inputs:
+      cli-version:
+        description: 'Version du CLI Supabase'
+        type: string
+        required: false
+        default: 'latest'
+      deploy-functions:
+        description: 'Déployer aussi supabase/functions/ (Edge Functions) après les migrations'
+        type: boolean
+        required: false
+        default: false
+      functions-flags:
+        description: 'Options passées à `supabase functions deploy` (ex. "--no-verify-jwt")'
+        type: string
+        required: false
+        default: ''
+    secrets:
+      SUPABASE_ACCESS_TOKEN:
+        description: 'Jeton d’accès personnel (Account → Access Tokens)'
+        required: true
+      SUPABASE_PROJECT_ID:
+        description: 'Référence du projet (Project Settings → General → Reference ID)'
+        required: true
+      SUPABASE_DB_PASSWORD:
+        description: 'Mot de passe de la base (Project Settings → Database)'
+        required: true
+
+permissions:
+  contents: read
+
+# Jamais deux pushs concurrents sur la base ; on ne coupe pas un run en cours.
+concurrency:
+  group: supabase-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier les secrets
+        env:
+          ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          missing=
+          [ -z "$ACCESS_TOKEN" ] && missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -z "$PROJECT_ID" ] && missing="$missing SUPABASE_PROJECT_ID"
+          [ -z "$DB_PASSWORD" ] && missing="$missing SUPABASE_DB_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Secret(s) manquant(s) :$missing — Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Link + db push
+        uses: mister-guiiug/dev-wpa-config/.github/actions/supabase-migrate@v3
+        with:
+          access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          project-id: ${{ secrets.SUPABASE_PROJECT_ID }}
+          db-password: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          cli-version: ${{ inputs.cli-version }}
+
+      - name: Deploy Edge Functions
+        if: ${{ inputs.deploy-functions }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          # Passé via env: — jamais interpolé dans le corps du script.
+          FUNCTIONS_FLAGS: ${{ inputs.functions-flags }}
+        run: |
+          if [ ! -d supabase/functions ]; then
+            echo "::warning::deploy-functions demandé mais supabase/functions/ est absent — rien à déployer."
+            exit 0
+          fi
+          # shellcheck disable=SC2086 — les options sont volontairement découpées.
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" $FUNCTIONS_FLAGS
