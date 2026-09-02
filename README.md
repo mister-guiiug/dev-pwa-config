@@ -542,6 +542,63 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
     NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+## Secrets et variables — la ligne de partage
+
+**La question n'est pas « est-ce sensible ? », c'est « le navigateur le
+voit-il ? ».** Vite copie la valeur de tout `VITE_*` dans le bundle au moment du
+build : elle part en clair sur GitHub Pages, lisible par n'importe qui. La
+ranger dans un _secret_ GitHub ne la protège donc de rien — ça masque seulement
+les journaux de CI (`***`) et donne l'illusion d'une confidentialité qui
+n'existe pas.
+
+| Ranger en…                      | Quoi                                                                                                                | Exemples                                                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`secrets`** (chiffrés)        | Ce qui donne un **pouvoir** : écrire, déployer, administrer. Jamais lu par le navigateur.                           | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_DB_URL`, `FIREBASE_TOKEN`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `CLOUDFLARE_API_TOKEN`, `RENOVATE_TOKEN`, `MIRROR_PUSH_TOKEN` |
+| **`vars`** (en clair, lisibles) | Ce qui finit **dans le bundle** ou dans une URL publique — donc tout `VITE_*`, et la configuration d'environnement. | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_FIREBASE_*`, `VITE_VAPID_PUBLIC_KEY`, `VITE_SENTRY_DSN`, `VITE_BASE_PATH`, `SUPABASE_PROJECT_ID`                               |
+
+Deux clés méritent un mot, parce qu'elles ressemblent à des secrets :
+
+- **l'`anon key` Supabase** est un JWT de rôle `anon`, conçu pour être publié :
+  c'est la RLS qui protège les données, pas la clé. La vérifier plutôt que la
+  cacher — `echo "$KEY" | cut -d. -f2 | base64 -d` doit dire `"role":"anon"`,
+  **jamais** `"role":"service_role"` ;
+- **les `VITE_FIREBASE_*`** sont la configuration publique du projet ; c'est
+  App Check et les règles de sécurité qui protègent, pas leur discrétion.
+
+### Comment les injecter
+
+Le build lit les `VITE_*` par l'entrée `build-env` du réutilisable, une par
+ligne — jamais par `secrets: inherit`, qui donnerait au workflow appelé **tout
+le trousseau du dépôt** alors qu'il n'a besoin de rien :
+
+```yaml
+jobs:
+  deploy:
+    uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
+    with:
+      use-base-path: true
+      build-env: |
+        VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY=${{ vars.VITE_SUPABASE_ANON_KEY }}
+    # Nommés, jamais hérités : le workflow ne reçoit que ce qu'il déclare.
+    secrets:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+```
+
+### Ce qui doit rester vrai
+
+- **Toute `VITE_*` que le code lit figure dans `.env.example`**, avec un
+  commentaire disant à quoi elle sert et si elle est facultative. C'est la seule
+  documentation qu'un nouveau venu lira.
+- **Une app doit démarrer sans configuration.** miss-lookhouse, miss-uwh et
+  mister-footcoach retombent sur un backend `local` quand l'URL ou la clé
+  manquent — la démo publique fonctionne, hors ligne, sans compte. À l'inverse,
+  une app qui construit `apiKey: import.meta.env.VITE_…` sans repli se déploie
+  **silencieusement cassée** : le site est en ligne, son backend est
+  injoignable, et rien ne le dit.
+- `pwa-doctor` relève les écarts : `VITE_*` rangée en secret, `secrets:
+inherit`, `.env.example` absent ou incomplet.
+
 ## Checklist — nouveau projet consommateur
 
 1. **`.npmrc`** (copier [`templates/.npmrc`](./templates/.npmrc)) + **`.nvmrc`** (`22`).
