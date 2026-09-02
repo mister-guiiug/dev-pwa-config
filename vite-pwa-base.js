@@ -326,3 +326,68 @@ Sitemap: ${homeUrl}sitemap.xml
     },
   };
 }
+
+/**
+ * Repli SPA pour GitHub Pages : `404.html` identique à `index.html`.
+ *
+ * GITHUB PAGES N'A PAS DE REPLI SPA. Rafraîchir `/miss-contraction/a-propos`
+ * — ou ouvrir un lien partagé — sert sa page « File not found », pas l'app.
+ * Le contournement connu : un `404.html` copié d'`index.html`. GitHub le sert
+ * (en 404, mais il le sert), la coquille démarre, le routeur lit l'URL.
+ *
+ * MESURÉ LE 02/09/2026 sur les sites publiés : quatre apps à routage par
+ * chemin servaient la page de GitHub (contraction, footcoach, badminton,
+ * family-map). Trois autres avaient écrit la correction chacune chez elles —
+ * un script `copy-404.mjs` dans `build` (carbook), un plugin Vite en ligne
+ * (molkky), le même plugin recopié à la lettre (dice). C'est ce plugin-là,
+ * promu.
+ *
+ * Le service worker masque le défaut après la première visite (Workbox sert
+ * `index.html` à toute navigation de son périmètre). Il reste entier pour un
+ * lien partagé ouvert à froid, un navigateur sans service worker, et tout ce
+ * qui indexe.
+ *
+ * INOFFENSIF pour une app qui route par `#` : GitHub ne voit jamais le chemin,
+ * le fichier ne sert simplement jamais. Et une app qui bascule un jour vers
+ * les chemins n'a rien à découvrir.
+ *
+ * Le workflow réutilisable `pwa-deploy.yml` fait la même copie APRÈS le build
+ * si le fichier manque : les apps déployées par lui sont couvertes sans
+ * changer une ligne. Ce plugin sert au reste — `vite preview`, un autre
+ * hébergeur, un déploiement écrit à la main.
+ *
+ *   plugins: [VitePWA(…), pwaSeoPlugin(…), spaFallbackPlugin()]
+ *
+ * @param {{ outDir?: string, from?: string, to?: string }} [opts]
+ *   `outDir` (défaut `dist`, ou `build.outDir` de la config), `from` (défaut
+ *   `index.html`), `to` (défaut `404.html`).
+ */
+export function spaFallbackPlugin(opts = {}) {
+  const { outDir = 'dist', from = 'index.html', to = '404.html' } = opts;
+  let resolvedOutDir = outDir;
+  let isBuild = false;
+  return {
+    name: 'mister-guiiug:spa-fallback',
+    configResolved(config) {
+      resolvedOutDir = config?.build?.outDir || outDir;
+      isBuild = config?.command === 'build';
+    },
+    async closeBundle() {
+      // Hook de build : rien à copier en dev, où il n'y a pas de `dist`.
+      if (!isBuild) return;
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const dist = path.resolve(process.cwd(), resolvedOutDir);
+      const source = path.join(dist, from);
+      if (!fs.existsSync(source)) {
+        // Pas de coquille, pas de repli — et pas d'échec de build pour ça :
+        // le défaut est déjà visible dans le déploiement, pas ici.
+        console.warn(
+          `[spa-fallback] ${from} introuvable dans ${resolvedOutDir} : ${to} non écrit.`
+        );
+        return;
+      }
+      fs.copyFileSync(source, path.join(dist, to));
+    },
+  };
+}

@@ -114,6 +114,22 @@ jobs:
           VITE_PUBLIC_SITE_ORIGIN: https://${{ github.repository_owner }}.github.io
         run: npm run build
 
+      # GitHub Pages n'a pas de repli SPA : rafraîchir un lien profond (ou
+      # l'ouvrir depuis un partage) sert sa page « File not found », pas l'app.
+      # Le 02/09/2026, quatre apps à routage par chemin étaient dans ce cas, et
+      # trois autres avaient chacune recopié la même correction. Un `404.html`
+      # identique à `index.html` suffit : GitHub le sert, la coquille démarre,
+      # le routeur lit l'URL. Inoffensif pour une app qui route par `#`, et
+      # sans effet si le build l'a déjà émis (plugin `spaFallbackPlugin`).
+      - name: SPA fallback (404.html)
+        env:
+          BUILD_DIR: ${{ inputs.build-dir }}
+        run: |
+          if [ -f "$BUILD_DIR/index.html" ] && [ ! -f "$BUILD_DIR/404.html" ]; then
+            cp "$BUILD_DIR/index.html" "$BUILD_DIR/404.html"
+            echo "::notice::404.html copié depuis index.html — repli SPA GitHub Pages."
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
