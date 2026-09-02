@@ -96,46 +96,48 @@ d'adoption qui comptait 19 copies pour 34 — est classé dans `PARC.md`.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
+_Relevé du 2026-09-02 sur 17 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 1 fichiers recopiés** dans 17 apps, sur 1 besoins distincts. Les pires : `testing/pwa-register` (1).
+> **Dette d'adoption : 5 fichiers recopiés** dans 17 apps, sur 2 besoins distincts. Les pires : `id` (4), `testing/pwa-register` (1).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
 | Export ou module              | Importé par | Encore recopié dans |
 | ----------------------------- | ----------- | ------------------- |
 | `baseTestOptions`             | 16 / 17     | —                   |
+| `pwaSeoPlugin`                | 16 / 17     | —                   |
+| `UpdatePromptBanner`          | 16 / 17     | —                   |
+| `createLogger`                | 14 / 17     | —                   |
 | `FamilyApps`                  | 14 / 17     | —                   |
 | `testing/pwa-register`        | 13 / 17     | 1 / 17              |
 | `definePwaPlaywrightConfig`   | 13 / 17     | —                   |
 | `initSentry`                  | 13 / 17     | —                   |
 | `installErrorReporter`        | 13 / 17     | —                   |
-| `pwaSeoPlugin`                | 13 / 17     | —                   |
 | `ConfirmDialog`               | 12 / 17     | —                   |
+| `cspPlugin`                   | 12 / 17     | —                   |
+| `expectNoA11yViolations`      | 12 / 17     | —                   |
 | `recordError`                 | 12 / 17     | —                   |
 | `createI18n`                  | 11 / 17     | —                   |
-| `expectNoA11yViolations`      | 11 / 17     | —                   |
+| `getDefaultLocale`            | 11 / 17     | —                   |
 | `repoUrl`                     | 11 / 17     | —                   |
-| `cspPlugin`                   | 10 / 17     | —                   |
+| `applyUpdate`                 | 10 / 17     | —                   |
 | `ErrorBoundary`               | 10 / 17     | —                   |
 | `useActionGuard`              | 10 / 17     | —                   |
 | `useTheme`                    | 10 / 17     | —                   |
 | `ConnectionBanner`            | 9 / 17      | —                   |
 | `Sheet`                       | 9 / 17      | —                   |
-| `applyUpdate`                 | 8 / 17      | —                   |
+| `AppUpdates`                  | 8 / 17      | —                   |
 | `coveragePreset`              | 8 / 17      | —                   |
 | `EmptyState`                  | 8 / 17      | —                   |
 | `LabelsProvider`              | 8 / 17      | —                   |
 | `pwaRegisterAlias`            | 8 / 17      | —                   |
 | `ThemeProvider`               | 8 / 17      | —                   |
-| `UpdatePromptBanner`          | 8 / 17      | —                   |
 | `useOnline`                   | 8 / 17      | —                   |
 | `AppFooter`                   | 7 / 17      | —                   |
 | `BottomNav`                   | 7 / 17      | —                   |
 | `SPONSOR_URL`                 | 7 / 17      | —                   |
 | `useThemeContext`             | 7 / 17      | —                   |
 | `IconsProvider`               | 6 / 17      | —                   |
-| `AppUpdates`                  | 5 / 17      | —                   |
 | `Button`                      | 5 / 17      | —                   |
 | `dateSlug`                    | 5 / 17      | —                   |
 | `downloadText`                | 5 / 17      | —                   |
@@ -153,10 +155,10 @@ _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 | `shareOrCopy`                 | 4 / 17      | —                   |
 | `SkeletonGroup`               | 4 / 17      | —                   |
 | `TextField`                   | 4 / 17      | —                   |
+| `Card`                        | 3 / 17      | —                   |
 | `createTranslator`            | 3 / 17      | —                   |
 | `formatDateTime`              | 3 / 17      | —                   |
 | `generateCode`                | 3 / 17      | —                   |
-| `getDefaultLocale`            | 3 / 17      | —                   |
 | `ObservabilityBoundary`       | 3 / 17      | —                   |
 | `SelectField`                 | 3 / 17      | —                   |
 | `Skeleton`                    | 3 / 17      | —                   |
@@ -204,11 +206,13 @@ _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 | `UpdateButton`                | 2 / 17      | —                   |
 | `validateImageFile`           | 2 / 17      | —                   |
 | `appById`                     | 1 / 17      | —                   |
+| `AppHeader`                   | 1 / 17      | —                   |
 | `AppVersion`                  | 1 / 17      | —                   |
 | `BACKUP_FORMAT`               | 1 / 17      | —                   |
 | `BACKUP_VERSION`              | 1 / 17      | —                   |
 | `BottomNavItem`               | 1 / 17      | —                   |
 | `BoundingBox`                 | 1 / 17      | —                   |
+| `CardHeader`                  | 1 / 17      | —                   |
 | `ChannelStatus`               | 1 / 17      | —                   |
 | `clearErrorLog`               | 1 / 17      | —                   |
 | `clusterByGrid`               | 1 / 17      | —                   |
@@ -216,7 +220,6 @@ _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 | `Coordinates`                 | 1 / 17      | —                   |
 | `createBackup`                | 1 / 17      | —                   |
 | `createIdb`                   | 1 / 17      | —                   |
-| `createLogger`                | 1 / 17      | —                   |
 | `createMapLibreMapProvider`   | 1 / 17      | —                   |
 | `createPushClient`            | 1 / 17      | —                   |
 | `distanceKm`                  | 1 / 17      | —                   |
@@ -269,8 +272,11 @@ _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 | `unescapeText`                | 1 / 17      | —                   |
 | `unfoldLines`                 | 1 / 17      | —                   |
 | `useAppUpdates`               | 1 / 17      | —                   |
+| `useFocusTrap`                | 1 / 17      | —                   |
 | `useInstallPrompt`            | 1 / 17      | —                   |
+| `useKeyboardShortcuts`        | 1 / 17      | —                   |
 | `useLabels`                   | 1 / 17      | —                   |
+| `usePullToRefresh`            | 1 / 17      | —                   |
 | `useQrScanner`                | 1 / 17      | —                   |
 | `useReducedMotion`            | 1 / 17      | —                   |
 | `versionPlugin`               | 1 / 17      | —                   |
@@ -279,6 +285,7 @@ _Relevé du 2026-09-01 sur 17 dépôts, par `npm run adoption`._
 | `writeRaw`                    | 1 / 17      | —                   |
 | `XlsxSheet`                   | 1 / 17      | —                   |
 | `XlsxValue`                   | 1 / 17      | —                   |
+| `id`                          | 0 / 17      | 4 / 17              |
 
 <!-- ADOPTION:FIN -->
 

@@ -18,7 +18,7 @@
  * effacerait le travail des autres.
  */
 globalThis.SHOWROOM_ADOPTION = {
-  generatedAt: '2026-09-02T16:37:00.392Z',
+  generatedAt: '2026-09-02T16:41:13.877Z',
   measured: 17,
   total: 17,
   apps: {
@@ -95,7 +95,19 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'PageContainer',
+          reason:
+            "réserve en haut la hauteur du bouton menu (72 px) et ajoute un palier « 2xl » que le socle n'a pas",
+        },
+        {
+          exported: 'useFullscreen',
+          reason:
+            'FullscreenToggle est le bouton, pas le hook — il reste à l’app',
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-carbook': {
       symbols: [
@@ -171,7 +183,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'AppHeader',
+          reason:
+            'TopBar tient la recherche de dossier, le menu de compte et la bascule de thème',
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-contraction': {
       symbols: [
@@ -237,7 +256,8 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-dice': {
       symbols: [
@@ -305,13 +325,15 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [
+      duplicates: [],
+      kept: [
         {
           exported: 'ErrorBoundary',
-          file: 'ErrorBoundary.tsx',
+          reason:
+            "l'app a son design maison et n'importe pas components.css : le repli du socle y serait nu",
         },
       ],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-genius': {
       symbols: [
@@ -391,7 +413,8 @@ globalThis.SHOWROOM_ADOPTION = {
           declares: 'createId',
         },
       ],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-lookhouse': {
       symbols: [
@@ -456,7 +479,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'LoginForm',
+          reason:
+            "LoginScreen porte le choix du backend (local ou Supabase) avant même l'identification",
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-supaboss': {
       symbols: [
@@ -528,7 +558,18 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'AppHeader',
+          reason:
+            "porte l'état de synchronisation de la flotte, le mode démo et sa confirmation de sortie — de l'interface métier, pas une mise en page",
+        },
+        {
+          exported: 'LoginForm',
+          reason: 'LoginScreen porte le mode démo, qui se choisit sans compte',
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -592,7 +633,8 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'miss-uwh': {
       symbols: [
@@ -688,16 +730,38 @@ globalThis.SHOWROOM_ADOPTION = {
       ],
       duplicates: [
         {
-          exported: 'AppHeader',
-          file: 'AppHeader.tsx',
-        },
-        {
           exported: 'id',
           file: 'src/shared/lib/id.ts',
           declares: 'createId',
         },
       ],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'AppHeader',
+          reason:
+            "porte le retour contextuel (lanceur ou lentille), le chip de saison, la recherche et le compteur d'alertes — c'est l'exemple qui a montré qu'importer `Button` du socle n'acquitte pas un en-tête",
+        },
+        {
+          exported: 'AuthProvider',
+          reason: 'tient les rôles du club et leurs politiques RLS',
+        },
+        {
+          exported: 'ErrorBoundary',
+          reason:
+            "deux niveaux de repli (`app` et `route`) et l'export de la sauvegarde locale depuis l'écran de crash",
+        },
+        {
+          exported: 'LoginForm',
+          reason:
+            "LoginPage enchaîne sur l'onboarding du club quand le compte est neuf",
+        },
+        {
+          exported: 'MfaChallenge',
+          reason:
+            "élévation AAL2 pour les rôles sensibles du club, sur l'i18n de l'app",
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-cim10': {
       symbols: [
@@ -775,7 +839,14 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'AppHeader',
+          reason:
+            "compose un slogan depuis la route, le store de réglages et l'i18n, et porte l'avertissement médical dismissible — le socle rend un titre et des actions",
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-doc': {
       symbols: [
@@ -863,13 +934,34 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
         '/xlsx',
       ],
-      duplicates: [
+      duplicates: [],
+      kept: [
+        {
+          exported: 'AuthProvider',
+          reason:
+            'tient les passkeys et le rattachement au service hospitalier',
+        },
+        {
+          exported: 'Badge',
+          reason:
+            'décline un ton CHROMATIQUE métier (teal/indigo pour jour et nuit, sky pour les HNC) là où le socle décline six intentions sémantiques — décision écrite dans le fichier',
+        },
         {
           exported: 'ErrorBoundary',
-          file: 'ErrorBoundary.tsx',
+          reason:
+            "écran de repli propre à l'app (pictogramme, recharge) ; seule la remontée d'erreur vient du socle, et elle est déjà importée",
+        },
+        {
+          exported: 'LoginForm',
+          reason: 'LoginPage propose la passkey avant le mot de passe',
+        },
+        {
+          exported: 'MfaChallenge',
+          reason:
+            "parcours de récupération propre à l'app (codes de secours, passkey)",
         },
       ],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-family-map': {
       symbols: [
@@ -966,7 +1058,8 @@ globalThis.SHOWROOM_ADOPTION = {
           declares: 'registerSW',
         },
       ],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-footcoach': {
       symbols: [
@@ -1047,7 +1140,27 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-setup',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'AppHeader',
+          reason:
+            'TopBar tient la navigation par équipe et le sélecteur de saison',
+        },
+        {
+          exported: 'AuthProvider',
+          reason: "expose `useAuth` avec le rattachement à l'équipe",
+        },
+        {
+          exported: 'id',
+          reason:
+            'genId est un compteur horodaté, pas un aléa — il promet un ordre que createId ne donne pas',
+        },
+        {
+          exported: 'LoginForm',
+          reason: "LoginPage porte l'invitation par lien d'équipe",
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-molkky': {
       symbols: [
@@ -1143,7 +1256,19 @@ globalThis.SHOWROOM_ADOPTION = {
           declares: 'newId',
         },
       ],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [
+        {
+          exported: 'PageContainer',
+          reason:
+            "porte l'animation d'entrée de vue (`mm-view-enter`), que le socle ne connaît pas",
+        },
+        {
+          exported: 'useFullscreen',
+          reason:
+            'FullscreenToggle est le bouton, pas le hook — il reste à l’app',
+        },
+      ],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-puzzle': {
       symbols: [
@@ -1197,7 +1322,8 @@ globalThis.SHOWROOM_ADOPTION = {
         '/web-vitals',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-qowa': {
       symbols: [
@@ -1257,7 +1383,8 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
     'mister-quota': {
       symbols: [
@@ -1280,7 +1407,8 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/toast',
       ],
       duplicates: [],
-      measuredAt: '2026-09-02T16:37:00.392Z',
+      kept: [],
+      measuredAt: '2026-09-02T16:41:13.877Z',
     },
   },
   bySymbol: {
@@ -1903,9 +2031,7 @@ globalThis.SHOWROOM_ADOPTION = {
     useInstallPrompt: ['mister-qowa'],
   },
   byDuplicate: {
-    ErrorBoundary: ['miss-dice', 'mister-doc'],
     id: ['miss-genius', 'miss-uwh', 'mister-family-map', 'mister-molkky'],
-    AppHeader: ['miss-uwh'],
     'testing/pwa-register': ['mister-family-map'],
   },
 };
