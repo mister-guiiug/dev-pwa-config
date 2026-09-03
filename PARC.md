@@ -258,6 +258,60 @@ mesure ce qu'on attend avant le premier rendu. Leurs deux scripts maison sont
 retirés : c'est d'eux que le socle avait promu le bin, et ils en étaient
 restés les seuls porteurs.
 
+### Secrets et variables, dépôt par dépôt
+
+Relevé du 02/09/2026 en croisant ce qui est **déclaré** sur GitHub, ce que les
+**workflows** consomment (`secrets: inherit` compris, en suivant ce que le
+réutilisable appelé consomme vraiment) et ce que le **code** lit. Trois pièges
+écartés au tri : un secret Firebase que `pwa-deploy.yml` n'exige que si le
+caller passe `firebase-project` ; un workflow gardé par
+`if: github.repository == …`, qui ne s'exécute pas dans le dépôt où il dort ;
+et les valeurs factices de la CI, qui masquent une absence en production — d'où
+la lecture ciblée sur `deploy.yml`.
+
+| Dépôt                      | Requis                                                                                                                | Manquant                                      | Obsolète                                                       |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
+| miss-badminton             | —                                                                                                                     | —                                             | —                                                              |
+| miss-carbook               | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | —                                             | `VITE_BASE_PATH`, `VITE_SENTRY_DSN`, `VITE_SENTRY_ENVIRONMENT` |
+| miss-contraction           | —                                                                                                                     | —                                             | —                                                              |
+| miss-dice                  | —                                                                                                                     | —                                             | —                                                              |
+| miss-genius                | `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`                                                                       | **les deux**                                  | —                                                              |
+| miss-lookhouse             | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`                        | **les quatre**                                | —                                                              |
+| miss-supaboss              | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SUPABASE_PROXY_URL`                                                 | `CLOUDFLARE_ACCOUNT_ID`                       | —                                                              |
+| miss-ticket-pwa            | `FIREBASE_SERVICE_ACCOUNT_KEY`                                                                                        | —                                             | `FIREBASE_TOKEN`                                               |
+| miss-uwh                   | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | —                                                              |
+| mister-cim10               | —                                                                                                                     | —                                             | —                                                              |
+| mister-doc                 | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_VAPID_PUBLIC_KEY`    | —                                             | —                                                              |
+| mister-footcoach           | —                                                                                                                     | —                                             | —                                                              |
+| mister-molkky              | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`                                                                         | —                                             | —                                                              |
+| mister-puzzle              | `FIREBASE_TOKEN`, les 7 `VITE_FIREBASE_*`                                                                             | —                                             | `CORS_ORIGINS`, `VITE_GTM_CONTAINER_ID`                        |
+| mister-qowa                | les 9 `VITE_FIREBASE_*` (voir plus bas)                                                                               | **les neuf**                                  | —                                                              |
+| mister-quota               | —                                                                                                                     | —                                             | —                                                              |
+| bac-sable                  | —                                                                                                                     | —                                             | `MIRROR_MODE`, `MIRROR_PUSH_TOKEN`                             |
+| mister-family-map (miroir) | `PRIVATE_READ_TOKEN`, `MIRROR_PUSH_TOKEN`                                                                             | —                                             | —                                                              |
+| dev-wpa-config             | `RENOVATE_TOKEN`                                                                                                      | `RENOVATE_TOKEN`                              | —                                                              |
+
+**Ce que « obsolète » veut dire ici** : déclaré sur GitHub, consommé par aucun
+workflow. Deux d'entre eux servent ailleurs et ne sont pas à jeter sans
+regarder — `CORS_ORIGINS` est lu par le serveur de mister-puzzle
+(`server/index.ts`), qui n'est pas déployé par GitHub Actions ; les scripts
+`firebase:deploy` de miss-ticket-pwa se lancent à la main. Les trois de
+miss-carbook, eux, ne sont injectés nulle part : le build ne les reçoit pas,
+donc le DSN Sentry n'arrive jamais dans le bundle.
+
+**Le cas mister-qowa n'est pas une dette, c'est une panne.** Ses neuf
+`VITE_FIREBASE_*` ne sont ni secrets ni variables du dépôt, et son `deploy.yml`
+n'en injecte aucune : le bundle en ligne porte `apiKey: undefined` (vérifié en
+lisant `assets/index-*.js` du site publié). L'app est déployée, son backend est
+injoignable, et rien ne le dit. La CI, elle, passe au vert : elle construit avec
+des valeurs factices, qui masquent l'absence.
+
+Les autres variables absentes du déploiement sont **facultatives par
+construction** : `VITE_SENTRY_DSN` (l'observabilité se tait sans DSN),
+`VITE_BACKEND` (repli sur le backend local, ce qui fait marcher la démo publique
+sans compte), `VITE_PWA_ICON_QS`. Une app doit démarrer sans configuration —
+c'est la règle du README, et treize apps la respectent.
+
 ### Ce que l'adoption a appris
 
 Le relevé comptait un doublon dès qu'un fichier portait le nom guetté. Sur
