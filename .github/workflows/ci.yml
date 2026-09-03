@@ -76,16 +76,40 @@ jobs:
           npm ci --no-audit --no-fund
           npm pack                       # produit mister-guiiug-dev-wpa-config-*.tgz
 
+      # Les peers sont installés AUX PLAGES QUE LE PAQUET DÉCLARE, pas aux
+      # dernières versions absolues. Le job les prenait en `*` : le 03/09/2026,
+      # la sortie d'ESLint 10 l'a cassé net (eslint-plugin-jsx-a11y exige encore
+      # `eslint@^9`), alors que le socle déclare lui-même `eslint: ^9.39.4`.
+      # On testait donc une combinaison que le paquet ne prétend pas supporter,
+      # et le résultat dépendait de ce que npmjs avait publié dans la nuit.
+      #
+      # Le jour où le socle passera à ESLint 10, ce job suivra tout seul.
+      # `react-dom` n'est pas un peer déclaré : il est ajouté à la main, parce
+      # que `react` sans lui ne se monte pas.
       - name: Scaffold a throwaway consumer
         run: |
           mkdir -p /tmp/fixture
+          node -e "
+            const peers = require('$GITHUB_WORKSPACE/package.json').peerDependencies;
+            const veut = [
+              'typescript', 'prettier', 'eslint', '@eslint/js', 'typescript-eslint',
+              'globals', 'eslint-plugin-jsx-a11y', 'eslint-plugin-react-hooks',
+              'eslint-plugin-react-refresh', 'react', '@testing-library/jest-dom',
+            ];
+            const manquants = veut.filter(n => !peers[n]);
+            if (manquants.length) {
+              throw new Error('plus un peer du paquet : ' + manquants.join(', '));
+            }
+            const devDependencies = Object.fromEntries(veut.map(n => [n, peers[n]]));
+            devDependencies['react-dom'] = peers.react;
+            require('node:fs').writeFileSync(
+              '/tmp/fixture/package.json',
+              JSON.stringify({ name: 'fixture', version: '1.0.0', private: true, devDependencies }, null, 2)
+            );
+          "
           cd /tmp/fixture
-          npm init -y >/dev/null
           npm install --no-audit --no-fund \
-            "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz \
-            typescript prettier eslint @eslint/js typescript-eslint globals \
-            eslint-plugin-jsx-a11y eslint-plugin-react-hooks eslint-plugin-react-refresh \
-            react react-dom @testing-library/jest-dom
+            "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz
 
       - name: tsconfig `extends` resolves through exports
         working-directory: /tmp/fixture
