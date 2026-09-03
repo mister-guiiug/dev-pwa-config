@@ -542,6 +542,16 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
     NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+## Monter à ESLint 10
+
+ESLint 9 est sorti du support (`npm` le dit à chaque installation). La montée
+est instruite dans [ESLINT-10.md](ESLINT-10.md) : un seul paquet de la chaîne
+refuse la 10 — `eslint-plugin-jsx-a11y`, dont la déclaration s'arrête à `^9` —
+et l'essai montre que **le blocage est déclaratif, pas réel**. La recette
+éprouvée tient en deux gestes (peers élargis côté socle, `overrides` côté app)
+et le seul coût mesuré est la nouvelle règle `no-useless-assignment` :
+sept occurrences dans le socle, deux dans miss-uwh, zéro dans miss-dice.
+
 ## Secrets et variables — la ligne de partage
 
 **La question n'est pas « est-ce sensible ? », c'est « le navigateur le
