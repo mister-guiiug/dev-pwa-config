@@ -89,6 +89,8 @@ jobs:
       - name: Scaffold a throwaway consumer
         run: |
           mkdir -p /tmp/fixture
+          TARBALL=$(ls "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz | head -1)
+          export TARBALL
           node -e "
             const peers = require('$GITHUB_WORKSPACE/package.json').peerDependencies;
             const veut = [
@@ -102,14 +104,20 @@ jobs:
             }
             const devDependencies = Object.fromEntries(veut.map(n => [n, peers[n]]));
             devDependencies['react-dom'] = peers.react;
+            // Le paquet packé est DÉCLARÉ, pas ajouté après coup : greffer un
+            // tarball sur un arbre dont les dépendances ne sont pas encore
+            // installées faisait échouer npm sur « Cannot read properties of
+            // null (reading 'edgesOut') » — un état intermédiaire qu'Arborist
+            // ne sait pas relire. Tout déclarer, c'est une seule résolution.
+            devDependencies['@mister-guiiug/dev-wpa-config'] =
+              'file:' + process.env.TARBALL;
             require('node:fs').writeFileSync(
               '/tmp/fixture/package.json',
               JSON.stringify({ name: 'fixture', version: '1.0.0', private: true, devDependencies }, null, 2)
             );
           "
           cd /tmp/fixture
-          npm install --no-audit --no-fund \
-            "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz
+          npm install --no-audit --no-fund
 
       - name: tsconfig `extends` resolves through exports
         working-directory: /tmp/fixture
