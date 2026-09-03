@@ -117,7 +117,13 @@ jobs:
             );
           "
           cd /tmp/fixture
-          npm install --no-audit --no-fund
+          # CACHE ISOLÉ. `setup-node` restaure le cache npm du SOCLE (clé
+          # calculée sur son package-lock) ; le réutiliser pour un arbre qui
+          # n'a rien à voir faisait échouer npm sur « Cannot read properties
+          # of null (reading 'edgesOut') » — et seulement sur le runner, où ce
+          # cache existe. Un cache neuf coûte quelques secondes de
+          # téléchargement et rend le job reproductible.
+          npm install --no-audit --no-fund --cache /tmp/npm-cache-fixture
 
       - name: tsconfig `extends` resolves through exports
         working-directory: /tmp/fixture
