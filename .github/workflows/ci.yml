@@ -117,6 +117,9 @@ jobs:
             );
           "
           cd /tmp/fixture
+          # Diagnostic : la version de npm décide, et elle n'apparaît nulle
+          # part ailleurs dans le journal.
+          node -v && npm -v
           # CACHE ISOLÉ. `setup-node` restaure le cache npm du SOCLE (clé
           # calculée sur son package-lock) ; le réutiliser pour un arbre qui
           # n'a rien à voir faisait échouer npm sur « Cannot read properties
