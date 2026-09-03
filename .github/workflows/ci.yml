@@ -117,16 +117,15 @@ jobs:
             );
           "
           cd /tmp/fixture
-          # Diagnostic : la version de npm décide, et elle n'apparaît nulle
-          # part ailleurs dans le journal.
-          node -v && npm -v
-          # CACHE ISOLÉ. `setup-node` restaure le cache npm du SOCLE (clé
-          # calculée sur son package-lock) ; le réutiliser pour un arbre qui
-          # n'a rien à voir faisait échouer npm sur « Cannot read properties
-          # of null (reading 'edgesOut') » — et seulement sur le runner, où ce
-          # cache existe. Un cache neuf coûte quelques secondes de
-          # téléchargement et rend le job reproductible.
-          npm install --no-audit --no-fund --cache /tmp/npm-cache-fixture
+          # NPM 11 POUR CETTE INSTALLATION. Node 22 embarque npm 10.9.8, dont
+          # Arborist échoue sur « Cannot read properties of null (reading
+          # 'edgesOut') » face à une dépendance `file:` — d'où un job rouge le
+          # 03/09/2026 alors que rien n'avait bougé dans le dépôt, et vert sur
+          # un poste en npm 11. Ce job éprouve la résolution des sous-chemins
+          # du paquet, pas la version du gestionnaire : on prend celle qui
+          # sait lire l'arbre. Le cache reste à part, celui du socle n'ayant
+          # rien à voir avec cet arbre-là.
+          npx --yes npm@11 install --no-audit --no-fund --cache /tmp/npm-cache-fixture
 
       - name: tsconfig `extends` resolves through exports
         working-directory: /tmp/fixture
