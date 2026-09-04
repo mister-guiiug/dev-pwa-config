@@ -856,6 +856,20 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'useSponsorUrl',
+      covers: ['useSponsorUrl', 'SponsorProvider'],
+      signature:
+        'useSponsorUrl(prop?) → string | null · <SponsorProvider handle | url | url={null}>',
+      summary: {
+        fr: 'Le lien de soutien déclaré une fois pour toute l’app : `handle` pour un autre pseudo Buy Me a Coffee, `url` pour une autre plateforme, `url={null}` pour n’en afficher aucun. Trois niveaux : la prop l’emporte, puis le contexte, puis la famille.',
+        en: 'The support link declared once for the whole app: `handle` for another Buy Me a Coffee handle, `url` for another platform, `url={null}` for none at all. Three levels: the prop wins, then the context, then the family.',
+      },
+      dont: {
+        fr: 'Ne pas confondre `null` et `undefined` : `undefined` laisse le niveau suivant répondre, `null` retire le lien. Et `.github/FUNDING.yml` reste à changer à part — GitHub le lit, l’app non.',
+        en: 'Don’t confuse `null` with `undefined`: `undefined` lets the next level answer, `null` removes the link. And `.github/FUNDING.yml` still has to be changed separately — GitHub reads it, the app doesn’t.',
+      },
+    },
+    {
       id: 'useLongPress',
       covers: ['useLongPress'],
       signature:

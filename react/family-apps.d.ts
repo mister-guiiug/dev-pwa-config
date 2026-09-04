@@ -24,8 +24,11 @@ export interface FamilyAppsProps {
   apps?: FamilyApp[];
   /** URL du dépôt de l'app courante ; si fourni, affiche la carte « Code source ». */
   repoUrl?: string;
-  /** URL sponsor (défaut : `SPONSOR_URL`). */
-  sponsorUrl?: string;
+  /**
+   * URL sponsor. Absente, `SponsorProvider` répond, puis `SPONSOR_URL`.
+   * `null` retire le lien.
+   */
+  sponsorUrl?: string | null;
   /** Afficher le lien code source (défaut : `!!repoUrl`). */
   showSource?: boolean;
   /** Afficher le lien sponsor (défaut : `true`). */

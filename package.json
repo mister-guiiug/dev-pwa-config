@@ -363,6 +363,10 @@
       "types": "./react/labels.d.ts",
       "default": "./react/labels.js"
     },
+    "./react/sponsor": {
+      "types": "./react/sponsor.d.ts",
+      "default": "./react/sponsor.js"
+    },
     "./react/net": {
       "types": "./react/net.d.ts",
       "default": "./react/net.js"

@@ -2,6 +2,7 @@ import { useLabels } from './labels.js';
 import { createElement as h } from 'react';
 import { Icon } from './icons-context.js';
 import { AppVersion } from './app-version.js';
+import { useSponsorUrl } from './sponsor.js';
 
 /**
  * Footer famille : lien code source (GitHub) + lien sponsor (Buy Me a Coffee).
@@ -50,7 +51,7 @@ import { AppVersion } from './app-version.js';
  * La leçon vaut d'être écrite : deux emplacements conçus depuis un tableau de
  * besoins en couvraient trois sur quatre. C'est en migrant qu'on l'a su.
  *
- * @param {{ repoUrl?: string, sponsorUrl?: string, sourceLabel?: string,
+ * @param {{ repoUrl?: string, sponsorUrl?: string|null, sourceLabel?: string,
  *   sponsorLabel?: string, className?: string, children?: import('react').ReactNode,
  *   links?: import('react').ReactNode, after?: import('react').ReactNode,
  *   version?: boolean | import('./app-version.js').AppVersionProps }} props
@@ -58,7 +59,10 @@ import { AppVersion } from './app-version.js';
 export function AppFooter(props) {
   const {
     repoUrl,
-    sponsorUrl = 'https://buymeacoffee.com/mister.guiiug',
+    // Plus de défaut ici : c'était une COPIE de `SPONSOR_URL`, et elle ne
+    // suivait pas le catalogue. Le hook répond — prop, puis contexte, puis
+    // famille — et `null` reste « pas de lien », comme avant.
+    sponsorUrl: sponsorUrlProp,
     sourceLabel,
     sponsorLabel,
     className,
@@ -68,6 +72,7 @@ export function AppFooter(props) {
     version,
   } = props;
 
+  const sponsorUrl = useSponsorUrl(sponsorUrlProp);
   const labels = useLabels('footer');
 
   const ext = { target: '_blank', rel: 'noopener noreferrer' };

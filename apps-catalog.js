@@ -19,8 +19,24 @@
 
 export const GITHUB_OWNER = 'mister-guiiug';
 
+/**
+ * Pseudo Buy Me a Coffee de la famille — le même que `.github/FUNDING.yml`.
+ *
+ * Séparé de l'URL parce que ce sont deux choses : le PSEUDO est ce qu'une app
+ * surcharge (`sponsorUrl('autre.pseudo')`, `<SponsorProvider handle="…">`),
+ * l'URL est ce qu'on affiche. Écrits ensemble, ils divergeaient : le 04/09/2026
+ * `AppFooter` avait sa propre copie de l'URL en dur, et ne suivait donc pas le
+ * catalogue.
+ */
+export const SPONSOR_HANDLE = 'mister.guiiug';
+
+/** URL de soutien Buy Me a Coffee, depuis un pseudo. */
+export function sponsorUrl(handle = SPONSOR_HANDLE) {
+  return `https://buymeacoffee.com/${handle}`;
+}
+
 /** Lien sponsor commun à toute la famille (Buy Me a Coffee). */
-export const SPONSOR_URL = 'https://buymeacoffee.com/mister.guiiug';
+export const SPONSOR_URL = sponsorUrl();
 
 /** Maturités éditoriales, de la plus jeune à la plus mûre. */
 export const MATURITIES = ['alpha', 'beta', 'stable'];
