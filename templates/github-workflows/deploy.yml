@@ -1,15 +1,34 @@
-# Workflow de déploiement GitHub Pages standard.
-# Personnaliser :
-# - VITE_BASE_PATH si site projet
-# - Variables d'env du build (Supabase, Firebase, etc.) via secrets
-# - Migrations backend à exécuter avant le build (Supabase db push, Firebase rules deploy, …)
-name: Deploy to GitHub Pages
+# Copier dans <projet>/.github/workflows/deploy.yml.
+#
+# CE GABARIT A ENSEIGNÉ LE CONTRAIRE DE LA RÈGLE JUSQU'AU 04/09/2026. Il disait
+# deux fois de ranger les `VITE_*` « via secrets » ; quinze valeurs publiques
+# dormaient en secrets sur trois dépôts, exactement les lignes qu'il montrait.
+# Une règle que ne porte pas l'artefact qu'on copie est une règle qui n'existe
+# pas — d'où les commentaires ci-dessous, qui sont la moitié du gabarit.
+#
+# LA LIGNE DE PARTAGE (README § « Secrets et variables »). La question n'est
+# pas « est-ce sensible ? », c'est « le navigateur le voit-il ? » :
+#
+#   - `vars`    → tout `VITE_*`, que Vite copie dans le bundle publié sur
+#                 Pages. Le ranger en secret ne masque que les journaux de CI,
+#                 pas la valeur. L'`anon key` Supabase et les `VITE_FIREBASE_*`
+#                 sont publiques par conception : ce sont la RLS et App Check
+#                 qui protègent, pas leur discrétion.
+#   - `secrets` → ce qui donne un POUVOIR : écrire, déployer, administrer.
+#                 Jamais lu par le navigateur.
+#
+# JAMAIS `secrets: inherit`. Le workflow appelé recevrait le trousseau entier
+# du dépôt alors qu'il déclare exactement ce qu'il consomme — et le 04/09, onze
+# des douze appelants qui l'écrivaient ne lui passaient RIEN : le réutilisable
+# n'utilise `FIREBASE_SERVICE_ACCOUNT_KEY` que si `firebase-project` est fourni.
+name: Deploy
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+# Au niveau de l'appelant : un workflow appelé n'hérite pas des permissions.
 permissions:
   contents: read
   pages: write
@@ -21,44 +40,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@mister-guiiug'
-
-      - name: Install
-        run: npm ci
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build
-        env:
-          # Pages projet : https://<user>.github.io/<repo>/
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
-          # Ajouter ici les VITE_* spécifiques au projet via ${{ secrets.* }}
-        run: npm run build
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
   deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+    uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
+    with:
+      # Pages projet : https://<user>.github.io/<repo>/
+      use-base-path: true
+      # Les VITE_* du build, une par ligne, lues dans `vars` — jamais `secrets`.
+      # Supprimer ce bloc si l'app n'a aucune configuration (sept du parc).
+      build-env: |
+        VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY=${{ vars.VITE_SUPABASE_ANON_KEY }}
+      # Celles dont l'absence CASSE l'app : le déploiement s'arrête en les
+      # nommant, au lieu de publier un site dont le backend est injoignable.
+      # N'y mettre que celles-là — une variable qui a un repli (VITE_SENTRY_DSN
+      # se tait, VITE_BACKEND retombe sur `local`) n'a rien à y faire.
+      required-env: |
+        VITE_SUPABASE_URL
+        VITE_SUPABASE_ANON_KEY
+    # Nommés un par un. Ne garder que ceux que le réutilisable déclare et que
+    # cette app utilise vraiment — ici, rien tant que `firebase-project` n'est
+    # pas passé.
+    # secrets:
+    #   FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}

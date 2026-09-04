@@ -1,21 +1,16 @@
 # Reusable workflow de déploiement GitHub Pages pour les PWA.
-# Usage côté consumer (.github/workflows/deploy.yml) :
 #
-# name: Deploy
-# on:
-#   push:
-#     branches: [main]
-#   workflow_dispatch:
-# jobs:
-#   deploy:
-#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
-#     secrets:
-#       FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
-#     with:
-#       use-base-path: true
+# Le gabarit à copier est dans `templates/github-workflows/deploy.yml` ; il
+# porte la règle en commentaire. En résumé :
 #
-# Pour les variables d'env du build (VITE_*), les passer dans le job appelant
-# via une étape pré-build, OU créer un workflow custom inspiré de celui-ci.
+#   - les `VITE_*` passent par `build-env`, lues dans **`vars`** — Vite les
+#     copie dans le bundle, un secret n'y masque que les journaux de CI ;
+#   - celles dont l'absence CASSE l'app se déclarent en plus dans
+#     `required-env`, qui arrête le déploiement au lieu de publier un bundle
+#     sans configuration ;
+#   - les secrets se passent NOMMÉMENT, jamais par `secrets: inherit` — qui
+#     donnerait à ce workflow le trousseau entier du dépôt alors qu'il déclare
+#     exactement ce qu'il consomme.
 name: Reusable PWA Deploy
 
 on:
@@ -44,6 +39,15 @@ on:
         description: >-
           Variables d'env injectées avant le build, une par ligne au format
           KEY=VALUE (VITE_* applicatives : Firebase, Supabase, etc.).
+        type: string
+        required: false
+        default: ''
+      required-env:
+        description: >-
+          Noms de variables qui doivent être NON VIDES après build-env, un par
+          ligne. Le déploiement s'arrête en les nommant si l'une manque. N'y
+          mettre que celles dont l'absence casse l'app — pas celles qui ont un
+          repli.
         type: string
         required: false
         default: ''
@@ -101,6 +105,46 @@ jobs:
               *) echo "❌ build-env: ligne invalide (attendu KEY=VALUE): $line" >&2; exit 1 ;;
             esac
           done <<< "$BUILD_ENV"
+
+      # UNE VALEUR VIDE NE DOIT PAS ATTEINDRE LA PRODUCTION.
+      #
+      # L'étape ci-dessus ne contrôle que la FORME. Quand `vars.VITE_X` n'existe
+      # pas, la ligne vaut `VITE_X=` : elle est bien au format KEY=VALUE, elle
+      # passe, et le build reçoit une chaîne vide. C'est ainsi que mister-qowa a
+      # été publié avec `apiKey: undefined` dans son bundle — CI verte, site en
+      # ligne, backend injoignable, et rien pour le dire.
+      #
+      # Le motif existait déjà dans le parc, écrit deux fois à la main dans les
+      # `deploy-worker.yml` de miss-genius et miss-supaboss, où l'enjeu est
+      # faible : un Worker qui ne part pas. Il manquait là où il est fort.
+      #
+      # N'y lister QUE les variables sans repli. Une `VITE_SENTRY_DSN` absente
+      # fait taire l'observabilité, elle ne casse rien : l'y mettre rendrait le
+      # garde bruyant, et un garde bruyant finit désactivé.
+      - name: Vérifier les variables requises
+        if: ${{ inputs.required-env != '' }}
+        env:
+          # Comme BUILD_ENV : passé par env:, jamais interpolé dans le script.
+          REQUIRED_ENV: ${{ inputs.required-env }}
+        run: |
+          manquantes=''
+          while IFS= read -r nom; do
+            nom="${nom//[[:space:]]/}"
+            if [ -z "$nom" ]; then continue; fi
+            # Le nom finit dans une expansion indirecte : il ne peut porter que
+            # ce qu'un identifiant shell accepte.
+            case "$nom" in
+              *[!A-Za-z0-9_]* | [0-9]*)
+                echo "❌ required-env: nom de variable invalide: $nom" >&2
+                exit 1
+                ;;
+            esac
+            if [ -z "${!nom}" ]; then manquantes="$manquantes $nom"; fi
+          done <<< "$REQUIRED_ENV"
+          if [ -n "$manquantes" ]; then
+            echo "::error::Déploiement arrêté — variables requises absentes ou vides :$manquantes. Les poser en variables de dépôt (Settings › Secrets and variables › Actions › Variables) puis relancer."
+            exit 1
+          fi
 
       - name: Pre-build
         if: ${{ inputs.pre-build-script != '' }}
