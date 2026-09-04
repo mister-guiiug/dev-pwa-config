@@ -1,5 +1,46 @@
 # Changelog
 
+## 3.34.0
+
+### Minor Changes
+
+- `required-env` : le déploiement s'arrête sur une variable vide, au lieu de publier
+
+  Le réutilisable `pwa-deploy.yml@v3` prend une entrée `required-env` — des noms
+  de variables, un par ligne, qui doivent être NON VIDES après `build-env`. La
+  vérification tombe **avant le pre-build** (donc avant les migrations) et avant
+  le build, en nommant ce qui manque.
+
+  `build-env` ne contrôlait que la FORME : quand `vars.VITE_X` n'existe pas, la
+  ligne vaut `VITE_X=`, elle passe, et le build reçoit une chaîne vide. C'est
+  ainsi qu'une app du parc est en ligne avec `apiKey: undefined`, CI verte.
+
+  N'y lister que les variables **sans repli** : une `VITE_SENTRY_DSN` absente fait
+  taire l'observabilité sans rien casser, et un garde bruyant finit désactivé.
+
+  Le gabarit `templates/github-workflows/deploy.yml` est réécrit avec : il disait
+  jusqu'ici de ranger les `VITE_*` « via `secrets` », c'est-à-dire l'inverse de la
+  règle du README — Vite les copie dans le bundle, le secret n'y masque que les
+  journaux de CI.
+
+  Entrée facultative : les appelants existants ne changent pas de comportement.
+
+- fcd7098: `pwa-doctor` relève trois écarts de plus sur les secrets et les variables :
+  `secrets: inherit` dans un caller (le workflow appelé reçoit tout le trousseau),
+  une `VITE_*` rangée en secret (Vite la copie dans le bundle : le secret masque
+  les journaux, pas la valeur), et un `.env.example` absent ou incomplet au regard
+  des `VITE_*` que le code lit. Le README porte la règle : la question n'est pas
+  « est-ce sensible ? » mais « le navigateur le voit-il ? ».
+- 8a17756: `SponsorProvider` : le lien de soutien se déclare une fois, et se retire
+
+  Nouveau sous-export `react/sponsor` (`SponsorProvider`, `useSponsorUrl`), et
+  `SPONSOR_HANDLE` + `sponsorUrl(handle)` au catalogue. `AppFooter` portait sa
+  propre copie en dur de l'URL Buy Me a Coffee : changer le catalogue ne changeait
+  pas le pied de page. Les deux composants lisent désormais la même source, avec
+  trois niveaux — prop, contexte, famille — et `null` veut dire « pas de lien ».
+
+  Aucune rupture : une app qui ne fait rien obtient exactement ce qu'elle rendait.
+
 ## 3.33.0
 
 ### Minor Changes
