@@ -1,3 +1,16 @@
 # Copier dans <projet>/.github/FUNDING.yml — active le bouton « Sponsor » du dépôt.
 # Handle Buy Me a Coffee de la famille miss-* / mister-*.
+#
+# CE FICHIER EST LU PAR GITHUB, PAS PAR L'APP. Le lien affiché DANS l'app vient
+# du catalogue (`SPONSOR_URL`), et se surcharge sans toucher au socle :
+#
+#   import { SponsorProvider } from '@mister-guiiug/dev-wpa-config/react/sponsor';
+#
+#   <SponsorProvider handle="autre.pseudo">…</SponsorProvider>   // autre pseudo
+#   <SponsorProvider url="https://liberapay.com/…">…</SponsorProvider>
+#   <SponsorProvider url={null}>…</SponsorProvider>              // aucun lien
+#
+# Les deux se règlent séparément parce qu'ils s'adressent à deux endroits. Un
+# fork qui change le pseudo ici doit poser le fournisseur là — sinon le bouton
+# de GitHub et le lien du pied de page désignent deux personnes différentes.
 buy_me_a_coffee: mister.guiiug

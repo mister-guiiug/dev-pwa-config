@@ -28,6 +28,7 @@ export * from './confirm-dialog';
 export * from './toast';
 export * from './bottom-nav';
 export * from './labels';
+export * from './sponsor';
 export * from './use-update-prompt';
 export * from './update-prompt-banner';
 export * from './update-button';

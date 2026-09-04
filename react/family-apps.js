@@ -1,12 +1,8 @@
 import { useLabels } from './labels.js';
 import { createElement as h, useState } from 'react';
 import { Icon } from './icons-context.js';
-import {
-  FAMILY_APPS,
-  SPONSOR_URL,
-  otherApps,
-  sortApps,
-} from '../apps-catalog.js';
+import { FAMILY_APPS, otherApps, sortApps } from '../apps-catalog.js';
+import { useSponsorUrl } from './sponsor.js';
 
 // Liens externes sécurisés.
 const EXT = { target: '_blank', rel: 'noopener noreferrer' };
@@ -83,7 +79,7 @@ function AppCard({ item, maturityLabels }) {
  *   currentAppId: string,
  *   apps?: import('../apps-catalog').FamilyApp[],
  *   repoUrl?: string,
- *   sponsorUrl?: string,
+ *   sponsorUrl?: string|null,
  *   showSource?: boolean,
  *   showSponsor?: boolean,
  *   showRepoLinks?: boolean,
@@ -101,7 +97,7 @@ export function FamilyApps(props) {
     currentAppId,
     apps = FAMILY_APPS,
     repoUrl,
-    sponsorUrl = SPONSOR_URL,
+    sponsorUrl: sponsorUrlProp,
     showSource = !!repoUrl,
     showSponsor = true,
     showRepoLinks = false,
@@ -111,6 +107,9 @@ export function FamilyApps(props) {
     className,
   } = props;
 
+  // Prop, puis contexte, puis famille — le même hook qu'`AppFooter`, pour que
+  // les deux liens de la même app ne puissent pas pointer ailleurs.
+  const sponsorUrl = useSponsorUrl(sponsorUrlProp);
   const maturityDictionary = useLabels('maturity');
   const appsDictionary = useLabels('apps');
 

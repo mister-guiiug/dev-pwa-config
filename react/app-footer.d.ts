@@ -4,8 +4,11 @@ import type { AppVersionProps } from './app-version.js';
 export interface AppFooterProps {
   /** URL du dépôt GitHub. Si absent, le lien source n'est pas rendu. */
   repoUrl?: string;
-  /** URL sponsor (défaut Buy Me a Coffee famille `mister.guiiug`). */
-  sponsorUrl?: string;
+  /**
+   * URL sponsor. Absente, `SponsorProvider` répond, puis le lien de la famille
+   * (`SPONSOR_URL`). `null` retire le lien.
+   */
+  sponsorUrl?: string | null;
   sourceLabel?: string;
   sponsorLabel?: string;
   className?: string;

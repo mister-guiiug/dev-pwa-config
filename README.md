@@ -468,12 +468,32 @@ Deux niveaux, à mettre en place ensemble :
    </a>
    ```
 
+   **Ou, sans écrire d'URL du tout** : `AppFooter` et `FamilyApps` prennent
+   déjà celle de la famille. Pour la remplacer, la déclarer **une fois** —
+
+   ```tsx
+   import { SponsorProvider } from '@mister-guiiug/dev-wpa-config/react/sponsor';
+
+   <SponsorProvider handle="autre.pseudo">        {/* autre pseudo BMC */}
+   <SponsorProvider url="https://liberapay.com/…"> {/* autre plateforme */}
+   <SponsorProvider url={null}>                    {/* aucun lien */}
+   ```
+
+   Trois niveaux, comme `LabelsProvider` : la prop l'emporte, puis le contexte,
+   puis la famille. `null` n'est pas `undefined` — c'est « pas de lien », et il
+   est respecté : sans quoi un fork ne pourrait pas retirer un appel au don qui
+   pointe vers quelqu'un d'autre.
+
 2. **Sur le dépôt** — `.github/FUNDING.yml` active le bouton « Sponsor » de
    GitHub. Template prêt à copier : [`templates/FUNDING.yml`](./templates/FUNDING.yml).
 
    ```yaml
    buy_me_a_coffee: mister.guiiug
    ```
+
+   Ce fichier est lu par **GitHub**, le fournisseur par **l'app** : les deux se
+   règlent séparément. Un fork qui change l'un sans l'autre affiche deux
+   destinataires différents.
 
 3. **Entre apps (cross-promotion)** — le sous-export `apps-catalog` est la
    **source unique** de la famille (id, nom, description, URL, maturité), et le
@@ -675,6 +695,7 @@ silence — est instruit dans [CONFIG.md](CONFIG.md).
 | `@mister-guiiug/dev-wpa-config/react/toast`                  | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                                              |
 | `@mister-guiiug/dev-wpa-config/react/bottom-nav`             | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur                                                                                                                                                    |
 | `@mister-guiiug/dev-wpa-config/react/labels`                 | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés des composants du paquet en sept langues (fr, en, es, de, it, pt, nl — prop > contexte > français)                                                                                                                 |
+| `@mister-guiiug/dev-wpa-config/react/sponsor`                | `.js` + `.d.ts` | `SponsorProvider` / `useSponsorUrl` : le lien de soutien déclaré une fois — `handle` pour un autre pseudo Buy Me a Coffee, `url` pour une autre plateforme, `url={null}` pour n'en afficher aucun (prop > contexte > famille)                                |
 | `@mister-guiiug/dev-wpa-config/sw-update`                    | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` / `unregisterServiceWorkers` : appliquer une mise à jour de service worker, ou tout désinscrire en dev — **sans React ni module virtuel**                                                                                     |
 | `@mister-guiiug/dev-wpa-config/theme-boot`                   | `.js` + `.d.ts` | `themeBootScript` / `themeBootSource` / `themeColorMetaTags` — le script anti-FOUC **engendré** (13 apps sur 16 le recopient), avec `legacyKeys` pour migrer les **6 clés de stockage** distinctes de la famille                                             |
 | `@mister-guiiug/dev-wpa-config/react/theme-provider`         | `.js` + `.d.ts` | `ThemeProvider` / `useThemeContext` — palette du catalogue, état et variables `--dwc-*` en un seul endroit, un seul écrivain de `data-theme`                                                                                                                 |

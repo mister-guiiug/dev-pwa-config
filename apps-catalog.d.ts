@@ -69,6 +69,12 @@ export interface FamilyApp {
 /** Propriétaire GitHub de la famille. */
 export declare const GITHUB_OWNER: string;
 
+/** Pseudo Buy Me a Coffee de la famille — le même que `.github/FUNDING.yml`. */
+export declare const SPONSOR_HANDLE: string;
+
+/** URL de soutien Buy Me a Coffee, depuis un pseudo. */
+export declare function sponsorUrl(handle?: string): string;
+
 /** Lien sponsor commun à toute la famille (Buy Me a Coffee). */
 export declare const SPONSOR_URL: string;
 

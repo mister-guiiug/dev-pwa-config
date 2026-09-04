@@ -53,6 +53,7 @@ export {
   labelsFor,
   LABELS,
 } from './labels.js';
+export { SponsorProvider, useSponsorUrl } from './sponsor.js';
 export { useUpdatePrompt } from './use-update-prompt.js';
 export { UpdatePromptBanner } from './update-prompt-banner.js';
 export { UpdateButton } from './update-button.js';
