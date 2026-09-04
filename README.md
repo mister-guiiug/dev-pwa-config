@@ -590,10 +590,24 @@ jobs:
       build-env: |
         VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
         VITE_SUPABASE_ANON_KEY=${{ vars.VITE_SUPABASE_ANON_KEY }}
+      # Celles dont l'absence CASSE l'app. Le déploiement s'arrête en les
+      # nommant, au lieu de publier un site au backend injoignable.
+      required-env: |
+        VITE_SUPABASE_URL
+        VITE_SUPABASE_ANON_KEY
     # Nommés, jamais hérités : le workflow ne reçoit que ce qu'il déclare.
+    # Ne lister que ceux que `pwa-deploy.yml` déclare et que l'app utilise —
+    # onze des douze appelants en `inherit` ne lui passaient rien.
     secrets:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
 ```
+
+**`required-env` est le garde qui manquait.** L'injection ne contrôle que la
+forme : quand `vars.VITE_SUPABASE_URL` n'existe pas, la ligne vaut
+`VITE_SUPABASE_URL=` — elle passe, et le build reçoit une chaîne vide. C'est
+ainsi que mister-qowa a été publié avec `apiKey: undefined`. N'y lister que les
+variables **sans repli** : une `VITE_SENTRY_DSN` absente fait taire
+l'observabilité, elle ne casse rien, et un garde bruyant finit désactivé.
 
 ### Ce qui doit rester vrai
 

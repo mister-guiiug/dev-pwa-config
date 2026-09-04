@@ -11,6 +11,11 @@
  *   3. aucun `secrets: inherit` : le workflow déclare ce qu'il consomme.
  *
  * Et la promesse du 02/09/2026 : `pwa-deploy.yml` écrit `404.html`.
+ *
+ * S'y ajoute, le 04/09/2026, ce que le GABARIT doit porter. La règle secrets /
+ * variables était au README depuis deux jours et appliquée nulle part : le
+ * fichier qu'on copie disait l'inverse. Les tests de fin de ce module figent
+ * l'artefact, pas la phrase.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -18,6 +23,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 
 const dir = new URL('../.github/workflows/', import.meta.url);
 const read = name => readFileSync(new URL(name, dir), 'utf8');
+
+const GABARIT = readFileSync(
+  new URL('../templates/github-workflows/deploy.yml', import.meta.url),
+  'utf8'
+);
 
 const REUTILISABLES = readdirSync(dir).filter(
   name => name.startsWith('pwa-') || name === 'cleanup-runs.yml'
@@ -52,7 +62,11 @@ test('les actions du dépôt sont référencées par @v3, jamais par un chemin r
 
 test('aucun réutilisable ne demande secrets: inherit', () => {
   for (const name of REUTILISABLES) {
-    assert.doesNotMatch(read(name), /secrets:\s*inherit/, name);
+    // Ancré en début de ligne : c'est la DIRECTIVE YAML qui est interdite, pas
+    // le fait de la nommer. Sans l'ancre, le workflow ne pouvait pas expliquer
+    // en commentaire pourquoi il ne l'emploie pas — un test qui interdit
+    // d'écrire la règle interdit surtout de la transmettre.
+    assert.doesNotMatch(read(name), /^\s*secrets:\s*inherit/m, name);
   }
 });
 
@@ -63,6 +77,58 @@ test('le déploiement Pages écrit le repli SPA 404.html', () => {
   assert.ok(
     deploy.indexOf('404.html') > deploy.indexOf('npm run build') &&
       deploy.indexOf('404.html') < deploy.indexOf('upload-pages-artifact')
+  );
+});
+
+test('le déploiement refuse une variable requise vide, AVANT de construire', () => {
+  const deploy = read('pwa-deploy.yml');
+  assert.match(deploy, /^\s+required-env:/m, 'entrée required-env absente');
+
+  // L'ordre fait tout : le garde doit tomber avant le pre-build (migrations !)
+  // et avant le build. Placé après, il constaterait le dégât au lieu de
+  // l'empêcher.
+  const garde = deploy.indexOf('Vérifier les variables requises');
+  assert.ok(garde > 0, 'étape de vérification absente');
+  assert.ok(
+    garde > deploy.indexOf('Inject build env'),
+    'garde avant build-env'
+  );
+  assert.ok(
+    garde < deploy.indexOf('name: Pre-build'),
+    'garde après le pre-build'
+  );
+  assert.ok(garde < deploy.indexOf('npm run build'), 'garde après le build');
+
+  // Le nom part dans une expansion indirecte : il doit être filtré.
+  assert.match(deploy, /\*\[!A-Za-z0-9_\]\*/, 'nom de variable non filtré');
+});
+
+test('le gabarit range les VITE_* en vars, et nomme ses secrets', () => {
+  // Ce que le gabarit disait avant le 04/09 : « Ajouter ici les VITE_*
+  // spécifiques au projet via ${{ secrets.* }} ». Trois dépôts l'ont appliqué.
+  assert.doesNotMatch(
+    GABARIT,
+    /secrets\.VITE_/,
+    'une VITE_* lue dans secrets : Vite la copie dans le bundle'
+  );
+  assert.doesNotMatch(
+    GABARIT,
+    /^\s*secrets:\s*inherit/m,
+    'le gabarit doit nommer les secrets, pas hériter du trousseau'
+  );
+  assert.match(GABARIT, /vars\.VITE_/, 'aucune VITE_* lue dans vars');
+  assert.match(
+    GABARIT,
+    /required-env:/,
+    'aucun garde sur les variables requises'
+  );
+
+  // Et il doit appeler le réutilisable : les quatre dépôts qui nommaient
+  // correctement leurs secrets étaient exactement les quatre qui s'en étaient
+  // écartés, chacun avec sa copie du job à maintenir.
+  assert.match(
+    GABARIT,
+    /uses:\s*mister-guiiug\/dev-wpa-config\/\.github\/workflows\/pwa-deploy\.yml@v3/
   );
 });
 
