@@ -132,6 +132,23 @@ test('le gabarit range les VITE_* en vars, et nomme ses secrets', () => {
   );
 });
 
+test('le gabarit ne redouble pas la concurrence du réutilisable', () => {
+  // Le 05/09/2026, le premier dépôt à copier le gabarit a vu son Deploy
+  // refusé avant le premier job — « workflow file issue », sans message.
+  // Seule différence avec les apps qui déploient : un `concurrency` de haut
+  // niveau dans l'appelant, alors que `pwa-deploy.yml` déclare déjà le sien.
+  // Retirer ce seul bloc a suffi. Ancré en début de ligne : nommer la clé en
+  // commentaire pour expliquer son absence reste permis.
+  assert.doesNotMatch(
+    GABARIT,
+    /^concurrency:/m,
+    'un `concurrency` dans l’appelant fait refuser le fichier par GitHub'
+  );
+  // Et le réutilisable, lui, doit continuer de le porter : c'est lui qui
+  // sérialise les déploiements Pages.
+  assert.match(read('pwa-deploy.yml'), /^concurrency:/m);
+});
+
 test('cleanup-runs ne fait jamais entrer une entrée dans le script', () => {
   // `${{ inputs.keep }}` interpolé DANS le JavaScript exécuterait ce qu'un
   // appelant y met. Les entrées passent par `env:`.
