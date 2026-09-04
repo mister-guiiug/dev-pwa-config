@@ -18,8 +18,8 @@ tard, voici l'état réel :
 | Dépôts rangeant leurs `VITE_*` en `vars`, comme dit le README | **1** (mister-doc)                                      |
 | Dépôts utilisant un _Environment_ pour porter une valeur      | **0** (`github-pages` existe partout, il ne porte rien) |
 | Valeurs déclarées que plus aucun workflow ne lit              | **8** (carbook 3, puzzle 2, bac-sable 2, ticket-pwa 1)  |
-| Dépôts où `.env` n'est pas dans `.gitignore`                  | **1** (mister-cim10)                                    |
-| Dépôts lisant une `VITE_*` sans `.env.example`                | **1** (miss-ticket-pwa, `VITE_SENTRY_DSN`)              |
+| Dépôts où `.env` n'est pas dans `.gitignore`                  | **1** (mister-cim10) — corrigé le 04/09                 |
+| Dépôts lisant une `VITE_*` sans `.env.example`                | **1** (miss-ticket-pwa) — corrigé le 04/09              |
 
 Un chiffre explique presque tous les autres : **les quatre dépôts qui nomment
 correctement leurs secrets sont exactement les quatre qui n'utilisent pas le
@@ -258,14 +258,32 @@ Détail d'implémentation : l'environnement se déclare dans le _job appelé_ �
 
 ## L'ordre des opérations
 
-**Phase 0 — ce qui saigne (aucun code).** Corriger le gabarit `deploy.yml`, qui
-enseigne aujourd'hui le contraire de la règle ; ajouter `.env` au `.gitignore`
-de mister-cim10 ; créer le `.env.example` de miss-ticket-pwa.
+**Phase 0 — ce qui saigne (aucun code). ✅ faite le 04/09/2026.** Gabarit
+`deploy.yml` réécrit ([#171](https://github.com/mister-guiiug/dev-wpa-config/pull/171)),
+`.gitignore` de mister-cim10 ([#42](https://github.com/mister-guiiug/mister-cim10/pull/42)),
+`.env.example` de miss-ticket-pwa ([#20](https://github.com/mister-guiiug/miss-ticket-pwa/pull/20)).
 
-**Phase 1 — le socle, côté déploiement.** Entrée `required-env` sur
-`pwa-deploy.yml` ; gabarit réécrit sur le workflow réutilisable, secrets
-nommés, `VITE_*` en `vars`. À elle seule, cette phase transforme la panne
-silencieuse de mister-qowa en déploiement rouge.
+Deux choses apprises en le faisant. Le `.gitignore` de miss-ticket-pwa ne
+couvrait que `.env` — ni `.env.local` ni `.env.development` : le même défaut
+que cim10, à un fichier près. Et son `.env.production` est **versionné
+volontairement** : il ne contient que des `VITE_FIREBASE_*`, publiques par
+construction, et les versionner supprime toute dérive entre le dépôt et le
+site. C'est un quatrième rangement légitime, à côté de `vars`, `secrets` et
+`local` — le manifeste devra le nommer.
+
+**Phase 1 — le socle, côté déploiement. ✅ faite le 04/09/2026**
+([#171](https://github.com/mister-guiiug/dev-wpa-config/pull/171)). L'entrée
+`required-env` arrête le déploiement **avant le pre-build** — donc avant les
+migrations — en nommant les variables vides. Elle est **opt-in** : les seize
+appelants existants n'ont pas changé de comportement, et poser la liste dans
+chaque app est la phase 3. C'est elle qui transformera la panne silencieuse de
+mister-qowa en déploiement rouge.
+
+En l'écrivant, un quatrième garde artisanal est apparu — le meilleur du parc :
+`src/config/firebase.ts` de miss-ticket-pwa **lève en production** quand la
+configuration est incomplète, et renvoyait déjà vers un `.env.example` qui
+n'existait pas. C'est exactement `envGuardPlugin()`, écrit pour une app sur
+dix-sept, dans la pile même où mister-qowa échoue en silence.
 
 **Phase 2 — le socle, côté déclaration.** Schéma du manifeste, `pwa-env check`
 (hors ligne, en CI sur chaque PR), `pwa-env sync --write`, `pwa-env audit` (en
