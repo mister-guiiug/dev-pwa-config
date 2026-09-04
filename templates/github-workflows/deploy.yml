@@ -35,10 +35,11 @@ permissions:
   id-token: write
   packages: read
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
+# PAS DE `concurrency` ICI. Le réutilisable déclare déjà le sien (`group:
+# pages`). Redoublé dans l'appelant, GitHub refuse le fichier AVANT de créer
+# un seul job — « This run likely failed because of a workflow file issue »,
+# sans autre message. Constaté le 05/09/2026 sur mister-miss-koh, premier
+# dépôt à copier ce gabarit ; confirmé en retirant le bloc et rien d'autre.
 jobs:
   deploy:
     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
