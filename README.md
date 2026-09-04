@@ -609,6 +609,15 @@ jobs:
 - `pwa-doctor` relève les écarts : `VITE_*` rangée en secret, `secrets:
 inherit`, `.env.example` absent ou incomplet.
 
+**Ces règles ne sont pas appliquées, et la raison est instructive** : relevé du
+04/09/2026, douze des seize workflows de déploiement héritent du trousseau
+entier et quinze valeurs publiques dorment en `secrets` — parce que le gabarit
+qu'on copie dit encore, en commentaire, d'y ranger les `VITE_*`. Le modèle qui
+rend la règle mécanique plutôt que documentaire — un manifeste déclaré, un
+`.env.example` engendré, un audit qui confronte la déclaration à l'API GitHub,
+et trois gardes pour qu'une valeur absente n'atteigne jamais la production en
+silence — est instruit dans [CONFIG.md](CONFIG.md).
+
 ## Checklist — nouveau projet consommateur
 
 1. **`.npmrc`** (copier [`templates/.npmrc`](./templates/.npmrc)) + **`.nvmrc`** (`22`).
