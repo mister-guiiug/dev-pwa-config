@@ -470,10 +470,31 @@ Chaque application de la famille **expose deux liens** : son **code source**
 (dépôt GitHub) et un lien **sponsor** (Buy Me a Coffee). C'est à la fois une
 question de transparence (apps gratuites, locales, open source) et de soutien.
 
+> **OÙ — la règle, depuis le 05/09/2026.** Les deux liens sont visibles **sur le
+> premier écran** (l'accueil) **et sur À propos / Réglages**. Pas l'un ou
+> l'autre : les deux. Qui ouvre l'app doit pouvoir vérifier ce qu'elle fait et
+> remercier sans aller les chercher dans un tiroir — et qui vient les chercher
+> doit les trouver là où on range ce genre de chose.
+>
+> **Deux façons de la tenir**, toutes deux acceptées :
+>
+> 1. **la coquille** — `<AppFooter>` rendu **hors des `<Routes>`**. C'est la
+>    réponse du socle : un seul endroit, tous les écrans, y compris ceux à
+>    venir ;
+> 2. **deux écrans** — le pied de page rendu sur l'accueil **et** sur À propos /
+>    Réglages. Trois apps le font ainsi, et n'ont rien à corriger.
+>
+> `npx pwa-doctor` le vérifie (`liens-famille`). **Relevé du 05/09/2026 : sept
+> apps sur dix-neuf tiennent la règle** — quatre par la coquille (`miss-carbook`,
+> `miss-lookhouse`, `mister-miss-koh`, le squelette), trois par deux écrans
+> (`miss-contraction`, `mister-cim10`, `mister-molkky`). Les douze autres ne
+> montrent les liens que sur un seul écran : dix sur les réglages, deux
+> (`mister-puzzle`, `mister-qowa`) sur l'accueil.
+
 Deux niveaux, à mettre en place ensemble :
 
-1. **Dans l'app** — un `src/links.ts` centralise les URL, consommé par un footer
-   ou un écran « À propos » / « Réglages » :
+1. **Dans l'app** — un `src/links.ts` centralise les URL, consommé par le pied
+   de page de la coquille (ou, à défaut, par les deux écrans) :
 
    ```ts
    // src/links.ts
@@ -489,8 +510,25 @@ Deux niveaux, à mettre en place ensemble :
    </a>
    ```
 
-   **Ou, sans écrire d'URL du tout** : `AppFooter` et `FamilyApps` prennent
-   déjà celle de la famille. Pour la remplacer, la déclarer **une fois** —
+   **Ou, sans écrire ni URL ni balise** — la forme du squelette, et celle que
+   `pwa-doctor` reconnaît sans rien deviner :
+
+   ```tsx
+   // src/App.tsx — DANS la coquille, APRÈS <Routes>, jamais dedans.
+   <PageContainer as="main">
+     <Routes>{/* … */}</Routes>
+     {/* Le lien de soutien n'est pas passé : AppFooter le prend au catalogue. */}
+     <AppFooter repoUrl={REPO_URL} />
+   </PageContainer>
+   ```
+
+   Un `<AppFooter>` écrit **dans** un `element={…}` ne vaut que pour cette
+   route-là. C'est l'erreur la plus fréquente du parc, et elle est invisible :
+   la page où on la teste, c'est justement celle qui a le pied de page.
+
+   **Le lien de soutien n'a pas à être écrit** : `AppFooter` et `FamilyApps`
+   prennent déjà celui de la famille. Pour le remplacer, le déclarer **une
+   fois** —
 
    ```tsx
    import { SponsorProvider } from '@mister-guiiug/dev-pwa-config/react/sponsor';
