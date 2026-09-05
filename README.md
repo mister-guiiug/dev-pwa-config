@@ -14,31 +14,40 @@ projets PWA de la famille `miss-*` et `mister-*`.
 Tableau **engendré** depuis `apps-catalog.js` (`npm run sync`) : la colonne
 « Sous-chemins consommés » est un RELEVÉ — les `import` et les `extends` trouvés
 dans le code de chaque dépôt —, pas une intention. Deux choses s'y lisent tout
-de suite : `components.css` est repris par **quinze dépôts sur dix-sept**, et
-seize sous-chemins n'ont qu'un seul adoptant — dont dix pour le seul
+de suite : `components.css` est repris par **dix-sept dépôts sur dix-neuf**, et
+vingt et un sous-chemins n'ont qu'un seul adoptant — dont dix pour le seul
 `mister-family-map`.
+
+⚠️ **Ce tableau compte des sous-chemins, pas des composants.** Une app qui
+importe `FamilyApps` depuis le baril `react` n'y fait pas apparaître
+`react/family-apps` : ce sous-chemin semble donc n'avoir qu'un adoptant, alors
+que quinze applications affichent le composant. Pour l'adoption d'un export,
+c'est le relevé par symbole du
+[showroom](#showroom-du-design-system) qui répond.
 
 <!-- CONSOMMATEURS:DÉBUT — engendré par `npm run sync` depuis apps-catalog.js -->
 
-| Projet                                                                    | Persistance              | Sous-chemins consommés                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`miss-carbook`](https://github.com/mister-guiiug/miss-carbook)           | Supabase                 | `components.css`, `eslint-react`, `image`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/confirm-dialog`, `react/empty-state`, `react/i18n`, `react/observability`, `react/sheet`, `react/toast`, `react/update-prompt-banner`, `react/use-online`, `react/use-update-prompt`, `realtime`, `realtime/supabase`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `web-vitals` — **26**                                                                                        |
-| [`miss-contraction`](https://github.com/mister-guiiug/miss-contraction)   | Local-first              | `download`, `eslint-react`, `lint-staged`, `pdf`, `playwright-base`, `prettier`, `react`, `react/observability`, `react/use-wake-lock`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `web-vitals` — **16**                                                                                                                                                                                                                                                                                                   |
-| [`miss-genius`](https://github.com/mister-guiiug/miss-genius)             | Local-first              | `apps-catalog`, `components.css`, `download`, `eslint-react`, `format`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/app-footer`, `react/bottom-nav`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/field`, `react/i18n`, `react/observability`, `react/sheet`, `react/update-prompt-banner`, `react/use-update-prompt`, `sw-update`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `versioned-store`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **30**                          |
-| [`miss-uwh`](https://github.com/mister-guiiug/miss-uwh)                   | Supabase                 | `apps-catalog`, `components.css`, `download`, `eslint-react`, `format`, `ical`, `lint-staged`, `playwright-a11y`, `prettier`, `react`, `react/app-footer`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/field`, `react/i18n`, `react/labels`, `react/observability`, `react/sheet`, `react/toast`, `react/update-prompt-banner`, `storage`, `supabase-client`, `sw-update`, `sync-queue`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `versioned-store`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `xlsx` — **34** |
-| [`mister-cim10`](https://github.com/mister-guiiug/mister-cim10)           | Local-first              | `components.css`, `csv`, `download`, `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/bottom-nav`, `react/confirm-dialog`, `react/i18n`, `react/labels`, `react/observability`, `react/theme-toggle`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **21**                                                                                                                                                                                                   |
-| [`mister-footcoach`](https://github.com/mister-guiiug/mister-footcoach)   | Supabase                 | `apps-catalog`, `components.css`, `download`, `eslint-react`, `ical`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/badge`, `react/bottom-nav`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/i18n`, `react/icons-context`, `react/icons-lucide`, `react/observability`, `react/sheet`, `react/toast`, `react/update-prompt-banner`, `react/use-update-prompt`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **30**                    |
-| [`mister-puzzle`](https://github.com/mister-guiiug/mister-puzzle)         | Firebase                 | `components.css`, `eslint-react`, `image`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/confirm-dialog`, `react/observability`, `react/update-prompt-banner`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `web-vitals` — **19**                                                                                                                                                                                                                             |
-| [`miss-ticket-pwa`](https://github.com/mister-guiiug/miss-ticket-pwa)     | Firebase                 | `apps-catalog`, `components.css`, `eslint-react`, `lint-staged`, `pairing`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/icons-lucide`, `react/observability`, `react/use-online`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **19**                                                                                                                                                                                                                                              |
-| [`mister-doc`](https://github.com/mister-guiiug/mister-doc)               | Supabase                 | `components.css`, `eslint-react`, `lint-staged`, `pdf`, `prettier`, `push`, `react`, `react/bottom-nav`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/field`, `react/i18n`, `react/icons-context`, `react/icons-lucide`, `react/labels`, `react/observability`, `react/sheet`, `react/skeleton`, `react/theme-provider`, `react/toast`, `react/update-prompt-banner`, `react/use-update-prompt`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `xlsx` — **30**                         |
-| [`miss-lookhouse`](https://github.com/mister-guiiug/miss-lookhouse)       | Supabase                 | `apps-catalog`, `components.css`, `eslint-react`, `format`, `geo`, `prettier`, `react/app-footer`, `react/badge`, `react/bottom-nav`, `react/icons-context`, `react/sparkline`, `react/theme-provider`, `react/theme-toggle`, `storage`, `supabase-client`, `sync-queue`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base`, `vitest-setup` — **21**                                                                                                                                                                                                |
-| [`miss-badminton`](https://github.com/mister-guiiug/miss-badminton)       | Local-first              | `apps-catalog`, `components.css`, `download`, `eslint-react`, `idb`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/confirm-dialog`, `react/observability`, `react/sheet`, `react/sparkline`, `react/use-online`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **22**                                                                                                                                                                                         |
-| [`miss-dice`](https://github.com/mister-guiiug/miss-dice)                 | Local-first              | `apps-catalog`, `commitlint`, `download`, `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `react/use-wake-lock`, `share`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **16**                                                                                                                                                                                                                                                                                                                |
-| [`miss-supaboss`](https://github.com/mister-guiiug/miss-supaboss)         | API tierce               | `apps-catalog`, `commitlint`, `components.css`, `eslint-react`, `format`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/badge`, `react/bottom-nav`, `react/confirm-dialog`, `react/empty-state`, `react/error-boundary`, `react/i18n`, `react/icons-context`, `react/observability`, `react/skeleton`, `react/toast`, `react/update-prompt-banner`, `react/use-online`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vitest-base`, `vitest-setup` — **27**                                                                      |
-| [`mister-molkky`](https://github.com/mister-guiiug/mister-molkky)         | Supabase                 | `apps-catalog`, `components.css`, `download`, `eslint-react`, `lint-staged`, `pairing`, `playwright-a11y`, `playwright-base`, `prettier`, `qr`, `react`, `react/confirm-dialog`, `react/icons-context`, `react/icons-lucide`, `react/labels`, `react/observability`, `react/sheet`, `react/skeleton`, `react/sparkline`, `react/use-online`, `react/use-qr-scanner`, `react/use-wake-lock`, `share`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **30**                                        |
-| [`mister-qowa`](https://github.com/mister-guiiug/mister-qowa)             | Firebase                 | `apps-catalog`, `components.css`, `csv`, `download`, `eslint-react`, `pairing`, `playwright-base`, `qr`, `react/app-footer`, `react/app-updates`, `react/confirm-dialog`, `react/error-boundary`, `react/use-install-prompt`, `share`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base` — **18**                                                                                                                                                                                                                                                   |
-| [`mister-family-map`](https://github.com/mister-guiiug/mister-family-map) | Supabase                 | `commitlint`, `components.css`, `correlation`, `eslint-react`, `geo`, `lint-staged`, `logger`, `map`, `map/maplibre`, `playwright-a11y`, `playwright-base`, `prefetch`, `prettier`, `react`, `react/app-version`, `react/observability`, `react/share-button`, `react/update-prompt-banner`, `react/version`, `realtime`, `realtime/local`, `storage`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vite-version`, `vitest-base`, `vitest-setup` — **30**                                                                      |
-| [`mister-quota`](https://github.com/mister-guiiug/mister-quota)           | — (non relevé) · desktop | `components.css`, `format`, `prettier`, `react/confirm-dialog`, `react/error-boundary`, `react/toast` — **6**                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Projet                                                                    | Persistance              | Sous-chemins consommés                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`miss-carbook`](https://github.com/mister-guiiug/miss-carbook)           | Supabase                 | `components.css`, `eslint-react`, `image`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/confirm-dialog`, `react/empty-state`, `react/i18n`, `react/observability`, `react/sheet`, `react/toast`, `react/update-prompt-banner`, `react/use-online`, `react/use-update-prompt`, `realtime`, `realtime/supabase`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `web-vitals` — **26**                                                                                                                                                |
+| [`miss-contraction`](https://github.com/mister-guiiug/miss-contraction)   | Local-first              | `download`, `eslint-react`, `lint-staged`, `pdf`, `playwright-base`, `prettier`, `react`, `react/observability`, `react/use-wake-lock`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `web-vitals` — **16**                                                                                                                                                                                                                                                                                                                                                           |
+| [`miss-genius`](https://github.com/mister-guiiug/miss-genius)             | Local-first              | `apps-catalog`, `components.css`, `download`, `eslint-react`, `format`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/app-footer`, `react/bottom-nav`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/field`, `react/i18n`, `react/observability`, `react/sheet`, `react/update-prompt-banner`, `react/use-update-prompt`, `sw-update`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `versioned-store`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **30**                                                                                  |
+| [`miss-uwh`](https://github.com/mister-guiiug/miss-uwh)                   | Supabase                 | `apps-catalog`, `components.css`, `download`, `eslint-react`, `format`, `ical`, `lint-staged`, `playwright-a11y`, `prettier`, `react`, `react/app-footer`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/field`, `react/i18n`, `react/labels`, `react/observability`, `react/sheet`, `react/toast`, `react/update-prompt-banner`, `storage`, `supabase-client`, `sw-update`, `sync-queue`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `versioned-store`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `xlsx` — **34**                                                         |
+| [`mister-cim10`](https://github.com/mister-guiiug/mister-cim10)           | Local-first              | `components.css`, `csv`, `download`, `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/bottom-nav`, `react/confirm-dialog`, `react/i18n`, `react/labels`, `react/observability`, `react/theme-toggle`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **21**                                                                                                                                                                                                                                                           |
+| [`mister-footcoach`](https://github.com/mister-guiiug/mister-footcoach)   | Supabase                 | `apps-catalog`, `components.css`, `download`, `eslint-react`, `ical`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/badge`, `react/bottom-nav`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/i18n`, `react/icons-context`, `react/icons-lucide`, `react/observability`, `react/sheet`, `react/toast`, `react/update-prompt-banner`, `react/use-update-prompt`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **30**                                                                            |
+| [`mister-puzzle`](https://github.com/mister-guiiug/mister-puzzle)         | Firebase                 | `components.css`, `eslint-react`, `image`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/confirm-dialog`, `react/observability`, `react/update-prompt-banner`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `web-vitals` — **19**                                                                                                                                                                                                                                                                                     |
+| [`miss-ticket-pwa`](https://github.com/mister-guiiug/miss-ticket-pwa)     | Firebase                 | `apps-catalog`, `components.css`, `eslint-react`, `lint-staged`, `pairing`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/i18n`, `react/icons-lucide`, `react/observability`, `react/use-online`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **19**                                                                                                                                                                                                                                                                                                      |
+| [`mister-doc`](https://github.com/mister-guiiug/mister-doc)               | Supabase                 | `components.css`, `eslint-react`, `lint-staged`, `pdf`, `prettier`, `push`, `react`, `react/bottom-nav`, `react/button`, `react/confirm-dialog`, `react/empty-state`, `react/field`, `react/i18n`, `react/icons-context`, `react/icons-lucide`, `react/labels`, `react/observability`, `react/sheet`, `react/skeleton`, `react/theme-provider`, `react/toast`, `react/update-prompt-banner`, `react/use-update-prompt`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-pwa-base`, `vitest-base`, `vitest-setup`, `xlsx` — **30**                                                                                 |
+| [`miss-lookhouse`](https://github.com/mister-guiiug/miss-lookhouse)       | Supabase                 | `apps-catalog`, `components.css`, `eslint-react`, `format`, `geo`, `prettier`, `react/app-footer`, `react/badge`, `react/bottom-nav`, `react/icons-context`, `react/sparkline`, `react/theme-provider`, `react/theme-toggle`, `storage`, `supabase-client`, `sync-queue`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base`, `vitest-setup` — **21**                                                                                                                                                                                                                                                        |
+| [`miss-badminton`](https://github.com/mister-guiiug/miss-badminton)       | Local-first              | `apps-catalog`, `components.css`, `download`, `eslint-react`, `idb`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/confirm-dialog`, `react/observability`, `react/sheet`, `react/sparkline`, `react/use-online`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **22**                                                                                                                                                                                                                                                 |
+| [`miss-dice`](https://github.com/mister-guiiug/miss-dice)                 | Local-first              | `apps-catalog`, `commitlint`, `download`, `eslint-react`, `lint-staged`, `playwright-a11y`, `playwright-base`, `prettier`, `react`, `react/observability`, `react/use-wake-lock`, `share`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **16**                                                                                                                                                                                                                                                                                                                                                                        |
+| [`miss-supaboss`](https://github.com/mister-guiiug/miss-supaboss)         | API tierce               | `apps-catalog`, `commitlint`, `components.css`, `eslint-react`, `format`, `lint-staged`, `playwright-base`, `prettier`, `react`, `react/badge`, `react/bottom-nav`, `react/confirm-dialog`, `react/empty-state`, `react/error-boundary`, `react/i18n`, `react/icons-context`, `react/observability`, `react/skeleton`, `react/toast`, `react/update-prompt-banner`, `react/use-online`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vitest-base`, `vitest-setup` — **27**                                                                                                                              |
+| [`miss-supatool`](https://github.com/mister-guiiug/miss-supatool)         | API tierce               | `components.css`, `download`, `eslint-react`, `format`, `prettier`, `react/app-header`, `react/badge`, `react/bottom-nav`, `react/button`, `react/card`, `react/confirm-dialog`, `react/empty-state`, `react/family-apps`, `react/field`, `react/observability`, `react/page-container`, `react/segmented-control`, `react/stat`, `react/theme-provider`, `react/theme-toggle`, `react/toast`, `react/update-prompt-banner`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **29**                                                                        |
+| [`mister-molkky`](https://github.com/mister-guiiug/mister-molkky)         | Supabase                 | `apps-catalog`, `components.css`, `download`, `eslint-react`, `lint-staged`, `pairing`, `playwright-a11y`, `playwright-base`, `prettier`, `qr`, `react`, `react/confirm-dialog`, `react/icons-context`, `react/icons-lucide`, `react/labels`, `react/observability`, `react/sheet`, `react/skeleton`, `react/sparkline`, `react/use-online`, `react/use-qr-scanner`, `react/use-wake-lock`, `share`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **30**                                                                                                |
+| [`mister-qowa`](https://github.com/mister-guiiug/mister-qowa)             | Firebase                 | `apps-catalog`, `components.css`, `csv`, `download`, `eslint-react`, `pairing`, `playwright-base`, `qr`, `react/app-footer`, `react/app-updates`, `react/confirm-dialog`, `react/error-boundary`, `react/use-install-prompt`, `share`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vitest-base` — **18**                                                                                                                                                                                                                                                                                                           |
+| [`mister-family-map`](https://github.com/mister-guiiug/mister-family-map) | Supabase                 | `commitlint`, `components.css`, `correlation`, `eslint-react`, `geo`, `lint-staged`, `logger`, `map`, `map/maplibre`, `playwright-a11y`, `playwright-base`, `prefetch`, `prettier`, `react`, `react/app-version`, `react/observability`, `react/share-button`, `react/update-prompt-banner`, `react/version`, `realtime`, `realtime/local`, `storage`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `vite-csp`, `vite-pwa-base`, `vite-version`, `vitest-base`, `vitest-setup` — **30**                                                                                                                              |
+| [`mister-miss-koh`](https://github.com/mister-guiiug/mister-miss-koh)     | Supabase                 | `backend`, `commitlint`, `components.css`, `eslint-react`, `format`, `lint-staged`, `prettier`, `react/app-footer`, `react/app-header`, `react/app-updates`, `react/badge`, `react/bottom-nav`, `react/button`, `react/card`, `react/empty-state`, `react/error-boundary`, `react/icons-context`, `react/icons-lucide`, `react/labels`, `react/page-container`, `react/rive`, `react/theme-provider`, `react/use-media-query`, `react/use-online`, `storage`, `supabase-client`, `tailwind-preset.css`, `tsconfig-app-react`, `tsconfig-node`, `versioned-store`, `vite-csp`, `vite-pwa-base`, `vitest-base`, `vitest-setup` — **34** |
+| [`mister-quota`](https://github.com/mister-guiiug/mister-quota)           | — (non relevé) · desktop | `components.css`, `format`, `prettier`, `react/confirm-dialog`, `react/error-boundary`, `react/toast` — **6**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 <!-- CONSOMMATEURS:FIN -->
 
@@ -96,196 +105,207 @@ d'adoption qui comptait 19 copies pour 34 — est classé dans `PARC.md`.
 
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
-_Relevé du 2026-09-02 sur 17 dépôts, par `npm run adoption`._
+_Relevé du 2026-09-05 sur 19 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 2 fichiers recopiés** dans 17 apps, sur 2 besoins distincts. Les pires : `id` (1), `testing/pwa-register` (1).
+> **Dette d'adoption : 4 fichiers recopiés** dans 19 apps, sur 3 besoins distincts. Les pires : `links` (2), `id` (1), `testing/pwa-register` (1).
 >
 > **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
 
 | Export ou module              | Importé par | Encore recopié dans |
 | ----------------------------- | ----------- | ------------------- |
-| `baseTestOptions`             | 16 / 17     | —                   |
-| `pwaSeoPlugin`                | 16 / 17     | —                   |
-| `UpdatePromptBanner`          | 16 / 17     | —                   |
-| `createLogger`                | 14 / 17     | —                   |
-| `FamilyApps`                  | 14 / 17     | —                   |
-| `testing/pwa-register`        | 13 / 17     | 1 / 17              |
-| `definePwaPlaywrightConfig`   | 13 / 17     | —                   |
-| `initSentry`                  | 13 / 17     | —                   |
-| `installErrorReporter`        | 13 / 17     | —                   |
-| `ConfirmDialog`               | 12 / 17     | —                   |
-| `cspPlugin`                   | 12 / 17     | —                   |
-| `expectNoA11yViolations`      | 12 / 17     | —                   |
-| `recordError`                 | 12 / 17     | —                   |
-| `createI18n`                  | 11 / 17     | —                   |
-| `getDefaultLocale`            | 11 / 17     | —                   |
-| `repoUrl`                     | 11 / 17     | —                   |
-| `applyUpdate`                 | 10 / 17     | —                   |
-| `ErrorBoundary`               | 10 / 17     | —                   |
-| `useActionGuard`              | 10 / 17     | —                   |
-| `useTheme`                    | 10 / 17     | —                   |
-| `ConnectionBanner`            | 9 / 17      | —                   |
-| `Sheet`                       | 9 / 17      | —                   |
-| `AppUpdates`                  | 8 / 17      | —                   |
-| `coveragePreset`              | 8 / 17      | —                   |
-| `EmptyState`                  | 8 / 17      | —                   |
-| `LabelsProvider`              | 8 / 17      | —                   |
-| `pwaRegisterAlias`            | 8 / 17      | —                   |
-| `ThemeProvider`               | 8 / 17      | —                   |
-| `useOnline`                   | 8 / 17      | —                   |
-| `AppFooter`                   | 7 / 17      | —                   |
-| `BottomNav`                   | 7 / 17      | —                   |
-| `SPONSOR_URL`                 | 7 / 17      | —                   |
-| `useThemeContext`             | 7 / 17      | —                   |
-| `IconsProvider`               | 6 / 17      | —                   |
-| `Button`                      | 5 / 17      | —                   |
-| `dateSlug`                    | 5 / 17      | —                   |
-| `downloadText`                | 5 / 17      | —                   |
-| `swStub`                      | 5 / 17      | —                   |
-| `ThemePreference`             | 5 / 17      | —                   |
-| `unregisterServiceWorkers`    | 5 / 17      | —                   |
-| `Badge`                       | 4 / 17      | —                   |
-| `createStore`                 | 4 / 17      | —                   |
-| `downloadJson`                | 4 / 17      | —                   |
-| `formatNumber`                | 4 / 17      | —                   |
-| `initWebVitals`               | 4 / 17      | —                   |
-| `lucideIconSet`               | 4 / 17      | —                   |
-| `RegisterSW`                  | 4 / 17      | —                   |
-| `setDefaultLocale`            | 4 / 17      | —                   |
-| `shareOrCopy`                 | 4 / 17      | —                   |
-| `SkeletonGroup`               | 4 / 17      | —                   |
-| `TextField`                   | 4 / 17      | —                   |
-| `Card`                        | 3 / 17      | —                   |
-| `createTranslator`            | 3 / 17      | —                   |
-| `formatDateTime`              | 3 / 17      | —                   |
-| `generateCode`                | 3 / 17      | —                   |
-| `ObservabilityBoundary`       | 3 / 17      | —                   |
-| `SelectField`                 | 3 / 17      | —                   |
-| `Skeleton`                    | 3 / 17      | —                   |
-| `Sparkline`                   | 3 / 17      | —                   |
-| `ThemeToggle`                 | 3 / 17      | —                   |
-| `ToastProvider`               | 3 / 17      | —                   |
-| `ToastViewport`               | 3 / 17      | —                   |
-| `useToast`                    | 3 / 17      | —                   |
-| `useUpdatePrompt`             | 3 / 17      | —                   |
-| `useWakeLock`                 | 3 / 17      | —                   |
-| `ActionGuardResult`           | 2 / 17      | —                   |
-| `ALPHABETS`                   | 2 / 17      | —                   |
-| `BadgeTone`                   | 2 / 17      | —                   |
-| `buildPdf`                    | 2 / 17      | —                   |
-| `buildXlsx`                   | 2 / 17      | —                   |
-| `compressImageToMaxBytes`     | 2 / 17      | —                   |
-| `createChannel`               | 2 / 17      | —                   |
-| `createSupabaseClientFactory` | 2 / 17      | —                   |
-| `createSyncQueue`             | 2 / 17      | —                   |
-| `createVersionedStore`        | 2 / 17      | —                   |
-| `currentAppUrl`               | 2 / 17      | —                   |
-| `downloadPdf`                 | 2 / 17      | —                   |
-| `downloadXlsx`                | 2 / 17      | —                   |
-| `formatCurrency`              | 2 / 17      | —                   |
-| `formatDate`                  | 2 / 17      | —                   |
-| `formatRelativeTime`          | 2 / 17      | —                   |
-| `I18nPaths`                   | 2 / 17      | —                   |
-| `ICAL_MIME`                   | 2 / 17      | —                   |
-| `IcalEvent`                   | 2 / 17      | —                   |
-| `isValidCoordinates`          | 2 / 17      | —                   |
-| `LabelOverrides`              | 2 / 17      | —                   |
-| `LABELS`                      | 2 / 17      | —                   |
-| `normalizeCode`               | 2 / 17      | —                   |
-| `PAGE`                        | 2 / 17      | —                   |
-| `PdfContent`                  | 2 / 17      | —                   |
-| `readJsonFile`                | 2 / 17      | —                   |
-| `registerSW`                  | 2 / 17      | —                   |
-| `stripImageMetadata`          | 2 / 17      | —                   |
-| `SyncQueue`                   | 2 / 17      | —                   |
-| `SyncQueueEntry`              | 2 / 17      | —                   |
-| `TextAreaField`               | 2 / 17      | —                   |
-| `textWidth`                   | 2 / 17      | —                   |
-| `toCsv`                       | 2 / 17      | —                   |
-| `toIcalendar`                 | 2 / 17      | —                   |
-| `UpdateButton`                | 2 / 17      | —                   |
-| `validateImageFile`           | 2 / 17      | —                   |
-| `appById`                     | 1 / 17      | —                   |
-| `AppHeader`                   | 1 / 17      | —                   |
-| `AppVersion`                  | 1 / 17      | —                   |
-| `BACKUP_FORMAT`               | 1 / 17      | —                   |
-| `BACKUP_VERSION`              | 1 / 17      | —                   |
-| `BottomNavItem`               | 1 / 17      | —                   |
-| `BoundingBox`                 | 1 / 17      | —                   |
-| `CardHeader`                  | 1 / 17      | —                   |
-| `ChannelStatus`               | 1 / 17      | —                   |
-| `clearErrorLog`               | 1 / 17      | —                   |
-| `clusterByGrid`               | 1 / 17      | —                   |
-| `clustersToMarkers`           | 1 / 17      | —                   |
-| `Coordinates`                 | 1 / 17      | —                   |
-| `createBackup`                | 1 / 17      | —                   |
-| `createIdb`                   | 1 / 17      | —                   |
-| `createMapLibreMapProvider`   | 1 / 17      | —                   |
-| `createPushClient`            | 1 / 17      | —                   |
-| `distanceKm`                  | 1 / 17      | —                   |
-| `downloadBlob`                | 1 / 17      | —                   |
-| `dumpAppState`                | 1 / 17      | —                   |
-| `ErrorBanner`                 | 1 / 17      | —                   |
-| `formatDistance`              | 1 / 17      | —                   |
-| `formatPercentage`            | 1 / 17      | —                   |
-| `formatUsage`                 | 1 / 17      | —                   |
-| `getErrorLog`                 | 1 / 17      | —                   |
-| `I18nApi`                     | 1 / 17      | —                   |
-| `IconComponent`               | 1 / 17      | —                   |
-| `IMAGE_ACCEPTED_TYPES`        | 1 / 17      | —                   |
-| `installCorrelation`          | 1 / 17      | —                   |
-| `installObservability`        | 1 / 17      | —                   |
-| `isClusterId`                 | 1 / 17      | —                   |
-| `isInBoundingBox`             | 1 / 17      | —                   |
-| `isValidLatitude`             | 1 / 17      | —                   |
-| `isValidLongitude`            | 1 / 17      | —                   |
-| `localRealtimeTransport`      | 1 / 17      | —                   |
-| `mapCspDirectives`            | 1 / 17      | —                   |
-| `mapTileRuntimeCaching`       | 1 / 17      | —                   |
-| `osmRasterTiles`              | 1 / 17      | —                   |
-| `pagesUrl`                    | 1 / 17      | —                   |
-| `PairingAlphabet`             | 1 / 17      | —                   |
-| `parseCsv`                    | 1 / 17      | —                   |
-| `parseDeepLink`               | 1 / 17      | —                   |
-| `permissionState`             | 1 / 17      | —                   |
-| `prefetch`                    | 1 / 17      | —                   |
-| `pushSupport`                 | 1 / 17      | —                   |
-| `PushSupport`                 | 1 / 17      | —                   |
-| `PushTransport`               | 1 / 17      | —                   |
-| `qrToDataUrl`                 | 1 / 17      | —                   |
-| `qrToSvg`                     | 1 / 17      | —                   |
-| `readRaw`                     | 1 / 17      | —                   |
-| `removeKey`                   | 1 / 17      | —                   |
-| `ResolvedTheme`               | 1 / 17      | —                   |
-| `resolveSeoPublicUrls`        | 1 / 17      | —                   |
-| `restoreBackup`               | 1 / 17      | —                   |
-| `rethrowWithState`            | 1 / 17      | —                   |
-| `Rgb`                         | 1 / 17      | —                   |
-| `ShareButton`                 | 1 / 17      | —                   |
-| `ShareResult`                 | 1 / 17      | —                   |
-| `STATUS`                      | 1 / 17      | —                   |
-| `SupabaseChange`              | 1 / 17      | —                   |
-| `supabaseConfig`              | 1 / 17      | —                   |
-| `supabaseRealtimeTransport`   | 1 / 17      | —                   |
-| `SyncQueueOptions`            | 1 / 17      | —                   |
-| `themeBootSource`             | 1 / 17      | —                   |
-| `unescapeText`                | 1 / 17      | —                   |
-| `unfoldLines`                 | 1 / 17      | —                   |
-| `useAppUpdates`               | 1 / 17      | —                   |
-| `useFocusTrap`                | 1 / 17      | —                   |
-| `useInstallPrompt`            | 1 / 17      | —                   |
-| `useKeyboardShortcuts`        | 1 / 17      | —                   |
-| `useLabels`                   | 1 / 17      | —                   |
-| `usePullToRefresh`            | 1 / 17      | —                   |
-| `useQrScanner`                | 1 / 17      | —                   |
-| `useReducedMotion`            | 1 / 17      | —                   |
-| `versionPlugin`               | 1 / 17      | —                   |
-| `VersionProvider`             | 1 / 17      | —                   |
-| `vibrate`                     | 1 / 17      | —                   |
-| `writeRaw`                    | 1 / 17      | —                   |
-| `XlsxSheet`                   | 1 / 17      | —                   |
-| `XlsxValue`                   | 1 / 17      | —                   |
-| `id`                          | 0 / 17      | 1 / 17              |
+| `baseTestOptions`             | 18 / 19     | —                   |
+| `pwaSeoPlugin`                | 18 / 19     | —                   |
+| `UpdatePromptBanner`          | 18 / 19     | —                   |
+| `FamilyApps`                  | 15 / 19     | —                   |
+| `createLogger`                | 14 / 19     | —                   |
+| `cspPlugin`                   | 14 / 19     | —                   |
+| `initSentry`                  | 14 / 19     | —                   |
+| `installErrorReporter`        | 14 / 19     | —                   |
+| `testing/pwa-register`        | 13 / 19     | 1 / 19              |
+| `ConfirmDialog`               | 13 / 19     | —                   |
+| `definePwaPlaywrightConfig`   | 13 / 19     | —                   |
+| `expectNoA11yViolations`      | 12 / 19     | —                   |
+| `recordError`                 | 12 / 19     | —                   |
+| `useTheme`                    | 12 / 19     | —                   |
+| `links`                       | 11 / 19     | 2 / 19              |
+| `applyUpdate`                 | 11 / 19     | —                   |
+| `createI18n`                  | 11 / 19     | —                   |
+| `ErrorBoundary`               | 11 / 19     | —                   |
+| `getDefaultLocale`            | 11 / 19     | —                   |
+| `repoUrl`                     | 11 / 19     | —                   |
+| `EmptyState`                  | 10 / 19     | —                   |
+| `ThemeProvider`               | 10 / 19     | —                   |
+| `useActionGuard`              | 10 / 19     | —                   |
+| `AppUpdates`                  | 9 / 19      | —                   |
+| `BottomNav`                   | 9 / 19      | —                   |
+| `ConnectionBanner`            | 9 / 19      | —                   |
+| `LabelsProvider`              | 9 / 19      | —                   |
+| `Sheet`                       | 9 / 19      | —                   |
+| `useOnline`                   | 9 / 19      | —                   |
+| `AppFooter`                   | 8 / 19      | —                   |
+| `coveragePreset`              | 8 / 19      | —                   |
+| `pwaRegisterAlias`            | 8 / 19      | —                   |
+| `useThemeContext`             | 8 / 19      | —                   |
+| `Button`                      | 7 / 19      | —                   |
+| `IconsProvider`               | 7 / 19      | —                   |
+| `SPONSOR_URL`                 | 7 / 19      | —                   |
+| `Badge`                       | 6 / 19      | —                   |
+| `dateSlug`                    | 6 / 19      | —                   |
+| `downloadText`                | 6 / 19      | —                   |
+| `Card`                        | 5 / 19      | —                   |
+| `createStore`                 | 5 / 19      | —                   |
+| `downloadJson`                | 5 / 19      | —                   |
+| `formatNumber`                | 5 / 19      | —                   |
+| `lucideIconSet`               | 5 / 19      | —                   |
+| `swStub`                      | 5 / 19      | —                   |
+| `TextField`                   | 5 / 19      | —                   |
+| `ThemePreference`             | 5 / 19      | —                   |
+| `unregisterServiceWorkers`    | 5 / 19      | —                   |
+| `initWebVitals`               | 4 / 19      | —                   |
+| `RegisterSW`                  | 4 / 19      | —                   |
+| `SelectField`                 | 4 / 19      | —                   |
+| `setDefaultLocale`            | 4 / 19      | —                   |
+| `shareOrCopy`                 | 4 / 19      | —                   |
+| `SkeletonGroup`               | 4 / 19      | —                   |
+| `ThemeToggle`                 | 4 / 19      | —                   |
+| `ToastProvider`               | 4 / 19      | —                   |
+| `AppHeader`                   | 3 / 19      | —                   |
+| `BadgeTone`                   | 3 / 19      | —                   |
+| `CardHeader`                  | 3 / 19      | —                   |
+| `createSupabaseClientFactory` | 3 / 19      | —                   |
+| `createTranslator`            | 3 / 19      | —                   |
+| `createVersionedStore`        | 3 / 19      | —                   |
+| `formatDate`                  | 3 / 19      | —                   |
+| `formatDateTime`              | 3 / 19      | —                   |
+| `generateCode`                | 3 / 19      | —                   |
+| `ObservabilityBoundary`       | 3 / 19      | —                   |
+| `Skeleton`                    | 3 / 19      | —                   |
+| `Sparkline`                   | 3 / 19      | —                   |
+| `ToastViewport`               | 3 / 19      | —                   |
+| `useToast`                    | 3 / 19      | —                   |
+| `useUpdatePrompt`             | 3 / 19      | —                   |
+| `useWakeLock`                 | 3 / 19      | —                   |
+| `ActionGuardResult`           | 2 / 19      | —                   |
+| `ALPHABETS`                   | 2 / 19      | —                   |
+| `buildPdf`                    | 2 / 19      | —                   |
+| `buildXlsx`                   | 2 / 19      | —                   |
+| `compressImageToMaxBytes`     | 2 / 19      | —                   |
+| `createChannel`               | 2 / 19      | —                   |
+| `createSyncQueue`             | 2 / 19      | —                   |
+| `currentAppUrl`               | 2 / 19      | —                   |
+| `downloadPdf`                 | 2 / 19      | —                   |
+| `downloadXlsx`                | 2 / 19      | —                   |
+| `formatCurrency`              | 2 / 19      | —                   |
+| `formatRelativeTime`          | 2 / 19      | —                   |
+| `I18nPaths`                   | 2 / 19      | —                   |
+| `ICAL_MIME`                   | 2 / 19      | —                   |
+| `IcalEvent`                   | 2 / 19      | —                   |
+| `isValidCoordinates`          | 2 / 19      | —                   |
+| `LabelOverrides`              | 2 / 19      | —                   |
+| `LABELS`                      | 2 / 19      | —                   |
+| `normalizeCode`               | 2 / 19      | —                   |
+| `PAGE`                        | 2 / 19      | —                   |
+| `PageContainer`               | 2 / 19      | —                   |
+| `PdfContent`                  | 2 / 19      | —                   |
+| `readJsonFile`                | 2 / 19      | —                   |
+| `registerSW`                  | 2 / 19      | —                   |
+| `stripImageMetadata`          | 2 / 19      | —                   |
+| `supabaseConfig`              | 2 / 19      | —                   |
+| `SyncQueue`                   | 2 / 19      | —                   |
+| `SyncQueueEntry`              | 2 / 19      | —                   |
+| `TextAreaField`               | 2 / 19      | —                   |
+| `textWidth`                   | 2 / 19      | —                   |
+| `toCsv`                       | 2 / 19      | —                   |
+| `toIcalendar`                 | 2 / 19      | —                   |
+| `UpdateButton`                | 2 / 19      | —                   |
+| `useReducedMotion`            | 2 / 19      | —                   |
+| `validateImageFile`           | 2 / 19      | —                   |
+| `appById`                     | 1 / 19      | —                   |
+| `AppVersion`                  | 1 / 19      | —                   |
+| `backendCoverage`             | 1 / 19      | —                   |
+| `BackendCoverage`             | 1 / 19      | —                   |
+| `BACKUP_FORMAT`               | 1 / 19      | —                   |
+| `BACKUP_VERSION`              | 1 / 19      | —                   |
+| `BottomNavItem`               | 1 / 19      | —                   |
+| `BoundingBox`                 | 1 / 19      | —                   |
+| `ChannelStatus`               | 1 / 19      | —                   |
+| `clearErrorLog`               | 1 / 19      | —                   |
+| `clusterByGrid`               | 1 / 19      | —                   |
+| `clustersToMarkers`           | 1 / 19      | —                   |
+| `composeBackend`              | 1 / 19      | —                   |
+| `Coordinates`                 | 1 / 19      | —                   |
+| `createBackup`                | 1 / 19      | —                   |
+| `createIdb`                   | 1 / 19      | —                   |
+| `createMapLibreMapProvider`   | 1 / 19      | —                   |
+| `createPushClient`            | 1 / 19      | —                   |
+| `distanceKm`                  | 1 / 19      | —                   |
+| `downloadBlob`                | 1 / 19      | —                   |
+| `dumpAppState`                | 1 / 19      | —                   |
+| `ErrorBanner`                 | 1 / 19      | —                   |
+| `formatBytes`                 | 1 / 19      | —                   |
+| `formatDistance`              | 1 / 19      | —                   |
+| `formatDuration`              | 1 / 19      | —                   |
+| `formatPercentage`            | 1 / 19      | —                   |
+| `formatUsage`                 | 1 / 19      | —                   |
+| `getErrorLog`                 | 1 / 19      | —                   |
+| `I18nApi`                     | 1 / 19      | —                   |
+| `IconComponent`               | 1 / 19      | —                   |
+| `IMAGE_ACCEPTED_TYPES`        | 1 / 19      | —                   |
+| `installCorrelation`          | 1 / 19      | —                   |
+| `installObservability`        | 1 / 19      | —                   |
+| `isClusterId`                 | 1 / 19      | —                   |
+| `isInBoundingBox`             | 1 / 19      | —                   |
+| `isValidLatitude`             | 1 / 19      | —                   |
+| `isValidLongitude`            | 1 / 19      | —                   |
+| `localRealtimeTransport`      | 1 / 19      | —                   |
+| `mapCspDirectives`            | 1 / 19      | —                   |
+| `mapTileRuntimeCaching`       | 1 / 19      | —                   |
+| `osmRasterTiles`              | 1 / 19      | —                   |
+| `pagesUrl`                    | 1 / 19      | —                   |
+| `PairingAlphabet`             | 1 / 19      | —                   |
+| `parseCsv`                    | 1 / 19      | —                   |
+| `parseDeepLink`               | 1 / 19      | —                   |
+| `permissionState`             | 1 / 19      | —                   |
+| `prefetch`                    | 1 / 19      | —                   |
+| `pushSupport`                 | 1 / 19      | —                   |
+| `PushSupport`                 | 1 / 19      | —                   |
+| `PushTransport`               | 1 / 19      | —                   |
+| `qrToDataUrl`                 | 1 / 19      | —                   |
+| `qrToSvg`                     | 1 / 19      | —                   |
+| `readRaw`                     | 1 / 19      | —                   |
+| `removeKey`                   | 1 / 19      | —                   |
+| `resolveBackendKind`          | 1 / 19      | —                   |
+| `ResolvedTheme`               | 1 / 19      | —                   |
+| `resolveSeoPublicUrls`        | 1 / 19      | —                   |
+| `restoreBackup`               | 1 / 19      | —                   |
+| `rethrowWithState`            | 1 / 19      | —                   |
+| `Rgb`                         | 1 / 19      | —                   |
+| `SegmentedControl`            | 1 / 19      | —                   |
+| `ShareButton`                 | 1 / 19      | —                   |
+| `ShareResult`                 | 1 / 19      | —                   |
+| `Stat`                        | 1 / 19      | —                   |
+| `STATUS`                      | 1 / 19      | —                   |
+| `SUPABASE_ENV_KEYS`           | 1 / 19      | —                   |
+| `SupabaseChange`              | 1 / 19      | —                   |
+| `supabaseRealtimeTransport`   | 1 / 19      | —                   |
+| `SyncQueueOptions`            | 1 / 19      | —                   |
+| `themeBootSource`             | 1 / 19      | —                   |
+| `unescapeText`                | 1 / 19      | —                   |
+| `unfoldLines`                 | 1 / 19      | —                   |
+| `useAppUpdates`               | 1 / 19      | —                   |
+| `useFocusTrap`                | 1 / 19      | —                   |
+| `useInstallPrompt`            | 1 / 19      | —                   |
+| `useKeyboardShortcuts`        | 1 / 19      | —                   |
+| `useLabels`                   | 1 / 19      | —                   |
+| `usePullToRefresh`            | 1 / 19      | —                   |
+| `useQrScanner`                | 1 / 19      | —                   |
+| `versionPlugin`               | 1 / 19      | —                   |
+| `VersionProvider`             | 1 / 19      | —                   |
+| `vibrate`                     | 1 / 19      | —                   |
+| `writeRaw`                    | 1 / 19      | —                   |
+| `XlsxSheet`                   | 1 / 19      | —                   |
+| `XlsxValue`                   | 1 / 19      | —                   |
+| `id`                          | 0 / 19      | 1 / 19              |
 
 <!-- ADOPTION:FIN -->
 

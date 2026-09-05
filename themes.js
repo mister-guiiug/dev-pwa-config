@@ -6,6 +6,11 @@
  * Les palettes vivaient auparavant DANS le showroom, qui n'est pas publié : le
  * paquet ignorait donc les seize palettes que sa propre vitrine connaissait.
  *
+ * UNE PALETTE PAR APP DU CATALOGUE, et un test l'exige. C'est ce qui a rattrapé
+ * l'inscription de `miss-supatool` et `mister-miss-koh` le 05/09/2026 : les
+ * ajouter au catalogue sans les relever ici aurait laissé deux cartes sans
+ * couleurs dans la vitrine.
+ *
  * MÉTHODE. Chaque palette est RELEVÉE dans le `src/*.css` de l'app, jamais
  * choisie ici. Deux règles de relevé :
  *  - les valeurs exprimées en `rgba()` sont composées sur le fond réel de
@@ -767,6 +772,100 @@ export const FAMILY_THEMES = [
       // L'app n'a pas de ton « information » : l'état « en avance » réutilise
       // l'accent. On retient donc la même valeur.
       info: '#6ea8ff',
+    },
+  },
+
+  {
+    id: 'miss-supatool',
+    name: 'Miss Supatool',
+    tagline:
+      'Vert Supabase sur gris chauds ; bleu « source », ambre « cible ».',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.875rem',
+    light: {
+      bg: '#f6faf8',
+      surface: '#ffffff',
+      surface2: '#eef4f1',
+      text: '#10231b',
+      textSoft: '#4e6459',
+      border: '#d5e2db',
+      primary: '#0f9d63',
+      // Presque noir sur le vert : relevé de `--dwc-primary-contrast`, qui
+      // vaut la même valeur dans les deux schémas.
+      primaryContrast: '#052b1c',
+      // Déclaré par l'app (`--color-primary-soft`), pas recalculé.
+      primarySoft: '#d9f2e6',
+      // `--color-source` : le bleu qui distingue le projet de départ. L'app
+      // n'a pas de ton « information » séparé, il tient les deux rôles.
+      accent: '#2563eb',
+      info: '#2563eb',
+      success: '#0f9d63',
+      warning: '#b45309',
+      danger: '#be123c',
+    },
+    dark: {
+      bg: '#0b1a14',
+      surface: '#12241c',
+      surface2: '#183025',
+      text: '#e6f2ec',
+      textSoft: '#9db3a8',
+      border: '#234536',
+      primary: '#3ecf8e',
+      primaryContrast: '#052b1c',
+      // Aucun ton doux déclaré en sombre : composé comme l'app le fait,
+      // `color-mix(in srgb, primary 15%, surface)`.
+      primarySoft: '#193e2d',
+      accent: '#2563eb',
+      info: '#2563eb',
+      success: '#3ecf8e',
+      warning: '#f59e0b',
+      danger: '#fb7185',
+    },
+  },
+
+  {
+    id: 'mister-miss-koh',
+    name: 'Mister & miss Koh',
+    tagline: 'Terre, feu, océan, jungle — identité originale, rien d’emprunté.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.875rem',
+    light: {
+      bg: '#f4efe4',
+      surface: '#fffdf8',
+      surface2: '#efe6d3',
+      text: '#1f2a24',
+      textSoft: '#5c6b62',
+      border: '#d9cdb4',
+      primary: '#c2410c',
+      primaryContrast: '#ffffff',
+      // `color-mix(in srgb, primary 14%, surface)`, comme l'app le compose.
+      primarySoft: '#f6e3d7',
+      accent: '#0f766e',
+      // L'app branche `--dwc-info` sur son accent : même valeur, relevée.
+      info: '#0f766e',
+      success: '#15803d',
+      warning: '#b45309',
+      danger: '#b91c1c',
+    },
+    dark: {
+      bg: '#12201c',
+      surface: '#1a2c27',
+      surface2: '#213931',
+      text: '#f1f5f2',
+      textSoft: '#9fb3a9',
+      border: '#2f4a42',
+      primary: '#fb923c',
+      primaryContrast: '#1f1207',
+      primarySoft: '#3a3a2a',
+      accent: '#5eead4',
+      info: '#5eead4',
+      success: '#4ade80',
+      warning: '#fbbf24',
+      danger: '#f87171',
     },
   },
 ];

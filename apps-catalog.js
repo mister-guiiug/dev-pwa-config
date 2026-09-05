@@ -88,6 +88,23 @@ export const PLATFORMS = ['web', 'desktop'];
  * derrière `eslint-react`, `prettier` et `vitest-base` (seize chacun) —, alors
  * que `commitlint` plafonne à trois. Seize sous-chemins n'ont qu'un adoptant,
  * dont dix pour le seul `mister-family-map`.
+ *
+ * COMPLÉTÉ LE 05/09/2026 par `miss-supatool` et `mister-miss-koh`. Elles
+ * consommaient le paquet depuis leur naissance sans figurer ici : elles
+ * n'apparaissaient donc chez aucune de leurs sœurs, et surtout **quatre
+ * exports que le relevé donnait pour morts avaient un adoptant** —
+ * `PageContainer`, `SegmentedControl`, `Stat` et `resolveBackendKind`. Un
+ * dépôt absent du catalogue est un dépôt que rien ne mesure : le chiffre
+ * d'adoption ne dit pas ce que le paquet sert, il dit ce qu'on a pensé à
+ * inscrire. C'est le geste que le générateur laisse délibérément à la main, et
+ * que deux applications avaient sauté.
+ *
+ * ATTENTION à ce que cette table compte. Elle relève des SOUS-CHEMINS, pas des
+ * symboles : une app qui importe `FamilyApps` depuis le baril `react` n'y fait
+ * pas apparaître `react/family-apps`. Compter les adoptants d'un composant ici
+ * donne un chiffre faux — `react/family-apps` y a un adoptant, quinze apps
+ * l'affichent. Pour cette question, `showroom/adoption.js`, qui relève les
+ * symboles.
  */
 const CONSUMED = {
   'miss-carbook': [
@@ -427,6 +444,47 @@ const CONSUMED = {
     'vitest-base',
     'vitest-setup',
   ],
+  // Relevée le 05/09/2026, à l'inscription au catalogue. Seule app à importer
+  // `SegmentedControl` et `Stat`, qui n'avaient AUCUN adoptant : deux
+  // composants que `showroom/adoption.js` comptait pour morts.
+  //
+  // Elle importe en chemins PROFONDS (`react/button`, `react/card`…) là où la
+  // plupart des apps passent par le baril `react`. Les deux sont légitimes ; il
+  // faut juste savoir qu'un compte fait sur cette table ne mesure pas
+  // l'adoption d'un composant — `FamilyApps` y semble à un adoptant alors que
+  // quinze apps l'affichent, par le baril. Le relevé par symbole est dans
+  // `showroom/adoption.js`, et c'est lui qui répond à cette question-là.
+  'miss-supatool': [
+    'components.css',
+    'download',
+    'eslint-react',
+    'format',
+    'prettier',
+    'react/app-header',
+    'react/badge',
+    'react/bottom-nav',
+    'react/button',
+    'react/card',
+    'react/confirm-dialog',
+    'react/empty-state',
+    'react/family-apps',
+    'react/field',
+    'react/observability',
+    'react/page-container',
+    'react/segmented-control',
+    'react/stat',
+    'react/theme-provider',
+    'react/theme-toggle',
+    'react/toast',
+    'react/update-prompt-banner',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
   'mister-molkky': [
     'apps-catalog',
     'components.css',
@@ -526,6 +584,46 @@ const CONSUMED = {
     'vitest-base',
     'vitest-setup',
   ],
+  // Relevée le 05/09/2026, à l'inscription au catalogue. Seule app à importer
+  // `resolveBackendKind` — le sélecteur de backend n'avait aucun adoptant —,
+  // et seule avec `mister-doc` à prendre `react/use-media-query`. Avec
+  // `miss-supatool`, elle sort aussi `PageContainer` de zéro.
+  'mister-miss-koh': [
+    'backend',
+    'commitlint',
+    'components.css',
+    'eslint-react',
+    'format',
+    'lint-staged',
+    'prettier',
+    'react/app-footer',
+    'react/app-header',
+    'react/app-updates',
+    'react/badge',
+    'react/bottom-nav',
+    'react/button',
+    'react/card',
+    'react/empty-state',
+    'react/error-boundary',
+    'react/icons-context',
+    'react/icons-lucide',
+    'react/labels',
+    'react/page-container',
+    'react/rive',
+    'react/theme-provider',
+    'react/use-media-query',
+    'react/use-online',
+    'storage',
+    'supabase-client',
+    'tailwind-preset.css',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'versioned-store',
+    'vite-csp',
+    'vite-pwa-base',
+    'vitest-base',
+    'vitest-setup',
+  ],
 };
 
 /** Tous les sous-chemins consommés au moins une fois, triés. */
@@ -575,8 +673,10 @@ function app(id, name, description, maturity, overrides = {}) {
 
 /**
  * Famille d'applications grand public. Exclut volontairement la librairie
- * `dev-pwa-config` et le monorepo `miss-ticket` (Tauri). Trier par maturité
- * puis nom est fait à l'affichage, pas ici.
+ * `dev-pwa-config`, le squelette `pwa-starter-kit`, le générateur
+ * `create-lg-pwa-app` et le monorepo `miss-ticket` (Tauri) : ce sont des
+ * outils du parc, pas des applications qu'on installe. Trier par maturité puis
+ * nom est fait à l'affichage, pas ici.
  *
  * @type {import('./apps-catalog').FamilyApp[]}
  */
@@ -675,6 +775,16 @@ export const FAMILY_APPS = [
     { category: 'dev', backend: 'api' }
   ),
   app(
+    'miss-supatool',
+    'Miss Supatool',
+    "Migration d'un projet Supabase vers un autre : structure, données et fichiers.",
+    'alpha',
+    // Même raison que `miss-supaboss` : elle parle à des projets Supabase
+    // TIERS en HTTP nu (PostgREST, API Storage) et à un relais pour l'API de
+    // management. Aucun `@supabase/supabase-js` dans le paquet, d'où `api`.
+    { category: 'dev', backend: 'api' }
+  ),
+  app(
     'mister-molkky',
     'Mister Mölkky',
     'Compteur de scores pour parties de Mölkky (multi-appareils).',
@@ -698,6 +808,17 @@ export const FAMILY_APPS = [
     // `loisirs` : la catégorie a été ajoutée pour elle. Sortir en famille n'est
     // ni un outil ni un jeu, et `outils` n'était qu'un pis-aller assumé à
     // l'ajout de l'app.
+    { category: 'loisirs', backend: 'supabase' }
+  ),
+  app(
+    'mister-miss-koh',
+    'Mister & miss Koh',
+    "Suivi d'une saison d'aventure : candidats, épisodes, épreuves, conseils et votes. Non officiel.",
+    'alpha',
+    // `loisirs`, comme `mister-family-map` : accompagner une émission n'est ni
+    // un jeu ni un outil. « Non officiel » fait partie de la description, pas
+    // d'une mention légale reléguée ailleurs : l'app n'a aucun lien avec les
+    // ayants droit, et sa donnée vient de Wikipédia, source collaborative.
     { category: 'loisirs', backend: 'supabase' }
   ),
   app(
