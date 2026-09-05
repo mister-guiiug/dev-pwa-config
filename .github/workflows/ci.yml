@@ -52,14 +52,29 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('./tsconfig-strict-plus.json'))"
           echo "✅ tsconfigs parsent"
 
-  # ── Smoke test « consommateur réel » ────────────────────────────────────────
-  # Le job `validate` ci-dessus ne teste que le dépôt. Il ne prouve PAS que le
-  # paquet, une fois `npm pack` + installé, résout ses subpath via la table
-  # `exports`. C'est exactement ce trou qui a laissé passer le bug de résolution
-  # intermittente du subpath `./tsconfig-app-react` en CI (mister-molkky a dû
-  # ré-inliner ses tsconfig/vitest pour le contourner).
-  consumer-resolution:
-    name: Consumer subpath resolution
+  # ── Le squelette, construit sur CE paquet ───────────────────────────────────
+  #
+  # Ce job remplace la fixture jetable qui vivait ici. Elle échafaudait un faux
+  # consommateur dans `/tmp` pour vérifier que les sous-chemins de la table
+  # `exports` se résolvent — le trou qui avait laissé passer le bug de
+  # résolution de `./tsconfig-app-react`, lequel avait forcé mister-molkky à
+  # ré-inliner ses configs.
+  #
+  # `pwa-starter-kit` est un VRAI consommateur, tenu vert, qui importe la
+  # composition entière : fournisseurs, routeur, écrans, backend, i18n, mise à
+  # jour du service worker. Il prouve donc ce que la fixture ne pouvait pas —
+  # qu'une application se COMPILE, se CONSTRUIT et reste conforme au parc avec
+  # la version candidate — et il le prouve avant que vingt applications ne
+  # découvrent le contraire.
+  #
+  # LE BALAYAGE EXHAUSTIF EST CONSERVÉ, et c'est délibéré. Le squelette
+  # n'importe que 51 sous-chemins sur 148 : s'en remettre à lui seul perdrait
+  # la résolution des 90 autres, dont personne ne verrait la rupture avant
+  # qu'une application ne les touche. Il est simplement rejoué DEPUIS le
+  # squelette, dont le `node_modules` porte déjà toutes les peers — c'est ce
+  # qui rend la fixture inutile, pas ce qui rend le balayage inutile.
+  starter-kit:
+    name: Le squelette, construit sur ce paquet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -71,96 +86,50 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: Install + pack
+      - name: Empaqueter la version candidate
         run: |
           npm ci --no-audit --no-fund
-          npm pack                       # produit mister-guiiug-dev-pwa-config-*.tgz
+          npm pack
+          echo "TARBALL=$(ls "$GITHUB_WORKSPACE"/mister-guiiug-dev-pwa-config-*.tgz | head -1)" >> "$GITHUB_ENV"
 
-      # Les peers sont installés AUX PLAGES QUE LE PAQUET DÉCLARE, pas aux
-      # dernières versions absolues. Le job les prenait en `*` : le 03/09/2026,
-      # la sortie d'ESLint 10 l'a cassé net (eslint-plugin-jsx-a11y exige encore
-      # `eslint@^9`), alors que le socle déclare lui-même `eslint: ^9.39.4`.
-      # On testait donc une combinaison que le paquet ne prétend pas supporter,
-      # et le résultat dépendait de ce que npmjs avait publié dans la nuit.
-      #
-      # Le jour où le socle passera à ESLint 10, ce job suivra tout seul.
-      # `react-dom` n'est pas un peer déclaré : il est ajouté à la main, parce
-      # que `react` sans lui ne se monte pas.
-      - name: Scaffold a throwaway consumer
+      # Dépôt PUBLIC : le jeton par défaut suffit à le lire. Épinglé sur `main`,
+      # qui est protégé et ne reçoit que des PR vertes.
+      - uses: actions/checkout@v5
+        with:
+          repository: mister-guiiug/pwa-starter-kit
+          path: starter-kit
+          persist-credentials: false
+
+      - name: Installer le squelette SUR le paquet empaqueté
+        working-directory: starter-kit
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p /tmp/fixture
-          TARBALL=$(ls "$GITHUB_WORKSPACE"/mister-guiiug-dev-pwa-config-*.tgz | head -1)
-          export TARBALL
-          node -e "
-            const peers = require('$GITHUB_WORKSPACE/package.json').peerDependencies;
-            const veut = [
-              'typescript', 'prettier', 'eslint', '@eslint/js', 'typescript-eslint',
-              'globals', 'eslint-plugin-jsx-a11y', 'eslint-plugin-react-hooks',
-              'eslint-plugin-react-refresh', 'react', '@testing-library/jest-dom',
-            ];
-            const manquants = veut.filter(n => !peers[n]);
-            if (manquants.length) {
-              throw new Error('plus un peer du paquet : ' + manquants.join(', '));
-            }
-            const devDependencies = Object.fromEntries(veut.map(n => [n, peers[n]]));
-            devDependencies['react-dom'] = peers.react;
-            // Le paquet packé est DÉCLARÉ, pas ajouté après coup : greffer un
-            // tarball sur un arbre dont les dépendances ne sont pas encore
-            // installées faisait échouer npm sur « Cannot read properties of
-            // null (reading 'edgesOut') » — un état intermédiaire qu'Arborist
-            // ne sait pas relire. Tout déclarer, c'est une seule résolution.
-            devDependencies['@mister-guiiug/dev-pwa-config'] =
-              'file:' + process.env.TARBALL;
-            require('node:fs').writeFileSync(
-              '/tmp/fixture/package.json',
-              JSON.stringify({ name: 'fixture', version: '1.0.0', private: true, devDependencies }, null, 2)
-            );
-          "
-          cd /tmp/fixture
+          # La dépendance est REMPLACÉE par le tarball : sans cela, le squelette
+          # installerait la dernière version PUBLIÉE et ce job ne testerait pas
+          # la modification en cours.
+          npm pkg set "devDependencies.@mister-guiiug/dev-pwa-config=file:$TARBALL"
+
           # NPM 11 POUR CETTE INSTALLATION. Node 22 embarque npm 10.9.8, dont
           # Arborist échoue sur « Cannot read properties of null (reading
-          # 'edgesOut') » face à une dépendance `file:` — d'où un job rouge le
-          # 03/09/2026 alors que rien n'avait bougé dans le dépôt, et vert sur
-          # un poste en npm 11. Ce job éprouve la résolution des sous-chemins
-          # du paquet, pas la version du gestionnaire : on prend celle qui
-          # sait lire l'arbre. Le cache reste à part, celui du socle n'ayant
-          # rien à voir avec cet arbre-là.
-          npx --yes npm@11 install --no-audit --no-fund --cache /tmp/npm-cache-fixture
+          # 'edgesOut') » face à une dépendance `file:`. Le job éprouve le
+          # paquet, pas le gestionnaire : on prend celui qui sait lire l'arbre.
+          # `npm install` et non `ci` : le lockfile ne correspond plus, c'est le
+          # but.
+          npx --yes npm@11 install --no-audit --no-fund
 
-      - name: tsconfig `extends` resolves through exports
-        working-directory: /tmp/fixture
-        run: |
-          # Un fichier source + `include` sont nécessaires, sinon `tsc` sort en
-          # TS18003 ("No inputs were found") — ce qui masquerait le vrai test
-          # (la résolution du subpath dans `extends`). --showConfig ne charge
-          # pas les paquets de `types`, donc l'absence de vite/node types ici
-          # n'est pas un problème : on ne valide QUE la résolution du extends.
-          mkdir -p src && echo 'export {};' > src/x.ts
-          for cfg in tsconfig-app tsconfig-app-react tsconfig-node tsconfig-strict-plus; do
-            echo "{\"extends\":\"@mister-guiiug/dev-pwa-config/$cfg\",\"include\":[\"src\"]}" > tsconfig.json
-            npx tsc --showConfig >/dev/null && echo "✅ extends $cfg"
-          done
-
-      # La liste n'est plus écrite à la main : elle est DÉRIVÉE de la table
-      # `exports` du tarball installé. Elle en couvrait dix sur vingt-six, dont
-      # aucun des plus consommés (`react`, `react/observability`, `vite-csp`).
-      # Tout nouvel export est désormais couvert d'office.
-      #
-      # Un seul module ne s'importe pas hors de son contexte, et c'est voulu :
-      # il est nommé, avec sa raison. Une liste d'exclusion muette finirait par
-      # cacher un vrai module cassé. Les deux modules de mise à jour en sont
-      # sortis : `useUpdatePrompt` reçoit désormais `registerSW` en paramètre au
-      # lieu d'importer le module virtuel de Vite.
-      - name: Every JS subpath import resolves
-        working-directory: /tmp/fixture
+      # Ce que la fixture vérifiait, rejoué là où les peers sont déjà installées.
+      - name: Chaque sous-chemin JS s'importe
+        working-directory: starter-kit
         run: |
           node --input-type=module -e "
             const { readFileSync } = await import('node:fs');
-            // Lu comme un FICHIER : \`package.json\` n'est pas dans la table
-            // \`exports\`, donc pas résoluble comme sous-chemin.
             const pkg = JSON.parse(
               readFileSync('node_modules/@mister-guiiug/dev-pwa-config/package.json', 'utf8')
             );
+            // Un seul module ne s'importe pas hors de son contexte, et c'est
+            // voulu : il est nommé, avec sa raison. Une liste d'exclusion muette
+            // finirait par cacher un vrai module cassé.
             const CONTEXT_BOUND = {
               'vitest-setup': 'appelle vi.mock() au niveau module — n existe que dans un run Vitest',
             };
@@ -169,23 +138,46 @@ jobs:
               .map(([s]) => s.replace(/^\.\//, ''));
             let ok = 0;
             for (const s of subs) {
-              if (s in CONTEXT_BOUND) {
-                console.log('— ' + s + ' : ' + CONTEXT_BOUND[s]);
-                continue;
-              }
+              if (s in CONTEXT_BOUND) continue;
               await import('@mister-guiiug/dev-pwa-config/' + s);
-              console.log('✅ import ' + s);
               ok++;
             }
-            if (ok < 20) throw new Error('trop peu de sous-chemins couverts : ' + ok);
-            console.log(ok + ' sous-chemins JS résolus sur ' + subs.length +
-              ' (' + Object.keys(CONTEXT_BOUND).length + ' hors contexte)');
+            if (ok < 100) throw new Error('trop peu de sous-chemins couverts : ' + ok);
+            console.log(ok + ' sous-chemins JS résolus sur ' + subs.length);
           "
 
-      - name: CSS + JSON assets are shipped in the tarball
-        working-directory: /tmp/fixture
+      # La sonde est écrite DANS le squelette, pas dans /tmp : `include` se
+      # résout relativement au fichier tsconfig, et `["src"]` ne désignerait
+      # rien ailleurs — `tsc` sortirait en TS18003 (« No inputs were found »),
+      # ce qui masquerait le vrai test, la résolution du `extends`.
+      - name: Les tsconfig s'étendent à travers la table exports
+        working-directory: starter-kit
         run: |
-          node -e "require.resolve('@mister-guiiug/dev-pwa-config/tailwind-preset.css'); console.log('✅ tailwind-preset.css present')"
-          node -e "require.resolve('@mister-guiiug/dev-pwa-config/tokens.css'); console.log('✅ tokens.css present')"
-          node -e "require.resolve('@mister-guiiug/dev-pwa-config/components.css'); console.log('✅ components.css present')"
-          node -e "require.resolve('@mister-guiiug/dev-pwa-config/tsconfig-app'); console.log('✅ tsconfig-app json present')"
+          for cfg in tsconfig-app tsconfig-app-react tsconfig-node tsconfig-strict-plus; do
+            echo "{\"extends\":\"@mister-guiiug/dev-pwa-config/$cfg\",\"include\":[\"src\"]}" > tsconfig.probe.json
+            npx tsc -p tsconfig.probe.json --showConfig >/dev/null && echo "✅ extends $cfg"
+          done
+          rm -f tsconfig.probe.json
+
+      - name: Les feuilles et les JSON sont bien livrés
+        working-directory: starter-kit
+        run: |
+          for asset in tailwind-preset.css tokens.css components.css tsconfig-app; do
+            node -e "require.resolve('@mister-guiiug/dev-pwa-config/$asset')" \
+              && echo "✅ $asset présent"
+          done
+
+      # LA PREUVE QUE LA FIXTURE NE POUVAIT PAS DONNER. Le squelette se
+      # compile, se teste, se construit — et son `build` enchaîne le budget de
+      # poids puis `pwa-doctor --strict`, qui refuse la moindre dette. Une
+      # modification du socle qui casserait une application le dit ici.
+      - name: Lint · types · tests
+        working-directory: starter-kit
+        run: |
+          npm run lint
+          npm run type-check
+          npm test
+
+      - name: Build, budget de poids et diagnostic strict
+        working-directory: starter-kit
+        run: npm run build

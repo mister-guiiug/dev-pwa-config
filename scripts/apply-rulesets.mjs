@@ -137,7 +137,13 @@ const REPOS = reposDuCompte();
  * est délibérément absent de la liste.
  */
 const CHECKS = {
-  [SELF]: ['In-repo config parse', 'Consumer subpath resolution'],
+  // Le second job a été RENOMMÉ le 05/09/2026 : la fixture jetable
+  // « Consumer subpath resolution » est remplacée par le squelette, qui est un
+  // vrai consommateur. Un contexte exigé qui disparaît gèle toutes les PR du
+  // dépôt — d'où l'ordre : fusionner d'abord (par le contournement admin, qui
+  // existe pour ce cas), laisser la CI de `main` produire le nouveau contexte,
+  // puis relancer ce script.
+  [SELF]: ['In-repo config parse', 'Le squelette, construit sur ce paquet'],
   'mister-quota': [
     'typecheck · test · build (20.x)',
     'typecheck · test · build (22.x)',
