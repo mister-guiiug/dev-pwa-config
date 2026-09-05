@@ -1,8 +1,9 @@
 # Contribuer
 
-Ce dépôt est le socle commun de seize applications PWA. Une modification ici
-part vers seize dépôts : les règles qui suivent existent pour ça, pas par
-formalisme.
+Ce dépôt est le socle commun de la famille. Une modification ici part vers
+**vingt dépôts** (05/09/2026) : dix-sept applications du catalogue — dont une
+par son miroir —, deux qui n'y sont pas encore inscrites, et le squelette. Les
+règles qui suivent existent pour ça, pas par formalisme.
 
 ## Démarrer
 
@@ -56,8 +57,8 @@ corps du message explique **pourquoi**, pas quoi : le diff dit déjà quoi.
 
 ## Relecture
 
-`.github/workflows/` et `.github/actions/` s'exécutent dans seize dépôts, avec
-leurs secrets. C'est le chemin d'escalade le plus court de la famille : ces
+`.github/workflows/` et `.github/actions/` s'exécutent dans dix-neuf dépôts,
+avec leurs secrets. C'est le chemin d'escalade le plus court de la famille : ces
 fichiers demandent une relecture, même pour un changement qui paraît anodin.
 `CODEOWNERS` le rend explicite.
 
@@ -75,8 +76,8 @@ git tag vx.y.z && git push --follow-tags
 ```
 
 `publish.yml` vérifie la cohérence tag / `package.json`, publie avec provenance
-sigstore, crée la release, et fait avancer le tag majeur mobile (`v3`) que les
-seize dépôts consomment pour les workflows réutilisables.
+sigstore, crée la release, et fait avancer le tag majeur mobile (`v4`) que les
+dix-neuf dépôts consomment pour les workflows réutilisables.
 
 ## Accessibilité
 

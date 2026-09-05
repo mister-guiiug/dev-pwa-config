@@ -511,8 +511,8 @@ mécanismes existent déjà à moitié et n'ont qu'à être nommés :
 
 ```
 socle 4.1.0 étiqueté
-  → CI du socle : validate · consumer-resolution · **starter-kit construit, déployé, doctor --strict, e2e**
-  → publish.yml : GitHub Packages · release · v3 avance
+  → CI du socle : validate · **starter-kit construit, diagnostiqué, e2e** (il A REMPLACÉ consumer-resolution)
+  → publish.yml : GitHub Packages · release · v4 avance
   → pwa-starter-kit étiqueté v4.1.0 (même PR ou PR liée : le squelette est la preuve de la version)
   → générateur : rien à publier (il tire l'étiquette)
   → apps : Renovate ouvre la montée ; `pwa-doctor --fix` resynchronise les fichiers figés ; codemods s'il y a lieu
@@ -676,6 +676,12 @@ du socle vérifie à chaque commit qu'il se construit. Embarquer des gabarits
 créerait un troisième endroit où la même chose vieillit — et le parc sait ce
 que cela coûte : treize dépôts ont étendu pendant des mois un préréglage logé
 dans un dépôt inexistant.
+
+**Il n'y a pas de `--backend`**, contrairement à l'esquisse ci-dessus. Le
+squelette livre les deux adaptateurs derrière un port, et le choix se fait à
+l'exécution : un drapeau qui supprimerait des fichiers rendrait le second
+chemin non construit, donc mort en quelques semaines. Ce que le générateur
+prend, ce sont l'identité et `--from <ref>`.
 
 Ce qu'il fait vraiment tient dans deux pièges que personne n'avait automatisés :
 le lockfile écrit par **npm 10**, la version du runner, sans quoi la CI rougit
