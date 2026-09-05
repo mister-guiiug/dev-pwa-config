@@ -548,7 +548,7 @@ teste avant ce qui se publie.
 | #   | Chantier                                                                                                                                                                                                                                                                                                                                                                    | Coût              | Ce qui le prouve                                                                                             |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
 | 1   | ✅ **Couche 0 — faite le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                                       | 2 j               | **25 dépôts publics sur 25 protégés** ; `renovate.json` posé sur les quatre dépôts hors PWA                  |
-| 2   | **`pwa-starter-kit`** extrait de `miss-supatool` + `bac-sable` + `templates/` : variante `local` d'abord, `supabase` (SQL rôles/RLS, keep-alive, migrations) ensuite ; ADR écrits ; déployé sur Pages ; `doctor --strict` propre                                                                                                                                            | 4–5 j             | le job `consumer-resolution` du socle remplacé par « construire, déployer, diagnostiquer le squelette »      |
+| 2   | ✅ **`pwa-starter-kit` — fait le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                               | 4–5 j             | **fait** : `consumer-resolution` remplacé par le squelette, qui se construit et se diagnostique à chaque PR  |
 | 3   | **`pwa-doctor --fix`** et `pwa-env` (CONFIG.md phase 2) : fichiers figés resynchronisés depuis le squelette, manifeste d'env → `.env.example` + `deploy.yml` engendrés                                                                                                                                                                                                      | 3 j               | `secrets: inherit` = 0/16 ; 17 `vitest.config.ts` → 1 ; `doctor` en CI sur 17 apps                           |
 | 4   | **Générateur** : extension `gh lg-pwa create` (degit@tag, substitutions, gestes GitHub, PR catalogue) ; test nocturne générer → build → doctor → e2e ; enveloppe `create-lg-pwa-app` sur npmjs.org si le nom est libre                                                                                                                                                      | 3 j               | `mister-miss-koh` re-échafaudée par le générateur, comparée à sa version manuelle                            |
 | 5   | **Socle 4.0 — rétrécir** : sortir catalogue et palettes (fichier de données tiré à la build, ou entrée écrite par le générateur) ; isoler les 0-adoptant en `experimental/*` avec date de retrait ; `.d.ts` engendrés depuis JSDoc (`tsc --declaration --allowJs`) ou source TS ; ESLint 10 ; amender `CONTRIBUTING.md` : « entre ce qu'utilise le squelette ou deux apps » | 5 j + une majeure | 148 → ~90 sous-chemins ; 0 ligne de `.d.ts` à la main ; aucune publication du socle exigée par une naissance |
@@ -614,6 +614,45 @@ Résultat vérifié sur l'API : **vingt-cinq dépôts publics sur vingt-cinq en 
 reconnu par GitHub.** Détail d'outillage à connaître : `prettier --check .`
 ignore `LICENSE` lors d'un balayage de répertoire, mais échoue si on le lui
 passe explicitement — ne jamais le nommer dans une commande de vérification.
+
+### Bilan du chantier 2, exécuté le 05/09/2026
+
+[`mister-guiiug/pwa-starter-kit`](https://github.com/mister-guiiug/pwa-starter-kit)
+existe, est déployé, et son `build` enchaîne le budget de poids puis
+`pwa-doctor --strict` à **zéro défaut, zéro dette, zéro info**. Sept décisions
+sont écrites dans `docs/adr/`, six tests unitaires et sept e2e le tiennent.
+
+**La variante Supabase n'est pas un fork.** C'est un adaptateur qui s'active
+quand `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` sont posées ; sans elles
+l'application reste entière, et l'écran de compte **dit** le mode local au lieu
+de disparaître. Un fork aurait eu deux CI et aurait divergé en quelques
+semaines. Elle apporte les trois migrations que trois dépôts recopient
+(`profiles`, rôles, RLS deny-by-default à double verrou), onze assertions pgTAP
+d'isolation, et les workflows de migration et de keep-alive.
+
+**Le squelette a remplacé la fixture jetable du socle**, mais pas ce qu'elle
+vérifiait. Le job `consumer-resolution` échafaudait un faux consommateur dans
+`/tmp` ; le squelette est un vrai consommateur, tenu vert, et prouve ce que la
+fixture ne pouvait pas — qu'une application se compile, se construit et reste
+conforme au parc avec la version candidate. Mais il n'importe que **51
+sous-chemins sur 148** : le balayage exhaustif est donc conservé, simplement
+rejoué depuis son `node_modules`, qui porte déjà toutes les peers.
+
+**Quatre défauts du socle sont sortis de son écriture**, ce qui est très
+exactement sa raison d'être :
+
+| Défaut                                                                       | Suite                                            |
+| ---------------------------------------------------------------------------- | ------------------------------------------------ |
+| `pwa-doctor` comptait les COMMENTAIRES qui mettent en garde contre un défaut | corrigé, socle #182, publié en 4.0.1             |
+| `definePwaPlaywrightConfig` : `overrides` REMPLACE `use` et efface `baseURL` | contourné dans le squelette, à corriger en amont |
+| Le socle habille la barre basse mais ne la PLACE pas (`position: relative`)  | c'est délibéré ; le squelette le documente       |
+| `pwaBaseOptions` ne trouve `theme_color` que pour une app du catalogue       | couleurs passées explicitement                   |
+
+Et une leçon de conception qui n'appartient qu'au squelette : **un port
+dessiné sur l'implémentation locale est inimplémentable à distance.** Le port
+des notes était synchrone parce que `localStorage` l'est ; l'adaptateur
+Supabase ne pouvait pas le satisfaire, et cela n'est apparu qu'en l'écrivant.
+Découvert plus tard, ce sont les écrans qu'il aurait fallu reprendre.
 
 Ce qu'on **ne fait pas**, et pourquoi :
 
