@@ -278,3 +278,61 @@ test('le conforme : silence complet — la définition exécutable de « conform
 test('un dossier introuvable : code 2, pas une exception', async () => {
   assert.equal(await run(['--dir', '/nulle/part/du/tout']), 2);
 });
+
+test('un commentaire qui MET EN GARDE contre un défaut n’est pas ce défaut', async () => {
+  // Les deux cas sont sortis du squelette `pwa-starter-kit` le 05/09/2026 : il
+  // documente pourquoi il n'écrit pas `secrets: inherit`, et pourquoi le parc
+  // ne doit plus coder `'fr-FR'` en dur. Les deux étaient comptés comme le
+  // défaut dont ils préviennent. Un contrôle qu'on ne peut pas expliquer sans
+  // le déclencher pousse à ne rien expliquer.
+  await repo(
+    {
+      'package.json': { name: 'miss-commentee' },
+      '.github/workflows/ci.yml': [
+        '# Pas de `secrets: inherit` : le réutilisable déclare ce qu’il consomme.',
+        'jobs:',
+        '  ci:',
+        '    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4',
+      ].join('\n'),
+      'src/i18n.ts': [
+        '/**',
+        " * Le parc portait 88 locales `'fr-FR'` codées en dur.",
+        ' */',
+        "// Ne jamais écrire 'fr-FR' ici : la locale vient du contexte.",
+        'export const locale = getDefaultLocale();',
+      ].join('\n'),
+    },
+    async root => {
+      const report = diagnose(root);
+      assert.ok(
+        !ids(report).includes('secrets-inherit'),
+        'un commentaire YAML n’est pas une clause'
+      );
+      assert.ok(
+        !ids(report).includes('locale-figee'),
+        'un commentaire de bloc ou de ligne n’est pas du code'
+      );
+    }
+  );
+});
+
+test('le défaut réel est toujours vu, commentaire ou pas', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-fautive' },
+      '.github/workflows/deploy.yml': [
+        '# Ce commentaire parle de secrets: inherit sans en être un.',
+        'jobs:',
+        '  deploy:',
+        '    uses: x/y/.github/workflows/z.yml@v4',
+        '    secrets: inherit',
+      ].join('\n'),
+      'src/date.ts': "export const f = new Intl.DateTimeFormat('fr-FR');",
+    },
+    async root => {
+      const report = diagnose(root);
+      assert.ok(ids(report).includes('secrets-inherit'));
+      assert.ok(ids(report).includes('locale-figee'));
+    }
+  );
+});
