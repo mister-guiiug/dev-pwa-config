@@ -67,17 +67,31 @@ réutilisable **déclare** les secrets dont il a besoin, on ne passe que ceux-l�
 
 ## Publier
 
-La publication est déclenchée par un tag :
+**`main` est protégé : le commit de version passe par une PR**, comme les
+autres. La recette en trois lignes qui poussait directement ne fonctionne plus
+depuis le 01/09/2026.
 
 ```bash
 npm run version-packages          # changesets → version + CHANGELOG
-git commit -am "chore(release): x.y.z"
-git tag vx.y.z && git push --follow-tags
+git switch -c chore/release-x.y.z && git commit -am "chore(release): x.y.z"
+git push -u origin chore/release-x.y.z && gh pr create
 ```
 
-`publish.yml` vérifie la cohérence tag / `package.json`, publie avec provenance
-sigstore, crée la release, et fait avancer le tag majeur mobile (`v4`) que les
-dix-neuf dépôts consomment pour les workflows réutilisables.
+**Fusionner en `--merge`, pas en `--squash`** : le tag doit pointer sur le
+commit de version, et un squash le réécrit.
+
+Puis, sans poser de tag à la main :
+
+```bash
+gh workflow run publish.yml --ref main
+```
+
+`publish.yml` lit alors la version dans `package.json`, **crée le tag lui-même**,
+publie avec provenance sigstore, crée la release, et fait avancer le tag majeur
+mobile (`v4`) que les dix-neuf dépôts consomment pour les workflows
+réutilisables. Un `git push --follow-tags` reste possible — le workflow se
+déclenche aussi sur `v*` — mais il suppose que le commit de version soit déjà
+sur `main`.
 
 ## Accessibilité
 
