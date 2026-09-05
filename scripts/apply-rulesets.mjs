@@ -163,6 +163,12 @@ const CHECKS = {
     // contexte qui n'arrive jamais, et toutes les PR de ce dépôt gèleraient.
     "Qualité (fmt, clippy, chaîne d'appro)",
   ],
+  // Le générateur n'a ni build ni dépendance au socle — c'est sa propriété
+  // principale, puisqu'il doit s'installer là où aucun `.npmrc` n'existe.
+  'create-lg-pwa-app': [
+    'Format et tests',
+    'Engendrer une application depuis le squelette',
+  ],
   'mister-gphotos': ['build-and-test'],
   'vscode-sops-diff': ['build'],
   'mister-claude-skills': ['validate'],

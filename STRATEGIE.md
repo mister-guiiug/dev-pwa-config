@@ -550,7 +550,7 @@ teste avant ce qui se publie.
 | 1   | ✅ **Couche 0 — faite le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                                       | 2 j               | **25 dépôts publics sur 25 protégés** ; `renovate.json` posé sur les quatre dépôts hors PWA                  |
 | 2   | ✅ **`pwa-starter-kit` — fait le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                               | 4–5 j             | **fait** : `consumer-resolution` remplacé par le squelette, qui se construit et se diagnostique à chaque PR  |
 | 3   | **`pwa-doctor --fix`** et `pwa-env` (CONFIG.md phase 2) : fichiers figés resynchronisés depuis le squelette, manifeste d'env → `.env.example` + `deploy.yml` engendrés                                                                                                                                                                                                      | 3 j               | `secrets: inherit` = 0/16 ; 17 `vitest.config.ts` → 1 ; `doctor` en CI sur 17 apps                           |
-| 4   | **Générateur** : extension `gh lg-pwa create` (degit@tag, substitutions, gestes GitHub, PR catalogue) ; test nocturne générer → build → doctor → e2e ; enveloppe `create-lg-pwa-app` sur npmjs.org si le nom est libre                                                                                                                                                      | 3 j               | `mister-miss-koh` re-échafaudée par le générateur, comparée à sa version manuelle                            |
+| 4   | ✅ **Générateur — fait le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                                      | 3 j               | **fait** : une application engendrée se construit et passe `doctor --strict` à 0/0/0                         |
 | 5   | **Socle 4.0 — rétrécir** : sortir catalogue et palettes (fichier de données tiré à la build, ou entrée écrite par le générateur) ; isoler les 0-adoptant en `experimental/*` avec date de retrait ; `.d.ts` engendrés depuis JSDoc (`tsc --declaration --allowJs`) ou source TS ; ESLint 10 ; amender `CONTRIBUTING.md` : « entre ce qu'utilise le squelette ou deux apps » | 5 j + une majeure | 148 → ~90 sous-chemins ; 0 ligne de `.d.ts` à la main ; aucune publication du socle exigée par une naissance |
 | 6   | Le squelette **Tauri** — seulement si un troisième projet Tauri naît ; source : la CI de `mister-commitia`                                                                                                                                                                                                                                                                  | —                 | —                                                                                                            |
 
@@ -653,6 +653,49 @@ dessiné sur l'implémentation locale est inimplémentable à distance.** Le por
 des notes était synchrone parce que `localStorage` l'est ; l'adaptateur
 Supabase ne pouvait pas le satisfaire, et cela n'est apparu qu'en l'écrivant.
 Découvert plus tard, ce sont les écrans qu'il aurait fallu reprendre.
+
+### Bilan du chantier 4, exécuté le 05/09/2026
+
+[`create-lg-pwa-app`](https://github.com/mister-guiiug/create-lg-pwa-app)
+existe. Une application naît en une commande :
+
+```bash
+npx github:mister-guiiug/create-lg-pwa-app miss-exemple --publish
+```
+
+**`npx github:` plutôt qu'un paquet publié, et c'est la décision qui compte.**
+L'analyse proposait npmjs.org ou une extension `gh` ; les deux sont inutiles.
+Tiré depuis GitHub, le générateur n'a **aucune dépendance** et ne touche aucun
+registre — il fonctionne avant que le moindre `.npmrc` n'existe, ce qui est
+précisément le seul cas où on l'appelle. C'est aussi pourquoi sa configuration
+Prettier est une copie assumée de celle du socle, avec un test qui compare au
+fichier publié à chaque exécution.
+
+**Il ne contient aucun gabarit.** Il tire le squelette, dépôt vivant dont la CI
+du socle vérifie à chaque commit qu'il se construit. Embarquer des gabarits
+créerait un troisième endroit où la même chose vieillit — et le parc sait ce
+que cela coûte : treize dépôts ont étendu pendant des mois un préréglage logé
+dans un dépôt inexistant.
+
+Ce qu'il fait vraiment tient dans deux pièges que personne n'avait automatisés :
+le lockfile écrit par **npm 10**, la version du runner, sans quoi la CI rougit
+au premier push sur un message parlant de bindings natifs ; et Pages activées
+par un **PUT**, sans quoi Jekyll republie le README rendu à la place de
+l'application.
+
+**Trois défauts de portabilité sont sortis de son écriture**, tous invisibles
+sur le poste de développement :
+
+| Défaut                                                       | Cause                                                            |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `tar` refuse un chemin Windows absolu                        | le deux-points y désigne une machine distante                    |
+| `rename` échoue entre `%TEMP%` sur `C:` et un dépôt sur `D:` | `EXDEV` — il faut copier, pas déplacer                           |
+| `git commit` échoue sur un runner sans `user.name`           | « empty ident name » ; le commit est un confort, pas le livrable |
+
+Ce qu'il ne fait **pas**, et qui est délibéré : poser un secret — un générateur
+qui écrit des secrets est un générateur qui les connaît —, protéger la branche,
+et inscrire l'application au catalogue. Les deux derniers vivent dans le socle,
+sous relecture.
 
 Ce qu'on **ne fait pas**, et pourquoi :
 
