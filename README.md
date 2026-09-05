@@ -652,10 +652,32 @@ rend la règle mécanique plutôt que documentaire — un manifeste déclaré, u
 et trois gardes pour qu'une valeur absente n'atteigne jamais la production en
 silence — est instruit dans [CONFIG.md](CONFIG.md).
 
-## Checklist — nouveau projet consommateur
+## Nouveau projet : une commande
+
+```bash
+npx github:mister-guiiug/create-lg-pwa-app miss-exemple --publish
+```
+
+[`create-lg-pwa-app`](https://github.com/mister-guiiug/create-lg-pwa-app) tire
+le squelette [`pwa-starter-kit`](https://github.com/mister-guiiug/pwa-starter-kit),
+substitue l'identité, écrit le lockfile avec **npm 10** — celui du runner —,
+fait le premier commit, crée le dépôt public et active Pages **par un PUT**.
+
+C'est la voie recommandée depuis le 05/09/2026. Ce que la checklist manuelle
+ci-dessous ne pouvait pas donner : le squelette apporte aussi la
+**composition** — pile de fournisseurs, routeur, écrans de cadre, i18n,
+sélecteur de backend, mise à jour du service worker — qui pesait 22 % des
+lignes du parc et se réécrivait à chaque naissance, ainsi que sept décisions
+d'architecture déjà prises.
+
+Restent deux gestes, volontairement hors du générateur :
+`node scripts/apply-rulesets.mjs <id>` pour protéger la branche, et une PR sur
+`apps-catalog.js` sans laquelle l'application n'apparaît pas chez ses sœurs.
+
+## Checklist — à la main, ou pour comprendre ce que fait le générateur
 
 1. **`.npmrc`** (copier [`templates/.npmrc`](./templates/.npmrc)) + **`.nvmrc`** (`22`).
-2. **Dépendance** : `npm i -D @mister-guiiug/dev-pwa-config@^3` + les peers utilisés
+2. **Dépendance** : `npm i -D @mister-guiiug/dev-pwa-config@^4` + les peers utilisés
    (cf. `peerDependencies` du [`package.json`](./package.json) : `eslint`, `@eslint/js`,
    `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`,
    `globals`, `prettier`, `typescript`, `vite`, `vitest`, `react`, `tailwindcss`…).
