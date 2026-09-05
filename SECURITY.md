@@ -26,8 +26,8 @@ engagement de bonne foi, pas un contrat de support.
 
 Seule la dernière version majeure publiée reçoit des correctifs. Les workflows
 réutilisables sont consommés via un **tag majeur mobile** (`@v4`) : un correctif
-publié atteint donc les seize dépôts au tag suivant, sans intervention de leur
-part.
+publié atteint donc les dix-neuf dépôts consommateurs au tag suivant, sans
+intervention de leur part.
 
 ## Périmètre
 

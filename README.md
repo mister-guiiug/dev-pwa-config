@@ -300,7 +300,8 @@ réellement :
   (redimensionner la fenêtre fait jouer les `clamp()`) ;
 - le DOM exact de chaque composant `/react` et les sélecteurs
   `[data-dwc="…"]` correspondants ;
-- une **vitrine des seize dépôts** de la famille, en grille ou en tableau :
+- une **vitrine des applications** de la famille — le catalogue, pas une copie —,
+  en grille ou en tableau :
   recherche sans diacritiques (les facettes et les sous-chemins y sont
   cherchables : « supabase », « vite-csp »), quatre axes de filtres croisés
   affichant le compte qu'ils donneraient, tri, ancre par application, liens app
@@ -3360,7 +3361,7 @@ Toute modification de stack famille (bump majeur React, ESLint, etc.) :
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md)        | Comment contribuer, et les quatre règles du dépôt — dont « promouvoir sans migrer, c'est ne pas avoir fini » |
 | [`SECURITY.md`](SECURITY.md)                | Signalement privé d'une vulnérabilité, périmètre, et les deux limites connues qui ne sont pas des failles    |
-| [`.github/CODEOWNERS`](.github/CODEOWNERS)  | `workflows/`, `actions/` et `scripts/` demandent une relecture : ils s'exécutent dans seize dépôts           |
+| [`.github/CODEOWNERS`](.github/CODEOWNERS)  | `workflows/`, `actions/` et `scripts/` demandent une relecture : ils s'exécutent dans dix-neuf dépôts        |
 | `npm run validate`                          | Ce que la CI exécute : format, lint, types, tests                                                            |
 | `node scripts/apply-rulesets.mjs --dry-run` | Protection de `main` sur les dix-huit dépôts — liste lue dans le catalogue, checks exigés par dépôt          |
 
