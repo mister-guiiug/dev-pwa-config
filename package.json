@@ -595,7 +595,8 @@
   "bin": {
     "pwa-icons": "./scripts/generate-pwa-icons.mjs",
     "pwa-bundle-budget": "./scripts/check-bundle-budget.mjs",
-    "pwa-doctor": "./scripts/pwa-doctor.mjs"
+    "pwa-doctor": "./scripts/pwa-doctor.mjs",
+    "pwa-pgtap": "./scripts/pwa-pgtap.mjs"
   },
   "files": [
     "eslint-base.js",
@@ -724,6 +725,7 @@
     "idb.js",
     "idb.d.ts",
     "scripts/pwa-doctor.mjs",
+    "scripts/pwa-pgtap.mjs",
     "scripts/site-readers.mjs"
   ],
   "peerDependencies": {

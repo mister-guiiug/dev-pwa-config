@@ -119,6 +119,8 @@ export const LABELS = {
     auth: {
       title: 'Connexion',
       signUpTitle: 'Créer un compte',
+      otpTitle: 'Recevoir un lien de connexion',
+      sendLink: 'Recevoir un lien',
       email: 'Adresse e-mail',
       password: 'Mot de passe',
       signIn: 'Se connecter',
@@ -209,6 +211,8 @@ export const LABELS = {
     auth: {
       title: 'Sign in',
       signUpTitle: 'Create an account',
+      otpTitle: 'Sign in with a link',
+      sendLink: 'Send me a link',
       email: 'Email address',
       password: 'Password',
       signIn: 'Sign in',
@@ -299,6 +303,8 @@ export const LABELS = {
     auth: {
       title: 'Iniciar sesión',
       signUpTitle: 'Crear una cuenta',
+      otpTitle: 'Iniciar sesión con un enlace',
+      sendLink: 'Enviar un enlace',
       email: 'Correo electrónico',
       password: 'Contraseña',
       signIn: 'Iniciar sesión',
@@ -394,6 +400,8 @@ export const LABELS = {
     auth: {
       title: 'Anmelden',
       signUpTitle: 'Konto erstellen',
+      otpTitle: 'Mit einem Link anmelden',
+      sendLink: 'Link senden',
       email: 'E-Mail-Adresse',
       password: 'Passwort',
       signIn: 'Anmelden',
@@ -484,6 +492,8 @@ export const LABELS = {
     auth: {
       title: 'Accedi',
       signUpTitle: 'Crea un account',
+      otpTitle: 'Accedi con un link',
+      sendLink: 'Invia un link',
       email: 'Indirizzo e-mail',
       password: 'Password',
       signIn: 'Accedi',
@@ -576,6 +586,8 @@ export const LABELS = {
     auth: {
       title: 'Iniciar sessão',
       signUpTitle: 'Criar uma conta',
+      otpTitle: 'Iniciar sessão com uma ligação',
+      sendLink: 'Enviar uma ligação',
       email: 'Endereço de e-mail',
       password: 'Palavra-passe',
       signIn: 'Iniciar sessão',
@@ -668,6 +680,8 @@ export const LABELS = {
     auth: {
       title: 'Inloggen',
       signUpTitle: 'Account aanmaken',
+      otpTitle: 'Inloggen met een link',
+      sendLink: 'Stuur me een link',
       email: 'E-mailadres',
       password: 'Wachtwoord',
       signIn: 'Inloggen',

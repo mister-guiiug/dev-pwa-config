@@ -1,0 +1,101 @@
+# Reusable workflow — tests pgTAP sur une pile Supabase JETABLE.
+#
+# LE SEUL ENDROIT OÙ LES MIGRATIONS S'EXÉCUTENT VRAIMENT. Le poste de
+# développement n'a pas de démon Docker qui démarre : `supabase start` y est
+# impossible, et les politiques RLS d'une application n'y sont que RELUES.
+# Une politique se lit vite et se trompe de même — et c'est le seul endroit
+# du système où une erreur d'une ligne expose une table entière à une clé
+# publique. Ce workflow les exécute, sur le Postgres du runner, à chaque
+# changement de migration ou de test.
+#
+# PROMU DE `miss-lookhouse` (05/09/2026), qui était la seule application du
+# parc à jouer ses tests pgTAP en CI. Le squelette en livrait onze qui ne
+# tournaient nulle part ; mister-miss-koh joue les siens à la main, contre la
+# base liée (`pwa-pgtap`, le bin du même paquet — les deux se complètent :
+# ici la pile jetable et les migrations depuis zéro, là le projet hébergé).
+#
+# AUCUN SECRET : tout se passe dans une base jetable. Rien ne touche le projet
+# hébergé — c'est `pwa-supabase-migrate.yml` qui s'en charge, à part.
+#
+# Usage côté consumer (.github/workflows/supabase-tests.yml) :
+#
+#   name: Supabase tests
+#   on:
+#     pull_request:
+#       paths: ['supabase/migrations/**', 'supabase/tests/**']
+#     push:
+#       branches: [main]
+#       paths: ['supabase/migrations/**', 'supabase/tests/**']
+#     workflow_dispatch:
+#   permissions:
+#     contents: read
+#   jobs:
+#     pgtap:
+#       uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-test.yml@v4
+#
+# PRÉREQUIS : `supabase/config.toml` (créé par `supabase init`), sans quoi
+# `supabase start` n'a rien à démarrer — le job le dit en clair au lieu
+# d'échouer sur un message du CLI.
+name: Reusable Supabase test
+
+on:
+  workflow_call:
+    inputs:
+      cli-version:
+        description: 'Version du CLI Supabase'
+        type: string
+        required: false
+        default: 'latest'
+      exclude:
+        description: >-
+          Services de la pile locale à NE PAS démarrer (liste séparée par des
+          virgules). Les tests écrivent en SQL : Postgres et GoTrue suffisent,
+          le reste ne fait que ralentir le démarrage.
+        type: string
+        required: false
+        default: 'realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor,mailpit,postgres-meta,postgrest,kong'
+
+permissions:
+  contents: read
+
+jobs:
+  pgtap:
+    name: pgTAP (pile jetable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: ${{ inputs.cli-version }}
+
+      - name: Le projet a une configuration locale
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            echo "::error::supabase/config.toml absent — lancer « supabase init » dans le dépôt et committer le fichier : sans lui, il n'y a pas de pile locale à démarrer."
+            exit 1
+          fi
+          if ! ls supabase/tests/*.sql >/dev/null 2>&1; then
+            echo "::error::aucun fichier dans supabase/tests/ — rien à jouer. Copier supabase/tests/rls.test.sql du squelette pwa-starter-kit."
+            exit 1
+          fi
+
+      # Les migrations sont appliquées ICI, depuis zéro, par `supabase start`.
+      # Une migration qui passe en hébergé mais échoue ici (ou l'inverse) est
+      # une information, pas un bruit.
+      - name: Démarrer la base locale
+        env:
+          EXCLUDE: ${{ inputs.exclude }}
+        run: supabase start -x "$EXCLUDE"
+
+      - name: Tests pgTAP
+        run: supabase test db
+
+      - name: Journaux de la base en cas d'échec
+        if: failure()
+        run: |
+          docker ps -a
+          db=$(docker ps -a --filter 'name=supabase_db' --format '{{.Names}}' | head -1)
+          [ -n "$db" ] && docker logs "$db" --tail 200 || true

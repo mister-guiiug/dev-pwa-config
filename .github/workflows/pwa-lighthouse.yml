@@ -21,6 +21,13 @@
 # Le rapport n'est PAS publié sur un stockage public : il est joint en artefact
 # du run (`upload-artifacts`, activé par défaut). Passer `public-report: true`
 # pour obtenir en plus une URL partageable.
+#
+# UN AUDIT SANS PAGE EST REFUSÉ. Quand la page ne rend rien (`NO_FCP` : base
+# path faux, backend initialisé au niveau module sans ses variables), Lighthouse
+# produit un rapport SANS catégorie accessibilité — et l'assertion
+# `categories:accessibility ≥ 0,9` du gabarit ne s'applique plus à rien. Trois
+# applications du parc ont eu un audit vert sur une page blanche en août 2026.
+# Le dernier pas lit le rapport et échoue sur un `runtimeError`.
 name: Reusable PWA Lighthouse
 
 on:
@@ -100,6 +107,7 @@ jobs:
         run: npm run build
 
       - name: Lighthouse CI
+        id: lhci
         # Action tierce épinglée au SHA (supply-chain) ; Renovate met à jour le pin.
         uses: treosh/lighthouse-ci-action@3e7e23fb74242897f95c0ba9cabad3d0227b9b18 # v12
         with:
@@ -108,3 +116,37 @@ jobs:
           # Opt-in : l'action compare la chaîne à 'true', donc `false` désactive
           # bien la publication (`temporaryPublicStorage === 'true' ? … : false`).
           temporaryPublicStorage: ${{ inputs.public-report }}
+
+      - name: Refuser un audit sans page (NO_FCP)
+        env:
+          RESULTS: ${{ steps.lhci.outputs.resultsPath }}
+        run: |
+          cat > "$RUNNER_TEMP/garde-lighthouse.mjs" <<'EOF'
+          import { existsSync, readdirSync, readFileSync } from 'node:fs';
+          import { join } from 'node:path';
+
+          const dir = process.env.RESULTS || '.lighthouseci';
+          const rapports = existsSync(dir)
+            ? readdirSync(dir).filter(f => /^lhr-.*\.json$/.test(f))
+            : [];
+          if (!rapports.length) {
+            console.log(`::error::aucun rapport Lighthouse (lhr-*.json) dans ${dir} : rien n'a été mesuré.`);
+            process.exit(1);
+          }
+          let refuses = 0;
+          for (const f of rapports) {
+            const lhr = JSON.parse(readFileSync(join(dir, f), 'utf8'));
+            const erreur = lhr.runtimeError;
+            const a11y = lhr.categories?.accessibility?.score;
+            if (erreur?.code || a11y === null || a11y === undefined) {
+              refuses++;
+              console.log(
+                `::error::${f} — ${erreur?.code ?? 'sans score accessibilité'} : ${erreur?.message ?? 'la page n’a rien rendu ; l’assertion a11y ne s’est appliquée à rien.'}`
+              );
+            } else {
+              console.log(`${f} — accessibilité ${Math.round(a11y * 100)}, page rendue.`);
+            }
+          }
+          process.exit(refuses ? 1 : 0);
+          EOF
+          node "$RUNNER_TEMP/garde-lighthouse.mjs"

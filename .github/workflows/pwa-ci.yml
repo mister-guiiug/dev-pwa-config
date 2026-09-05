@@ -7,7 +7,19 @@
 #   ci:
 #     uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4
 #     with:
+#       run-doctor: true   # la checklist du parc, lue sur le dépôt ET sur dist/
 #       run-e2e: false
+#
+# DEUX GARDES QUI NE TOURNAIENT NULLE PART, relevé du 05/09/2026 :
+#
+#   - `pwa-doctor` existait, et une seule application sur vingt l'appelait —
+#     le squelette. Les dix-neuf autres n'étaient jamais diagnostiquées. D'où
+#     `run-doctor` : opt-in en 4.x, défaut `true` à la prochaine majeure ;
+#   - `e2e-grep` valait `@critical` : la spec `@a11y` du gabarit et du
+#     squelette n'était JAMAIS exécutée, et Playwright rend « No tests found »
+#     avec un code 0 quand rien ne correspond. Le défaut joue désormais
+#     `@critical|@a11y`, et un filtre qui ne trouve aucun test fait échouer le
+#     job au lieu de le laisser vert.
 name: Reusable PWA CI
 
 on:
@@ -37,6 +49,23 @@ on:
         type: boolean
         required: false
         default: true
+      run-doctor:
+        description: >-
+          Lance `pwa-doctor` après le build : la checklist du parc, lue sur le
+          dépôt et sur `dist/`. Échoue sur un DÉFAUT (quelqu'un en souffre) ;
+          avec `doctor-strict`, aussi sur une dette. Opt-in en 4.x, défaut
+          `true` à la prochaine majeure.
+        type: boolean
+        required: false
+        default: false
+      doctor-strict:
+        description: >-
+          `pwa-doctor --strict` : une dette suffit à échouer. C'est le régime
+          du squelette ; une application l'adopte quand son diagnostic est
+          revenu à zéro.
+        type: boolean
+        required: false
+        default: false
       verify-lockfile:
         description: >-
           Vérifie en PR que package-lock.json est synchronisé avec package.json.
@@ -63,9 +92,13 @@ on:
         required: false
         default: false
       e2e-grep:
+        description: >-
+          Filtre `--grep` de Playwright. Défaut `@critical|@a11y` : le parcours
+          critique ET la suite axe-core du gabarit. Un filtre qui ne trouve
+          aucun test fait échouer le job.
         type: string
         required: false
-        default: '@critical'
+        default: '@critical|@a11y'
       e2e-project:
         type: string
         required: false
@@ -170,6 +203,20 @@ jobs:
         if: ${{ inputs.run-build }}
         run: npm run build
 
+      # APRÈS le build : le docteur lit `dist/` (manifeste, icônes, langue,
+      # CSP, 404.html) en plus du dépôt. Sans build, ces lectures sont sautées
+      # et il le dit.
+      - name: Doctor (conformité au parc)
+        if: ${{ inputs.run-doctor }}
+        env:
+          STRICT: ${{ inputs.doctor-strict }}
+        run: |
+          if [ "$STRICT" = "true" ]; then
+            npx pwa-doctor --strict
+          else
+            npx pwa-doctor
+          fi
+
       - name: Audit dependencies (SCA)
         if: ${{ inputs.run-npm-audit }}
         run: npm audit --omit=dev --audit-level=${{ inputs.npm-audit-level }}
@@ -186,6 +233,11 @@ jobs:
     if: ${{ inputs.run-e2e }}
     needs: quality
     runs-on: ubuntu-latest
+    env:
+      # Passés par l'environnement, jamais interpolés dans un script : un filtre
+      # est une expression, pas une ligne de commande.
+      E2E_GREP: ${{ inputs.e2e-grep }}
+      E2E_PROJECT: ${{ inputs.e2e-project }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -197,18 +249,36 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Playwright browsers
-        run: npx playwright install ${{ inputs.e2e-project }} --with-deps
+        run: npx playwright install "$E2E_PROJECT" --with-deps
+
+      # `playwright test --grep` qui ne trouve rien imprime « No tests found »
+      # et rend 0 : un `run-e2e: true` sans spec taguée était un job vert qui
+      # ne jouait rien. Le squelette et le gabarit ont porté une spec `@a11y`
+      # jamais exécutée pour cette raison.
+      - name: Le filtre trouve des tests
+        run: |
+          listing=$(npx playwright test --list --grep "$E2E_GREP" --project="$E2E_PROJECT" 2>&1 || true)
+          total=$(printf '%s\n' "$listing" | sed -n 's/^Total: \([0-9][0-9]*\) tests\{0,1\} in .*/\1/p' | tail -1)
+          if [ -z "$total" ] || [ "$total" = "0" ]; then
+            printf '%s\n' "$listing" | tail -20
+            echo "::error::run-e2e est demandé, mais aucun test ne correspond à « $E2E_GREP » — Playwright rendrait « No tests found » sans échouer. Taguer les specs (@critical, @a11y) ou ajuster e2e-grep."
+            exit 1
+          fi
+          echo "$total test(s) pour « $E2E_GREP »."
 
       - name: Run E2E
-        run: npx playwright test --grep "${{ inputs.e2e-grep }}" --project=${{ inputs.e2e-project }}
+        run: npx playwright test --grep "$E2E_GREP" --project="$E2E_PROJECT"
         env:
           CI: true
 
+      # Le nom d'un artefact refuse `|`, `:` et `/` : le filtre n'y a pas sa
+      # place — `@critical|@a11y` ferait échouer l'envoi du rapport, au moment
+      # précis où on en a besoin.
       - name: Upload report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-results-${{ inputs.e2e-grep }}
+          name: e2e-results-${{ inputs.e2e-project }}
           path: |
             playwright-report/
             test-results/

@@ -6,14 +6,22 @@ export interface LoginFormValues {
 }
 
 export interface LoginFormProps {
-  /** Reçoit `{ email, password }` — l'e-mail rogné. L'appelant fait `signIn`. */
+  /**
+   * Reçoit `{ email, password }` — l'e-mail rogné. L'appelant fait `signIn`.
+   * En mode `otp`, `password` vaut `''` : l'appelant fait
+   * `signInWithOtp({ email, emailRedirectTo })`.
+   */
   onSubmit?: (values: LoginFormValues) => void;
   /** Pose `aria-busy` sur le bouton et ignore une seconde soumission. */
   busy?: boolean;
   /** Une chaîne DÉJÀ traduite (`frAuthError`), rendue dans un `role="alert"`. */
   error?: string | null;
-  /** `signup` : `autoComplete="new-password"` et `minLength`. */
-  mode?: 'signin' | 'signup';
+  /**
+   * `signup` : `autoComplete="new-password"` et `minLength`. `otp` : un seul
+   * champ e-mail et un bouton « Recevoir un lien » — la connexion par lien à
+   * usage unique, sans mot de passe nulle part.
+   */
+  mode?: 'signin' | 'signup' | 'otp';
   /** Défaut : « Connexion » / « Créer un compte ». `null` retire le titre. */
   title?: ReactNode | null;
   titleAs?: ElementType;

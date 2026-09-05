@@ -12,9 +12,11 @@ import { dirname, join } from 'node:path';
 import {
   PRESET,
   diagnose,
+  filtreE2e,
   format,
   liensFamille,
   run,
+  specJouee,
 } from '../scripts/pwa-doctor.mjs';
 
 /** Un dépôt factice à partir d'une carte chemin → contenu. */
@@ -235,7 +237,7 @@ test('le conforme : silence complet — la définition exécutable de « conform
       'package.json': {
         name: 'miss-x',
         engines: { node: '>=22' },
-        bundleBudget: { totalGzipKb: 200 },
+        bundleBudget: { totalGzipKb: 200, mainChunkKb: 120 },
         dependencies: { '@supabase/supabase-js': '2' },
         devDependencies: { '@playwright/test': '1' },
       },
@@ -245,7 +247,8 @@ test('le conforme : silence complet — la définition exécutable de « conform
       '.gitignore': 'dist\n.claude/worktrees/\n',
       'renovate.json': { extends: [PRESET] },
       '.lighthouserc.json': {},
-      'e2e/a11y.spec.ts': 'test',
+      // Un titre que le filtre par défaut de la CI (`@critical|@a11y`) joue.
+      'e2e/a11y.spec.ts': "test.describe('@a11y accessibilité', () => {});",
       '.github/workflows/ci.yml':
         'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4\nwith:\n  run-e2e: true',
       '.github/workflows/lighthouse.yml':
@@ -254,7 +257,7 @@ test('le conforme : silence complet — la définition exécutable de « conform
         'uses: mister-guiiug/dev-pwa-config/.github/workflows/cleanup-runs.yml@v4',
       '.github/workflows/keepalive.yml':
         'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v4',
-      'vite.config.ts': `pwaSeoPlugin({ themeColor: { light: '#fff', dark: '#000' } }); cspPlugin(); VitePWA({ registerType: 'prompt' })`,
+      'vite.config.ts': `versionPlugin({ manifest: true }); pwaSeoPlugin({ themeColor: { light: '#fff', dark: '#000' } }); cspPlugin(); VitePWA({ registerType: 'prompt' })`,
       // Les deux liens de la famille sont dans la COQUILLE, hors <Routes> :
       // ils sont donc sur l'accueil comme sur les réglages, et sur tout écran
       // que l'app ajoutera ensuite.
@@ -263,6 +266,7 @@ export function Shell() {
   return (<><Routes><Route path="/" element={<Home />} /></Routes><AppFooter repoUrl={REPO_URL} /></>);
 }`,
       'dist/index.html': html,
+      'dist/version.json': { version: '1.0.0' },
       'dist/manifest.webmanifest': {
         id: '/miss-x/',
         lang: 'fr',
@@ -422,5 +426,182 @@ test('aucun porteur : la dette le dit sans deviner', () => {
   assert.equal(
     liens([fichier('src/App.test.tsx', '<AppFooter repoUrl={REPO_URL} />')]),
     'absent'
+  );
+});
+
+/* ── Les gardes du 05/09/2026 ─────────────────────────────────────────────── */
+
+test('un déploiement Pages écrit à la main est une dette ; par le réutilisable, non', async () => {
+  // mister-puzzle et mister-doc servaient la page 404 de GitHub sur un lien
+  // profond : leur deploy.yml n'appelle pas le réutilisable, qui seul pose le
+  // repli SPA, `required-env` et le base path.
+  const maison = {
+    'package.json': { name: 'mister-puzzle' },
+    '.github/workflows/deploy.yml':
+      'steps:\n  - uses: actions/upload-pages-artifact@v3\n  - uses: actions/deploy-pages@v4',
+  };
+  await repo(maison, root => {
+    assert.ok(ids(diagnose(root), 'dette').includes('wf-deploy-maison'));
+  });
+  await repo(
+    {
+      ...maison,
+      '.github/workflows/deploy.yml':
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4',
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('wf-deploy-maison'));
+    }
+  );
+});
+
+test('spa-404 : ce que pwa-deploy.yml@v4 pose au déploiement n’est pas un défaut du build', async () => {
+  const base = {
+    'package.json': { name: 'miss-badminton' },
+    'src/main.tsx': "import { BrowserRouter } from 'react-router';",
+    'dist/index.html':
+      '<html lang="fr"><head><link rel="manifest" href="/miss-badminton/m.webmanifest"><script type="module" src="/miss-badminton/assets/i.js"></script></head></html>',
+  };
+  await repo(
+    {
+      ...base,
+      '.github/workflows/deploy.yml':
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4',
+    },
+    root => {
+      assert.ok(
+        !ids(diagnose(root), 'défaut').includes('spa-404'),
+        'le réutilisable copie index.html en 404.html'
+      );
+    }
+  );
+  await repo(
+    {
+      ...base,
+      '.github/workflows/deploy.yml':
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v2',
+    },
+    root => {
+      assert.ok(
+        ids(diagnose(root), 'défaut').includes('spa-404'),
+        'un v2 ne le fait pas'
+      );
+    }
+  );
+});
+
+test('une spec que le filtre e2e ne joue jamais est une dette ; le défaut du réutilisable joue @a11y', async () => {
+  const fichiers = {
+    'package.json': {
+      name: 'miss-x',
+      devDependencies: { '@playwright/test': '1' },
+    },
+    'e2e/a11y.spec.ts':
+      "test.describe('@a11y accessibilité', () => { test('accueil', async () => {}); });",
+    'e2e/smoke.spec.ts': "test.describe('@critical le cadre', () => {});",
+  };
+  await repo(
+    {
+      ...fichiers,
+      '.github/workflows/ci.yml':
+        "uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4\nwith:\n  run-e2e: true\n  e2e-grep: '@critical'",
+    },
+    root => {
+      const d = diagnose(root).findings.find(f => f.id === 'e2e-hors-filtre');
+      assert.ok(d, 'la spec a11y est hors filtre');
+      assert.match(d.message, /e2e\/a11y\.spec\.ts/);
+      assert.doesNotMatch(d.message, /smoke/);
+      assert.match(d.message, /@critical/);
+    }
+  );
+  await repo(
+    {
+      ...fichiers,
+      '.github/workflows/ci.yml':
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4\nwith:\n  run-e2e: true',
+    },
+    root => {
+      assert.ok(
+        !ids(diagnose(root)).includes('e2e-hors-filtre'),
+        'le défaut @critical|@a11y couvre les deux specs'
+      );
+    }
+  );
+});
+
+test('filtreE2e lit ci.yml, ignore les commentaires, tolère un filtre mal formé', () => {
+  assert.equal(
+    filtreE2e("with:\n  e2e-grep: '@smoke|@a11y'").source,
+    '@smoke|@a11y'
+  );
+  assert.equal(filtreE2e('with:\n  run-e2e: true').source, '@critical|@a11y');
+  assert.equal(
+    filtreE2e('# e2e-grep: \'@jamais\'\nwith:\n  e2e-grep: "@critical"').source,
+    '@critical'
+  );
+  assert.ok(
+    filtreE2e('e2e-grep: (').test('('),
+    'un filtre invalide devient littéral'
+  );
+  assert.ok(
+    specJouee("test.describe.serial('@critical x', () => {})", filtreE2e(''))
+  );
+  assert.ok(!specJouee("test('sans tag', async () => {})", filtreE2e('')));
+});
+
+test('version.json : sans versionPlugin, l’app ne sait pas ce qui est en ligne', async () => {
+  // Dix-sept sites sur dix-huit le 05/09/2026 : `AppUpdates` propose une
+  // version sans pouvoir dire laquelle, ni laquelle tourne.
+  await repo(
+    { 'package.json': { name: 'miss-x' }, 'vite.config.ts': 'VitePWA({})' },
+    root => {
+      assert.ok(ids(diagnose(root), 'dette').includes('version-manifest'));
+    }
+  );
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'vite.config.ts': 'versionPlugin({ manifest: true }); VitePWA({})',
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('version-manifest'));
+    }
+  );
+});
+
+test('deux informations : un budget sans plafond initial, localStorage sans magasin versionné', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-x', bundleBudget: { totalGzipKb: 300 } },
+      'src/store.ts': [
+        "localStorage.setItem('a', '1'); localStorage.getItem('a');",
+        "// localStorage.removeItem('c') — un commentaire n'est pas un accès",
+      ].join('\n'),
+    },
+    root => {
+      const infos = diagnose(root).findings.filter(f => f.level === 'info');
+      assert.ok(infos.some(f => f.id === 'main-chunk-budget'));
+      const ls = infos.find(f => f.id === 'local-storage-direct');
+      assert.ok(ls);
+      assert.match(ls.message, /^2 accès/, 'le commentaire ne compte pas');
+    }
+  );
+  await repo(
+    {
+      'package.json': {
+        name: 'miss-x',
+        bundleBudget: { totalGzipKb: 300, mainChunkKb: 120 },
+      },
+      'src/store.ts':
+        "import { createVersionedStore } from '@mister-guiiug/dev-pwa-config/versioned-store'; localStorage.getItem('legacy');",
+    },
+    root => {
+      const trouves = ids(diagnose(root));
+      assert.ok(!trouves.includes('main-chunk-budget'));
+      assert.ok(
+        !trouves.includes('local-storage-direct'),
+        'le magasin versionné est là : la lecture héritée est un choix'
+      );
+    }
   );
 });

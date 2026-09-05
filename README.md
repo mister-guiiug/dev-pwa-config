@@ -846,7 +846,7 @@ Restent deux gestes, volontairement hors du générateur :
 | `@mister-guiiug/dev-pwa-config/react/use-auth`               | `.js` + `.d.ts` | `useAuth` — l'état de session dans React, branché sur le port ; quatre apps portaient chacune leur pont                                                                                                                                                      |
 | `@mister-guiiug/dev-pwa-config/react/auth-gate`              | `.js` + `.d.ts` | `AuthGate` : garde d'accès **non stylée** — quoi rendre selon l'état de session                                                                                                                                                                              |
 | `@mister-guiiug/dev-pwa-config/react/auth-provider`          | `.js` + `.d.ts` | `AuthProvider` / `useAuthContext` : le contexte qui tient le client du port et expose `signIn` / `signUp` / `signOut` — ce que quatre `AuthProvider` d'apps recopiaient ; mode local sans adaptateur                                                         |
-| `@mister-guiiug/dev-pwa-config/react/login-form`             | `.js` + `.d.ts` | `LoginForm` : e-mail + mot de passe, présentationnel, emplacements `children` / `footer` — quatre écrans de connexion identiques dans les apps                                                                                                               |
+| `@mister-guiiug/dev-pwa-config/react/login-form`             | `.js` + `.d.ts` | `LoginForm` : e-mail + mot de passe, ou e-mail seul en `mode="otp"` (lien de connexion, sans mot de passe nulle part), présentationnel, emplacements `children` / `footer` — quatre écrans de connexion identiques dans les apps                             |
 | `@mister-guiiug/dev-pwa-config/react/mfa-challenge`          | `.js` + `.d.ts` | `MfaChallenge` : défi TOTP au login, code de secours et déconnexion en option — promu de mister-doc et miss-uwh                                                                                                                                              |
 | `@mister-guiiug/dev-pwa-config/realtime`                     | `.js` + `.d.ts` | Synchronisation vivante — le **port**, agnostique du service                                                                                                                                                                                                 |
 | `@mister-guiiug/dev-pwa-config/realtime/supabase`            | `.js` + `.d.ts` | Transport Supabase Realtime — client injecté ; le canal est nommé **avec son filtre**, sans quoi deux écrans sur la même table se télescopent                                                                                                                |
@@ -907,11 +907,12 @@ Restent deux gestes, volontairement hors du générateur :
 
 ## Bin
 
-| Commande            | Rôle                                                                                                                                                                                                                                                                                                                                                      |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pwa-icons`         | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable`                                                                                                                                                                                                                 |
-| `pwa-bundle-budget` | Refuse un build qui dépasse `bundleBudget` (`totalGzipKb` : tout le JS gzip ; `mainChunkKb` : le chunk principal, brut) lu dans `package.json`. Ex. `"build": "vite build && pwa-bundle-budget"` — promu de miss-uwh et mister-qowa                                                                                                                       |
-| `pwa-doctor`        | Lit UN dépôt et dit ce qui manque à la checklist du parc — fichiers du gabarit, workflows, et le build (`dist/` : manifeste lié sous le site, PNG 512, `id`, langue, icône iOS, CSP, `404.html`). Trois verdicts (défaut, dette, info), le geste à chaque ligne, code 1 sur un défaut (`--strict` : aussi sur une dette). Ex. `"postbuild": "pwa-doctor"` |
+| Commande            | Rôle                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pwa-icons`         | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable`                                                                                                                                                                                                                                                                                                                                                                    |
+| `pwa-bundle-budget` | Refuse un build qui dépasse `bundleBudget` (`totalGzipKb` : tout le JS gzip ; `mainChunkKb` : le chunk principal, brut) lu dans `package.json`. Ex. `"build": "vite build && pwa-bundle-budget"` — promu de miss-uwh et mister-qowa                                                                                                                                                                                                                                                                          |
+| `pwa-doctor`        | Lit UN dépôt et dit ce qui manque à la checklist du parc — fichiers du gabarit, workflows, et le build (`dist/` : manifeste lié sous le site, PNG 512, `id`, langue, icône iOS, CSP, `404.html`). Trois verdicts (défaut, dette, info), le geste à chaque ligne, code 1 sur un défaut (`--strict` : aussi sur une dette). Ex. `"postbuild": "pwa-doctor"`                                                                                                                                                    |
+| `pwa-pgtap`         | Joue les fichiers pgTAP de `supabase/tests/` contre la base LIÉE, sans Docker : chaque assertion dépose son verdict dans une table temporaire que la dernière requête renvoie d'un bloc (`supabase db query` ne rend que le dernier jeu de lignes). Même fichier, même plan, même `rollback`. Exige le CLI `supabase`, `supabase link` fait et `SUPABASE_ACCESS_TOKEN`. Promu de mister-miss-koh ; complément du réutilisable `pwa-supabase-test.yml` (pile jetable en CI). Ex. `npx pwa-pgtap rls.test.sql` |
 
 ### À quoi sert `pwa-doctor`
 
@@ -928,34 +929,44 @@ seconde, hors ligne, sur un dépôt :
    `renovate.json` sur le préréglage du socle, `.lighthouserc.json`, une spec
    a11y si Playwright est là, un `bundleBudget` ;
 2. **les workflows** — Lighthouse, `cleanup-runs`, le keep-alive Supabase si
-   l'app en dépend, les e2e en CI, les références au socle en `@v4` ;
+   l'app en dépend, les e2e en CI (et qu'aucune spec ne reste hors du filtre
+   `e2e-grep`, donc jamais jouée), un déploiement Pages passé par le
+   réutilisable, les références au socle en `@v4` ;
 3. **le build** (`dist/`, après `vite build`) — `lang`, le lien du manifeste
    sous le site, PNG 192/512 et maskable, `id`, la langue du manifeste égale à
    celle de la page, l'icône iOS, `theme-color` par schéma, CSP, Open Graph,
-   canonique, `404.html` quand l'app route par chemin.
+   canonique, `version.json`, `404.html` quand l'app route par chemin sans
+   passer par `pwa-deploy.yml` (qui le pose au déploiement).
 
 Trois verdicts : **défaut** (quelqu'un en souffre aujourd'hui), **dette** (le
 socle a la réponse, l'app ne l'a pas prise), **info** (une mesure : locales
-figées, `console.*`). Chaque ligne dit le geste qui la fait disparaître, pas un
-score. En CI, `pwa-doctor --strict` après le build refuse toute dette ; en
+figées, `console.*`, un budget sans `mainChunkKb`, `localStorage` sans magasin
+versionné). Chaque ligne dit le geste qui la fait disparaître, pas un score.
+En CI, `run-doctor: true` du réutilisable `pwa-ci.yml` le lance après le build
+(`doctor-strict: true` refuse toute dette — le régime du squelette) ; en
 local, `npx pwa-doctor` suffit. Il ne mesure ni le poids (`pwa-bundle-budget`)
 ni ce que l'hébergeur sert vraiment (`scripts/probe-sites.mjs`, sur le site
 publié).
+
+**Le 05/09/2026, une application sur vingt l'appelait** — le squelette. Un
+garde que personne n'exécute n'est pas un garde : d'où l'entrée `run-doctor`,
+opt-in en 4.x et `true` par défaut à la prochaine majeure.
 
 ## Reusable workflows GitHub Actions
 
 Hébergés dans [`.github/workflows/`](.github/workflows/) — utilisables par tous les repos de la famille.
 
-| Workflow                     | Rôle                                                                                                                                                                       | Exemple d'appel                                                                                                             |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `pwa-ci.yml`                 | Format · Lint · Type · Test · Build (+ E2E optionnel)                                                                                                                      | voir [Utilisation](#reusable-workflow-ci)                                                                                   |
-| `pwa-deploy.yml`             | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto et repli SPA `404.html`)                                                                                      | voir [Utilisation](#reusable-workflow-deploy)                                                                               |
-| `npm-publish.yml`            | Publication npm sur GitHub Packages avec `--provenance`                                                                                                                    | voir [Utilisation](#reusable-workflow-publish)                                                                              |
-| `pwa-lighthouse.yml`         | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR                                                                                                                            | `uses: …/pwa-lighthouse.yml@v4` (requiert `.lighthouserc.json`, cf. template)                                               |
-| `pwa-supabase-migrate.yml`   | `supabase link` + `db push` (+ Edge Functions en option), sans annulation d'un run en cours — quatre copies en une                                                         | `uses: …/pwa-supabase-migrate.yml@v4` avec les trois secrets `SUPABASE_*` (cf. en-tête du fichier)                          |
-| `pwa-supabase-keepalive.yml` | Ping REST tous les trois jours pour qu'un projet Free ne s'endorme pas — **à poser avec la migration** : le 02/09/2026 aucune app ne l'appelait, et `miss-carbook` dormait | `uses: …/pwa-supabase-keepalive.yml@v4` depuis un caller `schedule` (cf. en-tête du fichier)                                |
-| `pwa-worker-deploy.yml`      | `wrangler deploy` d'un Cloudflare Worker, sans échec quand le secret manque — deux copies en une                                                                           | `uses: …/pwa-worker-deploy.yml@v4` avec `working-directory`                                                                 |
-| `cleanup-runs.yml`           | Élague l'historique Actions du dépôt APPELANT (N runs par workflow) — douze copies identiques en une                                                                       | `uses: …/cleanup-runs.yml@v4` depuis un caller `workflow_dispatch` à `permissions: actions: write` (cf. en-tête du fichier) |
+| Workflow                     | Rôle                                                                                                                                                                                                                       | Exemple d'appel                                                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `pwa-ci.yml`                 | Format · Lint · Type · Test · Build (+ E2E optionnel)                                                                                                                                                                      | voir [Utilisation](#reusable-workflow-ci)                                                                                     |
+| `pwa-deploy.yml`             | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto et repli SPA `404.html`)                                                                                                                                      | voir [Utilisation](#reusable-workflow-deploy)                                                                                 |
+| `npm-publish.yml`            | Publication npm sur GitHub Packages avec `--provenance`                                                                                                                                                                    | voir [Utilisation](#reusable-workflow-publish)                                                                                |
+| `pwa-lighthouse.yml`         | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR                                                                                                                                                                            | `uses: …/pwa-lighthouse.yml@v4` (requiert `.lighthouserc.json`, cf. template)                                                 |
+| `pwa-supabase-migrate.yml`   | `supabase link` + `db push` (+ Edge Functions en option), sans annulation d'un run en cours — quatre copies en une                                                                                                         | `uses: …/pwa-supabase-migrate.yml@v4` avec les trois secrets `SUPABASE_*` (cf. en-tête du fichier)                            |
+| `pwa-supabase-test.yml`      | Tests pgTAP sur une pile Supabase JETABLE du runner — migrations depuis zéro, aucun secret ; promu de miss-lookhouse, seule app à le faire. Complément du bin `pwa-pgtap`, qui joue les mêmes fichiers contre la base liée | `uses: …/pwa-supabase-test.yml@v4` depuis un caller sur `supabase/**` (cf. en-tête du fichier ; exige `supabase/config.toml`) |
+| `pwa-supabase-keepalive.yml` | Ping REST tous les trois jours pour qu'un projet Free ne s'endorme pas — **à poser avec la migration** : le 02/09/2026 aucune app ne l'appelait, et `miss-carbook` dormait                                                 | `uses: …/pwa-supabase-keepalive.yml@v4` depuis un caller `schedule` (cf. en-tête du fichier)                                  |
+| `pwa-worker-deploy.yml`      | `wrangler deploy` d'un Cloudflare Worker, sans échec quand le secret manque — deux copies en une                                                                                                                           | `uses: …/pwa-worker-deploy.yml@v4` avec `working-directory`                                                                   |
+| `cleanup-runs.yml`           | Élague l'historique Actions du dépôt APPELANT (N runs par workflow) — douze copies identiques en une                                                                                                                       | `uses: …/cleanup-runs.yml@v4` depuis un caller `workflow_dispatch` à `permissions: actions: write` (cf. en-tête du fichier)   |
 
 ## Composite actions
 
@@ -1021,9 +1032,11 @@ plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
 
 ## Inputs notables des reusables
 
-- **`pwa-ci.yml`** — `build-env` (variables `KEY=VALUE`, une par ligne, injectées
-  avant build/test pour les apps Firebase/Supabase) ; `server-dir` (install +
-  `tsc --noEmit` d'un backend annexe).
+- **`pwa-ci.yml`** — `run-doctor` (`pwa-doctor` après le build ; opt-in en
+  4.x) et `doctor-strict` ; `e2e-grep` (défaut `@critical|@a11y`, et un
+  filtre sans test fait échouer le job) ; `build-env` (variables `KEY=VALUE`,
+  une par ligne, injectées avant build/test pour les apps Firebase/Supabase) ;
+  `server-dir` (install + `tsc --noEmit` d'un backend annexe).
 - **`pwa-lighthouse.yml`** — `build-env` (même usage) → Lighthouse activable sur
   les apps à secrets ; `public-report` (défaut `false`) pour publier en plus le
   rapport sur le stockage public temporaire de Lighthouse CI. Par défaut le
@@ -3119,8 +3132,10 @@ jobs:
     # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
     # secrets du dépôt à un workflow qui n'en demande aucun.
     with:
+      run-doctor: true # la checklist du parc, lue sur le dépôt et sur dist/
       run-e2e: false # passer à true quand Playwright est en place
-      e2e-grep: '@critical'
+      # e2e-grep vaut '@critical|@a11y' par défaut ; un filtre qui ne trouve
+      # aucun test fait ÉCHOUER le job, au lieu de le laisser vert.
 ```
 
 ### Reusable workflow deploy {#reusable-workflow-deploy}
