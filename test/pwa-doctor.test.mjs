@@ -9,7 +9,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { PRESET, diagnose, format, run } from '../scripts/pwa-doctor.mjs';
+import {
+  PRESET,
+  diagnose,
+  format,
+  liensFamille,
+  run,
+} from '../scripts/pwa-doctor.mjs';
 
 /** Un dépôt factice à partir d'une carte chemin → contenu. */
 async function repo(files, fn) {
@@ -249,7 +255,13 @@ test('le conforme : silence complet — la définition exécutable de « conform
       '.github/workflows/keepalive.yml':
         'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v4',
       'vite.config.ts': `pwaSeoPlugin({ themeColor: { light: '#fff', dark: '#000' } }); cspPlugin(); VitePWA({ registerType: 'prompt' })`,
-      'src/main.tsx': `import { HashRouter } from 'react-router'; import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';`,
+      // Les deux liens de la famille sont dans la COQUILLE, hors <Routes> :
+      // ils sont donc sur l'accueil comme sur les réglages, et sur tout écran
+      // que l'app ajoutera ensuite.
+      'src/main.tsx': `import { HashRouter } from 'react-router'; import { createLogger } from '@mister-guiiug/dev-pwa-config/logger'; import { AppFooter } from '@mister-guiiug/dev-pwa-config/react/app-footer';
+export function Shell() {
+  return (<><Routes><Route path="/" element={<Home />} /></Routes><AppFooter repoUrl={REPO_URL} /></>);
+}`,
       'dist/index.html': html,
       'dist/manifest.webmanifest': {
         id: '/miss-x/',
@@ -334,5 +346,81 @@ test('le défaut réel est toujours vu, commentaire ou pas', async () => {
       assert.ok(ids(report).includes('secrets-inherit'));
       assert.ok(ids(report).includes('locale-figee'));
     }
+  );
+});
+
+/* ── Les deux liens de la famille ────────────────────────────────────────── */
+
+const liens = source => liensFamille(source).verdict;
+const fichier = (rel, text) => ({ rel, text });
+
+test('la coquille suffit : rendus hors des routes, ils sont sur tous les écrans', () => {
+  assert.equal(
+    liens([
+      fichier(
+        'src/App.tsx',
+        '<Routes><Route path="/" element={<Home />} /></Routes><AppFooter repoUrl={REPO_URL} />'
+      ),
+    ]),
+    'partout'
+  );
+  // Une indirection : le pied de page vit ailleurs, la coquille le rend. C'est
+  // la forme de `miss-carbook` (SiteFooter) et de `miss-lookhouse` (Footer).
+  assert.equal(
+    liens([
+      fichier(
+        'src/components/SiteFooter.tsx',
+        'export function SiteFooter() { return <a href="https://buymeacoffee.com/x">café</a> + REPO_URL; }'
+      ),
+      fichier('src/App.tsx', '<Routes>{routes}</Routes><SiteFooter />'),
+    ]),
+    'partout'
+  );
+});
+
+test('un écran MONTÉ PAR UNE ROUTE n’est pas « partout »', () => {
+  // LE CŒUR DU CONTRÔLE. Sans le dépouillement des routes, `<SettingsScreen/>`
+  // écrit dans `element={…}` se lit comme un rendu de coquille — et douze apps
+  // sur dix-neuf passaient à tort le 05/09/2026.
+  assert.equal(
+    liens([
+      fichier(
+        'src/features/settings/SettingsScreen.tsx',
+        'export function SettingsScreen() { return <FamilyApps />; }'
+      ),
+      fichier(
+        'src/App.tsx',
+        '<Routes><Route path="/reglages" element={<SettingsScreen />} /></Routes>'
+      ),
+    ]),
+    'partiel'
+  );
+});
+
+test('deux écrans suffisent aussi — l’accueil ET À propos / Réglages', () => {
+  const accueil = fichier(
+    'src/pages/HomePage.tsx',
+    'export function HomePage() { return <AppFooter />; }'
+  );
+  const reglages = fichier(
+    'src/pages/SettingsPage.tsx',
+    'export function SettingsPage() { return <AppFooter />; }'
+  );
+  assert.equal(liens([accueil, reglages]), 'deux');
+  // L'un sans l'autre ne suffit pas : c'est le cas de douze apps du parc, dans
+  // les deux sens — dix sur les réglages seuls, deux sur l'accueil seul.
+  assert.equal(liens([accueil]), 'partiel');
+  assert.equal(liens([reglages]), 'partiel');
+});
+
+test('aucun porteur : la dette le dit sans deviner', () => {
+  assert.equal(
+    liens([fichier('src/App.tsx', '<Routes>{routes}</Routes>')]),
+    'absent'
+  );
+  // Un fichier de test ne compte pas : il ne rend rien à personne.
+  assert.equal(
+    liens([fichier('src/App.test.tsx', '<AppFooter repoUrl={REPO_URL} />')]),
+    'absent'
   );
 });

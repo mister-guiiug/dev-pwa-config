@@ -17,7 +17,9 @@
  *
  *   1. LE DÉPÔT — les fichiers que le gabarit attend (`.editorconfig`,
  *      `.nvmrc`, `.gitattributes` en LF, `renovate.json` sur le préréglage du
- *      socle, `.lighthouserc.json`, une spec a11y, un `bundleBudget`) ;
+ *      socle, `.lighthouserc.json`, une spec a11y, un `bundleBudget`), et les
+ *      DEUX LIENS DE LA FAMILLE — code source et soutien — sur le premier
+ *      écran comme sur À propos / Réglages ;
  *   2. LES WORKFLOWS — lighthouse, `cleanup-runs`, le keep-alive Supabase si
  *      l'app en dépend, les e2e en CI, et les références au socle en `@v4` ;
  *   3. LE BUILD (`dist/`, s'il existe) — la langue, le lien du manifeste (qui
@@ -123,6 +125,95 @@ const sansCommentaires = {
       .replace(/\/\*(?:(?!\*\/)[\s\S])*\*\//g, '')
       .replace(/^[ \t]*\/\/.*$/gm, ''),
 };
+
+/* ── Les deux liens de la famille ──────────────────────────────────────────
+ *
+ * RÈGLE : le CODE SOURCE et le SOUTIEN sont visibles sur le premier écran ET
+ * sur À propos / Réglages. Une app gratuite et locale se finance par les deux :
+ * qui l'ouvre doit pouvoir vérifier ce qu'elle fait, et remercier — sans aller
+ * les chercher dans un tiroir.
+ *
+ * DEUX FAÇONS DE LA TENIR, et le contrôle accepte les deux :
+ *
+ *   1. LA COQUILLE — `<AppFooter>` rendu hors des routes. C'est la réponse du
+ *      socle : un seul endroit, tous les écrans, y compris ceux à venir.
+ *   2. DEUX ÉCRANS — le porteur rendu sur l'accueil ET sur À propos/Réglages.
+ *      Trois apps le font ainsi et n'ont rien à corriger.
+ *
+ * CE QUE LE CONTRÔLE VOIT, ET CE QU'IL NE VOIT PAS. Il lit du texte, pas un
+ * graphe de rendu : il résout UNE indirection (`<Footer/>` défini ailleurs,
+ * rendu par la coquille — c'est la forme de `miss-carbook` et `miss-lookhouse`)
+ * et reconnaît l'accueil et les réglages AU NOM DE FICHIER. Deux indirections,
+ * ou un écran nommé autrement, lui échappent : d'où une DETTE et non un défaut.
+ *
+ * LE DÉPOUILLEMENT DES ROUTES EST LE CŒUR. Sans lui, `<SettingsScreen/>` monté
+ * par `element={…}` dans le fichier des routes se lit comme un rendu « partout »
+ * — et douze apps sur dix-neuf passaient à tort. Mesuré le 05/09/2026 : quatre
+ * apps tiennent la règle par la coquille, trois par deux écrans, douze ne la
+ * tiennent pas.
+ */
+const LIENS = {
+  /* Un élément JSX, pas un import : le socle, ou la paire écrite à la main. */
+  socle: /<(?:AppFooter|FamilyApps)\b/,
+  soutien: /buymeacoffee\.com|SPONSOR_URL|useSponsorUrl|sponsorUrl/,
+  depot: /github\.com\/[\w-]+\/[\w-]+|REPO_URL|repoUrl\(/,
+  coquille: /<Outlet\b|<Routes\b|createBrowserRouter|createHashRouter/,
+  exporte:
+    /export\s+(?:default\s+)?function\s+([A-Z]\w*)|export\s+const\s+([A-Z]\w*)/g,
+  accueil:
+    /(?:^|\/)(?:home|accueil|index|dashboard|start)[\w-]*\.[cm]?[jt]sx?$/i,
+  reglages:
+    /setting|reglage|réglage|parametre|paramètre|about|propos|profil|account|compte|help|aide/i,
+};
+
+/** Le texte d'une coquille, ses écrans montés retirés. */
+const horsRoutes = text =>
+  text
+    .replace(/element=\{[^{}]*\}/g, '')
+    .replace(/element:\s*[^,}]+/g, '')
+    .replace(/<Route\b[^>]*>/g, '');
+
+/**
+ * @param {Array<{rel: string, text: string}>} source
+ * @returns {{ verdict: 'partout'|'deux'|'partiel'|'absent', ou?: string }}
+ */
+export function liensFamille(source) {
+  const fichiers = source.filter(f => !/\.test\.|\.spec\./.test(f.rel));
+  const porteurs = fichiers.filter(
+    f =>
+      LIENS.socle.test(f.text) ||
+      (LIENS.soutien.test(f.text) && LIENS.depot.test(f.text))
+  );
+  if (!porteurs.length) return { verdict: 'absent' };
+
+  const coquilles = fichiers.filter(f => LIENS.coquille.test(f.text));
+  if (porteurs.some(f => LIENS.coquille.test(f.text)))
+    return { verdict: 'partout' };
+
+  for (const p of porteurs) {
+    const noms = [...p.text.matchAll(LIENS.exporte)]
+      .map(m => m[1] ?? m[2])
+      .filter(Boolean);
+    for (const nom of noms) {
+      const motif = new RegExp(`<${nom}\\b`);
+      if (coquilles.some(c => motif.test(horsRoutes(c.text)))) {
+        return { verdict: 'partout' };
+      }
+    }
+  }
+
+  const accueil = porteurs.some(f => LIENS.accueil.test(f.rel));
+  const reglages = porteurs.some(f => LIENS.reglages.test(f.rel));
+  if (accueil && reglages) return { verdict: 'deux' };
+  return {
+    verdict: 'partiel',
+    ou: accueil
+      ? "l'accueil"
+      : reglages
+        ? 'À propos / Réglages'
+        : 'un seul écran',
+  };
+}
 
 /**
  * Le diagnostic d'un dépôt. Pur au sens utile : il lit le disque, n'écrit
@@ -378,6 +469,21 @@ export function diagnose(dir) {
         );
       }
     }
+  }
+
+  const liens = liensFamille(source);
+  if (liens.verdict === 'absent') {
+    dette(
+      'liens-famille',
+      'ni code source ni soutien : aucun écran ne les porte',
+      '<AppFooter repoUrl={REPO_URL} /> dans la coquille, hors <Routes>'
+    );
+  } else if (liens.verdict === 'partiel') {
+    dette(
+      'liens-famille',
+      `code source + soutien seulement sur ${liens.ou}`,
+      '<AppFooter repoUrl={REPO_URL} /> dans la coquille, hors <Routes> — ou sur les deux écrans'
+    );
   }
 
   const figees = count(sansCommentaires.source(srcText), /['"]fr-FR['"]/g);
