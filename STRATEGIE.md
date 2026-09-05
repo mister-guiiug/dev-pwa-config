@@ -547,12 +547,52 @@ teste avant ce qui se publie.
 
 | #   | Chantier                                                                                                                                                                                                                                                                                                                                                                    | Coût              | Ce qui le prouve                                                                                             |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| 1   | **Couche 0** : créer `mister-guiiug/.github` (SECURITY, FUNDING, PR template) ; `apply-rulesets` lit `gh repo list`, plus seulement le catalogue ; `renovate.json` + préréglages cargo/nuget/gradle sur les dépôts publics hors PWA                                                                                                                                         | 2 j               | `gh api repos/*/rulesets` non vide sur les 26 dépôts publics ; première PR Renovate hors PWA                 |
+| 1   | ✅ **Couche 0 — faite le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                                       | 2 j               | **25 dépôts publics sur 25 protégés** ; `renovate.json` posé sur les quatre dépôts hors PWA                  |
 | 2   | **`pwa-starter-kit`** extrait de `miss-supatool` + `bac-sable` + `templates/` : variante `local` d'abord, `supabase` (SQL rôles/RLS, keep-alive, migrations) ensuite ; ADR écrits ; déployé sur Pages ; `doctor --strict` propre                                                                                                                                            | 4–5 j             | le job `consumer-resolution` du socle remplacé par « construire, déployer, diagnostiquer le squelette »      |
 | 3   | **`pwa-doctor --fix`** et `pwa-env` (CONFIG.md phase 2) : fichiers figés resynchronisés depuis le squelette, manifeste d'env → `.env.example` + `deploy.yml` engendrés                                                                                                                                                                                                      | 3 j               | `secrets: inherit` = 0/16 ; 17 `vitest.config.ts` → 1 ; `doctor` en CI sur 17 apps                           |
 | 4   | **Générateur** : extension `gh lg-pwa create` (degit@tag, substitutions, gestes GitHub, PR catalogue) ; test nocturne générer → build → doctor → e2e ; enveloppe `create-lg-pwa-app` sur npmjs.org si le nom est libre                                                                                                                                                      | 3 j               | `mister-miss-koh` re-échafaudée par le générateur, comparée à sa version manuelle                            |
 | 5   | **Socle 4.0 — rétrécir** : sortir catalogue et palettes (fichier de données tiré à la build, ou entrée écrite par le générateur) ; isoler les 0-adoptant en `experimental/*` avec date de retrait ; `.d.ts` engendrés depuis JSDoc (`tsc --declaration --allowJs`) ou source TS ; ESLint 10 ; amender `CONTRIBUTING.md` : « entre ce qu'utilise le squelette ou deux apps » | 5 j + une majeure | 148 → ~90 sous-chemins ; 0 ligne de `.d.ts` à la main ; aucune publication du socle exigée par une naissance |
 | 6   | Le squelette **Tauri** — seulement si un troisième projet Tauri naît ; source : la CI de `mister-commitia`                                                                                                                                                                                                                                                                  | —                 | —                                                                                                            |
+
+### Bilan du chantier 1, exécuté le 05/09/2026
+
+Six PR, et deux découvertes qui n'étaient pas dans le plan.
+
+| Livré                                                                        | Où                                                                                                                           |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `apply-rulesets` lit le compte, plus le catalogue                            | socle [#177](https://github.com/mister-guiiug/dev-pwa-config/pull/177)                                                       |
+| Préréglage Renovate étendu à cargo, nuget, gradle, maven, pip, gomod         | socle [#178](https://github.com/mister-guiiug/dev-pwa-config/pull/178)                                                       |
+| Garde-fou : un contexte inexistant est refusé, pas appliqué                  | socle [#179](https://github.com/mister-guiiug/dev-pwa-config/pull/179)                                                       |
+| `renovate.json` sur les quatre dépôts hors PWA                               | commitia #16, gphotos #1, sops-diff #1, claude-skills #4                                                                     |
+| Dépôt `mister-guiiug/.github` : SECURITY, gabarits d'issue et de PR, FUNDING | [le dépôt](https://github.com/mister-guiiug/.github) — héritage vérifié : le gabarit de PR de `miss-dice` y pointe désormais |
+
+**Le trou était plus large que mesuré.** L'analyse comptait les neuf dépôts hors
+PWA comme démunis. En réalité **six dépôts publics sur vingt-quatre n'avaient
+aucune règle sur `main`** — et deux étaient des PWA, `miss-supatool` et
+`mister-miss-koh`, nées après la dernière mise à jour du catalogue. La cause
+n'était donc pas « le catalogue ne couvre pas tout », mais « une liste, quelle
+qu'elle soit, prend du retard sans le dire ». D'où la lecture du compte.
+
+**Automatiser la liste a ouvert une panne, qu'il a fallu refermer aussitôt.** Un
+dépôt neuf hérite de `CHECKS.default`, la convention des PWA. Appliquée au
+dépôt `.github` créé le jour même — qui n'a aucune CI — elle aurait exigé un
+contexte qui n'arrive jamais, et gelé chacune de ses PR sans message lisible.
+C'est exactement la panne que l'en-tête du script raconte depuis le début : une
+énumération automatique doit venir avec sa vérification, sinon elle industrialise
+le défaut au lieu de le corriger.
+
+Deux pièges de détail, chacun à un aller-retour près : le nom de job de
+`mister-commitia` porte une apostrophe **droite** (`U+0027`) et non
+typographique — écrite autrement, la chaîne ne correspond à aucun check ; et les
+check-runs de `main` incluent des contextes venus d'un `release.yml` sur tag,
+qui ne s'exécutent jamais en PR. Les noms exigés se relèvent sur une **PR
+réelle**, pas sur `main`.
+
+Ce que le chantier a révélé et qui reste ouvert : **cinq dépôts publics n'ont
+pas de `LICENSE`** (`miss-lookhouse`, `mister-family-map`, `mister-gphotos`,
+`mister-qowa`, `mister-quota`). GitHub n'hérite pas les licences : un dépôt
+public sans licence est « tous droits réservés », ce qui contredit la
+convention MIT de la famille. À corriger dépôt par dépôt.
 
 Ce qu'on **ne fait pas**, et pourquoi :
 
