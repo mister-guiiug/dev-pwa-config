@@ -30,6 +30,8 @@
  *   node scripts/apply-rulesets.mjs                 # tous les repos
  *   node scripts/apply-rulesets.mjs miss-carbook    # repo unique
  *   node scripts/apply-rulesets.mjs --dry-run       # preview sans modif
+ *   node scripts/apply-rulesets.mjs --force         # passe outre le garde-fou
+ *                                                   # des checks (cf. plus bas)
  */
 import { execFileSync } from 'node:child_process';
 import { GITHUB_OWNER } from '../apps-catalog.js';
@@ -159,8 +161,47 @@ const CHECKS = {
   'vscode-sops-diff': ['build'],
   'mister-claude-skills': ['validate'],
 
+  // AUCUN check : ce dépôt ne porte que des fichiers communautaires, il n'a
+  // pas de CI et n'en aura pas. Le ruleset y garde tout son sens — PR
+  // obligatoire, pas de `push --force`, pas de suppression — mais exiger un
+  // contexte y gèlerait chaque PR pour toujours.
+  '.github': [],
+
   default: ['ci / Format · Lint · Type · Test · Build'],
 };
+
+/**
+ * Les noms de check RÉELLEMENT observés sur la branche par défaut du dépôt.
+ *
+ * POURQUOI CE GARDE-FOU. Depuis que la liste des dépôts est lue sur le compte,
+ * un dépôt neuf reçoit `CHECKS.default` — la convention des PWA — sans que
+ * personne l'ait décidé. Sur un dépôt qui n'a pas cette CI, GitHub attendrait
+ * un contexte qui n'arrive jamais et TOUTES ses PR gèleraient, sans message
+ * lisible. C'est la panne que l'en-tête de ce fichier raconte depuis le
+ * début ; l'énumération automatique en a fait un risque permanent, alors elle
+ * doit venir avec sa vérification.
+ *
+ * Un check qui ne s'exécute QUE sur `pull_request` n'apparaît pas ici : le
+ * garde refuse alors à tort, ce qui se lève par `--force`. Refuser d'appliquer
+ * est réversible ; geler les PR d'un dépôt ne l'est qu'en touchant au ruleset.
+ */
+function checksObserves(repo) {
+  try {
+    const out = execFileSync(
+      'gh',
+      [
+        'api',
+        `repos/${OWNER}/${repo}/commits/HEAD/check-runs`,
+        '--jq',
+        '.check_runs[].name',
+      ],
+      { encoding: 'utf8' }
+    );
+    return new Set(out.split('\n').filter(Boolean));
+  } catch {
+    return new Set();
+  }
+}
 
 function rulesetFor(repo) {
   const contexts = CHECKS[repo] ?? CHECKS.default;
@@ -215,6 +256,7 @@ function rulesetFor(repo) {
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
+const FORCE = args.includes('--force');
 const onlyRepo = args.find(a => !a.startsWith('--'));
 
 /**
@@ -285,6 +327,20 @@ for (const repo of targets) {
       ? '  · MIROIR : suppression bloquée seulement (le push --force doit passer)'
       : `  · checks exigés : ${contexts.join(', ') || 'aucun'}`
   );
+
+  if (contexts.length && !FORCE) {
+    const vus = checksObserves(repo);
+    const absents = contexts.filter(c => !vus.has(c));
+    if (absents.length) {
+      console.error(
+        `  ✗ REFUSÉ — ces contextes ne s'exécutent pas sur ce dépôt : ${absents.join(', ')}.
+    Les exiger gèlerait toutes ses PR. Corriger CHECKS['${repo}'] (ou [] s'il n'a pas de CI),
+    ou passer --force si le check ne tourne QUE sur pull_request.`
+      );
+      continue;
+    }
+  }
+
   try {
     const list = JSON.parse(gh(path) ?? '[]');
     const existing = list.find(r => r.name === ruleset.name);
