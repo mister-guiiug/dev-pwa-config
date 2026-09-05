@@ -24,6 +24,21 @@ test('le préréglage partagé : recommandé, tableau de bord, samedi matin, reg
   const groupes = preset.packageRules.map(rule => rule.groupName);
   assert.ok(groupes.includes('npm (mineur & patch)'));
   assert.ok(groupes.includes('github-actions'));
+
+  // Le compte n'est pas fait que de PWA : quatre dépôts publics vivent sur
+  // cargo, nuget ou les seules actions GitHub. Sans règle pour eux, chaque
+  // mise à jour mineure y arrive en PR séparée — le bruit qui fait qu'on
+  // cesse de les lire.
+  const autres = preset.packageRules.find(
+    rule => rule.groupName === 'dépendances (mineur & patch)'
+  );
+  assert.ok(autres, 'les écosystèmes hors npm sont groupés eux aussi');
+  for (const manager of ['cargo', 'nuget']) {
+    assert.ok(
+      autres.matchManagers.includes(manager),
+      `${manager} est utilisé par un dépôt public du compte`
+    );
+  }
   const socle = preset.packageRules.find(rule =>
     rule.matchPackageNames?.includes('@mister-guiiug/dev-pwa-config')
   );

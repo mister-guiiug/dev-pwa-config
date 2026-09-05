@@ -22,6 +22,20 @@
       "groupName": "npm (mineur & patch)"
     },
     {
+      "description": "Les autres écosystèmes du compte, groupés comme npm. Le préréglage servait quatre dépôts hors PWA sans jamais les nommer : cargo (mister-commitia), nuget (mister-gphotos), et le reste par anticipation. Sans cette règle, chaque mise à jour mineure y arrive en PR séparée.",
+      "matchManagers": [
+        "cargo",
+        "nuget",
+        "gradle",
+        "maven",
+        "pip_requirements",
+        "poetry",
+        "gomod"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dépendances (mineur & patch)"
+    },
+    {
       "description": "Peers = stack cible famille : élargir le range, PR séparées, majors revus à la main.",
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen"
