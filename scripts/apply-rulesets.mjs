@@ -3,10 +3,21 @@
  * Applique le ruleset standard "main protection" sur les repos de la famille
  * miss-* / mister-*. Idempotent : crée si absent, met à jour sinon.
  *
- * LA LISTE DES DÉPÔTS EST LUE DANS LE CATALOGUE. Elle était écrite à la main :
- * elle en oubliait neuf, et nommait `miss-ticket` un dépôt qui s'appelle
- * `miss-ticket-pwa`. Un ruleset qu'on croit appliqué et qui ne l'est pas est
- * pire que pas de ruleset.
+ * LA LISTE DES DÉPÔTS EST LUE SUR LE COMPTE, plus dans le catalogue. Elle a
+ * été écrite à la main (elle en oubliait neuf, et nommait `miss-ticket` un
+ * dépôt qui s'appelle `miss-ticket-pwa`), puis dérivée du catalogue — ce qui
+ * corrigeait les fautes de frappe mais laissait un trou plus large : LE
+ * CATALOGUE NE DÉCRIT QUE LES PWA DE LA FAMILLE. Au relevé du 05/09/2026, six
+ * dépôts publics sur vingt-quatre n'avaient donc AUCUNE protection — dont deux
+ * PWA nées après la dernière mise à jour du catalogue (`miss-supatool`,
+ * `mister-miss-koh`) et quatre projets hors périmètre (Rust, C#, Python,
+ * extension VS Code). Un dépôt neuf naissait sans protection et rien ne le
+ * disait.
+ *
+ * PUBLICS ET NON ARCHIVÉS SEULEMENT. Un dépôt privé sur un compte personnel
+ * sans GitHub Pro répond **403** à l'API des rulesets (vérifié sur
+ * `miss-ticket`) : l'y inclure produirait une croix permanente. Un dépôt
+ * archivé est en lecture seule.
  *
  * LE CONTEXTE DE CHECK DÉPEND DU DÉPÔT. Toutes les apps exposent le même job
  * (« Format · Lint · Type · Test · Build », via le workflow réutilisable), mais
@@ -21,7 +32,7 @@
  *   node scripts/apply-rulesets.mjs --dry-run       # preview sans modif
  */
 import { execFileSync } from 'node:child_process';
-import { FAMILY_APPS, GITHUB_OWNER } from '../apps-catalog.js';
+import { GITHUB_OWNER } from '../apps-catalog.js';
 
 const OWNER = GITHUB_OWNER;
 const SELF = 'dev-pwa-config';
@@ -70,13 +81,40 @@ const BYPASS = [
 ];
 
 /**
- * Le socle, puis les dix-sept dépôts du catalogue.
+ * Tous les dépôts PUBLICS et non archivés du compte, lus sur GitHub.
  *
- * `.github` A ÉTÉ RETIRÉ : le dépôt n'existe pas (404). Son entrée produisait
- * une croix au milieu d'une sortie verte, avalée par le `try` — le même défaut
- * que celui corrigé le 01/09 sur les noms de dépôt.
+ * Aucune liste à tenir : un dépôt créé demain est protégé au prochain passage,
+ * sans que personne ait à penser à l'inscrire quelque part. C'est la seule
+ * forme qui résiste au temps — les deux précédentes (liste à la main, puis
+ * catalogue) ont chacune laissé des dépôts dehors sans le dire.
+ *
+ * Le fichier `.github` du compte, s'il existe un jour, entrera de lui-même :
+ * son entrée avait dû être retirée le 01/09 parce qu'elle produisait un 404
+ * avalé par le `try`, donc une croix au milieu d'une sortie verte.
  */
-const REPOS = [SELF, ...FAMILY_APPS.map(app => app.id)];
+function reposDuCompte() {
+  const out = execFileSync(
+    'gh',
+    [
+      'repo',
+      'list',
+      OWNER,
+      '--limit',
+      '200',
+      '--no-archived',
+      '--visibility',
+      'public',
+      '--json',
+      'name',
+      '--jq',
+      '.[].name',
+    ],
+    { encoding: 'utf8' }
+  );
+  return out.split('\n').filter(Boolean).sort();
+}
+
+const REPOS = reposDuCompte();
 
 /**
  * Checks exigés, par dépôt. UN CONTEXTE QUI NE S'EXÉCUTE JAMAIS BLOQUE TOUT :
@@ -102,6 +140,25 @@ const CHECKS = {
     'typecheck · test · build (20.x)',
     'typecheck · test · build (22.x)',
   ],
+
+  // Les quatre dépôts HORS PWA. Chaque nom est relevé sur une PR RÉELLE (ou,
+  // à défaut de PR fusionnée, sur le job d'un `ci.yml` déclenché par
+  // `pull_request` et sans `if:`), jamais sur les seuls check-runs de `main` :
+  // `mister-commitia` y expose aussi « Bundle Windows (MSI/NSIS) », qui vient
+  // de `release.yml` sur un tag et ne s'exécuterait JAMAIS en PR. L'exiger
+  // gèlerait toutes ses PR — la panne exacte que l'en-tête décrit.
+  'mister-commitia': [
+    'Tests mc-core (ubuntu-latest)',
+    'Tests mc-core (windows-latest)',
+    // Apostrophe DROITE (U+0027), comme le nom du job. Écrite en typographique
+    // (U+2019), la chaîne ne correspond à aucun check : GitHub attendrait un
+    // contexte qui n'arrive jamais, et toutes les PR de ce dépôt gèleraient.
+    "Qualité (fmt, clippy, chaîne d'appro)",
+  ],
+  'mister-gphotos': ['build-and-test'],
+  'vscode-sops-diff': ['build'],
+  'mister-claude-skills': ['validate'],
+
   default: ['ci / Format · Lint · Type · Test · Build'],
 };
 
@@ -177,7 +234,7 @@ const onlyRepo = args.find(a => !a.startsWith('--'));
 if (onlyRepo && !REPOS.includes(onlyRepo)) {
   console.error(
     `Dépôt inconnu : « ${onlyRepo} ».
-Ceux du catalogue : ${REPOS.join(', ')}`
+Publics et non archivés sur ${OWNER} : ${REPOS.join(', ')}`
   );
   process.exit(1);
 }
