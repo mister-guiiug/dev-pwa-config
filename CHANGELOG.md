@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.1.0
+
+### Minor Changes
+
+- bce3b0e: Le catalogue connaît **dix-neuf** applications : `miss-supatool` et
+  `mister-miss-koh` y entrent, avec leur palette.
+
+  Elles consommaient le paquet depuis leur naissance sans y figurer : elles
+  n'apparaissaient dans le `<FamilyApps>` d'aucune de leurs sœurs. C'est le geste
+  que `create-lg-pwa-app` laisse délibérément à la main, et ces deux-là sont nées
+  avant lui.
+
+  `apps-catalog.js` et `themes.js` étant publiés, la montée est ce qui fait
+  apparaître les deux nouvelles cartes chez les dix-sept autres.
+
+- 730eea9: **Règle famille** : le lien **code source** et le lien **m'offrir un café** sont
+  visibles **sur le premier écran** et **sur À propos / Réglages**. Pas l'un ou
+  l'autre.
+
+  `pwa-doctor` la vérifie (`liens-famille`), et accepte les deux façons de la
+  tenir : `<AppFooter>` rendu dans la coquille **hors des `<Routes>`** — la
+  réponse du socle, un seul endroit pour tous les écrans —, ou le pied de page
+  rendu sur l'accueil **et** sur À propos / Réglages.
+
+  Le contrôle dépouille les routes avant de conclure : un `<AppFooter>` écrit dans
+  un `element={…}` ne vaut que pour cette route-là. Sans ce dépouillement, douze
+  apps sur dix-neuf passaient à tort.
+
+  Relevé du 05/09/2026 : **sept apps sur dix-neuf** tiennent la règle.
+
 ## 4.0.1
 
 ### Patch Changes
