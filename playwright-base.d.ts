@@ -1,6 +1,6 @@
 /**
  * Types minimaux pour playwright-base (évite d'importer `@playwright/test`
- * dans dev-wpa-config — peerDep optionnelle). Les objets sont volontairement
+ * dans dev-pwa-config — peerDep optionnelle). Les objets sont volontairement
  * typés en `Record<string, unknown>` pour rester compatibles cross-version.
  */
 export const basePlaywrightOptions: Record<string, unknown>;

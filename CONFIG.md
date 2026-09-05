@@ -259,7 +259,7 @@ Détail d'implémentation : l'environnement se déclare dans le _job appelé_ �
 ## L'ordre des opérations
 
 **Phase 0 — ce qui saigne (aucun code). ✅ faite le 04/09/2026.** Gabarit
-`deploy.yml` réécrit ([#171](https://github.com/mister-guiiug/dev-wpa-config/pull/171)),
+`deploy.yml` réécrit ([#171](https://github.com/mister-guiiug/dev-pwa-config/pull/171)),
 `.gitignore` de mister-cim10 ([#42](https://github.com/mister-guiiug/mister-cim10/pull/42)),
 `.env.example` de miss-ticket-pwa ([#20](https://github.com/mister-guiiug/miss-ticket-pwa/pull/20)).
 
@@ -272,7 +272,7 @@ site. C'est un quatrième rangement légitime, à côté de `vars`, `secrets` et
 `local` — le manifeste devra le nommer.
 
 **Phase 1 — le socle, côté déploiement. ✅ faite le 04/09/2026**
-([#171](https://github.com/mister-guiiug/dev-wpa-config/pull/171)). L'entrée
+([#171](https://github.com/mister-guiiug/dev-pwa-config/pull/171)). L'entrée
 `required-env` arrête le déploiement **avant le pre-build** — donc avant les
 migrations — en nommant les variables vides. Elle est **opt-in** : les seize
 appelants existants n'ont pas changé de comportement, et poser la liste dans

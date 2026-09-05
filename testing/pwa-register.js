@@ -51,11 +51,11 @@
  * Pose, côté app :
  *
  *   // vitest.config.ts — l'alias est prêt à l'emploi, ne le réécrivez pas
- *   import { pwaRegisterAlias } from '@mister-guiiug/dev-wpa-config/vitest-base';
+ *   import { pwaRegisterAlias } from '@mister-guiiug/dev-pwa-config/vitest-base';
  *   resolve: { alias: { ...pwaRegisterAlias } }
  *
  *   // le test
- *   import { swStub } from '@mister-guiiug/dev-wpa-config/testing/pwa-register';
+ *   import { swStub } from '@mister-guiiug/dev-pwa-config/testing/pwa-register';
  *   beforeEach(() => swStub.reset());
  *   act(() => swStub.needRefresh());
  */

@@ -241,7 +241,7 @@ test('tout sous-chemin publié figure dans la table « Exports npm »', () => {
   const table = readme.slice(start, readme.indexOf('\n## ', start + 1));
 
   const documented = new Set(
-    [...table.matchAll(/dev-wpa-config\/([a-zA-Z0-9/.-]+)/g)].map(m => m[1])
+    [...table.matchAll(/dev-pwa-config\/([a-zA-Z0-9/.-]+)/g)].map(m => m[1])
   );
   const absents = Object.keys(PKG.exports)
     .filter(subpath => subpath !== '.' && !subpath.includes('*'))

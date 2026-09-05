@@ -54,7 +54,7 @@ test('les sous-chemins à état sont exclus du pré-bundling', async () => {
   const excluded = pwaSeoPlugin().config().optimizeDeps.exclude;
   for (const sub of ['correlation', 'logger', 'react/observability']) {
     assert.ok(
-      excluded.includes(`@mister-guiiug/dev-wpa-config/${sub}`),
+      excluded.includes(`@mister-guiiug/dev-pwa-config/${sub}`),
       `${sub} doit partager l’instance d’observability`
     );
   }

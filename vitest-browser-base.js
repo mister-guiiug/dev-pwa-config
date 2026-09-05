@@ -6,7 +6,7 @@
  *   // vitest.config.ts
  *   import { defineConfig } from 'vitest/config';
  *   import react from '@vitejs/plugin-react';
- *   import { baseBrowserTestOptions } from '@mister-guiiug/dev-wpa-config/vitest-browser-base';
+ *   import { baseBrowserTestOptions } from '@mister-guiiug/dev-pwa-config/vitest-browser-base';
  *
  *   export default defineConfig({
  *     plugins: [react()],

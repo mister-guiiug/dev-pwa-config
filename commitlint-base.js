@@ -2,7 +2,7 @@
  * Conventional Commits + extensions famille miss-* / mister-*.
  *
  * Usage côté consumer (commitlint.config.js) :
- *   export { default } from '@mister-guiiug/dev-wpa-config/commitlint';
+ *   export { default } from '@mister-guiiug/dev-pwa-config/commitlint';
  */
 export default {
   extends: ['@commitlint/config-conventional'],

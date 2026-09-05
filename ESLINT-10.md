@@ -55,7 +55,7 @@ entrent dans `recommended`. Mesuré en installant réellement ESLint 10 :
 
 | Dépôt          | Nouvelles erreurs | Lesquelles                      |
 | -------------- | ----------------- | ------------------------------- |
-| dev-wpa-config | **7**             | `no-useless-assignment`, toutes |
+| dev-pwa-config | **7**             | `no-useless-assignment`, toutes |
 | miss-uwh       | **2**             | `no-useless-assignment`         |
 | miss-dice      | **0**             | —                               |
 

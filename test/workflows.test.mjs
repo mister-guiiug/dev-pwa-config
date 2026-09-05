@@ -6,7 +6,7 @@
  *
  *   1. un `pwa-*.yml` (et `cleanup-runs.yml`) DOIT déclarer `workflow_call`,
  *      sinon chaque app le recopie entier (douze copies de cleanup-runs) ;
- *   2. les actions du dépôt s'y référencent par `@v3`, jamais par `./` — un
+ *   2. les actions du dépôt s'y référencent par `@v4`, jamais par `./` — un
  *      chemin relatif désigne le checkout de l'APPELANT, où l'action n'est pas ;
  *   3. aucun `secrets: inherit` : le workflow déclare ce qu'il consomme.
  *
@@ -44,7 +44,7 @@ test('chaque workflow réutilisable déclare workflow_call', () => {
   }
 });
 
-test('les actions du dépôt sont référencées par @v3, jamais par un chemin relatif', () => {
+test('les actions du dépôt sont référencées par @v4, jamais par un chemin relatif', () => {
   for (const name of REUTILISABLES) {
     const source = read(name);
     assert.doesNotMatch(
@@ -53,9 +53,9 @@ test('les actions du dépôt sont référencées par @v3, jamais par un chemin r
       `${name} : un chemin relatif vise le checkout de l'appelant`
     );
     for (const match of source.matchAll(
-      /uses:\s*mister-guiiug\/dev-wpa-config\/\.github\/actions\/[\w-]+@(\S+)/g
+      /uses:\s*mister-guiiug\/dev-pwa-config\/\.github\/actions\/[\w-]+@(\S+)/g
     )) {
-      assert.equal(match[1], 'v3', `${name} : ${match[0]}`);
+      assert.equal(match[1], 'v4', `${name} : ${match[0]}`);
     }
   }
 });
@@ -128,7 +128,7 @@ test('le gabarit range les VITE_* en vars, et nomme ses secrets', () => {
   // écartés, chacun avec sa copie du job à maintenir.
   assert.match(
     GABARIT,
-    /uses:\s*mister-guiiug\/dev-wpa-config\/\.github\/workflows\/pwa-deploy\.yml@v3/
+    /uses:\s*mister-guiiug\/dev-pwa-config\/\.github\/workflows\/pwa-deploy\.yml@v4/
   );
 });
 

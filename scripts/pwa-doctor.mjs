@@ -19,7 +19,7 @@
  *      `.nvmrc`, `.gitattributes` en LF, `renovate.json` sur le préréglage du
  *      socle, `.lighthouserc.json`, une spec a11y, un `bundleBudget`) ;
  *   2. LES WORKFLOWS — lighthouse, `cleanup-runs`, le keep-alive Supabase si
- *      l'app en dépend, les e2e en CI, et les références au socle en `@v3` ;
+ *      l'app en dépend, les e2e en CI, et les références au socle en `@v4` ;
  *   3. LE BUILD (`dist/`, s'il existe) — la langue, le lien du manifeste (qui
  *      doit rester sous le site), les icônes PNG 192/512 et maskable, `id`,
  *      la langue du manifeste égale à celle de la page, l'icône iOS, le
@@ -51,7 +51,7 @@ import {
 } from './site-readers.mjs';
 
 export const PRESET =
-  'github>mister-guiiug/dev-wpa-config//renovate/default.json';
+  'github>mister-guiiug/dev-pwa-config//renovate/default.json';
 
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
 const SKIP = new Set(['node_modules', 'dist', 'dev-dist', '.git', 'coverage']);
@@ -226,14 +226,14 @@ export function diagnose(dir) {
       dette(
         'wf-lighthouse',
         'pas de workflow Lighthouse',
-        'lighthouse.yml → pwa-lighthouse.yml@v3'
+        'lighthouse.yml → pwa-lighthouse.yml@v4'
       );
     }
     if (!/cleanup-runs/.test(wfText)) {
       dette(
         'wf-cleanup',
         'pas de nettoyage des runs',
-        'cleanup-runs.yml → cleanup-runs.yml@v3'
+        'cleanup-runs.yml → cleanup-runs.yml@v4'
       );
     }
     if (
@@ -243,7 +243,7 @@ export function diagnose(dir) {
       dette(
         'wf-keepalive',
         'Supabase sans keep-alive : le projet Free se met en pause après 7 jours',
-        'keepalive.yml → pwa-supabase-keepalive.yml@v3 (miss-carbook en a payé le prix)'
+        'keepalive.yml → pwa-supabase-keepalive.yml@v4 (miss-carbook en a payé le prix)'
       );
     }
     if (playwright && !/run-e2e:\s*true|playwright/i.test(wfText)) {
@@ -254,13 +254,13 @@ export function diagnose(dir) {
       );
     }
     const vieux = wfText.match(
-      /mister-guiiug\/dev-wpa-config\/\S+@(?!v3\b)\S+/g
+      /mister-guiiug\/dev-pwa-config\/\S+@(?!v4\b)\S+/g
     );
     if (vieux) {
       dette(
         'wf-v3',
-        `référence au socle hors @v3 : ${[...new Set(vieux)].join(', ')}`,
-        'passer en @v3 (étiquette flottante déplacée à chaque release)'
+        `référence au socle hors @v4 : ${[...new Set(vieux)].join(', ')}`,
+        'passer en @v4 (étiquette flottante déplacée à chaque release)'
       );
     }
 
@@ -496,7 +496,7 @@ export function diagnose(dir) {
       defaut(
         'spa-404',
         'routage par chemin sans 404.html : un lien profond sert la page 404 de GitHub',
-        'spaFallbackPlugin() (vite-pwa-base) ou pwa-deploy.yml@v3'
+        'spaFallbackPlugin() (vite-pwa-base) ou pwa-deploy.yml@v4'
       );
     }
   }

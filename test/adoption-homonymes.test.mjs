@@ -50,7 +50,7 @@ export function applyTheme(theme) {
 }
 `;
 
-const APP_QUI_MONTE_LE_FOURNISSEUR = `import { ThemeProvider } from '@mister-guiiug/dev-wpa-config/react/theme-provider';
+const APP_QUI_MONTE_LE_FOURNISSEUR = `import { ThemeProvider } from '@mister-guiiug/dev-pwa-config/react/theme-provider';
 import { THEME_COLOR, THEME_STORAGE_KEY } from './theme';
 export const App = () => <ThemeProvider storageKey={THEME_STORAGE_KEY} themeColor={THEME_COLOR} />;
 `;

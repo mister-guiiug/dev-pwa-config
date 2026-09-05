@@ -35,7 +35,7 @@
  * `pwaSeoPlugin` et `cspPlugin`.
  *
  * Usage (vite.config.ts) :
- *   import { versionPlugin } from '@mister-guiiug/dev-wpa-config/vite-version';
+ *   import { versionPlugin } from '@mister-guiiug/dev-pwa-config/vite-version';
  *   export default defineConfig({
  *     plugins: [react(), versionPlugin(), cspPlugin()],
  *   });

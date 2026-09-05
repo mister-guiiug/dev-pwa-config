@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Préréglage Renovate de la famille mister-guiiug. Les apps l'étendent : github>mister-guiiug/dev-wpa-config//renovate/default.json",
+  "description": "Préréglage Renovate de la famille mister-guiiug. Les apps l'étendent : github>mister-guiiug/dev-pwa-config//renovate/default.json",
   "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
   "timezone": "Europe/Paris",
   "schedule": ["before 7am on saturday"],
@@ -10,15 +10,15 @@
   "packageRules": [
     {
       "description": "Le socle : une PR à lui seul, dès qu'il sort, jamais groupé avec le reste.",
-      "matchPackageNames": ["@mister-guiiug/dev-wpa-config"],
-      "groupName": "socle dev-wpa-config",
+      "matchPackageNames": ["@mister-guiiug/dev-pwa-config"],
+      "groupName": "socle dev-pwa-config",
       "schedule": ["at any time"]
     },
     {
       "description": "Mineur + patch npm groupés en une PR (moins de bruit).",
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch"],
-      "matchPackageNames": ["!@mister-guiiug/dev-wpa-config"],
+      "matchPackageNames": ["!@mister-guiiug/dev-pwa-config"],
       "groupName": "npm (mineur & patch)"
     },
     {

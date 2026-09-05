@@ -5,7 +5,7 @@
 # on: [pull_request, push]
 # jobs:
 #   ci:
-#     uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v3
+#     uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4
 #     with:
 #       run-e2e: false
 name: Reusable PWA CI
@@ -102,7 +102,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v3
+      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v4
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -130,7 +130,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v3
+      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v4
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -191,7 +191,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-wpa-config/.github/actions/setup-pwa@v3
+      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v4
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

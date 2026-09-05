@@ -18,7 +18,7 @@
 #     contents: read
 #   jobs:
 #     deploy:
-#       uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-worker-deploy.yml@v3
+#       uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-worker-deploy.yml@v4
 #       secrets:
 #         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 #         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -15,7 +15,7 @@
  *    le consommateur passe son propre `devices` à la factory :
  *
  *      import { defineConfig, devices } from '@playwright/test';
- *      import { definePwaPlaywrightConfig } from '@mister-guiiug/dev-wpa-config/playwright-base';
+ *      import { definePwaPlaywrightConfig } from '@mister-guiiug/dev-pwa-config/playwright-base';
  *
  *      export default defineConfig(definePwaPlaywrightConfig({ devices }));
  *

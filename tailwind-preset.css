@@ -2,7 +2,7 @@
  * Preset Tailwind 4 famille miss-* / mister-*.
  * À importer dans le CSS principal du projet :
  *   @import 'tailwindcss';
- *   @import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+ *   @import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
  */
 @theme {
   --font-sans:

@@ -30,7 +30,7 @@ import { createContext, createElement, useContext, useMemo } from 'react';
  * **contexte**, puis le **français par défaut**. Une app qui ne fait rien
  * obtient exactement ce qu'elle avait avant — aucune rupture.
  *
- *   import { LabelsProvider } from '@mister-guiiug/dev-wpa-config/react/labels';
+ *   import { LabelsProvider } from '@mister-guiiug/dev-pwa-config/react/labels';
  *
  *   const { locale } = useI18n();          // le i18n de l'app
  *   <LabelsProvider locale={locale}>…</LabelsProvider>

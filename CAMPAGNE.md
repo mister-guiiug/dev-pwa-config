@@ -15,13 +15,13 @@ qu'il reste, est en bas de cette page.
 ```bash
 # Un dossier parent, les dix-sept dépôts dedans, ce dépôt aussi.
 mister-guiiug/
-├── dev-wpa-config/          ← ce dépôt
+├── dev-pwa-config/          ← ce dépôt
 ├── mister-family-map/
 ├── miss-supaboss/
 └── … (les quinze autres)
 ```
 
-Depuis `dev-wpa-config/`, mettre chaque app sur la dernière version du paquet
+Depuis `dev-pwa-config/`, mettre chaque app sur la dernière version du paquet
 (`npm install` par app). **Seule la ligne du paquet bouge** — voir les
 gardes-fous plus bas pour `--peers` et l'exclusion des miroirs :
 
@@ -61,8 +61,8 @@ Une app qui veut adopter la couche interface commence donc par :
 
 ```css
 @import 'tailwindcss';
-@import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
-@import '@mister-guiiug/dev-wpa-config/components.css'; /* ← le prérequis */
+@import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-pwa-config/components.css'; /* ← le prérequis */
 ```
 
 C'est une décision d'apparence, pas une ligne de plomberie : elle se prend app
@@ -149,7 +149,7 @@ node scripts/console-audit.mjs --app mister-doc
 Remplacement type, à la main :
 
 ```ts
-import { createLogger } from '@mister-guiiug/dev-wpa-config/logger';
+import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 const log = createLogger('favoris'); // le nom : votre décision
 log.error('Échec du rejeu de la file', { cause });
 ```
@@ -202,7 +202,7 @@ croyant tester celui d'après. L'un des trois s'en est aperçu tard.
 Le remède est de forcer la réextraction :
 
 ```bash
-rm -rf node_modules/@mister-guiiug/dev-wpa-config && npm install
+rm -rf node_modules/@mister-guiiug/dev-pwa-config && npm install
 # ou, plus simplement quand le verrou est déjà bon :
 npm ci
 ```
@@ -568,7 +568,7 @@ pas une ligne, le bouton « Télécharger le .ics » est un lien vers ce flux.
 
 Quatre obstacles, dont trois vérifiés en commande :
 
-1. `@mister-guiiug/dev-wpa-config` est **404 sur npmjs** et **401 sans jeton sur
+1. `@mister-guiiug/dev-pwa-config` est **404 sur npmjs** et **401 sans jeton sur
    GitHub Packages** — qui exige un jeton même en lecture, même pour un dépôt
    public.
 2. Le déploiement se fait par `supabase functions deploy --use-api` : c'est

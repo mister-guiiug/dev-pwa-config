@@ -2,9 +2,9 @@
  * Jeu de tokens neutre pour le contrat de couleur `--dwc-*`.
  *
  *   @import 'tailwindcss';
- *   @import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
- *   @import '@mister-guiiug/dev-wpa-config/tokens.css';       ← ce fichier
- *   @import '@mister-guiiug/dev-wpa-config/components.css';
+ *   @import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
+ *   @import '@mister-guiiug/dev-pwa-config/tokens.css';       ← ce fichier
+ *   @import '@mister-guiiug/dev-pwa-config/components.css';
  *
  * POURQUOI. `components.css` lit quinze variables `--dwc-*` et n'en
  * définissait aucune : chaque `var()` portait un repli, mais aucune valeur

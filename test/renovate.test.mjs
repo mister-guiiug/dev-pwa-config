@@ -13,7 +13,7 @@ const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 const json = path => JSON.parse(read(path));
 
 export const PRESET =
-  'github>mister-guiiug/dev-wpa-config//renovate/default.json';
+  'github>mister-guiiug/dev-pwa-config//renovate/default.json';
 
 test('le préréglage partagé : recommandé, tableau de bord, samedi matin, regroupements', () => {
   const preset = json('../renovate/default.json');
@@ -25,7 +25,7 @@ test('le préréglage partagé : recommandé, tableau de bord, samedi matin, reg
   assert.ok(groupes.includes('npm (mineur & patch)'));
   assert.ok(groupes.includes('github-actions'));
   const socle = preset.packageRules.find(rule =>
-    rule.matchPackageNames?.includes('@mister-guiiug/dev-wpa-config')
+    rule.matchPackageNames?.includes('@mister-guiiug/dev-pwa-config')
   );
   assert.ok(socle, 'le socle a sa propre règle');
   assert.deepEqual(

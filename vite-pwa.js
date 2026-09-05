@@ -19,7 +19,7 @@
  * pour ça, et reste utilisable même si l'app pilote une autre version.
  *
  * Usage (vite.config.ts) :
- *   import { pwaBaseOptions } from '@mister-guiiug/dev-wpa-config/vite-pwa';
+ *   import { pwaBaseOptions } from '@mister-guiiug/dev-pwa-config/vite-pwa';
  *
  *   VitePWA(
  *     pwaBaseOptions({

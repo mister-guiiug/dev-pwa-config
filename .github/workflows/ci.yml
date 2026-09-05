@@ -74,7 +74,7 @@ jobs:
       - name: Install + pack
         run: |
           npm ci --no-audit --no-fund
-          npm pack                       # produit mister-guiiug-dev-wpa-config-*.tgz
+          npm pack                       # produit mister-guiiug-dev-pwa-config-*.tgz
 
       # Les peers sont installés AUX PLAGES QUE LE PAQUET DÉCLARE, pas aux
       # dernières versions absolues. Le job les prenait en `*` : le 03/09/2026,
@@ -89,7 +89,7 @@ jobs:
       - name: Scaffold a throwaway consumer
         run: |
           mkdir -p /tmp/fixture
-          TARBALL=$(ls "$GITHUB_WORKSPACE"/mister-guiiug-dev-wpa-config-*.tgz | head -1)
+          TARBALL=$(ls "$GITHUB_WORKSPACE"/mister-guiiug-dev-pwa-config-*.tgz | head -1)
           export TARBALL
           node -e "
             const peers = require('$GITHUB_WORKSPACE/package.json').peerDependencies;
@@ -109,7 +109,7 @@ jobs:
             // installées faisait échouer npm sur « Cannot read properties of
             // null (reading 'edgesOut') » — un état intermédiaire qu'Arborist
             // ne sait pas relire. Tout déclarer, c'est une seule résolution.
-            devDependencies['@mister-guiiug/dev-wpa-config'] =
+            devDependencies['@mister-guiiug/dev-pwa-config'] =
               'file:' + process.env.TARBALL;
             require('node:fs').writeFileSync(
               '/tmp/fixture/package.json',
@@ -137,7 +137,7 @@ jobs:
           # n'est pas un problème : on ne valide QUE la résolution du extends.
           mkdir -p src && echo 'export {};' > src/x.ts
           for cfg in tsconfig-app tsconfig-app-react tsconfig-node tsconfig-strict-plus; do
-            echo "{\"extends\":\"@mister-guiiug/dev-wpa-config/$cfg\",\"include\":[\"src\"]}" > tsconfig.json
+            echo "{\"extends\":\"@mister-guiiug/dev-pwa-config/$cfg\",\"include\":[\"src\"]}" > tsconfig.json
             npx tsc --showConfig >/dev/null && echo "✅ extends $cfg"
           done
 
@@ -159,7 +159,7 @@ jobs:
             // Lu comme un FICHIER : \`package.json\` n'est pas dans la table
             // \`exports\`, donc pas résoluble comme sous-chemin.
             const pkg = JSON.parse(
-              readFileSync('node_modules/@mister-guiiug/dev-wpa-config/package.json', 'utf8')
+              readFileSync('node_modules/@mister-guiiug/dev-pwa-config/package.json', 'utf8')
             );
             const CONTEXT_BOUND = {
               'vitest-setup': 'appelle vi.mock() au niveau module — n existe que dans un run Vitest',
@@ -173,7 +173,7 @@ jobs:
                 console.log('— ' + s + ' : ' + CONTEXT_BOUND[s]);
                 continue;
               }
-              await import('@mister-guiiug/dev-wpa-config/' + s);
+              await import('@mister-guiiug/dev-pwa-config/' + s);
               console.log('✅ import ' + s);
               ok++;
             }
@@ -185,7 +185,7 @@ jobs:
       - name: CSS + JSON assets are shipped in the tarball
         working-directory: /tmp/fixture
         run: |
-          node -e "require.resolve('@mister-guiiug/dev-wpa-config/tailwind-preset.css'); console.log('✅ tailwind-preset.css present')"
-          node -e "require.resolve('@mister-guiiug/dev-wpa-config/tokens.css'); console.log('✅ tokens.css present')"
-          node -e "require.resolve('@mister-guiiug/dev-wpa-config/components.css'); console.log('✅ components.css present')"
-          node -e "require.resolve('@mister-guiiug/dev-wpa-config/tsconfig-app'); console.log('✅ tsconfig-app json present')"
+          node -e "require.resolve('@mister-guiiug/dev-pwa-config/tailwind-preset.css'); console.log('✅ tailwind-preset.css present')"
+          node -e "require.resolve('@mister-guiiug/dev-pwa-config/tokens.css'); console.log('✅ tokens.css present')"
+          node -e "require.resolve('@mister-guiiug/dev-pwa-config/components.css'); console.log('✅ components.css present')"
+          node -e "require.resolve('@mister-guiiug/dev-pwa-config/tsconfig-app'); console.log('✅ tsconfig-app json present')"

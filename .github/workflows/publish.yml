@@ -1,4 +1,4 @@
-# Publish dev-wpa-config sur GitHub Packages.
+# Publish dev-pwa-config sur GitHub Packages.
 # Note : workflow standalone (ne s'appuie pas sur le reusable npm-publish.yml du
 # même repo pour éviter le problème de bootstrap au tag initial).
 #
@@ -46,7 +46,7 @@ jobs:
         run: |
           PKG_VERSION=$(node -p "require('./package.json').version")
 
-          # Tag majeur mobile (`v3`) : il ne fait que suivre une release, il n'y
+          # Tag majeur mobile (`v4`) : il ne fait que suivre une release, il n'y
           # a rien à publier. La forme est reconnue par le motif `vN`, et non
           # plus comparée au littéral `v1` — le majeur courant est 3 depuis
           # longtemps, si bien qu'une poussée de `v3` tombait dans le chemin de
@@ -99,8 +99,8 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Fait pointer le tag majeur mobile (`v3`) sur cette release stable, afin
-      # que tous les consommateurs référençant `...@v3` reçoivent les derniers
+      # Fait pointer le tag majeur mobile (`v4`) sur cette release stable, afin
+      # que tous les consommateurs référençant `...@v4` reçoivent les derniers
       # workflows/actions réutilisables sans intervention manuelle.
       # Ignoré pour les pré-releases (v3.5.0-beta.1).
       - name: Advance rolling major tag

@@ -158,7 +158,7 @@ export const EQUIVALENTS = {
   // faible : sur les sept `storage.ts` du parc, un seul doublait vraiment
   // `./backup`. Elle était « conservée pour le vrai positif ». Ce vrai positif
   // était mister-cim10 — et il a migré : son `src/lib/storage.ts` importe
-  // aujourd'hui `@mister-guiiug/dev-wpa-config/backup`.
+  // aujourd'hui `@mister-guiiug/dev-pwa-config/backup`.
   //
   // Il ne restait donc que le bruit, vérifié fichier par fichier :
   //   · `mister-molkky/src/storage.ts` — un adaptateur `Storage` à repli

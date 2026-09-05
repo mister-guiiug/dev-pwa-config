@@ -38,7 +38,7 @@ async function api(path) {
   const res = await fetch(`${API}${path}`, {
     headers: {
       accept: 'application/vnd.github+json',
-      'user-agent': 'dev-wpa-config-showroom',
+      'user-agent': 'dev-pwa-config-showroom',
       ...(token ? { authorization: `Bearer ${token}` } : {}),
     },
   });

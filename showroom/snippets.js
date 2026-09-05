@@ -14,7 +14,7 @@
  * classique ET importable par node:test.
  */
 globalThis.SHOWROOM_SNIPPETS = {
-  Button: `import { Button } from '@mister-guiiug/dev-wpa-config/react';
+  Button: `import { Button } from '@mister-guiiug/dev-pwa-config/react';
 
 <Button variant="primary" onClick={save}>Enregistrer</Button>
 
@@ -28,7 +28,7 @@ globalThis.SHOWROOM_SNIPPETS = {
   <Plus size={18} aria-hidden="true" />
 </Button>`,
 
-  Field: `import { TextField, SelectField } from '@mister-guiiug/dev-wpa-config/react';
+  Field: `import { TextField, SelectField } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* label lié, aria-invalid et aria-describedby câblés automatiquement.
     L'aide reste annoncée MÊME en erreur. */}
@@ -45,13 +45,13 @@ globalThis.SHOWROOM_SNIPPETS = {
   <option value="travel">Déplacements</option>
 </SelectField>`,
 
-  Badge: `import { Badge } from '@mister-guiiug/dev-wpa-config/react';
+  Badge: `import { Badge } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* \`tone\` dit une INTENTION ; la teinte vient du thème de l'app. */}
 <Badge tone="success">À jour</Badge>
 <Badge tone="warning" variant="outline">En attente</Badge>`,
 
-  Card: `import { Card, CardHeader } from '@mister-guiiug/dev-wpa-config/react';
+  Card: `import { Card, CardHeader } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* Une surface, pas un contrôle : l'action va dans \`action\`, jamais sur la
     carte entière. \`as\` pour article / section / a / li. */}
@@ -67,7 +67,7 @@ globalThis.SHOWROOM_SNIPPETS = {
 {/* \`padding={false}\` : un contenu qui touche les bords (image, liste). */}
 <Card padding={false}><img src={photo} alt="" /></Card>`,
 
-  Stat: `import { Stat } from '@mister-guiiug/dev-wpa-config/react';
+  Stat: `import { Stat } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* \`trendLabel\` est lu par les lecteurs d'écran : la couleur et la flèche
     ne suffisent pas à distinguer une hausse d'une baisse. */}
@@ -79,13 +79,13 @@ globalThis.SHOWROOM_SNIPPETS = {
   trendLabel="en hausse"
 />`,
 
-  Skeleton: `import { SkeletonGroup } from '@mister-guiiug/dev-wpa-config/react';
+  Skeleton: `import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* Le libellé est annoncé UNE fois, par le conteneur — pas une fois
     par barre. */}
 {loading ? <SkeletonGroup label="Chargement des écritures" lines={4} /> : <List items={rows} />}`,
 
-  Sheet: `import { Sheet } from '@mister-guiiug/dev-wpa-config/react';
+  Sheet: `import { Sheet } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* Échap, clic sur le fond, piège de focus, focus restitué à la fermeture
     et scroll de fond verrouillé : tout est déjà là. */}
@@ -93,7 +93,7 @@ globalThis.SHOWROOM_SNIPPETS = {
   <ExpenseForm onDone={() => setOpen(false)} />
 </Sheet>`,
 
-  EmptyState: `import { EmptyState, Button } from '@mister-guiiug/dev-wpa-config/react';
+  EmptyState: `import { EmptyState, Button } from '@mister-guiiug/dev-pwa-config/react';
 
 <EmptyState
   icon={<Inbox size={32} aria-hidden="true" />}
@@ -102,7 +102,7 @@ globalThis.SHOWROOM_SNIPPETS = {
   action={<Button onClick={create}>Créer une entrée</Button>}
 />`,
 
-  ErrorBanner: `import { ErrorBanner } from '@mister-guiiug/dev-wpa-config/react';
+  ErrorBanner: `import { ErrorBanner } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* severity="error" pose role="alert" (interruption) ;
     "warning" et "info" posent role="status" (discret). */}
@@ -113,34 +113,34 @@ globalThis.SHOWROOM_SNIPPETS = {
   onDismiss={() => setError(null)}
 />`,
 
-  SyncStatusBadge: `import { SyncStatusBadge } from '@mister-guiiug/dev-wpa-config/react';
+  SyncStatusBadge: `import { SyncStatusBadge } from '@mister-guiiug/dev-pwa-config/react';
 
 <SyncStatusBadge status={online ? 'synced' : 'offline'} pending={queue.length} />`,
 
-  ErrorBoundary: `import { ErrorBoundary } from '@mister-guiiug/dev-wpa-config/react';
-import { recordError } from '@mister-guiiug/dev-wpa-config/react/observability';
+  ErrorBoundary: `import { ErrorBoundary } from '@mister-guiiug/dev-pwa-config/react';
+import { recordError } from '@mister-guiiug/dev-pwa-config/react/observability';
 
 {/* onDownloadBackup : récupérer l'état local même si React est cassé. */}
 <ErrorBoundary onError={recordError} onDownloadBackup={exportLocalData}>
   <App />
 </ErrorBoundary>`,
 
-  PwaInstallPrompt: `import { PwaInstallPrompt } from '@mister-guiiug/dev-wpa-config/react';
+  PwaInstallPrompt: `import { PwaInstallPrompt } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* Ne s'affiche que si l'installation est possible et non refusée. */}
 <PwaInstallPrompt />`,
 
   UpdatePromptBanner: `// Import par sous-chemin : couplé à virtual:pwa-register/react, hors barrel.
-import { UpdatePromptBanner } from '@mister-guiiug/dev-wpa-config/react/update-prompt-banner';
+import { UpdatePromptBanner } from '@mister-guiiug/dev-pwa-config/react/update-prompt-banner';
 
 <UpdatePromptBanner snoozeHours={24} />`,
 
-  AppFooter: `import { AppFooter } from '@mister-guiiug/dev-wpa-config/react';
+  AppFooter: `import { AppFooter } from '@mister-guiiug/dev-pwa-config/react';
 import { REPO_URL, SPONSOR_URL } from './links';
 
 <AppFooter repoUrl={REPO_URL} sponsorUrl={SPONSOR_URL} />`,
 
-  FamilyApps: `import { FamilyApps } from '@mister-guiiug/dev-wpa-config/react';
+  FamilyApps: `import { FamilyApps } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* La grille exclut d'elle-même l'app courante. */}
 <FamilyApps currentAppId="miss-uwh" repoUrl={REPO_URL} />
@@ -155,7 +155,7 @@ import { REPO_URL, SPONSOR_URL } from './links';
   max={3}
 />`,
 
-  AppHeader: `import { AppHeader } from '@mister-guiiug/dev-wpa-config/react';
+  AppHeader: `import { AppHeader } from '@mister-guiiug/dev-pwa-config/react';
 import { Link } from 'react-router-dom';
 
 {/* Le titre EST le h1 de la page. Le retour est un lien quand il a une
@@ -173,7 +173,7 @@ import { Link } from 'react-router-dom';
   <p>Vos données restent sur cet appareil.</p>
 </AppHeader>`,
 
-  PageContainer: `import { PageContainer } from '@mister-guiiug/dev-wpa-config/react';
+  PageContainer: `import { PageContainer } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* Centré, borné à un palier, zones sûres iOS comprises — celle du bas
     surtout, sans laquelle le dernier bouton colle à la barre d'onglets. */}
@@ -181,9 +181,9 @@ import { Link } from 'react-router-dom';
   …
 </PageContainer>`,
 
-  LoginForm: `import { AuthProvider, useAuthContext } from '@mister-guiiug/dev-wpa-config/react';
-import { LoginForm } from '@mister-guiiug/dev-wpa-config/react/login-form';
-import { frAuthError } from '@mister-guiiug/dev-wpa-config/auth/errors-fr';
+  LoginForm: `import { AuthProvider, useAuthContext } from '@mister-guiiug/dev-pwa-config/react';
+import { LoginForm } from '@mister-guiiug/dev-pwa-config/react/login-form';
+import { frAuthError } from '@mister-guiiug/dev-pwa-config/auth/errors-fr';
 
 {/* Présentationnel : l'appelant fait signIn et redonne busy + error. */}
 function LoginPage() {
@@ -205,7 +205,7 @@ function LoginPage() {
   );
 }`,
 
-  MfaChallenge: `import { MfaChallenge } from '@mister-guiiug/dev-wpa-config/react/mfa-challenge';
+  MfaChallenge: `import { MfaChallenge } from '@mister-guiiug/dev-pwa-config/react/mfa-challenge';
 
 {/* La voie de secours et la déconnexion n'existent que si on les donne. */}
 <MfaChallenge

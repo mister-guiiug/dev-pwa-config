@@ -18,7 +18,7 @@ import { createElement as h } from 'react';
  * **zéro**.
  *
  *   import { X, Sun, Moon, Monitor } from 'lucide-react';
- *   import { lucideIconSet } from '@mister-guiiug/dev-wpa-config/react/icons-lucide';
+ *   import { lucideIconSet } from '@mister-guiiug/dev-pwa-config/react/icons-lucide';
  *
  *   <IconsProvider icons={lucideIconSet({ close: X, light: Sun, dark: Moon, system: Monitor })}>
  *

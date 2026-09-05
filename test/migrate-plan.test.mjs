@@ -45,7 +45,7 @@ test('un miroir n’est jamais un consommateur à migrer', () => {
   );
   // La source, elle, reste découverte — ce sont deux dossiers distincts.
   assert.equal(isConsumerDir('bac-sable', CONSOMMATEUR), true);
-  assert.equal(isConsumerDir('dev-wpa-config', CONSOMMATEUR), false);
+  assert.equal(isConsumerDir('dev-pwa-config', CONSOMMATEUR), false);
 });
 
 test('la liste des miroirs n’est pas vide — sinon la garde ne garde rien', () => {

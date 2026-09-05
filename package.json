@@ -1,6 +1,6 @@
 {
-  "name": "@mister-guiiug/dev-wpa-config",
-  "version": "3.34.0",
+  "name": "@mister-guiiug/dev-pwa-config",
+  "version": "4.0.0",
   "private": false,
   "engines": {
     "node": ">=22"
@@ -22,13 +22,13 @@
   "description": "Configurations partagées (ESLint, Prettier, TypeScript, Vitest, Playwright, Tailwind, commitlint, lint-staged) + reusable workflows + composite actions pour les projets miss-* et mister-*.",
   "license": "MIT",
   "author": "GuiiuG",
-  "homepage": "https://github.com/mister-guiiug/dev-wpa-config#readme",
+  "homepage": "https://github.com/mister-guiiug/dev-pwa-config#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mister-guiiug/dev-wpa-config.git"
+    "url": "git+https://github.com/mister-guiiug/dev-pwa-config.git"
   },
   "bugs": {
-    "url": "https://github.com/mister-guiiug/dev-wpa-config/issues"
+    "url": "https://github.com/mister-guiiug/dev-pwa-config/issues"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

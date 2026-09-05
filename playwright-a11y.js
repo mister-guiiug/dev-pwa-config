@@ -7,7 +7,7 @@
  * Usage (e2e/a11y.spec.ts) :
  *   import { test, expect } from '@playwright/test';
  *   import AxeBuilder from '@axe-core/playwright';
- *   import { expectNoA11yViolations } from '@mister-guiiug/dev-wpa-config/playwright-a11y';
+ *   import { expectNoA11yViolations } from '@mister-guiiug/dev-pwa-config/playwright-a11y';
  *
  *   test('accueil sans violation WCAG A/AA', async ({ page }) => {
  *     await page.goto('/');

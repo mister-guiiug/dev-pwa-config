@@ -18,7 +18,7 @@ import { readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
 /** Le paquet dont ce dépôt est la source. */
-export const PACKAGE = '@mister-guiiug/dev-wpa-config';
+export const PACKAGE = '@mister-guiiug/dev-pwa-config';
 
 /**
  * Ce qu'on ne regarde pas. Rien ici n'est du code que l'app expédie.
@@ -77,14 +77,14 @@ export const GENERATED = /\.(test|spec)\./;
  * premier jet de ce relevé, qui rendait « 185 symboles » dont `useState`.
  */
 export const IMPORT_RE =
-  /import\s+(?:type\s+)?\{([^{}]*)\}\s*from\s*['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
+  /import\s+(?:type\s+)?\{([^{}]*)\}\s*from\s*['"]@mister-guiiug\/dev-pwa-config([^'"]*)['"]/g;
 
 /**
  * Une feuille de style n'apporte aucun symbole : seul son sous-chemin compte,
  * et c'est justement lui qui manquait au relevé.
  */
 export const CSS_IMPORT_RE =
-  /@import\s+['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
+  /@import\s+['"]@mister-guiiug\/dev-pwa-config([^'"]*)['"]/g;
 
 /**
  * TOUTES LES AUTRES FORMES — et elles cachaient la couche la plus adoptée du
@@ -118,7 +118,7 @@ export const CSS_IMPORT_RE =
  * Les imports nommés multilignes restent l'affaire d'`IMPORT_RE`.
  */
 export const SPECIFIER_RE =
-  /(?:import|export)\s*[^'"()\n]*?['"]@mister-guiiug\/dev-wpa-config([^'"]*)['"]/g;
+  /(?:import|export)\s*[^'"()\n]*?['"]@mister-guiiug\/dev-pwa-config([^'"]*)['"]/g;
 
 /** Les seuls JSON qu'on ouvre : un `package-lock` ne dit rien et pèse lourd. */
 export const TSCONFIG_FILE = /^(?:ts|js)config[\w.-]*\.json$/;
@@ -127,7 +127,7 @@ export const TSCONFIG_FILE = /^(?:ts|js)config[\w.-]*\.json$/;
  * Les configurations TypeScript dont un `tsconfig` HÉRITE VRAIMENT.
  *
  * L'ANCRAGE SUR `extends` N'EST PAS UNE PRÉCAUTION DE STYLE. `miss-dice` cite
- * `@mister-guiiug/dev-wpa-config/tsconfig-app` deux fois dans son
+ * `@mister-guiiug/dev-pwa-config/tsconfig-app` deux fois dans son
  * `tsconfig.app.json` — dans des COMMENTAIRES : « Inlined from … ». L'app a
  * recopié le contenu au lieu de l'étendre, en expliquant pourquoi (les
  * sous-chemins publiés étaient par moments irrésolvables en CI). Chercher le
@@ -142,7 +142,7 @@ export function tsconfigSubpaths(source) {
   const cle = /"extends"\s*:\s*(\[[^\]]*\]|"[^"]*")/g;
   for (const match of String(source).matchAll(cle)) {
     for (const ref of match[1].matchAll(
-      /"@mister-guiiug\/dev-wpa-config([^"]*)"/g
+      /"@mister-guiiug\/dev-pwa-config([^"]*)"/g
     )) {
       trouves.push(ref[1] || '/');
     }

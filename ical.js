@@ -91,7 +91,7 @@ export const ICAL_MIME = 'text/calendar;charset=utf-8';
  * l'app : une app qui veut le sien le passe en option (les quatre sources ont
  * chacune le leur).
  */
-const DEFAULT_PRODID = '-//mister-guiiug//dev-wpa-config//FR';
+const DEFAULT_PRODID = '-//mister-guiiug//dev-pwa-config//FR';
 
 /* ── Valeurs ───────────────────────────────────────────────────────────── */
 
