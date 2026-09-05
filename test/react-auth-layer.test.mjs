@@ -237,6 +237,44 @@ test('LoginForm : l’erreur est une alerte à part, les emplacements sont à le
 
 /* ── MfaChallenge ───────────────────────────────────────────────────────── */
 
+test('LoginForm mode otp : un seul champ, un bouton qui parle de lien, et un mot de passe vide à la soumission', async () => {
+  const html = renderToStaticMarkup(h(LoginForm, { mode: 'otp' }));
+  assert.match(html, /<form data-dwc="login-form" data-mode="otp">/);
+  assert.match(html, /Recevoir un lien de connexion<\/h1>/);
+  assert.doesNotMatch(
+    html,
+    /type="password"/,
+    'aucun mot de passe, nulle part'
+  );
+  // Sans mot de passe à apparier, `email` est le bon indice pour le
+  // gestionnaire — `username` désigne la moitié d'un couple qui n'existe pas.
+  assert.match(html, /type="email"[^>]*autocomplete="email"/i);
+  assert.match(html, /type="submit"[^>]*>Recevoir un lien</);
+
+  const en = renderToStaticMarkup(
+    h(LabelsProvider, { locale: 'en' }, h(LoginForm, { mode: 'otp' }))
+  );
+  assert.match(en, /Sign in with a link/);
+  assert.match(en, /Send me a link/);
+
+  const dom = setupDom();
+  try {
+    const received = [];
+    const view = await mount(
+      h(LoginForm, { mode: 'otp', onSubmit: values => received.push(values) })
+    );
+    const form = view.container.querySelector('form');
+    await view.act(() => type(form.querySelector('input'), ' lien@b.c '));
+    await view.act(() => soumettre(form));
+    // Le TYPE ne change pas : `password` est là, vide. L'appelant fait
+    // `signInWithOtp` et n'a rien à réapprendre.
+    assert.deepEqual(received, [{ email: 'lien@b.c', password: '' }]);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
 test('MfaChallenge : le clavier numérique, le code reçu proposé, et la vérification', async () => {
   const dom = setupDom();
   try {

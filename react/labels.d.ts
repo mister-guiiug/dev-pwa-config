@@ -63,6 +63,10 @@ export interface LabelGroups {
   auth: {
     title: string;
     signUpTitle: string;
+    /** Titre du mode `otp` : « Recevoir un lien de connexion ». */
+    otpTitle: string;
+    /** Bouton du mode `otp` : « Recevoir un lien ». */
+    sendLink: string;
     email: string;
     password: string;
     signIn: string;

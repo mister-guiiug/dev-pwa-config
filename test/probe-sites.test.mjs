@@ -9,6 +9,7 @@ import {
   manifestSummary,
   resolveUrl,
 } from '../scripts/site-readers.mjs';
+import { probe } from '../scripts/probe-sites.mjs';
 
 const HTML = `<!doctype html>
 <html lang="fr">
@@ -121,4 +122,32 @@ test('resolveUrl : la racine de l’origine n’est pas la racine du site', () =
 test('isAppShell distingue la coquille de la page 404 de GitHub', () => {
   assert.equal(isAppShell(HTML), true);
   assert.equal(isAppShell('<h1>404</h1><p>File not found</p>'), false);
+});
+
+test('probe : un lien profond qui rend le corps d’index.html est une coquille, quel que soit l’élément racine', async () => {
+  // mister-cim10 monte sur `id="react-root"` : `isAppShell` ne le reconnaît
+  // pas, et la sonde le classait « page GitHub » alors que Pages lui servait
+  // exactement son index (6 216 octets, relevé du 05/09/2026).
+  const index = HTML.replace('id="root"', 'id="react-root"');
+  const reponse = (body, status = 200) => ({
+    ok: status < 400,
+    status,
+    headers: { get: () => null },
+    text: async () => body,
+    arrayBuffer: async () => new ArrayBuffer(0),
+  });
+  const fauxFetch = async url => {
+    if (url.endsWith('/quelque-chose-qui-n-existe-pas'))
+      return reponse(index, 404);
+    if (url.endsWith('/miss-x/')) return reponse(index);
+    return reponse('', 404);
+  };
+  const r = await probe('miss-x', fauxFetch);
+  assert.equal(r.fallback, 'coquille');
+
+  const pageGitHub = async url =>
+    url.endsWith('/quelque-chose-qui-n-existe-pas')
+      ? reponse('<h1>404</h1><p>File not found</p>', 404)
+      : fauxFetch(url);
+  assert.equal((await probe('miss-x', pageGitHub)).fallback, 'page GitHub');
 });

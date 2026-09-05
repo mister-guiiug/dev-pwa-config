@@ -93,7 +93,14 @@ export async function probe(app, fetchImpl = fetch) {
     const nf = await fetchImpl(base + 'quelque-chose-qui-n-existe-pas', {
       redirect: 'follow',
     });
-    fallback = isAppShell(await nf.text()) ? 'coquille' : 'page GitHub';
+    // LE CORPS D'INDEX.HTML EST LA COQUILLE, quel que soit le nom de l'élément
+    // racine. `isAppShell` ne reconnaît que `root` et `app` ; mister-cim10
+    // monte sur `react-root`, et la sonde le classait « page GitHub » alors
+    // que Pages lui servait exactement son index (6 216 octets, relevé du
+    // 05/09/2026). L'identité avec la page d'accueil est le critère sûr ;
+    // l'heuristique reste pour un index qui varierait d'une réponse à l'autre.
+    const corps = await nf.text();
+    fallback = corps === html || isAppShell(corps) ? 'coquille' : 'page GitHub';
   } catch {
     fallback = 'injoignable';
   }

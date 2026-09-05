@@ -24,6 +24,21 @@ const formDataOf = form =>
  * plus, avant le bouton — le nom affiché à l'inscription) et `footer`
  * (après — passkey, lien de confidentialité, mot de passe oublié).
  *
+ * TROIS MODES. `signin` et `signup` portent le mot de passe ; **`otp`** n'a
+ * qu'un champ e-mail et un bouton « Recevoir un lien » — la connexion par
+ * lien à usage unique, que les deux applications ayant écrit un écran de
+ * compte en septembre 2026 (miss-carbook, mister-miss-koh) ont choisie :
+ * l'application ne voit passer aucun secret et n'en stocke aucun. En `otp`,
+ * `onSubmit` reçoit `{ email, password: '' }` — le type ne change pas — et
+ * l'appelant fait `signInWithOtp({ email, emailRedirectTo })`.
+ *
+ * DEUX RÉGLAGES QUE LE LIEN EXIGE, hors de ce composant : `flowType: 'pkce'`
+ * sur le client dès que l'application route par `#` (le flux implicite met
+ * le jeton dans le FRAGMENT, exactement là où le routeur lit la route — il
+ * le remplacerait par « / » avant qu'il ait servi), et la liste d'URL
+ * autorisées du projet, qui ne contient que `http://localhost:3000` à la
+ * création. Les deux échouent en silence.
+ *
  * PRÉSENTATIONNEL. Il ne connaît ni le port ni l'adaptateur : `onSubmit`
  * reçoit `{ email, password }`, l'appelant fait `signIn` et redonne `busy` et
  * `error` — une chaîne DÉJÀ traduite (`frAuthError`, ou l'i18n de l'app).
@@ -41,7 +56,7 @@ const formDataOf = form =>
  *
  * @param {{
  *   onSubmit?: (values: { email: string, password: string }) => void,
- *   busy?: boolean, error?: string | null, mode?: 'signin' | 'signup',
+ *   busy?: boolean, error?: string | null, mode?: 'signin' | 'signup' | 'otp',
  *   title?: import('react').ReactNode | null, titleAs?: string,
  *   emailLabel?: string, passwordLabel?: string, submitLabel?: string,
  *   minPasswordLength?: number, initialEmail?: string, className?: string,
@@ -68,9 +83,16 @@ export function LoginForm(props = {}) {
 
   const labels = useLabels('auth');
   const signup = mode === 'signup';
+  const otp = mode === 'otp';
 
   const heading =
-    title === undefined ? (signup ? labels.signUpTitle : labels.title) : title;
+    title === undefined
+      ? otp
+        ? labels.otpTitle
+        : signup
+          ? labels.signUpTitle
+          : labels.title
+      : title;
 
   const submit = event => {
     event.preventDefault();
@@ -80,7 +102,7 @@ export function LoginForm(props = {}) {
     const data = formDataOf(event.currentTarget);
     onSubmit?.({
       email: String(data.get('email') ?? '').trim(),
-      password: String(data.get('password') ?? ''),
+      password: otp ? '' : String(data.get('password') ?? ''),
     });
   };
 
@@ -101,19 +123,22 @@ export function LoginForm(props = {}) {
       name: 'email',
       inputMode: 'email',
       // `username`, pas `email` : c'est ce qu'un gestionnaire de mots de
-      // passe attend pour proposer l'identifiant enregistré.
-      autoComplete: 'username',
+      // passe attend pour proposer l'identifiant enregistré. Sans mot de
+      // passe à côté, `email` est le bon indice — il n'y a rien à apparier.
+      autoComplete: otp ? 'email' : 'username',
       required: true,
       defaultValue: initialEmail,
     }),
-    h(TextField, {
-      label: passwordLabel ?? labels.password,
-      type: 'password',
-      name: 'password',
-      autoComplete: signup ? 'new-password' : 'current-password',
-      required: true,
-      minLength: signup ? minPasswordLength : undefined,
-    }),
+    otp
+      ? null
+      : h(TextField, {
+          label: passwordLabel ?? labels.password,
+          type: 'password',
+          name: 'password',
+          autoComplete: signup ? 'new-password' : 'current-password',
+          required: true,
+          minLength: signup ? minPasswordLength : undefined,
+        }),
     children,
     error
       ? h('p', { role: 'alert', 'data-dwc': 'login-form-error' }, error)
@@ -121,7 +146,8 @@ export function LoginForm(props = {}) {
     h(
       Button,
       { type: 'submit', block: true, loading: busy },
-      submitLabel ?? (signup ? labels.signUp : labels.signIn)
+      submitLabel ??
+        (otp ? labels.sendLink : signup ? labels.signUp : labels.signIn)
     ),
     footer ? h('div', { 'data-dwc': 'login-form-footer' }, footer) : null
   );

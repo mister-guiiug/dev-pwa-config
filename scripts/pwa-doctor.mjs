@@ -21,12 +21,15 @@
  *      DEUX LIENS DE LA FAMILLE — code source et soutien — sur le premier
  *      écran comme sur À propos / Réglages ;
  *   2. LES WORKFLOWS — lighthouse, `cleanup-runs`, le keep-alive Supabase si
- *      l'app en dépend, les e2e en CI, et les références au socle en `@v4` ;
+ *      l'app en dépend, les e2e en CI (et qu'aucune spec ne reste hors du
+ *      filtre `e2e-grep`, donc jamais jouée), un déploiement Pages passé par
+ *      le réutilisable, et les références au socle en `@v4` ;
  *   3. LE BUILD (`dist/`, s'il existe) — la langue, le lien du manifeste (qui
  *      doit rester sous le site), les icônes PNG 192/512 et maskable, `id`,
  *      la langue du manifeste égale à celle de la page, l'icône iOS, le
- *      `theme-color` par schéma, la CSP, Open Graph, la canonique, et le
- *      `404.html` quand l'app route par chemin.
+ *      `theme-color` par schéma, la CSP, Open Graph, la canonique,
+ *      `version.json`, et le `404.html` quand l'app route par chemin sans
+ *      passer par `pwa-deploy.yml`, qui le pose au déploiement.
  *
  * TROIS VERDICTS, parce qu'ils ne se traitent pas pareil :
  *
@@ -215,6 +218,43 @@ export function liensFamille(source) {
   };
 }
 
+/* ── Le filtre e2e de la CI ────────────────────────────────────────────────
+ *
+ * `pwa-ci.yml` ne joue que les tests dont le titre correspond à `e2e-grep`.
+ * Une spec dont aucun titre ne correspond n'est JAMAIS exécutée — et
+ * Playwright rend « No tests found » avec un code 0. Le squelette et le
+ * gabarit ont porté une spec `@a11y` dans ce cas pendant que le filtre valait
+ * `@critical` (relevé du 05/09/2026).
+ */
+const FILTRE_E2E_DEFAUT = '@critical|@a11y';
+
+/** Le filtre que la CI applique : celui de `ci.yml`, sinon celui du réutilisable. */
+export function filtreE2e(wfText) {
+  const m = /e2e-grep:\s*(['"]?)(.+?)\1\s*$/m.exec(
+    sansCommentaires.yaml(wfText)
+  );
+  const source = m ? m[2].trim() : FILTRE_E2E_DEFAUT;
+  try {
+    return new RegExp(source);
+  } catch {
+    return new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  }
+}
+
+/**
+ * Vrai si au moins un titre de la spec — `describe` ou `test` — correspond au
+ * filtre. Playwright compare le titre COMPLET (`describe › test`) : un tag
+ * posé sur le `describe` couvre tous ses tests.
+ */
+export function specJouee(text, filtre) {
+  const titres = [
+    ...text.matchAll(
+      /\b(?:test|it|describe)(?:\.(?:describe|only|skip|fixme|serial|parallel))*\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/g
+    ),
+  ].map(m => m[2]);
+  return titres.some(t => filtre.test(t));
+}
+
 /**
  * Le diagnostic d'un dépôt. Pur au sens utile : il lit le disque, n'écrit
  * rien, ne touche pas au réseau.
@@ -247,6 +287,11 @@ export function diagnose(dir) {
   const indexHtml = readText(root, 'index.html') ?? '';
   const workflows = walk(root, ['.github/workflows'], /\.ya?ml$/);
   const wfText = workflows.map(w => w.text).join('\n');
+  const specs = walk(
+    root,
+    ['e2e', 'tests', 'test', 'playwright'],
+    /\.(spec|test)\.[jt]sx?$/
+  );
 
   /* ── 1. Le dépôt ──────────────────────────────────────────────────────── */
 
@@ -304,11 +349,6 @@ export function diagnose(dir) {
   }
   const playwright = Boolean(deps['@playwright/test']);
   if (playwright) {
-    const specs = walk(
-      root,
-      ['e2e', 'tests', 'test', 'playwright'],
-      /\.(spec|test)\.[jt]sx?$/
-    );
     if (!specs.some(f => /a11y|accessib/i.test(basename(f.rel)))) {
       dette(
         'a11y-spec',
@@ -366,6 +406,34 @@ export function diagnose(dir) {
         'wf-e2e',
         'les e2e ne tournent pas en CI',
         'run-e2e: true dans ci.yml'
+      );
+    }
+
+    // Les e2e tournent, mais pas tous : une spec dont aucun titre ne
+    // correspond au filtre est un test qui n'existe pas pour la CI.
+    if (playwright && /run-e2e:\s*true/.test(wfText) && specs.length) {
+      const filtre = filtreE2e(wfText);
+      const horsFiltre = specs.filter(f => !specJouee(f.text, filtre));
+      if (horsFiltre.length) {
+        dette(
+          'e2e-hors-filtre',
+          `${horsFiltre.map(f => f.rel).join(', ')} : aucun titre ne correspond au filtre « ${filtre.source} » — jamais joué en CI`,
+          `taguer les titres (@critical, @a11y), ou e2e-grep: '${FILTRE_E2E_DEFAUT}' dans ci.yml`
+        );
+      }
+    }
+
+    // Un déploiement Pages écrit à la main n'a ni le repli SPA `404.html`, ni
+    // `required-env`, ni `VITE_BASE_PATH` posé : mister-puzzle et mister-doc
+    // servaient la page 404 de GitHub sur un lien profond le 05/09/2026.
+    if (
+      /deploy-pages|upload-pages-artifact/.test(wfText) &&
+      !/pwa-deploy\.yml@/.test(wfText)
+    ) {
+      dette(
+        'wf-deploy-maison',
+        'déploiement Pages écrit à la main : sans le réutilisable, ni repli SPA 404.html, ni required-env, ni base path',
+        'deploy.yml → pwa-deploy.yml@v4 (use-base-path: true ; ce qui précède le build en pre-build)'
       );
     }
     const vieux = wfText.match(
@@ -440,6 +508,15 @@ export function diagnose(dir) {
   ) {
     dette('csp', 'pas de Content-Security-Policy', 'cspPlugin() de vite-csp');
   }
+  // Sans `version.json`, l'app ne sait ni dire ce qui est en ligne, ni qu'une
+  // version l'attend : dix-sept sites sur dix-huit le 05/09/2026.
+  if (viteConfig && !/versionPlugin/.test(viteConfig)) {
+    dette(
+      'version-manifest',
+      'pas de version.json : l’app ne peut dire ni ce qui est en ligne, ni qu’une version l’attend',
+      'versionPlugin({ manifest: true }) (vite-version) + <AppVersion updates /> (react/app-version)'
+    );
+  }
   // Toute VITE_* que le code lit doit figurer dans `.env.example` : c'est la
   // seule documentation qu'un nouveau venu lira.
   const lues = [
@@ -500,6 +577,28 @@ export function diagnose(dir) {
       'console',
       `${consoles} console.error/warn`,
       'createLogger (logger) — voir scripts/console-audit.mjs'
+    );
+  }
+  // Un budget total fige un poids ; sans `mainChunkKb`, ce qui charge AVANT
+  // le premier rendu n'est pas borné (puzzle : 271 kB de JS initial).
+  if (pkg.bundleBudget && !pkg.bundleBudget.mainChunkKb) {
+    info(
+      'main-chunk-budget',
+      'bundleBudget sans mainChunkKb : le poids initial n’est pas borné, seul le total l’est',
+      'mesurer le chunk principal (pwa-bundle-budget l’affiche) et poser mainChunkKb à +10 %'
+    );
+  }
+  // `localStorage` nu perd la donnée à la première version qui change de
+  // forme ; le magasin versionné copie de côté avant toute perte.
+  const directs = count(
+    sansCommentaires.source(srcText),
+    /localStorage\.(?:get|set|remove)Item\(/g
+  );
+  if (directs && !/versioned-store/.test(srcText)) {
+    info(
+      'local-storage-direct',
+      `${directs} accès direct(s) à localStorage sans versioned-store : aucune copie de côté avant une perte`,
+      'createVersionedStore (versioned-store) — migrations, validation, sauvegarde avant perte'
     );
   }
 
@@ -621,9 +720,20 @@ export function diagnose(dir) {
           );
       }
     }
+    if (!exists(root, 'dist/version.json')) {
+      dette(
+        'version-manifest',
+        'pas de version.json dans le build : l’app ne peut dire ni ce qui est en ligne, ni qu’une version l’attend',
+        'versionPlugin({ manifest: true }) (vite-version)'
+      );
+    }
+    // `pwa-deploy.yml@v4` copie `index.html` en `404.html` AU DÉPLOIEMENT :
+    // un build local sans lui n'est pas un défaut pour une app qui déploie
+    // par le réutilisable — c'est le cas de badminton, contraction, footcoach.
     if (
       /BrowserRouter|createBrowserRouter/.test(srcText) &&
-      !exists(root, 'dist/404.html')
+      !exists(root, 'dist/404.html') &&
+      !/pwa-deploy\.yml@v[4-9]/.test(wfText)
     ) {
       defaut(
         'spa-404',
