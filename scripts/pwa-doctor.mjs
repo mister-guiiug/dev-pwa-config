@@ -101,6 +101,30 @@ function walk(dir, roots, keep = SOURCE) {
 const count = (text, re) => (text.match(re) ?? []).length;
 
 /**
+ * Le texte SANS ses commentaires — parce qu'un diagnostic qui lit du texte
+ * plat punit celui qui documente.
+ *
+ * Le squelette `pwa-starter-kit` a fait sortir les deux cas le 05/09/2026, et
+ * ils sont du même genre : son `ci.yml` porte le commentaire « Pas de
+ * `secrets: inherit` : le réutilisable déclare ce qu'il consomme », et son
+ * module i18n explique que le parc portait quatre-vingt-huit `'fr-FR'` codés
+ * en dur. Les deux étaient comptés comme le défaut qu'ils mettent en garde de
+ * commettre. Un contrôle qu'on ne peut pas expliquer sans le déclencher pousse
+ * à ne rien expliquer.
+ *
+ * Le motif de bloc est TEMPÉRÉ. La forme paresseuse enjambe les fins de
+ * commentaire et avalerait le fichier entier depuis son premier bloc de
+ * documentation ; la forme tempérée refuse d'avancer au-delà de la première.
+ */
+const sansCommentaires = {
+  yaml: text => text.replace(/^[ \t]*#.*$/gm, ''),
+  source: text =>
+    text
+      .replace(/\/\*(?:(?!\*\/)[\s\S])*\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, ''),
+};
+
+/**
  * Le diagnostic d'un dépôt. Pur au sens utile : il lit le disque, n'écrit
  * rien, ne touche pas au réseau.
  *
@@ -266,7 +290,9 @@ export function diagnose(dir) {
 
     // `secrets: inherit` donne au workflow appelé TOUT le trousseau du dépôt,
     // alors qu'il déclare exactement ce dont il a besoin.
-    const herites = workflows.filter(w => /secrets:\s*inherit/.test(w.text));
+    const herites = workflows.filter(w =>
+      /secrets:\s*inherit/.test(sansCommentaires.yaml(w.text))
+    );
     if (herites.length) {
       dette(
         'secrets-inherit',
@@ -354,7 +380,7 @@ export function diagnose(dir) {
     }
   }
 
-  const figees = count(srcText, /['"]fr-FR['"]/g);
+  const figees = count(sansCommentaires.source(srcText), /['"]fr-FR['"]/g);
   if (figees) {
     info(
       'locale-figee',
