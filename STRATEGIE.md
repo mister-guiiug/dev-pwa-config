@@ -588,11 +588,32 @@ check-runs de `main` incluent des contextes venus d'un `release.yml` sur tag,
 qui ne s'exécutent jamais en PR. Les noms exigés se relèvent sur une **PR
 réelle**, pas sur `main`.
 
-Ce que le chantier a révélé et qui reste ouvert : **cinq dépôts publics n'ont
-pas de `LICENSE`** (`miss-lookhouse`, `mister-family-map`, `mister-gphotos`,
-`mister-qowa`, `mister-quota`). GitHub n'hérite pas les licences : un dépôt
-public sans licence est « tous droits réservés », ce qui contredit la
-convention MIT de la famille. À corriger dépôt par dépôt.
+### Les licences, réglées dans la foulée
+
+Le chantier a révélé que **cinq dépôts publics n'avaient pas de `LICENSE`**.
+GitHub n'hérite pas les licences — ni depuis le dépôt `.github` créé le matin
+même, ni depuis le champ `"license"` d'un `package.json` : sans fichier à la
+racine, un dépôt public est « tous droits réservés », et c'est cette lecture-là
+qui fait foi.
+
+Le traitement n'a pas été le même pour tous, parce que le cas ne l'était pas :
+
+| Dépôt                                           | Situation                                         | Traitement                                            |
+| ----------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
+| `miss-lookhouse`, `mister-qowa`, `mister-quota` | `"license": "MIT"` dans le paquet, fichier absent | mise en cohérence, sans rien choisir                  |
+| `mister-gphotos`                                | aucune déclaration, nulle part                    | licence **demandée** avant d'être posée               |
+| `mister-family-map`                             | idem, et c'est un miroir                          | fichier + champ dans `bac-sable`, puis republié       |
+| `.github`                                       | créé le jour même, ne porte que des gabarits      | MIT : des gabarits hérités doivent être réutilisables |
+
+La distinction compte : rendre explicite ce qu'un paquet déclare déjà est une
+correction, tandis que **choisir une licence à la place de l'auteur n'en est
+pas une**. Les deux dépôts sans aucune déclaration ont donc fait l'objet d'une
+question, pas d'une décision.
+
+Résultat vérifié sur l'API : **vingt-cinq dépôts publics sur vingt-cinq en MIT
+reconnu par GitHub.** Détail d'outillage à connaître : `prettier --check .`
+ignore `LICENSE` lors d'un balayage de répertoire, mais échoue si on le lui
+passe explicitement — ne jamais le nommer dans une commande de vérification.
 
 Ce qu'on **ne fait pas**, et pourquoi :
 
