@@ -4,7 +4,7 @@
 # CE FICHIER EST LU PAR GITHUB, PAS PAR L'APP. Le lien affiché DANS l'app vient
 # du catalogue (`SPONSOR_URL`), et se surcharge sans toucher au socle :
 #
-#   import { SponsorProvider } from '@mister-guiiug/dev-wpa-config/react/sponsor';
+#   import { SponsorProvider } from '@mister-guiiug/dev-pwa-config/react/sponsor';
 #
 #   <SponsorProvider handle="autre.pseudo">…</SponsorProvider>   // autre pseudo
 #   <SponsorProvider url="https://liberapay.com/…">…</SponsorProvider>

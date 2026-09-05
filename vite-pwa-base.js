@@ -15,7 +15,7 @@
  * objet Plugin Vite valide structurellement.
  *
  * Usage (vite.config.ts) :
- *   import { pwaSeoPlugin } from '@mister-guiiug/dev-wpa-config/vite-pwa-base';
+ *   import { pwaSeoPlugin } from '@mister-guiiug/dev-pwa-config/vite-pwa-base';
  *   export default defineConfig({
  *     plugins: [react(), pwaSeoPlugin({ siteName: 'Mister Puzzle' })],
  *   });
@@ -214,7 +214,7 @@ export function pwaSeoPlugin(opts = {}) {
       return {
         optimizeDeps: {
           exclude: [
-            '@mister-guiiug/dev-wpa-config/react/observability',
+            '@mister-guiiug/dev-pwa-config/react/observability',
             // Même famille de panne, autre module : `map/maplibre` résout
             // l'URL de son worker par le suffixe Vite `?worker&url`, sans quoi
             // MapLibre cherche un fichier que le bundler n'émet pas et la
@@ -223,7 +223,7 @@ export function pwaSeoPlugin(opts = {}) {
             // `[UNLOADABLE_DEPENDENCY]`. Le premier consommateur a écrit
             // l'exclusion à la main ; comme ci-dessus, elle appartient au
             // paquet dont le module est en cause, pas aux apps.
-            '@mister-guiiug/dev-wpa-config/map/maplibre',
+            '@mister-guiiug/dev-pwa-config/map/maplibre',
             // Ces deux-là n'ont pas de suffixe problématique : ils importent
             // `react/observability`, qui est exclu ci-dessus. Un module
             // pré-bundlé embarque sa copie des modules qu'il importe — la
@@ -231,8 +231,8 @@ export function pwaSeoPlugin(opts = {}) {
             // session, et le câblage de la corrélation ne produit plus rien,
             // silencieusement. Règle générale : ce qui importe un singleton
             // exclu doit être exclu aussi.
-            '@mister-guiiug/dev-wpa-config/correlation',
-            '@mister-guiiug/dev-wpa-config/logger',
+            '@mister-guiiug/dev-pwa-config/correlation',
+            '@mister-guiiug/dev-pwa-config/logger',
           ],
         },
       };

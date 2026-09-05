@@ -2,7 +2,7 @@
  * Setup Vitest partagé pour les PWA React de la famille.
  *
  * À importer depuis le `src/test/setup.ts` du projet (chargé par `setupFiles`) :
- *   import '@mister-guiiug/dev-wpa-config/vitest-setup';
+ *   import '@mister-guiiug/dev-pwa-config/vitest-setup';
  *   // puis, si besoin, des mocks spécifiques au projet…
  *
  * Fournit :
@@ -26,7 +26,7 @@
  * servi par vite-plugin-pwa. Un mock ne rattrape jamais ça — il faut un
  * FICHIER, désigné par `resolve.alias` dans `vitest.config.ts` :
  *
- *   import { pwaRegisterAlias } from '@mister-guiiug/dev-wpa-config/vitest-base';
+ *   import { pwaRegisterAlias } from '@mister-guiiug/dev-pwa-config/vitest-base';
  *   resolve: { alias: { ...pwaRegisterAlias } }
  *
  * Et il détruisait, parce qu'une fois cet alias posé le spécificateur

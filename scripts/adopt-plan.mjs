@@ -126,7 +126,7 @@ export const EXPORTS = {
   ],
 };
 
-const PACKAGE = '@mister-guiiug/dev-wpa-config';
+const PACKAGE = '@mister-guiiug/dev-pwa-config';
 
 /**
  * Les symboles importés d'un module, dans un fichier source.
@@ -186,7 +186,7 @@ function escapeRegExp(value) {
  * écrit déjà. Deviner `../../shared/ui/Button` à partir d'une arborescence
  * suppose une convention que les dix-sept apps ne partagent pas.
  *
- * LE SOCLE N'EST PAS UN VOISIN. `@mister-guiiug/dev-wpa-config/storage` se
+ * LE SOCLE N'EST PAS UN VOISIN. `@mister-guiiug/dev-pwa-config/storage` se
  * termine lui aussi par `/storage` : sans cette exclusion, le codemod prenait
  * un import DÉJÀ migré pour un fichier local, le réécrivait vers lui-même, et
  * comptait la non-modification comme une réécriture. Le chiffre de la campagne

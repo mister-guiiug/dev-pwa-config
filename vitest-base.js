@@ -31,7 +31,7 @@ export const PWA_REGISTER_STUB = fileURLToPath(
  *   import {
  *     baseTestOptions,
  *     pwaRegisterAlias,
- *   } from '@mister-guiiug/dev-wpa-config/vitest-base';
+ *   } from '@mister-guiiug/dev-pwa-config/vitest-base';
  *
  *   export default defineConfig({
  *     resolve: { alias: { ...pwaRegisterAlias } },
@@ -80,7 +80,7 @@ export const baseTestOptions = {
  * jamais à baisser pour faire passer le rouge au vert.
  *
  * Usage :
- *   import { baseTestOptions, coveragePreset } from '@mister-guiiug/dev-wpa-config/vitest-base';
+ *   import { baseTestOptions, coveragePreset } from '@mister-guiiug/dev-pwa-config/vitest-base';
  *   test: {
  *     ...baseTestOptions,
  *     coverage: {

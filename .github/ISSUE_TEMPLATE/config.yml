@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Faille de sécurité
-    url: https://github.com/mister-guiiug/dev-wpa-config/security/advisories/new
+    url: https://github.com/mister-guiiug/dev-pwa-config/security/advisories/new
     about: Signalement privé — ne pas ouvrir d'issue publique.
   - name: Vitrine du design system
-    url: https://mister-guiiug.github.io/dev-wpa-config/
+    url: https://mister-guiiug.github.io/dev-pwa-config/
     about: Catalogue des composants, des seize apps et de ce que chacune consomme.

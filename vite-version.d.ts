@@ -55,7 +55,7 @@ export declare function versionPlugin(options?: VersionPluginOptions): {
  * Les identifiants posés par `define`. À déclarer dans un `env.d.ts` d'app pour
  * que TypeScript les connaisse :
  *
- *   /// <reference types="@mister-guiiug/dev-wpa-config/vite-version" />
+ *   /// <reference types="@mister-guiiug/dev-pwa-config/vite-version" />
  */
 declare global {
   const __APP_VERSION__: string;

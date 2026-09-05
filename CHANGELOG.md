@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.0.0
+
+### Major Changes
+
+- Le socle s'appelle désormais `@mister-guiiug/dev-pwa-config` — dépôt, paquet et étiquette mobile `v4`.
+
+  Le produit a toujours été une PWA ; seul le nom du paquet disait « wpa ». Renommer un paquet npm n'est pas une redirection : c'est une nouvelle publication sous un autre nom, d'où cette majeure. Ce qui change pour une app, et rien d'autre :
+  - `package.json` : `@mister-guiiug/dev-wpa-config@^3` → `@mister-guiiug/dev-pwa-config@^4` ;
+  - tous les imports, `extends` et `@import` : même remplacement de nom ;
+  - `.github/workflows/*.yml` : `mister-guiiug/dev-wpa-config/…@v3` → `mister-guiiug/dev-pwa-config/…@v4` — **obligatoire**, GitHub ne redirige pas les `uses:` d'un dépôt renommé (« repository not found ») ;
+  - `renovate.json` : `github>mister-guiiug/dev-pwa-config//renovate/default.json`.
+
+  L'ancien paquet reste publié en 3.34.0 et n'évoluera plus. Aucune API, aucun sous-chemin, aucun composant ne change dans cette version.
+
 ## 3.34.0
 
 ### Minor Changes

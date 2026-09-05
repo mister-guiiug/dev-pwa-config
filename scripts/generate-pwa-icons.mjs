@@ -5,7 +5,7 @@
  * Remplace les `scripts/generate-pwa-icons.mjs` / `generate-icons.mjs` /
  * `generate-icons.ts` qui étaient dupliqués (et divergeaient) dans chaque projet.
  *
- * Prérequis consumer : `sharp` installé (peerDep optionnelle de dev-wpa-config).
+ * Prérequis consumer : `sharp` installé (peerDep optionnelle de dev-pwa-config).
  *
  * Usage (package.json) :
  *   "icons": "pwa-icons --source public/favicon.svg --out public --maskable"

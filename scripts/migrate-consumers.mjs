@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
  * Met à jour les projets consommateurs vers une version cible de
- * `@mister-guiiug/dev-wpa-config`, en **alignant aussi les peerDependencies**
+ * `@mister-guiiug/dev-pwa-config`, en **alignant aussi les peerDependencies**
  * que le consommateur déclare déjà (ex. `lucide-react` 0.x → 1.x, `vitest`).
  *
  * Auto-découverte : tout dossier frère (`../*`) dont le `package.json` dépend de
- * `@mister-guiiug/dev-wpa-config`. Plus de liste codée en dur.
+ * `@mister-guiiug/dev-pwa-config`. Plus de liste codée en dur.
  *
  * Usage :
  *   node scripts/migrate-consumers.mjs [version] [--write] [--install]

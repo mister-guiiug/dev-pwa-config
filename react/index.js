@@ -7,7 +7,7 @@
 //
 // Reste volontairement EXCLUE l'observabilité (init à effets, Sentry chargé à
 // la demande) :
-//   import { installErrorReporter } from '@mister-guiiug/dev-wpa-config/react/observability';
+//   import { installErrorReporter } from '@mister-guiiug/dev-pwa-config/react/observability';
 export { useLocalStorage } from './use-local-storage.js';
 export { useInstallPrompt } from './use-install-prompt.js';
 export { useTheme } from './use-theme.js';

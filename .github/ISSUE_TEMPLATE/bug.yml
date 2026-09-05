@@ -11,7 +11,7 @@ body:
     id: version
     attributes:
       label: Version du paquet
-      description: '`npm ls @mister-guiiug/dev-wpa-config`'
+      description: '`npm ls @mister-guiiug/dev-pwa-config`'
       placeholder: 3.11.0
     validations:
       required: true

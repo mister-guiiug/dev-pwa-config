@@ -25,7 +25,7 @@
 #     contents: read
 #   jobs:
 #     migrate:
-#       uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-migrate.yml@v3
+#       uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-migrate.yml@v4
 #       secrets:
 #         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 #         SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
@@ -106,7 +106,7 @@ jobs:
           persist-credentials: false
 
       - name: Link + db push
-        uses: mister-guiiug/dev-wpa-config/.github/actions/supabase-migrate@v3
+        uses: mister-guiiug/dev-pwa-config/.github/actions/supabase-migrate@v4
         with:
           access-token: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           project-id: ${{ secrets.SUPABASE_PROJECT_ID }}

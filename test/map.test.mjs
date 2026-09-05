@@ -200,11 +200,11 @@ test('pwaSeoPlugin sort /map/maplibre du pré-bundling', async () => {
   const { pwaSeoPlugin } = await import('../vite-pwa-base.js');
   const excluded = pwaSeoPlugin().config().optimizeDeps.exclude;
   assert.ok(
-    excluded.includes('@mister-guiiug/dev-wpa-config/map/maplibre'),
+    excluded.includes('@mister-guiiug/dev-pwa-config/map/maplibre'),
     'l’adaptateur MapLibre doit être exclu du pré-bundling'
   );
   assert.ok(
-    excluded.includes('@mister-guiiug/dev-wpa-config/react/observability'),
+    excluded.includes('@mister-guiiug/dev-pwa-config/react/observability'),
     'l’exclusion existante ne doit pas avoir été perdue'
   );
 });

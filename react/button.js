@@ -38,7 +38,7 @@ function isDev() {
  *    (un avertissement console, jamais en production).
  *
  * Non stylé : cibler `[data-dwc="button"][data-variant][data-size]`, ou
- * importer `@mister-guiiug/dev-wpa-config/components.css`.
+ * importer `@mister-guiiug/dev-pwa-config/components.css`.
  *
  * @param {{ variant?: 'primary'|'secondary'|'outline'|'ghost'|'danger',
  *   size?: 'sm'|'md'|'lg', loading?: boolean, block?: boolean,

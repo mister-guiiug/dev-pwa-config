@@ -51,7 +51,7 @@ jobs:
         if: steps.review.outcome != 'success'
         run: |
           echo "::warning title=Revue des dépendances inactive::L'action n'a pas pu s'exécuter — le « Dependency graph » est probablement désactivé (Settings → Code security). Tant qu'il l'est, aucune vulnérabilité introduite par une PR n'est signalée ici. \`npm audit\` reste actif."
-          echo "Voir https://github.com/mister-guiiug/dev-wpa-config/settings/security_analysis"
+          echo "Voir https://github.com/mister-guiiug/dev-pwa-config/settings/security_analysis"
 
   audit:
     name: npm audit

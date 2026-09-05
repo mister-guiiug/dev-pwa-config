@@ -10,7 +10,7 @@
  * volontairement PAS un JSDoc (`/**`) : TypeScript y lirait les lignes
  * `@import` comme des directives de type et échouerait à les parser.
  *   @import 'tailwindcss';
- *   @import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
+ *   @import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
  */
 export const designTokens = {
   fontFamily: {

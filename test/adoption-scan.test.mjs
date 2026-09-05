@@ -61,7 +61,7 @@ function faussDepot(fichiers) {
 test('le balayage ignore les worktrees d’agent', () => {
   const racine = faussDepot({
     'src/App.tsx': 'export const App = () => null;',
-    'src/styles.css': '@import "@mister-guiiug/dev-wpa-config/components.css";',
+    'src/styles.css': '@import "@mister-guiiug/dev-pwa-config/components.css";',
     '.claude/worktrees/abc/src/hooks/useI18n.ts': 'export const useI18n = 1;',
     'node_modules/x/index.js': 'export const x = 1;',
   });
@@ -330,7 +330,7 @@ test('un tsconfig compte ce dont il HÉRITE, chaîne ou tableau', () => {
 
 test('un tsconfig qui CITE le paquet sans l’étendre ne compte pas', () => {
   // miss-dice a recopié le contenu au lieu de l'étendre, en expliquant
-  // pourquoi : « Inlined from @mister-guiiug/dev-wpa-config/tsconfig-app ».
+  // pourquoi : « Inlined from @mister-guiiug/dev-pwa-config/tsconfig-app ».
   // Chercher le nom du paquet n'importe où compterait cette app comme
   // adoptante alors qu'elle a fait exactement l'inverse.
   const dice = `{

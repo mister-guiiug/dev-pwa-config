@@ -1,7 +1,7 @@
 # Changesets setup template
 
 [Changesets](https://github.com/changesets/changesets) gère le bump de version
-et le changelog de manière coordonnée. Recommandé pour `dev-wpa-config` (paquet
+et le changelog de manière coordonnée. Recommandé pour `dev-pwa-config` (paquet
 publié sur GitHub Packages).
 
 ## Installation

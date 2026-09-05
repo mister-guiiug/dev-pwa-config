@@ -14,9 +14,9 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const major = `v${pkg.version.split('.')[0]}`;
 
-// Capture toute ref `mister-guiiug/dev-wpa-config/<chemin>@vN` — `uses:` réels ET
+// Capture toute ref `mister-guiiug/dev-pwa-config/<chemin>@vN` — `uses:` réels ET
 // exemples en commentaire, qui doivent rester cohérents entre eux.
-const REF_RE = /mister-guiiug\/dev-wpa-config\/[^@\s'"]+@(v\d+)/g;
+const REF_RE = /mister-guiiug\/dev-pwa-config\/[^@\s'"]+@(v\d+)/g;
 const DIRS = ['.github/workflows', 'templates/github-workflows'];
 
 test(`refs internes des workflows toutes alignées sur ${major}`, () => {

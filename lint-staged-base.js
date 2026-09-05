@@ -2,7 +2,7 @@
  * Configuration lint-staged commune.
  *
  * Usage côté consumer (lint-staged.config.js) :
- *   export { default } from '@mister-guiiug/dev-wpa-config/lint-staged';
+ *   export { default } from '@mister-guiiug/dev-pwa-config/lint-staged';
  *
  * Note type-check : `tsc -b --noEmit` est renvoyé par une **fonction** (sans
  * argument de fichier) pour s'exécuter **une seule fois** sur le graphe de

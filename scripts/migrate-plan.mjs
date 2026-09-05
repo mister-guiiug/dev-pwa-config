@@ -24,7 +24,7 @@
 export const MIRRORS = new Set(['mister-family-map']);
 
 /** Le paquet dont ce dépôt est la source. */
-export const PKG_NAME = '@mister-guiiug/dev-wpa-config';
+export const PKG_NAME = '@mister-guiiug/dev-pwa-config';
 
 /** Le consommateur déclare-t-il ce paquet ? Rend `[section, range]` ou `null`. */
 export function findDep(pkg, name) {
@@ -42,7 +42,7 @@ export function majorOf(range) {
 
 /** Un dossier frère est-il un consommateur à migrer ? */
 export function isConsumerDir(name, pkg) {
-  if (name === 'dev-wpa-config' || MIRRORS.has(name)) return false;
+  if (name === 'dev-pwa-config' || MIRRORS.has(name)) return false;
   return findDep(pkg, PKG_NAME) != null;
 }
 

@@ -6,7 +6,7 @@
  * patterns adaptés).
  *
  * Pour passer en mode strict (toutes les règles compiler en `error`) :
- *   import { default as base } from '@mister-guiiug/dev-wpa-config/eslint-react';
+ *   import { default as base } from '@mister-guiiug/dev-pwa-config/eslint-react';
  *   export default [...base, {
  *     files: ['**\/*.{ts,tsx}'],
  *     rules: {

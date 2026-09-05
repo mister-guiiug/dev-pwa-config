@@ -2,8 +2,8 @@
  * Habillage OPTIONNEL des composants `/react`.
  *
  *   @import 'tailwindcss';
- *   @import '@mister-guiiug/dev-wpa-config/tailwind-preset.css';
- *   @import '@mister-guiiug/dev-wpa-config/components.css';   ← opt-in
+ *   @import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
+ *   @import '@mister-guiiug/dev-pwa-config/components.css';   ← opt-in
  *
  * POURQUOI. Les composants du paquet ne posent que des attributs `data-dwc` :
  * intentionnellement non stylés, pour que chaque app impose son univers. En
@@ -18,7 +18,7 @@
  * `.dark`…) ; chaque `var()` porte un repli neutre, donc l'import seul donne
  * déjà un rendu correct en clair ET en sombre. Un jeu de valeurs prêt à
  * l'emploi, au contraste vérifié, est livré à part :
- * `@import '@mister-guiiug/dev-wpa-config/tokens.css'`.
+ * `@import '@mister-guiiug/dev-pwa-config/tokens.css'`.
  *
  *   --dwc-surface            fond des panneaux            (repli : Canvas)
  *   --dwc-surface-2          fond en retrait              (repli : dérivé)

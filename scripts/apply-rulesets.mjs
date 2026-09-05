@@ -10,7 +10,7 @@
  *
  * LE CONTEXTE DE CHECK DÉPEND DU DÉPÔT. Toutes les apps exposent le même job
  * (« Format · Lint · Type · Test · Build », via le workflow réutilisable), mais
- * `dev-wpa-config` a les siens. Exiger un check qui ne s'exécute jamais laisse
+ * `dev-pwa-config` a les siens. Exiger un check qui ne s'exécute jamais laisse
  * chaque PR éternellement « en attente » — ce qui était le cas ici.
  *
  * Prérequis : `gh auth login` avec scope `repo` + `admin:repo_hook`.
@@ -24,7 +24,7 @@ import { execFileSync } from 'node:child_process';
 import { FAMILY_APPS, GITHUB_OWNER } from '../apps-catalog.js';
 
 const OWNER = GITHUB_OWNER;
-const SELF = 'dev-wpa-config';
+const SELF = 'dev-pwa-config';
 
 /**
  * MIROIRS : `main` y arrive par `git push --force`, jamais par une PR.

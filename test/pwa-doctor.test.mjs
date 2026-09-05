@@ -84,7 +84,7 @@ test('le fautif : les défauts du 02/09/2026, un par un', async () => {
         icons: [{ src: 'i.svg', sizes: 'any', type: 'image/svg+xml' }],
       },
       '.github/workflows/deploy.yml':
-        'uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v2',
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v2',
     },
     root => {
       const report = diagnose(root);
@@ -162,7 +162,7 @@ test('secrets et variables : ce que Vite copie dans le bundle n’est pas un sec
 const k = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const d = import.meta.env.VITE_SENTRY_DSN;`,
       '.env.example': 'VITE_SUPABASE_URL=\n# VITE_SENTRY_DSN= (facultatif)\n',
-      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-deploy.yml@v3
+      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4
     secrets: inherit
     with:
       build-env: |
@@ -241,15 +241,15 @@ test('le conforme : silence complet — la définition exécutable de « conform
       '.lighthouserc.json': {},
       'e2e/a11y.spec.ts': 'test',
       '.github/workflows/ci.yml':
-        'uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-ci.yml@v3\nwith:\n  run-e2e: true',
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4\nwith:\n  run-e2e: true',
       '.github/workflows/lighthouse.yml':
-        'uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-lighthouse.yml@v3',
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-lighthouse.yml@v4',
       '.github/workflows/cleanup-runs.yml':
-        'uses: mister-guiiug/dev-wpa-config/.github/workflows/cleanup-runs.yml@v3',
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/cleanup-runs.yml@v4',
       '.github/workflows/keepalive.yml':
-        'uses: mister-guiiug/dev-wpa-config/.github/workflows/pwa-supabase-keepalive.yml@v3',
+        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v4',
       'vite.config.ts': `pwaSeoPlugin({ themeColor: { light: '#fff', dark: '#000' } }); cspPlugin(); VitePWA({ registerType: 'prompt' })`,
-      'src/main.tsx': `import { HashRouter } from 'react-router'; import { createLogger } from '@mister-guiiug/dev-wpa-config/logger';`,
+      'src/main.tsx': `import { HashRouter } from 'react-router'; import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';`,
       'dist/index.html': html,
       'dist/manifest.webmanifest': {
         id: '/miss-x/',

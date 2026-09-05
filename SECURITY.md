@@ -1,19 +1,19 @@
 # Politique de sécurité
 
-`@mister-guiiug/dev-wpa-config` est le socle commun de seize applications PWA de
+`@mister-guiiug/dev-pwa-config` est le socle commun de seize applications PWA de
 la famille `miss-*` / `mister-*`. Une faille ici se propage à toutes : le
 signalement mérite un canal, et ce dépôt n'en avait aucun.
 
 ## Signaler une vulnérabilité
 
 **N'ouvrez pas d'issue publique.** Utilisez l'onglet
-[Security → Report a vulnerability](https://github.com/mister-guiiug/dev-wpa-config/security/advisories/new)
+[Security → Report a vulnerability](https://github.com/mister-guiiug/dev-pwa-config/security/advisories/new)
 du dépôt (GitHub Private Vulnerability Reporting), qui ouvre un fil privé avec
 les mainteneurs.
 
 Merci d'y indiquer :
 
-- la version du paquet concernée (`npm ls @mister-guiiug/dev-wpa-config`) ;
+- la version du paquet concernée (`npm ls @mister-guiiug/dev-pwa-config`) ;
 - le sous-chemin en cause (`react/…`, `vite-csp`, un workflow réutilisable…) ;
 - ce qu'un attaquant obtient concrètement ;
 - de quoi reproduire — un dépôt minimal vaut mieux qu'une description.
@@ -25,7 +25,7 @@ engagement de bonne foi, pas un contrat de support.
 ## Versions suivies
 
 Seule la dernière version majeure publiée reçoit des correctifs. Les workflows
-réutilisables sont consommés via un **tag majeur mobile** (`@v3`) : un correctif
+réutilisables sont consommés via un **tag majeur mobile** (`@v4`) : un correctif
 publié atteint donc les seize dépôts au tag suivant, sans intervention de leur
 part.
 

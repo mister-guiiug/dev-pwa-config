@@ -2,9 +2,9 @@
 #
 # Site 100 % statique : `showroom/` est publié TEL QUEL, sans build ni
 # dépendance. Les ressources y sont référencées en chemins relatifs, le site
-# fonctionne donc aussi bien à la racine que sous /dev-wpa-config/.
+# fonctionne donc aussi bien à la racine que sous /dev-pwa-config/.
 #
-# → https://mister-guiiug.github.io/dev-wpa-config/
+# → https://mister-guiiug.github.io/dev-pwa-config/
 name: Deploy showroom
 
 on:

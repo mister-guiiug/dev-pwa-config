@@ -2,7 +2,7 @@
 //
 // Données PURES (aucune dépendance React) : importable depuis les apps, les
 // scripts ou les tests Node. Le composant de présentation est
-// `@mister-guiiug/dev-wpa-config/react` → `FamilyApps`, et la vitrine du
+// `@mister-guiiug/dev-pwa-config/react` → `FamilyApps`, et la vitrine du
 // showroom (`showroom/apps.js`) en est un miroir généré.
 //
 // Trois axes décrivent chaque app, et ils n'ont PAS le même statut :
@@ -70,7 +70,7 @@ export const PLATFORMS = ['web', 'desktop'];
 /**
  * Sous-chemins du paquet effectivement importés par chaque dépôt.
  *
- * RELEVÉ, pas éditorial : obtenu en cherchant `'@mister-guiiug/dev-wpa-config/…'`
+ * RELEVÉ, pas éditorial : obtenu en cherchant `'@mister-guiiug/dev-pwa-config/…'`
  * entre guillemets dans le code source de chaque application — donc les imports
  * et les `extends` réels, pas les mentions en commentaire ni les copies
  * inlinées. Le tableau « Projets consommateurs » du README est engendré depuis
@@ -575,7 +575,7 @@ function app(id, name, description, maturity, overrides = {}) {
 
 /**
  * Famille d'applications grand public. Exclut volontairement la librairie
- * `dev-wpa-config` et le monorepo `miss-ticket` (Tauri). Trier par maturité
+ * `dev-pwa-config` et le monorepo `miss-ticket` (Tauri). Trier par maturité
  * puis nom est fait à l'affichage, pas ici.
  *
  * @type {import('./apps-catalog').FamilyApp[]}

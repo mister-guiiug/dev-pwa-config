@@ -58,11 +58,11 @@ test('les types sont relevés à part, sous leur nom nu', () => {
 });
 
 test('un import DÉJÀ migré n’est pas repris pour un voisin', () => {
-  // `@mister-guiiug/dev-wpa-config/storage` se termine par `/storage` : pris
+  // `@mister-guiiug/dev-pwa-config/storage` se termine par `/storage` : pris
   // pour un fichier local, il était réécrit vers lui-même et compté comme une
   // réécriture. Le chiffre de la campagne grossissait de ce qui était déjà fait.
   const source = [
-    `import { createStore } from '@mister-guiiug/dev-wpa-config/storage';`,
+    `import { createStore } from '@mister-guiiug/dev-pwa-config/storage';`,
     `import { loadData } from '../lib/storage';`,
   ].join('\n');
   assert.deepEqual(findLocalImports(source, 'storage'), ['../lib/storage']);
@@ -83,7 +83,7 @@ test('un type publié par le sous-chemin ne bloque PAS le fichier', () => {
     expectedTypes: EXPORTED_TYPES.geo,
   });
   assert.equal(result.blocked, undefined);
-  assert.match(result.source, /from '@mister-guiiug\/dev-wpa-config\/geo'/);
+  assert.match(result.source, /from '@mister-guiiug\/dev-pwa-config\/geo'/);
   assert.ok(result.source.includes('type Coordinates'), 'le type est conservé');
 });
 
@@ -99,7 +99,7 @@ test('une clause `import type` entière est réécrite elle aussi', () => {
   });
   assert.equal(
     result.source,
-    `import type { Coordinates } from '@mister-guiiug/dev-wpa-config/geo';`
+    `import type { Coordinates } from '@mister-guiiug/dev-pwa-config/geo';`
   );
 });
 
@@ -124,7 +124,7 @@ test('l’import local devient le sous-chemin du socle', () => {
   });
   assert.equal(
     result.source,
-    `import { EmptyState } from '@mister-guiiug/dev-wpa-config/react/empty-state';\nexport const x = 1;`
+    `import { EmptyState } from '@mister-guiiug/dev-pwa-config/react/empty-state';\nexport const x = 1;`
   );
   assert.deepEqual(result.symbols, ['EmptyState']);
 });
@@ -163,7 +163,7 @@ test('plusieurs imports du même module sont tous réécrits', () => {
     subpath: 'react/sheet',
     expected: ['Sheet'],
   });
-  assert.equal(result.source.match(/dev-wpa-config\/react\/sheet/g).length, 2);
+  assert.equal(result.source.match(/dev-pwa-config\/react\/sheet/g).length, 2);
 });
 
 test('les imports d’AUTRES modules ne sont pas touchés', () => {

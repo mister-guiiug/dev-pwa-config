@@ -21,7 +21,7 @@
  * bloquer par la CSP en production.
  *
  * Usage (vite.config.ts) :
- *   import { cspPlugin } from '@mister-guiiug/dev-wpa-config/vite-csp';
+ *   import { cspPlugin } from '@mister-guiiug/dev-pwa-config/vite-csp';
  *   export default defineConfig(({ command }) => ({
  *     plugins: [
  *       react(), tailwindcss(), pwaSeoPlugin({ ... }),

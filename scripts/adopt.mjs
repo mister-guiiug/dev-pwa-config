@@ -108,7 +108,7 @@ function importsComponentsCss(appDir) {
   return files.some(file => {
     try {
       return readFileSync(file, 'utf8').includes(
-        '@mister-guiiug/dev-wpa-config/components.css'
+        '@mister-guiiug/dev-pwa-config/components.css'
       );
     } catch {
       return false;

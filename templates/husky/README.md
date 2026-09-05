@@ -10,8 +10,8 @@ npx husky init
 ## Copier les hooks
 
 ```bash
-cp <chemin-vers>/dev-wpa-config/templates/husky/pre-commit .husky/pre-commit
-cp <chemin-vers>/dev-wpa-config/templates/husky/commit-msg .husky/commit-msg
+cp <chemin-vers>/dev-pwa-config/templates/husky/pre-commit .husky/pre-commit
+cp <chemin-vers>/dev-pwa-config/templates/husky/commit-msg .husky/commit-msg
 chmod +x .husky/pre-commit .husky/commit-msg
 ```
 
@@ -20,13 +20,13 @@ chmod +x .husky/pre-commit .husky/commit-msg
 `commitlint.config.js` :
 
 ```js
-export { default } from '@mister-guiiug/dev-wpa-config/commitlint';
+export { default } from '@mister-guiiug/dev-pwa-config/commitlint';
 ```
 
 `lint-staged.config.js` :
 
 ```js
-export { default } from '@mister-guiiug/dev-wpa-config/lint-staged';
+export { default } from '@mister-guiiug/dev-pwa-config/lint-staged';
 ```
 
 ## Activation auto à l'install
