@@ -1,6 +1,7 @@
 import { createContext, createElement as h, useContext } from 'react';
 import {
   BackIcon,
+  BugIcon,
   CloseIcon,
   CoffeeIcon,
   ExternalLinkIcon,
@@ -41,9 +42,21 @@ export const DEFAULT_ICONS = {
   repo: GithubIcon,
   sponsor: CoffeeIcon,
   external: ExternalLinkIcon,
-  // Le signalement d'`AppFooter` : un lien sortant, donc la même flèche que
-  // `external` en repli — une app peut lui donner une punaise ou un insecte.
-  issue: ExternalLinkIcon,
+  /*
+   * Le signalement d'`AppFooter`.
+   *
+   * IL A PORTÉ LA FLÈCHE D'`external` JUSQU'À LA 4.5.0, ET C'ÉTAIT UN DÉFAUT
+   * DE CE CONTRAT. Une app avec lucide voyait un insecte (`LUCIDE_NAMES.issue`
+   * vaut `Bug`), une app sans voyait une flèche : deux dessins pour un rôle,
+   * exactement ce que ce module existe pour empêcher — et le seul des neuf
+   * rôles dans ce cas. À l'écran, la flèche disait « ce lien sort du site »,
+   * ce qui est vrai des trois liens du pied de page : elle ne distinguait rien
+   * et se lisait, entre un octocat et une tasse, comme un glyphe égaré.
+   *
+   * Le repli et lucide dessinent donc la même chose, et `icons.test.mjs` le
+   * vérifie pour les neuf rôles.
+   */
+  issue: BugIcon,
   // Le retour d'`AppHeader` — le huitième rôle, ajouté le 02/09/2026.
   back: BackIcon,
 };

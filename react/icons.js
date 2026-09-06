@@ -64,6 +64,41 @@ export function ExternalLinkIcon() {
   );
 }
 
+/**
+ * Insecte « signaler un problème » (16×16, contour `currentColor`).
+ *
+ * DESSIN ORIGINAL, et à la taille des deux autres liens du pied de page. Le
+ * rôle `issue` reprenait la flèche d'`external` : elle dit « ce lien sort du
+ * site », ce qui est vrai des TROIS liens du pied de page et ne distinguait
+ * donc rien — à côté d'un octocat et d'une tasse, elle se lisait comme un
+ * glyphe égaré plutôt que comme une icône.
+ *
+ * Volontairement pauvre en traits : à 16 px, un corps, deux antennes et quatre
+ * pattes sont lisibles ; un thorax segmenté et six pattes deviennent une tache.
+ */
+export function BugIcon() {
+  return h(
+    'svg',
+    {
+      width: 16,
+      height: 16,
+      viewBox: '0 0 24 24',
+      'aria-hidden': 'true',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+    },
+    // Le corps : une capsule, du haut de la tête au bas de l'abdomen.
+    h('path', { d: 'M12 7a4 4 0 0 1 4 4v3a4 4 0 0 1-8 0v-3a4 4 0 0 1 4-4z' }),
+    // Les antennes.
+    h('path', { d: 'M9.6 7.4 8 4.5M14.4 7.4 16 4.5' }),
+    // Deux pattes de chaque côté.
+    h('path', { d: 'M8 11H4.5M8 14.5H5M16 11h3.5M16 14.5h3' })
+  );
+}
+
 /** Croix de fermeture (18×18, contour `currentColor`). */
 export function CloseIcon() {
   return h(
