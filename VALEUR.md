@@ -894,8 +894,30 @@ premier rendu en thème sombre. Aucune relecture ne les aurait trouvés, et
 c'est la meilleure raison de préférer une passe qui livre à une analyse qui
 décrit.
 
-### Réserve sur ce bilan
+### Le dernier chantier, rentré après coup
 
-Il est écrit avant le retour du dernier chantier (**mister-family-map**, via
-`bac-sable`). Si son exécution dément un constat de plus, il faudra l'ajouter
-ici.
+**mister-family-map** (via `bac-sable`, PR #43) est revenu après l'écriture de
+ce bilan. Il ne dément aucun constat — les trois de V17, V10 et V12 tenaient —
+mais il ajoute une correction et un défaut, tous deux dans l'esprit de ce qui
+précède.
+
+- **Une phrase fausse écrite par l'exécution elle-même.** La corbeille livrée
+  annonçait « rien n'est effacé tant que vous ne supprimez pas votre compte ».
+  C'est faux : sur cette app, la suppression de compte **anonymise**, elle
+  n'efface pas. Corrigé à l'écran **et** dans la page « Mentions », qui n'en
+  disait rien. Le tableau du § 1 range donc family-map en « oui » pour la
+  suppression de compte ; il faut lire « anonymisation », comme mister-doc.
+- **Un défaut générique du parc, révélé par le magasin unique.** La
+  synchronisation entre onglets est passée de 8/8 à 8 échecs sur 16 : le
+  message d'un onglet à l'autre ne portait qu'une clé, et rien n'ordonne
+  l'écriture d'un onglet avec l'arrivée du message dans l'autre. Le défaut
+  **préexistait** — il ne se voyait pas tant que la valeur tenait en 20
+  octets ; elle en fait 11 000 sous magasin versionné. Trois hypothèses
+  écartées **par la mesure** avant la bonne, une sonde au point d'appel exact
+  du receveur : `brut AVANT = ABSENT`. Le message porte désormais la valeur.
+- **Et le nom du fichier d'export utilisait `toISOString()`** : à 23 h 30 à
+  Paris, il portait la date du lendemain. `dateSlug` du socle le règle — le
+  même piège dort partout où une app nomme un fichier avec une date.
+
+Cela clôt la passe : **les dix-neuf chantiers ont été instruits**, V14 mis à
+part, qui reste suspendu à une décision juridique.
