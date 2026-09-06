@@ -40,10 +40,11 @@
  */
 import { readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
 import { EQUIVALENTS } from './adoption-equivalents.mjs';
 import { GENERATED, scanFile, walk } from './adoption-scan.mjs';
+import { estPointDEntree } from './entree.mjs';
 
 /**
  * Des noms qu'on trouve dans toute base de code, et dont la collision
@@ -310,9 +311,6 @@ export async function run(args = []) {
 
 // Lancé en ligne de commande seulement : importé par un test, le module ne
 // balaie rien.
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (estPointDEntree(import.meta.url)) {
   await run(process.argv.slice(2));
 }

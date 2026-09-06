@@ -41,9 +41,10 @@
  */
 import { readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, sep } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
 import { GENERATED, scanFile, walk } from './adoption-scan.mjs';
+import { estPointDEntree } from './entree.mjs';
 
 /** Personne ne les importe : c'est leur rôle. */
 export const ENTRY_POINTS =
@@ -152,9 +153,6 @@ export async function run(args = []) {
   );
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (estPointDEntree(import.meta.url)) {
   await run(process.argv.slice(2));
 }

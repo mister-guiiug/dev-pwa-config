@@ -44,6 +44,7 @@ import {
 import { FAMILY_THEMES } from '../themes.js';
 import { SUBPATHS } from './adopt-plan.mjs';
 import { EQUIVALENTS } from './adoption-equivalents.mjs';
+import { estPointDEntree } from './entree.mjs';
 
 const root = new URL('../', import.meta.url);
 const at = path => fileURLToPath(new URL(path, root));
@@ -413,4 +414,4 @@ async function main() {
 }
 
 // Importable par les tests sans rien réécrire sur le disque.
-if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
+if (estPointDEntree(import.meta.url)) await main();

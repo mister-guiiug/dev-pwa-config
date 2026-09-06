@@ -36,8 +36,8 @@
  *
  * Non publié (absent de `files`) : outillage de développement du dépôt.
  */
-import { pathToFileURL } from 'node:url';
 import { FAMILY_APPS, GITHUB_OWNER, pagesUrl } from '../apps-catalog.js';
+import { estPointDEntree } from './entree.mjs';
 import {
   htmlMarkers,
   isAppShell,
@@ -170,9 +170,6 @@ export async function run(args = []) {
   if (json) console.log(JSON.stringify(results, null, 2));
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (estPointDEntree(import.meta.url)) {
   await run(process.argv.slice(2));
 }
