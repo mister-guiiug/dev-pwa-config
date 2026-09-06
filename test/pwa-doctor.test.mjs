@@ -184,9 +184,16 @@ const d = import.meta.env.VITE_SENTRY_DSN;`,
       const report = diagnose(root);
       const dettes = ids(report, 'dette');
 
+      // DÉFAUT, plus dette, depuis le 07/09/2026 : la dette n'a rien empêché
+      // — dix-sept dépôts sur dix-sept portaient la ligne au relevé de la
+      // veille, et aucune app ne lance `--strict`.
       assert.ok(
-        dettes.includes('secrets-inherit'),
-        'inherit donne tout le trousseau'
+        ids(report, 'défaut').includes('secrets-inherit'),
+        'inherit donne tout le trousseau, et le job doit échouer dessus'
+      );
+      assert.ok(
+        !dettes.includes('secrets-inherit'),
+        'plus en dette : une dette que rien ne force ne se paie jamais'
       );
       assert.ok(
         dettes.includes('vite-en-secret'),

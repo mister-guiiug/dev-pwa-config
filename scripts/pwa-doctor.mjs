@@ -33,7 +33,8 @@
  *
  * TROIS VERDICTS, parce qu'ils ne se traitent pas pareil :
  *
- *   ✖ DÉFAUT   quelqu'un en souffre aujourd'hui (pas installable, 404, …) ;
+ *   ✖ DÉFAUT   quelqu'un en souffre aujourd'hui (pas installable, 404, …),
+ *              ou une porte s'ouvre à chaque run (`secrets: inherit`) ;
  *   • DETTE    le socle a la réponse, l'app ne l'a pas prise ;
  *   i INFO     une mesure à connaître (locales figées, `console.*`), pas un
  *              jugement.
@@ -780,14 +781,29 @@ export function diagnose(dir, faits = {}) {
 
     // `secrets: inherit` donne au workflow appelé TOUT le trousseau du dépôt,
     // alors qu'il déclare exactement ce dont il a besoin.
+    //
+    // DÉFAUT DEPUIS LE 07/09/2026, ET C'EST UNE PROMOTION. Le contrôle
+    // existait — en dette, avec ses tests — et n'a rien empêché : au relevé du
+    // 06/09/2026, DIX-SEPT DÉPÔTS SUR DIX-SEPT écrivaient la ligne, dans
+    // quarante-sept fichiers. Aucune app ne lance `--strict`, donc la dette ne
+    // coûtait rien ; une dette que rien ne force ne se paie jamais. Le parc
+    // est revenu à zéro par campagne, et le niveau change pour que ça le
+    // reste.
+    //
+    // Le verdict s'écarte de la lettre de « quelqu'un en souffre aujourd'hui »,
+    // et l'assume : ce n'est pas une réponse du socle que l'app n'aurait pas
+    // prise, c'est un trousseau entier remis à chaque exécution, sur chaque
+    // PR. `pwa-ci.yml` et `pwa-lighthouse.yml` ne déclarent AUCUN secret —
+    // `secrets.GITHUB_TOKEN` est fourni d'office à un workflow appelé — et
+    // `pwa-deploy.yml` n'en déclare qu'un.
     const herites = workflows.filter(w =>
       /secrets:\s*inherit/.test(sansCommentaires.yaml(w.text))
     );
     if (herites.length) {
-      dette(
+      defaut(
         'secrets-inherit',
         `secrets: inherit dans ${herites.map(w => basename(w.rel)).join(', ')} — le workflow appelé reçoit tout le trousseau`,
-        'nommer les secrets un par un (README § Secrets et variables)'
+        'nommer les secrets un par un, ou retirer la ligne quand le réutilisable n’en déclare aucun (README § Secrets et variables)'
       );
     }
 
