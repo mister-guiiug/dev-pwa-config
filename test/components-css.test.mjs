@@ -7,7 +7,7 @@
 //   3. « contrat stable »   → la liste des variables lues ne dérive pas.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const read = name =>
   readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
@@ -462,6 +462,82 @@ test('le showroom câble le contrat au lieu de recopier l’habillage', () => {
       showroomCss,
       new RegExp(`${token}:\\s*var\\(--ds-`),
       `${token} non câblé sur le thème du showroom`
+    );
+  }
+});
+
+/*
+ * ── QUATRIÈME PROMESSE : CE QUE `react/` ÉMET, CETTE FEUILLE L'HABILLE ────────
+ *
+ * Rien ne croisait les deux jusqu'ici, et un marqueur a vécu sans règle. La
+ * 4.4.0 a posé `AppFooter issues`, un troisième lien à côté de `footer-source`
+ * et `footer-sponsor` ; seuls les deux premiers étaient habillés. Le troisième
+ * héritait de la couleur du texte : noir sur violet nuit, contraste 1,08,
+ * relevé « serious » par axe sur mister-qowa, et servi par huit applications.
+ *
+ * Le défaut ne se voit ni à la compilation, ni au test unitaire, ni à la
+ * relecture du composant — seulement à l'écran, dans un thème sombre. D'où ce
+ * croisement, et la liste ci-dessous.
+ */
+
+const REACT_DIR = new URL('../react/', import.meta.url);
+
+/**
+ * Les marqueurs qui n'ont VOLONTAIREMENT pas de règle ici, avec leur raison.
+ *
+ * Une liste d'exceptions sans motif écrit ne fait que déplacer la dette : elle
+ * grossit, personne ne sait plus ce qu'elle protège, et le chiffre ne descend
+ * jamais. Chaque entrée dit donc par quoi l'élément est habillé À LA PLACE.
+ */
+const SANS_REGLE = new Map([
+  ['visually-hidden', 'habillé par `.dwc-sr-only` dans tokens.css'],
+  ['skip-link', 'habillé par `.dwc-skip-link` dans tokens.css'],
+  ['app-version-label', 'un <span> dans app-version : il hérite, exprès'],
+  ['family-apps', 'conteneur <section> ; ses enfants portent les règles'],
+  ['sparkline-last', 'un <circle> SVG, peint par son attribut fill'],
+]);
+
+function marqueursEmis() {
+  const emis = new Map();
+  for (const fichier of readdirSync(REACT_DIR)) {
+    if (!fichier.endsWith('.js')) continue;
+    const source = readFileSync(new URL(fichier, REACT_DIR), 'utf8');
+    for (const m of source.matchAll(/'data-dwc':\s*'([a-z0-9-]+)'/g)) {
+      if (!emis.has(m[1])) emis.set(m[1], `react/${fichier}`);
+    }
+  }
+  return emis;
+}
+
+test('tout marqueur émis par react/ est habillé, ou dispensé avec sa raison', () => {
+  const stylés = new Set(
+    [...RAW.matchAll(/\[data-dwc='([^']+)'\]/g)].map(m => m[1])
+  );
+  const orphelins = [...marqueursEmis()]
+    .filter(([nom]) => !stylés.has(nom) && !SANS_REGLE.has(nom))
+    .map(([nom, fichier]) => `${nom} (${fichier})`);
+
+  assert.deepEqual(
+    orphelins,
+    [],
+    `marqueur(s) émis sans règle dans components.css : ${orphelins.join(', ')} — ` +
+      'les habiller, ou les inscrire dans SANS_REGLE avec ce qui les habille à la place'
+  );
+});
+
+test('la liste des dispenses ne survit pas à ce qu’elle protège', () => {
+  const emis = marqueursEmis();
+  const stylés = new Set(
+    [...RAW.matchAll(/\[data-dwc='([^']+)'\]/g)].map(m => m[1])
+  );
+  for (const [nom, raison] of SANS_REGLE) {
+    assert.ok(
+      emis.has(nom),
+      `SANS_REGLE dispense « ${nom} » (${raison}), que react/ n'émet plus : à retirer`
+    );
+    assert.ok(
+      !stylés.has(nom),
+      `« ${nom} » est désormais habillé : le retirer de SANS_REGLE`
     );
   }
 });

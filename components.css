@@ -84,6 +84,7 @@
     [data-dwc='pwa-install-actions'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
+    [data-dwc='footer-issues'],
     [data-dwc='family-source'],
     [data-dwc='family-sponsor'],
     [data-dwc='family-app'],
@@ -425,8 +426,24 @@
     font-size: var(--text-fluid-sm, 0.9rem);
   }
 
+  /*
+   * `footer-issues` EST DANS CETTE LISTE DEPUIS QU'IL EXISTE, ET IL Y MANQUAIT.
+   *
+   * `AppFooter issues` (4.4.0) pose un troisième lien à côté de `footer-source`
+   * et `footer-sponsor` ; seuls les deux premiers étaient habillés. Le
+   * troisième héritait donc de la couleur du texte courant : sur un fond
+   * sombre, noir sur violet nuit — contraste 1,08, relevé « serious » par axe
+   * sur mister-qowa. Huit applications l'affichent en production.
+   *
+   * La leçon n'est pas le lien manquant, c'est qu'aucun test ne pouvait le
+   * voir : rien ne croisait les marqueurs que `react/` ÉMET avec ceux que
+   * cette feuille habille. C'est désormais le rôle de `marqueursOrphelins`
+   * dans `test/components-css.test.mjs`, avec la liste écrite de ceux qui
+   * n'ont volontairement pas de règle ici.
+   */
   [data-dwc='footer-source'],
   [data-dwc='footer-sponsor'],
+  [data-dwc='footer-issues'],
   [data-dwc='family-source'],
   [data-dwc='family-sponsor'] {
     display: inline-flex;
@@ -438,6 +455,7 @@
 
   [data-dwc='footer-source']:hover,
   [data-dwc='footer-sponsor']:hover,
+  [data-dwc='footer-issues']:hover,
   [data-dwc='family-source']:hover,
   [data-dwc='family-sponsor']:hover {
     color: var(--dwc-primary, CanvasText);
