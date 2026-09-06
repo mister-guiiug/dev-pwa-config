@@ -291,6 +291,70 @@ export function Shell() {
   );
 });
 
+test('les assets qui SORTENT du site sont un défaut, même quand le préfixe déduit ment', async () => {
+  // `miss-ticket-pwa` a servi une PAGE BLANCHE du 03/06 au 06/09/2026 : sa base
+  // valait `/`, le site vit sous `/miss-ticket-pwa/`, et Vite écrivait donc
+  // `<script src="/assets/…">` — 404 depuis la racine de l'origine. Build vert,
+  // CI verte, docteur muet.
+  //
+  // MUET POUR UNE RAISON PRÉCISE, et c'est elle que ce test fige : `sitePrefix`
+  // déduit le chemin du site DES SCRIPTS. Quand les scripts sont faux, il se
+  // replie sur `/`, et tout contrôle bâti dessus se désarme au moment où il
+  // servirait. La canonique, écrite depuis l'URL publique déclarée, ne dépend
+  // pas des assets : c'est elle qui juge.
+  const html = `<!doctype html><html lang="fr"><head>
+    <link rel="canonical" href="https://o.github.io/miss-x/">
+    <script type="module" src="/assets/index-abc.js"></script>
+    <link rel="stylesheet" href="/assets/index-abc.css">
+    </head><body><div id="root"></div></body></html>`;
+  await repo(
+    { 'package.json': { name: 'miss-x' }, 'dist/index.html': html },
+    root => {
+      const trouve = diagnose(root).findings.find(
+        f => f.id === 'assets-hors-site'
+      );
+      assert.ok(trouve, 'un site sans JS ni CSS est un défaut, pas une dette');
+      assert.equal(trouve.level, 'défaut');
+      assert.match(trouve.message, /2 asset/);
+      assert.match(trouve.message, /miss-x/, 'le message dit où vit le site');
+    }
+  );
+});
+
+test('les mêmes assets SOUS le site ne disent rien', async () => {
+  const html = `<!doctype html><html lang="fr"><head>
+    <link rel="canonical" href="https://o.github.io/miss-x/">
+    <script type="module" src="/miss-x/assets/index-abc.js"></script>
+    <link rel="stylesheet" href="/miss-x/assets/index-abc.css">
+    </head><body></body></html>`;
+  await repo(
+    { 'package.json': { name: 'miss-x' }, 'dist/index.html': html },
+    root => {
+      assert.ok(
+        !ids(diagnose(root)).includes('assets-hors-site'),
+        'sous le site : rien à signaler'
+      );
+    }
+  );
+});
+
+test('sans canonique, le contrôle des assets se TAIT au lieu de deviner', async () => {
+  // Un site à la racine d'un domaine propre n'a pas de préfixe, et une app sans
+  // `pwaSeoPlugin` n'a pas de canonique du tout. Inventer un chemin là serait
+  // pire que se taire — et l'absence de canonique est déjà signalée.
+  const html = `<!doctype html><html lang="fr"><head>
+    <script type="module" src="/assets/index-abc.js"></script>
+    </head><body></body></html>`;
+  await repo(
+    { 'package.json': { name: 'miss-x' }, 'dist/index.html': html },
+    root => {
+      const report = diagnose(root);
+      assert.ok(!ids(report).includes('assets-hors-site'));
+      assert.ok(ids(report, 'dette').includes('canonical'));
+    }
+  );
+});
+
 test('un dossier introuvable : code 2, pas une exception', async () => {
   assert.equal(await run(['--dir', '/nulle/part/du/tout']), 2);
 });

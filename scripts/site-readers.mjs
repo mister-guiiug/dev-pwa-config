@@ -74,6 +74,14 @@ export function htmlMarkers(source) {
     appleTouchIcon: links.some(t => has(t, 'rel="apple-touch-icon"')),
     ogImage: metas.some(t => has(t, 'property="og:image"')),
     canonical: links.some(t => has(t, 'rel="canonical"')),
+    // L'URL PUBLIQUE DÉCLARÉE, pas seulement sa présence. C'est la seule
+    // source du chemin du site qui ne dépende pas des assets — donc la seule
+    // utilisable pour juger les assets eux-mêmes. Voir `siteScope`.
+    canonicalHref: attr(
+      links.find(t => has(t, 'rel="canonical"')) ?? '',
+      'href'
+    ),
+    styles: initialStyles(source),
     jsonLd: all.some(t => is(t, 'script') && has(t, 'application/ld+json')),
     noscript: all.some(t => t.toLowerCase().startsWith('<noscript')),
     manifest: attr(links.find(t => has(t, 'rel="manifest"')) ?? '', 'href'),
@@ -89,6 +97,18 @@ export function initialScripts(source) {
       const src = attr(tag, 'src');
       if (src) out.push(src);
     } else if (is(tag, 'link') && has(tag, 'rel="modulepreload"')) {
+      const href = attr(tag, 'href');
+      if (href) out.push(href);
+    }
+  }
+  return [...new Set(out)];
+}
+
+/** Les feuilles de style liées dans le document. */
+export function initialStyles(source) {
+  const out = [];
+  for (const tag of tags(source).map(flatten)) {
+    if (is(tag, 'link') && has(tag, 'rel="stylesheet"')) {
       const href = attr(tag, 'href');
       if (href) out.push(href);
     }
@@ -159,6 +179,35 @@ export function sitePrefix(markers) {
  * `/manifest.json` sous `/miss-ticket-pwa/` : 404, l'app ne s'installait pas.
  */
 export function escapesSite(href, prefix) {
-  if (!href || prefix === '/' || !href.startsWith('/')) return false;
+  // UN PRÉFIXE INCONNU N'ACCUSE PAS. `siteScope` rend `null` quand la page n'a
+  // pas de canonique — une app sans `pwaSeoPlugin`, ou servie à la racine d'un
+  // domaine propre. Sans cette garde, `href.startsWith(null)` compare à la
+  // chaîne « null », donc échoue toujours, et tout asset absolu devenait un
+  // défaut. Un contrôle qui ne sait pas se tait.
+  if (!href || !prefix || prefix === '/' || !href.startsWith('/')) return false;
   return !href.startsWith(prefix);
+}
+
+/**
+ * Le chemin du site D'APRÈS SON URL CANONIQUE — `/miss-x/`, ou `/` à la racine.
+ *
+ * POURQUOI PAS `sitePrefix`. Celui-là déduit le préfixe DES SCRIPTS eux-mêmes.
+ * C'est juste tant que les scripts sont bons, et aveugle dès qu'ils ne le sont
+ * plus : sur un build à `base: '/'` servi sous `/miss-ticket-pwa/`, le script
+ * est `/assets/index-x.js`, le préfixe déduit vaut `/`, et tout contrôle qui
+ * s'appuie dessus se désarme — exactement quand le défaut est là. Le site a
+ * servi une page blanche du 03/06 au 06/09/2026 sans que rien ne le dise.
+ *
+ * La canonique, elle, est écrite par `pwaSeoPlugin` depuis l'URL publique
+ * déclarée : elle ne dépend pas de la base des assets, et c'est ce qui permet
+ * de les juger.
+ */
+export function siteScope(canonicalHref) {
+  if (!canonicalHref) return null;
+  try {
+    const { pathname } = new URL(canonicalHref);
+    return pathname.endsWith('/') ? pathname : `${pathname}/`;
+  } catch {
+    return null;
+  }
 }
