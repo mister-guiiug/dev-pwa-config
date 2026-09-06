@@ -37,5 +37,24 @@ export interface VersionProviderProps {
 /** Une déclaration en haut de l'arbre ; le contexte pour tout le reste. */
 export declare const VersionProvider: FC<VersionProviderProps>;
 
-/** L'état de version. Hors fournisseur : la version, sans surveillance. */
-export declare function useAppVersion(): AppVersionState;
+export interface UseAppVersionOptions {
+  /**
+   * Hors fournisseur : sonder `version.json` une fois au montage. C'est ce
+   * qu'un `AppVersion updates` demande ; sous `VersionProvider`, ignoré.
+   */
+  check?: boolean;
+  /** URL du manifeste (défaut : `version.json` sous la base du build). */
+  checkUrl?: string;
+  /** Sondage périodique en plus du premier (`'1h'`, `'30m'`, ms). */
+  checkEvery?: string | number;
+  fetch?: typeof fetch;
+}
+
+/**
+ * L'état de version. Sous `VersionProvider`, le sien ; hors fournisseur, la
+ * version du build et — avec `check` — le résultat d'un sondage au montage.
+ * `justUpdated` reste au fournisseur.
+ */
+export declare function useAppVersion(
+  options?: UseAppVersionOptions
+): AppVersionState;

@@ -255,3 +255,31 @@ test('le précache workbox laisse version.json tranquille', async () => {
   // La valeur par défaut de workbox est reconduite, pas remplacée.
   assert.ok(workbox.globIgnores.includes('**/node_modules/**/*'));
 });
+
+test('la base du build voyage avec la version : dans le HTML et dans version.json', async () => {
+  // Depuis un lien profond d'une app qui route par chemin, `version.json`
+  // relatif partait à côté de la page (404). Avec la base, l'URL est absolue.
+  const outDir = mkdtempSync(join(tmpdir(), 'dwc-version-base-'));
+  try {
+    const plugin = versionPlugin({ version: '3.13.0', buildTime: 'hier' });
+    plugin.configResolved({
+      command: 'build',
+      base: '/miss-genius/',
+      build: { outDir },
+    });
+    const html = plugin.transformIndexHtml('<head></head>');
+    assert.match(html, /"base":"\/miss-genius\/"/);
+    await plugin.closeBundle();
+    const manifest = JSON.parse(
+      readFileSync(join(outDir, 'version.json'), 'utf8')
+    );
+    assert.equal(manifest.base, '/miss-genius/');
+    assert.equal(manifest.version, '3.13.0');
+
+    // Avant `configResolved` — ou sans base connue — rien n'est inventé.
+    const sansBase = versionPlugin({ version: '1.0.0' });
+    assert.doesNotMatch(sansBase.transformIndexHtml('<head></head>'), /base/);
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+  }
+});

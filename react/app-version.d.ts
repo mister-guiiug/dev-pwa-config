@@ -10,8 +10,17 @@ export interface AppVersionProps {
   label?: boolean | string;
   /** Ajoute la date de compilation et le commit court. */
   details?: boolean;
-  /** `false` masque « mis à jour vers » et « version disponible ». */
+  /**
+   * `false` masque « mis à jour vers » et « version disponible ». Par défaut,
+   * hors `VersionProvider`, sonde `version.json` une fois au montage.
+   */
   updates?: boolean;
+  /** URL du manifeste (défaut : `version.json` sous la base du build). */
+  checkUrl?: string;
+  /** Sondage périodique en plus du premier, hors fournisseur (`'1h'`). */
+  checkEvery?: string | number;
+  /** Implémentation de `fetch` (tests, relais) ; défaut : la globale. */
+  fetch?: typeof fetch;
   /** Dépôt GitHub : le numéro devient un lien vers `releases/tag/vX.Y.Z`. */
   repoUrl?: string;
   /** URL de release explicite ; `{version}` y est remplacé. Prime sur `repoUrl`. */

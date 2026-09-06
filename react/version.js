@@ -12,7 +12,7 @@ import {
   isNewerVersion,
   readBuildInfo,
   rememberVersion,
-  VERSION_MANIFEST,
+  versionManifestUrl,
 } from '../version.js';
 import { parseInterval } from './app-updates.js';
 
@@ -83,7 +83,9 @@ export function VersionProvider(props = {}) {
   const [latest, setLatest] = useState('');
   const [checking, setChecking] = useState(false);
 
-  const url = checkUrl ?? VERSION_MANIFEST;
+  // Sous la base du build, jamais relatif au document : depuis un lien
+  // profond, `version.json` relatif partait à côté de la page (404 muet).
+  const url = checkUrl ?? versionManifestUrl(info);
   const checkNow = useCallback(async () => {
     setChecking(true);
     try {
@@ -134,12 +136,52 @@ export function VersionProvider(props = {}) {
 }
 
 /**
- * L'état de version. Hors fournisseur, rend la version injectée au build et
- * des drapeaux à `false` : un `AppVersion` posé dans un pied de page s'affiche
- * donc sans rien avoir à déclarer, il ne surveille simplement rien.
+ * L'état de version. Sous `VersionProvider`, le sien. Hors fournisseur, la
+ * version injectée au build — et, si `check` est demandé, UN SONDAGE DE
+ * `version.json` AU MONTAGE (puis tous les `checkEvery`, s'il est donné).
+ *
+ * POURQUOI SONDER SANS FOURNISSEUR. Le cas qui compte est le plus simple : une
+ * PWA installée s'ouvre sur la coquille que le service worker a gardée, alors
+ * qu'une version l'attend en ligne. Exiger un `VersionProvider` en haut de
+ * l'arbre pour le dire, c'est un câblage de plus que dix-sept apps n'ont pas
+ * fait ; un `AppVersion` dans le pied de page suffit désormais, et il ne coûte
+ * qu'une requête au démarrage. `justUpdated`, lui, reste au fournisseur : il
+ * demande de mémoriser la version d'avant, ce qu'un pied de page ne décide pas.
+ *
+ * @param {{ check?: boolean, checkUrl?: string, checkEvery?: string|number,
+ *   fetch?: typeof fetch }} [options]
  */
-export function useAppVersion() {
+export function useAppVersion(options = {}) {
+  const { check = false, checkUrl, checkEvery, fetch: fetchImpl } = options;
   const context = useContext(VersionContext);
-  const fallback = useMemo(() => standalone(), []);
+  const build = useMemo(() => readBuildInfo(), []);
+  const [latest, setLatest] = useState('');
+  const url = checkUrl ?? versionManifestUrl();
+  const everyMs = parseInterval(checkEvery);
+
+  useEffect(() => {
+    // Le fournisseur sonde déjà ; et sans `check`, rien n'est demandé.
+    if (context || !check) return undefined;
+    let alive = true;
+    const tick = async () => {
+      const found = await fetchAppVersion(url, { fetch: fetchImpl });
+      if (alive && found?.version) setLatest(found.version);
+    };
+    void tick();
+    const id = everyMs ? setInterval(() => void tick(), everyMs) : null;
+    return () => {
+      alive = false;
+      if (id) clearInterval(id);
+    };
+  }, [context, check, url, everyMs, fetchImpl]);
+
+  const fallback = useMemo(
+    () => ({
+      ...standalone(build),
+      latest,
+      updateAvailable: isNewerVersion(latest, build.version),
+    }),
+    [build, latest]
+  );
   return context ?? fallback;
 }
