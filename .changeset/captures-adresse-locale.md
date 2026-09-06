@@ -1,0 +1,5 @@
+---
+'@mister-guiiug/dev-pwa-config': patch
+---
+
+**`pwa-screenshots` vérifie que l'adresse qu'il ouvre reste sur la boucle locale.** L'adresse servie était fabriquée par concaténation — `http://localhost:${port}` devant une base lue dans `dist/index.html`, ou passée en `--base`. Ni l'une ni l'autre n'est écrite par le script, et la garantie reposait entièrement sur leur FORME : tant que la base commence par une barre, l'hôte ne bouge pas. Rien ne l'exigeait, et une référence protocol-relative (`//ailleurs/`) change d'hôte dès qu'on la résout — c'est ce que CodeQL relevait (`js/file-access-to-http`, « le contenu d'un fichier atteint une requête sortante », alerte 27). Le nouveau `adresseLocale(port, base)` construit l'URL contre une origine fixe puis **compare l'origine obtenue**, seul contrôle qui tienne quelle que soit la valeur reçue ; une base qui sortirait de `http://localhost:<port>` arrête le script avant même de démarrer le serveur d'aperçu, avec un message qui la nomme. `--url` n'est pas concerné : c'est une adresse que l'appelant donne, pas une valeur déduite d'un fichier. Aucun changement pour les appels normaux.

@@ -138,6 +138,39 @@ export function baseDuBuild(html) {
   return '/';
 }
 
+/**
+ * L'adresse à photographier — TOUJOURS sur la boucle locale, ou rien.
+ *
+ * LA BASE VIENT D'AILLEURS. Elle est lue dans `dist/index.html` (donc dans un
+ * fichier que ce script n'écrit pas) ou passée en `--base`. Coller
+ * `http://localhost:PORT` devant cette valeur fait reposer toute la garantie
+ * sur sa FORME : tant qu'elle commence par une barre, l'hôte ne bouge pas —
+ * mais rien dans le code ne l'exige, et une référence PROTOCOL-RELATIVE
+ * (`//ailleurs/`) change d'hôte dès qu'on la résout.
+ *
+ * On construit donc l'URL contre une origine fixe, puis on VÉRIFIE l'origine
+ * obtenue. C'est le seul contrôle qui tienne quelle que soit la valeur reçue,
+ * et il rend visible un invariant qui n'était jusqu'ici que supposé. CodeQL
+ * l'avait relevé : `js/file-access-to-http`, « le contenu d'un fichier atteint
+ * une requête sortante ».
+ *
+ * `--url`, lui, n'est pas concerné : c'est une adresse que l'appelant DONNE,
+ * pas une valeur qu'on déduit d'un fichier.
+ *
+ * @param {number|string} port
+ * @param {string} base chemin de base servi (`/`, `/mon-app/`…)
+ * @returns {URL|null} `null` si l'adresse quitterait la boucle locale.
+ */
+export function adresseLocale(port, base) {
+  const origine = `http://localhost:${port}`;
+  try {
+    const url = new URL(String(base ?? '/'), origine);
+    return url.origin === origine ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Les captures à prendre, dans l'ordre. */
 export function plan(options) {
   return Object.entries(options.shots)
@@ -264,8 +297,17 @@ export async function run(argv = [], cwd = process.cwd()) {
       baseServie = baseDuBuild(html);
       console.log(`base lue dans ${options.dist}/index.html : ${baseServie}`);
     }
+    // L'origine est vérifiée AVANT de servir quoi que ce soit : mieux vaut ne
+    // pas démarrer que démarrer et frapper ailleurs.
+    const adresse = adresseLocale(options.port, baseServie);
+    if (!adresse) {
+      console.error(
+        `pwa-screenshots : base « ${baseServie} » refusée — elle sortirait de http://localhost:${options.port}.`
+      );
+      return 2;
+    }
     apercu = servir(cwd, options.port, baseServie);
-    base = `http://localhost:${options.port}${baseServie}`;
+    base = adresse.href;
     if (!(await attendre(base))) {
       apercu.kill();
       console.error(
