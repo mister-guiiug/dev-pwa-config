@@ -790,7 +790,7 @@ Restent deux gestes, volontairement hors du générateur :
 | `@mister-guiiug/dev-pwa-config/react/use-update-prompt`      | `.js` + `.d.ts` | `useUpdatePrompt` (MAJ service worker + report) — `registerSW` injecté, donc importable partout                                                                                                                                                                                    |
 | `@mister-guiiug/dev-pwa-config/react/update-button`          | `.js` + `.d.ts` | `UpdateButton` : bouton « Forcer la mise à jour » des réglages, sans dépendance à vite-plugin-pwa                                                                                                                                                                                  |
 | `@mister-guiiug/dev-pwa-config/react/confirm-dialog`         | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone, `cancelLabel={null}` pour une alerte mono-action                                                                                                                    |
-| `@mister-guiiug/dev-pwa-config/react/toast`                  | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                                                                    |
+| `@mister-guiiug/dev-pwa-config/react/toast`                  | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol, et une `action` facultative — « Annuler » plutôt que « êtes-vous sûr ? », huit secondes au minimum                                                                |
 | `@mister-guiiug/dev-pwa-config/react/bottom-nav`             | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur ; `placement="fixed"` la colle au bas de la fenêtre (huit dépôts recopiaient la règle) et emmène au-dessus d'elle le bandeau de mise à jour et les toasts                |
 | `@mister-guiiug/dev-pwa-config/react/labels`                 | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés des composants du paquet en sept langues (fr, en, es, de, it, pt, nl — prop > contexte > français)                                                                                                                                       |
 | `@mister-guiiug/dev-pwa-config/react/sponsor`                | `.js` + `.d.ts` | `SponsorProvider` / `useSponsorUrl` : le lien de soutien déclaré une fois — `handle` pour un autre pseudo Buy Me a Coffee, `url` pour une autre plateforme, `url={null}` pour n'en afficher aucun (prop > contexte > famille)                                                      |
@@ -2823,7 +2823,7 @@ copie laissait passer.
 | `Stat`                                         | tableaux de bord de 10 apps                                       | `<dl>/<dt>/<dd>` relie le libellé à la valeur ; la tendance a une flèche **et** un libellé lu                                                                                                                                                                                   |
 | `Badge`                                        | 4 apps, couleurs ad hoc                                           | axe `tone` sémantique (`brand \| success \| warning \| danger \| info \| muted`) × `variant` (`soft \| outline`)                                                                                                                                                                |
 | `ConfirmDialog`                                | 7 apps, sept fichiers différents                                  | `role="alertdialog"` nommé par son titre, focus initial sur **Annuler** (une app le posait sur la suppression), `loading` pour une confirmation asynchrone ; `cancelLabel={null}` bascule en **mono-action** (alerte) : focus sur l'action unique, Échap et voile valent « OK » |
-| `ToastProvider` / `ToastViewport` / `useToast` | 6 apps, six mécaniques                                            | régions vivantes montées en permanence et **sans rôle sur le message** (deux apps l'annonçaient deux fois), pile bornée, compte à rebours suspendu au survol                                                                                                                    |
+| `ToastProvider` / `ToastViewport` / `useToast` | 6 apps, six mécaniques                                            | régions vivantes montées en permanence et **sans rôle sur le message** (deux apps l'annonçaient deux fois), pile bornée, compte à rebours suspendu au survol, `action` pour **annuler plutôt que confirmer**                                                                    |
 | `BottomNav`                                    | 7 apps                                                            | `<nav>` toujours nommé (3 ne l'étaient pas), onglet courant jamais distingué par la seule couleur (4 le faisaient), bouton « Plus » avec `aria-expanded`                                                                                                                        |
 
 ```tsx
@@ -2870,6 +2870,19 @@ import {
 const toast = useToast();
 toast.success('Fiche enregistrée');
 toast.error('Envoi impossible'); // ne s'efface pas tout seul
+
+// ANNULER PLUTÔT QUE CONFIRMER. `ConfirmDialog` est posé sur quatorze apps,
+// `useUndoableState` sur aucune : quatorze demandent « êtes-vous sûr ? » avant
+// de supprimer, pas une n'offre de revenir en arrière après. Le bouton porte
+// « Annuler » dans les sept langues de `labels` (`action.label` pour un autre
+// mot), agit puis referme, et la notification vit huit secondes AU MINIMUM —
+// le temps de lire, de décider et d'atteindre le bouton. Passer `duration`
+// l'emporte, et redevient votre responsabilité.
+const supprimer = note => {
+  const avant = notes;
+  setNotes(notes.filter(n => n.id !== note.id));
+  toast.show('Note supprimée', { action: { onAction: () => setNotes(avant) } });
+};
 
 <ConfirmDialog
   open={open}

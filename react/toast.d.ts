@@ -8,6 +8,16 @@ import type { FC, ReactNode } from 'react';
  */
 export type ToastTone = 'info' | 'success' | 'danger' | 'error';
 
+/**
+ * L'action portée par une notification — « Annuler » après une suppression.
+ * Le bouton agit puis referme le message ; sans `onAction`, il n'est pas rendu.
+ */
+export interface ToastAction {
+  /** Par défaut « Annuler » (`labels.toast.undo`, sept langues). */
+  label?: string;
+  onAction: () => void;
+}
+
 export interface ToastOptions {
   tone?: ToastTone;
   /**
@@ -17,12 +27,19 @@ export interface ToastOptions {
   duration?: number;
   /** Identifiant stable : une seconde notification du même id remplace la première. */
   id?: string;
+  /**
+   * Un bouton dans le message : annuler plutôt que confirmer. Sa présence
+   * porte la durée de vie à 8 s au moins — le temps de lire, de décider et
+   * d'atteindre le bouton — sauf `duration` explicite.
+   */
+  action?: ToastAction | null;
 }
 
 export interface ToastItem {
   id: string;
   message: ReactNode;
   tone?: ToastTone;
+  action?: ToastAction | null;
 }
 
 export interface ToastApi {

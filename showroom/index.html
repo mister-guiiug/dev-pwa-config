@@ -1672,12 +1672,25 @@
             <p data-i18n="composants.p17">
               Deux régions vivantes montées en permanence, et aucun rôle sur le
               message : c’est ce qui évite la double annonce constatée dans deux
-              apps.
+              apps. Une <code>action</code> facultative y met un bouton — «
+              Annuler » plutôt que « êtes-vous sûr&nbsp;? » — et porte la durée
+              de vie à huit secondes.
             </p>
           </div>
           <div class="sr-demo-stage">
             <div data-dwc="toast" data-tone="success">
               <span data-dwc="toast-message">Fiche enregistrée</span>
+              <button
+                type="button"
+                data-dwc="toast-close"
+                aria-label="Fermer la notification"
+              >
+                ×
+              </button>
+            </div>
+            <div data-dwc="toast" data-tone="info">
+              <span data-dwc="toast-message">Note supprimée</span>
+              <button type="button" data-dwc="toast-action">Annuler</button>
               <button
                 type="button"
                 data-dwc="toast-close"
@@ -1706,6 +1719,7 @@
                 <li><code>[data-dwc="toast-region"]</code></li>
                 <li><code>[data-dwc="toast"][data-tone]</code></li>
                 <li><code>[data-dwc="toast-message"]</code></li>
+                <li><code>[data-dwc="toast-action"]</code></li>
                 <li><code>[data-dwc="toast-close"]</code></li>
               </ul>
             </div>

@@ -226,6 +226,23 @@ function LoginPage() {
   );
 }`,
 
+  Toast: `import { ToastProvider, useToast } from '@mister-guiiug/dev-pwa-config/react';
+
+<ToastProvider>…</ToastProvider>; {/* une fois, dans la coquille */}
+
+const toast = useToast();
+
+{/* ANNULER PLUTÔT QUE CONFIRMER : on supprime, puis on offre de revenir.
+    Le libellé par défaut est « Annuler » (sept langues) et la notification
+    vit huit secondes au moins — le temps de lire, décider, atteindre. */}
+function remove(note) {
+  const avant = notes;
+  setNotes(notes.filter(n => n.id !== note.id));
+  toast.show('Note supprimée', { action: { onAction: () => setNotes(avant) } });
+}
+
+toast.error('Envoi impossible'); {/* ne s'efface pas tout seul */}`,
+
   MfaChallenge: `import { MfaChallenge } from '@mister-guiiug/dev-pwa-config/react/mfa-challenge';
 
 {/* La voie de secours et la déconnexion n'existent que si on les donne. */}

@@ -10,7 +10,7 @@ export interface LabelGroups {
     /** Mode mono-action : le bouton prend acte, il ne « confirme » rien. */
     ok: string;
   };
-  toast: { close: string; region: string };
+  toast: { close: string; region: string; undo: string };
   error: { retry: string; close: string };
   install: {
     title: string;

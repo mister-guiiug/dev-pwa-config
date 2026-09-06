@@ -322,6 +322,231 @@ test('le bouton de fermeture est nommé, dans la langue du provider', async () =
   }
 });
 
+/* ── L'action : annuler plutôt que confirmer ─────────────────────────────── *
+ * `ConfirmDialog` du socle est posé sur QUATORZE apps, `useUndoableState` sur
+ * AUCUNE : quatorze demandent « êtes-vous sûr ? » avant de supprimer, pas une
+ * n'offre de revenir en arrière après. Le geste manquait parce que ce fichier
+ * n'avait aucune notion d'action.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+test('une action rend un bouton dans le message : il agit, puis referme', async () => {
+  const dom = setupDom();
+  try {
+    let api;
+    const annule = [];
+    function Sonde() {
+      api = useToast();
+      return null;
+    }
+    const view = await mount(h(ToastProvider, {}, h(Sonde)));
+    await view.act(() =>
+      api.show('Note supprimée', {
+        action: { onAction: () => annule.push('rappelée') },
+      })
+    );
+
+    const bouton = view.container.querySelector('[data-dwc="toast-action"]');
+    assert.ok(bouton, 'aucun bouton d’action rendu');
+    assert.equal(
+      bouton.tagName,
+      'BUTTON',
+      'un <button>, pas un <div> cliquable'
+    );
+    assert.equal(bouton.getAttribute('type'), 'button');
+
+    // L'ordre du DOM : le message, l'action, puis la fermeture. Agir d'abord.
+    assert.deepEqual(
+      [...view.container.querySelectorAll('[data-dwc="toast"] > *')].map(
+        node => node.dataset.dwc
+      ),
+      ['toast-message', 'toast-action', 'toast-close']
+    );
+
+    await view.act(() => bouton.click());
+    assert.deepEqual(annule, ['rappelée'], 'le rappel n’a pas été appelé');
+    assert.equal(
+      view.container.querySelectorAll('[data-dwc="toast"]').length,
+      0,
+      'le message reste après l’action : rien ne dit qu’elle a été prise'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('sans rappel, l’action n’est pas rendue : un bouton mort vaut moins que rien', async () => {
+  const dom = setupDom();
+  try {
+    let api;
+    function Sonde() {
+      api = useToast();
+      return null;
+    }
+    const view = await mount(h(ToastProvider, {}, h(Sonde)));
+    await view.act(() =>
+      api.show('Supprimée', { action: { label: 'Annuler' } })
+    );
+    assert.equal(
+      view.container.querySelector('[data-dwc="toast-action"]'),
+      null,
+      'un libellé sans rappel promet une annulation que personne n’exécute'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('le libellé par défaut est « Annuler », dans la langue du provider', async () => {
+  // `undo` n'est pas `confirm.cancel` : « Undo » et « Cancel » sont deux mots
+  // différents en anglais, comme dans cinq des six autres langues.
+  const dom = setupDom();
+  try {
+    const defaut = await mount(
+      h(ToastViewport, {
+        toasts: [{ id: 'x', message: 'Supprimée', action: { onAction() {} } }],
+        onDismiss() {},
+      })
+    );
+    assert.equal(
+      defaut.container.querySelector('[data-dwc="toast-action"]').textContent,
+      'Annuler'
+    );
+    await defaut.unmount();
+
+    const anglais = await mount(
+      h(
+        LabelsProvider,
+        { locale: 'en' },
+        h(ToastViewport, {
+          toasts: [{ id: 'x', message: 'Deleted', action: { onAction() {} } }],
+          onDismiss() {},
+        })
+      )
+    );
+    assert.equal(
+      anglais.container.querySelector('[data-dwc="toast-action"]').textContent,
+      'Undo'
+    );
+    await anglais.unmount();
+
+    // Un libellé explicite l'emporte : toutes les actions ne sont pas des
+    // annulations — « Rouvrir », « Voir », « Réessayer ».
+    const propre = await mount(
+      h(ToastViewport, {
+        toasts: [
+          {
+            id: 'x',
+            message: 'Fiche archivée',
+            action: { label: 'Rouvrir', onAction() {} },
+          },
+        ],
+        onDismiss() {},
+      })
+    );
+    assert.equal(
+      propre.container.querySelector('[data-dwc="toast-action"]').textContent,
+      'Rouvrir'
+    );
+    await propre.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('un toast porteur d’une action ne s’évanouit pas en deux secondes', async () => {
+  // Une notification qu'on lit peut durer cinq secondes ; une qu'il faut lire,
+  // décider PUIS atteindre, non. La durée du fournisseur devient un plancher
+  // de huit secondes — et une durée explicite reste souveraine.
+  const dom = setupDom();
+  try {
+    let api;
+    function Sonde() {
+      api = useToast();
+      return null;
+    }
+    const view = await mount(h(ToastProvider, { duration: 30 }, h(Sonde)));
+    await view.act(() => {
+      api.show('Sans action');
+      api.show('Avec action', { action: { onAction() {} } });
+      api.show('Action pressée', {
+        action: { onAction() {} },
+        duration: 30,
+      });
+    });
+    assert.equal(
+      view.container.querySelectorAll('[data-dwc="toast"]').length,
+      3
+    );
+
+    await view.act(() => attendre(70));
+    assert.deepEqual(
+      [...view.container.querySelectorAll('[data-dwc="toast-message"]')].map(
+        node => node.textContent
+      ),
+      ['Avec action'],
+      'le plancher de l’action n’a pas tenu, ou il a écrasé une durée explicite'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('le bouton se prend au clavier : le rebours s’y suspend, et rien n’est réannoncé', async () => {
+  // DEUX PROMESSES EN UNE, parce qu'elles n'en font qu'une à l'usage. Un toast
+  // qui s'efface pendant qu'on tabule vers son bouton est inatteignable au
+  // clavier (WCAG 2.2.1) ; et le rendu déclenché par cette suspension ne doit
+  // rien réinsérer dans la région vivante, sinon le lecteur d'écran relit le
+  // message à chaque fois que le focus s'en approche.
+  const dom = setupDom();
+  try {
+    let api;
+    function Sonde() {
+      api = useToast();
+      return null;
+    }
+    const view = await mount(h(ToastProvider, { duration: 60 }, h(Sonde)));
+    await view.act(() =>
+      api.show('Note supprimée', { action: { onAction() {} }, duration: 60 })
+    );
+
+    const avant = view.container.querySelector('[data-dwc="toast"]');
+    const bouton = view.container.querySelector('[data-dwc="toast-action"]');
+    await view.act(() => bouton.focus());
+    assert.equal(
+      document.activeElement,
+      bouton,
+      'le focus ne se pose pas sur l’action : elle est hors du clavier'
+    );
+
+    await view.act(() => attendre(120));
+    assert.equal(
+      view.container.querySelector('[data-dwc="toast-action"]'),
+      bouton,
+      'le message s’est effacé sous les doigts de qui venait l’atteindre'
+    );
+
+    // LES MÊMES NŒUDS, pas seulement les mêmes sélecteurs : une clé instable
+    // (l'index, un identifiant tiré à chaque rendu) ferait démonter puis
+    // remonter le message, et une région vivante annonce ce qu'on y INSÈRE.
+    assert.equal(view.container.querySelector('[data-dwc="toast"]'), avant);
+    assert.equal(document.activeElement, bouton, 'le focus a été perdu');
+
+    // Rendu au repos, le rebours reprend là où il s'était arrêté.
+    await view.act(() => bouton.blur());
+    await view.act(() => attendre(120));
+    assert.equal(
+      view.container.querySelectorAll('[data-dwc="toast"]').length,
+      0
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
 test('useToast hors fournisseur ne casse rien et le dit', async () => {
   // miss-carbook et mister-doc lèvent ; mister-footcoach ne fait rien, en
   // silence. Ici : rien, mais l'avertissement dit pourquoi l'écran est muet.

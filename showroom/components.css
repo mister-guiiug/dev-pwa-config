@@ -1458,6 +1458,31 @@
     min-width: 0;
   }
 
+  /* L'action — « Annuler » après une suppression. UN TEXTE, PAS UN APLAT, et
+     ce n'est pas une préférence : un aplat demanderait un contour transparent
+     (invisible en contraste forcé) et un libellé en `--dwc-primary-contrast`
+     (blanc sur blanc à l'impression, les fonds étant retirés). Le soulignement
+     la distingue du message sans que la couleur porte seule le sens. */
+  [data-dwc='toast-action'] {
+    font: inherit;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding-inline: 0.5rem;
+    /* Marge négative : la cible tactile reste entière sans épaissir le
+       message. */
+    margin-block: -0.65rem;
+    flex: none;
+    border: 0;
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: none;
+    color: var(--dwc-primary, CanvasText);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
   [data-dwc='toast-close'] {
     font: inherit;
     display: inline-flex;
