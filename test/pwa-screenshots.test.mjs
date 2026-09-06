@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  baseDuBuild,
   CADRES,
   cheminVite,
   parseArgs,
@@ -117,4 +118,24 @@ test('cheminVite lit le champ bin du paquet installé, sans passer par ses expor
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
+});
+
+test('baseDuBuild lit la base dans le chemin des actifs de index.html', () => {
+  // Un build fait pour `/pwa-starter-kit/` servi sous `/` : 404 sur chaque
+  // actif, page blanche. Les captures du squelette étaient dans ce cas.
+  const kit =
+    '<!doctype html><html><head><script type="module" crossorigin src="/pwa-starter-kit/assets/index-CfsxhJUb.js"></script><link rel="stylesheet" crossorigin href="/pwa-starter-kit/assets/index-DBAs9nMW.css"></head></html>';
+  assert.equal(baseDuBuild(kit), '/pwa-starter-kit/');
+  assert.equal(baseDuBuild('<script src="/assets/index.js"></script>'), '/');
+  assert.equal(baseDuBuild('<script src="./assets/index.js"></script>'), '/');
+  assert.equal(
+    baseDuBuild('<script src="https://cdn.example/app/assets/i.js"></script>'),
+    '/app/'
+  );
+  assert.equal(baseDuBuild('<html><body>rien</body></html>'), '/');
+  assert.equal(baseDuBuild(''), '/');
+  // Sans `--base`, rien n'est décidé avant d'avoir lu le build.
+  assert.equal(parseArgs([]).base, undefined);
+  assert.equal(parseArgs(['--base', '/x/']).base, '/x/');
+  assert.equal(parseArgs([]).dist, 'dist');
 });

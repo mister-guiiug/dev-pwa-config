@@ -27,7 +27,13 @@
  *     (showroom) ;
  *   - l'aperçu est lancé PAR NODE, sur le script de Vite — jamais par `npx`,
  *     qui est un `.cmd` sous Windows et que Node refuse de lancer sans shell
- *     depuis CVE-2024-27980 (squelette).
+ *     depuis CVE-2024-27980 (squelette) ;
+ *   - l'aperçu sert le build SOUS SA BASE, lue dans `dist/index.html` : un
+ *     build fait pour `/mister-x/` servi sous `/` demande ses actifs à
+ *     `/mister-x/assets/…`, reçoit des 404, et la page est blanche. Les
+ *     captures du squelette, prises ainsi le 05/09/2026, étaient deux
+ *     rectangles blancs que personne n'avait ouverts. Le bin refuse désormais
+ *     d'écrire une page vide, et dit combien d'actifs ont répondu 404.
  *
  * LES TAILLES SONT CELLES QUE CHROME ATTEND pour ne pas recadrer : 540×1170
  * (un 9/19.5 de téléphone) et 1280×720. Au-delà de 3 840 px, il refuse
@@ -79,7 +85,9 @@ export function parseArgs(argv = []) {
     help: argv.includes('--help') || argv.includes('-h'),
     url: at('--url'),
     port: Number(at('--port') ?? 4319),
-    base: at('--base') ?? '/',
+    // Pas de défaut : la base se lit dans le build (`baseDuBuild`).
+    base: at('--base'),
+    dist: at('--dist') ?? 'dist',
     out: at('--out') ?? 'public/screenshots',
     locale: at('--locale') ?? 'fr-FR',
     scheme: at('--scheme') === 'dark' ? 'dark' : 'light',
@@ -97,6 +105,36 @@ export function parseArgs(argv = []) {
       },
     },
   };
+}
+
+/**
+ * La base sous laquelle le build a été fait, lue dans le premier actif que
+ * `index.html` référence : `/mister-x/assets/…` → `/mister-x/`. Sans actif,
+ * ou pour `./assets/…` et `/assets/…`, c'est la racine. Sans regex : CodeQL
+ * lit `[^"]*` suivi d'un littéral comme un parcours polynomial.
+ *
+ * @param {string} html
+ */
+export function baseDuBuild(html) {
+  const marque = 'assets/';
+  let i = String(html ?? '').indexOf(marque);
+  while (i !== -1) {
+    const ouverture = html.lastIndexOf('"', i);
+    const avant = ouverture === -1 ? '' : html.slice(ouverture + 1, i);
+    if (ouverture !== -1 && !avant.includes('<') && !avant.includes('>')) {
+      if (avant.startsWith('http')) {
+        try {
+          return new URL(avant).pathname || '/';
+        } catch {
+          return '/';
+        }
+      }
+      if (avant.startsWith('/')) return avant;
+      return '/';
+    }
+    i = html.indexOf(marque, i + marque.length);
+  }
+  return '/';
 }
 
 /** Les captures à prendre, dans l'ordre. */
@@ -187,7 +225,8 @@ export async function run(argv = [], cwd = process.cwd()) {
         'pwa-screenshots — les deux captures du manifeste (narrow 540×1170, wide 1280×720).',
         '',
         '  --url <http://…/>       photographier une app déjà servie (sinon : vite preview du build)',
-        '  --port 4319 --base /    l’aperçu lancé par le bin',
+        '  --port 4319 --dist dist l’aperçu lancé par le bin',
+        '  --base /mister-x/       sinon lue dans dist/index.html (le chemin des actifs)',
         '  --out public/screenshots',
         '  --narrow 540x1170 --wide 1280x720',
         '  --narrow-path <chemin> --wide-path <chemin>   ajoutés à l’URL (ex. reglages, #/episodes)',
@@ -209,8 +248,23 @@ export async function run(argv = [], cwd = process.cwd()) {
   let apercu = null;
   let base = options.url;
   if (!base) {
-    apercu = servir(cwd, options.port, options.base);
-    base = `http://localhost:${options.port}${options.base}`;
+    let baseServie = options.base;
+    if (!baseServie) {
+      const index = join(cwd, options.dist, 'index.html');
+      let html = '';
+      try {
+        html = readFileSync(index, 'utf8');
+      } catch {
+        console.error(
+          `pwa-screenshots : ${options.dist}/index.html introuvable. Construire d'abord (\`vite build\`), ou passer --url.`
+        );
+        return 2;
+      }
+      baseServie = baseDuBuild(html);
+      console.log(`base lue dans ${options.dist}/index.html : ${baseServie}`);
+    }
+    apercu = servir(cwd, options.port, baseServie);
+    base = `http://localhost:${options.port}${baseServie}`;
     if (!(await attendre(base))) {
       apercu.kill();
       console.error(
@@ -238,6 +292,7 @@ export async function run(argv = [], cwd = process.cwd()) {
   const out = resolve(cwd, options.out);
   mkdirSync(out, { recursive: true });
   const navigateur = await chromium.launch();
+  let vides = 0;
   try {
     for (const shot of plan(options)) {
       const contexte = await navigateur.newContext({
@@ -248,22 +303,47 @@ export async function run(argv = [], cwd = process.cwd()) {
         reducedMotion: 'reduce',
       });
       const page = await contexte.newPage();
+      const introuvables = [];
+      page.on('response', r => {
+        if (r.status() === 404) introuvables.push(r.url());
+      });
       const url = base + shot.path;
       await page.goto(url, { waitUntil: 'networkidle' });
       if (preparer) await preparer(page, { name: shot.name, url });
       // Le premier écran d'une PWA s'hydrate après le `load` : sans ce délai,
       // on capture un squelette de chargement.
       await sleep(options.wait);
-      const fichier = join(out, `${shot.name}.png`);
-      writeFileSync(fichier, await page.screenshot({ type: 'png' }));
-      console.log(
-        `✓ ${options.out}/${shot.name}.png (${shot.width}×${shot.height})`
+      // Une page sans un mot n'est pas une capture, c'est une page blanche
+      // dans la fiche d'installation. Ne rien écrire, et dire pourquoi.
+      const texte = await page.evaluate(
+        () => document.body?.innerText?.trim() ?? ''
       );
+      if (!texte) {
+        vides += 1;
+        const detail = introuvables.length
+          ? ` ${introuvables.length} réponse(s) 404, la première : ${introuvables[0]}`
+          : '';
+        console.error(
+          `✗ ${shot.name} : la page ${url} est vide, rien n'est écrit.${detail}`
+        );
+      } else {
+        const fichier = join(out, `${shot.name}.png`);
+        writeFileSync(fichier, await page.screenshot({ type: 'png' }));
+        console.log(
+          `✓ ${options.out}/${shot.name}.png (${shot.width}×${shot.height})`
+        );
+      }
       await contexte.close();
     }
   } finally {
     await navigateur.close();
     arreter();
+  }
+  if (vides) {
+    console.error(
+      `pwa-screenshots : ${vides} capture(s) refusée(s). Le build est-il servi sous sa base (--base) ? Ses actifs répondent-ils ?`
+    );
+    return 2;
   }
 
   const entries = manifestScreenshots(out, {
