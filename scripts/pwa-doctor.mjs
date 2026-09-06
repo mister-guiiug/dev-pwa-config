@@ -198,7 +198,12 @@ const horsRoutes = text =>
  *   ou?: string, ecrans?: string[] }}
  */
 export function liensFamille(source) {
-  const fichiers = source.filter(f => !/\.test\.|\.spec\./.test(f.rel));
+  // SANS LES COMMENTAIRES, comme les autres lectures du texte : le squelette
+  // explique dans `App.tsx` pourquoi `<AppFooter>` n'y est plus — et ce
+  // commentaire en faisait un porteur, rendu par la coquille, donc partout.
+  const fichiers = source
+    .filter(f => !/\.test\.|\.spec\./.test(f.rel))
+    .map(f => ({ rel: f.rel, text: sansCommentaires.source(f.text) }));
   const porteurs = fichiers.filter(
     f =>
       LIENS.socle.test(f.text) ||

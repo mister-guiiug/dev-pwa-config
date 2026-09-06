@@ -551,6 +551,26 @@ test('aucun porteur : la dette le dit sans deviner', () => {
   );
 });
 
+test('un commentaire qui cite le pied de page n’en rend pas un', () => {
+  // Le squelette explique dans `App.tsx` pourquoi `<AppFooter>` n'y est plus :
+  // lu en texte plat, ce commentaire faisait de la coquille un porteur — donc
+  // « partout », le verdict même que l'explication écarte. Comme les autres
+  // lectures du docteur, celle-ci retire les commentaires d'abord.
+  const coquille = fichier(
+    'src/App.tsx',
+    "/* Le pied de page n'est pas ici : `<AppFooter>` suivrait chaque écran. */\n<Routes>{routes}</Routes>{/* jadis <AppFooter /> ici */}"
+  );
+  assert.equal(liens([coquille]), 'absent');
+  assert.equal(
+    liens([
+      coquille,
+      fichier('src/pages/HomePage.tsx', '<AppFooter repoUrl={REPO_URL} />'),
+      fichier('src/pages/AboutPage.tsx', '<AppFooter repoUrl={REPO_URL} />'),
+    ]),
+    'deux'
+  );
+});
+
 test('une app SANS ROUTEUR a quand même une coquille : celle que l’entrée monte', () => {
   // Trois apps du parc basculent d'écran sur un état, sans `<Routes>` ni
   // `<Outlet>` : `miss-dice`, `miss-ticket-pwa`, `mister-puzzle`. Cherchée à
