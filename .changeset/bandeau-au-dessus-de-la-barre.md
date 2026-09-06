@@ -1,5 +1,0 @@
----
-'@mister-guiiug/dev-pwa-config': patch
----
-
-**Le bandeau de mise à jour flotte au-dessus de la barre basse collée.** `components.css` habillait `[data-dwc='update-banner']` et `[data-dwc='offline-ready']` sans les placer ; rendus après `children`, ils finissaient en flux tout en bas du document — sous `BottomNav placement="fixed"`, hors écran puis sous la barre, « Recharger » inatteignable (mister-miss-koh, le squelette, miss-lookhouse). Sous cette barre, et seulement sous elle, le bandeau est désormais `position: fixed` au-dessus (`z-index: 25`, entre la barre à 20 et l'en-tête à 30), avec l'entrée `dwc-rise` éteinte sous `prefers-reduced-motion` ; les toasts surgissent au-dessus de la barre aussi. L'empreinte de la barre (4,5 rem + zone sûre) n'est plus écrite qu'une fois, dans `--_dwc-bottom-nav-reserve`, lue par la réserve de `PageContainer`, les toasts et le bandeau. Sans barre collée, rien ne bouge. Une app qui plaçait le bandeau elle-même et adopte la barre collée retire son placement maison — mister-miss-koh porte la règle côté app depuis sa PR #12 et pourra la retirer à la montée.
