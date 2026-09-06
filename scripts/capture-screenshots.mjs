@@ -34,6 +34,7 @@
 import { mkdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
+import { estPointDEntree } from './entree.mjs';
 
 const OUT = fileURLToPath(new URL('../showroom/screenshots/', import.meta.url));
 
@@ -128,4 +129,4 @@ async function main() {
   );
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
+if (estPointDEntree(import.meta.url)) await main();

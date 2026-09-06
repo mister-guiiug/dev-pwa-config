@@ -30,6 +30,7 @@
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS, GITHUB_OWNER } from '../apps-catalog.js';
+import { estPointDEntree } from './entree.mjs';
 
 const API = 'https://api.github.com';
 const token = process.env.GITHUB_TOKEN;
@@ -121,4 +122,4 @@ async function main() {
   );
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) await main();
+if (estPointDEntree(import.meta.url)) await main();

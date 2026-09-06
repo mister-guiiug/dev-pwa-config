@@ -24,6 +24,13 @@
  * Chaque bin reçoit des arguments qui le font parler tout de suite et sans
  * rien toucher : un dossier introuvable, ou `--help`. Aucun réseau, aucun
  * navigateur, aucun psql.
+ *
+ * ET LA RÈGLE, pas seulement les quatre coupables. Sept outils de dépôt non
+ * publiés portaient le même piège, écrit de TROIS façons différentes —
+ * `pathToFileURL(argv[1])`, `new URL('file://' + argv[1])`, et la comparaison
+ * de chaînes nue. Interdire ces trois orthographes laisserait passer la
+ * quatrième : le dernier test exige donc qu'un seul module du dépôt lise
+ * `process.argv[1]`, celui qui est éprouvé ici.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,6 +38,7 @@ import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   rmdirSync,
@@ -160,10 +168,35 @@ test('estPointDEntree : le realpath décide, pas la façon de l’écrire', () =
   }
 });
 
+test('aucun script du dépôt ne relit `process.argv[1]` lui-même', () => {
+  // LA RÈGLE, plutôt que la liste des coupables connus. Le piège s'était
+  // écrit de TROIS façons dans `scripts/` — `pathToFileURL(argv[1])`,
+  // `new URL('file://' + argv[1])`, et la comparaison de chaînes nue
+  // `argv[1] === fileURLToPath(import.meta.url)` — et interdire ces trois
+  // orthographes laisserait passer la quatrième. Un seul module lit
+  // `argv[1]`, et il est couvert de bout en bout par les tests ci-dessus.
+  //
+  // Les quatre bins sont éprouvés en vrai, derrière un lien ; les outils de
+  // dépôt s'arrêtent à ce contrôle statique, parce que les lancer coûterait
+  // un balayage du parc ou un accès réseau pour prouver la même ligne.
+  const dir = new URL('../scripts/', import.meta.url);
+  const scripts = readdirSync(dir).filter(f => f.endsWith('.mjs'));
+  assert.ok(scripts.length >= 20, 'les scripts du dépôt');
+
+  for (const nom of scripts) {
+    if (nom === 'entree.mjs') continue;
+    const source = readFileSync(new URL(nom, dir), 'utf8');
+    assert.doesNotMatch(
+      source,
+      /process\.argv\[1\]/,
+      `${nom} décide lui-même s'il est le point d'entrée : passer par estPointDEntree(import.meta.url), sinon il sera muet derrière un lien`
+    );
+  }
+});
+
 test('aucun bin publié ne compare des chemins bruts', () => {
-  // Balayer la carte `bin` plutôt que la liste ci-dessus : un bin ajouté
-  // demain hériterait du piège en copiant son voisin, et personne ne
-  // relancerait ce raisonnement.
+  // Redondant avec le contrôle ci-dessus tant que tous les bins vivent dans
+  // `scripts/` — mais la carte `bin` peut demain pointer ailleurs.
   const pkg = JSON.parse(
     readFileSync(new URL('../package.json', import.meta.url), 'utf8')
   );

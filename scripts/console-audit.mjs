@@ -21,6 +21,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
+import { estPointDEntree } from './entree.mjs';
 
 const SKIP = new Set(['node_modules', 'dist', 'build', '.git', 'coverage']);
 
@@ -93,11 +94,7 @@ function sourceFiles(dir, found = []) {
 
 // Seulement lancé DIRECTEMENT : importé (par les tests des fonctions pures),
 // le module ne doit ni lire le disque ni écrire dans la console.
-const invokedDirectly =
-  process.argv[1] &&
-  import.meta.url === new URL(`file://${process.argv[1]}`).href;
-
-if (invokedDirectly) {
+if (estPointDEntree(import.meta.url)) {
   main();
 }
 
