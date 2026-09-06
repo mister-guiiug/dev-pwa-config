@@ -52,9 +52,25 @@ import { VERSION_MANIFEST } from './version.js';
  */
 export function paletteFromCss(css) {
   if (!css) return null;
-  const primary = /--dwc-primary\s*:\s*([^;]+);/.exec(css)?.[1]?.trim();
-  const bg = /--dwc-bg\s*:\s*([^;]+);/.exec(css)?.[1]?.trim();
+  const primary = declarationDe(css, '--dwc-primary');
+  const bg = declarationDe(css, '--dwc-bg');
   return primary || bg ? { primary, bg } : null;
+}
+
+/**
+ * La valeur d'une custom property, à sa première déclaration — sans
+ * expression régulière : une feuille de style est une entrée qu'on ne
+ * contrôle pas, et `\s*:\s*[^;]+` s'y emballe (CodeQL, `polynomial-redos`).
+ */
+function declarationDe(css, nom) {
+  const debut = css.indexOf(nom);
+  if (debut === -1) return undefined;
+  const fin = css.indexOf(';', debut);
+  const declaration = fin === -1 ? css.slice(debut) : css.slice(debut, fin);
+  const deuxPoints = declaration.indexOf(':');
+  if (deuxPoints === -1) return undefined;
+  const valeur = declaration.slice(deuxPoints + 1).trim();
+  return valeur || undefined;
 }
 
 const readIfExists = path => {

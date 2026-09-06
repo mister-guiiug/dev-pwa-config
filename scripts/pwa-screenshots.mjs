@@ -109,11 +109,14 @@ export function plan(options) {
 /** Les lignes `screenshots` du manifeste, à copier si l'app l'écrit à la main. */
 export function snippet(entries) {
   if (!entries.length) return 'aucune capture trouvée';
+  // Chaque valeur passe par JSON.stringify : un libellé n'est pas du code, et
+  // un échappement à la main oublie toujours un caractère (CodeQL le rappelle).
+  const s = JSON.stringify;
   return [
     'screenshots: [',
     ...entries.map(
       e =>
-        `  { src: '${e.src}', sizes: '${e.sizes}', type: '${e.type}', form_factor: '${e.form_factor}', label: '${e.label.replace(/'/g, "\\'")}' },`
+        `  { src: ${s(e.src)}, sizes: ${s(e.sizes)}, type: ${s(e.type)}, form_factor: ${s(e.form_factor)}, label: ${s(e.label)} },`
     ),
     ']',
   ].join('\n');
