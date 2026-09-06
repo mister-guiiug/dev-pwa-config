@@ -685,7 +685,7 @@ export const FAMILY_APPS = [
     'miss-carbook',
     'Miss Carbook',
     'Comparatif collaboratif de véhicules, en temps réel.',
-    'stable',
+    'alpha',
     { category: 'outils', backend: 'supabase' }
   ),
   app(
@@ -720,7 +720,7 @@ export const FAMILY_APPS = [
     'mister-footcoach',
     'Mister Footcoach',
     "Gestion d'équipes de foot : compositions, statistiques, entraînements.",
-    'stable',
+    'alpha',
     { icon: 'logo.svg', category: 'sport', backend: 'supabase' }
   ),
   app(
@@ -734,14 +734,14 @@ export const FAMILY_APPS = [
     'miss-ticket-pwa',
     'Miss Ticket',
     "Télécommande PWA pour l'application desktop Miss Ticket.",
-    'stable',
+    'alpha',
     { category: 'outils', backend: 'firebase' }
   ),
   app(
     'mister-doc',
     'Mister Doc',
     'Planning de gardes de médecins synchronisé : vue mensuelle, compteurs week-end et heures.',
-    'beta',
+    'stable',
     { category: 'sante', backend: 'supabase' }
   ),
   app(
@@ -755,21 +755,21 @@ export const FAMILY_APPS = [
     'miss-badminton',
     'Miss Badminton',
     'Suivi de scores et statistiques de badminton.',
-    'alpha',
+    'stable',
     { category: 'sport', backend: 'local' }
   ),
   app(
     'miss-dice',
     'Miss Dice',
     'Lanceur de dé à 6 faces, 100 % hors ligne, installable.',
-    'alpha',
+    'stable',
     { category: 'jeux', backend: 'local' }
   ),
   app(
     'miss-supaboss',
     'Miss Supaboss',
     'Pilotage multi-comptes Supabase Free : pause/restore, quotas, démos.',
-    'alpha',
+    'beta',
     // Pilote d'AUTRES comptes Supabase via un backend Node et un jeton
     // personnel : aucun client Supabase côté navigateur, d'où `api`.
     { category: 'dev', backend: 'api' }
@@ -778,7 +778,7 @@ export const FAMILY_APPS = [
     'miss-supatool',
     'Miss Supatool',
     "Migration d'un projet Supabase vers un autre : structure, données et fichiers.",
-    'alpha',
+    'beta',
     // Même raison que `miss-supaboss` : elle parle à des projets Supabase
     // TIERS en HTTP nu (PostgREST, API Storage) et à un relais pour l'API de
     // management. Aucun `@supabase/supabase-js` dans le paquet, d'où `api`.
@@ -788,14 +788,14 @@ export const FAMILY_APPS = [
     'mister-molkky',
     'Mister Mölkky',
     'Compteur de scores pour parties de Mölkky (multi-appareils).',
-    'alpha',
+    'stable',
     { icon: 'logo.png', category: 'jeux', backend: 'supabase' }
   ),
   app(
     'mister-qowa',
     'Mister Qowa',
     "Quiz interactif en temps réel : l'animateur pilote, les joueurs répondent.",
-    'alpha',
+    'stable',
     // Pas de `favicon.svg` à la racine (404 vérifié en prod) : l'icône vit
     // dans `icons/`, et le SVG reste net à toute taille.
     { icon: 'icons/icon.svg', category: 'jeux', backend: 'firebase' }
@@ -804,7 +804,7 @@ export const FAMILY_APPS = [
     'mister-family-map',
     'Mister Family Map',
     'Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.',
-    'alpha',
+    'beta',
     // `loisirs` : la catégorie a été ajoutée pour elle. Sortir en famille n'est
     // ni un outil ni un jeu, et `outils` n'était qu'un pis-aller assumé à
     // l'ajout de l'app.
@@ -814,7 +814,7 @@ export const FAMILY_APPS = [
     'mister-miss-koh',
     'Mister & miss Koh',
     "Suivi d'une saison d'aventure : candidats, épisodes, épreuves, conseils et votes. Non officiel.",
-    'alpha',
+    'beta',
     // `loisirs`, comme `mister-family-map` : accompagner une émission n'est ni
     // un jeu ni un outil. « Non officiel » fait partie de la description, pas
     // d'une mention légale reléguée ailleurs : l'app n'a aucun lien avec les
