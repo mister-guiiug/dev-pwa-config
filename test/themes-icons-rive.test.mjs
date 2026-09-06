@@ -329,6 +329,45 @@ test('lucideIconSet couvre les rôles que le paquet réclame', () => {
   assert.deepEqual(lucideIconSet({ close: null }), {});
 });
 
+test('le repli et lucide dessinent la MÊME chose, rôle par rôle', () => {
+  /*
+   * LA PARITÉ DES CLÉS NE SUFFIT PAS, ET `issue` L'A PROUVÉ. Jusqu'à la 4.5.0,
+   * `DEFAULT_ICONS.issue` valait `ExternalLinkIcon` — le dessin d'`external` —
+   * pendant que `LUCIDE_NAMES.issue` valait `Bug`. Les deux tables avaient les
+   * mêmes neuf clés, le test ci-dessus passait, et deux apps de la famille
+   * affichaient pourtant deux icônes différentes pour le même rôle : une
+   * flèche sans lucide, un insecte avec. C'est très exactement le défaut que
+   * ce module dit combattre — « deux langages visuels dans la même interface,
+   * sans que personne l'ait décidé ».
+   *
+   * L'invariant qui l'attrape ne regarde pas les dessins (on ne compare pas un
+   * SVG maison à un composant lucide qu'on n'a pas) mais leur PARTAGE : deux
+   * rôles servis par le même repli doivent l'être par le même nom lucide, et
+   * réciproquement. Un rôle qui emprunte le dessin d'un autre d'un côté sans
+   * l'emprunter de l'autre échoue ici, nommément.
+   */
+  const parRepli = new Map();
+  for (const [role, composant] of Object.entries(DEFAULT_ICONS)) {
+    if (!parRepli.has(composant)) parRepli.set(composant, []);
+    parRepli.get(composant).push(role);
+  }
+  const parNom = new Map();
+  for (const [role, nom] of Object.entries(LUCIDE_NAMES)) {
+    if (!parNom.has(nom)) parNom.set(nom, []);
+    parNom.get(nom).push(role);
+  }
+
+  const groupes = liste =>
+    [...liste.values()].map(r => r.sort().join('+')).sort();
+
+  assert.deepEqual(
+    groupes(parRepli),
+    groupes(parNom),
+    'un rôle emprunte le dessin d’un autre d’un seul côté : le repli et lucide ' +
+      'ne montreraient pas la même chose selon que l’app installe lucide ou non'
+  );
+});
+
 /* ── Rive ──────────────────────────────────────────────────────────────── */
 
 test('runtime absent : le repli s’affiche, l’écran ne disparaît pas', async () => {
