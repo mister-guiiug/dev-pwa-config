@@ -85,19 +85,58 @@ test('chaque var(--dwc-*) porte un repli', () => {
  * Constaté ce jour-là : `--text-fluid-xs` retombait sur `0.8rem` à huit
  * endroits et sur `0.75rem` sur les onglets de `BottomNav`.
  */
-test('un même jeton porte le même repli partout', () => {
-  // PÉRIMÈTRE ASSUMÉ : les replis SCALAIRES, ceux dont la valeur ne contient
-  // aucune parenthèse (tailles, rayons). Les replis de couleur imbriquent
-  // `light-dark()`, `color-mix()` ou un second `var()` — les comparer demande
-  // un vrai analyseur, pas une expression rationnelle, et une expression
-  // rationnelle qui les tronque comparerait des valeurs fausses. Mieux vaut un
-  // garde-fou étroit et exact qu'un large et menteur.
+/**
+ * Les `var(--x, repli)` de PREMIER NIVEAU, lus à parenthèses équilibrées.
+ *
+ * L'ancienne version de ce fichier s'en tenait aux replis SCALAIRES — ceux
+ * sans parenthèses — en assumant le périmètre : « les comparer demande un vrai
+ * analyseur, pas une expression rationnelle ». C'était juste, et le trou était
+ * exactement là : l'audit du 06/09/2026 a trouvé **cinq jetons à replis
+ * divergents**, tous des couleurs. `--dwc-danger` valait `#b91c1c` dans douze
+ * règles et `#b42318` dans quatre — deux rouges côte à côte chez une app qui
+ * ne déclare pas ses jetons. Voici l'analyseur.
+ *
+ * PREMIER NIVEAU SEULEMENT, et c'est la subtilité. `--dwc-border-strong` a pour
+ * repli `var(--dwc-border, …)` : l'app qui ne déclare qu'une couleur de bordure
+ * la voit aussi sur ses contours de contrôle, c'est documenté. Ce `var()`
+ * imbriqué appartient au repli de `border-strong`, ce n'est pas un usage
+ * indépendant de `border` — le compter comme tel ferait échouer ce test sur une
+ * imbrication voulue.
+ */
+function varsDePremierNiveau(texte) {
+  const out = [];
+  let i = texte.indexOf('var(');
+  while (i !== -1) {
+    let profondeur = 1;
+    let j = i + 4;
+    let virgule = -1;
+    while (j < texte.length && profondeur > 0) {
+      const c = texte[j];
+      if (c === '(') profondeur++;
+      else if (c === ')') profondeur--;
+      else if (c === ',' && profondeur === 1 && virgule === -1) virgule = j;
+      j++;
+    }
+    if (profondeur !== 0) break;
+    if (virgule !== -1) {
+      out.push([
+        texte.slice(i + 4, virgule).trim(),
+        texte
+          .slice(virgule + 1, j - 1)
+          .trim()
+          .replace(/\s+/g, ' '),
+      ]);
+    }
+    i = texte.indexOf('var(', j);
+  }
+  return out;
+}
+
+test('un même jeton porte le même repli partout, couleurs comprises', () => {
   const replis = new Map();
-  for (const [, nom, repli] of CSS.matchAll(
-    /var\(\s*(--[\w-]+)\s*,\s*([^;()]+?)\s*\)/g
-  )) {
+  for (const [nom, repli] of varsDePremierNiveau(CSS)) {
     if (!replis.has(nom)) replis.set(nom, new Set());
-    replis.get(nom).add(repli.trim());
+    replis.get(nom).add(repli);
   }
   const divergents = [...replis]
     .filter(([, valeurs]) => valeurs.size > 1)

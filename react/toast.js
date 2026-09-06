@@ -12,6 +12,21 @@ import { Icon } from './icons-context.js';
 import { useLabels } from './labels.js';
 
 /**
+ * Le ton qui exige une lecture : il reste affiché jusqu'à fermeture et part en
+ * région `assertive`.
+ *
+ * `danger` EST LE MOT DE LA FAMILLE — celui de `Badge` —, `error` son ancien
+ * nom, que les apps passent encore et que leurs feuilles de style ciblent.
+ * L'audit du 06/09/2026 avait relevé sept attributs pour une seule idée ; le
+ * vocabulaire retenu est `tone` pour le sens, `variant` pour la forme.
+ *
+ * UN SEUL ENDROIT DÉCIDE. Deux tests séparés — la durée de vie et la région
+ * d'annonce — reconnaîtraient sinon l'un le nouveau mot et l'autre l'ancien,
+ * et une erreur s'effacerait toute seule sans avoir été annoncée.
+ */
+const grave = tone => tone === 'danger' || tone === 'error';
+
+/**
  * Notifications transitoires — fournisseur, file et zone d'affichage.
  *
  * PROMU, PAS INVENTÉ. **Six apps sur seize** portent leur propre pile de
@@ -127,7 +142,7 @@ export function ToastProvider(props = {}) {
     (message, options = {}) => {
       const tone = options.tone ?? 'info';
       // Une erreur reste jusqu'à ce qu'on la ferme, sauf durée explicite.
-      const life = options.duration ?? (tone === 'error' ? 0 : duration);
+      const life = options.duration ?? (grave(tone) ? 0 : duration);
       const id = options.id ?? `dwc-toast-${(counter += 1)}`;
       setToasts(list => {
         const next = [
@@ -281,12 +296,17 @@ export function ToastViewport(props = {}) {
     region(
       'polite',
       'status',
-      toasts.filter(toast => (toast.tone ?? 'info') !== 'error')
+      // `!grave(...)` et non `!== 'error'` : les deux régions doivent se
+      // partager les notifications, pas se les disputer. Écrit en deux tests
+      // séparés, un `danger` tombait dans les DEUX — rendu deux fois, annoncé
+      // deux fois. C'est le test « danger et error sont le même ton » qui l'a
+      // vu, à l'instant où le second mot est apparu.
+      toasts.filter(toast => !grave(toast.tone))
     ),
     region(
       'assertive',
       'alert',
-      toasts.filter(toast => toast.tone === 'error')
+      toasts.filter(toast => grave(toast.tone))
     )
   );
 }

@@ -164,8 +164,16 @@ test('useAuthContext hors du fournisseur lève : une erreur de câblage, pas un 
 
 test('LoginForm : deux champs nommés, autocomplete de gestionnaire de mots de passe, un bouton', () => {
   const html = renderToStaticMarkup(h(LoginForm, {}));
-  assert.match(html, /<form data-dwc="login-form" data-mode="signin">/);
-  assert.match(html, /<h1 data-dwc="login-form-title">Connexion<\/h1>/);
+  assert.match(html, /<form data-dwc="login-form"[^>]*data-mode="signin">/);
+  assert.match(
+    html,
+    /<h1 id="[^"]+" data-dwc="login-form-title">Connexion<\/h1>/
+  );
+  // Le formulaire porte le NOM de son titre : sans cela, un lecteur
+  // d’écran annonce « formulaire » et rien d’autre.
+  const nomme = html.match(/aria-labelledby="([^"]+)"/);
+  assert.ok(nomme, 'le formulaire doit être nommé');
+  assert.match(html, new RegExp(`<h1 id="${nomme[1]}"`));
   assert.match(html, /Adresse e-mail/);
   assert.match(html, /type="email"[^>]*autocomplete="username"/i);
   assert.match(html, /type="password"[^>]*autocomplete="current-password"/i);
@@ -239,7 +247,7 @@ test('LoginForm : l’erreur est une alerte à part, les emplacements sont à le
 
 test('LoginForm mode otp : un seul champ, un bouton qui parle de lien, et un mot de passe vide à la soumission', async () => {
   const html = renderToStaticMarkup(h(LoginForm, { mode: 'otp' }));
-  assert.match(html, /<form data-dwc="login-form" data-mode="otp">/);
+  assert.match(html, /<form data-dwc="login-form"[^>]*data-mode="otp">/);
   assert.match(html, /Recevoir un lien de connexion<\/h1>/);
   assert.doesNotMatch(
     html,
@@ -287,6 +295,16 @@ test('MfaChallenge : le clavier numérique, le code reçu proposé, et la vérif
     assert.equal(input.getAttribute('autocomplete'), 'one-time-code');
     assert.equal(input.getAttribute('minlength'), '6');
     assert.match(view.container.innerHTML, /Vérification en deux étapes/);
+
+    // Le formulaire porte le NOM de son titre. Sans cela, un lecteur d'écran
+    // annonce « formulaire » sur un écran qui n'a que ça : le titre est juste
+    // au-dessus, il ne coûtait qu'un `aria-labelledby`.
+    const form = view.container.querySelector('form');
+    const titre = view.container.querySelector(
+      '[data-dwc="mfa-challenge-title"]'
+    );
+    assert.ok(titre.id, 'le titre doit porter un id');
+    assert.equal(form.getAttribute('aria-labelledby'), titre.id);
     assert.doesNotMatch(
       view.container.innerHTML,
       /data-action="switch"|data-action="sign-out"/,

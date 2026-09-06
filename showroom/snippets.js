@@ -79,6 +79,27 @@ globalThis.SHOWROOM_SNIPPETS = {
   trendLabel="en hausse"
 />`,
 
+  Sparkline: `import {
+  Sparkline,
+  BarChart,
+  Gauge,
+} from '@mister-guiiug/dev-pwa-config/react';
+
+{/* \`label\` et \`unit\` ne décorent pas : ils composent la phrase lue à la
+    place du tracé, qui est \`aria-hidden\`. Sans eux, la donnée disparaît
+    pour qui n'y voit pas. */}
+<Sparkline values={vues} label="trafic" unit="vues" />
+
+{/* Une valeur manquante COUPE le trait plutôt que de le traverser : une
+    ligne continue raconterait une mesure qui n'existe pas. */}
+<Sparkline values={[12, 18, null, 24]} label="visites" />
+
+<BarChart values={ventes} label="ventes" unit="€" />
+
+{/* Un vrai \`meter\` : la valeur hors bornes est bornée à l'écran, mais
+    ANNONCÉE telle quelle — borner le dessin ne doit pas mentir. */}
+<Gauge value={quota} max={60} label="quota" unit="Go" />`,
+
   Skeleton: `import { SkeletonGroup } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* Le libellé est annoncé UNE fois, par le conteneur — pas une fois
