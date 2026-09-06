@@ -52,6 +52,7 @@ import {
   escapesSite,
   htmlMarkers,
   manifestSummary,
+  siteScope,
   sitePrefix,
 } from './site-readers.mjs';
 import { appById } from '../apps-catalog.js';
@@ -731,6 +732,24 @@ export function diagnose(dir) {
     if (!m.ogImage) dette('og-image', 'pas de og:image', 'pwaSeoPlugin');
     if (!m.canonical)
       dette('canonical', 'pas de rel="canonical"', 'pwaSeoPlugin');
+
+    // LES ASSETS RESTENT-ILS SOUS LE SITE ? Jugés à l'aune de la CANONIQUE, pas
+    // du préfixe déduit des scripts : celui-ci se replie sur `/` quand les
+    // scripts sont justement faux, et le contrôle se désarmerait au moment où
+    // il servirait. `miss-ticket-pwa` a servi une page blanche du 03/06 au
+    // 06/09/2026 — build vert, CI verte, docteur muet — parce que sa base
+    // valait `/` alors que le site vit sous `/miss-ticket-pwa/`.
+    const scope = siteScope(m.canonicalHref);
+    const dehors = [...(m.scripts ?? []), ...(m.styles ?? [])].filter(href =>
+      escapesSite(href, scope)
+    );
+    if (dehors.length) {
+      defaut(
+        'assets-hors-site',
+        `${dehors.length} asset(s) liés hors du site : ${dehors.slice(0, 2).join(', ')} (le site vit sous ${scope}) — la page se charge sans JS ni CSS`,
+        'base du build = le chemin du site (use-base-path: true, ou VITE_BASE_PATH)'
+      );
+    }
 
     const prefix = sitePrefix(m);
     if (!m.manifest) {
