@@ -1,5 +1,52 @@
 # Changelog
 
+## 4.5.2
+
+### Patch Changes
+
+- **La matrice E2E de `pwa-ci.yml` sait enfin nommer un téléphone.** `e2e-project`
+  partait à la fois dans `--project=` et dans `playwright install`, qui ne connaît
+  que des NAVIGATEURS : `playwright install mobile-chrome` répond « Invalid
+  installation targets ». Les deux projets mobiles de la matrice famille
+  (`mobile-chrome` = Pixel 5, `mobile-safari` = iPhone 12, posés par `pwaProjects`)
+  étaient donc **inexprimables en CI**, et l'entrée n'en acceptait qu'un seul de
+  toute façon.
+
+  Ce que cet angle mort a coûté : deux tests de `e2e/navigation.spec.ts` de
+  miss-badminton échouaient sur ces deux projets **depuis toujours** — un lien de
+  la barre latérale, cherché sous le seuil `md` où elle n'existe pas. Personne ne
+  les jouait, donc personne ne le savait.
+
+  `e2e-project` accepte désormais une **liste** séparée par des espaces. Une étape
+  la lit une fois et en tire trois choses : les `--project=` des deux étapes
+  Playwright, les navigateurs à installer, et le nom de l'artefact de rapport (une
+  liste y mettrait un espace). Les navigateurs se **déduisent** du projet —
+  `mobile-chrome` → chromium, `mobile-safari` → webkit — et se **dédoublonnent** :
+  `chromium mobile-chrome` n'installe qu'un binaire, Pixel 5 tournant sur le même.
+  `e2e-install` reste la sortie de secours pour un `extraProjects` maison, dont le
+  nom ne désigne aucun navigateur.
+
+  **Le défaut ne bouge pas** (`chromium`) : ouvrir la matrice pour tout le parc
+  d'un coup rendrait rouges des CI qui ne demandaient rien — c'est exactement ce
+  que miss-badminton a découvert en jouant enfin ses mobiles. L'ouverture est un
+  opt-in, app par app.
+
+  Le prix, mesuré le 06/09/2026 sur miss-badminton : le job E2E coûte 63 s dont 39
+  de mise en place (`setup-pwa` 18, `playwright install --with-deps` 20) ; toute la
+  matrice ne représente que 71 s de tests (chromium 6,7 · firefox 34,8 · webkit
+  12,1 · mobile-chrome 6,9 · mobile-safari 10,9). Ajouter `mobile-chrome` à un run
+  chromium coûte donc **sept secondes et aucun téléchargement**.
+
+  Sûreté : chaque nom est filtré sur `[A-Za-z0-9._-]` avant de devenir un argument,
+  et `set -f` empêche un motif de s'expanser en noms de fichiers. Les entrées
+  n'entrent toujours dans le job que par le bloc `env:`. Les tests **exécutent** le
+  corps de l'étape sous `bash`, avec un `GITHUB_ENV` et un `GITHUB_OUTPUT` de bac à
+  sable : c'est le script réel qui répond, pas une regex recopiée à côté.
+
+  Le paquet publié ne change pas d'un octet — cette version existe pour faire
+  avancer l'étiquette mobile `v4`, seul chemin par lequel un réutilisable atteint
+  les dix-neuf dépôts qui le consomment.
+
 ## 4.5.1
 
 ### Patch Changes
