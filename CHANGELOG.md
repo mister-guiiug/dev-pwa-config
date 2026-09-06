@@ -1,5 +1,46 @@
 # Changelog
 
+## 4.3.0
+
+### Minor Changes
+
+- 74c606e: Les cinq actions de l'audit du design system du 06/09/2026.
+
+  **Cinq jetons avaient des replis divergents.** `--dwc-danger` valait `#b91c1c`
+  dans douze règles et `#b42318` dans quatre : une app qui ne déclare pas ses
+  jetons voyait **deux rouges côte à côte**. Idem pour `success`, `info`,
+  `primary-soft` (dont un repli `rgb(0 0 0 / 8%)`, noir sur noir en thème sombre)
+  et `border-strong`. Le garde-fou qui devait l'empêcher s'en tenait aux replis
+  sans parenthèses — il est remplacé par un lecteur à parenthèses équilibrées.
+
+  **Douze marqueurs `data-dwc` étaient émis sans une seule règle.** Le bandeau
+  « prêt hors ligne » d'`UpdatePromptBanner` sortait entièrement nu, `UpdateButton`
+  et son indice aussi. Le libellé de `BottomNav` déborde désormais en points de
+  suspension au lieu de pousser son voisin, et le contenu libre d'`EmptyState`
+  n'est plus comprimé au centre.
+
+  **`LoginForm` et `MfaChallenge` prennent le nom de leur titre**
+  (`aria-labelledby`), comme `Sheet` et `ConfirmDialog` : un lecteur d'écran
+  annonçait « formulaire » sur un écran qui n'a que ça.
+
+  **`tone` est le mot de la famille**, `variant` la forme. `ErrorBanner` accepte
+  `tone` (`severity` continue de marcher et reste l'attribut rendu), `Toast`
+  accepte `tone="danger"` à côté de `"error"`. En l'écrivant, un vrai défaut est
+  apparu : un `danger` tombait dans les **deux** régions vivantes — rendu et
+  annoncé deux fois.
+
+  **`Sparkline`, `BarChart` et `Gauge` ont enfin des tests** — seul composant
+  visuel sans aucun, avec trois adoptants — une fiche de catalogue et une
+  démonstration dans la vitrine.
+
+- c61bb66: Les briques qui circulent : la barre basse collée, les captures du manifeste, le port de développement au catalogue, le budget à cliquet, et deux défauts connus corrigés (étape 4 d'[AMELIORATIONS.md](AMELIORATIONS.md)).
+  - **`BottomNav placement="fixed"`** colle la barre au bas de la fenêtre, et **`PageContainer reserve="bottom-nav"`** réserve la place qu'elle occupe. Huit dépôts (sept apps et le squelette) recopiaient la même règle CSS avec la même réserve à côté. Défauts inchangés : rien ne bouge pour qui ne le demande pas.
+  - **`pwa-screenshots`** (nouveau bin) : les deux captures du manifeste — `narrow` 540×1170 et `wide` 1280×720 — prises sur le build servi par `vite preview`, ou sur une app déjà servie (`--url`, données réelles), avec un module `--prepare` pour mettre l'écran dans l'état voulu par l'interface. Trois scripts faisaient la même chose (squelette, mister-miss-koh, showroom). **`pwaBaseOptions` lit ensuite `public/screenshots/` et déclare les entrées au manifeste, aux tailles lues dans les fichiers** : rien à écrire.
+  - **`pwaBaseOptions` sans catalogue** : les couleurs du manifeste sont lues dans `src/index.css` (`--dwc-primary`, `--dwc-bg`) après l'explicite et le catalogue ; sans aucune source, un avertissement nomme les trois remèdes au lieu de laisser sortir un manifeste que Chrome refuse d'installer.
+  - **`definePwaPlaywrightConfig`** : `overrides.use` complète le `use` calculé au lieu de le remplacer — le squelette perdait `baseURL` en fixant sa locale.
+  - **`apps-catalog`** : `devPort` sur chaque app, unique (5201–5299 ; 1420 pour miss-ticket-pwa ; 5240 réservé au squelette), `devPortOf(id)`, `freeDevPort()` pour le générateur. `pwa-doctor` signale (info) un port déclaré qui n'est pas celui du catalogue.
+  - **`pwa-bundle-budget --ratchet`** propose un budget resserré (mesure + 10 %) quand le build a maigri, et `--write` l'écrit dans `package.json` — un budget se posait un jour de surpoids et n'en bougeait plus.
+
 ## 4.2.1
 
 ### Patch Changes
