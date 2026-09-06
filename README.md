@@ -1069,9 +1069,13 @@ plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
 
 - **`pwa-ci.yml`** — `run-doctor` (`pwa-doctor` après le build ; opt-in en
   4.x) et `doctor-strict` ; `e2e-grep` (défaut `@critical|@a11y`, et un
-  filtre sans test fait échouer le job) ; `build-env` (variables `KEY=VALUE`,
-  une par ligne, injectées avant build/test pour les apps Firebase/Supabase) ;
-  `server-dir` (install + `tsc --noEmit` d'un backend annexe).
+  filtre sans test fait échouer le job) ; `e2e-project` (défaut `chromium`,
+  mais accepte une **liste** : `chromium mobile-chrome` joue le bureau et le
+  téléphone, et n'installe qu'un navigateur — Pixel 5 tourne sur le chromium
+  déjà là) avec `e2e-install` pour les projets maison dont le nom n'est pas
+  celui d'un navigateur ; `build-env` (variables `KEY=VALUE`, une par ligne,
+  injectées avant build/test pour les apps Firebase/Supabase) ; `server-dir`
+  (install + `tsc --noEmit` d'un backend annexe).
 - **`pwa-lighthouse.yml`** — `build-env` (même usage) → Lighthouse activable sur
   les apps à secrets ; `public-report` (défaut `false`) pour publier en plus le
   rapport sur le stockage public temporaire de Lighthouse CI. Par défaut le
@@ -3207,6 +3211,9 @@ jobs:
       run-e2e: false # passer à true quand Playwright est en place
       # e2e-grep vaut '@critical|@a11y' par défaut ; un filtre qui ne trouve
       # aucun test fait ÉCHOUER le job, au lieu de le laisser vert.
+      # e2e-project vaut 'chromium' par défaut et accepte une liste :
+      # 'chromium mobile-chrome' couvre aussi le téléphone (Pixel 5), sans
+      # navigateur supplémentaire à installer.
 ```
 
 ### Reusable workflow deploy {#reusable-workflow-deploy}

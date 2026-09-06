@@ -20,6 +20,19 @@
 #     avec un code 0 quand rien ne correspond. Le défaut joue désormais
 #     `@critical|@a11y`, et un filtre qui ne trouve aucun test fait échouer le
 #     job au lieu de le laisser vert.
+#
+# UN TROISIÈME ANGLE MORT, mesuré le 06/09/2026 : `e2e-project` servait à la
+# fois à `--project=` et à `playwright install`, qui n'accepte que des noms de
+# NAVIGATEURS. `playwright install mobile-chrome` répond « Invalid installation
+# targets » : les deux projets mobiles de la matrice famille (Pixel 5, iPhone
+# 12) étaient donc inexprimables, et l'entrée n'en acceptait qu'un seul.
+# Deux tests de miss-badminton échouaient sur ces deux projets DEPUIS TOUJOURS
+# — un lien de la barre latérale, cherché sous le seuil `md` où elle n'existe
+# pas. L'entrée accepte désormais une LISTE, et les navigateurs à installer
+# s'en déduisent : `chromium mobile-chrome` n'installe que `chromium`, Pixel 5
+# tournant sur le même binaire. Coût mesuré de ce second projet : sept
+# secondes, dans un job qui en coûte soixante dont quarante de mise en place.
+# Le défaut reste `chromium` : un socle ne rend pas rouges les CI qu'il sert.
 name: Reusable PWA CI
 
 on:
@@ -100,9 +113,25 @@ on:
         required: false
         default: '@critical|@a11y'
       e2e-project:
+        description: >-
+          Projet(s) Playwright à jouer, séparés par des espaces — par exemple
+          `chromium mobile-chrome` pour couvrir le bureau ET le téléphone.
+          Chaque nom devient un `--project=`, et les navigateurs à installer
+          s'en déduisent (`mobile-chrome` → chromium, `mobile-safari` →
+          webkit), sans doublon. Un nom hors de `[A-Za-z0-9._-]` fait échouer
+          le job.
         type: string
         required: false
         default: 'chromium'
+      e2e-install:
+        description: >-
+          Navigateurs à installer, quand la déduction ne suffit pas — un projet
+          maison (`extraProjects`) porte un nom que `playwright install` ne
+          connaît pas. Renseignée, cette liste REMPLACE la déduction. Vide par
+          défaut.
+        type: string
+        required: false
+        default: ''
       build-env:
         description: >-
           Variables d'environnement injectées avant le build/test, une par ligne
@@ -245,6 +274,7 @@ jobs:
       # est une expression, pas une ligne de commande.
       E2E_GREP: ${{ inputs.e2e-grep }}
       E2E_PROJECT: ${{ inputs.e2e-project }}
+      E2E_INSTALL: ${{ inputs.e2e-install }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -255,8 +285,71 @@ jobs:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Une seule lecture de `e2e-project`, trois usages : les `--project=` des
+      # deux étapes Playwright, les navigateurs à installer, et le nom de
+      # l'artefact. Les listes repartent par l'environnement — jamais par une
+      # interpolation dans un corps de script.
+      - name: Projets Playwright et navigateurs à installer
+        id: matrice
+        run: |
+          set -f # la liste se découpe sur les espaces, et rien de plus : aucun motif ne s'expanse
+
+          valider() {
+            case "$1" in
+              '' | *[!A-Za-z0-9._-]*)
+                echo "::error::$2 : « $1 » n'est pas un nom valide (attendu [A-Za-z0-9._-])."
+                exit 1
+                ;;
+            esac
+          }
+
+          args=''
+          cibles=''
+          slug=''
+          for projet in $E2E_PROJECT; do
+            valider "$projet" e2e-project
+            args="$args --project=$projet"
+            slug="$slug-$projet"
+            # `playwright install` ne connaît que des navigateurs : un projet
+            # mobile s'installe par le moteur sur lequel il tourne.
+            case "$projet" in
+              mobile-chrome) cible=chromium ;;
+              mobile-safari) cible=webkit ;;
+              *) cible=$projet ;;
+            esac
+            # Sans dédoublonnage, `chromium mobile-chrome` téléchargerait deux
+            # fois le même binaire.
+            case " $cibles " in
+              *" $cible "*) ;;
+              *) cibles="$cibles $cible" ;;
+            esac
+          done
+
+          if [ -z "$args" ]; then
+            echo "::error::e2e-project est vide — au moins un projet Playwright est requis."
+            exit 1
+          fi
+
+          if [ -n "$E2E_INSTALL" ]; then
+            cibles=''
+            for cible in $E2E_INSTALL; do
+              valider "$cible" e2e-install
+              cibles="$cibles $cible"
+            done
+          fi
+
+          {
+            echo "E2E_PROJECT_ARGS=${args# }"
+            echo "E2E_INSTALL_TARGETS=${cibles# }"
+          } >> "$GITHUB_ENV"
+          echo "slug=${slug#-}" >> "$GITHUB_OUTPUT"
+          echo "Projets : ${args# } · navigateurs : ${cibles# }"
+
+      # Sans guillemets, à dessein : la liste doit se découper en arguments.
+      # C'est l'étape précédente qui la rend sûre — chaque nom y est filtré sur
+      # `[A-Za-z0-9._-]`, donc aucun motif ne peut s'expanser ici.
       - name: Install Playwright browsers
-        run: npx playwright install "$E2E_PROJECT" --with-deps
+        run: npx playwright install $E2E_INSTALL_TARGETS --with-deps
 
       # `playwright test --grep` qui ne trouve rien imprime « No tests found »
       # et rend 0 : un `run-e2e: true` sans spec taguée était un job vert qui
@@ -264,7 +357,7 @@ jobs:
       # jamais exécutée pour cette raison.
       - name: Le filtre trouve des tests
         run: |
-          listing=$(npx playwright test --list --grep "$E2E_GREP" --project="$E2E_PROJECT" 2>&1 || true)
+          listing=$(npx playwright test --list --grep "$E2E_GREP" $E2E_PROJECT_ARGS 2>&1 || true)
           total=$(printf '%s\n' "$listing" | sed -n 's/^Total: \([0-9][0-9]*\) tests\{0,1\} in .*/\1/p' | tail -1)
           if [ -z "$total" ] || [ "$total" = "0" ]; then
             printf '%s\n' "$listing" | tail -20
@@ -274,18 +367,20 @@ jobs:
           echo "$total test(s) pour « $E2E_GREP »."
 
       - name: Run E2E
-        run: npx playwright test --grep "$E2E_GREP" --project="$E2E_PROJECT"
+        run: npx playwright test --grep "$E2E_GREP" $E2E_PROJECT_ARGS
         env:
           CI: true
 
       # Le nom d'un artefact refuse `|`, `:` et `/` : le filtre n'y a pas sa
       # place — `@critical|@a11y` ferait échouer l'envoi du rapport, au moment
-      # précis où on en a besoin.
+      # précis où on en a besoin. Une LISTE de projets n'y a pas sa place non
+      # plus telle quelle : `chromium mobile-chrome` devient
+      # `chromium-mobile-chrome`, calculé à l'étape `matrice`.
       - name: Upload report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-results-${{ inputs.e2e-project }}
+          name: e2e-results-${{ steps.matrice.outputs.slug }}
           path: |
             playwright-report/
             test-results/
