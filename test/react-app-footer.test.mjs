@@ -220,3 +220,70 @@ test('le pied de page de miss-contraction, ses quatre éléments dans l’ordre'
     dom.restore();
   }
 });
+
+/**
+ * `issues` — LE SIGNALEMENT AVEC SON CONTEXTE. Aucune app du parc n'avait de
+ * lien de signalement structuré (05/09/2026) : les rapports arrivaient sans
+ * version, et la première réponse était « quelle version ? ». Le lien vise
+ * le gabarit `bug.yml` du compte, prérempli par `issue-report`.
+ */
+test('`issues` ajoute un troisième lien, vers le gabarit d’anomalie prérempli', async () => {
+  const dom = setupDom();
+  try {
+    globalThis.__DWC_BUILD__ = { version: '2.1.0', commit: '0123456789' };
+    const view = await mount(
+      h(AppFooter, {
+        repoUrl: 'https://github.com/mister-guiiug/miss-dice',
+        issues: true,
+      })
+    );
+    const lien = view.container.querySelector('[data-dwc="footer-issues"]');
+    assert.ok(lien, 'le lien de signalement est rendu');
+    const url = new URL(lien.getAttribute('href'));
+    assert.equal(
+      url.origin + url.pathname,
+      'https://github.com/mister-guiiug/miss-dice/issues/new'
+    );
+    assert.equal(url.searchParams.get('template'), 'bug.yml');
+    assert.equal(url.searchParams.get('version'), 'v2.1.0 (0123456)');
+    // Un lien sortant, sécurisé comme les deux autres.
+    assert.equal(lien.getAttribute('rel'), 'noopener noreferrer');
+    assert.equal(lien.textContent, 'Signaler un problème');
+    // Après le sponsor, avant le numéro : l'ordre de lecture des trois liens.
+    const footer = view.container.querySelector('[data-dwc="app-footer"]');
+    assert.deepEqual(
+      [...footer.children].map(el => el.getAttribute('data-dwc')),
+      ['footer-source', 'footer-sponsor', 'footer-issues']
+    );
+    await view.unmount();
+  } finally {
+    delete globalThis.__DWC_BUILD__;
+    dom.restore();
+  }
+});
+
+test('`issues` sans `repoUrl` ne rend rien, et accepte gabarit et libellé', async () => {
+  const dom = setupDom();
+  try {
+    const muet = await mount(h(AppFooter, { issues: true }));
+    assert.equal(
+      muet.container.querySelector('[data-dwc="footer-issues"]'),
+      null
+    );
+    await muet.unmount();
+
+    const view = await mount(
+      h(AppFooter, {
+        repoUrl: 'https://github.com/o/r',
+        sponsorUrl: null,
+        issues: { template: 'feature.yml', label: 'Une idée ?' },
+      })
+    );
+    const lien = view.container.querySelector('[data-dwc="footer-issues"]');
+    assert.equal(lien.textContent, 'Une idée ?');
+    assert.match(lien.getAttribute('href'), /template=feature\.yml/);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});

@@ -41,6 +41,9 @@ export const DEFAULT_ICONS = {
   repo: GithubIcon,
   sponsor: CoffeeIcon,
   external: ExternalLinkIcon,
+  // Le signalement d'`AppFooter` : un lien sortant, donc la même flèche que
+  // `external` en repli — une app peut lui donner une punaise ou un insecte.
+  issue: ExternalLinkIcon,
   // Le retour d'`AppHeader` — le huitième rôle, ajouté le 02/09/2026.
   back: BackIcon,
 };

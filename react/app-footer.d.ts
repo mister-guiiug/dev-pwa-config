@@ -35,6 +35,13 @@ export interface AppFooterProps {
    * options d'`AppVersion`.
    */
   version?: boolean | AppVersionProps;
+  /**
+   * Un lien « Signaler un problème » vers `issues/new` du dépôt, le gabarit
+   * `bug.yml` prérempli avec la version, le commit, l'écran courant et le
+   * navigateur (`issue-report`). OPT-IN : `true`, ou le gabarit et le libellé.
+   * Demande `repoUrl`.
+   */
+  issues?: boolean | { template?: string; label?: string };
 }
 
 /** Footer famille : lien code source (GitHub) + lien sponsor (café). */

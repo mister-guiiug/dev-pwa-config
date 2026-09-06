@@ -77,7 +77,11 @@ export const LABELS = {
       offlineReady: 'L’application fonctionne maintenant hors ligne.',
       offlineReadyOk: 'OK',
     },
-    footer: { source: 'Code source', sponsor: 'M’offrir un café' },
+    footer: {
+      source: 'Code source',
+      sponsor: 'M’offrir un café',
+      issues: 'Signaler un problème',
+    },
     share: {
       label: 'Partager',
       copied: 'Lien copié',
@@ -171,7 +175,11 @@ export const LABELS = {
       offlineReady: 'The app now works offline.',
       offlineReadyOk: 'OK',
     },
-    footer: { source: 'Source code', sponsor: 'Buy me a coffee' },
+    footer: {
+      source: 'Source code',
+      sponsor: 'Buy me a coffee',
+      issues: 'Report a problem',
+    },
     share: {
       label: 'Share',
       copied: 'Link copied',
@@ -263,7 +271,11 @@ export const LABELS = {
       offlineReady: 'La aplicación ya funciona sin conexión.',
       offlineReadyOk: 'OK',
     },
-    footer: { source: 'Código fuente', sponsor: 'Invítame a un café' },
+    footer: {
+      source: 'Código fuente',
+      sponsor: 'Invítame a un café',
+      issues: 'Informar de un problema',
+    },
     share: {
       label: 'Compartir',
       copied: 'Enlace copiado',
@@ -358,7 +370,11 @@ export const LABELS = {
       offlineReady: 'Die App funktioniert jetzt auch offline.',
       offlineReadyOk: 'OK',
     },
-    footer: { source: 'Quellcode', sponsor: 'Spendier mir einen Kaffee' },
+    footer: {
+      source: 'Quellcode',
+      sponsor: 'Spendier mir einen Kaffee',
+      issues: 'Ein Problem melden',
+    },
     share: {
       label: 'Teilen',
       copied: 'Link kopiert',
@@ -452,7 +468,11 @@ export const LABELS = {
       offlineReady: 'L’app ora funziona anche offline.',
       offlineReadyOk: 'OK',
     },
-    footer: { source: 'Codice sorgente', sponsor: 'Offrimi un caffè' },
+    footer: {
+      source: 'Codice sorgente',
+      sponsor: 'Offrimi un caffè',
+      issues: 'Segnala un problema',
+    },
     share: {
       label: 'Condividi',
       copied: 'Link copiato',
@@ -546,7 +566,11 @@ export const LABELS = {
       offlineReady: 'A aplicação já funciona sem ligação.',
       offlineReadyOk: 'OK',
     },
-    footer: { source: 'Código-fonte', sponsor: 'Pague-me um café' },
+    footer: {
+      source: 'Código-fonte',
+      sponsor: 'Pague-me um café',
+      issues: 'Relatar um problema',
+    },
     share: {
       label: 'Partilhar',
       copied: 'Ligação copiada',
@@ -638,7 +662,11 @@ export const LABELS = {
       offlineReady: 'De app werkt nu ook offline.',
       offlineReadyOk: 'OK',
     },
-    footer: { source: 'Broncode', sponsor: 'Trakteer me op een koffie' },
+    footer: {
+      source: 'Broncode',
+      sponsor: 'Trakteer me op een koffie',
+      issues: 'Een probleem melden',
+    },
     share: {
       label: 'Delen',
       copied: 'Link gekopieerd',

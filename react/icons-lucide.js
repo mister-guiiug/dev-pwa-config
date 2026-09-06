@@ -43,6 +43,7 @@ export const LUCIDE_NAMES = {
   repo: 'Github',
   sponsor: 'Coffee',
   external: 'ExternalLink',
+  issue: 'Bug',
   back: 'ChevronLeft',
 };
 

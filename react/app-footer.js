@@ -3,6 +3,7 @@ import { createElement as h } from 'react';
 import { Icon } from './icons-context.js';
 import { AppVersion } from './app-version.js';
 import { useSponsorUrl } from './sponsor.js';
+import { currentIssueReportUrl } from '../issue-report.js';
 
 /**
  * Footer famille : lien code source (GitHub) + lien sponsor (Buy Me a Coffee).
@@ -70,12 +71,29 @@ export function AppFooter(props) {
     links,
     after,
     version,
+    issues,
   } = props;
 
   const sponsorUrl = useSponsorUrl(sponsorUrlProp);
   const labels = useLabels('footer');
 
   const ext = { target: '_blank', rel: 'noopener noreferrer' };
+
+  // Le signalement : `issues/new` du dépôt, gabarit `bug.yml` du compte,
+  // champs préremplis avec ce que la page sait (version, commit, écran,
+  // navigateur). L'URL est posée au rendu pour un `<a>` honnête, puis
+  // RECALCULÉE AU CLIC : la route change sans que le pied de page se rende.
+  const issueOptions =
+    issues && repoUrl
+      ? {
+          repoUrl,
+          ...(typeof issues === 'object' && issues.template
+            ? { template: issues.template }
+            : {}),
+        }
+      : null;
+  const issuesLabel =
+    (typeof issues === 'object' && issues.label) || labels.issues;
 
   return h(
     'footer',
@@ -98,6 +116,21 @@ export function AppFooter(props) {
           { href: sponsorUrl, ...ext, 'data-dwc': 'footer-sponsor' },
           h(Icon, { role: 'sponsor' }),
           h('span', null, sponsorLabel ?? labels.sponsor)
+        )
+      : null,
+    issueOptions
+      ? h(
+          'a',
+          {
+            href: currentIssueReportUrl(issueOptions),
+            ...ext,
+            'data-dwc': 'footer-issues',
+            onClick: event => {
+              event.currentTarget.href = currentIssueReportUrl(issueOptions);
+            },
+          },
+          h(Icon, { role: 'issue' }),
+          h('span', null, issuesLabel)
         )
       : null,
     version
