@@ -68,7 +68,8 @@ test('le snippet reprend les entrées telles que le manifeste les veut', () => {
     },
   ]);
   assert.match(texte, /^screenshots: \[/);
-  assert.match(texte, /form_factor: 'narrow'/);
+  assert.match(texte, /form_factor: "narrow"/);
+  assert.match(texte, /label: "L’application, sur téléphone"/);
   assert.equal(snippet([]), 'aucune capture trouvée');
 });
 
