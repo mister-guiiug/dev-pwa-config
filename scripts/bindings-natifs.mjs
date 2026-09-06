@@ -158,6 +158,35 @@ export function lireLockfile(dossier) {
 }
 
 /**
+ * Comment lancer `npm i --no-save …` sur CETTE plateforme.
+ *
+ * Sur Windows, `npm` est un `npm.cmd`, et depuis le correctif de
+ * CVE-2024-27980 **Node refuse de lancer un fichier de commandes sans
+ * interpréteur** : `spawnSync('npm.cmd', …)` rend `EINVAL`. La 4.6.0 nommait
+ * `npm.cmd` explicitement pour éviter `shell: true` — et ne posait donc RIEN
+ * sur aucun poste Windows, la seule plateforme pour laquelle l'outil existe.
+ *
+ * Windows passe donc par l'interpréteur, et par une **ligne unique** : avec un
+ * tableau d'arguments, Node avertit (DEP0190) que ces arguments ne sont pas
+ * échappés mais concaténés — un avertissement à chaque exécution, sur la
+ * plateforme qui s'en sert le plus. La concaténation est sans danger ici, et
+ * c'est la validation qui le garantit, pas la confiance : chaque nom et chaque
+ * version a passé `NOM_VALIDE` / `VERSION_VALIDE`, qui n'admettent ni espace ni
+ * métacaractère. Ailleurs, aucun interpréteur n'est nécessaire : on n'en
+ * demande pas.
+ *
+ * @param {string[]} specs `nom@version` déjà validés
+ * @param {NodeJS.Platform} [plateforme]
+ * @returns {{ fichier: string, args: string[], shell: boolean }}
+ */
+export function appelNpm(specs, plateforme = process.platform) {
+  const args = ['i', '--no-save', ...specs];
+  return plateforme === 'win32'
+    ? { fichier: ['npm', ...args].join(' '), args: [], shell: true }
+    : { fichier: 'npm', args, shell: false };
+}
+
+/**
  * @param {string[]} argv
  * @param {string} cwd
  * @returns {number} code de sortie
@@ -186,13 +215,11 @@ export function run(argv = [], cwd = process.cwd()) {
     return 0;
   }
 
-  // `npm.cmd` nommé explicitement plutôt qu'un `shell: true` : aucun
-  // interpréteur ne voit ces noms, donc aucune façon de les faire lire de
-  // travers.
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const { status, error } = spawnSync(npm, ['i', '--no-save', ...specs], {
+  const { fichier, args, shell } = appelNpm(specs);
+  const { status, error } = spawnSync(fichier, args, {
     cwd: dossier,
     stdio: 'inherit',
+    shell,
   });
   if (error) {
     console.error(`[bindings] ❌ ${error.message}`);
