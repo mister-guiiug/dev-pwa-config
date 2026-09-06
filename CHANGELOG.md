@@ -1,5 +1,41 @@
 # Changelog
 
+## 4.5.1
+
+### Patch Changes
+
+- 6091697: **`pwa-screenshots` vérifie que l'adresse qu'il ouvre reste sur la boucle locale.** L'adresse servie était fabriquée par concaténation — `http://localhost:${port}` devant une base lue dans `dist/index.html`, ou passée en `--base`. Ni l'une ni l'autre n'est écrite par le script, et la garantie reposait entièrement sur leur FORME : tant que la base commence par une barre, l'hôte ne bouge pas. Rien ne l'exigeait, et une référence protocol-relative (`//ailleurs/`) change d'hôte dès qu'on la résout — c'est ce que CodeQL relevait (`js/file-access-to-http`, « le contenu d'un fichier atteint une requête sortante », alerte 27). Le nouveau `adresseLocale(port, base)` construit l'URL contre une origine fixe puis **compare l'origine obtenue**, seul contrôle qui tienne quelle que soit la valeur reçue ; une base qui sortirait de `http://localhost:<port>` arrête le script avant même de démarrer le serveur d'aperçu, avec un message qui la nomme. `--url` n'est pas concerné : c'est une adresse que l'appelant donne, pas une valeur déduite d'un fichier. Aucun changement pour les appels normaux.
+- 8cea04d: **« Signaler un problème » portait la flèche d'un autre rôle, et le contrat
+  d'icônes se contredisait lui-même.**
+
+  `DEFAULT_ICONS.issue` valait `ExternalLinkIcon` — le dessin d'`external` —
+  pendant que `LUCIDE_NAMES.issue` valait `Bug`. Une app avec `lucide-react`
+  affichait donc un insecte, une app sans affichait une flèche : **deux dessins
+  pour un rôle**, ce que ce module existe précisément pour empêcher (« deux
+  langages visuels dans la même interface, sans que personne l'ait décidé »).
+  Sur les neuf rôles, `issue` était le seul dans ce cas.
+
+  À l'écran, l'effet était pire que l'incohérence. La flèche dit « ce lien sort
+  du site », ce qui est vrai des **trois** liens du pied de page : elle ne
+  distinguait rien, et entre l'octocat de « Code source » et la tasse de
+  « M'offrir un café », elle se lisait comme un glyphe égaré plutôt que comme une
+  icône. Elle pesait aussi moins que ses deux voisines — 14 px de contour fin
+  contre 16.
+
+  `BugIcon` est un dessin original, à la taille des deux autres (16 px), et
+  volontairement pauvre en traits : un corps, deux antennes, quatre pattes. À
+  16 px, un thorax segmenté et six pattes deviennent une tache.
+
+  **Le garde qui manquait.** `themes-icons-rive.test.mjs` vérifiait déjà que les
+  deux tables ont les mêmes clés — ce qui était vrai, et ne suffisait pas. Un
+  nouveau test compare leur **partage** : deux rôles servis par le même repli
+  doivent l'être par le même nom lucide, et réciproquement. Un rôle qui emprunte
+  le dessin d'un autre d'un seul côté échoue désormais, nommément. Vérifié par
+  falsification : remettre `issue: ExternalLinkIcon` le fait rougir.
+
+  Une app qui fournit déjà ses propres icônes (`IconsProvider`) ne change de
+  rien, et celles sur lucide non plus — elles voyaient déjà un insecte.
+
 ## 4.5.0
 
 ### Minor Changes
