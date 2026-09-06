@@ -1,14 +1,17 @@
 # La campagne d'adoption — mode d'emploi
 
-Le relevé est sans appel : **71 fichiers recopiés dans les dix-sept apps, et
-aucun de ces doublons ne manque au socle**. Cette campagne les remplace par les
-imports du paquet, app par app, rapport par rapport. Elle s'exécute depuis une
-machine où les dix-sept dépôts sont clonés **côte à côte** — ce qu'aucune CI ni
-session distante n'a.
+Une app recopie du code que le socle exporte déjà. Cette campagne remplace ces
+copies par les imports du paquet, app par app, rapport par rapport. Elle
+s'exécute depuis une machine où les dépôts sont clonés **côte à côte** — ce
+qu'aucune CI ni session distante n'a.
 
-Le chiffre à jour vit dans le README, engendré par `npm run sync` ; celui-ci
-n'est qu'un ordre de grandeur. Ce qui a été fait au dernier passage, et ce
-qu'il reste, est en bas de cette page.
+**Le chiffre de dette du jour vit dans le README**, engendré par `npm run sync`
+— jamais ici : un compte écrit dans une page se périme le lendemain.
+
+> **Élagué le 06/09/2026.** Les décomptes par passage et les listes « ce qui
+> reste » ont quitté ce document ; ce qui est resté est **le mode d'emploi** et
+> **ce que chaque passage a appris**, qui ne se périme pas. L'historique garde
+> la comptabilité.
 
 ## Préparer
 
@@ -216,13 +219,12 @@ préserve l'existant — et le verrou commité reste identique à l'octet près,
 **Vérifier la version sur le DISQUE, pas dans le verrou**, avant de conclure
 qu'une validation prouve quelque chose.
 
-## Le passage du 29/08/2026 — ce qui est fait, ce qui reste
+## Ce que le passage du 29/08/2026 a appris
 
 Relevé complet, dix-sept dépôts clonés côte à côte, tout fusionné et publié.
-**132 doublons avant, 113 après.**
 
-Les cinq premiers sont tombés en une journée de tranche mécanique ; les
-quatorze suivants ont demandé de relire chaque site d'appel dans une app —
+Les cinq premiers doublons sont tombés en une journée de tranche mécanique ;
+les quatorze suivants ont demandé de relire chaque site d'appel dans une app —
 `miss-genius`, qui a dû d'abord lever le prérequis `components.css`, puis
 `miss-uwh`, qui l'avait déjà. C'est le vrai enseignement du passage : la couche
 outillage se migre par lots, la couche interface se migre app par app, et le
@@ -317,15 +319,10 @@ l'app. Les composants du paquet portent leurs propres textes et retombent sur le
 français hors fournisseur — invisible pour une app monolingue, faux pour une app
 bilingue. C'est un point de raccordement unique, à poser à la racine.
 
-Ce qui restait à l'issue de ce passage — `components.css` sur quatorze apps,
-`links`, `useTheme`/`useI18n`, le nommage d'`applyUpdate`/`backup`,
-`miss-ticket-pwa` sans tests, `mister-quota` hors paquet — a été repris le
-lendemain. Voir le passage suivant.
+## Ce que le passage du 30/08/2026 a appris — le verrou saute
 
-## Le passage du 30/08/2026 — le verrou saute, et le socle grandit
-
-Relevé complet, mêmes dix-sept dépôts. **113 doublons avant, 71 après.** Le
-paquet passe de 3.21.1 à **3.23.0** en trois releases dans la journée.
+Relevé complet, mêmes dix-sept dépôts, trois releases du paquet dans la
+journée.
 
 La différence avec la veille tient en une phrase : **on n'a pas migré vers le
 socle, on a d'abord fait grandir le socle avec ce que les apps avaient déjà
@@ -717,22 +714,13 @@ recevoir.
 
 `scripts/adoption-candidates.mjs` a sorti **57 noms** que les apps déclarent et
 que le paquet exporte déjà. Voici ce qu'ils sont devenus, pour que personne ne
-refasse l'analyse. **Un tiers seulement était une vraie duplication.**
+refasse l'analyse. **Un tiers seulement était une vraie duplication** — et
+c'est le tri, pas la liste des migrations, qui vaut d'être gardé.
 
-### Ce qui a été migré
-
-| nom                               | apps      | verdict                                                             |
-| --------------------------------- | --------- | ------------------------------------------------------------------- |
-| `registerSW`                      | 9         | **doublon** — le plus gros du parc, jamais compté ; neuf migrations |
-| `dates` (5 fns)                   | bac-sable | **doublon** — identiques au caractère près                          |
-| `createRateLimiter`               | bac-sable | **doublon** — identique ligne pour ligne                            |
-| `sanitize*` (3 fns)               | bac-sable | **doublon** — identiques, plus une coercition                       |
-| `nameSimilarity`, `normalizeName` | bac-sable | **doublon** — identiques                                            |
-
-Le cas `bac-sable` mérite d'être retenu : **ce dépôt est la source d'au moins
-trois modules du socle** — `dates`, `rate-limit`, `similarity` le nomment dans
-leur en-tête — et n'avait jamais réadopté ce qu'il avait donné. Le code est
-parti, la copie est restée, et les deux ont vécu côte à côte pendant des mois.
+Un cas mérite d'être retenu : **`bac-sable` est la source d'au moins trois
+modules du socle** — `dates`, `rate-limit`, `similarity` le nomment dans leur
+en-tête — et n'avait jamais réadopté ce qu'il avait donné. Le code est parti,
+la copie est restée, et les deux ont vécu côte à côte pendant des mois.
 
 ### Ce qui est un HOMONYME, et pas une dette
 
@@ -781,10 +769,8 @@ c'est le seul montage qui ne fabrique pas de fausses dettes.
 
 ## Le second tri du 02/09/2026
 
-La dette mesurée est retombée à **un seul doublon** — le `pwa-register-stub` de
-`mister-family-map`, qui s'éteindra au prochain `npm run mirror` puisque
-`bac-sable`, sa source, l'a déjà retiré. Le balayage, lui, sort encore
-**54 noms**. Voici ce qu'ils sont, pour que personne ne refasse l'analyse.
+Le balayage sortait encore une cinquantaine de noms. Voici ce qu'ils sont, pour
+que personne ne refasse l'analyse.
 
 ### `mister-molkky` n'avait rien réadopté non plus
 
@@ -838,12 +824,9 @@ l'importe.**
   par `mediaText` ne tranche pas, ce Chrome ne normalise pas les requêtes
   invalides.
 
-## Le sens inverse — 02/09/2026
+## Le sens inverse
 
 Tout ce document mesure l'adoption : ce que le paquet exporte et que les apps
 recopient. La question symétrique — **ce que plusieurs apps écrivent et que le
-paquet n'a pas** — a désormais son instrument, `scripts/promotion-candidates.mjs`,
-et son tri : `GISEMENTS.md`. Dix chantiers classés par rendement, dont un
-défaut mesuré en production (quatre apps servent la page 404 de GitHub sur un
-lien profond) et une liste de souhaits que les apps avaient écrite dans leurs
-propres commentaires, sans que personne ne la lise.
+paquet n'a pas** — a son instrument, `scripts/promotion-candidates.mjs`, et son
+tri : [`GISEMENTS.md`](GISEMENTS.md).

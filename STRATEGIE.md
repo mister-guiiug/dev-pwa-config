@@ -16,6 +16,12 @@ paquet 3.34.0. Ce qui n'a pas pu l'être est marqué « non vérifié »._
 > que cela a coûté, et le piège rencontré. Les mesures ci-dessous restent
 > celles de la 3.34.0.
 
+> **Élagué le 06/09/2026.** Les chantiers 1, 2 et 4 de la feuille de route sont
+> livrés ; leurs bilans ont été conservés parce qu'ils racontent **ce que
+> l'exécution a démenti**, pas ce qu'elle a produit. Le relevé chiffré du § 1 a
+> été ramené à ce qui a fondé une décision — le compte du jour vit dans le
+> README, engendré par `npm run sync`. L'historique garde la version longue.
+
 ## 0. Le verdict, en dix lignes
 
 **Option 3, mais pas sous la forme proposée.** Le socle est déjà une bonne
@@ -55,17 +61,22 @@ tous.
 
 ## 1. Ce que le relevé mesure
 
+_Les chiffres qui suivent datent du 05/09/2026 et n'ont pas été rafraîchis : ils
+ne servent plus qu'à montrer les ORDRES DE GRANDEUR qui ont fondé les décisions
+de ce document. Le compte du jour se lit dans le README, engendré par
+`npm run sync`._
+
 ### Le socle, en chiffres
 
-| Mesure            | Valeur                                                                                                                                   |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Version / cadence | 3.34.0 ; 63 étiquettes ; 335 commits depuis le 07/05/2026 ; **226 en août** ; 174 PR fusionnées                                          |
-| Surface publiée   | **148 sous-chemins**, 292 fichiers, 1,4 Mo décompressés, 3 binaires, 0 dépendance de production, 33 peers (22 optionnelles)              |
-| Code              | 22 683 lignes de JS (11 807 racine, 8 308 `react/`) + **6 188 lignes de `.d.ts` écrites à la main** + 2 012 lignes de `components.css`   |
-| Tests             | 97 fichiers, 23 085 lignes, **1 134 tests en 5,9 s** (`node --test`, jsdom, fake-indexeddb)                                              |
-| CI/CD partagée    | 15 workflows dont **6 réutilisables**, 3 actions composites, 21 fichiers de gabarit à copier                                             |
-| Outillage de parc | 22 scripts (4 847 lignes) : adoption, promotion, sondes des sites, exports morts, rulesets, migration des consommateurs, doctor          |
-| Documentation     | README **3 349 lignes** (223 Ko, un seul fichier), CHANGELOG 3 244, quatre dossiers d'analyse (~2 100 lignes), showroom statique déployé |
+Au 05/09/2026 : **148 sous-chemins** publiés, 0 dépendance de production et 33
+peers dont 22 optionnelles ; 22 700 lignes de JavaScript **plus 6 200 lignes de
+`.d.ts` écrites à la main** ; 1 134 tests en six secondes ; 15 workflows dont 6
+réutilisables et 21 gabarits à copier ; 22 scripts d'outillage de parc ; un
+README de 3 350 lignes en un seul fichier.
+
+Deux de ces nombres ont directement produit une décision : les `.d.ts` écrits à
+la main (d'où « les engendrer »), et les gabarits à copier (d'où « le troisième
+endroit où la même chose vieillit »).
 
 ### Ce que les apps en prennent
 
@@ -347,67 +358,22 @@ même mécanisme).
 
 ## 5. Un dépôt squelette dédié : `pwa-starter-kit`
 
-### Ce que c'est
+### Ce que c'est — et où le lire aujourd'hui
 
-Une application **complète et vide de métier**, publiée sur Pages, qui est à
-la fois : la démonstration vivante du socle (ce que le showroom montre
-composant par composant, le squelette le montre assemblé), le **dix-huitième
-consommateur** (testé dans la CI du socle contre `HEAD`, en remplacement de la
-fixture jetable), et la source de tout ce que le générateur produit.
+Une application **complète et vide de métier**, publiée sur Pages, qui porte la
+composition qu'un paquet ne peut pas donner : `main.tsx`, le routeur, la pile de
+fournisseurs, l'écran de réglages, le choix du backend.
 
-```
-pwa-starter-kit/
-├── .github/workflows/        ci · deploy · lighthouse · cleanup-runs (+ supabase-migrate, keepalive si backend)
-├── .vscode/  .husky/  .editorconfig  .gitattributes  .nvmrc  .npmrc  renovate.json  .lighthouserc.json
-├── config/env.manifest.json  ← CONFIG.md phase 2 : la vérité, dont dérivent .env.example et deploy.yml
-├── docs/
-│   ├── adr/                  0001-routeur · 0002-état · 0003-i18n · 0004-backend · 0005-auth-et-rôles · 0006-mise-à-jour-sw
-│   ├── DEVELOPPEUR.md        « comment on fait X ici » (pas la doc du socle)
-│   └── CONVENTIONS.md        nommage (miss-/mister-, dwc_*, data-dwc, VITE_*), commits, branches, PR
-├── e2e/                      a11y.spec.ts · smoke.spec.ts (@critical)
-├── supabase/                 (option) migrations 0001 profiles + rôles + RLS deny-by-default · keep_alive · tests d'isolation
-├── src/
-│   ├── main.tsx              installErrorReporter → initSentry → Version → Theme → I18n → Toast → Auth → App
-│   ├── App.tsx               routeur (ADR 0001) · AppHeader + PageContainer + BottomNav · UpdatePromptBanner · ConnectionBanner
-│   ├── app/config/           env.ts (schéma + configReport) · backend.ts (resolveBackendKind + repli local)
-│   ├── backend/              ports · adaptateur local · adaptateur Supabase (option)
-│   ├── auth/                 AuthProvider + LoginForm + MfaChallenge du socle, câblés ; useRole()
-│   ├── features/
-│   │   ├── home/             un écran d'exemple avec un store Zustand + versioned-store + son test
-│   │   ├── settings/         thème · langue · export/import · MàJ forcée · version · FamilyApps · diagnostic (configReport)
-│   │   └── about/            source, sponsor, licences, attribution
-│   ├── i18n/                 createI18n + messages fr/en + LabelsProvider
-│   ├── pwa/                  enregistrement SW en `prompt`, install prompt
-│   └── test/setup.ts
-├── index.html                sans __PLACEHOLDERS__ : rempli par pwaSeoPlugin et par le générateur
-├── vite.config.ts            ~40 lignes : pwaBaseOptions({ id }) · pwaSeoPlugin · cspPlugin · spaFallbackPlugin
-├── AGENTS.md                 règles de la famille, pour les agents qui y travailleront
-└── package.json              scripts figés : build = tsc -b && vite build && pwa-bundle-budget && pwa-doctor --strict
-```
+**Ce dépôt existe depuis le 05/09/2026.** La spécification détaillée qui vivait
+ici — sa structure, ses choix domaine par domaine, les gains attendus et leur
+niveau de confiance — a été remplacée par la chose elle-même : le
+[README de `pwa-starter-kit`](https://github.com/mister-guiiug/pwa-starter-kit)
+et ses ADR disent ce qu'il fait et pourquoi, et ils sont tenus à jour par sa CI.
+Une spécification et son implémentation qui coexistent divergent ; c'est la
+leçon des gabarits, appliquée à ce document.
 
-Ce que le squelette **décide** (et écrit en ADR, parce que le parc a montré
-que ce qui n'est pas décidé se décide dix-sept fois) :
-
-| Décision       | Recommandation                                                                                                   | Pourquoi                                                                                                          |
-| -------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Routeur        | `react-router-dom` 7, **`BrowserRouter`**                                                                        | liens profonds partageables et canoniques ; le repli 404 est dans `pwa-deploy` et `spaFallbackPlugin` depuis 3.33 |
-| État           | Zustand + `versioned-store` (persistance versionnée) + `sync-queue` si backend                                   | 13 apps sur 17 ; `versioned-store` remplace les sept `storage.ts`                                                 |
-| i18n           | `createI18n` du socle, `fr` + `en` livrés, `fmt.*` obligatoire (jamais `'fr-FR'` en dur)                         | 88 locales figées trouvées le 02/09                                                                               |
-| Backend        | `backend.js` : `local` par défaut, `supabase` par option ; **l'app démarre sans configuration**                  | règle du README, treize apps la respectent, `mister-qowa` a été publié avec `apiKey: undefined`                   |
-| Auth et rôles  | `AuthProvider`/`LoginForm`/`MfaChallenge` du socle ; SQL `profiles` + `role` + RLS deny-by-default ; `useRole()` | dix copies gardées : la couche ne sera adoptée qu'à la naissance                                                  |
-| Mise à jour SW | `registerType: 'prompt'` + `UpdatePromptBanner`                                                                  | `autoUpdate` recharge en pleine saisie (PARC § 13)                                                                |
-| Observabilité  | `installErrorReporter` + `createLogger` toujours ; Sentry **si** `VITE_SENTRY_DSN` (variable, pas secret)        | no-op sans DSN, bundle intact                                                                                     |
-| Qualité en CI  | `pwa-doctor --strict` et `pwa-bundle-budget` **dans `build`** ; e2e `@critical` activé ; a11y axe                | aucune app ne le fait aujourd'hui                                                                                 |
-
-### Gains attendus, et ce qu'ils valent
-
-| Gain                  | Aujourd'hui (mesuré)                                                                                                                  | Avec le squelette                                                                                               | Confiance                                                                                                 |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Time to market        | premier commit de 70–90 fichiers copiés d'une sœur ; six gestes GitHub à la main ; quatre pièges connus                               | un `create` : dépôt, CI verte, Pages en ligne, ruleset, `doctor` propre — **avant la première ligne de métier** | élevée : chaque geste est déjà écrit quelque part (mémoire, scripts, README)                              |
-| Coût de développement | 22 % des lignes du parc sont de la coquille réécrite ; 3 122 lignes de YAML                                                           | la coquille est engendrée (~2 000 lignes par app) ; YAML ≈ 60 lignes par app                                    | moyenne : la coquille reste **propriété de l'app** après génération                                       |
-| Erreurs               | `secrets: inherit` 12/16, `lang: en` ×3, manifeste 404, `autoUpdate` ×3, keep-alive 2/8 — tous des défauts de **gabarit ou de copie** | le gabarit est **une app testée**, `doctor --strict` en CI refuse la dérive                                     | élevée : c'est la leçon de CONFIG.md (« une règle que ne porte pas l'artefact qu'on copie n'existe pas ») |
-| Qualité               | densité de tests de 5 à 47 tests/kloc ; a11y spec absente de 4 apps ; e2e hors CI (puzzle jusqu'au 02/09)                             | un plancher livré : setup, a11y, smoke, un test de store, couverture activée                                    | moyenne : un plancher n'est pas une culture                                                               |
-| Standardisation       | 17 `vitest.config.ts`, 17 `index.html`, 13 `deploy.yml`                                                                               | fichiers figés resynchronisés ; un seul `index.html` rempli à la build                                          | élevée sur les fichiers figés, faible sur `App.tsx` (il DOIT diverger)                                    |
+Ce qui reste ci-dessous est ce que le squelette ne peut pas dire de lui-même :
+ce qu'il coûte, et ce qu'il risque.
 
 ### Coût et risques
 
@@ -540,19 +506,25 @@ Renovate et `SECURITY.md` cessent d'être des privilèges de PWA.
 
 ---
 
-## 8. Feuille de route
+## 8. Feuille de route — ce qui est fait, ce qui reste
 
-L'ordre suit le rendement : ce qui répare avant ce qui construit, ce qui se
-teste avant ce qui se publie.
+**Faits le 05/09/2026** : la couche 0 (vingt-cinq dépôts publics protégés,
+Renovate posé hors PWA, le dépôt `.github`), le squelette `pwa-starter-kit`, et
+le générateur `create-lg-pwa-app`. Les trois bilans qui suivent ne racontent pas
+ce qui a été livré — les dépôts et le CHANGELOG le disent mieux — mais **ce que
+l'exécution a démenti ou révélé**, qui ne se trouve nulle part ailleurs.
 
-| #   | Chantier                                                                                                                                                                                                                                                                                                                                                                    | Coût              | Ce qui le prouve                                                                                             |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| 1   | ✅ **Couche 0 — faite le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                                       | 2 j               | **25 dépôts publics sur 25 protégés** ; `renovate.json` posé sur les quatre dépôts hors PWA                  |
-| 2   | ✅ **`pwa-starter-kit` — fait le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                               | 4–5 j             | **fait** : `consumer-resolution` remplacé par le squelette, qui se construit et se diagnostique à chaque PR  |
-| 3   | **`pwa-doctor --fix`** et `pwa-env` (CONFIG.md phase 2) : fichiers figés resynchronisés depuis le squelette, manifeste d'env → `.env.example` + `deploy.yml` engendrés                                                                                                                                                                                                      | 3 j               | `secrets: inherit` = 0/16 ; 17 `vitest.config.ts` → 1 ; `doctor` en CI sur 17 apps                           |
-| 4   | ✅ **Générateur — fait le 05/09/2026** (voir le bilan sous ce tableau)                                                                                                                                                                                                                                                                                                      | 3 j               | **fait** : une application engendrée se construit et passe `doctor --strict` à 0/0/0                         |
-| 5   | **Socle 4.0 — rétrécir** : sortir catalogue et palettes (fichier de données tiré à la build, ou entrée écrite par le générateur) ; isoler les 0-adoptant en `experimental/*` avec date de retrait ; `.d.ts` engendrés depuis JSDoc (`tsc --declaration --allowJs`) ou source TS ; ESLint 10 ; amender `CONTRIBUTING.md` : « entre ce qu'utilise le squelette ou deux apps » | 5 j + une majeure | 148 → ~90 sous-chemins ; 0 ligne de `.d.ts` à la main ; aucune publication du socle exigée par une naissance |
-| 6   | Le squelette **Tauri** — seulement si un troisième projet Tauri naît ; source : la CI de `mister-commitia`                                                                                                                                                                                                                                                                  | —                 | —                                                                                                            |
+**Restent ouverts :**
+
+- **`pwa-doctor --fix` et `pwa-env`** (CONFIG.md phase 2) : fichiers figés
+  resynchronisés depuis le squelette, manifeste d'env engendrant `.env.example`
+  et `deploy.yml`. Preuve visée : un seul `vitest.config.ts` au lieu de dix-sept.
+- **Rétrécir le socle** : sortir le catalogue et les palettes, isoler les
+  sous-chemins sans adoptant en `experimental/*` avec date de retrait, engendrer
+  les `.d.ts` au lieu de les écrire, amender `CONTRIBUTING.md` — « un module
+  entre s'il est utilisé par le squelette ou par deux apps ». Coûte une majeure.
+- **Un squelette Tauri**, seulement si un troisième projet Tauri naît ; la
+  source serait la CI de `mister-commitia`.
 
 ### Bilan du chantier 1, exécuté le 05/09/2026
 
