@@ -9,6 +9,12 @@ export interface PageContainerProps extends HTMLAttributes<HTMLElement> {
   width?: PageWidth;
   /** `false` : aucune marge — la vue gère les siennes. */
   padding?: boolean;
+  /**
+   * `bottom-nav` réserve, en bas, la place d'une `<BottomNav placement="fixed">` :
+   * sans elle, le dernier élément de la vue passe sous la barre. Prime sur
+   * `padding={false}`.
+   */
+  reserve?: 'bottom-nav';
   children?: ReactNode;
 }
 

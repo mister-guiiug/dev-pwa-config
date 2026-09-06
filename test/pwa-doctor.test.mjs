@@ -597,6 +597,43 @@ test('filtreE2e lit ci.yml, ignore les commentaires, tolère un filtre mal form�
   assert.ok(!specJouee("test('sans tag', async () => {})", filtreE2e('')));
 });
 
+test('un port de développement qui n’est pas celui du catalogue est une information', async () => {
+  // miss-carbook a 5201 au catalogue ; un launch.json sur 5173 la mettrait en
+  // collision avec toute app restée sur le port par défaut de Vite.
+  await repo(
+    {
+      'package.json': { name: 'miss-carbook' },
+      '.claude/launch.json': { configurations: [{ port: 5173 }] },
+      'vite.config.ts': 'export default { server: { port: 5173 }, base: "/" }',
+    },
+    root => {
+      const info = diagnose(root).findings.find(f => f.id === 'dev-port');
+      assert.ok(info && info.level === 'info');
+      assert.match(info.message, /5173 \(\.claude\/launch\.json\)/);
+      assert.match(info.message, /5173 \(vite\.config\)/);
+      assert.match(info.message, /5201/);
+    }
+  );
+  await repo(
+    {
+      'package.json': { name: 'miss-carbook' },
+      'vite.config.ts': 'export default { server: { port: 5201 } }',
+    },
+    root => {
+      assert.ok(
+        !ids(diagnose(root)).includes('dev-port'),
+        'le bon port : rien à dire'
+      );
+    }
+  );
+  await repo({ 'package.json': { name: 'app-hors-catalogue' } }, root => {
+    assert.ok(
+      !ids(diagnose(root)).includes('dev-port'),
+      'hors catalogue : rien à comparer'
+    );
+  });
+});
+
 test('version.json : sans versionPlugin, l’app ne sait pas ce qui est en ligne', async () => {
   // Dix-sept sites sur dix-huit le 05/09/2026 : `AppUpdates` propose une
   // version sans pouvoir dire laquelle, ni laquelle tourne.

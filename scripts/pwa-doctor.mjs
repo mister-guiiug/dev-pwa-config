@@ -54,6 +54,7 @@ import {
   manifestSummary,
   sitePrefix,
 } from './site-readers.mjs';
+import { appById } from '../apps-catalog.js';
 
 export const PRESET =
   'github>mister-guiiug/dev-pwa-config//renovate/default.json';
@@ -425,6 +426,31 @@ export function diagnose(dir) {
   }
   if (!pkg.engines?.node) {
     info('engines', 'pas de engines.node', '"engines": { "node": ">=22" }');
+  }
+  // Le port de développement est au catalogue, unique dans la famille. Une
+  // app qui en déclare un autre — ou le 5173 de tout le monde — se disputera
+  // le port avec sa voisine le jour où les deux tournent sur le même poste.
+  const fiche = appById(pkg.name);
+  if (fiche?.devPort) {
+    const declares = [];
+    const launch = readText(root, '.claude/launch.json');
+    const dansLaunch =
+      launch &&
+      (/"port"\s*:\s*(\d+)/.exec(launch) ?? /--port",\s*"(\d+)"/.exec(launch));
+    if (dansLaunch)
+      declares.push(['.claude/launch.json', Number(dansLaunch[1])]);
+    const dansVite = /server\s*:\s*\{[^}]*?\bport\s*:\s*(\d+)/s.exec(
+      viteConfig
+    );
+    if (dansVite) declares.push(['vite.config', Number(dansVite[1])]);
+    const ecarts = declares.filter(([, port]) => port !== fiche.devPort);
+    if (ecarts.length) {
+      info(
+        'dev-port',
+        `port de développement ${ecarts.map(([ou, port]) => `${port} (${ou})`).join(', ')} ; le catalogue lui donne ${fiche.devPort}`,
+        `server: { port: devPortOf('${pkg.name}') } dans vite.config.ts (apps-catalog) — deux apps côte à côte sans collision`
+      );
+    }
   }
 
   /* ── 2. Les workflows ─────────────────────────────────────────────────── */

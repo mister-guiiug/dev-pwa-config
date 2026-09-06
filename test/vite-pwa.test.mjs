@@ -10,13 +10,104 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import {
+  manifestScreenshots,
+  paletteFromCss,
+  pngDimensions,
   pwaBaseOptions,
   pwaManifest,
   pwaWorkbox,
   normalizeBasePath,
 } from '../vite-pwa.js';
 import { brandColor, themeById } from '../themes.js';
+
+/** Un PNG réduit à sa signature et à son en-tête IHDR : de quoi lire la taille. */
+function faussePng(width, height) {
+  const buffer = Buffer.alloc(33);
+  Buffer.from('89504e470d0a1a0a', 'hex').copy(buffer, 0);
+  buffer.writeUInt32BE(13, 8);
+  buffer.write('IHDR', 12, 'ascii');
+  buffer.writeUInt32BE(width, 16);
+  buffer.writeUInt32BE(height, 20);
+  return buffer;
+}
+
+test('une app HORS catalogue prend ses couleurs dans sa feuille de style', () => {
+  // Le squelette passait ses couleurs à la main parce que `pwaBaseOptions` ne
+  // savait lire que themes.js. `src/index.css` les peint déjà : on les y lit.
+  const css = `:root { color-scheme: light; --dwc-bg: #f7f8fa; --dwc-primary: #3b6ea5; }`;
+  const manifest = pwaManifest({
+    id: 'miss-inconnue',
+    css,
+    screenshots: false,
+  });
+  assert.equal(manifest.theme_color, '#3b6ea5');
+  assert.equal(manifest.background_color, '#f7f8fa');
+  // L'explicite et le catalogue passent avant : la feuille n'est qu'un repli.
+  assert.equal(
+    pwaManifest({ id: 'miss-uwh', css, screenshots: false }).theme_color,
+    brandColor('miss-uwh')
+  );
+  assert.deepEqual(paletteFromCss(''), null);
+  assert.deepEqual(paletteFromCss('body { margin: 0 }'), null);
+});
+
+test('sans aucune couleur, un avertissement qui dit les trois remèdes', () => {
+  const original = console.warn;
+  const messages = [];
+  console.warn = message => messages.push(String(message));
+  try {
+    pwaManifest({ id: 'miss-inconnue', css: '', screenshots: false });
+  } finally {
+    console.warn = original;
+  }
+  assert.equal(messages.length, 1);
+  assert.match(messages[0], /themeColor/);
+  assert.match(messages[0], /catalogue/);
+  assert.match(messages[0], /--dwc-primary/);
+});
+
+test('les captures présentes sur le disque entrent au manifeste, à leur taille réelle', () => {
+  assert.deepEqual(pngDimensions(faussePng(540, 1170)), {
+    width: 540,
+    height: 1170,
+  });
+  assert.equal(pngDimensions(Buffer.from('pas un png')), null);
+
+  const root = mkdtempSync(join(tmpdir(), 'dwc-shots-'));
+  try {
+    const dir = join(root, 'public', 'screenshots');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'narrow.png'), faussePng(540, 1170));
+    writeFileSync(join(dir, 'wide.png'), faussePng(1280, 720));
+    const entries = manifestScreenshots(dir, {
+      publicDir: join(root, 'public'),
+    });
+    assert.deepEqual(
+      entries.map(e => [e.src, e.sizes, e.form_factor]),
+      [
+        ['screenshots/narrow.png', '540x1170', 'narrow'],
+        ['screenshots/wide.png', '1280x720', 'wide'],
+      ]
+    );
+    const manifest = pwaManifest({
+      id: 'miss-uwh',
+      screenshotsDir: dir,
+    });
+    assert.equal(manifest.screenshots.length, 2);
+    // Sans fichier, pas de clé : un tableau vide serait un mensonge poli.
+    assert.equal(
+      'screenshots' in pwaManifest({ id: 'miss-uwh', screenshots: false }),
+      false
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('normalizeBasePath produit toujours /…/ ou /', () => {
   assert.equal(normalizeBasePath(), '/');

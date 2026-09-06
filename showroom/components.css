@@ -1549,6 +1549,13 @@
     max-width: none;
   }
 
+  /* La place d'une barre basse collée (`BottomNav placement="fixed"`) : sans
+     ce dégagement, le dernier élément de la vue passe sous la barre. Après
+     `data-padding='none'` exprès — réserver n'est pas une marge. */
+  [data-dwc='page-container'][data-reserve='bottom-nav'] {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
   /* ── LoginForm & MfaChallenge ──────────────────────────────────────────── *
    * Deux formulaires d'un seul écran : une colonne, des champs espacés, une
    * erreur qui se voit, des boutons pleine largeur. L'app pose la carte ou
@@ -1608,6 +1615,17 @@
       var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
     background: var(--dwc-surface, Canvas);
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  /* Collée au bas de la fenêtre : `placement="fixed"`. Le socle habillait la
+     barre sans la placer, et huit dépôts recopiaient cette règle (sept apps
+     et le squelette, relevé du 05/09/2026). La place qu'elle occupe se
+     réserve côté contenu : `<PageContainer reserve="bottom-nav">`. */
+  [data-dwc='bottom-nav'][data-placement='fixed'] {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
   }
 
   [data-dwc='bottom-nav-item'],

@@ -32,8 +32,89 @@
  *     })
  *   );
  */
+import { existsSync, readFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { themeById } from './themes.js';
 import { VERSION_MANIFEST } from './version.js';
+
+/**
+ * Les deux couleurs du manifeste, lues dans une feuille de style.
+ *
+ * `pwaBaseOptions` ne trouvait `theme_color` que pour une app INSCRITE au
+ * catalogue ; une app neuve en sortait sans, et `vite-plugin-pwa` avertissait
+ * qu'elle « ne pourra pas être installée » — dans le bruit du build. Or la
+ * palette est déjà écrite : `src/index.css` peint `--dwc-primary` et
+ * `--dwc-bg` (le squelette, et toute app qui suit son `index.css`). On la lit
+ * là, avant de déclarer forfait.
+ *
+ * @param {string | null | undefined} css
+ * @returns {{ primary?: string, bg?: string } | null}
+ */
+export function paletteFromCss(css) {
+  if (!css) return null;
+  const primary = /--dwc-primary\s*:\s*([^;]+);/.exec(css)?.[1]?.trim();
+  const bg = /--dwc-bg\s*:\s*([^;]+);/.exec(css)?.[1]?.trim();
+  return primary || bg ? { primary, bg } : null;
+}
+
+const readIfExists = path => {
+  try {
+    return existsSync(path) ? readFileSync(path, 'utf8') : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Largeur et hauteur d'un PNG, lues dans son en-tête IHDR — sans décoder
+ * l'image, sans dépendance. `null` si ce n'est pas un PNG.
+ *
+ * @param {Buffer} buffer
+ * @returns {{ width: number, height: number } | null}
+ */
+export function pngDimensions(buffer) {
+  if (!buffer || buffer.length < 24) return null;
+  if (buffer.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') return null;
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+/**
+ * Les captures du manifeste, trouvées sur le disque.
+ *
+ * `pwa-screenshots` écrit `narrow.png` et `wide.png` dans `public/screenshots`
+ * ; ce lecteur en fait les deux entrées `screenshots` que Chrome exige pour
+ * ouvrir une fiche d'installation au lieu d'une ligne et d'un bouton. Les
+ * tailles sont LUES dans les fichiers : un manifeste qui annonce une taille
+ * fausse est ignoré en silence.
+ *
+ * @param {string} [dir='public/screenshots']
+ * @param {{ publicDir?: string }} [options]
+ * @returns {Array<{ src: string, sizes: string, type: 'image/png',
+ *   form_factor: 'narrow' | 'wide', label: string }>}
+ */
+export function manifestScreenshots(
+  dir = 'public/screenshots',
+  { publicDir = 'public' } = {}
+) {
+  const entries = [];
+  for (const [name, label] of [
+    ['narrow', 'L’application, sur téléphone'],
+    ['wide', 'L’application, sur ordinateur'],
+  ]) {
+    const file = join(dir, `${name}.png`);
+    if (!existsSync(file)) continue;
+    const dim = pngDimensions(readFileSync(file));
+    if (!dim) continue;
+    entries.push({
+      src: relative(publicDir, file).split(sep).join('/'),
+      sizes: `${dim.width}x${dim.height}`,
+      type: 'image/png',
+      form_factor: name,
+      label,
+    });
+  }
+  return entries;
+}
 
 /** Tailles par défaut, alignées sur ce que produit `npx pwa-icons`. */
 const DEFAULT_ICONS = [
@@ -108,14 +189,35 @@ export function pwaManifest(options = {}) {
   const base = normalizeBasePath(basePath ?? (id ? `/${id}/` : '/'));
   const theme = id ? themeById(id) : undefined;
   const palette = theme?.light ?? theme?.dark;
+  // Troisième source, après l'explicite et le catalogue : la feuille de style
+  // de l'app. Lue seulement s'il manque quelque chose — jamais pour rien.
+  const cssPalette =
+    (themeColor ?? palette?.primary) && (backgroundColor ?? palette?.bg)
+      ? null
+      : paletteFromCss(
+          options.css ?? readIfExists(options.cssPath ?? 'src/index.css')
+        );
+  const theme_color = themeColor ?? palette?.primary ?? cssPalette?.primary;
+  if (!theme_color) {
+    console.warn(
+      `[vite-pwa] theme_color introuvable pour « ${id ?? name ?? 'cette app'} » : passer themeColor et backgroundColor, inscrire l'app au catalogue (themes.js), ou peindre --dwc-primary et --dwc-bg dans src/index.css. Sans lui, l'application ne s'installe pas.`
+    );
+  }
+  // Les captures trouvées sur le disque : `pwa-screenshots` les écrit, le
+  // manifeste les déclare. `screenshots: false` pour s'en passer.
+  const shots =
+    options.screenshots === false
+      ? []
+      : manifestScreenshots(options.screenshotsDir ?? 'public/screenshots');
 
   return {
     id: base,
     name: name ?? shortName ?? id,
     short_name: shortName ?? name ?? id,
     description,
-    theme_color: themeColor ?? palette?.primary,
-    background_color: backgroundColor ?? palette?.bg,
+    theme_color,
+    background_color: backgroundColor ?? palette?.bg ?? cssPalette?.bg,
+    ...(shots.length ? { screenshots: shots } : {}),
     display,
     orientation,
     scope: base,

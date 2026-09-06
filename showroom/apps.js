@@ -231,6 +231,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-carbook',
       appUrl: 'https://mister-guiiug.github.io/miss-carbook/',
       iconUrl: 'https://mister-guiiug.github.io/miss-carbook/favicon.svg',
+      devPort: 5201,
     },
     {
       id: 'miss-contraction',
@@ -261,6 +262,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-contraction',
       appUrl: 'https://mister-guiiug.github.io/miss-contraction/',
       iconUrl: 'https://mister-guiiug.github.io/miss-contraction/icon.svg',
+      devPort: 5202,
     },
     {
       id: 'miss-genius',
@@ -306,6 +308,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-genius',
       appUrl: 'https://mister-guiiug.github.io/miss-genius/',
       iconUrl: 'https://mister-guiiug.github.io/miss-genius/icons/icon-192.png',
+      devPort: 5203,
     },
     {
       id: 'miss-uwh',
@@ -355,6 +358,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-uwh',
       appUrl: 'https://mister-guiiug.github.io/miss-uwh/',
       iconUrl: 'https://mister-guiiug.github.io/miss-uwh/icons/icon-192.png',
+      devPort: 5205,
     },
     {
       id: 'mister-cim10',
@@ -391,6 +395,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-cim10',
       appUrl: 'https://mister-guiiug.github.io/mister-cim10/',
       iconUrl: 'https://mister-guiiug.github.io/mister-cim10/favicon.svg',
+      devPort: 5206,
     },
     {
       id: 'mister-footcoach',
@@ -436,6 +441,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-footcoach',
       appUrl: 'https://mister-guiiug.github.io/mister-footcoach/',
       iconUrl: 'https://mister-guiiug.github.io/mister-footcoach/logo.svg',
+      devPort: 5207,
     },
     {
       id: 'mister-puzzle',
@@ -469,6 +475,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-puzzle',
       appUrl: 'https://mister-guiiug.github.io/mister-puzzle/',
       iconUrl: 'https://mister-guiiug.github.io/mister-puzzle/favicon.svg',
+      devPort: 5208,
     },
     {
       id: 'miss-ticket-pwa',
@@ -502,6 +509,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-ticket-pwa',
       appUrl: 'https://mister-guiiug.github.io/miss-ticket-pwa/',
       iconUrl: 'https://mister-guiiug.github.io/miss-ticket-pwa/favicon.svg',
+      devPort: 1420,
     },
     {
       id: 'mister-doc',
@@ -547,6 +555,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-doc',
       appUrl: 'https://mister-guiiug.github.io/mister-doc/',
       iconUrl: 'https://mister-guiiug.github.io/mister-doc/favicon.svg',
+      devPort: 5210,
     },
     {
       id: 'miss-lookhouse',
@@ -583,6 +592,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-lookhouse',
       appUrl: 'https://mister-guiiug.github.io/miss-lookhouse/',
       iconUrl: 'https://mister-guiiug.github.io/miss-lookhouse/favicon.svg',
+      devPort: 5214,
     },
     {
       id: 'miss-badminton',
@@ -619,6 +629,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-badminton',
       appUrl: 'https://mister-guiiug.github.io/miss-badminton/',
       iconUrl: 'https://mister-guiiug.github.io/miss-badminton/favicon.svg',
+      devPort: 5211,
     },
     {
       id: 'miss-dice',
@@ -649,6 +660,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-dice',
       appUrl: 'https://mister-guiiug.github.io/miss-dice/',
       iconUrl: 'https://mister-guiiug.github.io/miss-dice/favicon.svg',
+      devPort: 5212,
     },
     {
       id: 'miss-supaboss',
@@ -691,6 +703,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-supaboss',
       appUrl: 'https://mister-guiiug.github.io/miss-supaboss/',
       iconUrl: 'https://mister-guiiug.github.io/miss-supaboss/favicon.svg',
+      devPort: 5204,
     },
     {
       id: 'miss-supatool',
@@ -735,6 +748,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/miss-supatool',
       appUrl: 'https://mister-guiiug.github.io/miss-supatool/',
       iconUrl: 'https://mister-guiiug.github.io/miss-supatool/favicon.svg',
+      devPort: 5234,
     },
     {
       id: 'mister-molkky',
@@ -780,6 +794,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-molkky',
       appUrl: 'https://mister-guiiug.github.io/mister-molkky/',
       iconUrl: 'https://mister-guiiug.github.io/mister-molkky/logo.png',
+      devPort: 5215,
     },
     {
       id: 'mister-qowa',
@@ -813,6 +828,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-qowa',
       appUrl: 'https://mister-guiiug.github.io/mister-qowa/',
       iconUrl: 'https://mister-guiiug.github.io/mister-qowa/icons/icon.svg',
+      devPort: 5216,
     },
     {
       id: 'mister-family-map',
@@ -858,6 +874,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-family-map',
       appUrl: 'https://mister-guiiug.github.io/mister-family-map/',
       iconUrl: 'https://mister-guiiug.github.io/mister-family-map/favicon.svg',
+      devPort: 5217,
     },
     {
       id: 'mister-miss-koh',
@@ -907,6 +924,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-miss-koh',
       appUrl: 'https://mister-guiiug.github.io/mister-miss-koh/',
       iconUrl: 'https://mister-guiiug.github.io/mister-miss-koh/favicon.svg',
+      devPort: 5236,
     },
     {
       id: 'mister-quota',
@@ -927,6 +945,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-quota',
       appUrl: 'https://github.com/mister-guiiug/mister-quota',
       iconUrl: null,
+      devPort: 5218,
     },
   ],
 };

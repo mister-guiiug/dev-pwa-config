@@ -62,6 +62,12 @@ export interface FamilyApp {
   appUrl: string;
   /** Icône de l'app ; `null` si aucune (ex. app desktop). */
   iconUrl: string | null;
+  /**
+   * Port de développement, UNIQUE dans la famille (plage 5201–5299 ; 1420 pour
+   * miss-ticket-pwa) : deux apps tournent côte à côte sans collision. À
+   * passer à `server.port` de `vite.config.ts` via `devPortOf(id)`.
+   */
+  devPort?: number;
   /** Couleur de thème optionnelle (pour accentuer les cartes). */
   themeColor?: string;
 }
@@ -101,6 +107,25 @@ export declare function repoUrl(id: string): string;
 
 /** URL GitHub Pages d'une app à partir de son id (base path inclus). */
 export declare function pagesUrl(id: string): string;
+
+/** Port réservé au squelette `pwa-starter-kit`, absent du catalogue : 5240. */
+export declare const STARTER_KIT_DEV_PORT: number;
+
+/** La plage des ports de développement de la famille (5201–5299). */
+export declare const DEV_PORT_RANGE: { min: number; max: number };
+
+/**
+ * Le port de développement d'une app du catalogue, ou `fallback` (5173, celui
+ * de Vite) pour une app qui n'y est pas encore.
+ */
+export declare function devPortOf(id: string, fallback?: number): number;
+
+/**
+ * Le plus petit port libre de la plage, hors catalogue et hors squelette —
+ * ce que le générateur donne à une application neuve. `null` si la plage est
+ * pleine.
+ */
+export declare function freeDevPort(pris?: number[]): number | null;
 
 /** Famille d'applications grand public (hors librairie et monorepo Tauri). */
 export declare const FAMILY_APPS: FamilyApp[];

@@ -151,7 +151,17 @@ export function definePwaPlaywrightConfig({
     snapshotPathTemplate:
       '{snapshotDir}/{testFileDir}/{testFileName}-{projectName}-{platform}{ext}',
   };
-  return { ...config, ...overrides };
+  // `overrides` FUSIONNE `use` au lieu de le remplacer. Le squelette a payé
+  // l'inverse le 05/09/2026 : `overrides: { use: { locale: 'fr-FR' } }`
+  // effaçait le `baseURL` calculé juste au-dessus, et `page.goto('/')`
+  // sortait en « Cannot navigate to invalid URL » — un diagnostic qui ne dit
+  // rien de la cause. Les autres clés restent remplacées : c'est ce qu'une
+  // surcharge finale veut dire.
+  return {
+    ...config,
+    ...overrides,
+    use: { ...config.use, ...(overrides.use ?? {}) },
+  };
 }
 
 /* ── L'état au moment de l'échec ─────────────────────────────────────────── */
