@@ -45,9 +45,9 @@
  * installé (`npx playwright install chromium`).
  */
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 import { manifestScreenshots } from '../vite-pwa.js';
@@ -153,9 +153,25 @@ async function attendre(url, ms = 30_000) {
  * Lance `vite preview` sur le build de l'app, par le script du paquet
  * installé — sans `npx`, sans shell, sans dépendre du PATH.
  */
-function servir(cwd, port, base) {
+/**
+ * Le script de Vite, tel que le paquet installé le déclare dans `bin`.
+ *
+ * `require.resolve('vite/bin/vite.js')` sort en ERR_PACKAGE_PATH_NOT_EXPORTED :
+ * le paquet ferme ses `exports` et n'ouvre que `./package.json`. C'est donc
+ * lui qu'on résout, et son champ `bin` qui dit où est le script. Première
+ * exécution réelle du bin, sur le squelette, le 06/09/2026.
+ */
+export function cheminVite(cwd) {
   const require = createRequire(join(cwd, 'package.json'));
-  const vite = require.resolve('vite/bin/vite.js');
+  const pkgPath = require.resolve('vite/package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  const bin = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.vite;
+  if (!bin) throw new Error(`vite : aucun champ bin dans ${pkgPath}`);
+  return join(dirname(pkgPath), bin);
+}
+
+function servir(cwd, port, base) {
+  const vite = cheminVite(cwd);
   return spawn(
     process.execPath,
     [vite, 'preview', '--port', String(port), '--strictPort', '--base', base],

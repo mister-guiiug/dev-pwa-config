@@ -2,9 +2,14 @@
 // cadres, le plan de capture et les lignes du manifeste.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import {
   CADRES,
+  cheminVite,
   parseArgs,
   parseSize,
   plan,
@@ -83,4 +88,33 @@ test('--help ne lance ni navigateur ni serveur', async () => {
     console.log = original;
   }
   assert.match(logs.join('\n'), /--prepare/);
+});
+
+test('cheminVite lit le champ bin du paquet installé, sans passer par ses exports', () => {
+  // Le paquet vite ferme ses `exports` : résoudre `vite/bin/vite.js` est une
+  // erreur, et c'est ce que le bin faisait à sa première exécution réelle.
+  const cwd = mkdtempSync(join(tmpdir(), 'dwc-vite-'));
+  try {
+    const dir = join(cwd, 'node_modules', 'vite');
+    mkdirSync(join(dir, 'bin'), { recursive: true });
+    writeFileSync(join(cwd, 'package.json'), '{"name":"app"}');
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({
+        name: 'vite',
+        version: '8.0.0',
+        bin: { vite: 'bin/vite.js' },
+        exports: { './package.json': './package.json' },
+      })
+    );
+    writeFileSync(join(dir, 'bin', 'vite.js'), '');
+    assert.throws(
+      () =>
+        createRequire(join(cwd, 'package.json')).resolve('vite/bin/vite.js'),
+      { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' }
+    );
+    assert.equal(cheminVite(cwd), join(dir, 'bin', 'vite.js'));
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
 });
