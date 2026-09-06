@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  adresseLocale,
   baseDuBuild,
   CADRES,
   cheminVite,
@@ -138,4 +139,25 @@ test('baseDuBuild lit la base dans le chemin des actifs de index.html', () => {
   assert.equal(parseArgs([]).base, undefined);
   assert.equal(parseArgs(['--base', '/x/']).base, '/x/');
   assert.equal(parseArgs([]).dist, 'dist');
+});
+
+test('adresseLocale refuse tout ce qui sortirait de la boucle locale', () => {
+  // La base vient d'un FICHIER (`dist/index.html`) ou de `--base` : deux
+  // valeurs que ce script ne contrôle pas. CodeQL l'avait relevé
+  // (`js/file-access-to-http`), et la parade n'est pas de filtrer des formes
+  // connues mais de construire l'URL puis de comparer l'ORIGINE obtenue.
+  const ok = adresseLocale(5236, '/mon-app/');
+  assert.equal(ok.href, 'http://localhost:5236/mon-app/');
+  assert.equal(adresseLocale(5236, '/').href, 'http://localhost:5236/');
+
+  // Une référence protocol-relative change d'hôte une fois résolue : c'est
+  // exactement ce qu'une concaténation laissait passer sans le voir.
+  assert.equal(adresseLocale(5236, '//ailleurs.example/'), null);
+  assert.equal(adresseLocale(5236, 'http://ailleurs.example/'), null);
+  assert.equal(adresseLocale(5236, 'https://localhost:5236/'), null);
+  // Un autre port n'est pas la même origine non plus.
+  assert.equal(adresseLocale(5236, 'http://localhost:5237/'), null);
+
+  // Ce qui n'est pas une URL du tout ne fait pas tomber le script.
+  assert.equal(adresseLocale(5236, undefined).href, 'http://localhost:5236/');
 });
