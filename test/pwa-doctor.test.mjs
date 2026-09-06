@@ -258,13 +258,16 @@ test('le conforme : silence complet — la définition exécutable de « conform
       '.github/workflows/keepalive.yml':
         'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v4',
       'vite.config.ts': `versionPlugin({ manifest: true }); pwaSeoPlugin({ themeColor: { light: '#fff', dark: '#000' } }); cspPlugin(); VitePWA({ registerType: 'prompt' })`,
-      // Les deux liens de la famille sont dans la COQUILLE, hors <Routes> :
-      // ils sont donc sur l'accueil comme sur les réglages, et sur tout écran
-      // que l'app ajoutera ensuite.
-      'src/main.tsx': `import { HashRouter } from 'react-router'; import { createLogger } from '@mister-guiiug/dev-pwa-config/logger'; import { AppFooter } from '@mister-guiiug/dev-pwa-config/react/app-footer';
+      // Les trois liens de la famille sont sur DEUX écrans — l'accueil et À
+      // propos — et nulle part ailleurs : la coquille ne les rend pas. C'est
+      // la règle du 06/09/2026 ; la veille, c'est la coquille qui les portait.
+      'src/main.tsx': `import { HashRouter } from 'react-router'; import { createLogger } from '@mister-guiiug/dev-pwa-config/logger';
 export function Shell() {
-  return (<><Routes><Route path="/" element={<Home />} /></Routes><AppFooter repoUrl={REPO_URL} /></>);
+  return (<Routes><Route path="/" element={<HomeScreen />} /><Route path="/a-propos" element={<AboutScreen />} /></Routes>);
 }`,
+      'src/features/home/HomeScreen.tsx': `import { AppFooter } from '@mister-guiiug/dev-pwa-config/react/app-footer';
+export function HomeScreen() { return <AppFooter repoUrl={REPO_URL} issues />; }`,
+      'src/features/about/AboutScreen.tsx': `export function AboutScreen() { return <AppFooter repoUrl={REPO_URL} issues />; }`,
       'dist/index.html': html,
       'dist/version.json': { version: '1.0.0' },
       'dist/manifest.webmanifest': {
@@ -417,12 +420,15 @@ test('le défaut réel est toujours vu, commentaire ou pas', async () => {
   );
 });
 
-/* ── Les deux liens de la famille ────────────────────────────────────────── */
+/* ── Les trois liens de la famille ───────────────────────────────────────── */
 
 const liens = source => liensFamille(source).verdict;
 const fichier = (rel, text) => ({ rel, text });
 
-test('la coquille suffit : rendus hors des routes, ils sont sur tous les écrans', () => {
+test('la coquille rend les liens sur TOUS les écrans : « partout » — un écran de trop depuis le 06/09/2026', () => {
+  // La veille, c'était la réponse du socle. Le verdict garde son nom : c'est
+  // le diagnostic qui a changé de camp (voir plus bas, « la coquille est un
+  // écran de trop »).
   assert.equal(
     liens([
       fichier(
@@ -465,7 +471,7 @@ test('un écran MONTÉ PAR UNE ROUTE n’est pas « partout »', () => {
   );
 });
 
-test('deux écrans suffisent aussi — l’accueil ET À propos / Réglages', () => {
+test('deux écrans — l’accueil ET À propos / Réglages — et seulement eux', () => {
   const accueil = fichier(
     'src/pages/HomePage.tsx',
     'export function HomePage() { return <AppFooter />; }'
@@ -479,6 +485,58 @@ test('deux écrans suffisent aussi — l’accueil ET À propos / Réglages', ()
   // les deux sens — dix sur les réglages seuls, deux sur l'accueil seul.
   assert.equal(liens([accueil]), 'partiel');
   assert.equal(liens([reglages]), 'partiel');
+
+  // UN TROISIÈME ÉCRAN EST UN ÉCRAN DE TROP, qu'il soit étranger à la règle
+  // (`miss-contraction` rend le pied de page sur sa liste de contrôle) ou
+  // qu'il soit un second « À propos / Réglages » (`mister-cim10` : l'aide ET
+  // les réglages, en plus de l'accueil). Le verdict nomme les écrans : c'est
+  // ce que la dette affiche.
+  const autre = fichier(
+    'src/pages/ChecklistPage.tsx',
+    'export function ChecklistPage() { return <AppFooter />; }'
+  );
+  const aide = fichier(
+    'src/pages/HelpPage.tsx',
+    'export function HelpPage() { return <AppFooter />; }'
+  );
+  assert.deepEqual(liensFamille([accueil, reglages, autre]), {
+    verdict: 'trop',
+    ecrans: [
+      'src/pages/HomePage.tsx',
+      'src/pages/SettingsPage.tsx',
+      'src/pages/ChecklistPage.tsx',
+    ],
+  });
+  assert.equal(liens([accueil, reglages, aide]), 'trop');
+  // Deux écrans, mais pas les bons : l'accueil et un écran étranger.
+  assert.equal(liens([accueil, autre]), 'trop');
+});
+
+test('une indirection côté écrans : ce sont les écrans qui rendent le pied de page qui comptent', () => {
+  // `Footer.tsx` définit le porteur ; il ne s'affiche nulle part par lui-même.
+  // Deux écrans le rendent : c'est la forme attendue. Trois : un de trop.
+  const footer = fichier(
+    'src/components/Footer.tsx',
+    'export function Footer() { return <AppFooter repoUrl={REPO_URL} issues />; }'
+  );
+  const home = fichier('src/pages/HomePage.tsx', '<Footer />');
+  const about = fichier('src/pages/AboutPage.tsx', '<Footer />');
+  const game = fichier('src/pages/GamePage.tsx', '<Footer />');
+  assert.equal(liens([footer, home, about]), 'deux');
+  assert.deepEqual(liensFamille([footer, home, about, game]), {
+    verdict: 'trop',
+    ecrans: [
+      'src/pages/HomePage.tsx',
+      'src/pages/AboutPage.tsx',
+      'src/pages/GamePage.tsx',
+    ],
+  });
+  // Un porteur que personne ne rend et qui n'est pas un écran nommé : le
+  // contrôle ne sait pas où il s'affiche, et le dit plutôt que de deviner.
+  assert.deepEqual(liensFamille([footer]), {
+    verdict: 'trop',
+    ecrans: ['src/components/Footer.tsx'],
+  });
 });
 
 test('aucun porteur : la dette le dit sans deviner', () => {
@@ -538,6 +596,135 @@ test('une app SANS ROUTEUR a quand même une coquille : celle que l’entrée mo
       fichier('src/App.tsx', 'export default function App() { return null; }'),
     ]),
     'absent'
+  );
+
+  // SANS ROUTEUR, LA CONDITION EST L'ÉCRAN. Ce que la coquille rend derrière
+  // un `&&`, dans un ternaire ou un `switch` n'est pas « partout » : c'est
+  // ainsi qu'elle bascule d'écran. `mister-puzzle` rend `<Home />` dans un
+  // ternaire, `miss-ticket-pwa` `<Settings />` derrière un `&&` — un écran
+  // chacune, et le contrôle leur reprochait tous les écrans.
+  const entree = fichier('src/main.tsx', "import App from './App';\n<App />");
+  assert.equal(
+    liens([
+      entree,
+      fichier(
+        'src/App.tsx',
+        "export default function App() { return screen === 'home' ? (\n<Home />\n) : (\n<Game />\n); }"
+      ),
+      fichier(
+        'src/components/Home.tsx',
+        'export function Home() { return <AppFooter repoUrl={REPO_URL} />; }'
+      ),
+    ]),
+    'partiel'
+  );
+  assert.equal(
+    liens([
+      entree,
+      fichier(
+        'src/App.tsx',
+        'export default function App() { return (<>{showSettings && (\n<Settings onClose={close} />\n)}<Board /></>); }'
+      ),
+      fichier(
+        'src/components/Settings.tsx',
+        'export function Settings() { return <AppFooter repoUrl={REPO_URL} />; }'
+      ),
+    ]),
+    'partiel'
+  );
+  assert.equal(
+    liens([
+      entree,
+      fichier(
+        'src/App.tsx',
+        "export default function App() { switch (screen) { case 'settings': return <Settings />; default: return <Board />; } }"
+      ),
+      fichier(
+        'src/components/Settings.tsx',
+        'export function Settings() { return <AppFooter repoUrl={REPO_URL} />; }'
+      ),
+    ]),
+    'partiel'
+  );
+  // Rendu SANS condition par la même coquille : partout, comme avant.
+  assert.equal(
+    liens([
+      entree,
+      fichier(
+        'src/App.tsx',
+        'export default function App() { return (<><Board /><Settings /></>); }'
+      ),
+      fichier(
+        'src/components/Settings.tsx',
+        'export function Settings() { return <AppFooter repoUrl={REPO_URL} />; }'
+      ),
+    ]),
+    'partout'
+  );
+  // Le pied de page du socle DANS la coquille sans routeur, sous condition :
+  // le contrôle ne sait pas nommer l'écran, et le dit (un écran de trop, cité).
+  assert.deepEqual(
+    liensFamille([
+      entree,
+      fichier(
+        'src/App.tsx',
+        "export default function App() { return (<>{screen === 'home' && <AppFooter repoUrl={REPO_URL} />}</>); }"
+      ),
+    ]),
+    { verdict: 'trop', ecrans: ['src/App.tsx'] }
+  );
+});
+
+test('la coquille est un écran de trop : les liens sur deux écrans, pas sur tous', async () => {
+  // Depuis le 06/09/2026, la règle plafonne : l'accueil ET À propos / Réglages,
+  // nulle part ailleurs. Un pied de page rendu hors des routes est sur TOUS
+  // les écrans — la forme que le contrôle acceptait la veille, et que quatre
+  // apps et le squelette tenaient. Trois liens sortants sous un plateau de jeu
+  // ou un formulaire, ce n'est pas un pied de page, c'est du bruit.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx':
+        '<Routes><Route path="/" element={<Home />} /></Routes><AppFooter repoUrl={REPO_URL} issues />',
+    },
+    root => {
+      const f = diagnose(root).findings.find(x => x.id === 'liens-famille');
+      assert.equal(f?.level, 'dette', 'la coquille est une dette');
+      assert.match(f.message, /tous les écrans/);
+      assert.match(f.fix, /l’accueil ET À propos \/ Réglages/);
+    }
+  );
+
+  // Un troisième écran, ou un écran étranger à la règle : la dette compte et
+  // nomme — c'est le geste, retirer le pied de page de l'écran cité.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/pages/HomePage.tsx': '<AppFooter repoUrl={REPO_URL} />',
+      'src/pages/SettingsPage.tsx': '<AppFooter repoUrl={REPO_URL} />',
+      'src/pages/GamePage.tsx': '<AppFooter repoUrl={REPO_URL} />',
+    },
+    root => {
+      const f = diagnose(root).findings.find(x => x.id === 'liens-famille');
+      assert.equal(f?.level, 'dette', 'trois écrans : une dette');
+      assert.match(f.message, /3 écrans/);
+      assert.match(f.message, /GamePage/);
+    }
+  );
+
+  // La forme attendue ne dit rien.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/pages/HomePage.tsx': '<AppFooter repoUrl={REPO_URL} issues />',
+      'src/pages/AboutPage.tsx': '<AppFooter repoUrl={REPO_URL} issues />',
+    },
+    root => {
+      assert.equal(
+        diagnose(root).findings.find(x => x.id === 'liens-famille'),
+        undefined
+      );
+    }
   );
 });
 

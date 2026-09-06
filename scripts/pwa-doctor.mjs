@@ -18,8 +18,8 @@
  *   1. LE DÉPÔT — les fichiers que le gabarit attend (`.editorconfig`,
  *      `.nvmrc`, `.gitattributes` en LF, `renovate.json` sur le préréglage du
  *      socle, `.lighthouserc.json`, une spec a11y, un `bundleBudget`), et les
- *      DEUX LIENS DE LA FAMILLE — code source et soutien — sur le premier
- *      écran comme sur À propos / Réglages ;
+ *      TROIS LIENS DE LA FAMILLE — code source, soutien, signalement — sur
+ *      l'accueil ET sur À propos / Réglages, et nulle part ailleurs ;
  *   2. LES WORKFLOWS — lighthouse, `cleanup-runs`, le keep-alive Supabase si
  *      l'app en dépend, les e2e en CI (et qu'aucune spec ne reste hors du
  *      filtre `e2e-grep`, donc jamais jouée), un déploiement Pages passé par
@@ -131,31 +131,34 @@ const sansCommentaires = {
       .replace(/^[ \t]*\/\/.*$/gm, ''),
 };
 
-/* ── Les deux liens de la famille ──────────────────────────────────────────
+/* ── Les trois liens de la famille ─────────────────────────────────────────
  *
- * RÈGLE : le CODE SOURCE et le SOUTIEN sont visibles sur le premier écran ET
- * sur À propos / Réglages. Une app gratuite et locale se finance par les deux :
- * qui l'ouvre doit pouvoir vérifier ce qu'elle fait, et remercier — sans aller
- * les chercher dans un tiroir.
+ * RÈGLE (06/09/2026) : le CODE SOURCE, le SOUTIEN et le SIGNALEMENT sont
+ * visibles sur DEUX écrans, et deux seulement — l'accueil, ET À propos /
+ * Réglages. Une app gratuite et locale se finance par les deux premiers : qui
+ * l'ouvre doit pouvoir vérifier ce qu'elle fait, et remercier — sans aller les
+ * chercher dans un tiroir. Et nulle part ailleurs : trois liens sortants sous
+ * un plateau de jeu ou un formulaire, ce n'est pas un pied de page, c'est du
+ * bruit.
  *
- * DEUX FAÇONS DE LA TENIR, et le contrôle accepte les deux :
- *
- *   1. LA COQUILLE — `<AppFooter>` rendu hors des routes. C'est la réponse du
- *      socle : un seul endroit, tous les écrans, y compris ceux à venir.
- *   2. DEUX ÉCRANS — le porteur rendu sur l'accueil ET sur À propos/Réglages.
- *      Trois apps le font ainsi et n'ont rien à corriger.
+ * LA COQUILLE N'EST PLUS UNE FAÇON DE LA TENIR. `<AppFooter>` rendu hors des
+ * routes est sur TOUS les écrans : c'était la réponse du socle la veille (un
+ * seul endroit, tous les écrans, y compris ceux à venir), c'est aujourd'hui un
+ * écran de trop. Le pied de page se rend DANS l'écran d'accueil et DANS À
+ * propos / Réglages — deux fichiers, le même composant.
  *
  * CE QUE LE CONTRÔLE VOIT, ET CE QU'IL NE VOIT PAS. Il lit du texte, pas un
- * graphe de rendu : il résout UNE indirection (`<Footer/>` défini ailleurs,
- * rendu par la coquille — c'est la forme de `miss-carbook` et `miss-lookhouse`)
- * et reconnaît l'accueil et les réglages AU NOM DE FICHIER. Deux indirections,
- * ou un écran nommé autrement, lui échappent : d'où une DETTE et non un défaut.
+ * graphe de rendu : il résout UNE indirection — `<Footer/>` défini ailleurs,
+ * rendu par la coquille (la forme de `miss-carbook` et `miss-lookhouse`) ou par
+ * deux écrans — et reconnaît l'accueil et les réglages AU NOM DE FICHIER. Deux
+ * indirections, ou un écran nommé autrement, lui échappent : d'où une DETTE et
+ * non un défaut, qui nomme ce qu'il a vu.
  *
  * LE DÉPOUILLEMENT DES ROUTES EST LE CŒUR. Sans lui, `<SettingsScreen/>` monté
  * par `element={…}` dans le fichier des routes se lit comme un rendu « partout »
- * — et douze apps sur dix-neuf passaient à tort. Mesuré le 05/09/2026 : quatre
- * apps tiennent la règle par la coquille, trois par deux écrans, douze ne la
- * tiennent pas.
+ * — et douze apps sur dix-neuf passaient à tort. Mesuré le 05/09/2026, sous la
+ * règle d'alors : quatre apps la tenaient par la coquille, trois par deux
+ * écrans, douze ne la tenaient pas. Le relevé sous celle-ci est dans le README.
  */
 const LIENS = {
   /* Un élément JSX, pas un import : le socle, ou la paire écrite à la main. */
@@ -191,7 +194,8 @@ const horsRoutes = text =>
 
 /**
  * @param {Array<{rel: string, text: string}>} source
- * @returns {{ verdict: 'partout'|'deux'|'partiel'|'absent', ou?: string }}
+ * @returns {{ verdict: 'partout'|'trop'|'deux'|'partiel'|'absent',
+ *   ou?: string, ecrans?: string[] }}
  */
 export function liensFamille(source) {
   const fichiers = source.filter(f => !/\.test\.|\.spec\./.test(f.rel));
@@ -251,31 +255,90 @@ export function liensFamille(source) {
     }
   }
 
-  if (porteurs.some(f => coquilles.includes(f) || LIENS.coquille.test(f.text)))
+  // LA COQUILLE PORTE LES LIENS ? Ils sont sur TOUS les écrans — la forme que
+  // le contrôle acceptait jusqu'au 06/09/2026, devenue un écran de trop. On ne
+  // conclut que sur ce qu'elle rend HORS de ses routes : un pied de page écrit
+  // dans un `element={…}` appartient à cet écran-là, pas à la coquille.
+  //
+  // SANS ROUTEUR, LA CONDITION EST L'ÉCRAN. Une coquille qui bascule sur un
+  // état écrit `{screen === 'x' && <X />}`, un ternaire, un `switch` : ce
+  // qu'elle rend sous condition n'est pas « partout », c'est un écran.
+  // `mister-puzzle` rend `<Home />` dans un ternaire, `miss-ticket-pwa`
+  // `<Settings />` derrière un `&&` — le contrôle leur reprochait tous les
+  // écrans quand ils n'en ont qu'un. Avec routeur, rien à lire : hors des
+  // routes, tout est toujours rendu.
+  const estCoquille = f => coquilles.includes(f) || LIENS.coquille.test(f.text);
+  const routeur = f => LIENS.coquille.test(f.text);
+  const sansCondition = (text, motif) => {
+    for (const m of text.matchAll(motif)) {
+      const avant = text
+        .slice(Math.max(0, m.index - 120), m.index)
+        .replace(/\s+/g, '');
+      if (!/(&&|\?|:|\)return|:return)\(?$/.test(avant)) return true;
+    }
+    return false;
+  };
+  const porte = f => {
+    const text = horsRoutes(f.text);
+    if (LIENS.socle.test(text))
+      return routeur(f) || sansCondition(text, /<(?:AppFooter|FamilyApps)\b/g);
+    return LIENS.soutien.test(text) && LIENS.depot.test(text);
+  };
+  if (porteurs.some(f => estCoquille(f) && porte(f)))
     return { verdict: 'partout' };
 
+  const nomsDe = p =>
+    [...p.text.matchAll(LIENS.exporte)].map(m => m[1] ?? m[2]).filter(Boolean);
+  const rend = (text, noms) =>
+    noms.some(nom => new RegExp(`<${nom}\\b`).test(text));
+  const rendSansCondition = (c, noms) =>
+    noms.length > 0 &&
+    (routeur(c)
+      ? rend(horsRoutes(c.text), noms)
+      : sansCondition(c.text, new RegExp(`<(?:${noms.join('|')})\\b`, 'g')));
   for (const p of porteurs) {
-    const noms = [...p.text.matchAll(LIENS.exporte)]
-      .map(m => m[1] ?? m[2])
-      .filter(Boolean);
-    for (const nom of noms) {
-      const motif = new RegExp(`<${nom}\\b`);
-      if (coquilles.some(c => motif.test(horsRoutes(c.text)))) {
-        return { verdict: 'partout' };
-      }
-    }
+    if (coquilles.some(c => rendSansCondition(c, nomsDe(p))))
+      return { verdict: 'partout' };
   }
 
-  const accueil = porteurs.some(f => LIENS.accueil.test(f.rel));
-  const reglages = porteurs.some(f => LIENS.reglages.test(f.rel));
-  if (accueil && reglages) return { verdict: 'deux' };
+  // LES ÉCRANS QUI PORTENT LES LIENS. Un porteur qui n'est pas un écran nommé
+  // — un `Footer.tsx` défini à part — compte pour les écrans qui le rendent :
+  // la même indirection que pour la coquille, résolue côté écrans. Une
+  // coquille qui porte les liens DANS ses routes, ou un porteur que personne
+  // ne rend, compte pour lui-même : le contrôle ne sait pas quel écran, et le
+  // dit plutôt que de deviner.
+  const estEcran = rel => LIENS.accueil.test(rel) || LIENS.reglages.test(rel);
+  const ecrans = [];
+  const retient = rel => {
+    if (!ecrans.includes(rel)) ecrans.push(rel);
+  };
+  for (const p of porteurs) {
+    if (estEcran(p.rel) || estCoquille(p)) {
+      retient(p.rel);
+      continue;
+    }
+    const noms = nomsDe(p);
+    const rendus = fichiers.filter(
+      f => f !== p && !estCoquille(f) && rend(f.text, noms)
+    );
+    if (rendus.length) rendus.forEach(f => retient(f.rel));
+    else retient(p.rel);
+  }
+
+  // DEUX ÉCRANS, ET CES DEUX-LÀ. Un troisième — ou un écran étranger à la
+  // règle — est un écran de trop, et le verdict le nomme.
+  const accueils = ecrans.filter(rel => LIENS.accueil.test(rel));
+  const reglages = ecrans.filter(
+    rel => !LIENS.accueil.test(rel) && LIENS.reglages.test(rel)
+  );
+  const autres = ecrans.filter(
+    rel => !accueils.includes(rel) && !reglages.includes(rel)
+  );
+  if (autres.length || ecrans.length > 2) return { verdict: 'trop', ecrans };
+  if (accueils.length && reglages.length) return { verdict: 'deux' };
   return {
     verdict: 'partiel',
-    ou: accueil
-      ? "l'accueil"
-      : reglages
-        ? 'À propos / Réglages'
-        : 'un seul écran',
+    ou: accueils.length ? "l'accueil" : 'À propos / Réglages',
   };
 }
 
@@ -634,18 +697,34 @@ export function diagnose(dir) {
     }
   }
 
+  // Les trois liens de la famille : sur l'accueil ET sur À propos / Réglages,
+  // nulle part ailleurs. Le geste est le même pour les quatre écarts.
   const liens = liensFamille(source);
+  const gesteLiens =
+    '<AppFooter repoUrl={REPO_URL} issues /> sur l’accueil ET À propos / Réglages — deux écrans, nulle part ailleurs, jamais dans la coquille';
   if (liens.verdict === 'absent') {
     dette(
       'liens-famille',
       'ni code source ni soutien : aucun écran ne les porte',
-      '<AppFooter repoUrl={REPO_URL} /> dans la coquille, hors <Routes>'
+      gesteLiens
     );
   } else if (liens.verdict === 'partiel') {
     dette(
       'liens-famille',
       `code source + soutien seulement sur ${liens.ou}`,
-      '<AppFooter repoUrl={REPO_URL} /> dans la coquille, hors <Routes> — ou sur les deux écrans'
+      gesteLiens
+    );
+  } else if (liens.verdict === 'partout') {
+    dette(
+      'liens-famille',
+      'code source + soutien sur tous les écrans, rendus par la coquille : deux écrans au plus',
+      gesteLiens
+    );
+  } else if (liens.verdict === 'trop') {
+    dette(
+      'liens-famille',
+      `code source + soutien sur ${liens.ecrans.length} écrans (${liens.ecrans.map(rel => basename(rel)).join(', ')}) : l’accueil et À propos / Réglages, nulle part ailleurs`,
+      gesteLiens
     );
   }
 
