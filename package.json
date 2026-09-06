@@ -594,6 +594,10 @@
     "./issue-report": {
       "types": "./issue-report.d.ts",
       "default": "./issue-report.js"
+    },
+    "./install": {
+      "types": "./install.d.ts",
+      "default": "./install.js"
     }
   },
   "bin": {
@@ -648,6 +652,8 @@
     "version.d.ts",
     "issue-report.js",
     "issue-report.d.ts",
+    "install.js",
+    "install.d.ts",
     "web-vitals.js",
     "web-vitals.d.ts",
     "react",

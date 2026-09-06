@@ -46,14 +46,34 @@ const GLOBALS = [
  * pilotable (`setMediaQuery`) qui notifie ses abonnés, sans quoi `useTheme` et
  * `useMediaQuery` ne seraient pas testables.
  *
- * @param {{ url?: string, online?: boolean }} [options]
+ * `userAgent` et `maxTouchPoints` sont REDÉFINIS sur le navigateur de jsdom,
+ * pas passés à son constructeur : jsdom 30 ignore l'option `userAgent` de ses
+ * versions précédentes — elle est acceptée sans effet, ce qui est le pire des
+ * cas. C'est le même geste que pour `navigator.onLine` ci-dessous. Sans eux,
+ * rien de ce qui dépend du navigateur n'est testable : l'invite d'installation
+ * n'existe pas sur iOS, et seul l'agent utilisateur le dit.
+ *
+ * @param {{ url?: string, online?: boolean, userAgent?: string,
+ *   maxTouchPoints?: number }} [options]
  */
 export function setupDom(options = {}) {
-  const { url = 'https://exemple.test/', online = true } = options;
+  const { url = 'https://exemple.test/', online = true, userAgent } = options;
   const dom = new JSDOM('<!doctype html><html><body></body></html>', {
     url,
     pretendToBeVisual: true,
   });
+  if (userAgent !== undefined) {
+    Object.defineProperty(dom.window.navigator, 'userAgent', {
+      get: () => userAgent,
+      configurable: true,
+    });
+  }
+  if (options.maxTouchPoints !== undefined) {
+    Object.defineProperty(dom.window.navigator, 'maxTouchPoints', {
+      value: options.maxTouchPoints,
+      configurable: true,
+    });
+  }
 
   const saved = new Map();
   for (const name of GLOBALS) {

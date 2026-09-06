@@ -64,6 +64,14 @@ export const LABELS = {
       title: 'Installer l’application',
       description:
         'Ajoutez cette application à votre écran d’accueil : accès rapide, hors-ligne.',
+      // Là où le navigateur installe sans invite programmable, la marche à
+      // suivre REMPLACE la description : sans elle, l'utilisateur d'iPhone lit
+      // une promesse et ne trouve aucun bouton pour la tenir.
+      howIos: 'Touchez le bouton Partager, puis « Sur l’écran d’accueil ».',
+      howSafari:
+        'Dans le menu Fichier de Safari, choisissez « Ajouter au Dock ».',
+      howGeneric:
+        'Ouvrez le menu de votre navigateur, puis « Installer l’application ».',
       install: 'Installer',
       dismiss: 'Plus tard',
     },
@@ -171,6 +179,9 @@ export const LABELS = {
       title: 'Install the app',
       description:
         'Add this app to your home screen: quick access, works offline.',
+      howIos: 'Tap the Share button, then “Add to Home Screen”.',
+      howSafari: 'In Safari’s File menu, choose “Add to Dock”.',
+      howGeneric: 'Open your browser’s menu, then “Install app”.',
       install: 'Install',
       dismiss: 'Not now',
     },
@@ -270,6 +281,9 @@ export const LABELS = {
       title: 'Instalar la aplicación',
       description:
         'Añade esta aplicación a tu pantalla de inicio: acceso rápido, sin conexión.',
+      howIos: 'Toca el botón Compartir y luego «Añadir a inicio».',
+      howSafari: 'En el menú Archivo de Safari, elige «Añadir al Dock».',
+      howGeneric: 'Abre el menú de tu navegador y elige «Instalar aplicación».',
       install: 'Instalar',
       dismiss: 'Más tarde',
     },
@@ -370,6 +384,9 @@ export const LABELS = {
       title: 'App installieren',
       description:
         'Füge diese App deinem Startbildschirm hinzu: schneller Zugriff, auch offline.',
+      howIos: 'Tippe auf „Teilen“ und dann auf „Zum Home-Bildschirm“.',
+      howSafari: 'Wähle in Safari „Ablage“ und dann „Zum Dock hinzufügen“.',
+      howGeneric: 'Öffne das Browsermenü und wähle „App installieren“.',
       install: 'Installieren',
       dismiss: 'Später',
     },
@@ -472,6 +489,9 @@ export const LABELS = {
       title: 'Installa l’app',
       description:
         'Aggiungi questa app alla schermata Home: accesso rapido, anche offline.',
+      howIos: 'Tocca il pulsante Condividi, poi «Aggiungi a Home».',
+      howSafari: 'Nel menu Archivio di Safari, scegli «Aggiungi al Dock».',
+      howGeneric: 'Apri il menu del browser, poi «Installa applicazione».',
       install: 'Installa',
       dismiss: 'Più tardi',
     },
@@ -574,6 +594,11 @@ export const LABELS = {
       title: 'Instalar a aplicação',
       description:
         'Adicione esta aplicação ao ecrã inicial: acesso rápido, mesmo sem ligação.',
+      howIos:
+        'Toque no botão Partilhar e depois em «Adicionar ao ecrã inicial».',
+      howSafari: 'No menu Ficheiro do Safari, escolha «Adicionar à Dock».',
+      howGeneric:
+        'Abra o menu do seu navegador e escolha «Instalar aplicação».',
       install: 'Instalar',
       dismiss: 'Mais tarde',
     },
@@ -674,6 +699,9 @@ export const LABELS = {
       title: 'App installeren',
       description:
         'Zet deze app op je beginscherm: snel bij de hand, ook offline.',
+      howIos: 'Tik op de deelknop en daarna op ‘Zet op beginscherm’.',
+      howSafari: 'Kies in het menu Archief van Safari ‘Voeg toe aan Dock’.',
+      howGeneric: 'Open het menu van je browser en kies ‘App installeren’.',
       install: 'Installeren',
       dismiss: 'Later',
     },

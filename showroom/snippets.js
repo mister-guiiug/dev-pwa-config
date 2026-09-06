@@ -148,8 +148,15 @@ import { recordError } from '@mister-guiiug/dev-pwa-config/react/observability';
 
   PwaInstallPrompt: `import { PwaInstallPrompt } from '@mister-guiiug/dev-pwa-config/react';
 
-{/* Ne s'affiche que si l'installation est possible et non refusée. */}
-<PwaInstallPrompt />`,
+{/* Au premier lancement, puis tous les 30 jours, 3 fois en tout. Bouton natif
+    là où le navigateur en expose un, marche à suivre sur iOS et Safari — qui
+    n'ont pas de \`beforeinstallprompt\`. */}
+<PwaInstallPrompt />
+
+{/* Une autre cadence, ou aucune : \`false\` pour un écran de réglages, où
+    l'utilisateur est venu CHERCHER l'installation. */}
+<PwaInstallPrompt cadence={{ snoozeDays: 7, maxPrompts: 5 }} />
+<PwaInstallPrompt cadence={false} />`,
 
   UpdatePromptBanner: `// Import par sous-chemin : couplé à virtual:pwa-register/react, hors barrel.
 import { UpdatePromptBanner } from '@mister-guiiug/dev-pwa-config/react/update-prompt-banner';
