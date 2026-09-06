@@ -410,6 +410,101 @@ test('un commentaire qui MET EN GARDE contre un défaut n’est pas ce défaut',
   );
 });
 
+/* ── Le droit de réponse ──────────────────────────────────────────────────
+ *
+ * Promouvoir un contrôle en défaut sans lui, c'est transformer un désaccord en
+ * CI rouge permanente. Le parc y a déjà buté : les e2e de mister-puzzle sont
+ * VOLONTAIREMENT sans étiquette, décision assumée par le propriétaire, et le
+ * docteur ne savait que la compter — faute de pouvoir l'entendre.
+ */
+
+const AVEC_INHERIT = [
+  'jobs:',
+  '  ci:',
+  '    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4',
+  '    secrets: inherit',
+].join('\n');
+
+test('un refus motivé éteint le défaut, sans le cacher', async () => {
+  await repo(
+    {
+      'package.json': {
+        name: 'miss-miroir',
+        pwaDoctor: {
+          refus: {
+            'secrets-inherit':
+              'miroir : la source est bac-sable, tout est régénéré par npm run mirror',
+          },
+        },
+      },
+      '.github/workflows/ci.yml': AVEC_INHERIT,
+    },
+    async root => {
+      const report = diagnose(root);
+      assert.ok(!ids(report, 'défaut').includes('secrets-inherit'));
+      assert.ok(!ids(report, 'dette').includes('secrets-inherit'));
+
+      // Éteint, pas effacé : la ligne reste au rapport, avec sa raison.
+      const refuse = report.findings.find(f => f.id === 'secrets-inherit');
+      assert.equal(refuse.level, 'refus');
+      assert.match(refuse.raison, /npm run mirror/);
+      assert.match(format(report), /↳ refusé ici : miroir : la source/);
+      assert.match(format(report), /1 refus/);
+
+      // Et surtout : la CI cesse d'être rouge pour ça.
+      assert.equal(await run(['--dir', root, '--no-github']), 0);
+    }
+  );
+});
+
+test('une raison vide n’est pas un refus', async () => {
+  // On refuse en disant pourquoi, ou on ne refuse pas : sinon la liste
+  // d'exceptions devient un interrupteur, et le pourquoi se perd.
+  await repo(
+    {
+      'package.json': {
+        name: 'miss-muette',
+        pwaDoctor: { refus: { 'secrets-inherit': '   ' } },
+      },
+      '.github/workflows/ci.yml': AVEC_INHERIT,
+    },
+    async root => {
+      const report = diagnose(root);
+      assert.ok(ids(report, 'défaut').includes('secrets-inherit'));
+      assert.equal(await run(['--dir', root, '--no-github']), 1);
+    }
+  );
+});
+
+test('un refus qui n’excuse plus rien se signale lui-même', async () => {
+  // Sans ça, la liste d'exceptions grossit d'un cran à chaque décision et ne
+  // redescend jamais — c'est la leçon du relevé d'adoption.
+  await repo(
+    {
+      'package.json': {
+        name: 'miss-propre',
+        pwaDoctor: {
+          refus: { 'secrets-inherit': 'plus vrai depuis la campagne du 07/09' },
+        },
+      },
+      '.github/workflows/ci.yml': 'jobs:\n  ci:\n    uses: x/y/z.yml@v4',
+    },
+    async root => {
+      const report = diagnose(root);
+      const perime = report.findings.find(
+        f => f.id === 'refus-perime-secrets-inherit'
+      );
+      assert.equal(perime.level, 'info');
+      assert.match(perime.message, /n’excuse plus rien/);
+      assert.equal(perime.fix, 'retirer la ligne de package.json');
+      // Se signaler n'est pas accuser : le refus périmé sort en info, et rien
+      // dans ce dépôt n'est un défaut — le code de sortie reste 0.
+      assert.deepEqual(ids(report, 'défaut'), []);
+      assert.equal(await run(['--dir', root, '--no-github']), 0);
+    }
+  );
+});
+
 test('le défaut réel est toujours vu, commentaire ou pas', async () => {
   await repo(
     {
