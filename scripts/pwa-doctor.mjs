@@ -33,14 +33,23 @@
  *
  * TROIS VERDICTS, parce qu'ils ne se traitent pas pareil :
  *
- *   ✖ DÉFAUT   quelqu'un en souffre aujourd'hui (pas installable, 404, …),
- *              ou une porte s'ouvre à chaque run (`secrets: inherit`) ;
+ *   ✖ DÉFAUT   ce qui NUIT DÉJÀ — parce que quelqu'un en souffre (pas
+ *              installable, 404) ou parce que le dépôt expose à chaque run ce
+ *              qu'il n'a pas à exposer ;
  *   • DETTE    le socle a la réponse, l'app ne l'a pas prise ;
  *   i INFO     une mesure à connaître (locales figées, `console.*`), pas un
  *              jugement.
  *
  * Chaque ligne dit le GESTE qui la fait disparaître — pas un score. Le code
  * de sortie : 1 sur un défaut ; avec `--strict`, aussi sur une dette.
+ *
+ * ET UN DROIT DE RÉPONSE. `pwaDoctor.refus` dans `package.json` associe l'id
+ * d'un contrôle à la RAISON de ne pas le suivre ici ; la ligne sort alors en
+ * `– refus`, avec sa raison, et ne compte plus dans le code de sortie. Une
+ * raison vide n'est pas un refus, et un refus qui n'excuse plus rien se
+ * signale de lui-même. Sans ce droit, promouvoir un contrôle en défaut
+ * transforme un désaccord en CI rouge permanente : les e2e volontairement non
+ * tagués de mister-puzzle attendaient exactement ça.
  *
  * UN SEUL FAIT VIENT D'AILLEURS : les issues du dépôt sont-elles ouvertes ?
  * Le lien « Signaler un problème » du pied de page (4.4.0) mène à `issues/new`,
@@ -572,18 +581,51 @@ export function specJouee(text, filtre) {
  */
 export function diagnose(dir, faits = {}) {
   const root = resolve(dir);
+  const pkg = readJson(root, 'package.json') ?? {};
+
+  // Le refus MOTIVÉ. `pwaDoctor.refus` de package.json associe l'id d'un
+  // contrôle à la raison de ne pas le suivre ICI :
+  //
+  //   "pwaDoctor": { "refus": { "wf-lighthouse": "app interne, pas de site" } }
+  //
+  // Un contrôle refusé sort en `refus`, avec sa raison, et ne pèse plus sur le
+  // code de sortie. Il ne DISPARAÎT pas : une exception qu'on ne voit plus est
+  // une exception qui survit à ce qu'elle excusait.
+  //
+  // POURQUOI MAINTENANT. Tant que tout était dette ou info, une décision
+  // contraire coûtait une ligne de bruit ; avec un défaut, elle coûte une CI
+  // rouge en permanence, et rien à faire pour l'éteindre. Le parc a déjà buté
+  // là-dessus : les tests e2e de mister-puzzle sont VOLONTAIREMENT sans
+  // étiquette (« hygiène locale, pas la porte de la CI »), décision assumée par
+  // le propriétaire, et le docteur ne savait que la compter en dette faute de
+  // pouvoir l'entendre. Promouvoir un contrôle sans donner ce droit de réponse,
+  // c'est transformer un désaccord en panne.
+  //
+  // UNE RAISON VIDE N'EST PAS UN REFUS : l'entrée est ignorée, et le contrôle
+  // reprend son niveau. On refuse en disant pourquoi, ou on ne refuse pas.
+  const refus = Object.fromEntries(
+    Object.entries(pkg.pwaDoctor?.refus ?? {}).filter(
+      ([, raison]) => typeof raison === 'string' && raison.trim() !== ''
+    )
+  );
+  const refusServis = new Set();
+
   const findings = [];
   const seen = new Set();
   const add = (level, id, message, fix) => {
     if (seen.has(id)) return;
     seen.add(id);
+    if (refus[id]) {
+      refusServis.add(id);
+      findings.push({ level: 'refus', id, message, fix, raison: refus[id] });
+      return;
+    }
     findings.push({ level, id, message, fix });
   };
   const defaut = (id, message, fix) => add('défaut', id, message, fix);
   const dette = (id, message, fix) => add('dette', id, message, fix);
   const info = (id, message, fix) => add('info', id, message, fix);
 
-  const pkg = readJson(root, 'package.json') ?? {};
   const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
   const source = walk(root, ['src']);
   const srcText = source.map(f => f.text).join('\n');
@@ -790,12 +832,12 @@ export function diagnose(dir, faits = {}) {
     // est revenu à zéro par campagne, et le niveau change pour que ça le
     // reste.
     //
-    // Le verdict s'écarte de la lettre de « quelqu'un en souffre aujourd'hui »,
-    // et l'assume : ce n'est pas une réponse du socle que l'app n'aurait pas
-    // prise, c'est un trousseau entier remis à chaque exécution, sur chaque
-    // PR. `pwa-ci.yml` et `pwa-lighthouse.yml` ne déclarent AUCUN secret —
-    // `secrets.GITHUB_TOKEN` est fourni d'office à un workflow appelé — et
-    // `pwa-deploy.yml` n'en déclare qu'un.
+    // Ce n'est pas une réponse du socle que l'app n'aurait pas prise — la
+    // définition même de la dette — mais un trousseau entier remis à chaque
+    // exécution, sur chaque PR. `pwa-ci.yml` et `pwa-lighthouse.yml` ne
+    // déclarent AUCUN secret (`secrets.GITHUB_TOKEN` est fourni d'office à un
+    // workflow appelé) et `pwa-deploy.yml` n'en déclare qu'un. Un dépôt qui a
+    // une raison de garder la ligne l'écrit dans `pwaDoctor.refus`.
     const herites = workflows.filter(w =>
       /secrets:\s*inherit/.test(sansCommentaires.yaml(w.text))
     );
@@ -1138,23 +1180,42 @@ export function diagnose(dir, faits = {}) {
     }
   }
 
+  // Un refus qui n'excuse plus rien reste écrit, et personne ne le relit : la
+  // liste d'exceptions grossit d'un cran à chaque décision et ne redescend
+  // jamais. Il se signale donc lui-même, en info — le geste étant de retirer
+  // la ligne.
+  for (const id of Object.keys(refus)) {
+    if (!refusServis.has(id)) {
+      info(
+        `refus-perime-${id}`,
+        `pwaDoctor.refus.${id} n’excuse plus rien : ce contrôle ne trouve rien ici`,
+        'retirer la ligne de package.json'
+      );
+    }
+  }
+
   return { dir: root, findings, build };
 }
 
-const MARK = { défaut: '✖', dette: '•', info: 'i' };
+const MARK = { défaut: '✖', dette: '•', info: 'i', refus: '–' };
 
 /** Le rapport, lisible. */
 export function format(report) {
   const lines = [];
-  for (const level of ['défaut', 'dette', 'info']) {
+  for (const level of ['défaut', 'dette', 'info', 'refus']) {
     for (const f of report.findings.filter(x => x.level === level)) {
       lines.push(`${MARK[level]} ${level.padEnd(6)} ${f.message}`);
-      if (f.fix) lines.push(`         → ${f.fix}`);
+      // La RAISON à la place du geste : sur un refus, le geste a déjà été
+      // écarté, et c'est le pourquoi qui doit rester sous les yeux.
+      if (f.raison) lines.push(`         ↳ refusé ici : ${f.raison}`);
+      else if (f.fix) lines.push(`         → ${f.fix}`);
     }
   }
   const n = level => report.findings.filter(f => f.level === level).length;
   lines.push(
-    `\n${n('défaut')} défaut(s), ${n('dette')} dette(s), ${n('info')} info(s)${report.build ? '' : ' — build non lu'}`
+    `\n${n('défaut')} défaut(s), ${n('dette')} dette(s), ${n('info')} info(s)` +
+      (n('refus') ? `, ${n('refus')} refus` : '') +
+      (report.build ? '' : ' — build non lu')
   );
   return lines.join('\n');
 }
