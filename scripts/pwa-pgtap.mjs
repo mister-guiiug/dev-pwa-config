@@ -40,7 +40,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { estPointDEntree } from './entree.mjs';
 
 /** Les assertions pgTAP dont le verdict doit être collecté. */
 const ASSERTIONS =
@@ -190,9 +190,6 @@ export async function run(args = []) {
   return results.every(r => r.ok) ? 0 : 1;
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (estPointDEntree(import.meta.url)) {
   process.exitCode = await run(process.argv.slice(2));
 }

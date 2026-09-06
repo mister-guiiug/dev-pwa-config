@@ -57,6 +57,7 @@ import { dirname, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 import { manifestScreenshots } from '../vite-pwa.js';
+import { estPointDEntree } from './entree.mjs';
 
 /** Les deux cadres, tels que Chrome les attend. */
 export const CADRES = {
@@ -355,9 +356,6 @@ export async function run(argv = [], cwd = process.cwd()) {
   return 0;
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (estPointDEntree(import.meta.url)) {
   process.exitCode = await run(process.argv.slice(2));
 }
