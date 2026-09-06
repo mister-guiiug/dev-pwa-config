@@ -220,6 +220,11 @@ globalThis.SHOWROOM_I18N = {
       'Add this app to your home screen: quick access, works offline.',
     'composants.summary5': 'CSS selectors',
     'composants.h411': 'ShareButton',
+    'composants.h412': 'Sparkline · BarChart · Gauge',
+    'composants.p412':
+      'The plot is <code>aria-hidden</code>: the data is spelled out in text next to it. A chart that says nothing says nothing to anyone.',
+    'composants.spark1': 'traffic: from 4 to 28 views, rising',
+    'composants.summary19': 'CSS selectors',
     'composants.p21':
       'Native share, clipboard fallback. Cancelling shows nothing: dismissing the share sheet is not a failure.',
     'composants.share1': 'Share',

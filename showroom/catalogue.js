@@ -491,6 +491,29 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'Sparkline',
+      category: 'primitive',
+      covers: ['Sparkline', 'BarChart', 'Gauge'],
+      donts: {
+        fr: [
+          'Ne pas laisser le tracé parler seul : le `<svg>` est `aria-hidden`, et c’est le texte à côté qui porte la donnée. Retirer `label` ou `unit` ne casse aucun rendu — la mesure disparaît simplement pour qui ne la voit pas.',
+          'Ne pas boucher les trous d’une série : une valeur manquante COUPE le trait. Une ligne qui traverse le trou raconte une mesure qui n’a jamais été prise.',
+          'Ne pas remplacer `Gauge` par une barre colorée maison : sans `aria-valuenow/min/max`, le niveau n’existe que pour l’œil.',
+          'Ne pas croire qu’une valeur hors bornes est refusée : le remplissage est borné à 0–100 %, mais la valeur ANNONCÉE reste la vraie. Borner le dessin ne doit pas mentir sur la mesure.',
+        ],
+        en: [
+          'Don’t let the plot speak alone: the `<svg>` is `aria-hidden`, and the text beside it carries the data. Dropping `label` or `unit` breaks no rendering — the measurement simply disappears for anyone who cannot see it.',
+          'Don’t bridge gaps in a series: a missing value BREAKS the line. A line crossing the gap tells of a measurement that was never taken.',
+          'Don’t replace `Gauge` with a hand-rolled coloured bar: without `aria-valuenow/min/max`, the level exists for the eye only.',
+          'Don’t assume an out-of-range value is rejected: the fill is clamped to 0–100 %, but the ANNOUNCED value stays the real one. Clamping the drawing must not lie about the measurement.',
+        ],
+      },
+      a11y: {
+        fr: 'Le dessin est masqué (`aria-hidden`, `focusable="false"`) et la donnée est dite en toutes lettres dans un texte voisin. `Gauge` est un vrai `meter` : `aria-valuenow`, `min`, `max`, `valuetext` avec l’unité, et un nom.',
+        en: 'The drawing is hidden (`aria-hidden`, `focusable="false"`) and the data is spelled out in an adjacent text. `Gauge` is a real `meter`: `aria-valuenow`, `min`, `max`, `valuetext` with the unit, and a name.',
+      },
+    },
+    {
       id: 'AppVersion',
       category: 'shell',
       covers: ['AppVersion'],

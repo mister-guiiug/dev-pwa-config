@@ -1,4 +1,4 @@
-import { createElement as h } from 'react';
+import { createElement as h, useId } from 'react';
 import { Button } from './button.js';
 import { TextField } from './field.js';
 import { useLabels } from './labels.js';
@@ -106,16 +106,25 @@ export function LoginForm(props = {}) {
     });
   };
 
+  const titreId = useId();
+
   return h(
     'form',
     {
       'data-dwc': 'login-form',
+      // Le formulaire prend le nom de son titre — même idiome que `Sheet` et
+      // `ConfirmDialog`. Sans lui, un lecteur d'écran annonce « formulaire »
+      // et rien d'autre, alors que le titre est juste au-dessus. Quand
+      // l'appelant rend son propre titre (`title={null}`), il n'y a rien à
+      // désigner : l'attribut disparaît plutôt que de pointer dans le vide.
+      'aria-labelledby':
+        heading !== null && heading !== undefined ? titreId : undefined,
       'data-mode': mode,
       className,
       onSubmit: submit,
     },
     heading !== null && heading !== undefined
-      ? h(titleAs, { 'data-dwc': 'login-form-title' }, heading)
+      ? h(titleAs, { id: titreId, 'data-dwc': 'login-form-title' }, heading)
       : null,
     h(TextField, {
       label: emailLabel ?? labels.email,

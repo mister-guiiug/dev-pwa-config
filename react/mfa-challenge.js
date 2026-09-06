@@ -1,4 +1,4 @@
-import { createElement as h, useState } from 'react';
+import { createElement as h, useId, useState } from 'react';
 import { Button } from './button.js';
 import { TextField } from './field.js';
 import { useLabels } from './labels.js';
@@ -75,16 +75,25 @@ export function MfaChallenge(props = {}) {
     else onRecover?.(value);
   };
 
+  const titreId = useId();
+
   return h(
     'form',
     {
       'data-dwc': 'mfa-challenge',
+      // Le formulaire prend le nom de son titre — même idiome que `Sheet` et
+      // `ConfirmDialog`. Sans lui, un lecteur d'écran annonce « formulaire »
+      // et rien d'autre, alors que le titre est juste au-dessus. Quand
+      // l'appelant rend son propre titre (`title={null}`), il n'y a rien à
+      // désigner : l'attribut disparaît plutôt que de pointer dans le vide.
+      'aria-labelledby':
+        heading !== null && heading !== undefined ? titreId : undefined,
       'data-mode': mode,
       className,
       onSubmit: submit,
     },
     heading !== null && heading !== undefined
-      ? h(titleAs, { 'data-dwc': 'mfa-challenge-title' }, heading)
+      ? h(titleAs, { id: titreId, 'data-dwc': 'mfa-challenge-title' }, heading)
       : null,
     totp ? h('p', { 'data-dwc': 'mfa-challenge-hint' }, labels.mfaHint) : null,
     h(TextField, {

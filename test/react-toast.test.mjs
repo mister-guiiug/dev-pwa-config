@@ -156,6 +156,48 @@ test('une erreur ne s’efface pas toute seule, les autres si', async () => {
   }
 });
 
+test('« danger » et « error » sont le même ton, jusque dans la région annoncée', async () => {
+  // Le vocabulaire de la famille est celui de `Badge` : `tone` pour le sens,
+  // `danger` pour le rouge. `error` est l'ancien nom, que les apps passent
+  // encore. LES DEUX DOIVENT SE COMPORTER PAREIL — un seul prédicat décide,
+  // sinon la durée de vie reconnaîtrait un mot et la région d'annonce l'autre,
+  // et une erreur s'effacerait sans avoir été annoncée.
+  const dom = setupDom();
+  try {
+    let api;
+    function Sonde() {
+      api = useToast();
+      return null;
+    }
+    const view = await mount(h(ToastProvider, { duration: 30 }, h(Sonde)));
+    await view.act(() => {
+      api.show('Ancien mot', { tone: 'error' });
+      api.show('Nouveau mot', { tone: 'danger' });
+      api.show('Sans gravité', { tone: 'info' });
+    });
+
+    await view.act(() => attendre(70));
+    const restants = [
+      ...view.container.querySelectorAll('[data-dwc="toast"]'),
+    ].map(node => node.dataset.tone);
+    assert.deepEqual(
+      restants.sort(),
+      ['danger', 'error'],
+      'les deux mots restent, l’info s’efface'
+    );
+
+    // Et les deux partent dans la région `assertive`, celle qu'un lecteur
+    // d'écran interrompt pour lire.
+    const assertive = view.container.querySelector('[aria-live="assertive"]');
+    assert.match(assertive.textContent, /Ancien mot/);
+    assert.match(assertive.textContent, /Nouveau mot/);
+    assert.doesNotMatch(assertive.textContent, /Sans gravité/);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
 test('le compte à rebours est suspendu tant que le pointeur est dessus', async () => {
   // WCAG 2.2.1 : aucune des six copies ne le faisait.
   const dom = setupDom();

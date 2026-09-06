@@ -1530,6 +1530,74 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
+            <h4 data-i18n="composants.h412">Sparkline · BarChart · Gauge</h4>
+            <p data-i18n="composants.p412">
+              Le tracé est <code>aria-hidden</code>&nbsp;: la donnée est dite en
+              toutes lettres dans un texte à côté. Un graphique qui ne dit rien
+              ne dit rien à personne.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <span data-dwc="sparkline">
+              <svg
+                width="120"
+                height="32"
+                viewBox="0 0 120 32"
+                aria-hidden="true"
+                focusable="false"
+                preserveAspectRatio="none"
+              >
+                <polyline
+                  points="0,26 24,18 48,22 72,8 96,12 120,4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <circle
+                  cx="120"
+                  cy="4"
+                  r="2"
+                  fill="currentColor"
+                  data-dwc="sparkline-last"
+                />
+              </svg>
+              <span
+                data-dwc="sparkline-text"
+                class="sr-only"
+                data-i18n="composants.spark1"
+                >trafic : de 4 à 28 vues, en hausse</span
+              >
+            </span>
+            <span
+              data-dwc="gauge"
+              role="meter"
+              aria-valuenow="30"
+              aria-valuemin="0"
+              aria-valuemax="60"
+              aria-valuetext="30 Go"
+              aria-label="quota"
+            >
+              <span data-dwc="gauge-fill" style="width: 50%"></span>
+            </span>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary19">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="Sparkline"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="sparkline"]</code></li>
+                <li><code>[data-dwc="sparkline-text"]</code></li>
+                <li><code>[data-dwc="bars"]</code></li>
+                <li><code>[data-dwc="gauge"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
             <h4 data-i18n="composants.h46">UpdatePromptBanner</h4>
             <p data-i18n="composants.p12">
               <code>registerSW</code> est reçu en prop, plus importé en dur : le

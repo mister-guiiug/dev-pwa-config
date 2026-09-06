@@ -77,7 +77,10 @@
     [data-dwc='error-boundary-backup'],
     [data-dwc='share-button'],
     [data-dwc='update-banner-update'],
+    [data-dwc='update-button'],
     [data-dwc='update-banner-dismiss'],
+    [data-dwc='update-banner-ignore'],
+    [data-dwc='offline-ready-dismiss'],
     [data-dwc='pwa-install-actions'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
@@ -95,7 +98,10 @@
     [data-dwc='error-boundary-backup'],
     [data-dwc='share-button'],
     [data-dwc='update-banner-update'],
+    [data-dwc='update-button'],
     [data-dwc='update-banner-dismiss'],
+    [data-dwc='update-banner-ignore'],
+    [data-dwc='offline-ready-dismiss'],
     [data-dwc='pwa-install-actions'] button
   ) {
     font: inherit;
@@ -142,6 +148,14 @@
     max-width: 40ch;
     font-size: var(--text-fluid-sm, 0.9rem);
     color: var(--dwc-text-soft, GrayText);
+  }
+
+  /* Le contenu libre glissé dans l'état vide. Sans règle, il héritait du
+     `justify-items: center` de la grille et se rétrécissait à son contenu :
+     un tableau ou un formulaire posé là arrivait comprimé au milieu. */
+  [data-dwc='empty-state-body'] {
+    justify-self: stretch;
+    margin-top: var(--spacing-fluid-sm, 0.75rem);
   }
 
   [data-dwc='empty-state-action'] {
@@ -314,7 +328,8 @@
   /* ── PwaInstallPrompt & UpdatePromptBanner ─────────────────────────────── */
 
   [data-dwc='pwa-install-prompt'],
-  [data-dwc='update-banner'] {
+  [data-dwc='update-banner'],
+  [data-dwc='offline-ready'] {
     padding: var(--spacing-fluid-md, 1rem);
     border: 1px solid
       var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
@@ -344,14 +359,16 @@
     gap: 0.5rem;
   }
 
-  [data-dwc='update-banner'] {
+  [data-dwc='update-banner'],
+  [data-dwc='offline-ready'] {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
   }
 
-  [data-dwc='update-banner-title'] {
+  [data-dwc='update-banner-title'],
+  [data-dwc='offline-ready-title'] {
     flex: 1 1 12rem;
     font-size: var(--text-fluid-sm, 0.9rem);
   }
@@ -447,7 +464,10 @@
   [data-dwc='app-version-available'] {
     padding: 0.1rem 0.45rem;
     border-radius: var(--dwc-radius, 0.75rem);
-    background: var(--dwc-primary-soft, rgb(0 0 0 / 8%));
+    background: var(
+      --dwc-primary-soft,
+      color-mix(in srgb, CanvasText 6%, Canvas)
+    );
     color: var(--dwc-text, CanvasText);
     font-size: 0.85em;
   }
@@ -525,7 +545,7 @@
     color: var(--dwc-primary, CanvasText);
     background: var(
       --dwc-primary-soft,
-      color-mix(in srgb, CanvasText 8%, Canvas)
+      color-mix(in srgb, CanvasText 6%, Canvas)
     );
   }
 
@@ -750,6 +770,22 @@
   }
 
   [data-dwc='field-hint'] {
+    margin: 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  /* Le bouton « forcer la mise à jour » et sa phrase d'explication : empilés,
+     l'indice sous le bouton. Le groupe n'avait qu'une règle d'impression — il
+     s'affichait donc en ligne, l'indice collé au bouton. */
+  [data-dwc='update-button-group'] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  [data-dwc='update-button-hint'] {
     margin: 0;
     font-size: var(--text-fluid-xs, 0.8rem);
     color: var(--dwc-text-soft, GrayText);
@@ -1273,7 +1309,11 @@
   }
 
   [data-dwc='confirm-cancel'] {
-    border: 1px solid var(--dwc-border-strong, var(--dwc-border, GrayText));
+    border: 1px solid
+      var(
+        --dwc-border-strong,
+        var(--dwc-border, color-mix(in srgb, CanvasText 40%, Canvas))
+      );
     background: var(--dwc-surface, Canvas);
     color: var(--dwc-text, CanvasText);
   }
@@ -1301,8 +1341,8 @@
   /* Destructif : la couleur ne porte pas seule le sens — le libellé passe à
      « Supprimer » côté composant. Elle le renforce, c'est tout. */
   [data-dwc='confirm'][data-destructive] [data-dwc='confirm-confirm'] {
-    border-color: var(--dwc-danger, light-dark(#b42318, #f97066));
-    background: var(--dwc-danger, light-dark(#b42318, #f97066));
+    border-color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+    background: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
   }
 
   [data-dwc='confirm-cancel'][aria-disabled='true'],
@@ -1355,18 +1395,21 @@
     color: var(--dwc-text, CanvasText);
     border: 1px solid
       var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
-    border-inline-start: 4px solid var(--dwc-info, light-dark(#175cd3, #84caff));
+    border-inline-start: 4px solid var(--dwc-info, light-dark(#1d4ed8, #60a5fa));
     border-radius: var(--dwc-radius, 0.75rem);
     box-shadow: var(--dwc-shadow, none);
     animation: dwc-rise 0.18s ease-out backwards;
   }
 
   [data-dwc='toast'][data-tone='success'] {
-    border-inline-start-color: var(--dwc-success, light-dark(#067647, #4ade80));
+    border-inline-start-color: var(--dwc-success, light-dark(#15803d, #4ade80));
   }
 
-  [data-dwc='toast'][data-tone='error'] {
-    border-inline-start-color: var(--dwc-danger, light-dark(#b42318, #f97066));
+  /* `danger` est le mot de la famille (celui de `Badge`), `error` son ancien
+     nom — les deux rendent le même trait tant que les apps n'ont pas migré. */
+  [data-dwc='toast'][data-tone='error'],
+  [data-dwc='toast'][data-tone='danger'] {
+    border-inline-start-color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
   }
 
   [data-dwc='toast-message'] {
@@ -1603,6 +1646,15 @@
     line-height: 0;
   }
 
+  /* Le libellé d'un onglet ne pousse pas la barre : à cinq entrées sur un
+     écran de 320 px, un mot long débordait sur son voisin. */
+  [data-dwc='bottom-nav-label'] {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   [data-dwc='bottom-nav-badge'] {
     position: absolute;
     transform: translate(0.9rem, -0.6rem);
@@ -1612,7 +1664,7 @@
     line-height: 1.05rem;
     text-align: center;
     border-radius: 999px;
-    background: var(--dwc-danger, light-dark(#b42318, #f97066));
+    background: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
     color: var(--dwc-primary-contrast, Canvas);
   }
 
@@ -1964,6 +2016,7 @@
     [data-dwc='bottom-nav'],
     [data-dwc='pwa-install-prompt'],
     [data-dwc='update-banner'],
+    [data-dwc='offline-ready'],
     [data-dwc='update-button-group'] {
       display: none;
     }

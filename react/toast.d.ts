@@ -1,6 +1,12 @@
 import type { FC, ReactNode } from 'react';
 
-export type ToastTone = 'info' | 'success' | 'error';
+/**
+ * Le ton sémantique. `danger` est le mot de la famille — celui de `Badge` —
+ * et `error` son ancien nom, conservé : les apps le passent, et leurs
+ * feuilles de style ciblent `[data-tone='error']`. Les deux rendent le même
+ * trait. Écrire `danger` dans du code neuf.
+ */
+export type ToastTone = 'info' | 'success' | 'danger' | 'error';
 
 export interface ToastOptions {
   tone?: ToastTone;
