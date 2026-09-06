@@ -1458,12 +1458,15 @@
             <h4 data-i18n="composants.h45">PwaInstallPrompt</h4>
             <p data-i18n="composants.p9">
               Bannière passive (<code>role="region"</code>, pas
-              <code>dialog</code> : elle ne piège pas le focus).
+              <code>dialog</code> : elle ne piège pas le focus). Deux visages :
+              le bouton natif, et la marche à suivre là où le navigateur n’en
+              expose aucun.
             </p>
           </div>
           <div class="sr-demo-stage">
             <div
               data-dwc="pwa-install-prompt"
+              data-method="prompt"
               role="region"
               aria-label="Installer l’application"
             >
@@ -1479,6 +1482,23 @@
                 <button type="button">Plus tard</button>
               </div>
             </div>
+            <div
+              data-dwc="pwa-install-prompt"
+              data-method="instructions"
+              data-platform="ios"
+              role="region"
+              aria-label="Installer l’application"
+            >
+              <p data-dwc="pwa-install-title" data-i18n="composants.p10b">
+                Installer l’application
+              </p>
+              <p data-dwc="pwa-install-desc" data-i18n="composants.p11b">
+                Touchez le bouton Partager, puis « Sur l’écran d’accueil ».
+              </p>
+              <div data-dwc="pwa-install-actions">
+                <button type="button">Plus tard</button>
+              </div>
+            </div>
           </div>
           <details>
             <summary data-i18n="composants.summary5">Sélecteurs CSS</summary>
@@ -1489,6 +1509,8 @@
                 <li><code>[data-dwc="pwa-install-title"]</code></li>
                 <li><code>[data-dwc="pwa-install-desc"]</code></li>
                 <li><code>[data-dwc="pwa-install-actions"]</code></li>
+                <li><code>[data-method="prompt|instructions"]</code></li>
+                <li><code>[data-platform="ios|safari|generic"]</code></li>
               </ul>
             </div>
           </details>

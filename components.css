@@ -354,6 +354,16 @@
     color: var(--dwc-text-soft, GrayText);
   }
 
+  /* Là où le navigateur n'expose aucune invite (iOS, Safari), cette ligne
+     n'est plus un argument de vente mais LA marche à suivre : on lui rend
+     l'encre du texte courant. Du gris atténué sur un aplat `primary-soft`
+     est précisément la composition que le relevé de contraste du 06/09 a
+     trouvée sous AA — et ici elle porterait la seule information utile. */
+  [data-dwc='pwa-install-prompt'][data-method='instructions']
+    [data-dwc='pwa-install-desc'] {
+    color: inherit;
+  }
+
   [data-dwc='pwa-install-actions'] {
     display: flex;
     flex-wrap: wrap;

@@ -1,24 +1,47 @@
 import { useLabels } from './labels.js';
-import { createElement as h, useId, useState } from 'react';
+import { createElement as h, useId } from 'react';
 import { useInstallPrompt } from './use-install-prompt.js';
 
 function getStore(kind) {
-  return kind === 'session' ? window.sessionStorage : window.localStorage;
+  try {
+    return kind === 'session' ? window.sessionStorage : window.localStorage;
+  } catch {
+    // Navigation privée, stockage refusé : le hook retombe sur une cadence
+    // qui ne vaut que pour la session, plutôt que de faire planter le rendu.
+    return null;
+  }
+}
+
+/** Le libellé d'instructions correspondant à la plateforme détectée. */
+function howTo(labels, platform) {
+  if (platform === 'ios') return labels.howIos;
+  if (platform === 'safari') return labels.howSafari;
+  return labels.howGeneric;
 }
 
 /**
- * Bandeau « Installer l'application » réutilisable. Ne s'affiche que si
- * l'installation est possible et n'a pas été refusée. Non stylé : cibler
- * `[data-dwc="pwa-install-prompt"]` (et descendants) en CSS du projet.
+ * Bandeau « Installer l'application ».
  *
- * @param {{ storage?: 'local'|'session', dismissKey?: string, title?: string,
- *   description?: string, installLabel?: string, dismissLabel?: string,
- *   className?: string }} [props]
+ * CE QUI CHANGE (4.6), et pourquoi. Le bandeau ne paraissait que si
+ * `beforeinstallprompt` était arrivé, et un refus le taisait pour toujours :
+ * sur iPhone il n'a jamais rien affiché, et ailleurs il n'avait qu'une chance.
+ * Il suit désormais la cadence de `../install.js` — au premier lancement, puis
+ * tous les trente jours, trois fois — et remplace le bouton par des
+ * instructions là où le navigateur n'expose pas d'invite (iOS, Safari).
+ *
+ * Non stylé au-delà de `components.css` : cibler `[data-dwc="pwa-install-*"]`.
+ *
+ * @param {{ storage?: 'local'|'session', dismissKey?: string,
+ *   storageKey?: string, cadence?: Partial<import('../install.js').InstallCadence>|false,
+ *   title?: string, description?: string, installLabel?: string,
+ *   dismissLabel?: string, className?: string }} [props]
  */
 export function PwaInstallPrompt(props = {}) {
   const {
     storage = 'local',
     dismissKey = 'dwc_pwa_install_dismissed',
+    storageKey,
+    cadence,
     title,
     description,
     installLabel,
@@ -28,28 +51,30 @@ export function PwaInstallPrompt(props = {}) {
 
   const labels = useLabels('install');
   const titleId = useId();
-  const title_ = title ?? labels.title;
-  const description_ = description ?? labels.description;
+  const descId = useId();
 
-  const { canInstall, promptInstall } = useInstallPrompt();
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return getStore(storage).getItem(dismissKey) === '1';
-    } catch {
-      return false;
-    }
-  });
+  const { method, platform, shouldPrompt, promptInstall, snooze } =
+    useInstallPrompt({
+      storage: getStore(storage),
+      storageKey,
+      // `dismissKey` désigne l'ANCIENNE clé booléenne. Une app qui l'avait
+      // personnalisée garde donc le bénéfice de son refus passé : sans ce
+      // relais, la migration ne trouverait rien et l'invite repartirait de
+      // zéro chez ses utilisateurs.
+      legacyKey: dismissKey,
+      cadence: cadence === false ? undefined : cadence,
+      enabled: cadence !== false,
+    });
 
-  if (!canInstall || dismissed) return null;
+  // `cadence={false}` : l'app place l'invite elle-même (écran de réglages,
+  // page « À propos ») et veut la voir dès qu'une installation est possible.
+  const visible = cadence === false ? method !== 'none' : shouldPrompt;
+  if (!visible) return null;
 
-  const dismiss = () => {
-    try {
-      getStore(storage).setItem(dismissKey, '1');
-    } catch {
-      /* ignore */
-    }
-    setDismissed(true);
-  };
+  const instructions = method === 'instructions';
+  const description_ =
+    description ??
+    (instructions ? howTo(labels, platform) : labels.description);
 
   return h(
     'div',
@@ -64,21 +89,35 @@ export function PwaInstallPrompt(props = {}) {
       // rendu marche pour les deux formes, et garde le nom synchronisé avec ce
       // qui est réellement affiché.
       'aria-labelledby': titleId,
+      // En mode instructions, la marche à suivre EST le contenu utile : sans
+      // ce lien, un lecteur d'écran annonce « Installer l'application » puis
+      // ne trouve qu'un bouton « Plus tard ».
+      ...(instructions ? { 'aria-describedby': descId } : {}),
       'data-dwc': 'pwa-install-prompt',
+      'data-method': method,
+      'data-platform': platform,
     },
-    h('p', { id: titleId, 'data-dwc': 'pwa-install-title' }, title_),
-    h('p', { 'data-dwc': 'pwa-install-desc' }, description_),
+    h(
+      'p',
+      { id: titleId, 'data-dwc': 'pwa-install-title' },
+      title ?? labels.title
+    ),
+    h('p', { id: descId, 'data-dwc': 'pwa-install-desc' }, description_),
     h(
       'div',
       { 'data-dwc': 'pwa-install-actions' },
+      // Pas de bouton « Installer » quand rien ne peut l'honorer : un bouton
+      // qui ouvrirait un tutoriel déjà lu à l'écran serait une fausse porte.
+      instructions
+        ? null
+        : h(
+            'button',
+            { type: 'button', onClick: () => void promptInstall() },
+            installLabel ?? labels.install
+          ),
       h(
         'button',
-        { type: 'button', onClick: () => void promptInstall() },
-        installLabel ?? labels.install
-      ),
-      h(
-        'button',
-        { type: 'button', onClick: dismiss },
+        { type: 'button', onClick: snooze },
         dismissLabel ?? labels.dismiss
       )
     )

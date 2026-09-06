@@ -214,10 +214,12 @@ globalThis.SHOWROOM_I18N = {
     'composants.summary4': 'CSS selectors',
     'composants.h45': 'PwaInstallPrompt',
     'composants.p9':
-      'Passive banner (<code>role="region"</code>, not <code>dialog</code>: it does not trap focus).',
+      'Passive banner (<code>role="region"</code>, not <code>dialog</code>: it does not trap focus). Two faces: the native button, and the how-to where the browser exposes none.',
     'composants.p10': 'Install the app',
     'composants.p11':
       'Add this app to your home screen: quick access, works offline.',
+    'composants.p10b': 'Install the app',
+    'composants.p11b': 'Tap the Share button, then “Add to Home Screen”.',
     'composants.summary5': 'CSS selectors',
     'composants.h411': 'ShareButton',
     'composants.h412': 'Sparkline · BarChart · Gauge',

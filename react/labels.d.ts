@@ -15,6 +15,12 @@ export interface LabelGroups {
   install: {
     title: string;
     description: string;
+    /** Marche à suivre sur iOS / iPadOS, où aucune invite n'est programmable. */
+    howIos: string;
+    /** Marche à suivre dans Safari de bureau (« Ajouter au Dock »). */
+    howSafari: string;
+    /** Marche à suivre ailleurs : le menu du navigateur. */
+    howGeneric: string;
     install: string;
     dismiss: string;
   };
@@ -32,7 +38,7 @@ export interface LabelGroups {
     offlineReady: string;
     offlineReadyOk: string;
   };
-  footer: { source: string; sponsor: string };
+  footer: { source: string; sponsor: string; issues: string };
   share: { label: string; copied: string; failed: string };
   version: {
     label: string;
