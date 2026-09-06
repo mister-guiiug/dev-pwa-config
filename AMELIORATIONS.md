@@ -292,16 +292,16 @@ les naissances) et par un lot de campagne (pour les existantes).
 L'ordre suit le même principe que STRATEGIE.md : ce qui répare avant ce qui
 construit, ce qui se prouve avant ce qui se publie.
 
-| Étape | Contenu                                                                                                                                | Coût     | Ce qui le prouve                                                                           |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| 1     | ✅ **T7** (sonde) — fait le 06/09/2026 ; **T1** (jeton Renovate) reste au propriétaire                                                 | 1 h      | cim10 « coquille » ✅ ; une PR Renovate — en attente du secret                             |
-| 2     | ✅ **K1, K2, K3** — le squelette corrigé et étiqueté `v1.0.0` ; **T3, T5** — ses gardes exercés (fait le 06/09/2026, bilan ci-dessous) | 3 j      | 7 e2e et **13** pgTAP joués en CI ✅ ; badge admin ✅ ; lien de connexion ✅               |
-| 3     | ✅ **T2, T4, T6** — le docteur et les gardes de CI, puis **18 PR** (fait le 06/09/2026, bilan ci-dessous)                              | 2,5 j    | `doctor` en CI sur 18 dépôts ✅ ; doc et puzzle servent la coquille sur un lien profond ✅ |
-| 4     | **T8, T9, T10, T11, T14** — les briques qui circulent ; **G1–G4**                                                                      | 3 j      | 4 fiches d'installation ; 8 copies de CSS retirées ; une naissance construite              |
-| 5     | **K4, K5** puis **F2, F3, F5, F6** en lots de campagne                                                                                 | 3 j + PR | `version.json` sur 18 sites ; import dans les réglages ; lien de connexion sur 5 apps      |
-| 6     | **F4** (suppression de compte), avec sa preuve                                                                                         | 1 j      | pgTAP « plus une ligne »                                                                   |
-| 7     | **T12, T13, T15** — rétrécir, engendrer, dériver (chantiers 3 et 5, déjà planifiés)                                                    | 8 j      | 148 → ≈ 100 ; 17 `vite.config.ts` courts                                                   |
-| —     | **F7, F8** si un besoin les appelle                                                                                                    | —        | —                                                                                          |
+| Étape | Contenu                                                                                                                                | Coût     | Ce qui le prouve                                                                                                        |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 1     | ✅ **T7** (sonde) — fait le 06/09/2026 ; **T1** (jeton Renovate) reste au propriétaire                                                 | 1 h      | cim10 « coquille » ✅ ; une PR Renovate — en attente du secret                                                          |
+| 2     | ✅ **K1, K2, K3** — le squelette corrigé et étiqueté `v1.0.0` ; **T3, T5** — ses gardes exercés (fait le 06/09/2026, bilan ci-dessous) | 3 j      | 7 e2e et **13** pgTAP joués en CI ✅ ; badge admin ✅ ; lien de connexion ✅                                            |
+| 3     | ✅ **T2, T4, T6** — le docteur et les gardes de CI, puis **18 PR** (fait le 06/09/2026, bilan ci-dessous)                              | 2,5 j    | `doctor` en CI sur 18 dépôts ✅ ; doc et puzzle servent la coquille sur un lien profond ✅                              |
+| 4     | ✅ **T8, T9, T10, T11, T14** — les briques qui circulent ; **G1–G4** (fait le 06/09/2026, bilan ci-dessous)                            | 3 j      | 4 fiches d'installation ✅ ; **4** copies de CSS retirées (le relevé n'en trouvait pas 8) ; une naissance construite ✅ |
+| 5     | **K4, K5** puis **F2, F3, F5, F6** en lots de campagne                                                                                 | 3 j + PR | `version.json` sur 18 sites ; import dans les réglages ; lien de connexion sur 5 apps                                   |
+| 6     | **F4** (suppression de compte), avec sa preuve                                                                                         | 1 j      | pgTAP « plus une ligne »                                                                                                |
+| 7     | **T12, T13, T15** — rétrécir, engendrer, dériver (chantiers 3 et 5, déjà planifiés)                                                    | 8 j      | 148 → ≈ 100 ; 17 `vite.config.ts` courts                                                                                |
+| —     | **F7, F8** si un besoin les appelle                                                                                                    | —        | —                                                                                                                       |
 
 Total des étapes 1 à 6 : **≈ 13 jours**, dont la moitié en petites PR.
 
@@ -364,6 +364,51 @@ passent en `vars` — un geste sur le dépôt, pas dans un fichier.
 seul le propriétaire peut poser ; l'activation du hook de rôle sur les projets
 Supabase hébergés le jour où une application née du squelette en a un ; et
 `doctor-strict`, que chaque application adoptera quand son relevé sera à zéro.
+
+### Bilan de l'étape 4, exécutée le 06/09/2026
+
+**Socle : 4.3.0, puis 4.3.1 et 4.3.2 le même jour** (PR #202, release #203 ;
+correctifs #205/#206 et #207/#208). Les deux correctifs ont été révélés par la
+première exécution réelle de `pwa-screenshots` sur le squelette, alors que
+1 183 tests étaient verts.
+
+| Livré                                                                                                                                                                                                                                       | Où                                                                                                                   | Ce qui le prouve                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T8 — `BottomNav placement="fixed"` (`data-placement`) et `PageContainer reserve="bottom-nav"` (`data-reserve`), les deux règles dans `components.css`                                                                                       | socle 4.3.0 ; squelette v1.1.0 ; supatool #12, lookhouse #67, miss-koh #10                                           | **4 copies retirées, pas 8** : le relevé sur `origin/main` ne trouve que quatre règles `[data-dwc='bottom-nav']` dans le parc (genius, lookhouse, supatool, miss-koh). genius est en `sticky`, pas en `fixed`, et garde la sienne ; contraction, cim10, doc, footcoach et supaboss importent le composant mais le placent autrement (classe utilitaire, coquille flex). La capture `wide` de supatool montre la barre collée sur un vrai build |
+| T9 — bin `pwa-screenshots` (`--url`, `--prepare`, `--base`, `--dist`, `--only`) ; `pwaBaseOptions` lit `public/screenshots`, tailles lues dans le PNG                                                                                       | socle ; squelette (`npm run screenshots`, script maison de 98 lignes retiré) ; qowa #42, lookhouse #67, supatool #12 | **4 fiches d'installation** : squelette, qowa, lookhouse, supatool — chaque image ouverte. quota n'a pas de manifeste (Electron), hors champ. Les captures du squelette du 05/09 étaient **blanches** : voir ci-dessous                                                                                                                                                                                                                        |
+| T10 — `devPort` au catalogue (`DEV_PORTS`, `devPortOf`, `freeDevPort`, `STARTER_KIT_DEV_PORT = 5240`), info `dev-port` du docteur                                                                                                           | socle ; squelette (`server.port = devPortOf(APP_ID, 5240)`, `.claude/launch.json`) ; générateur                      | une naissance reçoit 5241 (`choisirPort`) ; le docteur du squelette reste à 0/0/0                                                                                                                                                                                                                                                                                                                                                              |
+| T11 — `pwa-bundle-budget --ratchet [--write]`                                                                                                                                                                                               | socle                                                                                                                | tests (`proposeBudget` : mesure + 10 %, arrondi au kilo-octet) ; aucun budget du parc resserré à cette étape                                                                                                                                                                                                                                                                                                                                   |
+| T14 — `definePwaPlaywrightConfig` fusionne `use` ; `pwaBaseOptions` lit `--dwc-primary` et `--dwc-bg` dans `src/index.css`, et avertit sans `theme_color`                                                                                   | socle ; squelette (`pwaBaseOptions({ id })` seul)                                                                    | le manifeste construit du squelette porte `#3b6ea5` et `#f7f8fa` sans les deux lignes de couleur                                                                                                                                                                                                                                                                                                                                               |
+| G1–G4 — le générateur construit ce qu'il engendre (`npm run build`, `--no-build`), choisit un port libre, écrit `.claude/launch.json`, pose la fiche du dépôt (`--publish` : homepage, topics) et imprime la liste Supabase sans rien poser | create-lg-pwa-app #2                                                                                                 | le job « Engendrer » de sa CI construit l'app engendrée ; naissance locale `miss-essai-build` : build sous budget, doctor 0/0/0, port 5241                                                                                                                                                                                                                                                                                                     |
+
+**Ce que la première exécution réelle a trouvé.** (1) `require.resolve('vite/bin/vite.js')`
+sort en `ERR_PACKAGE_PATH_NOT_EXPORTED` : vite ferme ses `exports` ; 4.3.1 lit
+`vite/package.json` et son champ `bin`. (2) Les captures du squelette étaient
+**deux rectangles blancs** de 4 ko : un build fait pour `/pwa-starter-kit/`
+servi sous `/` demande ses actifs à `/pwa-starter-kit/assets/…` et reçoit des 404. L'ancien script du squelette avait le même défaut, et personne n'avait
+ouvert les images ; 4.3.2 lit la base dans `dist/index.html`, compte les 404 et
+refuse d'écrire une page sans texte. Un test unitaire ne voit ni le navigateur
+ni le serveur : la preuve d'une capture, c'est son ouverture.
+
+**Le Lighthouse du squelette n'avait jamais démarré.** Neuf runs en
+`startup_failure` depuis le 05/09 : l'appelant accordait `contents` et
+`packages`, le réutilisable demande `pull-requests: write` — « requesting
+'pull-requests: write', but is only allowed 'pull-requests: none' ». Sans job,
+sans journal, sans bloquer une fusion. Corrigé dans le squelette (#9) : premier
+Lighthouse vert du dépôt le 06/09. Un check du docteur sur les appelants
+(comparer leur bloc `permissions:` à celui du réutilisable) est à écrire :
+c'est le seul moyen de voir un workflow qui ne démarre pas.
+
+**Squelette v1.1.0** (PR #8 et #9) : les briques adoptées, `lighthouse.yml`
+réparé, e2e chromium 14/14 en local, CI et Lighthouse verts.
+
+**Ce qui reste de l'étape 4 :** genius (`sticky`) et les cinq apps qui placent
+la barre autrement ne changent pas — le « 8 copies » de l'analyse était un
+comptage large, le chiffre vérifié est 4. Les captures de lookhouse montrent
+l'écran de connexion, ce qu'un nouvel utilisateur voit : un compte de
+démonstration joué par `--prepare` est une décision du propriétaire. Aucun
+port d'app n'a été aligné sur le catalogue (le docteur le signale en info), et
+`--ratchet` n'a été joué sur aucun budget du parc.
 
 ## 5. Ce qu'on ne propose pas, et pourquoi
 
