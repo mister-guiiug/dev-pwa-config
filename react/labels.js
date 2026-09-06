@@ -51,7 +51,14 @@ export const LABELS = {
       // Mode mono-action : le bouton prend acte, il ne « confirme » rien.
       ok: 'OK',
     },
-    toast: { close: 'Fermer la notification', region: 'Notifications' },
+    // `undo` n'est PAS `confirm.cancel`, qui dit aussi « Annuler » en
+    // français : l'un renonce à ce qu'on allait faire, l'autre défait ce qui
+    // est fait. Six des sept langues les distinguent — « Cancel » / « Undo ».
+    toast: {
+      close: 'Fermer la notification',
+      region: 'Notifications',
+      undo: 'Annuler',
+    },
     error: { retry: 'Réessayer', close: 'Fermer' },
     install: {
       title: 'Installer l’application',
@@ -154,7 +161,11 @@ export const LABELS = {
       destructiveConfirm: 'Delete',
       ok: 'OK',
     },
-    toast: { close: 'Dismiss notification', region: 'Notifications' },
+    toast: {
+      close: 'Dismiss notification',
+      region: 'Notifications',
+      undo: 'Undo',
+    },
     error: { retry: 'Try again', close: 'Dismiss' },
     install: {
       title: 'Install the app',
@@ -249,7 +260,11 @@ export const LABELS = {
       destructiveConfirm: 'Eliminar',
       ok: 'OK',
     },
-    toast: { close: 'Cerrar la notificación', region: 'Notificaciones' },
+    toast: {
+      close: 'Cerrar la notificación',
+      region: 'Notificaciones',
+      undo: 'Deshacer',
+    },
     error: { retry: 'Reintentar', close: 'Cerrar' },
     install: {
       title: 'Instalar la aplicación',
@@ -348,6 +363,7 @@ export const LABELS = {
     toast: {
       close: 'Benachrichtigung schließen',
       region: 'Benachrichtigungen',
+      undo: 'Rückgängig',
     },
     error: { retry: 'Erneut versuchen', close: 'Schließen' },
     install: {
@@ -446,7 +462,11 @@ export const LABELS = {
       destructiveConfirm: 'Elimina',
       ok: 'OK',
     },
-    toast: { close: 'Chiudi la notifica', region: 'Notifiche' },
+    toast: {
+      close: 'Chiudi la notifica',
+      region: 'Notifiche',
+      undo: 'Annulla',
+    },
     error: { retry: 'Riprova', close: 'Chiudi' },
     install: {
       title: 'Installa l’app',
@@ -544,7 +564,11 @@ export const LABELS = {
       destructiveConfirm: 'Eliminar',
       ok: 'OK',
     },
-    toast: { close: 'Fechar a notificação', region: 'Notificações' },
+    toast: {
+      close: 'Fechar a notificação',
+      region: 'Notificações',
+      undo: 'Desfazer',
+    },
     error: { retry: 'Tentar novamente', close: 'Fechar' },
     install: {
       title: 'Instalar a aplicação',
@@ -640,7 +664,11 @@ export const LABELS = {
       destructiveConfirm: 'Verwijderen',
       ok: 'OK',
     },
-    toast: { close: 'Melding sluiten', region: 'Meldingen' },
+    toast: {
+      close: 'Melding sluiten',
+      region: 'Meldingen',
+      undo: 'Ongedaan maken',
+    },
     error: { retry: 'Opnieuw proberen', close: 'Sluiten' },
     install: {
       title: 'App installeren',

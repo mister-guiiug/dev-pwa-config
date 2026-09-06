@@ -322,16 +322,20 @@ globalThis.SHOWROOM_CATALOGUE = {
           'Ne pas poser un rôle sur le message : la région vivante est le CONTENEUR. miss-supaboss et mister-footcoach font les deux, et le message est annoncé deux fois.',
           'Ne pas n’en afficher qu’un à la fois : miss-carbook remplace le précédent, qui disparaît sans avoir été lu. La pile est bornée, et c’est le plus ancien qui cède.',
           'Ne pas faire d’une erreur une notification fugace : par défaut `tone="error"` ne s’efface pas tout seul. Un message qu’on n’a pas eu le temps de lire n’a servi à rien.',
+          'Ne pas demander « êtes-vous sûr ? » là où `action` suffit : `ConfirmDialog` est posé sur quatorze apps, `useUndoableState` sur aucune. Supprimer puis proposer d’annuler coûte un geste au lieu de deux, et ne coûte rien quand on ne s’est pas trompé.',
+          'Ne pas raccourcir un toast porteur d’une action avec `duration` : elle vit huit secondes au minimum, le temps de lire, de décider et d’atteindre le bouton. Une durée explicite l’emporte — et redevient votre responsabilité.',
         ],
         en: [
           'Don’t put a role on the message: the live region is the CONTAINER. miss-supaboss and mister-footcoach do both, and the message is announced twice.',
           'Don’t show only one at a time: miss-carbook replaces the previous one, which vanishes unread. The stack is bounded, and the oldest is the one that goes.',
           'Don’t make an error a fleeting notice: by default `tone="error"` does not clear itself. A message nobody had time to read served no purpose.',
+          'Don’t ask “are you sure?” where `action` is enough: `ConfirmDialog` is used by fourteen apps, `useUndoableState` by none. Delete then offer to undo costs one gesture instead of two, and costs nothing when nobody made a mistake.',
+          'Don’t shorten an action-bearing toast with `duration`: it lives at least eight seconds — time to read, decide and reach the button. An explicit duration wins, and becomes your responsibility.',
         ],
       },
       a11y: {
-        fr: 'Deux régions montées en permanence — polie pour l’ordinaire, assertive pour l’erreur — parce qu’une région créée en même temps que son contenu n’est pas annoncée. Le compte à rebours est suspendu au survol et au focus (WCAG 2.2.1).',
-        en: 'Two regions mounted at all times — polite for the ordinary, assertive for errors — because a region created together with its content is not announced. The countdown pauses on hover and focus (WCAG 2.2.1).',
+        fr: 'Deux régions montées en permanence — polie pour l’ordinaire, assertive pour l’erreur — parce qu’une région créée en même temps que son contenu n’est pas annoncée. Le compte à rebours est suspendu au survol et au focus (WCAG 2.2.1) : le focus qui se pose sur l’action l’arrête, sinon le message s’effacerait sous les doigts de qui vient l’atteindre. Chaque message est clé sur son identifiant : le rendu déclenché par cette suspension ne réinsère rien, donc rien n’est relu.',
+        en: 'Two regions mounted at all times — polite for the ordinary, assertive for errors — because a region created together with its content is not announced. The countdown pauses on hover and focus (WCAG 2.2.1): focus landing on the action stops it, otherwise the message would clear under the fingers of whoever was reaching for it. Each message is keyed on its id: the render triggered by that pause re-inserts nothing, so nothing is announced twice.',
       },
     },
     {

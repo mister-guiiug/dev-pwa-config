@@ -240,7 +240,7 @@ globalThis.SHOWROOM_I18N = {
     'composants.summary9': 'CSS selectors',
     'composants.h50': 'Toast',
     'composants.p17':
-      'Two live regions mounted at all times, and no role on the message: that is what avoids the double announcement found in two apps.',
+      'Two live regions mounted at all times, and no role on the message: that is what avoids the double announcement found in two apps. An optional <code>action</code> puts a button in it — “Undo” rather than “are you sure?” — and raises the lifetime to eight seconds.',
     'composants.summary10': 'CSS selectors',
     'composants.h51': 'BottomNav',
     'composants.p18':

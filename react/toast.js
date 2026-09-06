@@ -64,6 +64,20 @@ const grave = tone => tone === 'danger' || tone === 'error';
  * Le compte à rebours est SUSPENDU tant que le pointeur survole la pile ou que
  * le focus s'y trouve (WCAG 2.2.1) : aucune des six copies ne le faisait.
  *
+ * UNE ACTION, POUR ANNULER PLUTÔT QUE CONFIRMER (06/09/2026). `ConfirmDialog`
+ * du socle est posé sur QUATORZE apps ; `useUndoableState`, sur AUCUNE.
+ * Quatorze apps demandent donc « êtes-vous sûr ? » avant chaque suppression,
+ * et pas une n'offre de revenir en arrière après. Le geste manquant tenait à
+ * un trou dans ce fichier : le toast n'avait pas de notion d'action, et six
+ * apps s'apprêtaient à réécrire chacune la sienne. `show(message, { action })`
+ * rend un bouton DANS le message, et le libellé par défaut est « Annuler »
+ * dans les sept langues de `labels`.
+ *
+ * SA DURÉE DE VIE EST UN PLANCHER, pas la durée ordinaire : une notification
+ * qu'on lit peut durer cinq secondes, une qu'il faut lire PUIS atteindre à la
+ * souris ou au clavier, non. `ACTION_DURATION` (8 s) s'applique comme minimum
+ * — une app qui a réglé son fournisseur plus haut garde sa valeur.
+ *
  * Non stylé : cibler `[data-dwc="toast-viewport"]` et descendants.
  */
 
@@ -80,6 +94,29 @@ function isDev() {
 }
 
 const DEFAULT_DURATION = 5000;
+
+/**
+ * Le PLANCHER de vie d'un toast porteur d'une action. Lire un message, décider,
+ * puis atteindre un bouton — à la souris, ou en trois tabulations — ne tient pas
+ * dans les cinq secondes de l'ordinaire. Huit, c'est ce que `miss-contraction`
+ * s'était donné pour son bandeau maison (`UNDO_MS`), la seule mesure du parc.
+ */
+const ACTION_DURATION = 8000;
+
+/**
+ * L'action d'un toast, ou `null` — un bouton sans rappel serait un bouton mort.
+ * Le libellé est facultatif : `labels.toast.undo` dit « Annuler » en sept
+ * langues.
+ *
+ * @param {unknown} action
+ */
+function actionUtile(action) {
+  if (!action || typeof action !== 'object') return null;
+  const { label, onAction } =
+    /** @type {{label?: unknown, onAction?: unknown}} */ (action);
+  if (typeof onAction !== 'function') return null;
+  return { label: typeof label === 'string' ? label : '', onAction };
+}
 
 /**
  * Hors fournisseur, l'API ne fait rien plutôt que de lever : une notification
@@ -141,13 +178,22 @@ export function ToastProvider(props = {}) {
   const show = useCallback(
     (message, options = {}) => {
       const tone = options.tone ?? 'info';
-      // Une erreur reste jusqu'à ce qu'on la ferme, sauf durée explicite.
-      const life = options.duration ?? (grave(tone) ? 0 : duration);
+      const action = actionUtile(options.action);
+      // Une erreur reste jusqu'à ce qu'on la ferme, sauf durée explicite ; une
+      // action tient au moins `ACTION_DURATION`, jamais moins que la durée du
+      // fournisseur si celle-ci est plus longue.
+      const life =
+        options.duration ??
+        (grave(tone)
+          ? 0
+          : action
+            ? Math.max(duration, ACTION_DURATION)
+            : duration);
       const id = options.id ?? `dwc-toast-${(counter += 1)}`;
       setToasts(list => {
         const next = [
           ...list.filter(toast => toast.id !== id),
-          { id, message, tone },
+          { id, message, tone, action },
         ];
         // La pile est bornée : c'est le PLUS ANCIEN qui cède, pas le nouveau.
         const dropped = next.slice(0, Math.max(0, next.length - max));
@@ -237,7 +283,8 @@ export function ToastProvider(props = {}) {
  * magasin (miss-supaboss et miss-uwh le font sur zustand) : elles gardent leur
  * état et reprennent l'accessibilité.
  *
- * @param {{ toasts?: Array<{id: string, message: unknown, tone?: string}>,
+ * @param {{ toasts?: Array<{id: string, message: unknown, tone?: string,
+ *     action?: {label?: string, onAction?: () => void} | null}>,
  *   onDismiss?: (id: string) => void, onPauseChange?: (paused: boolean) => void,
  *   className?: string }} props
  */
@@ -247,11 +294,33 @@ export function ToastViewport(props = {}) {
 
   const pause = value => onPauseChange?.(value);
 
-  const item = toast =>
-    h(
+  const item = toast => {
+    // La file peut venir d'ailleurs (miss-supaboss, miss-uwh la tiennent sur
+    // zustand) : l'action est validée ICI aussi, pas seulement dans `show`.
+    const action = actionUtile(toast.action);
+    return h(
       'div',
       { key: toast.id, 'data-dwc': 'toast', 'data-tone': toast.tone ?? 'info' },
       h('span', { 'data-dwc': 'toast-message' }, toast.message),
+      // UN VRAI `<button>`, dans le flux du message : atteignable au clavier
+      // sans rien à câbler, et le focus qui s'y pose suspend le rebours par
+      // `onFocusCapture` — sinon le toast s'effacerait sous les doigts de qui
+      // vient l'atteindre. Il précède la fermeture : agir d'abord, renoncer
+      // ensuite.
+      action
+        ? h(
+            'button',
+            {
+              type: 'button',
+              onClick: () => {
+                action.onAction();
+                onDismiss?.(toast.id);
+              },
+              'data-dwc': 'toast-action',
+            },
+            action.label || labels.undo
+          )
+        : null,
       typeof onDismiss === 'function'
         ? h(
             'button',
@@ -265,6 +334,7 @@ export function ToastViewport(props = {}) {
           )
         : null
     );
+  };
 
   const region = (live, role, list) =>
     h(
@@ -272,6 +342,14 @@ export function ToastViewport(props = {}) {
       {
         // La région est montée EN PERMANENCE, même vide : un lecteur d'écran
         // n'annonce une insertion que dans une région déjà présente.
+        //
+        // ET ELLE N'ANNONCE QU'UNE FOIS. Une région vivante annonce ce qu'on y
+        // INSÈRE : la clé de chaque message est son `id`, donc React garde le
+        // même nœud d'un rendu à l'autre. Ça compte depuis qu'un bouton vit
+        // dedans — s'en approcher à la souris ou au clavier change `paused`,
+        // qui rend à nouveau tout l'arbre. Une clé instable (l'index, un
+        // identifiant tiré à chaque rendu) ferait relire le message à chaque
+        // survol, sans que rien ne bouge à l'écran.
         'data-dwc': 'toast-region',
         'data-live': live,
         role,
