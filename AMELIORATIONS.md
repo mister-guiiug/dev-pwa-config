@@ -11,6 +11,14 @@ copies de travail des vingt-deux dépôts du poste, sur l'API GitHub, et sur les
 dix-huit sites publiés par `scripts/probe-sites.mjs`. Ce qui n'a pas pu l'être
 est marqué « non vérifié »._
 
+> **Élagué le 06/09/2026.** Les vingt-neuf propositions T/K/G/F ont été
+> exécutées en cinq étapes ; leurs fiches ont quitté ce document, et le § 3 ne
+> garde que ce qui reste ouvert. **Les trois bilans, eux, restent en entier** :
+> ils ne racontent pas ce qui a été livré — le CHANGELOG le dit mieux — mais ce
+> que la première exécution réelle a démenti, et cela ne se trouve nulle part
+> ailleurs. Le § 6 s'est enrichi de la réserve la plus lourde de cette page, et
+> a vu tomber la plus ancienne. L'historique garde la version longue.
+
 ## 0. Le verdict, en dix lignes
 
 Les trois couches sont saines et récentes ; le problème n'est plus la structure,
@@ -37,66 +45,27 @@ dans STRATEGIE.md et n'est ici que précisé par la mesure.
 
 ## 1. Ce que le relevé mesure
 
-### La bibliothèque — `dev-pwa-config` 4.0.1
+_Relevé du 05/09/2026, conservé pour ses ORDRES DE GRANDEUR : ce sont eux qui
+ont fondé l'ordre des chantiers. Les comptes du jour se lisent dans le README
+(`npm run sync`), le catalogue et la CI._
 
-| Mesure                                  | Valeur                                                                                       |
-| --------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Sous-chemins exportés                   | 148, trois binaires (`pwa-icons`, `pwa-bundle-budget`, `pwa-doctor`)                         |
-| Workflows                               | 14, dont 6 réutilisables `pwa-*`                                                             |
-| Scripts d'outillage                     | 22                                                                                           |
-| Tests                                   | ≈ 1 133 dans 97 fichiers ; CI ≈ 1 min                                                        |
-| Consommateurs alignés                   | 17 apps en `^4.0.0` ; `mister-family-map` en `^3.21.0` (miroir non régénéré depuis le 29/08) |
-| Sous-chemins **sans aucun importateur** | **51** (§ 2.1)                                                                               |
-| PR et issues ouvertes                   | 0 / 0                                                                                        |
+Trois chiffres portaient tout le raisonnement :
 
-### Le squelette — `pwa-starter-kit`
+- **`pwa-doctor` tournait sur une application sur vingt** — le squelette. Les
+  dix-neuf autres ne l'appelaient ni au build ni en CI, et `pwa-ci.yml` ne le
+  proposait pas. _(Corrigé depuis, puis rattrapé par bien pire : le drapeau a
+  été posé partout le 06/09, et les bins ne s'exécutaient toujours pas — voir
+  les réserves, § 6.)_
+- **51 des 148 sous-chemins n'avaient aucun importateur** dans le parc, dont la
+  couche auth entière, `vite-pwa` (le manifeste engendré) et
+  `react/pwa-install-prompt`, que cinq apps avaient réécrit. Le chiffre robuste
+  est 44 : sept sous-chemins de configuration échappaient au relevé.
+- **Renovate n'avait jamais tourné** : chaque exécution s'arrêtait sur
+  « `RENOVATE_TOKEN` absent ». Playwright allait de 1.49 à 1.62 selon les apps,
+  `supabase-js` de 2.45 à 2.115.
 
-19 fichiers source, 6 tests unitaires, 7 e2e (6 `@critical`, 1 `@a11y`),
-7 ADR, 3 migrations et **11 assertions pgTAP**, `doctor --strict` à 0/0/0 au
-build, port de développement 5240, **0 étiquette** (un `--from` ne peut viser
-que `main`). Il est le test de contrat du socle : la CI du socle le construit
-sur chaque version candidate.
-
-### Le générateur — `create-lg-pwa-app` 1.0.0
-
-260 lignes de gestes GitHub + 184 lignes pures testées (2 fichiers de tests).
-Sa CI engendre une application depuis le squelette **réel** — avec
-`--no-install`, donc **sans jamais la construire** : elle vérifie qu'aucune
-trace du nom du squelette ne subsiste, pas qu'une application engendrée passe
-`doctor --strict`. C'est le squelette qui le prouve, à sa version `main` du
-moment.
-
-### Le parc — 19 applications au catalogue, plus `bac-sable`
-
-| Ce qui est mesuré                                   | Résultat                                                                                                                 |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Routeur                                             | **9** par `#`, 6 `BrowserRouter`, 2 `createBrowserRouter`, 3 sans routeur                                                |
-| `components.css`                                    | 17 / 20                                                                                                                  |
-| i18n du socle                                       | 11                                                                                                                       |
-| `versioned-store`                                   | **3** (genius, uwh, miss-koh) — et **485 appels directs à `localStorage`** ailleurs (jusqu'à 55 dans cim10)              |
-| La règle CSS qui colle la barre basse               | recopiée dans **7 apps + le squelette**                                                                                  |
-| `pwa-doctor` au build                               | **1 / 20** (le squelette)                                                                                                |
-| `pwa-bundle-budget` au build                        | 19 / 20 ; un seul `mainChunkKb` (qowa)                                                                                   |
-| e2e joués en CI (`run-e2e: true`)                   | **8 / 19** par le réutilisable, doc par un workflow à part ; trois apps sans aucune spec (lookhouse, supatool, miss-koh) |
-| `@a11y` joué en CI                                  | **1** app (`e2e-grep: '@smoke\|@a11y'`) ; ni le squelette ni les autres                                                  |
-| Suites pgTAP                                        | lookhouse (2, en CI par Docker), miss-koh (2, contre la base liée), squelette (1, **jamais jouée**)                      |
-| Apps Supabase                                       | 8 ; connexion par mot de passe ×5, par lien (`signInWithOtp`) ×2 (carbook, miss-koh), `flowType: 'pkce'` ×3              |
-| Couche auth du socle (`AuthProvider`, `LoginForm`…) | **0 adoptant** (hors squelette)                                                                                          |
-| `docs/adr/`                                         | 2 / 19 (family-map et son dépôt source)                                                                                  |
-| Locale fixée dans `playwright.config.ts`            | 4 / 14                                                                                                                   |
-| Port de développement déclaré                       | 5173 par défaut presque partout ; 5204, 5214, 5234, 5236, 5240 choisis à la main, sans registre                          |
-
-### Les sites publiés — sonde du 05/09/2026, 18 sites
-
-| Constat                                    | Sites                                                                                                                                                                                 |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `version.json` absent (**404**)            | **17 / 18** — seul family-map le sert ; `vite-version` a un adoptant                                                                                                                  |
-| Manifeste sans capture d'écran (`shots=0`) | lookhouse, supatool, qowa, family-map — Chrome propose une ligne au lieu d'une fiche d'installation                                                                                   |
-| Lien profond → page 404 de GitHub          | **puzzle, doc** (déploiement écrit à la main, sans le réutilisable donc sans le repli SPA) ; cim10 est un **faux positif de la sonde** (corps identique à `index.html`, 6 216 octets) |
-| `og:image` absent                          | family-map                                                                                                                                                                            |
-| JS initial transféré                       | puzzle 271 kB, contraction 243, doc 209, carbook 201, family-map 187, uwh 183, badminton 182 … dice 98                                                                                |
-| Budgets de poids                           | figés à « poids courant + marge » : bac-sable 675, carbook 505, qowa 435, ticket-pwa 330, puzzle 320                                                                                  |
-| Tout le reste                              | `lang=fr`, CSP, `theme-color` par schéma, icône iOS, canonique, `robots`, `sitemap` : **18 / 18**                                                                                     |
+Le squelette comptait alors 19 fichiers source et 7 ADR ; le générateur, 260
+lignes de gestes GitHub et 184 lignes pures testées.
 
 ## 2. Ce que l'audit trouve, couche par couche
 
@@ -134,6 +103,13 @@ ce que le docteur exige ensuite.
 une quarantaine de contrôles) n'est appelé que par le `build` du squelette. Le
 réutilisable `pwa-ci.yml` n'a pas d'entrée pour lui. Les dix-neuf autres apps
 ne sont donc **jamais diagnostiquées**, sauf à la main lors d'une campagne.
+
+> **Ce constat a été deux fois vrai.** L'entrée `run-doctor` est arrivée le
+> 06/09 et le drapeau a été posé sur dix-sept dépôts — puis on a découvert le
+> même soir que **les bins ne s'exécutaient pas du tout** sous le lien
+> symbolique de `node_modules/.bin` : le drapeau était posé, le contrôle ne
+> tournait nulle part, et rien ne le disait. Corrigé en 4.5.0. Voir la réserve
+> ajoutée au § 6, qui est la plus lourde de cette page.
 
 **Trois trous silencieux dans les gardes de CI :**
 
@@ -219,91 +195,34 @@ tient en quatre lignes :
   imprimés avec leur commande exacte (le port, les réglages Supabase quand
   l'app en aura un).
 
-## 3. Les propositions
+## 3. Les propositions — et ce qu'il en reste
 
-Chaque proposition porte : le constat mesuré, ce qu'elle donne aux
-applications, le coût estimé pour une personne connaissant le parc, et ce qui
-prouvera qu'elle est faite.
+Les vingt-neuf propositions de ce relevé (T1–T15 pour les gardes et
+l'outillage, K1–K6 pour le squelette, G1–G4 pour le générateur, F1–F8 pour
+l'utilisateur final) ont été **exécutées entre le 05 et le 06/09/2026**, en
+cinq étapes dont les bilans suivent. Leurs fiches — constat, forme, coût,
+preuve — ont quitté ce document : ce qu'elles proposaient est dans le code, et
+ce qu'elles ont appris est dans les bilans.
 
-### 3.1 Rendre les gardes effectifs (avant tout le reste)
+**Ce qui reste ouvert :**
 
-| #      | Proposition                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Ce que ça donne aux apps                                                                                                                     | Coût  | Preuve                                                  |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------------------------------------------- |
-| **T1** | **Poser `RENOVATE_TOKEN`** sur le socle (geste du propriétaire ; aucun script ne peut le faire). Puis vérifier la première PR sur un dépôt.                                                                                                                                                                                                                                                                                                                                | Les 18 dépôts reçoivent enfin leurs montées ; la dérive Playwright 1.49→1.62 et supabase-js 2.45→2.115 se résorbe seule                      | 5 min | une PR Renovate fusionnée                               |
-| **T2** | **`pwa-ci.yml` : entrée `doctor` (défaut `true` en v5)**, qui exécute `pwa-doctor` après le build ; en 4.x, opt-in et campagne « 18 PR d'une ligne ».                                                                                                                                                                                                                                                                                                                      | Le docteur diagnostique 19 apps à chaque PR au lieu d'une                                                                                    | 0,5 j | `doctor` en CI sur 18 apps                              |
-| **T3** | **`pwa-ci.yml` : `e2e-grep` par défaut `@critical\|@a11y`**, et un échec explicite sur « No tests found » (un `run-e2e: true` qui ne trouve rien est un mensonge).                                                                                                                                                                                                                                                                                                         | La spec a11y du gabarit et du squelette tourne enfin                                                                                         | 0,5 j | le job E2E du squelette exécute 7 tests, pas 6          |
-| **T4** | **`pwa-lighthouse.yml` : échouer sur `runtimeError`** (NO_FCP) en lisant le rapport, au lieu de laisser l'assertion accessibilité s'évaporer.                                                                                                                                                                                                                                                                                                                              | Plus d'audit vert sans page                                                                                                                  | 0,5 j | un `VITE_BASE_PATH` faux fait rougir le job             |
-| **T5** | **Un réutilisable `pwa-supabase-test.yml`** (Postgres jetable du runner, `supabase test db` — le workflow de lookhouse promu) **et un bin `pwa-pgtap`** contre la base liée (le `pgtap-remote.mjs` de miss-koh, 87 lignes, avec ses pièges déjà écrits : colonne `(line)`, grants, plan exact).                                                                                                                                                                            | Les suites pgTAP du squelette, de lookhouse et de miss-koh tournent de la même façon ; toute app Supabase née du squelette a ses tests joués | 1 j   | 11/11 du squelette en CI                                |
-| **T6** | **Cinq contrôles `pwa-doctor`** : (a) `deploy.yml` sans le réutilisable → pas de repli SPA (puzzle, doc) ; (b) une spec e2e dont le tag n'est jamais joué par `e2e-grep` ; (c) `e2e/` présent et `run-e2e` absent (8 apps) ; (d) `versionPlugin` absent → `version.json` 404 (17 sites) ; (e) manifeste sans `screenshots` (4 sites). Et deux « info » : `mainChunkKb` absent quand le JS initial dépasse 200 kB ; appels directs à `localStorage` sans `versioned-store`. | Ces défauts cessent d'être trouvés à la main, une fois par trimestre                                                                         | 1 j   | `doctor` rouge sur puzzle et doc, vert sur le squelette |
-| **T7** | **Corriger la sonde** (`probe-sites`) : comparer le corps du lien profond à `index.html` avant de conclure « page GitHub ».                                                                                                                                                                                                                                                                                                                                                | Un relevé de production sans faux positif                                                                                                    | 0,5 h | cim10 classé « coquille »                               |
+| #       | Ce qui reste                                                                                                                                 | À qui                  |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| T1      | poser le secret `RENOVATE_TOKEN` sur le socle — aucun script ne peut le faire                                                                | propriétaire           |
+| T12–T15 | rétrécir le socle : retirer les gabarits qui doublent le squelette, engendrer le manifeste par codemod, dater les sous-chemins sans adoptant | une majeure            |
+| F8      | « Nouveautés » après une mise à jour, alimentée par `version.json` et le CHANGELOG                                                           | si un besoin l'appelle |
+| —       | activer le hook « Custom Access Token » et la liste d'URL de retour sur les projets Supabase hébergés                                        | propriétaire           |
 
-### 3.2 Corriger le squelette avant qu'il soit copié
+F7 (écrire hors ligne) est livré depuis : le squelette porte la file sur son
+port, et `mister-doc` la sienne avec le conflit d'occupant traité.
 
-| #      | Proposition                                                                                                                                                                                                                                                                                                                                                   | Coût  | Preuve                                                      |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------- |
-| **K1** | **`useRole` lit `user_roles`** (une requête, la RLS autorise déjà la lecture de soi), ou documente le hook de jeton ; un test unitaire et une assertion pgTAP « un admin se voit admin ».                                                                                                                                                                     | 0,5 j | le badge admin s'affiche pour un rôle posé en SQL           |
-| **K2** | **Connexion par lien d'abord** : `LoginForm mode="otp"` dans le socle (un champ, « Recevoir un lien »), `AuthProvider.signInWithOtp` existe déjà ; `flowType: 'pkce'` posé et expliqué (inoffensif en `BrowserRouter`, indispensable en `#`) ; `emailRedirectTo` calculé depuis `origin + BASE_URL`. Le mot de passe reste possible, il n'est plus le défaut. | 1 j   | l'e2e « mode local » passe ; un e2e « lien envoyé » simulé  |
-| **K3** | **Étiqueter le squelette** (`v1.0.0`, puis à chaque publication du socle) ; le job « Le squelette, construit sur ce paquet » reste sur `main`, mais **`--from` du générateur vise la dernière étiquette par défaut**.                                                                                                                                         | 0,5 j | `npx … --from v1.0.0` reproduit une naissance à l'identique |
-| **K4** | **Réglages : importer, pas seulement exporter** (`versioned-store.import()` existe) ; **`PwaInstallPrompt`** dans « À propos » ; **un lien « Signaler un problème »** qui ouvre `issues/new?template=bug.yml` du dépôt `.github` avec version, build, route et navigateur préremplis.                                                                         | 1 j   | trois écrans, trois e2e `@critical`                         |
-| **K5** | **Le port des notes gagne `add` / `remove`** ; l'adaptateur Supabase cesse de tout effacer à chaque sauvegarde — la limite que son propre commentaire annonce.                                                                                                                                                                                                | 0,5 j | l'e2e « une note survit au rechargement » inchangé          |
-| **K6** | **`.claude/launch.json` et un `devPort` lu dans le catalogue** (§ 3.3, T10) ; `AGENTS.md` du squelette le mentionne.                                                                                                                                                                                                                                          | 0,5 h | deux apps tournent côte à côte sans `--port`                |
+## 4. Ce que l'exécution a donné
 
-### 3.3 Faire circuler ce qui existe déjà
-
-| #       | Proposition                                                                                                                                                                                                                                                                                                   | Constat                                                                                    | Coût                                           |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------- |
-| **T8**  | **`BottomNav placement="fixed"`** (attribut `data-dwc-placement`, la règle CSS dans `components.css`) et **`PageContainer reserveBottomNav`** pour la hauteur réservée.                                                                                                                                       | la même règle recopiée 8 fois, avec la même réserve de hauteur à côté                      | 0,5 j                                          |
-| **T9**  | **Un bin `pwa-screenshots`** (Playwright en peer optionnelle) qui produit `narrow` et `wide` du manifeste — à la place des **trois** scripts qui existent (98 lignes dans le squelette, 50 dans miss-koh, celui du showroom dans le socle) ; le docteur vérifie leur présence (T6-e).                         | 4 sites sans fiche d'installation ; trois scripts pour une chose                           | 1 j                                            |
-| **T10** | **`FAMILY_APPS[].devPort`** dans le catalogue, unique, lu par le squelette, le générateur et le gabarit VS Code ; le docteur signale une collision.                                                                                                                                                           | cinq ports choisis à la main, 5173 partout ailleurs                                        | 0,5 j                                          |
-| **T11** | **`pwa-bundle-budget --ratchet`** : quand un build passe sous le budget d'une marge donnée, proposer (ou écrire, avec `--write`) la nouvelle valeur. Aujourd'hui les budgets figent un poids, ils ne le font jamais descendre.                                                                                | bac-sable 675, carbook 505, qowa 435 ; le JS initial de puzzle à 271 kB sans `mainChunkKb` | 0,5 j                                          |
-| **T12** | **Retirer `templates/github-workflows/*` et `templates/index.html`** du socle — ou les faire dériver du squelette par `pwa-doctor --fix` (chantier 3). Garder les gabarits que le squelette ne porte pas (`.lighthouserc.json`, `husky/`, `vscode/`, `changesets/`), en le disant dans `templates/README.md`. | deux copies qui ont déjà divergé                                                           | 0,5 j (retrait) ; 3 j (`--fix`, déjà planifié) |
-| **T13** | **`vite-pwa` par codemod** (`scripts/adopt.mjs`, lot « manifeste engendré ») : remplacer le bloc `manifest` écrit à la main par `pwaBaseOptions({ id, themeColor, backgroundColor, manifest: { screenshots } })`. Vérifier par `probe-sites` que le manifeste publié est identique avant/après.               | 20 `vite.config.ts` de 27 à 380 lignes, zéro adoptant du module qui les remplace           | 1 j + 17 PR                                    |
-| **T14** | **Corriger `definePwaPlaywrightConfig`** : fusionner `use` au lieu de le remplacer ; et **`pwaBaseOptions`** : accepter `themeColor` sans catalogue **ou** le lire dans `index.css`.                                                                                                                          | deux défauts connus depuis la naissance du squelette                                       | 0,5 j                                          |
-| **T15** | **Chantier 5 avec la liste du § 2.1** : `experimental/*` daté pour les 44 modules d'exécution à zéro ; garder la couche auth (le squelette la porte) ; retirer `push/*` sauf si qowa ou molkky l'adopte dans le trimestre ; `vite-pwa` sort de la liste dès T13.                                              | 148 → ≈ 100 sous-chemins, chiffré cette fois                                               | 5 j + une majeure (planifié)                   |
-
-### 3.4 Le générateur
-
-| #      | Proposition                                                                                                                                                                                                                            | Coût  |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| **G1** | **Construire ce qu'il engendre** : sans `--no-install`, enchaîner `npm run build` (donc budget + `doctor --strict`) et refuser de publier une application qui ne passe pas. Sa CI fait de même avec `npm ci`.                          | 0,5 j |
-| **G2** | **`--from` = dernière étiquette du squelette** (K3) ; `main` reste possible.                                                                                                                                                           | 0,5 h |
-| **G3** | **`--publish` pose `homepage` et deux `topics`** (`pwa`, `mister-guiiug`) par `gh repo edit` — l'adresse est connue.                                                                                                                   | 0,5 h |
-| **G4** | **Écrire `.claude/launch.json`** avec le premier `devPort` libre du catalogue (T10), et **imprimer** la liste Supabase quand l'app en aura un : `site_url`, `uri_allow_list`, table `keep_alive`, les trois secrets — sans rien poser. | 0,5 j |
-
-### 3.5 Pour l'utilisateur final
-
-Ce sont les propositions qui changent quelque chose **dans** les applications,
-pas seulement dans leurs dépôts. Elles passent toutes par le squelette (pour
-les naissances) et par un lot de campagne (pour les existantes).
-
-| #      | Fonctionnalité                                                                                                                                                                                                                                                                                                                                                                                                                                          | Constat                                                                                                                    | Apps concernées          | Coût                     |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------ |
-| **F1** | **Une vraie fiche d'installation** : captures dans le manifeste (T9) et `PwaInstallPrompt` du socle (K4).                                                                                                                                                                                                                                                                                                                                               | 4 sites sans captures ; 0 adoptant du composant, 5 réécritures                                                             | toutes                   | dans T9 + K4             |
-| **F2** | **« Ce qui tourne, et ce qui attend »** : `versionPlugin({ manifest: true })` partout, `AppVersion updates` dans « À propos », `AppUpdates checkEvery` déjà adopté par 9 apps. Sans `version.json`, une PWA installée ne sait pas dire qu'une version l'attend.                                                                                                                                                                                         | `version.json` en 404 sur 17 sites                                                                                         | toutes                   | T6-d + 17 PR d'une ligne |
-| **F3** | **Se connecter sans mot de passe** (K2) — le lien à usage unique comme entrée par défaut, le mot de passe en option.                                                                                                                                                                                                                                                                                                                                    | 5 apps à mot de passe seul ; 2 apps ont déjà le lien                                                                       | les 8 apps Supabase      | dans K2 + 5 PR           |
-| **F4** | **Supprimer son compte** : une fonction SQL `delete_my_account()` (`security definer`, `delete from auth.users where id = auth.uid()`, la cascade fait le reste) livrée dans les migrations du squelette, une carte « Zone dangereuse » avec confirmation, une assertion pgTAP « après suppression, plus une ligne ». **À prouver** : que le propriétaire des fonctions a le droit d'effacer dans `auth.users` sur un projet hébergé (non vérifié ici). | aucune app ne l'offre ; miss-koh le note comme « demande un appel serveur »                                                | les 8 apps Supabase      | 1 j + preuve pgTAP       |
-| **F5** | **Emporter ses données** : importer dans les réglages (K4), sur `versioned-store.import()`, pour changer d'appareil sans compte.                                                                                                                                                                                                                                                                                                                        | export dans ≈ 15 apps, import à l'écran presque nulle part ; `backup` à zéro adoptant parce qu'il vide `localStorage` brut | les 11 apps sans backend | dans K4 + campagne       |
-| **F6** | **Signaler un problème avec le contexte** (K4) : version, build, route, navigateur, dans le gabarit `bug.yml` du dépôt `.github`.                                                                                                                                                                                                                                                                                                                       | aucune app n'a de signalement structuré                                                                                    | toutes                   | dans K4                  |
-| **F7** | **Écrire hors ligne sur une app Supabase** : promouvoir dans l'adaptateur du squelette le motif file d'attente + badge d'état (`sync-queue` : lookhouse et uwh ; `use-offline-queue` et `sync-status-badge` : zéro).                                                                                                                                                                                                                                    | deux apps l'ont écrit, le socle a les pièces, personne ne les assemble                                                     | apps Supabase            | 2–3 j (optionnel)        |
-| **F8** | **« Nouveautés »** après une mise à jour : une feuille alimentée par `version.json` et un extrait du `CHANGELOG`. Le prompt de mise à jour existe (9 apps) ; personne ne dit ce qui a changé.                                                                                                                                                                                                                                                           | zéro app                                                                                                                   | toutes                   | 1 j (optionnel)          |
-
-## 4. Feuille de route proposée
-
-L'ordre suit le même principe que STRATEGIE.md : ce qui répare avant ce qui
-construit, ce qui se prouve avant ce qui se publie.
-
-| Étape | Contenu                                                                                                                                | Coût     | Ce qui le prouve                                                                                                                        |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | ✅ **T7** (sonde) — fait le 06/09/2026 ; **T1** (jeton Renovate) reste au propriétaire                                                 | 1 h      | cim10 « coquille » ✅ ; une PR Renovate — en attente du secret                                                                          |
-| 2     | ✅ **K1, K2, K3** — le squelette corrigé et étiqueté `v1.0.0` ; **T3, T5** — ses gardes exercés (fait le 06/09/2026, bilan ci-dessous) | 3 j      | 7 e2e et **13** pgTAP joués en CI ✅ ; badge admin ✅ ; lien de connexion ✅                                                            |
-| 3     | ✅ **T2, T4, T6** — le docteur et les gardes de CI, puis **18 PR** (fait le 06/09/2026, bilan ci-dessous)                              | 2,5 j    | `doctor` en CI sur 18 dépôts ✅ ; doc et puzzle servent la coquille sur un lien profond ✅                                              |
-| 4     | ✅ **T8, T9, T10, T11, T14** — les briques qui circulent ; **G1–G4** (fait le 06/09/2026, bilan ci-dessous)                            | 3 j      | 4 fiches d'installation ✅ ; **4** copies de CSS retirées (le relevé n'en trouvait pas 8) ; une naissance construite ✅                 |
-| 5     | ✅ **K4, K5** puis **F2, F3, F5, F6** en lots de campagne (fait le 06/09/2026, bilan ci-dessous)                                       | 3 j + PR | `version.json` sur **19** sites ✅ ; import dans les réglages (squelette) ✅ ; lien de connexion sur **4** apps (la 5ᵉ l'avait déjà) ✅ |
-| 6     | **F4** (suppression de compte), avec sa preuve                                                                                         | 1 j      | pgTAP « plus une ligne »                                                                                                                |
-| 7     | **T12, T13, T15** — rétrécir, engendrer, dériver (chantiers 3 et 5, déjà planifiés)                                                    | 8 j      | 148 → ≈ 100 ; 17 `vite.config.ts` courts                                                                                                |
-| —     | **F7, F8** si un besoin les appelle                                                                                                    | —        | —                                                                                                                                       |
-
-Total des étapes 1 à 6 : **≈ 13 jours**, dont la moitié en petites PR.
+Les cinq étapes ont été jouées les 05 et 06/09/2026. Les trois bilans qui
+suivent ne listent pas ce qui a été livré — le CHANGELOG et les PR le disent —
+mais **ce que la première exécution réelle a démenti ou révélé**. C'est la
+partie qu'on ne retrouve nulle part ailleurs, et la seule raison de garder ces
+pages.
 
 ### Bilan des étapes 1 à 3, exécutées le 06/09/2026
 
@@ -460,9 +379,26 @@ port d'app n'a été aligné sur le catalogue (le docteur le signale en info), e
 - Les comptages « export / import / onboarding / favoris » du parc reposent
   sur des mots (`downloadText`, `importer`, `welcome`, `favori`…) : ils
   situent un ordre de grandeur, pas une liste d'écrans.
-- F4 suppose qu'une fonction `security definer` appartenant à `postgres` peut
-  effacer dans `auth.users` sur un projet hébergé. C'est documenté par
-  Supabase, mais **non vérifié ici** ; c'est précisément ce que l'assertion
-  pgTAP proposée doit prouver avant toute publication.
+- ~~F4 suppose qu'une fonction `security definer` appartenant à `postgres` peut
+  effacer dans `auth.users` sur un projet hébergé.~~ **RÉSERVE FERMÉE le
+  06/09/2026**, prouvée quatre fois par quatre chantiers indépendants — dont
+  une sonde en lecture seule sur un projet **hébergé**, qui établit le
+  mécanisme : le droit vient d'un `GRANT` de la plateforme ou de la propriété
+  de la table, ni l'un ni l'autre n'étant un privilège de superutilisateur,
+  dont `postgres` ne dispose pas. Portée exacte : l'**effet** (« plus une
+  ligne ») est établi sur des piles jetables, le **mécanisme** sur un projet
+  hébergé — personne n'a encore effacé un compte hébergé par cette voie. Le
+  repli par anonymisation n'a été livré nulle part. Voir `VALEUR.md`, V9.
 - Les coûts sont des estimations pour une personne connaissant le parc, hors
   imprévu de chaîne d'outils.
+
+**Ajoutée le 06/09/2026, et c'est la plus lourde de cette page.** Tout ce que
+ce document dit de `pwa-doctor` ou de `pwa-bundle-budget` « en CI » décrivait
+un décor. Les quatre bins du socle ne lançaient `run()` que si
+`import.meta.url === pathToFileURL(process.argv[1]).href` ; sous le lien
+symbolique que npm pose dans `.bin`, la comparaison est fausse et le module
+sort **0 sans rien faire**. La campagne du 06/09 a donc posé `run-doctor: true`
+sur dix-sept dépôts, et le relevé a conclu « le docteur diagnostique 19 apps »
+— **le drapeau était bien posé et le contrôle ne s'exécutait nulle part**. Le
+`0/0/0` du squelette mesurait l'absence d'exécution, pas l'absence de défaut.
+Corrigé en 4.5.0 ; une app ne le verra qu'après avoir monté son lockfile.
