@@ -317,3 +317,46 @@ test('les libellés suivent la locale du LabelsProvider', async () => {
     dom.restore();
   }
 });
+
+test('hors fournisseur, `updates` sonde version.json une fois, sous la base du build', async () => {
+  // Le cas qui compte : une PWA installée s'ouvre sur la coquille gardée par
+  // le service worker alors qu'une version l'attend en ligne. Un pied de
+  // page suffit désormais à le dire — dix-sept apps n'avaient pas posé le
+  // fournisseur.
+  const dom = setupDom();
+  globalThis[BUILD_INFO_GLOBAL] = { ...BUILD, base: '/miss-genius/' };
+  try {
+    const urls = [];
+    const fetchImpl = async url => {
+      urls.push(String(url));
+      return new Response(JSON.stringify({ version: '3.14.0' }), {
+        status: 200,
+      });
+    };
+    const view = await mount(
+      h(AppVersion, {
+        checkUrl: undefined,
+        checkEvery: undefined,
+        fetch: fetchImpl,
+      })
+    );
+    await view.act(async () => {});
+    assert.deepEqual(urls, ['/miss-genius/version.json']);
+    const badge = view.container.querySelector(
+      '[data-dwc="app-version-available"]'
+    );
+    assert.equal(badge?.textContent, 'Version 3.14.0 disponible');
+    await view.unmount();
+
+    // `updates: false` : aucune requête.
+    const muet = await mount(
+      h(AppVersion, { updates: false, fetch: fetchImpl })
+    );
+    await muet.act(async () => {});
+    assert.equal(urls.length, 1);
+    await muet.unmount();
+  } finally {
+    delete globalThis[BUILD_INFO_GLOBAL];
+    dom.restore();
+  }
+});

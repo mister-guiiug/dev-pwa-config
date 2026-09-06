@@ -188,6 +188,9 @@ export function readBuildInfo(source) {
     commit,
     // Sept caractères : la forme courte de git, celle que porte une release.
     shortCommit: commit.slice(0, 7),
+    // La base sous laquelle le build a été fait (`/miss-genius/`), posée par
+    // le plugin : c'est elle qui dit OÙ est `version.json`.
+    base: text(info.base),
   };
 }
 
@@ -204,7 +207,28 @@ export function versionContext(source) {
   if (info.version) context.version = info.version;
   if (info.buildTime) context.buildTime = info.buildTime;
   if (info.commit) context.commit = info.commit;
+  if (info.base) context.base = info.base;
   return context;
+}
+
+/**
+ * L'URL de `version.json`, SOUS LA BASE DU BUILD.
+ *
+ * Un `fetch('version.json')` est relatif au document : depuis
+ * `/miss-genius/eleves/3` — un lien profond d'une app qui route par chemin —
+ * il part vers `/miss-genius/eleves/version.json`, reçoit 404, et le sondage
+ * conclut en silence qu'aucune version n'attend. Le plugin injecte la base
+ * du build ; avec elle, l'URL est absolue. Sans elle (build antérieur, page
+ * sans injection), on retombe sur le relatif d'avant.
+ *
+ * @param {unknown} [source]
+ */
+export function versionManifestUrl(source) {
+  const base = readBuildInfo(source).base;
+  if (!base) return VERSION_MANIFEST;
+  return base.endsWith('/')
+    ? `${base}${VERSION_MANIFEST}`
+    : `${base}/${VERSION_MANIFEST}`;
 }
 
 function safeStorage(storage) {

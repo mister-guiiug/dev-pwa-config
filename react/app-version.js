@@ -31,8 +31,12 @@ function trimTrailingSlashes(value) {
  * TROIS ÉTATS, PAS UN. Le numéro qui tourne ; « mis à jour vers X » au premier
  * démarrage après une bascule réussie — la confirmation qu'aucun des cinq
  * modules de mise à jour ne savait donner ; et « version Y disponible » quand
- * un sondage a vu passer un déploiement. Les deux derniers ne s'affichent que
- * sous `VersionProvider`, qui seul les calcule.
+ * un sondage a vu passer un déploiement. Le premier des deux ne s'affiche que
+ * sous `VersionProvider`, qui seul mémorise la version d'avant ; le second,
+ * depuis 4.4.1, se calcule ICI quand il n'y a pas de fournisseur : `updates`
+ * sonde `version.json` une fois au montage (`checkUrl`, `checkEvery`). Un
+ * pied de page suffit donc pour qu'une PWA installée sache qu'une version
+ * l'attend — dix-sept apps n'avaient pas posé le fournisseur.
  *
  * PAS DE COULEUR SEULE. Chaque état porte son TEXTE. L'annonce de disponibilité
  * est une région `status` : elle apparaît après coup, donc sans elle, un
@@ -44,8 +48,9 @@ function trimTrailingSlashes(value) {
  * Non stylé : cibler `[data-dwc="app-version"]`.
  *
  * @param {{ prefix?: string, label?: boolean|string, details?: boolean,
- *   updates?: boolean, repoUrl?: string, releaseUrl?: string,
- *   locale?: string, className?: string }} props
+ *   updates?: boolean, checkUrl?: string, checkEvery?: string|number,
+ *   repoUrl?: string, releaseUrl?: string, locale?: string,
+ *   className?: string }} props
  */
 export function AppVersion(props = {}) {
   const {
@@ -53,13 +58,21 @@ export function AppVersion(props = {}) {
     label = true,
     details = false,
     updates = true,
+    checkUrl,
+    checkEvery,
+    fetch: fetchImpl,
     repoUrl,
     releaseUrl,
     locale,
     className,
   } = props;
 
-  const state = useAppVersion();
+  const state = useAppVersion({
+    check: updates,
+    checkUrl,
+    checkEvery,
+    fetch: fetchImpl,
+  });
   const labels = useLabels('version');
 
   const text = formatVersion(state.version, { prefix });

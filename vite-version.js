@@ -112,10 +112,16 @@ export function versionPlugin(options = {}) {
   } = options;
 
   const info = resolveBuildInfo(options);
-  const payload = versionContext(info);
 
   let resolvedOutDir = outDir;
   let command = 'build';
+  // La base du build (`/miss-genius/`), connue seulement une fois la
+  // configuration résolue : injectée avec la version, elle dit au navigateur
+  // OÙ chercher `version.json` — un lien profond d'une app qui route par
+  // chemin le cherchait à côté de la page, et recevait 404.
+  let base = '';
+  const complet = () => (base ? { ...info, base } : info);
+  const payload = () => versionContext(complet());
 
   return {
     name: 'dwc-version',
@@ -134,6 +140,7 @@ export function versionPlugin(options = {}) {
     configResolved(config = {}) {
       resolvedOutDir = config.build?.outDir ?? outDir;
       command = config.command ?? 'build';
+      base = typeof config.base === 'string' ? config.base : '';
     },
 
     /**
@@ -153,13 +160,13 @@ export function versionPlugin(options = {}) {
         }
         res.setHeader('content-type', 'application/json; charset=utf-8');
         res.setHeader('cache-control', 'no-store');
-        res.end(JSON.stringify(payload));
+        res.end(JSON.stringify(payload()));
       });
     },
 
     transformIndexHtml(html) {
       if (!inject) return html;
-      const script = buildInfoScript(info);
+      const script = buildInfoScript(complet());
       // Avant `</head>` — la version n'a pas à bloquer le rendu, contrairement
       // au script anti-FOUC qui, lui, doit passer en tête.
       return html.includes('</head>')
@@ -171,7 +178,7 @@ export function versionPlugin(options = {}) {
       if (!manifest || command !== 'build') return;
       const target = join(resolvedOutDir, VERSION_MANIFEST);
       mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+      writeFileSync(target, `${JSON.stringify(payload(), null, 2)}\n`, 'utf8');
     },
   };
 }

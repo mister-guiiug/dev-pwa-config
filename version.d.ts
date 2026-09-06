@@ -12,6 +12,8 @@ export interface BuildInfo {
   commit: string;
   /** Les sept premiers caractères de `commit`, ou `''`. */
   shortCommit: string;
+  /** La base du build (`/miss-genius/`), si le plugin l'a injectée ; sinon `''`. */
+  base: string;
 }
 
 export interface ParsedVersion {
@@ -66,7 +68,13 @@ export declare function readBuildInfo(source?: unknown): BuildInfo;
 /** Le contexte pour `setSessionContext`, champs vides omis. */
 export declare function versionContext(
   source?: unknown
-): Partial<Pick<BuildInfo, 'version' | 'buildTime' | 'commit'>>;
+): Partial<Pick<BuildInfo, 'version' | 'buildTime' | 'commit' | 'base'>>;
+
+/**
+ * L'URL de `version.json` sous la base du build injectée par le plugin
+ * (`/miss-genius/version.json`) ; sans base, le relatif `version.json`.
+ */
+export declare function versionManifestUrl(source?: unknown): string;
 
 /** Compare à la version du démarrage précédent, et la mémorise. */
 export declare function rememberVersion(

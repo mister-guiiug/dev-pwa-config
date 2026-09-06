@@ -26,6 +26,7 @@ import {
   readBuildInfo,
   rememberVersion,
   versionContext,
+  versionManifestUrl,
 } from '../version.js';
 
 /** Un `Storage` minimal, suffisant pour ce que `rememberVersion` en attend. */
@@ -109,6 +110,7 @@ test('readBuildInfo ne lève pas et ne rend jamais undefined', () => {
     buildTime: '',
     commit: '',
     shortCommit: '',
+    base: '',
   });
 
   const info = readBuildInfo({
@@ -282,4 +284,34 @@ test('le script inline ne peut pas refermer sa propre balise', () => {
     })
   )(posed);
   assert.equal(readBuildInfo(posed[BUILD_INFO_GLOBAL]).version, '3.13.0');
+});
+
+test('readBuildInfo porte la base du build, et versionManifestUrl la suit', () => {
+  // Depuis `/miss-genius/eleves/3`, un `version.json` relatif partait à côté
+  // de la page et recevait 404 : le sondage concluait qu'aucune version
+  // n'attendait. La base injectée par le plugin rend l'URL absolue.
+  assert.equal(readBuildInfo({ base: '/miss-genius/' }).base, '/miss-genius/');
+  assert.equal(readBuildInfo({}).base, '');
+  assert.equal(
+    versionManifestUrl({ base: '/miss-genius/' }),
+    '/miss-genius/version.json'
+  );
+  assert.equal(
+    versionManifestUrl({ base: '/miss-genius' }),
+    '/miss-genius/version.json'
+  );
+  assert.equal(versionManifestUrl({ base: '/' }), '/version.json');
+  // Sans base (build antérieur, page sans injection) : le relatif d'avant.
+  assert.equal(versionManifestUrl({}), 'version.json');
+  assert.deepEqual(versionContext({ version: '1.0.0', base: '/x/' }), {
+    version: '1.0.0',
+    base: '/x/',
+  });
+
+  globalThis[BUILD_INFO_GLOBAL] = { version: '1.0.0', base: '/mister-doc/' };
+  try {
+    assert.equal(versionManifestUrl(), '/mister-doc/version.json');
+  } finally {
+    delete globalThis[BUILD_INFO_GLOBAL];
+  }
 });
