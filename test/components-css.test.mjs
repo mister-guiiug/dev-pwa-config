@@ -299,8 +299,132 @@ test('aucune animation ne retient sa valeur d’arrivée', () => {
   const fills = [...CSS.matchAll(/animation:[^;}]*\bbackwards\b/g)];
   assert.equal(
     fills.length,
-    3,
-    'les trois entrées de panneau devraient porter `backwards` — le motif a changé'
+    4,
+    'les quatre entrées (feuille, confirmation, toast, bandeau) devraient porter `backwards` — le motif a changé'
+  );
+});
+
+test('toute entrée animée s’éteint sous prefers-reduced-motion', () => {
+  // Que le bloc existe ne prouve rien : ce qui compte, c'est que CHAQUE règle
+  // qui anime porte son antidote. La liste ne couvrait que `sheet-panel` quand
+  // `confirm-panel` et `toast` portaient la même entrée — relevé par la
+  // migration de mister-puzzle (#14), qui a dû reposer la règle chez elle.
+  const body = mediaBody('(prefers-reduced-motion: reduce)');
+  assert.ok(body, 'bloc @media (prefers-reduced-motion: reduce) absent');
+
+  const rules = CSS.slice(
+    0,
+    CSS.indexOf('@media (prefers-reduced-motion: reduce)')
+  );
+  const animes = [...rules.matchAll(/([^{}]+)\{[^{}]*animation:\s*dwc-/g)]
+    .flatMap(m => m[1].trim().split(/\s*,\s*/))
+    // Le dernier `[data-dwc]` du sélecteur : la condition qui le précède
+    // (`:root:has(…)`) ne désigne pas l'élément animé.
+    .map(sel => (sel.match(/\[data-dwc='[^']+'\]/g) ?? [sel]).pop());
+
+  assert.ok(animes.length, 'aucune animation détectée : le motif a changé');
+  const orphans = [...new Set(animes)].filter(sel => !body.includes(sel));
+  assert.deepEqual(
+    orphans,
+    [],
+    'ces sélecteurs animent sans contrepartie sous prefers-reduced-motion'
+  );
+});
+
+test('un sélecteur `:has()` ne partage jamais sa liste', () => {
+  // Une liste de sélecteurs est tout ou rien : un navigateur qui ne connaît
+  // pas `:has()` (Firefox avant 121) jette la RÈGLE entière, pas le seul
+  // sélecteur fautif. Glissé dans la liste de `prefers-reduced-motion`, il
+  // rallumerait le mouvement de tous les panneaux chez qui l'a éteint.
+  const preludes = [...CSS.matchAll(/(?<=^|[{};])\s*([^{};]+?)\s*\{/g)].map(
+    m => m[1]
+  );
+  const mixtes = preludes.filter(
+    p =>
+      p.includes(':has(') &&
+      p.split(/\s*,\s*/).some(sel => !sel.includes(':has('))
+  );
+  assert.deepEqual(
+    mixtes,
+    [],
+    'un `:has()` voisine avec un sélecteur ordinaire : sans lui, la règle entière tomberait'
+  );
+  assert.ok(
+    preludes.some(p => p.includes(':has(')),
+    'aucun `:has()` : la barre collée ne relève plus le plancher des surfaces flottantes'
+  );
+});
+
+test('la barre basse collée emmène au-dessus d’elle le bandeau de mise à jour et les toasts', () => {
+  // Le bandeau est rendu APRÈS `children` : en flux, tout en bas du document.
+  // Sous `BottomNav placement="fixed"`, il finissait hors écran puis, page
+  // déroulée, dans les 4,5 rem que la barre couvre — « Recharger » n'était
+  // atteignable par personne. Mesuré dans mister-miss-koh le 06/09/2026, en
+  // 375×812 : bord bas du bandeau à 812 px, haut de la barre à 759 px.
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Corps de la première règle dont le prélude est exactement `source`
+  // (une expression rationnelle), accolades non imbriquées.
+  const block = source =>
+    CSS.match(new RegExp(`${source}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+
+  // 1 — L'empreinte de la barre est écrite UNE fois. Trois règles la lisent :
+  //     la réserve de PageContainer, le toast, le bandeau — et koh, côté app,
+  //     l'avait figée une quatrième fois.
+  assert.equal(
+    (CSS.match(/4\.5rem/g) ?? []).length,
+    1,
+    '4,5 rem figé à plusieurs endroits : passer par --_dwc-bottom-nav-reserve'
+  );
+  assert.match(CSS, /--_dwc-bottom-nav-reserve:\s*calc\(\s*4\.5rem\s*\+/);
+  assert.match(
+    block(esc("[data-dwc='page-container'][data-reserve='bottom-nav']")),
+    /padding-bottom:\s*var\(--_dwc-bottom-nav-reserve\)/,
+    'la réserve de PageContainer ne lit pas l’empreinte de la barre'
+  );
+
+  // 2 — La barre collée relève le plancher des surfaces flottantes, et c'est
+  //     la RACINE qui le porte : une variable posée sur la barre n'atteindrait
+  //     que ses descendants, or le bandeau et les toasts sont ses voisins.
+  const condition =
+    ":root:has([data-dwc='bottom-nav'][data-placement='fixed'])";
+  assert.match(
+    block(esc(condition)),
+    /--_dwc-bottom-clearance:\s*var\(--_dwc-bottom-nav-reserve\)/,
+    'la barre collée ne relève pas --_dwc-bottom-clearance'
+  );
+  assert.match(
+    block(esc("[data-dwc='toast-viewport']")),
+    /bottom:\s*var\(--_dwc-bottom-clearance\)/,
+    'les toasts ignorent le plancher : ils surgiraient sous la barre'
+  );
+
+  // 3 — Le bandeau flotte SOUS LA MÊME CONDITION : sans barre collée, rien ne
+  //     bouge pour les treize apps qui le placent elles-mêmes — dont deux en
+  //     haut de l'écran, où un `bottom` venu d'ici s'ajouterait à leur `top`.
+  const banner = block(
+    `${esc(condition)}\\s+\\[data-dwc='update-banner'\\],\\s*${esc(condition)}\\s+\\[data-dwc='offline-ready'\\]`
+  );
+  assert.ok(
+    banner,
+    'règle de placement du bandeau absente ou inconditionnelle'
+  );
+  assert.match(banner, /position:\s*fixed/);
+  assert.match(banner, /bottom:\s*calc\(\s*var\(--_dwc-bottom-clearance\)/);
+  assert.match(banner, /animation:\s*dwc-rise[^;]*\bbackwards\b/);
+
+  // 4 — L'ordre d'empilement : barre 20 < bandeau < en-tête 30 < toast 70.
+  //     Les deux bornes ne bougent pas : les apps qui placent leur bandeau
+  //     elles-mêmes se calent dessus.
+  const z = body => Number(/z-index:\s*(\d+)/.exec(body)?.[1]);
+  const nav = z(block(esc("[data-dwc='bottom-nav'][data-placement='fixed']")));
+  const bandeau = z(banner);
+  const header = z(block(esc("[data-dwc='app-header']")));
+  const toast = z(block(esc("[data-dwc='toast-viewport']")));
+  assert.equal(nav, 20, 'z-index de la barre collée');
+  assert.equal(toast, 70, 'z-index des toasts');
+  assert.ok(
+    nav < bandeau && bandeau < header && header < toast,
+    `ordre d’empilement rompu : barre ${nav} < bandeau ${bandeau} < en-tête ${header} < toast ${toast}`
   );
 });
 
