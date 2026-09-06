@@ -56,6 +56,13 @@ export interface BottomNavProps {
    * « Plus » interne reste réservé aux `items` en surnombre.
    */
   trailing?: ReactNode;
+  /**
+   * `fixed` colle la barre au bas de la fenêtre (`position: fixed`, pleine
+   * largeur, au-dessus du contenu) — la règle que huit dépôts recopiaient.
+   * Réserver la place qu'elle occupe avec `<PageContainer reserve="bottom-nav">`.
+   * Défaut `static` : la barre reste dans le flux, comme avant.
+   */
+  placement?: 'static' | 'fixed';
 }
 
 /** Barre de navigation basse, agnostique de routeur. */

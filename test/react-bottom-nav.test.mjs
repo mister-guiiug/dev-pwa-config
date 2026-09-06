@@ -18,6 +18,32 @@ const ITEMS = [
   { href: '/reglages', label: 'Réglages' },
 ];
 
+test('placement="fixed" colle la barre ; par défaut elle reste dans le flux', async () => {
+  // Huit dépôts recopiaient `position: fixed; inset-inline: 0; bottom: 0` :
+  // la règle vit désormais dans components.css, derrière cet attribut.
+  const dom = setupDom();
+  try {
+    const flux = await mount(h(BottomNav, { items: ITEMS, currentPath: '/' }));
+    assert.equal(
+      flux.container.querySelector('nav').hasAttribute('data-placement'),
+      false,
+      'rien ne change pour qui ne le demande pas'
+    );
+    await flux.unmount();
+
+    const collee = await mount(
+      h(BottomNav, { items: ITEMS, currentPath: '/', placement: 'fixed' })
+    );
+    assert.equal(
+      collee.container.querySelector('nav').getAttribute('data-placement'),
+      'fixed'
+    );
+    await collee.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
 test('le repère de navigation a toujours un nom', async () => {
   // miss-contraction, mister-doc et mister-footcoach n'en posent aucun : deux
   // `<nav>` anonymes sont indiscernables dans la liste des repères.

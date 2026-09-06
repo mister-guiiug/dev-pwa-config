@@ -55,6 +55,50 @@ test('les id sont uniques', () => {
   assert.equal(new Set(ids).size, ids.length, 'doublon d’id');
 });
 
+test('chaque app a un port de développement, unique, et le squelette a le sien', async () => {
+  // Presque toutes démarraient sur 5173 ; cinq avaient choisi un port à la
+  // main sans registre. Deux apps côte à côte sur le même poste ne doivent
+  // jamais se disputer un port.
+  const { devPortOf, freeDevPort, DEV_PORT_RANGE, STARTER_KIT_DEV_PORT } =
+    await import('../apps-catalog.js');
+  const ports = FAMILY_APPS.map(a => a.devPort);
+  for (const a of FAMILY_APPS) {
+    assert.ok(
+      Number.isInteger(a.devPort) && a.devPort > 1023 && a.devPort < 65536,
+      `${a.id}: devPort`
+    );
+  }
+  assert.equal(new Set(ports).size, ports.length, 'doublon de port');
+  assert.ok(
+    !ports.includes(STARTER_KIT_DEV_PORT),
+    'le port du squelette est réservé'
+  );
+  assert.equal(
+    devPortOf('miss-supaboss'),
+    5204,
+    'un port choisi à la main est conservé'
+  );
+  assert.equal(
+    devPortOf('miss-ticket-pwa'),
+    1420,
+    'celui de sa configuration Vite'
+  );
+  assert.equal(
+    devPortOf('app-inconnue'),
+    5173,
+    'hors catalogue : celui de Vite'
+  );
+  assert.equal(devPortOf('app-inconnue', 5240), 5240);
+  const libre = freeDevPort();
+  assert.ok(libre >= DEV_PORT_RANGE.min && libre <= DEV_PORT_RANGE.max);
+  assert.ok(!ports.includes(libre) && libre !== STARTER_KIT_DEV_PORT);
+  assert.notEqual(
+    freeDevPort([libre]),
+    libre,
+    'un port pris en plus est évité'
+  );
+});
+
 test('otherApps(id) exclut l’app courante', () => {
   const id = FAMILY_APPS[0].id;
   const rest = otherApps(id);

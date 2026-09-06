@@ -596,7 +596,8 @@
     "pwa-icons": "./scripts/generate-pwa-icons.mjs",
     "pwa-bundle-budget": "./scripts/check-bundle-budget.mjs",
     "pwa-doctor": "./scripts/pwa-doctor.mjs",
-    "pwa-pgtap": "./scripts/pwa-pgtap.mjs"
+    "pwa-pgtap": "./scripts/pwa-pgtap.mjs",
+    "pwa-screenshots": "./scripts/pwa-screenshots.mjs"
   },
   "files": [
     "eslint-base.js",
@@ -726,6 +727,7 @@
     "idb.d.ts",
     "scripts/pwa-doctor.mjs",
     "scripts/pwa-pgtap.mjs",
+    "scripts/pwa-screenshots.mjs",
     "scripts/site-readers.mjs"
   ],
   "peerDependencies": {

@@ -80,6 +80,15 @@ import { useLabels } from './labels.js';
  *   seulement une fois déployé, jamais en développement. Passer
  *   `useLocation().pathname`, qui est relatif au `basename`.
  *
+ * COLLÉE OU DANS LE FLUX : `placement`. Le socle habillait la barre sans la
+ * PLACER — `position: relative`, délibérément, parce qu'une barre peut vivre
+ * dans une colonne flex qui occupe la hauteur. Résultat mesuré le 05/09/2026 :
+ * **huit dépôts** (sept apps et le squelette) recopiaient la même règle
+ * `position: fixed; inset-inline: 0; bottom: 0`, avec à côté la même réserve
+ * de hauteur sur le contenu. `placement="fixed"` pose la règle une fois, et
+ * `<PageContainer reserve="bottom-nav">` réserve la place qu'elle occupe. Le
+ * défaut reste `static` : rien ne change pour qui ne le demande pas.
+ *
  * Non stylé : cibler `[data-dwc="bottom-nav"]` et descendants.
  *
  * @param {{
@@ -94,6 +103,7 @@ import { useLabels } from './labels.js';
  *   hrefProp?: string,
  *   onNavigate?: (item: object) => void,
  *   className?: string,
+ *   placement?: 'static' | 'fixed',
  * }} props
  */
 export function BottomNav(props = {}) {
@@ -108,6 +118,7 @@ export function BottomNav(props = {}) {
     onNavigate,
     className,
     trailing,
+    placement = 'static',
   } = props;
 
   const labels = useLabels('nav');
@@ -196,6 +207,7 @@ export function BottomNav(props = {}) {
       className,
       'aria-label': label ?? labels.label,
       'data-dwc': 'bottom-nav',
+      'data-placement': placement === 'fixed' ? 'fixed' : undefined,
     },
     visible.map(item => link(item, 'item')),
     overflowing

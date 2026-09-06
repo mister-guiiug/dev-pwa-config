@@ -2,15 +2,67 @@
 // budget lu dans package.json, tous les dépassements d'un coup.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
   checkBudget,
   measureBundle,
+  proposeBudget,
   readBudget,
+  writeBudget,
 } from '../scripts/check-bundle-budget.mjs';
+
+test('proposeBudget : la mesure plus dix pour cent, seulement quand c’est plus bas', () => {
+  // Un budget posé un jour de surpoids (bac-sable 675, carbook 505) laisse
+  // toute la place de regrossir : le cliquet le ramène vers la mesure.
+  const measure = { totalGzipKb: 100, files: [] };
+  assert.deepEqual(proposeBudget(measure, { totalGzipKb: 200 }), [
+    { key: 'totalGzipKb', measured: 100, current: 200, proposed: 110 },
+  ]);
+  // À dix pour cent près, rien à dire : 110 n'est pas plus bas que 105.
+  assert.deepEqual(proposeBudget(measure, { totalGzipKb: 105 }), []);
+  // Le chunk principal suit la même règle, sur son poids brut.
+  const main = { name: 'index-abc.js', rawKb: 300 };
+  assert.deepEqual(
+    proposeBudget(measure, { totalGzipKb: 100, mainChunkKb: 420 }, main),
+    [{ key: 'mainChunkKb', measured: 300, current: 420, proposed: 330 }]
+  );
+  // Sans borne écrite, pas de proposition : le cliquet resserre, il ne pose pas.
+  assert.deepEqual(proposeBudget(measure, {}, main), []);
+});
+
+test('writeBudget n’écrit que les clés proposées, en gardant le reste', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'dwc-ratchet-'));
+  try {
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify(
+        {
+          name: 'miss-x',
+          bundleBudget: { totalGzipKb: 200, mainChunk: 'app-' },
+        },
+        null,
+        2
+      )
+    );
+    writeBudget(root, [
+      { key: 'totalGzipKb', measured: 100, current: 200, proposed: 110 },
+    ]);
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+    assert.deepEqual(pkg.bundleBudget, { totalGzipKb: 110, mainChunk: 'app-' });
+    assert.equal(pkg.name, 'miss-x');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 /** Un dist/assets factice : un chunk principal et un vendor, aux poids voulus. */
 async function withDist(run) {

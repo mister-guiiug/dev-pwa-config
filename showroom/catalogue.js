@@ -417,11 +417,13 @@ globalThis.SHOWROOM_CATALOGUE = {
           'Ne pas laisser le `<nav>` sans nom : trois des sept copies n’en posent aucun, et deux repères anonymes sont indiscernables dans la liste d’un lecteur d’écran.',
           'Ne pas distinguer l’onglet courant par la seule couleur : quatre copies sur sept ne changent que l’encre. En contraste forcé, les deux teintes deviennent la même.',
           'Ne pas nommer une pastille par `aria-label` sur un `<span>` : miss-lookhouse le fait, et rien n’est restitué. Passer `badgeLabel`.',
+          'Ne pas recopier `position: fixed` dans l’app pour coller la barre : huit dépôts portaient la même règle le 05/09/2026. `placement="fixed"`, et `<PageContainer reserve="bottom-nav">` pour la place qu’elle occupe.',
         ],
         en: [
           'Don’t leave the `<nav>` unnamed: three of the seven copies set none, and two anonymous landmarks are indistinguishable in a screen reader’s list.',
           'Don’t signal the current tab by colour alone: four copies out of seven change only the ink. Under forced colours the two hues become one.',
           'Don’t name a badge with `aria-label` on a `<span>`: miss-lookhouse does, and nothing is conveyed. Pass `badgeLabel`.',
+          'Don’t copy `position: fixed` into the app to pin the bar: eight repositories carried the same rule on 05/09/2026. `placement="fixed"`, and `<PageContainer reserve="bottom-nav">` for the room it takes.',
         ],
       },
       a11y: {

@@ -649,6 +649,74 @@ export function pagesUrl(id) {
 //   - `iconUrl: '<URL absolue>'` ou `iconUrl: null` (app sans icône web) ;
 //   - `appUrl`, `repoUrl`, `themeColor` (hébergement/casse custom) ;
 //   - `category`, `backend`, `platform` (défaut `'web'`).
+/**
+ * Le port de développement de chaque application — UNIQUE, pour que deux apps
+ * tournent côte à côte sur le même poste.
+ *
+ * Relevé du 05/09/2026 : presque toutes démarraient sur le 5173 de Vite, et
+ * cinq avaient choisi un port à la main sans registre (5204, 5214, 5234, 5236,
+ * 5240). Les ports déjà choisis sont conservés ; les autres reçoivent une
+ * valeur dans la plage 5201–5299. `miss-ticket-pwa` garde 1420, celui de sa
+ * configuration Vite.
+ *
+ * Réservé hors catalogue : **5240** pour le squelette `pwa-starter-kit`. Le
+ * générateur prend le plus petit port libre de la plage pour une app neuve,
+ * et l'inscription au catalogue le fige.
+ */
+const DEV_PORTS = {
+  'miss-carbook': 5201,
+  'miss-contraction': 5202,
+  'miss-genius': 5203,
+  'miss-supaboss': 5204,
+  'miss-uwh': 5205,
+  'mister-cim10': 5206,
+  'mister-footcoach': 5207,
+  'mister-puzzle': 5208,
+  'mister-doc': 5210,
+  'miss-badminton': 5211,
+  'miss-dice': 5212,
+  'miss-lookhouse': 5214,
+  'mister-molkky': 5215,
+  'mister-qowa': 5216,
+  'mister-family-map': 5217,
+  'mister-quota': 5218,
+  'miss-supatool': 5234,
+  'mister-miss-koh': 5236,
+  'miss-ticket-pwa': 1420,
+};
+
+/** Le port réservé au squelette, absent du catalogue par décision. */
+export const STARTER_KIT_DEV_PORT = 5240;
+
+/** La plage des ports de développement de la famille. */
+export const DEV_PORT_RANGE = { min: 5201, max: 5299 };
+
+/**
+ * Le port de développement d'une app, ou le repli (5173, celui de Vite) pour
+ * une app hors catalogue. À passer à `server.port` de `vite.config.ts`.
+ */
+export function devPortOf(id, fallback = 5173) {
+  return DEV_PORTS[id] ?? fallback;
+}
+
+/**
+ * Le plus petit port libre de la plage, hors catalogue et hors squelette —
+ * ce que le générateur donne à une app neuve.
+ *
+ * @param {number[]} [pris] Ports occupés en plus du catalogue.
+ */
+export function freeDevPort(pris = []) {
+  const occupes = new Set([
+    ...Object.values(DEV_PORTS),
+    STARTER_KIT_DEV_PORT,
+    ...pris,
+  ]);
+  for (let port = DEV_PORT_RANGE.min; port <= DEV_PORT_RANGE.max; port += 1) {
+    if (!occupes.has(port)) return port;
+  }
+  return null;
+}
+
 function app(id, name, description, maturity, overrides = {}) {
   const appUrl = overrides.appUrl ?? pagesUrl(id);
   let iconUrl;
@@ -668,6 +736,7 @@ function app(id, name, description, maturity, overrides = {}) {
     appUrl,
     iconUrl,
     themeColor: overrides.themeColor,
+    devPort: overrides.devPort ?? DEV_PORTS[id],
   };
 }
 

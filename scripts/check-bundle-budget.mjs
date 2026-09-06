@@ -30,7 +30,7 @@
  *
  * Publié comme bin `pwa-bundle-budget` — la mécanique de `pwa-icons`.
  */
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
@@ -123,6 +123,63 @@ export function checkBudget(measure, budget = {}) {
   return { ok: problems.length === 0, problems, main };
 }
 
+/**
+ * Le cliquet : quand le build a MAIGRI, proposer un budget plus serré.
+ *
+ * Un budget se pose à « poids courant + marge » et n'en bouge plus : le
+ * 05/09/2026, bac-sable était à 675 kB de budget, carbook à 505, qowa à 435 —
+ * des plafonds posés un jour de surpoids, qui laissent depuis toute la place
+ * de regrossir sans qu'on le décide. Le cliquet ne fait que proposer : la
+ * mesure plus dix pour cent, quand c'est plus bas que le budget écrit. Avec
+ * `--write`, il l'écrit dans `package.json` — à relire dans la PR, comme le
+ * budget lui-même.
+ *
+ * @param {ReturnType<typeof measureBundle>} measure
+ * @param {{ totalGzipKb?: number, mainChunkKb?: number }} budget
+ * @param {{ name: string, rawKb: number } | null} main
+ * @param {{ marge?: number }} [options]
+ * @returns {Array<{ key: string, measured: number, current: number, proposed: number }>}
+ */
+export function proposeBudget(measure, budget = {}, main = null, options = {}) {
+  const marge = options.marge ?? 0.1;
+  // Arrondi à six décimales AVANT le plafond : `100 * 1.1` vaut
+  // 110.00000000000001 en flottant, et `Math.ceil` en ferait 111.
+  const serre = kb => Math.ceil(Number((kb * (1 + marge)).toFixed(6)));
+  const proposals = [];
+  if (Number.isFinite(budget.totalGzipKb)) {
+    const proposed = serre(measure.totalGzipKb);
+    if (proposed < budget.totalGzipKb) {
+      proposals.push({
+        key: 'totalGzipKb',
+        measured: measure.totalGzipKb,
+        current: budget.totalGzipKb,
+        proposed,
+      });
+    }
+  }
+  if (Number.isFinite(budget.mainChunkKb) && main) {
+    const proposed = serre(main.rawKb);
+    if (proposed < budget.mainChunkKb) {
+      proposals.push({
+        key: 'mainChunkKb',
+        measured: main.rawKb,
+        current: budget.mainChunkKb,
+        proposed,
+      });
+    }
+  }
+  return proposals;
+}
+
+/** Écrit les budgets proposés dans `package.json`, et rien d'autre. */
+export function writeBudget(cwd, proposals) {
+  const path = join(cwd, 'package.json');
+  const pkg = JSON.parse(readFileSync(path, 'utf8'));
+  pkg.bundleBudget = { ...(pkg.bundleBudget ?? {}) };
+  for (const p of proposals) pkg.bundleBudget[p.key] = p.proposed;
+  writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`);
+}
+
 /** Le budget : `package.json`, puis les options de ligne de commande. */
 export function readBudget(cwd, argv = []) {
   let fromPackage = {};
@@ -171,6 +228,26 @@ export function run(argv = [], cwd = process.cwd()) {
       `${verdict.main?.name ?? 'chunk principal'} ≤ ${budget.mainChunkKb} kB`,
   ].filter(Boolean);
   console.log(`[budget] ✅ sous le budget (${bornes.join(', ')}).`);
+
+  if (argv.includes('--ratchet')) {
+    const proposals = proposeBudget(measure, budget, verdict.main);
+    if (!proposals.length) {
+      console.log(
+        '[budget] ↔ rien à resserrer : le build est à moins de dix pour cent du budget.'
+      );
+    }
+    for (const p of proposals) {
+      console.log(
+        `[budget] ↓ ${p.key} : ${p.measured.toFixed(1)} kB mesurés — budget ${p.current} → ${p.proposed} kB proposé`
+      );
+    }
+    if (proposals.length && argv.includes('--write')) {
+      writeBudget(cwd, proposals);
+      console.log('[budget] ✍ package.json mis à jour — à relire dans la PR.');
+    } else if (proposals.length) {
+      console.log('[budget]   `--ratchet --write` pour l’écrire.');
+    }
+  }
   return 0;
 }
 
