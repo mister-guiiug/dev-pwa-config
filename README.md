@@ -709,7 +709,9 @@ qu'on copie dit encore, en commentaire, d'y ranger les `VITE_*`. Le modèle qui
 rend la règle mécanique plutôt que documentaire — un manifeste déclaré, un
 `.env.example` engendré, un audit qui confronte la déclaration à l'API GitHub,
 et trois gardes pour qu'une valeur absente n'atteigne jamais la production en
-silence — est instruit dans [CONFIG.md](CONFIG.md).
+silence — est instruit dans [CONFIG.md](CONFIG.md). **La procédure, geste par
+geste, avec ses variantes** (Supabase, Firebase, Cloudflare, le socle, le
+miroir, déplacer une valeur, retirer) est dans [PARAMETRAGE.md](PARAMETRAGE.md).
 
 ## Nouveau projet : une commande
 

@@ -2,7 +2,9 @@
 
 _Dossier instruit le 04/09/2026. Tous les chiffres qui suivent ont été relevés
 ce jour-là sur les dix-huit dépôts et sur l'API GitHub — aucun n'est repris de
-l'inventaire du 02/09, dont la péremption est précisément le sujet._
+l'inventaire du 02/09, dont la péremption est précisément le sujet. Ce
+document dit le **modèle** ; la procédure et ses variantes, geste par geste,
+sont dans [PARAMETRAGE.md](PARAMETRAGE.md)._
 
 ## Le constat : la règle existe, elle n'est appliquée nulle part
 
