@@ -932,6 +932,34 @@ Restent deux gestes, volontairement hors du générateur :
 | `pwa-doctor`        | Lit UN dépôt et dit ce qui manque à la checklist du parc — fichiers du gabarit, workflows, et le build (`dist/` : manifeste lié sous le site, PNG 512, `id`, langue, icône iOS, CSP, `404.html`) ; plus un seul fait qui n'est pas sur le disque, les issues du dépôt, quand un jeton permet de le lire (`--no-github` coupe l'appel). Trois verdicts (défaut, dette, info), le geste à chaque ligne, code 1 sur un défaut (`--strict` : aussi sur une dette). Ex. `"postbuild": "pwa-doctor"`                                                                                                |
 | `pwa-pgtap`         | Joue les fichiers pgTAP de `supabase/tests/` contre la base LIÉE, sans Docker : chaque assertion dépose son verdict dans une table temporaire que la dernière requête renvoie d'un bloc (`supabase db query` ne rend que le dernier jeu de lignes). Même fichier, même plan, même `rollback`. Exige le CLI `supabase`, `supabase link` fait et `SUPABASE_ACCESS_TOKEN`. Promu de mister-miss-koh ; complément du réutilisable `pwa-supabase-test.yml` (pile jetable en CI). Ex. `npx pwa-pgtap rls.test.sql`                                                                                  |
 | `pwa-screenshots`   | Les deux captures du manifeste — `narrow` 540×1170 et `wide` 1280×720, celles qui décident de la fiche d'installation — prises sur le build servi par `vite preview`, ou sur une app déjà servie (`--url`, données réelles) ; `--prepare` joue un module avant chaque capture pour mettre l'écran dans l'état voulu par l'interface. `pwaBaseOptions` lit ensuite `public/screenshots/` et déclare les entrées au manifeste, aux tailles lues dans les fichiers. Trois scripts faisaient la même chose (squelette, mister-miss-koh, showroom). Ex. `npx pwa-screenshots --wide-path reglages` |
+| `pwa-bindings`      | Pose les binaires natifs de CE poste **aux versions du lockfile**. Utile là où le `.npmrc` épingle `os=linux` (le lockfile reste celui de la CI) et où `npm ci` n'installe donc rien pour Windows ou macOS. La liste n'est pas écrite : toute entrée du lockfile dont `os`/`cpu`/`libc` désignent le poste est retenue. `--dry-run` imprime la commande sans l'exécuter, `--dir` vise un autre dossier. Ex. `npx pwa-bindings`                                                                                                                                                                |
+
+### Pourquoi `pwa-bindings` épingle
+
+La parade connue s'écrivait à la main, et **sans numéro de version** :
+
+```bash
+npm i --no-save @rolldown/binding-win32-x64-msvc lightningcss-win32-x64-msvc …
+```
+
+Or `npm i <nom>` installe la **dernière** version publiée, pas celle que le
+lockfile a résolue. Le poste se met alors à faire tourner un compilateur que la
+CI n'a jamais vu — et il ne le dit pas.
+
+Ce que ça a coûté, une fois mesuré (`mister-footcoach`, 06/09/2026) : le poste
+avait `@rolldown/binding-win32-x64-msvc` **1.2.7** quand le lockfile disait
+**1.1.5**. Le transformeur de 1.2.7 conserve davantage de commentaires à travers
+la transformation JSX, donc des indices `istanbul ignore` qui ne survivaient pas
+survivaient — et `ast-v8-to-istanbul` retire du rapport le sous-arbre annoté.
+Deux fichiers y perdaient une région entière, entièrement couverte : **75.67 /
+74.83 / 71.18 / 76.13** sur le poste contre **75.72 / 75.22 / 71.26 / 76.18** en
+CI. L'écart se lit « Windows ≠ Linux » alors que les deux systèmes rendent le
+même chiffre au bit près dès que la chaîne d'outils est la même.
+
+Une commande épinglée à la main n'aurait pas suffi : les versions diffèrent d'une
+app à l'autre — le même jour, `@rolldown/binding` valait 1.0.3 sur `miss-uwh` et
+`mister-qowa`, 1.1.5 sur `mister-footcoach`, 1.2.5 ici. La seule forme qui reste
+vraie est celle qui lit le lockfile.
 
 ### À quoi sert `pwa-doctor`
 

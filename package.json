@@ -601,7 +601,8 @@
     "pwa-bundle-budget": "./scripts/check-bundle-budget.mjs",
     "pwa-doctor": "./scripts/pwa-doctor.mjs",
     "pwa-pgtap": "./scripts/pwa-pgtap.mjs",
-    "pwa-screenshots": "./scripts/pwa-screenshots.mjs"
+    "pwa-screenshots": "./scripts/pwa-screenshots.mjs",
+    "pwa-bindings": "./scripts/bindings-natifs.mjs"
   },
   "files": [
     "eslint-base.js",
@@ -734,6 +735,7 @@
     "scripts/pwa-doctor.mjs",
     "scripts/pwa-pgtap.mjs",
     "scripts/pwa-screenshots.mjs",
+    "scripts/bindings-natifs.mjs",
     "scripts/site-readers.mjs",
     "scripts/entree.mjs"
   ],
