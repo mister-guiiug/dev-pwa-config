@@ -211,15 +211,26 @@ export function liensFamille(source) {
   // ON SUIT L'IMPORT, PAS L'EXPORT : `export default App` ne porte pas de nom
   // exportable, et c'est la forme de deux des trois apps concernées. Le nom
   // vivant est celui que l'entrée s'est donné en important.
+  //
+  // ON PART DU `from '…'`, PAS DU MOT `import`. Un motif qui commence à
+  // `import` doit traverser une clause de longueur libre avant de savoir s'il
+  // a gagné, et rétro-suit sur `import {import {…` — CodeQL l'a signalé en
+  // ReDoS polynomial (`js/polynomial-redos`) dès la première relecture. Ancré
+  // sur le chemin, chaque position n'est examinée qu'une fois ; la clause se
+  // lit ensuite dans une fenêtre BORNÉE avant le point d'ancrage.
   const entree = fichiers.find(f => /(?:^|\/)main\.[cm]?[jt]sx?$/.test(f.rel));
   if (entree) {
     const base = entree.rel.replace(/\/[^/]+$/, '');
-    for (const [, defaut, nommes, chemin] of entree.text.matchAll(
-      /import\s+(?:([A-Z]\w*)|\{([^}]*)\})\s*from\s*['"](\.[^'"]*)['"]/g
+    for (const trouve of entree.text.matchAll(
+      /from\s*['"](\.[^'"\n]{0,200})['"]/g
     )) {
-      const noms = [defaut, ...(nommes ?? '').split(',')]
-        .map(n => (n ?? '').trim())
-        .filter(n => /^[A-Z]\w*$/.test(n));
+      const chemin = trouve[1];
+      const clause = entree.text.slice(
+        Math.max(0, trouve.index - 200),
+        trouve.index
+      );
+      if (!clause.includes('import')) continue;
+      const noms = clause.match(/[A-Z]\w*/g) ?? [];
       if (!noms.some(nom => new RegExp(`<${nom}\\b`).test(entree.text)))
         continue;
       const cible = normalise(`${base}/${chemin}`).replace(
