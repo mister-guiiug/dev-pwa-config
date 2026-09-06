@@ -3,10 +3,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  appelNpm,
   bindingsDuLockfile,
   cibleCourante,
   lireLockfile,
@@ -154,6 +156,39 @@ test('sans lockfile, le message dit ce qui manque et pourquoi', () => {
     assert.throws(() => lireLockfile(dir), /package-lock\.json.*illisible/s);
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('la façon d’appeler npm marche VRAIMENT sur ce poste', () => {
+  // Le test qui échouait. La 4.6.0 lançait `npm.cmd` sans interpréteur : depuis
+  // le correctif de CVE-2024-27980, Node rend `EINVAL` sur un fichier de
+  // commandes, donc `npx pwa-bindings` ne posait RIEN sur Windows — la seule
+  // plateforme pour laquelle l'outil existe. On ne vérifie pas la forme de
+  // l'appel, on l'exécute : c'est le seul contrôle qui aurait vu le défaut.
+  const { fichier, args, shell } = appelNpm(['--version']);
+  // `i --no-save --version` : npm imprime sa version et ne pose rien.
+  const { status, error } = spawnSync(fichier, args, {
+    shell,
+    encoding: 'utf8',
+  });
+  assert.equal(error, undefined, `npm injoignable : ${error?.message}`);
+  assert.equal(status, 0);
+});
+
+test('l’interpréteur n’est demandé que là où il est nécessaire', () => {
+  // Windows : une LIGNE unique, sinon Node avertit (DEP0190) à chaque appel.
+  assert.deepEqual(appelNpm(['a@1'], 'win32'), {
+    fichier: 'npm i --no-save a@1',
+    args: [],
+    shell: true,
+  });
+  // Ailleurs, pas d'interpréteur du tout.
+  for (const plateforme of ['linux', 'darwin']) {
+    assert.deepEqual(appelNpm(['a@1'], plateforme), {
+      fichier: 'npm',
+      args: ['i', '--no-save', 'a@1'],
+      shell: false,
+    });
   }
 });
 
