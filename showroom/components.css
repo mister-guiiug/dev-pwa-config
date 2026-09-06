@@ -511,9 +511,18 @@
     text-decoration: underline;
   }
 
-  [data-dwc='app-version-details'] {
-    opacity: 0.85;
-  }
+  /*
+   * `[data-dwc='app-version-details']` n'a PLUS de règle, et c'est délibéré :
+   * il portait `opacity: 0.85`. Le bloc `app-version` est déjà en
+   * `--dwc-text-soft` ; une opacité par-dessus compose une TROISIÈME couleur,
+   * plus pâle que le rôle « soft » choisi par la palette, et sur laquelle
+   * aucune palette ne s'est prononcée. À 0.85 elle tombait sous 4,5:1 dans
+   * QUATORZE des trente-six palettes du parc — relevé par axe sur `/profil` de
+   * mister-family-map le 06/09/2026 (#707871 sur #fefcf6 : 4,43 pour 4,5
+   * exigé), à la première exécution réelle d'une suite a11y qui n'avait jamais
+   * tourné en CI. La discrétion voulue est le rôle du jeton, pas d'un voile
+   * posé dessus. `themes.test.mjs` interdit son retour.
+   */
 
   /*
    * Les deux annonces portent leur TEXTE : la pastille colorée n'est qu'un
@@ -660,12 +669,35 @@
     border: 1px solid currentColor;
   }
 
+  /*
+   * `--dwc-success` et `--dwc-warning` sont des couleurs de SIGNAL, calibrées
+   * pour une pastille ou un liseré — pas pour du texte de 0.68rem (~10,9 px),
+   * que WCAG soumet au seuil 4,5:1. Employées telles quelles, elles tombaient
+   * sous ce seuil dans quinze palettes sur trente-six (`stable`) et douze
+   * (`beta`) : le libellé de maturité était illisible dans presque la moitié
+   * du parc, sur l'écran même qui liste les autres apps.
+   *
+   * Le mélange vers `--dwc-text` corrige sans imposer de couleur : il pousse
+   * la teinte vers celle du texte de l'app, donc vers le contraste, dans les
+   * deux schémas — plus sombre en clair, plus clair en sombre. 60 % est le
+   * point où les TRENTE-SIX palettes passent (mesuré, cf. `themes.test.mjs`),
+   * en gardant la teinte reconnaissable ; ne pas remonter cette valeur sans
+   * rejouer le test.
+   */
   [data-dwc='maturity'][data-maturity='stable'] {
-    color: var(--dwc-success, light-dark(#15803d, #4ade80));
+    color: color-mix(
+      in srgb,
+      var(--dwc-success, light-dark(#15803d, #4ade80)) 60%,
+      var(--dwc-text, CanvasText)
+    );
   }
 
   [data-dwc='maturity'][data-maturity='beta'] {
-    color: var(--dwc-warning, light-dark(#b45309, #fbbf24));
+    color: color-mix(
+      in srgb,
+      var(--dwc-warning, light-dark(#b45309, #fbbf24)) 60%,
+      var(--dwc-text, CanvasText)
+    );
   }
 
   [data-dwc='maturity'][data-maturity='alpha'] {
