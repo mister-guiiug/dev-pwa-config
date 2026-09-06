@@ -7,14 +7,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 import {
   PRESET,
+  depotGitHub,
   diagnose,
+  faitsDepot,
   filtreE2e,
   format,
+  issuesActivees,
   liensFamille,
+  porteSignalement,
   run,
   specJouee,
 } from '../scripts/pwa-doctor.mjs';
@@ -958,6 +962,244 @@ test('deux informations : un budget sans plafond initial, localStorage sans maga
         !trouves.includes('local-storage-direct'),
         'le magasin versionné est là : la lecture héritée est un choix'
       );
+    }
+  );
+});
+
+/* ── « Signaler un problème » mène-t-il quelque part ? ─────────────────────
+ *
+ * `miss-supatool` affichait le lien le 06/09/2026 et
+ * `…/miss-supatool/issues/new?template=bug.yml` répondait 404 : ses issues
+ * sont désactivées (`miss-ticket-pwa` aussi). Un canal de retour mort est pire
+ * que pas de canal — l'utilisateur clique et se cogne.
+ *
+ * Les trois cas qui comptent : le cassé, le sain, et LE SILENCE quand
+ * l'information n'est pas disponible.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Un dépôt qui affiche « Signaler un problème » depuis son écran d'accueil. */
+const AVEC_SIGNALEMENT = {
+  'package.json': { name: 'miss-x' },
+  'src/screens/Home.tsx':
+    "import { AppFooter } from '@mister-guiiug/dev-pwa-config/react';\n" +
+    'export function Home() {\n' +
+    '  return <AppFooter repoUrl={REPO_URL} issues />;\n' +
+    '}',
+};
+
+test('le lien de signalement sur un dépôt aux issues fermées est un DÉFAUT', async () => {
+  await repo(AVEC_SIGNALEMENT, root => {
+    const report = diagnose(root, {
+      hasIssues: false,
+      repo: 'mister-guiiug/miss-supatool',
+    });
+    const trouve = report.findings.find(f => f.id === 'issues-desactivees');
+    assert.ok(trouve, 'le lien mort passe inaperçu');
+    assert.equal(
+      trouve.level,
+      'défaut',
+      'quelqu’un clique et se cogne : ce n’est pas une dette'
+    );
+    assert.match(trouve.message, /miss-supatool/, 'le message dit quel dépôt');
+    assert.match(trouve.fix, /Issues/);
+  });
+});
+
+test('issues ouvertes : le lien mène quelque part, rien à dire', async () => {
+  await repo(AVEC_SIGNALEMENT, root => {
+    assert.ok(
+      !ids(diagnose(root, { hasIssues: true, repo: 'o/r' })).includes(
+        'issues-desactivees'
+      )
+    );
+  });
+});
+
+test('sans réponse de GitHub, le contrôle se TAIT au lieu d’accuser', async () => {
+  // Hors CI, sans jeton, sans réseau, sur un dépôt qu'on n'a pas su nommer :
+  // `hasIssues` vaut `null`. L'absence de preuve n'est pas la preuve du
+  // défaut — c'est la règle d'`escapesSite`, qui refuse d'accuser sur un
+  // préfixe inconnu, et le contraire du repli `href.startsWith(null)` qui
+  // faisait de tout asset absolu un défaut.
+  await repo(AVEC_SIGNALEMENT, async root => {
+    for (const faits of [
+      undefined,
+      {},
+      { hasIssues: null },
+      { hasIssues: undefined, repo: 'o/r' },
+    ]) {
+      assert.ok(
+        !ids(diagnose(root, faits)).includes('issues-desactivees'),
+        `verdict rendu sur ${JSON.stringify(faits)} : le contrôle a deviné`
+      );
+    }
+    // Et par le bin : `--no-github` ne consulte rien et ne conclut rien.
+    assert.equal(await run(['--dir', root, '--no-github', '--json']), 0);
+  });
+});
+
+test('pas de lien de signalement : les issues fermées ne regardent personne', async () => {
+  // Quinze apps sur vingt n'affichent pas encore le lien. Leur reprocher un
+  // réglage de dépôt sans conséquence visible serait du bruit.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/screens/Home.tsx':
+        "import { AppFooter } from '@mister-guiiug/dev-pwa-config/react';\n" +
+        'export const Home = () => <AppFooter repoUrl={REPO_URL} />;',
+    },
+    root => {
+      assert.ok(
+        !ids(diagnose(root, { hasIssues: false, repo: 'o/r' })).includes(
+          'issues-desactivees'
+        )
+      );
+    }
+  );
+});
+
+test('porteSignalement lit les deux formes, et jamais un commentaire', () => {
+  // La prop du socle, l'appel direct d'un pied de page maison — et le geste
+  // que le docteur lui-même recommande, recopié en commentaire : un
+  // diagnostic qui punit celui qui documente pousse à ne rien documenter.
+  const oui = [
+    '<AppFooter repoUrl={R} issues />',
+    '<AppFooter\n  repoUrl={R}\n  issues={{ template: "bug.yml" }}\n/>',
+    // Un `>` dans une prop ne ferme pas la balise : sans lecture à
+    // profondeur, `issues` tomberait hors de la fenêtre lue.
+    '<AppFooter onClick={() => open()} repoUrl={R} issues />',
+    'const url = currentIssueReportUrl({ repoUrl: REPO_URL });',
+    'href={issueReportUrl({ repoUrl })}',
+  ];
+  for (const text of oui) {
+    assert.ok(
+      porteSignalement([{ rel: 'src/a.tsx', text }]),
+      `non vu : ${text}`
+    );
+  }
+
+  const non = [
+    '<AppFooter repoUrl={R} />',
+    '// À faire : <AppFooter repoUrl={REPO_URL} issues />',
+    '/* Le geste : <AppFooter repoUrl={REPO_URL} issues /> */',
+    '<AppFooter repoUrl={R} /> {/* pas de issues ici */}\n<Autre issues />',
+  ];
+  for (const text of non) {
+    assert.ok(
+      !porteSignalement([{ rel: 'src/a.tsx', text }]),
+      `vu à tort : ${text}`
+    );
+  }
+
+  // Les tests d'une app parlent de tout, y compris de ce qu'elle n'a pas.
+  assert.ok(
+    !porteSignalement([
+      { rel: 'src/a.test.tsx', text: '<AppFooter repoUrl={R} issues />' },
+    ])
+  );
+});
+
+test('depotGitHub ne devine pas : catalogue, package.json, puis la copie de travail', () => {
+  const ici = resolve('/tmp/une-app');
+
+  // 1 — Le catalogue de la famille tient l'URL de chaque dépôt.
+  assert.equal(
+    depotGitHub(ici, { name: 'miss-dice' }, {}),
+    'mister-guiiug/miss-dice'
+  );
+
+  // 2 — Sinon `repository`, sous ses deux formes, `.git` retiré.
+  assert.equal(
+    depotGitHub(ici, { name: 'hors-parc', repository: 'github:o/r' }, {}),
+    'o/r'
+  );
+  assert.equal(
+    depotGitHub(
+      ici,
+      {
+        name: 'hors-parc',
+        repository: { url: 'git+https://github.com/o/r.git' },
+      },
+      {}
+    ),
+    'o/r'
+  );
+
+  // 3 — `GITHUB_REPOSITORY` SEULEMENT si le dossier diagnostiqué est bien la
+  //     copie de travail du run : sinon un `--dir /tmp/…` lancé depuis la CI
+  //     d'un autre dépôt jugerait le mauvais dépôt, sans jamais le dire.
+  const env = { GITHUB_WORKSPACE: ici, GITHUB_REPOSITORY: 'o/ci' };
+  assert.equal(depotGitHub(ici, { name: 'hors-parc' }, env), 'o/ci');
+  assert.equal(
+    depotGitHub(resolve('/tmp/ailleurs'), { name: 'hors-parc' }, env),
+    null,
+    'le dépôt du run a été attribué à un autre dossier'
+  );
+  assert.equal(depotGitHub(ici, { name: 'hors-parc' }, {}), null);
+});
+
+test('issuesActivees rend null sur tout ce qui n’est pas une réponse claire', async () => {
+  const reponse = (ok, body) => async () => ({
+    ok,
+    json: async () => body,
+  });
+
+  assert.equal(
+    await issuesActivees('o/r', {
+      token: 'jeton',
+      fetch: reponse(true, { has_issues: false }),
+    }),
+    false
+  );
+  assert.equal(
+    await issuesActivees('o/r', {
+      token: 'jeton',
+      fetch: reponse(true, { has_issues: true }),
+    }),
+    true
+  );
+
+  // Tout le reste vaut « je ne sais pas », JAMAIS « c'est faux ».
+  const muets = [
+    { token: undefined, fetch: reponse(true, { has_issues: false }) },
+    { token: 'jeton', fetch: reponse(false, {}) },
+    { token: 'jeton', fetch: reponse(true, {}) },
+    { token: 'jeton', fetch: reponse(true, { has_issues: 'non' }) },
+    {
+      token: 'jeton',
+      fetch: async () => {
+        throw new Error('getaddrinfo ENOTFOUND api.github.com');
+      },
+    },
+  ];
+  for (const options of muets) {
+    assert.equal(await issuesActivees('o/r', options), null);
+  }
+  assert.equal(await issuesActivees(null, { token: 'jeton' }), null);
+  // Un slug qui n'en est pas un ne part pas dans une URL.
+  assert.equal(
+    await issuesActivees('o/r?x=1', {
+      token: 'jeton',
+      fetch: reponse(true, { has_issues: false }),
+    }),
+    null
+  );
+});
+
+test('faitsDepot ne consulte rien hors ligne, et rend le dépôt qu’il a nommé', async () => {
+  await repo(
+    { 'package.json': { name: 'hors-parc', repository: 'github:o/r' } },
+    async root => {
+      const hors = await faitsDepot(resolve(root), { offline: true, env: {} });
+      assert.deepEqual(hors, { repo: 'o/r', hasIssues: null });
+
+      const sansJeton = await faitsDepot(resolve(root), {
+        env: {},
+        fetch: async () => {
+          throw new Error('le réseau ne devait pas être appelé');
+        },
+      });
+      assert.deepEqual(sansJeton, { repo: 'o/r', hasIssues: null });
     }
   );
 });

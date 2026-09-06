@@ -157,3 +157,22 @@ test('cleanup-runs ne fait jamais entrer une entrée dans le script', () => {
   assert.doesNotMatch(script, /\$\{\{\s*inputs\./);
   assert.match(source, /KEEP:\s*\$\{\{ inputs\.keep \}\}/);
 });
+
+test('le docteur reçoit un jeton en CI, sinon son contrôle GitHub est muet', () => {
+  // `issues-desactivees` se tait sans jeton — c'est la règle, et c'est ce qui
+  // le rend inoffensif hors ligne. Mais la CI est le SEUL endroit où il peut
+  // parler : sans cette ligne, le contrôle existerait sans jamais s'exécuter,
+  // exactement comme `pwa-doctor` lui-même jusqu'au 05/09/2026 (une app sur
+  // vingt l'appelait) et comme la spec `@a11y` qu'aucun filtre ne jouait.
+  const source = read('pwa-ci.yml');
+  const etape = source.slice(source.indexOf('- name: Doctor'));
+  const doctor = etape.slice(0, etape.indexOf('- name: ', 10));
+  assert.match(
+    doctor,
+    /GITHUB_TOKEN:\s*\$\{\{ github\.token \}\}/,
+    'sans jeton, le contrôle des issues se tait partout — donc n’existe pas'
+  );
+  // Le jeton AUTOMATIQUE du run, pas un secret déclaré : un appelant n'a rien
+  // à passer, et `metadata: read` suffit à lire `has_issues`.
+  assert.doesNotMatch(doctor, /secrets\.GITHUB_TOKEN|secrets\.GH_TOKEN/);
+});

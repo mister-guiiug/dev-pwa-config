@@ -210,6 +210,13 @@ jobs:
         if: ${{ inputs.run-doctor }}
         env:
           STRICT: ${{ inputs.doctor-strict }}
+          # Le seul contrôle qui ne se lit pas sur le disque : les issues du
+          # dépôt sont-elles ouvertes ? Le lien « Signaler un problème » du
+          # pied de page mène à `issues/new`, qui répond 404 quand elles sont
+          # désactivées. `github.token` — et non un secret déclaré : le jeton
+          # automatique du run suffit (`metadata: read` est toujours accordé)
+          # et ne demande rien à l'appelant. Sans lui, le contrôle se tait.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           if [ "$STRICT" = "true" ]; then
             npx pwa-doctor --strict

@@ -929,7 +929,7 @@ Restent deux gestes, volontairement hors du générateur :
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pwa-icons`         | Génère les icônes PWA (PNG + maskable) depuis un SVG/PNG source. Requiert `sharp`. Ex. `pwa-icons --source public/favicon.svg --maskable`                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `pwa-bundle-budget` | Refuse un build qui dépasse `bundleBudget` (`totalGzipKb` : tout le JS gzip ; `mainChunkKb` : le chunk principal, brut) lu dans `package.json`. Ex. `"build": "vite build && pwa-bundle-budget"` — promu de miss-uwh et mister-qowa. `--ratchet` propose un budget resserré (mesure + 10 %) quand le build a maigri, `--write` l'écrit : un budget posé un jour de surpoids ne redescendait jamais                                                                                                                                                                                            |
-| `pwa-doctor`        | Lit UN dépôt et dit ce qui manque à la checklist du parc — fichiers du gabarit, workflows, et le build (`dist/` : manifeste lié sous le site, PNG 512, `id`, langue, icône iOS, CSP, `404.html`). Trois verdicts (défaut, dette, info), le geste à chaque ligne, code 1 sur un défaut (`--strict` : aussi sur une dette). Ex. `"postbuild": "pwa-doctor"`                                                                                                                                                                                                                                     |
+| `pwa-doctor`        | Lit UN dépôt et dit ce qui manque à la checklist du parc — fichiers du gabarit, workflows, et le build (`dist/` : manifeste lié sous le site, PNG 512, `id`, langue, icône iOS, CSP, `404.html`) ; plus un seul fait qui n'est pas sur le disque, les issues du dépôt, quand un jeton permet de le lire (`--no-github` coupe l'appel). Trois verdicts (défaut, dette, info), le geste à chaque ligne, code 1 sur un défaut (`--strict` : aussi sur une dette). Ex. `"postbuild": "pwa-doctor"`                                                                                                |
 | `pwa-pgtap`         | Joue les fichiers pgTAP de `supabase/tests/` contre la base LIÉE, sans Docker : chaque assertion dépose son verdict dans une table temporaire que la dernière requête renvoie d'un bloc (`supabase db query` ne rend que le dernier jeu de lignes). Même fichier, même plan, même `rollback`. Exige le CLI `supabase`, `supabase link` fait et `SUPABASE_ACCESS_TOKEN`. Promu de mister-miss-koh ; complément du réutilisable `pwa-supabase-test.yml` (pile jetable en CI). Ex. `npx pwa-pgtap rls.test.sql`                                                                                  |
 | `pwa-screenshots`   | Les deux captures du manifeste — `narrow` 540×1170 et `wide` 1280×720, celles qui décident de la fiche d'installation — prises sur le build servi par `vite preview`, ou sur une app déjà servie (`--url`, données réelles) ; `--prepare` joue un module avant chaque capture pour mettre l'écran dans l'état voulu par l'interface. `pwaBaseOptions` lit ensuite `public/screenshots/` et déclare les entrées au manifeste, aux tailles lues dans les fichiers. Trois scripts faisaient la même chose (squelette, mister-miss-koh, showroom). Ex. `npx pwa-screenshots --wide-path reglages` |
 
@@ -942,7 +942,7 @@ silence), qu'une app routée par chemin n'a pas de `404.html` (un lien profond
 sert la page 404 de GitHub). Ce sont des défauts de CONFORMITÉ AU PARC : ils
 vivent entre le dépôt, le build et l'hébergeur, et le 02/09/2026 on les a tous
 trouvés à la main ([PARC.md](PARC.md)). `pwa-doctor` les cherche en une
-seconde, hors ligne, sur un dépôt :
+seconde, sur un dépôt :
 
 1. **le dépôt** — `.editorconfig`, `.nvmrc`, `.gitattributes` en LF,
    `renovate.json` sur le préréglage du socle, `.lighthouserc.json`, une spec
@@ -955,7 +955,23 @@ seconde, hors ligne, sur un dépôt :
    sous le site, PNG 192/512 et maskable, `id`, la langue du manifeste égale à
    celle de la page, l'icône iOS, `theme-color` par schéma, CSP, Open Graph,
    canonique, `version.json`, `404.html` quand l'app route par chemin sans
-   passer par `pwa-deploy.yml` (qui le pose au déploiement).
+   passer par `pwa-deploy.yml` (qui le pose au déploiement) ;
+4. **le seul réglage de dépôt qui se voit à l'écran** — une app qui affiche
+   « Signaler un problème » (`<AppFooter … issues>`, ou `issueReportUrl` dans
+   un pied de page maison) sur un dépôt dont les issues sont **désactivées** :
+   `issues/new` répond 404, l'utilisateur clique et se cogne. C'est arrivé —
+   `miss-supatool` affichait le lien le 06/09/2026, `miss-ticket-pwa` aussi ;
+   les deux ont été rouverts le jour même, et le contrôle est là pour la
+   rechute (une case se décoche en deux clics, un dépôt neuf peut naître sans,
+   et le code de l'app est écrit pareil dans les deux cas).
+
+Ce quatrième point est **le seul qui ne se lise pas sur le disque** : le fait
+vient de l'API GitHub, appelée quand un jeton est présent — la CI en donne un
+(`GITHUB_TOKEN: ${{ github.token }}`, posé par `pwa-ci.yml`). Sans jeton, sans
+réseau, sur une réponse inattendue ou sur un dépôt qu'on n'a pas su nommer
+sans deviner, **le contrôle se tait** : pas de « probablement », pas de « à
+vérifier », rien. `--no-github` coupe l'appel pour un diagnostic strictement
+hors ligne. Tout le reste tourne sans réseau, comme avant.
 
 Trois verdicts : **défaut** (quelqu'un en souffre aujourd'hui), **dette** (le
 socle a la réponse, l'app ne l'a pas prise), **info** (une mesure : locales

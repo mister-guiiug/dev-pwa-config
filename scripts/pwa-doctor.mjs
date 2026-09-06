@@ -41,9 +41,18 @@
  * Chaque ligne dit le GESTE qui la fait disparaître — pas un score. Le code
  * de sortie : 1 sur un défaut ; avec `--strict`, aussi sur une dette.
  *
+ * UN SEUL FAIT VIENT D'AILLEURS : les issues du dépôt sont-elles ouvertes ?
+ * Le lien « Signaler un problème » du pied de page (4.4.0) mène à `issues/new`,
+ * qui répond **404** quand elles sont désactivées. C'est arrivé : `miss-supatool`
+ * affichait le lien avec `has_issues: false` au relevé du 06/09/2026 —
+ * `miss-ticket-pwa` aussi. Ça ne se lit pas sur le disque : `run()` interroge
+ * l'API GitHub quand un jeton est là (la CI en donne un), et passe la réponse à
+ * `diagnose`. Sans jeton, sans réseau, sur un dépôt qu'on n'a pas su nommer :
+ * le fait vaut `null` et LE CONTRÔLE SE TAIT. `--no-github` coupe l'appel.
+ *
  * CE QU'IL NE FAIT PAS. Il ne mesure pas le poids (c'est `pwa-bundle-budget`)
  * ni ce que l'hébergeur sert vraiment (c'est `scripts/probe-sites.mjs`, sur
- * le site publié) : il lit le dépôt et son build, hors ligne, en une seconde.
+ * le site publié) : il lit le dépôt et son build en une seconde.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
@@ -347,6 +356,167 @@ export function liensFamille(source) {
   };
 }
 
+/* ── Le lien de signalement, et le dépôt qui doit l'accueillir ─────────────
+ *
+ * DEPUIS 4.4.0 le pied de page porte « Signaler un problème » : un
+ * `issues/new?template=bug.yml` prérempli de la version, du commit, de l'écran
+ * et du navigateur. Encore faut-il que le dépôt ACCEPTE des issues.
+ *
+ * `miss-supatool` affichait le lien au relevé du 06/09/2026 et
+ * `github.com/mister-guiiug/miss-supatool/issues/new?template=bug.yml`
+ * répondait **404** : ses issues étaient désactivées (`has_issues: false` ;
+ * `miss-ticket-pwa` aussi). Un canal de retour mort est pire que pas de canal —
+ * l'utilisateur clique, se cogne, et n'essaie pas deux fois.
+ *
+ * CE CONTRÔLE NE RÉPARE RIEN AUJOURD'HUI, ET C'EST NORMAL. Le propriétaire a
+ * rouvert les issues des deux dépôts dans la journée : les vingt dépôts
+ * d'application les ont ouvertes à l'heure où ceci s'écrit, et le contrôle est
+ * donc muet sur tout le parc. Il est là pour la rechute — une case se décoche
+ * en deux clics, un dépôt neuf peut naître sans, et rien dans le code de l'app
+ * ne le dirait jamais : le lien est écrit pareil dans les deux cas.
+ *
+ * CE N'EST PAS UNE LECTURE DU DISQUE : le réglage vit chez GitHub. Le fait
+ * entre donc dans `diagnose` par `faits.hasIssues`, et c'est `run()` qui va le
+ * chercher — hors CI, sans jeton, sans réseau, il vaut `null` et LE CONTRÔLE
+ * SE TAIT. C'est la règle d'`escapesSite`, qui refuse d'accuser sur un préfixe
+ * inconnu : un contrôle qui ne sait pas ne dit rien, jamais « probablement ».
+ */
+
+/** L'appel direct au composeur d'URL, dans une app à pied de page maison. */
+const APPEL_SIGNALEMENT = /\b(?:currentIssueReportUrl|issueReportUrl)\s*\(/;
+
+/**
+ * La balise JSX ouverte à `at`, bornée — balayage linéaire, sans regex sur le
+ * document (doctrine de `site-readers.mjs`). Le `>` qui compte est celui de
+ * profondeur zéro : `sponsorUrl={() => url}` en contient un qui n'est pas la
+ * fin de la balise.
+ */
+function baliseJsx(text, at, max = 600) {
+  let depth = 0;
+  const fin = Math.min(text.length, at + max);
+  for (let i = at; i < fin; i += 1) {
+    const c = text[i];
+    if (c === '{') depth += 1;
+    else if (c === '}') depth -= 1;
+    else if (c === '>' && depth === 0) return text.slice(at, i + 1);
+  }
+  return text.slice(at, fin);
+}
+
+/**
+ * L'application propose-t-elle de SIGNALER un problème ? Deux formes :
+ * `<AppFooter issues>` (huit apps le 06/09/2026) et l'appel direct à
+ * `issueReportUrl` / `currentIssueReportUrl` pour un pied de page maison.
+ *
+ * SANS LES COMMENTAIRES, comme les autres lectures : le geste que ce fichier
+ * recommande — `<AppFooter repoUrl={REPO_URL} issues />` — se recopie dans les
+ * commentaires des apps, et un diagnostic qui punit celui qui documente pousse
+ * à ne rien documenter.
+ *
+ * @param {Array<{rel: string, text: string}>} source
+ */
+export function porteSignalement(source) {
+  for (const f of source) {
+    if (/\.test\.|\.spec\./.test(f.rel)) continue;
+    const text = sansCommentaires.source(f.text);
+    if (APPEL_SIGNALEMENT.test(text)) return true;
+    let i = text.indexOf('<AppFooter');
+    while (i !== -1) {
+      if (/(?:^|[\s{])issues(?:[\s=/}>]|$)/.test(baliseJsx(text, i))) {
+        return true;
+      }
+      i = text.indexOf('<AppFooter', i + 10);
+    }
+  }
+  return false;
+}
+
+/**
+ * `owner/repo` si la chaîne désigne un dépôt GitHub, sinon `null`.
+ *
+ * Deux formes : l'URL complète, et le raccourci npm (`github:o/r`, `o/r`) que
+ * `package.json` autorise. Dans les deux motifs, deux classes bornées séparées
+ * par un `/` littéral qu'aucune ne peut absorber : rien à rétro-suivre, donc
+ * rien pour CodeQL.
+ */
+function slugDepuis(url) {
+  const texte = String(url ?? '').trim();
+  const court = /^(?:github:)?([\w.-]{1,100})\/([\w.-]{1,100})$/.exec(texte);
+  const m =
+    court ?? /github\.com[:/]([\w.-]{1,100})\/([\w.-]{1,100})/.exec(texte);
+  if (!m) return null;
+  return `${m[1]}/${m[2].replace(/\.git$/, '')}`;
+}
+
+/**
+ * Le dépôt GitHub du dossier diagnostiqué — jamais deviné.
+ *
+ * TROIS SOURCES, dans l'ordre de fiabilité : le catalogue de la famille (qui
+ * tient l'URL de chaque dépôt), le champ `repository` du `package.json`, et
+ * `GITHUB_REPOSITORY` — celui-là SEULEMENT quand le dossier diagnostiqué est
+ * bien la copie de travail de l'exécution en cours. Sans cette dernière garde,
+ * un `pwa-doctor --dir /tmp/…` lancé depuis la CI d'un autre dépôt jugerait
+ * le mauvais dépôt, et le verdict serait faux sans jamais le dire.
+ *
+ * @param {string} root Racine RÉSOLUE du dossier diagnostiqué.
+ * @param {{ name?: string, repository?: unknown }} pkg
+ * @param {Record<string, string | undefined>} [env]
+ */
+export function depotGitHub(root, pkg = {}, env = {}) {
+  const fiche = appById(pkg.name);
+  const parCatalogue = slugDepuis(fiche?.repoUrl);
+  if (parCatalogue) return parCatalogue;
+
+  const repository = pkg.repository;
+  const parPackage = slugDepuis(
+    typeof repository === 'string' ? repository : (repository?.url ?? '')
+  );
+  if (parPackage) return parPackage;
+
+  const espace = env.GITHUB_WORKSPACE;
+  const slug = env.GITHUB_REPOSITORY;
+  if (espace && slug && resolve(espace) === root) {
+    return /^[\w.-]{1,100}\/[\w.-]{1,100}$/.test(slug) ? slug : null;
+  }
+  return null;
+}
+
+/**
+ * Les issues du dépôt sont-elles ouvertes ? `true`, `false`, ou **`null` quand
+ * on ne sait pas** — pas de jeton, pas de réseau, réponse inattendue.
+ *
+ * `null` est le cas ordinaire hors CI, et c'est voulu : le contrôle qui le lit
+ * se tait. Toute erreur — DNS, 401, 403, 404, JSON illisible, délai dépassé —
+ * rend `null` et non `false` : l'absence de preuve n'est pas la preuve du
+ * défaut.
+ *
+ * @param {string | null} slug `owner/repo`
+ * @param {{ token?: string, fetch?: typeof globalThis.fetch, timeout?: number }} [options]
+ * @returns {Promise<boolean | null>}
+ */
+export async function issuesActivees(slug, options = {}) {
+  const token = options.token;
+  const appel = options.fetch ?? globalThis.fetch;
+  if (!slug || !token || typeof appel !== 'function') return null;
+  if (!/^[\w.-]{1,100}\/[\w.-]{1,100}$/.test(slug)) return null;
+  try {
+    const reponse = await appel(`https://api.github.com/repos/${slug}`, {
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${token}`,
+        'user-agent': 'pwa-doctor',
+      },
+      // Un contrôle qui pend est un contrôle qui bloque une CI.
+      signal: AbortSignal.timeout?.(options.timeout ?? 8000),
+    });
+    if (!reponse?.ok) return null;
+    const corps = await reponse.json();
+    return typeof corps?.has_issues === 'boolean' ? corps.has_issues : null;
+  } catch {
+    return null;
+  }
+}
+
 /* ── Le filtre e2e de la CI ────────────────────────────────────────────────
  *
  * `pwa-ci.yml` ne joue que les tests dont le titre correspond à `e2e-grep`.
@@ -388,11 +558,18 @@ export function specJouee(text, filtre) {
  * Le diagnostic d'un dépôt. Pur au sens utile : il lit le disque, n'écrit
  * rien, ne touche pas au réseau.
  *
+ * `faits` porte ce que le disque ne dit pas — aujourd'hui le seul réglage de
+ * dépôt qui produise un défaut visible par l'utilisateur (`hasIssues`). Il est
+ * PASSÉ, pas cherché : c'est ce qui garde cette fonction pure et testable, et
+ * ce qui fait que « je ne sais pas » (`null`, `undefined`) reste distinct de
+ * « c'est faux ».
+ *
  * @param {string} dir Racine de l'app.
+ * @param {{ hasIssues?: boolean | null, repo?: string | null }} [faits]
  * @returns {{ dir: string, findings: Array<{ level: 'défaut'|'dette'|'info',
  *   id: string, message: string, fix?: string }>, build: boolean }}
  */
-export function diagnose(dir) {
+export function diagnose(dir, faits = {}) {
   const root = resolve(dir);
   const findings = [];
   const seen = new Set();
@@ -733,6 +910,20 @@ export function diagnose(dir) {
     );
   }
 
+  // LE LIEN DE SIGNALEMENT MÈNE-T-IL QUELQUE PART ? Un défaut, et pas une
+  // dette : l'utilisateur clique sur « Signaler un problème » et se cogne à un
+  // 404. Mais SEULEMENT quand la preuve est faite — `hasIssues` vaut `null`
+  // hors CI, sans jeton, sans réseau, et alors on ne dit rien du tout. Ni
+  // « probablement », ni « à vérifier » : rien.
+  if (faits.hasIssues === false && porteSignalement(source)) {
+    const ou = faits.repo ? `de ${faits.repo}` : 'du dépôt';
+    defaut(
+      'issues-desactivees',
+      `« Signaler un problème » est affiché, mais les issues ${ou} sont désactivées : issues/new répond 404`,
+      'Settings → General → Features → cocher Issues (miss-supatool et miss-ticket-pwa, 06/09/2026) — ou retirer `issues` du pied de page'
+    );
+  }
+
   const figees = count(sansCommentaires.source(srcText), /['"]fr-FR['"]/g);
   if (figees) {
     info(
@@ -952,6 +1143,31 @@ export function format(report) {
   return lines.join('\n');
 }
 
+/**
+ * Les faits qui ne sont pas sur le disque. Un seul aujourd'hui : les issues du
+ * dépôt sont-elles ouvertes ?
+ *
+ * TROIS CONDITIONS, et le silence sinon : un dépôt identifié sans deviner, un
+ * jeton (`GITHUB_TOKEN` — la CI le donne, un poste de développement non), et
+ * une réponse exploitable de l'API. `--no-github` coupe l'appel franchement,
+ * pour un diagnostic hors ligne qui ne doit rien attendre.
+ *
+ * @param {string} root Racine RÉSOLUE du dossier diagnostiqué.
+ * @param {{ env?: Record<string, string | undefined>, offline?: boolean,
+ *   fetch?: typeof globalThis.fetch }} [options]
+ */
+export async function faitsDepot(root, options = {}) {
+  const env = options.env ?? process.env;
+  const pkg = readJson(root, 'package.json') ?? {};
+  const repo = depotGitHub(root, pkg, env);
+  if (options.offline) return { repo, hasIssues: null };
+  const hasIssues = await issuesActivees(repo, {
+    token: env.GITHUB_TOKEN || env.GH_TOKEN,
+    fetch: options.fetch,
+  });
+  return { repo, hasIssues };
+}
+
 export async function run(args = []) {
   const at = flag =>
     args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined;
@@ -963,7 +1179,10 @@ export async function run(args = []) {
     console.error(`pwa-doctor : dossier introuvable : ${dir}`);
     return 2;
   }
-  const report = diagnose(dir);
+  const faits = await faitsDepot(resolve(dir), {
+    offline: args.includes('--no-github'),
+  });
+  const report = diagnose(dir, faits);
   if (args.includes('--json')) console.log(JSON.stringify(report, null, 2));
   else console.log(format(report));
   const defauts = report.findings.some(f => f.level === 'défaut');
