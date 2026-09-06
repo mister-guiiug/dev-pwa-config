@@ -1,5 +1,36 @@
 # Changelog
 
+## 4.2.1
+
+### Patch Changes
+
+- 7c42fee: `pwa-doctor` — le contrôle `liens-famille` reconnaît maintenant la coquille
+  d'une application **sans routeur**.
+
+  Trois apps du parc basculent d'écran sur un état, sans `<Routes>` ni
+  `<Outlet>` : `miss-dice`, `miss-ticket-pwa`, `mister-puzzle`. Cherchée à ces
+  marqueurs seuls, leur coquille n'existait pas, et le contrôle leur reprochait
+  éternellement une place qu'elles tiennent. Il prend désormais aussi ce que
+  l'**entrée** monte : `main.tsx` rend `<App />`, et ce composant-là est la
+  coquille, routeur ou pas.
+
+  Il suit l'**import**, pas l'export : `export default App` ne porte pas de nom
+  exportable, et c'est la forme de deux des trois.
+
+- 4e00325: Maturités du catalogue relevées au 06/09/2026. Elles décident du badge affiché
+  par `FamilyApps` dans chaque application et de l'ordre de tri de la vitrine.
+
+  | Vers       | Applications                                                                |
+  | ---------- | --------------------------------------------------------------------------- |
+  | **stable** | `mister-doc`, `mister-molkky`, `miss-dice`, `miss-badminton`, `mister-qowa` |
+  | **beta**   | `mister-family-map`, `miss-supatool`, `miss-supaboss`, `mister-miss-koh`    |
+  | **alpha**  | `miss-carbook`, `mister-footcoach`, `miss-ticket-pwa`                       |
+
+  `mister-quota` était déjà en `alpha` : rien à changer.
+
+  Six applications gardent la leur : `miss-contraction`, `miss-genius`,
+  `miss-uwh`, `mister-cim10`, `mister-puzzle` (stable) et `miss-lookhouse` (beta).
+
 ## 4.2.0
 
 ### Minor Changes
