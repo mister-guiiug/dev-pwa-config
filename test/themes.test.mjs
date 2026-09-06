@@ -214,3 +214,71 @@ test('la couleur de marque reste distinguable de son fond (3:1)', () => {
     }
   }
 });
+
+/* ── Contraste des couleurs COMPOSÉES par components.css ─────────────────
+ *
+ * `AA_PAIRS` ci-dessus compare des JETONS entre eux. Il ne voyait donc pas les
+ * couleurs que la feuille fabrique à partir d'eux — et c'est là que le parc
+ * a échoué, le 06/09/2026, à la première exécution réelle d'une suite a11y
+ * (celle de mister-family-map, jamais jouée en CI parce que son `e2e-grep`
+ * valait `@critical`) :
+ *
+ *  - `[data-dwc='app-version-details']` posait `opacity: .85` SUR du
+ *    `--dwc-text-soft` : la couleur rendue est le mélange à 85 % sur le fond,
+ *    une teinte plus pâle que le rôle « soft » que la palette avait choisi ;
+ *  - `[data-dwc='maturity']` emploie `--dwc-success` / `--dwc-warning` comme
+ *    couleur de TEXTE à 0.68rem — du petit texte, donc le seuil 4,5:1.
+ *
+ * Ces deux tests lisent les VALEURS DE LA FEUILLE, pas des constantes
+ * recopiées : remonter le pourcentage de `color-mix` ou remettre une opacité
+ * fait échouer ici, sur les palettes concernées et nommément.
+ */
+
+/** Mélange sRGB de deux hex — ce que fait `color-mix(in srgb, a P%, b)`. */
+const mix = (a, b, part) => {
+  const [ia, ib] = [a, b].map(h => parseInt(h.slice(1), 16));
+  const canal = d =>
+    Math.round((((ia >> d) & 255) * part + ((ib >> d) & 255) * (1 - part)) * 1);
+  return `#${[16, 8, 0].map(d => canal(d).toString(16).padStart(2, '0')).join('')}`;
+};
+
+test("le bloc version n'est plus voilé par une opacité", () => {
+  const css = read('components.css');
+  const bloc =
+    /\[data-dwc='app-version-details'\]\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  assert.ok(
+    !/opacity/.test(bloc),
+    "`app-version-details` reprend une opacité : elle compose une couleur sur laquelle aucune palette ne s'est prononcée, et retombe sous AA dans 14 palettes sur 36"
+  );
+});
+
+test('la pastille de maturité tient AA dans toutes les palettes', () => {
+  const css = read('components.css');
+  // Le pourcentage EST celui de la feuille : le test suit le CSS, pas l'inverse.
+  const parts = [
+    ...css.matchAll(
+      /\[data-maturity='(stable|beta)'\]\s*\{\s*color:\s*color-mix\(\s*in srgb,\s*var\(--dwc-(success|warning)[^)]*\)[^)]*\)\s*(\d+)%,\s*var\(--dwc-text/g
+    ),
+  ].map(m => [m[1], m[2], Number(m[3]) / 100]);
+  assert.equal(
+    parts.length,
+    2,
+    'stable et beta doivent mélanger leur couleur de signal vers --dwc-text (cf. le commentaire de components.css)'
+  );
+
+  for (const theme of FAMILY_THEMES) {
+    if (theme.usesCssDefaults) continue;
+    for (const scheme of theme.schemes) {
+      const p = theme[scheme];
+      for (const [maturite, role, part] of parts) {
+        const rendu = mix(p[role], p.text, part);
+        const ratio = contrast(rendu, p.surface);
+        assert.ok(
+          ratio >= 4.5,
+          `${theme.id}/${scheme} maturité ${maturite} : ${ratio.toFixed(2)}:1 — ` +
+            `${role} mélangé à ${Math.round(part * 100)}% ne tient pas AA en petit texte`
+        );
+      }
+    }
+  }
+});
