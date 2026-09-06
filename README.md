@@ -464,37 +464,45 @@ Conventions :
 > dans `package.json`. La règle ferme reste : pas d'icône de marque via `lucide`
 > (la 1.x ne les fournit plus) → logo GitHub en SVG inline, `Coffee` pour le sponsor.
 
-### Liens app — code source + sponsor (règle famille)
+### Liens app — code source, sponsor, signalement (règle famille)
 
-Chaque application de la famille **expose deux liens** : son **code source**
-(dépôt GitHub) et un lien **sponsor** (Buy Me a Coffee). C'est à la fois une
-question de transparence (apps gratuites, locales, open source) et de soutien.
+Chaque application de la famille **expose trois liens** : son **code source**
+(dépôt GitHub), un lien **sponsor** (Buy Me a Coffee) et **« Signaler un
+problème »** (`AppFooter issues` : le gabarit `bug.yml` du compte, prérempli
+avec la version, le commit, l'écran et le navigateur). Transparence (apps
+gratuites, locales, open source), soutien, et retour.
 
-> **OÙ — la règle, depuis le 05/09/2026.** Les deux liens sont visibles **sur le
-> premier écran** (l'accueil) **et sur À propos / Réglages**. Pas l'un ou
-> l'autre : les deux. Qui ouvre l'app doit pouvoir vérifier ce qu'elle fait et
-> remercier sans aller les chercher dans un tiroir — et qui vient les chercher
-> doit les trouver là où on range ce genre de chose.
+> **OÙ — la règle, depuis le 06/09/2026.** Les trois liens sont visibles **sur
+> deux écrans, et deux seulement** : **l'accueil**, et **À propos ou Réglages**.
+> Pas l'un ou l'autre : les deux — qui ouvre l'app doit pouvoir vérifier ce
+> qu'elle fait et remercier sans aller les chercher dans un tiroir, et qui vient
+> les chercher doit les trouver là où on range ce genre de chose. Et **nulle
+> part ailleurs** : un pied de page qui suit chaque écran pèse sur un plateau de
+> jeu, un formulaire, une carte — trois liens sortants sous une saisie, ce n'est
+> pas un pied de page, c'est du bruit.
 >
-> **Deux façons de la tenir**, toutes deux acceptées :
+> **La coquille n'est plus une façon de la tenir.** `<AppFooter>` rendu hors des
+> `<Routes>` est sur TOUS les écrans : c'était la réponse du socle la veille,
+> c'est aujourd'hui un écran de trop. Le pied de page se rend **dans** l'écran
+> d'accueil et **dans** À propos / Réglages — deux fichiers, le même composant.
 >
-> 1. **la coquille** — `<AppFooter>` rendu **hors des `<Routes>`**. C'est la
->    réponse du socle : un seul endroit, tous les écrans, y compris ceux à
->    venir ;
-> 2. **deux écrans** — le pied de page rendu sur l'accueil **et** sur À propos /
->    Réglages. Trois apps le font ainsi, et n'ont rien à corriger.
->
-> `npx pwa-doctor` le vérifie (`liens-famille`). **Relevé du 05/09/2026 : sept
-> apps sur dix-neuf tiennent la règle** — quatre par la coquille (`miss-carbook`,
-> `miss-lookhouse`, `mister-miss-koh`, le squelette), trois par deux écrans
-> (`miss-contraction`, `mister-cim10`, `mister-molkky`). Les douze autres ne
-> montrent les liens que sur un seul écran : dix sur les réglages, deux
-> (`mister-puzzle`, `mister-qowa`) sur l'accueil.
+> `npx pwa-doctor` le vérifie (`liens-famille`) : il dépouille les routes,
+> résout une indirection (`<Footer/>` défini à part, rendu par la coquille ou
+> par deux écrans), lit la condition d'une coquille sans routeur, et reconnaît
+> l'accueil et les réglages au nom de fichier. **Relevé du 06/09/2026 : une app
+> sur vingt tient la règle** — `mister-molkky`, par deux écrans. Seize rendent
+> le pied de page par la coquille, donc partout (`miss-badminton`,
+> `miss-carbook`, `miss-dice`, `miss-genius`, `miss-lookhouse`, `miss-supaboss`,
+> `miss-supatool`, `miss-ticket-pwa`, `miss-uwh`, `mister-doc`,
+> `mister-family-map`, `mister-footcoach`, `mister-miss-koh`, `mister-puzzle`,
+> `mister-qowa` et le squelette) ; deux sur trois écrans (`miss-contraction` :
+> la liste de contrôle en plus ; `mister-cim10` : l'aide ET les réglages) ; une
+> sans aucun lien (`mister-quota`).
 
 Deux niveaux, à mettre en place ensemble :
 
 1. **Dans l'app** — un `src/links.ts` centralise les URL, consommé par le pied
-   de page de la coquille (ou, à défaut, par les deux écrans) :
+   de page des deux écrans :
 
    ```ts
    // src/links.ts
@@ -514,17 +522,24 @@ Deux niveaux, à mettre en place ensemble :
    `pwa-doctor` reconnaît sans rien deviner :
 
    ```tsx
-   // src/App.tsx — DANS la coquille, APRÈS <Routes>, jamais dedans.
-   <PageContainer as="main">
-     <Routes>{/* … */}</Routes>
-     {/* Le lien de soutien n'est pas passé : AppFooter le prend au catalogue. */}
-     <AppFooter repoUrl={REPO_URL} />
-   </PageContainer>
+   // src/features/home/HomeScreen.tsx — et la même ligne dans AboutScreen.tsx
+   // (ou SettingsScreen.tsx). Jamais dans App.tsx hors des <Routes> : là, il
+   // serait sur tous les écrans.
+   export function HomeScreen() {
+     return (
+       <>
+         {/* … */}
+         {/* Le lien de soutien n'est pas passé : AppFooter le prend au catalogue. */}
+         <AppFooter repoUrl={REPO_URL} issues />
+       </>
+     );
+   }
    ```
 
-   Un `<AppFooter>` écrit **dans** un `element={…}` ne vaut que pour cette
-   route-là. C'est l'erreur la plus fréquente du parc, et elle est invisible :
-   la page où on la teste, c'est justement celle qui a le pied de page.
+   Un `<AppFooter>` écrit dans la coquille, **hors** des `<Routes>`, vaut pour
+   toutes les routes — celles où il n'a rien à faire comprises. C'était la forme
+   de seize apps le 06/09/2026, et elle est invisible : la page où on le
+   regarde, c'est justement une de celles qui doivent l'avoir.
 
    **Le lien de soutien n'a pas à être écrit** : `AppFooter` et `FamilyApps`
    prennent déjà celui de la famille. Pour le remplacer, le déclarer **une
