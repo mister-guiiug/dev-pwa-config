@@ -169,6 +169,17 @@ const LIENS = {
     /setting|reglage|réglage|parametre|paramètre|about|propos|profil|account|compte|help|aide/i,
 };
 
+/** `a/b/../c` → `a/c`. Les chemins du relevé sont relatifs et en avant. */
+const normalise = chemin => {
+  const out = [];
+  for (const part of chemin.split('/')) {
+    if (part === '.' || part === '') continue;
+    if (part === '..') out.pop();
+    else out.push(part);
+  }
+  return out.join('/');
+};
+
 /** Le texte d'une coquille, ses écrans montés retirés. */
 const horsRoutes = text =>
   text
@@ -190,7 +201,44 @@ export function liensFamille(source) {
   if (!porteurs.length) return { verdict: 'absent' };
 
   const coquilles = fichiers.filter(f => LIENS.coquille.test(f.text));
-  if (porteurs.some(f => LIENS.coquille.test(f.text)))
+
+  // TROIS APPS DU PARC N'ONT PAS DE ROUTEUR — `miss-dice`, `miss-ticket-pwa` et
+  // `mister-puzzle` basculent d'écran sur un état. Leur coquille ne contient ni
+  // `<Routes>` ni `<Outlet>` : cherchée à ces marqueurs seuls, elle n'existe
+  // pas, et le contrôle leur reprochait éternellement une place qu'elles
+  // tiennent. On prend donc aussi ce que l'ENTRÉE monte : `main.tsx` rend
+  // `<App />`, et ce composant-là est la coquille, routeur ou pas.
+  // ON SUIT L'IMPORT, PAS L'EXPORT : `export default App` ne porte pas de nom
+  // exportable, et c'est la forme de deux des trois apps concernées. Le nom
+  // vivant est celui que l'entrée s'est donné en important.
+  const entree = fichiers.find(f => /(?:^|\/)main\.[cm]?[jt]sx?$/.test(f.rel));
+  if (entree) {
+    const base = entree.rel.replace(/\/[^/]+$/, '');
+    for (const [, defaut, nommes, chemin] of entree.text.matchAll(
+      /import\s+(?:([A-Z]\w*)|\{([^}]*)\})\s*from\s*['"](\.[^'"]*)['"]/g
+    )) {
+      const noms = [defaut, ...(nommes ?? '').split(',')]
+        .map(n => (n ?? '').trim())
+        .filter(n => /^[A-Z]\w*$/.test(n));
+      if (!noms.some(nom => new RegExp(`<${nom}\\b`).test(entree.text)))
+        continue;
+      const cible = normalise(`${base}/${chemin}`).replace(
+        /\.[cm]?[jt]sx?$/,
+        ''
+      );
+      for (const f of fichiers) {
+        const sansExt = f.rel.replace(/\.[cm]?[jt]sx?$/, '');
+        if (
+          (sansExt === cible || sansExt === `${cible}/index`) &&
+          !coquilles.includes(f)
+        ) {
+          coquilles.push(f);
+        }
+      }
+    }
+  }
+
+  if (porteurs.some(f => coquilles.includes(f) || LIENS.coquille.test(f.text)))
     return { verdict: 'partout' };
 
   for (const p of porteurs) {

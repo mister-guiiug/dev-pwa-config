@@ -429,6 +429,54 @@ test('aucun porteur : la dette le dit sans deviner', () => {
   );
 });
 
+test('une app SANS ROUTEUR a quand même une coquille : celle que l’entrée monte', () => {
+  // Trois apps du parc basculent d'écran sur un état, sans `<Routes>` ni
+  // `<Outlet>` : `miss-dice`, `miss-ticket-pwa`, `mister-puzzle`. Cherchée à
+  // ces marqueurs seuls, leur coquille n'existe pas — et le contrôle leur
+  // reprochait éternellement une place qu'elles tiennent.
+  //
+  // ON SUIT L'IMPORT, PAS L'EXPORT : `export default App` ne porte pas de nom
+  // exportable, et c'est la forme de deux des trois. Le nom vivant est celui
+  // que l'entrée s'est donné en important.
+  assert.equal(
+    liens([
+      fichier(
+        'src/main.tsx',
+        "import App from './App.tsx';\ncreateRoot(el).render(<App />);"
+      ),
+      fichier(
+        'src/App.tsx',
+        'function App() { return (<><Screen /><AppFooter repoUrl={REPO_URL} /></>); }\nexport default App;'
+      ),
+    ]),
+    'partout'
+  );
+
+  // Une indirection au-delà de l'entrée : `main` monte `App`, `App` rend le
+  // porteur défini ailleurs. C'est la forme de `miss-dice`.
+  assert.equal(
+    liens([
+      fichier('src/main.tsx', "import { App } from './react/App';\n<App />"),
+      fichier('src/react/App.tsx', '<DiceScreen /><FamilyLinks />'),
+      fichier(
+        'src/react/components/FamilyLinks.tsx',
+        "export function FamilyLinks() { return <a href={SPONSOR_URL}>café</a> + repoUrl('x'); }"
+      ),
+    ]),
+    'partout'
+  );
+
+  // Le composant que l'entrée monte n'est PAS un blanc-seing : sans porteur,
+  // le verdict reste « absent ».
+  assert.equal(
+    liens([
+      fichier('src/main.tsx', "import App from './App';\n<App />"),
+      fichier('src/App.tsx', 'export default function App() { return null; }'),
+    ]),
+    'absent'
+  );
+});
+
 /* ── Les gardes du 05/09/2026 ─────────────────────────────────────────────── */
 
 test('un déploiement Pages écrit à la main est une dette ; par le réutilisable, non', async () => {
