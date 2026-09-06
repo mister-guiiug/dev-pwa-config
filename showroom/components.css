@@ -367,6 +367,48 @@
     gap: 0.5rem;
   }
 
+  /*
+   * SA PLACE, QUAND LA BARRE EST COLLÉE. `AppUpdates` rend le bandeau APRÈS
+   * `children` : en flux, tout en bas du document. Sous `BottomNav
+   * placement="fixed"`, il finissait hors écran puis, page déroulée, dans les
+   * 4,5 rem que la barre couvre — « Recharger » n'était atteignable par
+   * personne. Mesuré dans mister-miss-koh le 06/09/2026, en 375×812 : bord bas
+   * du bandeau à 812 px, haut de la barre à 759 px. Le squelette et
+   * miss-lookhouse avaient le même défaut sans l'avoir vu.
+   *
+   * Fixé au-dessus de la barre — le plancher vient de `:root`, voir BottomNav —
+   * sous l'en-tête (30) et les toasts (70). Onze apps flottent déjà ce bandeau
+   * en bas d'écran ; celles qui le placent elles-mêmes gardent la main, leur
+   * CSS n'étant pas « layered ».
+   *
+   * SOUS CONDITION, ET C'EST VOULU. Sans barre collée, rien ne bouge : treize
+   * apps placent le bandeau elles-mêmes, dont deux EN HAUT de l'écran
+   * (`top: 0`), où un `bottom` venu d'ici s'ajouterait à leur `top` et
+   * étirerait le bandeau sur toute la hauteur. Adopter `placement="fixed"`,
+   * c'est aussi retirer son placement maison du bandeau.
+   *
+   * Deux gardes pour qui adopte la barre sans le faire tout de suite : une
+   * hauteur POSÉE, pour qu'un `top` d'app rende ce `bottom` ignoré au lieu de
+   * s'y ajouter (sur-contrainte, CSS 2 §10.6.4) ; une largeur POSÉE plutôt
+   * qu'un `max-width`, pour qu'un centrage à `left: 50%` + `translateX(-50%)`
+   * (trois apps) ne se retrouve pas avec un `right` en plus et un bandeau
+   * réduit de moitié — les trois côtés posés, `right` est ignoré.
+   */
+  :root:has([data-dwc='bottom-nav'][data-placement='fixed'])
+    [data-dwc='update-banner'],
+  :root:has([data-dwc='bottom-nav'][data-placement='fixed'])
+    [data-dwc='offline-ready'] {
+    position: fixed;
+    inset-inline: 0;
+    bottom: calc(var(--_dwc-bottom-clearance) + 0.5rem);
+    z-index: 25;
+    width: min(100% - 2 * var(--spacing-fluid-sm, 0.75rem), 40rem);
+    height: max-content;
+    margin-inline: auto;
+    /* `backwards`, jamais `both` — voir « Animations » en fin de fichier. */
+    animation: dwc-rise 0.22s ease-out backwards;
+  }
+
   [data-dwc='update-banner-title'],
   [data-dwc='offline-ready-title'] {
     flex: 1 1 12rem;
@@ -1361,15 +1403,14 @@
   [data-dwc='toast-viewport'] {
     position: fixed;
     inset-inline: 0;
-    bottom: 0;
+    /* Le plancher : la zone sûre iOS, ou la barre basse collée quand il y en
+       a une — un message ne surgit jamais SOUS la barre (voir BottomNav). */
+    bottom: var(--_dwc-bottom-clearance);
     z-index: 70;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
     padding: var(--spacing-fluid-sm, 0.75rem);
-    padding-bottom: calc(
-      var(--spacing-fluid-sm, 0.75rem) + max(env(safe-area-inset-bottom), 0px)
-    );
     /* Le conteneur ne doit pas intercepter les clics de la page en dessous ;
        chaque message les reprend. */
     pointer-events: none;
@@ -1551,9 +1592,11 @@
 
   /* La place d'une barre basse collée (`BottomNav placement="fixed"`) : sans
      ce dégagement, le dernier élément de la vue passe sous la barre. Après
-     `data-padding='none'` exprès — réserver n'est pas une marge. */
+     `data-padding='none'` exprès — réserver n'est pas une marge. L'empreinte
+     elle-même n'est écrite qu'une fois, sur `:root`, dans la section BottomNav :
+     les toasts et le bandeau de mise à jour lisent la même. */
   [data-dwc='page-container'][data-reserve='bottom-nav'] {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--_dwc-bottom-nav-reserve);
   }
 
   /* ── LoginForm & MfaChallenge ──────────────────────────────────────────── *
@@ -1626,6 +1669,38 @@
     inset-inline: 0;
     bottom: 0;
     z-index: 20;
+  }
+
+  /*
+   * L'EMPREINTE DE LA BARRE, ÉCRITE UNE FOIS. Trois règles ont besoin de la
+   * même hauteur : la réserve de `PageContainer`, le plancher des toasts et
+   * celui du bandeau de mise à jour. Figée à trois endroits, elle finirait par
+   * diverger — c'est ce qui est arrivé aux replis de couleur (audit du
+   * 06/09/2026). Deux variables PRIVÉES (`--_dwc-*`, hors du contrat) :
+   *
+   *   --_dwc-bottom-nav-reserve   ce que la barre couvre : 4,5 rem + zone sûre ;
+   *   --_dwc-bottom-clearance     ce que les surfaces flottantes dégagent en
+   *                               bas — la zone sûre seule, ou la barre entière
+   *                               quand il y en a une.
+   *
+   * SUR LA RACINE, ET PAS SUR LA BARRE. Une propriété personnalisée ne descend
+   * que vers les descendants : posée sur `[data-placement='fixed']`, elle
+   * n'atteindrait ni le bandeau ni les toasts, qui sont ses voisins. `:has()`
+   * remonte donc la condition à `:root`. Un navigateur qui l'ignore (Firefox
+   * avant 121 — largement disponible depuis 2026) jette cette seule règle : le
+   * plancher reste la zone sûre, rien d'autre ne casse. D'où une règle À PART,
+   * jamais glissée dans une liste de sélecteurs partagée — une liste est tout
+   * ou rien, et `test/components-css.test.mjs` y veille.
+   */
+  :root {
+    --_dwc-bottom-nav-reserve: calc(
+      4.5rem + max(env(safe-area-inset-bottom), 0px)
+    );
+    --_dwc-bottom-clearance: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  :root:has([data-dwc='bottom-nav'][data-placement='fixed']) {
+    --_dwc-bottom-clearance: var(--_dwc-bottom-nav-reserve);
   }
 
   [data-dwc='bottom-nav-item'],
@@ -1903,13 +1978,17 @@
      LA LISTE DOIT SUIVRE `dwc-rise`. Elle ne couvrait que `sheet-panel`, alors
      que `confirm-panel` et `toast` portent la MÊME entrée : une alerte et un
      message surgissaient donc toujours, réglage ignoré. Relevé par la
-     migration de mister-puzzle (#14), qui a dû reposer la règle chez elle. */
+     migration de mister-puzzle (#14), qui a dû reposer la règle chez elle.
+     Depuis, `test/components-css.test.mjs` exige que chaque règle animée y
+     figure — le bandeau de mise à jour y est entré avec son entrée. */
   @media (prefers-reduced-motion: reduce) {
     [data-dwc='button-spinner'],
     [data-dwc='skeleton'],
     [data-dwc='sheet-panel'],
     [data-dwc='confirm-panel'],
-    [data-dwc='toast'] {
+    [data-dwc='toast'],
+    [data-dwc='update-banner'],
+    [data-dwc='offline-ready'] {
       animation-duration: 0.001ms;
       animation-iteration-count: 1;
     }
@@ -1987,10 +2066,14 @@
       background: CanvasText;
     }
 
-    /* 4 — les trois surfaces ajoutées ensuite, même raison qu'au point 2. */
+    /* 4 — les surfaces ajoutées ensuite, même raison qu'au point 2 : la boîte
+       de confirmation, la notification, le tiroir de navigation, et le bandeau
+       de mise à jour depuis qu'il flotte au-dessus de la barre collée. */
     [data-dwc='confirm-panel'],
     [data-dwc='toast'],
-    [data-dwc='bottom-nav-drawer'] {
+    [data-dwc='bottom-nav-drawer'],
+    [data-dwc='update-banner'],
+    [data-dwc='offline-ready'] {
       outline: 1px solid CanvasText;
       outline-offset: -1px;
     }

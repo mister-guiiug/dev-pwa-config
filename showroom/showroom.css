@@ -1627,7 +1627,9 @@ pre code {
 
 .sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='confirm-panel'],
 .sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='toast'],
-.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='bottom-nav-drawer'] {
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='bottom-nav-drawer'],
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='update-banner'],
+.sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='offline-ready'] {
   outline: 1px solid var(--sr-fc-text);
   outline-offset: -1px;
 }

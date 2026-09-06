@@ -776,7 +776,7 @@ Restent deux gestes, volontairement hors du générateur :
 | `@mister-guiiug/dev-pwa-config/react/update-button`          | `.js` + `.d.ts` | `UpdateButton` : bouton « Forcer la mise à jour » des réglages, sans dépendance à vite-plugin-pwa                                                                                                                                                                                  |
 | `@mister-guiiug/dev-pwa-config/react/confirm-dialog`         | `.js` + `.d.ts` | `ConfirmDialog` : `role="alertdialog"`, focus initial sur Annuler, `loading` pour une confirmation asynchrone, `cancelLabel={null}` pour une alerte mono-action                                                                                                                    |
 | `@mister-guiiug/dev-pwa-config/react/toast`                  | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol                                                                                                                                                                    |
-| `@mister-guiiug/dev-pwa-config/react/bottom-nav`             | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur ; `placement="fixed"` la colle au bas de la fenêtre (huit dépôts recopiaient la règle)                                                                                   |
+| `@mister-guiiug/dev-pwa-config/react/bottom-nav`             | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur ; `placement="fixed"` la colle au bas de la fenêtre (huit dépôts recopiaient la règle) et emmène au-dessus d'elle le bandeau de mise à jour et les toasts                |
 | `@mister-guiiug/dev-pwa-config/react/labels`                 | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés des composants du paquet en sept langues (fr, en, es, de, it, pt, nl — prop > contexte > français)                                                                                                                                       |
 | `@mister-guiiug/dev-pwa-config/react/sponsor`                | `.js` + `.d.ts` | `SponsorProvider` / `useSponsorUrl` : le lien de soutien déclaré une fois — `handle` pour un autre pseudo Buy Me a Coffee, `url` pour une autre plateforme, `url={null}` pour n'en afficher aucun (prop > contexte > famille)                                                      |
 | `@mister-guiiug/dev-pwa-config/sw-update`                    | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` / `unregisterServiceWorkers` : appliquer une mise à jour de service worker, ou tout désinscrire en dev — **sans React ni module virtuel**                                                                                                           |
@@ -1510,7 +1510,8 @@ une app qui n'a pas Tailwind du tout (`mister-quota`, en Electron, l'a prise à
 ce titre). Elle lit bien huit variables de l'échelle fluide du preset
 (`--text-fluid-*`, `--spacing-fluid-*`) **en plus** des quinze jetons du
 contrat, mais toutes portent un repli — sans le preset, les tailles sont figées,
-rien ne casse. Et comme tous ses sélecteurs sont portés par `[data-dwc="…"]`,
+rien ne casse. Et comme tous ses sélecteurs sont portés par `[data-dwc="…"]`
+(les deux règles sur `:root` ne posent que des variables privées `--_dwc-*`),
 elle ne peut entrer en collision avec aucun style existant.
 
 **Le plus simple : importer aussi `tokens.css`**, qui livre un jeu de valeurs
@@ -2488,6 +2489,21 @@ tant qu'une version attend, il se tait, y compris une fois le bandeau écarté.
 
 L'interrupteur ne s'appelle pas `offlineReady` parce que l'état du hook porte
 déjà ce nom sur les mêmes props, et l'écraserait à chaque rendu.
+
+**Sa place.** `components.css` habille le bandeau sans le placer — sauf sous
+`BottomNav placement="fixed"` : la barre collée l'emmène au-dessus d'elle
+(`position: fixed`, `z-index: 25` — entre la barre à 20 et l'en-tête à 30, sous
+les toasts à 70), avec l'entrée `dwc-rise` et son extinction sous
+`prefers-reduced-motion`. Les toasts suivent : ils surgissent au-dessus de la
+barre, plus dessous. Rendu après `children`, le bandeau était sinon en flux tout
+en bas du document, donc hors écran puis sous la barre : « Recharger » n'était
+atteignable par personne (mister-miss-koh, 06/09/2026 — et le squelette). Sans
+barre collée, rien ne bouge : le placer soi-même, comme onze apps le font
+(`className="fixed inset-x-3 bottom-3 z-40 mx-auto max-w-md"`). En adoptant la
+barre collée, **retirer ce placement maison** : les deux se cumuleraient.
+L'empreinte de la barre — 4,5 rem plus la zone sûre — n'est écrite qu'une fois,
+dans la variable privée `--_dwc-bottom-nav-reserve`, que lisent la réserve de
+`PageContainer`, les toasts et le bandeau.
 
 **Ne pas enregistrer du tout** ne demande aucune API : `registerSW` est
 facultatif, et le hook s'en passe (`needRefresh` reste faux, `update()` et
