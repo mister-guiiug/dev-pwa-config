@@ -292,18 +292,78 @@ les naissances) et par un lot de campagne (pour les existantes).
 L'ordre suit le même principe que STRATEGIE.md : ce qui répare avant ce qui
 construit, ce qui se prouve avant ce qui se publie.
 
-| Étape | Contenu                                                                             | Coût     | Ce qui le prouve                                                                      |
-| ----- | ----------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------- |
-| 1     | **T1** (jeton Renovate — propriétaire), **T7** (sonde)                              | 1 h      | une PR Renovate ; cim10 « coquille »                                                  |
-| 2     | **K1, K2, K3** — le squelette corrigé et étiqueté ; **T3, T5** — ses gardes exercés | 3 j      | 7 e2e et 11 pgTAP joués en CI ; badge admin ; lien de connexion                       |
-| 3     | **T2, T4, T6** — le docteur et les gardes de CI, puis **18 PR d'une ligne**         | 2,5 j    | `doctor` en CI partout ; puzzle et doc corrigés                                       |
-| 4     | **T8, T9, T10, T11, T14** — les briques qui circulent ; **G1–G4**                   | 3 j      | 4 fiches d'installation ; 8 copies de CSS retirées ; une naissance construite         |
-| 5     | **K4, K5** puis **F2, F3, F5, F6** en lots de campagne                              | 3 j + PR | `version.json` sur 18 sites ; import dans les réglages ; lien de connexion sur 5 apps |
-| 6     | **F4** (suppression de compte), avec sa preuve                                      | 1 j      | pgTAP « plus une ligne »                                                              |
-| 7     | **T12, T13, T15** — rétrécir, engendrer, dériver (chantiers 3 et 5, déjà planifiés) | 8 j      | 148 → ≈ 100 ; 17 `vite.config.ts` courts                                              |
-| —     | **F7, F8** si un besoin les appelle                                                 | —        | —                                                                                     |
+| Étape | Contenu                                                                                                                                | Coût     | Ce qui le prouve                                                                           |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| 1     | ✅ **T7** (sonde) — fait le 06/09/2026 ; **T1** (jeton Renovate) reste au propriétaire                                                 | 1 h      | cim10 « coquille » ✅ ; une PR Renovate — en attente du secret                             |
+| 2     | ✅ **K1, K2, K3** — le squelette corrigé et étiqueté `v1.0.0` ; **T3, T5** — ses gardes exercés (fait le 06/09/2026, bilan ci-dessous) | 3 j      | 7 e2e et **13** pgTAP joués en CI ✅ ; badge admin ✅ ; lien de connexion ✅               |
+| 3     | ✅ **T2, T4, T6** — le docteur et les gardes de CI, puis **18 PR** (fait le 06/09/2026, bilan ci-dessous)                              | 2,5 j    | `doctor` en CI sur 18 dépôts ✅ ; doc et puzzle servent la coquille sur un lien profond ✅ |
+| 4     | **T8, T9, T10, T11, T14** — les briques qui circulent ; **G1–G4**                                                                      | 3 j      | 4 fiches d'installation ; 8 copies de CSS retirées ; une naissance construite              |
+| 5     | **K4, K5** puis **F2, F3, F5, F6** en lots de campagne                                                                                 | 3 j + PR | `version.json` sur 18 sites ; import dans les réglages ; lien de connexion sur 5 apps      |
+| 6     | **F4** (suppression de compte), avec sa preuve                                                                                         | 1 j      | pgTAP « plus une ligne »                                                                   |
+| 7     | **T12, T13, T15** — rétrécir, engendrer, dériver (chantiers 3 et 5, déjà planifiés)                                                    | 8 j      | 148 → ≈ 100 ; 17 `vite.config.ts` courts                                                   |
+| —     | **F7, F8** si un besoin les appelle                                                                                                    | —        | —                                                                                          |
 
 Total des étapes 1 à 6 : **≈ 13 jours**, dont la moitié en petites PR.
+
+### Bilan des étapes 1 à 3, exécutées le 06/09/2026
+
+**Socle : 4.2.0** (PR #193, release #194). Une 4.1.0 avait été publiée entre
+l'analyse et l'exécution par une autre session (catalogue à dix-neuf
+applications, règle des liens de la famille) ; ce bilan s'y ajoute.
+
+| Livré                                                                                                                                                                                                                                   | Où                                 | Ce qui le prouve                                                                                                      |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| T7 — la sonde compare le corps du lien profond à `index.html`                                                                                                                                                                           | `scripts/probe-sites.mjs` + test   | cim10 monte sur `id="react-root"` : classé « coquille »                                                               |
+| T3 — `e2e-grep` par défaut `@critical\|@a11y`, échec sur « No tests found » (Playwright rend 0), artefact renommé (`\|` interdit)                                                                                                       | `pwa-ci.yml`                       | `E2E (@critical\|@a11y)` vert sur le squelette et sur puzzle ; les specs a11y de puzzle, qowa et du squelette passent |
+| T2 — `run-doctor` et `doctor-strict`                                                                                                                                                                                                    | `pwa-ci.yml`                       | le docteur tourne sur **18 dépôts** (17 apps + bac-sable) au lieu d'un                                                |
+| T4 — un audit sans page est refusé                                                                                                                                                                                                      | `pwa-lighthouse.yml`               | le rapport est relu, `runtimeError` ou score a11y absent = échec                                                      |
+| T5 — réutilisable `pwa-supabase-test.yml` (pile jetable, promu de lookhouse) et bin `pwa-pgtap` (promu de miss-koh)                                                                                                                     | socle + squelette                  | **13 / 13** en CI sur le squelette — voir la découverte ci-dessous                                                    |
+| T6 — quatre lectures docteur (`wf-deploy-maison`, `e2e-hors-filtre`, `version-manifest`, infos `main-chunk-budget` et `local-storage-direct`) ; `spa-404` ne compte plus ce que `pwa-deploy@v4` pose au déploiement ; (e) existait déjà | `scripts/pwa-doctor.mjs` + 6 tests | badminton et contraction perdent leur faux défaut ; **0 défaut** sur les seize applications relues                    |
+| K2 (socle) — `LoginForm mode="otp"`, sept langues                                                                                                                                                                                       | `react/login-form.js`, `labels.js` | test : un champ, « Recevoir un lien », `password: ''`                                                                 |
+
+**Squelette : v1.0.0** (PR #5, première étiquette).
+
+| Livré                                                                                                                                                                                                                  | Ce qui le prouve                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| K1 — hook « Custom Access Token » (`0004`) qui recopie `user_roles` dans le jeton, `supabase/config.toml` qui l'active en local, test unitaire de `useRole`                                                            | deux assertions pgTAP (rôle présent → `["admin"]`, absent → `[]`) ; le README dit qu'il faut l'activer sur le projet hébergé |
+| K2 — le lien d'abord, le mot de passe en option, `flowType: 'pkce'`, ADR 0007 amendé (dont la nuance sur les politiques permissives)                                                                                   | e2e « mode local » inchangé ; lint, types, 8 tests, build 184,3 kB et `doctor --strict` 0/0/0                                |
+| K3 — étiquette `v1.0.0` ; le générateur tire la **dernière étiquette** par défaut (`create-lg-pwa-app` #1), et **lit** le dossier de l'archive au lieu de le calculer — GitHub retire le `v` (`pwa-starter-kit-1.0.0`) | 9 tests du générateur ; `--help`                                                                                             |
+
+**La découverte qui justifie T5 à elle seule.** La première exécution réelle
+des assertions du squelette a montré que **trois d'entre elles n'avaient
+jamais pu passer** : « anon ne lit aucune note / profil / rôle » attendait un
+zéro ; le premier verrou de `0003` (`revoke all … from anon`) refuse la
+requête en **42501** avant que les politiques ne filtrent. Elles étaient
+vertes et fausses, parce que jamais jouées — exactement ce que l'analyse
+reprochait au parc. Réécrites en `throws_ok`, plus fortes que ce qu'elles
+attendaient.
+
+**Campagne : 18 PR ouvertes et fusionnées en une passe** — les dix-sept
+applications au catalogue plus `bac-sable` (#40, fusionnée par son
+propriétaire) : socle `^4.2.0` (lockfile écrit par npm 10) et
+`run-doctor: true`. Toutes vertes ; **0 défaut partout**. Le script
+(`D:/tmp/campagne-run-doctor.mjs`) travaille dans un worktree lié et
+`--package-lock-only`, sans toucher aux copies de travail — une autre session
+en occupait trois. Deux pièges lui ont coûté une PR partie sans son `ci.yml`,
+complétée ensuite : sous Windows, `spawnSync` avec `shell: true` concatène les
+arguments sans les échapper ; et un `trim()` sur la sortie de `git status
+--porcelain` mange l'espace de tête de la première ligne.
+
+**Les deux déploiements écrits à la main.** `mister-doc` appelle désormais le
+réutilisable, et un lien profond rend la coquille (vérifié en production :
+même corps que `index.html`, 4 885 octets). `mister-puzzle` a d'abord **cassé**
+: le bloc `with:` d'un job `uses:` n'a pas accès au contexte `secrets`, et
+ses sept `VITE_FIREBASE_*` y vivent — GitHub a refusé le fichier entier sur
+`main`, sans que la PR l'ait vu. Retour au déploiement écrit à la main (#37),
+mais avec `VITE_BASE_PATH` et le repli SPA que la version d'avant n'avait pas
+; vérifié en production (7 656 octets, règles Firebase déployées). La
+conversion complète attend que ces sept valeurs, publiques par construction,
+passent en `vars` — un geste sur le dépôt, pas dans un fichier.
+
+**Ce qui reste de ces trois étapes :** T1, le secret `RENOVATE_TOKEN`, que
+seul le propriétaire peut poser ; l'activation du hook de rôle sur les projets
+Supabase hébergés le jour où une application née du squelette en a un ; et
+`doctor-strict`, que chaque application adoptera quand son relevé sera à zéro.
 
 ## 5. Ce qu'on ne propose pas, et pourquoi
 
