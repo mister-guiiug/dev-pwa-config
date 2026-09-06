@@ -734,7 +734,8 @@
     "scripts/pwa-doctor.mjs",
     "scripts/pwa-pgtap.mjs",
     "scripts/pwa-screenshots.mjs",
-    "scripts/site-readers.mjs"
+    "scripts/site-readers.mjs",
+    "scripts/entree.mjs"
   ],
   "peerDependencies": {
     "@axe-core/playwright": "^4.8.0",

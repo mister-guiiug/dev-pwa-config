@@ -56,7 +56,7 @@
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { estPointDEntree } from './entree.mjs';
 import {
   escapesSite,
   htmlMarkers,
@@ -1190,9 +1190,6 @@ export async function run(args = []) {
   return defauts || (strict && dettes) ? 1 : 0;
 }
 
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (estPointDEntree(import.meta.url)) {
   process.exitCode = await run(process.argv.slice(2));
 }

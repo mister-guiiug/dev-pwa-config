@@ -32,8 +32,8 @@
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { estPointDEntree } from './entree.mjs';
 
 const DEFAULT_DIR = 'dist/assets';
 /**
@@ -252,10 +252,7 @@ export function run(argv = [], cwd = process.cwd()) {
 }
 
 // Lancé en ligne de commande seulement : importé par un test, rien ne tourne.
-if (
-  process.argv[1] &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-) {
+if (estPointDEntree(import.meta.url)) {
   try {
     process.exit(run(process.argv.slice(2)));
   } catch (error) {
