@@ -590,7 +590,11 @@
     "./tailwind-preset": "./tailwind-preset.js",
     "./tailwind-preset.css": "./tailwind-preset.css",
     "./tokens.css": "./tokens.css",
-    "./components.css": "./components.css"
+    "./components.css": "./components.css",
+    "./issue-report": {
+      "types": "./issue-report.d.ts",
+      "default": "./issue-report.js"
+    }
   },
   "bin": {
     "pwa-icons": "./scripts/generate-pwa-icons.mjs",
@@ -642,6 +646,8 @@
     "themes.d.ts",
     "version.js",
     "version.d.ts",
+    "issue-report.js",
+    "issue-report.d.ts",
     "web-vitals.js",
     "web-vitals.d.ts",
     "react",

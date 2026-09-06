@@ -459,9 +459,11 @@ globalThis.SHOWROOM_CATALOGUE = {
       donts: {
         fr: [
           'Ne pas recopier les liens à la main : le composant pose déjà `rel="noopener noreferrer"` et la cible tactile de 2,75 rem.',
+          'Ne pas écrire soi-même le lien de signalement : `issues` ouvre le gabarit `bug.yml` du compte avec la version, le commit, l’écran et le navigateur préremplis — ce que l’utilisateur ne sait jamais dire.',
         ],
         en: [
           'Don’t hand-copy the links: the component already sets `rel="noopener noreferrer"` and the 2.75 rem touch target.',
+          'Don’t write the report link yourself: `issues` opens the account’s `bug.yml` form with version, commit, screen and browser prefilled — what users never manage to say.',
         ],
       },
       a11y: {
