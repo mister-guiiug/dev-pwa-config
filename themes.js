@@ -868,6 +868,52 @@ export const FAMILY_THEMES = [
       danger: '#f87171',
     },
   },
+  {
+    id: 'mister-settle',
+    name: 'Mister Settle',
+    tagline:
+      'Un bleu posé pour compter à plusieurs ; le vert et le rouge ne disent que les soldes.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    radius: '0.75rem',
+    light: {
+      bg: '#f7f8fa',
+      surface: '#ffffff',
+      surface2: '#eef1f5',
+      text: '#131720',
+      textSoft: '#5a6472',
+      border: '#d9dfe7',
+      primary: '#3b6ea5',
+      primaryContrast: '#ffffff',
+      // `--dwc-primary-soft` n'est pas redéfini : valeur de `tokens.css`, un
+      // gris doux — pas une teinte de la primaire.
+      primarySoft: '#ebedf1',
+      // Pas d'accent propre : le vert des soldes créditeurs tient ce rôle.
+      accent: '#1b6b3a',
+      // `--dwc-info` n'est pas redéfini non plus : valeur de `tokens.css`.
+      info: '#1a5fb4',
+      success: '#1b6b3a',
+      warning: '#8a5a00',
+      danger: '#b3261e',
+    },
+    dark: {
+      bg: '#0f1115',
+      surface: '#171b22',
+      surface2: '#1f242d',
+      text: '#e8ecf2',
+      textSoft: '#a3adbb',
+      border: '#2c333d',
+      primary: '#7fb0e0',
+      primaryContrast: '#0f1115',
+      primarySoft: '#262c35',
+      accent: '#7fd6a0',
+      info: '#86b6f0',
+      success: '#7fd6a0',
+      warning: '#e8c07d',
+      danger: '#f2b8b5',
+    },
+  },
 ];
 
 /** Thème d'une app par son identifiant de dépôt. */
