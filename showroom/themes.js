@@ -187,7 +187,7 @@ globalThis.SHOWROOM_THEMES = [
   },
   {
     id: 'miss-lookhouse',
-    name: 'Miss Lookhouse',
+    name: 'Miss LookHouse',
     tagline: 'Sarcelle et cyan clairs, veille immobilière lisible et sobre.',
     schemes: ['light', 'dark'],
     attribute: 'data-theme',
@@ -310,7 +310,7 @@ globalThis.SHOWROOM_THEMES = [
   },
   {
     id: 'mister-cim10',
-    name: 'Mister CIM-10',
+    name: 'Mister CIM10',
     tagline: 'Sarcelle clinique sur bleu nuit, densité d’information élevée.',
     schemes: ['light', 'dark'],
     attribute: 'data-theme',
@@ -433,7 +433,7 @@ globalThis.SHOWROOM_THEMES = [
   },
   {
     id: 'mister-family-map',
-    name: 'Mister Family Map',
+    name: 'Mister FamilyMap',
     tagline:
       'Vert prairie et papier crème, touche d’ambre : lisible au soleil, sobre à l’ombre.',
     schemes: ['light', 'dark'],
@@ -737,7 +737,7 @@ globalThis.SHOWROOM_THEMES = [
   },
   {
     id: 'mister-miss-koh',
-    name: 'Mister & miss Koh',
+    name: 'Mister & Miss Koh',
     tagline: 'Terre, feu, océan, jungle — identité originale, rien d’emprunté.',
     schemes: ['light', 'dark'],
     attribute: 'data-theme',

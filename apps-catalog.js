@@ -845,7 +845,7 @@ export const FAMILY_APPS = [
   ),
   app(
     'mister-cim10',
-    'Mister CIM-10',
+    'Mister CIM10',
     'Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).',
     'stable',
     { category: 'sante', backend: 'local' }
@@ -880,7 +880,7 @@ export const FAMILY_APPS = [
   ),
   app(
     'miss-lookhouse',
-    'Miss Lookhouse',
+    'Miss LookHouse',
     'Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.',
     'beta',
     { category: 'outils', backend: 'supabase' }
@@ -936,7 +936,7 @@ export const FAMILY_APPS = [
   ),
   app(
     'mister-family-map',
-    'Mister Family Map',
+    'Mister FamilyMap',
     'Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.',
     'beta',
     // `loisirs` : la catégorie a été ajoutée pour elle. Sortir en famille n'est
@@ -946,7 +946,7 @@ export const FAMILY_APPS = [
   ),
   app(
     'mister-miss-koh',
-    'Mister & miss Koh',
+    'Mister & Miss Koh',
     "Suivi d'une saison d'aventure : candidats, épisodes, épreuves, conseils et votes. Non officiel.",
     'beta',
     // `loisirs`, comme `mister-family-map` : accompagner une émission n'est ni
