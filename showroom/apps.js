@@ -382,7 +382,7 @@ globalThis.SHOWROOM_APPS = {
     },
     {
       id: 'mister-cim10',
-      name: 'Mister CIM-10',
+      name: 'Mister CIM10',
       description:
         'Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).',
       maturity: 'stable',
@@ -579,7 +579,7 @@ globalThis.SHOWROOM_APPS = {
     },
     {
       id: 'miss-lookhouse',
-      name: 'Miss Lookhouse',
+      name: 'Miss LookHouse',
       description:
         'Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.',
       maturity: 'beta',
@@ -852,7 +852,7 @@ globalThis.SHOWROOM_APPS = {
     },
     {
       id: 'mister-family-map',
-      name: 'Mister Family Map',
+      name: 'Mister FamilyMap',
       description:
         'Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.',
       maturity: 'beta',
@@ -898,7 +898,7 @@ globalThis.SHOWROOM_APPS = {
     },
     {
       id: 'mister-miss-koh',
-      name: 'Mister & miss Koh',
+      name: 'Mister & Miss Koh',
       description:
         "Suivi d'une saison d'aventure : candidats, épisodes, épreuves, conseils et votes. Non officiel.",
       maturity: 'beta',
