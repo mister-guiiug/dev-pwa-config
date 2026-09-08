@@ -34,6 +34,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import { appById } from './apps-catalog.js';
 import { themeById } from './themes.js';
 import { VERSION_MANIFEST } from './version.js';
 
@@ -179,7 +180,9 @@ export function normalizeBasePath(basePath) {
  * Manifest par défaut. `theme_color` et `background_color` sont LUS dans
  * `themes.js` quand l'app y figure, au lieu d'être recopiés : cinq manifests
  * sur treize avaient divergé du relevé, sans qu'on puisse distinguer le choix
- * délibéré de l'oubli.
+ * délibéré de l'oubli. Le NOM se lit de même dans `apps-catalog.js` — sans
+ * quoi il retombait sur l'identifiant du dépôt, et huit apps du parc se sont
+ * installées sous leur slug.
  *
  * @param {import('./vite-pwa.js').PwaOptions} options
  */
@@ -226,10 +229,30 @@ export function pwaManifest(options = {}) {
       ? []
       : manifestScreenshots(options.screenshotsDir ?? 'public/screenshots');
 
+  // LE NOM SE LIT AU CATALOGUE, comme les couleurs. Sans cela, une app qui ne
+  // passait pas `name` retombait sur son IDENTIFIANT DE DÉPÔT : le manifeste
+  // annonçait « mister-settle », « mister-doc », et c'est ce que l'écran
+  // d'accueil d'un téléphone affichait sous l'icône — le raccourci lit
+  // `short_name`, jamais autre chose. Le catalogue connaissait pourtant le nom
+  // depuis toujours ; il n'était lu que pour les couleurs.
+  //
+  // L'ORDRE : l'explicite, puis le catalogue, puis l'identifiant. Ce dernier
+  // recours S'ANNONCE, parce qu'il ne se voit qu'une fois l'application
+  // installée — huit apps du parc ont porté un mauvais nom sans que rien ne le
+  // dise, jusqu'au 09/09/2026.
+  const fiche = id ? appById(id) : undefined;
+  const resolvedName = name ?? shortName ?? fiche?.name ?? id;
+  const resolvedShortName = shortName ?? name ?? fiche?.name ?? id;
+  if (id && !name && !shortName && !fiche?.name) {
+    console.warn(
+      `[vite-pwa] nom introuvable pour « ${id} » : le manifeste prendra l'identifiant du dépôt, et le raccourci installé affichera « ${id} » sous l'icône. Passer \`name\` (et \`shortName\` s'il doit être plus court), ou inscrire l'app au catalogue.`
+    );
+  }
+
   return {
     id: base,
-    name: name ?? shortName ?? id,
-    short_name: shortName ?? name ?? id,
+    name: resolvedName,
+    short_name: resolvedShortName,
     description,
     theme_color,
     background_color: backgroundColor ?? palette?.bg ?? cssPalette?.bg,

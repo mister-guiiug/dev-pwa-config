@@ -24,6 +24,7 @@ import {
   normalizeBasePath,
 } from '../vite-pwa.js';
 import { brandColor, themeById } from '../themes.js';
+import { appById } from '../apps-catalog.js';
 
 /** Un PNG réduit à sa signature et à son en-tête IHDR : de quoi lire la taille. */
 function faussePng(width, height) {
@@ -65,10 +66,14 @@ test('sans aucune couleur, un avertissement qui dit les trois remèdes', () => {
   } finally {
     console.warn = original;
   }
-  assert.equal(messages.length, 1);
-  assert.match(messages[0], /themeColor/);
-  assert.match(messages[0], /catalogue/);
-  assert.match(messages[0], /--dwc-primary/);
+  // Une app hors catalogue et sans nom en récolte DEUX : celui des couleurs
+  // et celui du nom. On choisit le sien plutôt que de compter — un test qui
+  // compte les avertissements casse à chaque fois qu'on en ajoute un utile.
+  const couleurs = messages.filter(m => m.includes('theme_color'));
+  assert.equal(couleurs.length, 1);
+  assert.match(couleurs[0], /themeColor/);
+  assert.match(couleurs[0], /catalogue/);
+  assert.match(couleurs[0], /--dwc-primary/);
 });
 
 test('les captures présentes sur le disque entrent au manifeste, à leur taille réelle', () => {
@@ -122,6 +127,59 @@ test('les couleurs du manifest sont LUES dans themes.js, pas recopiées', () => 
   const manifest = pwaManifest({ id: 'miss-uwh', name: 'Miss UWH' });
   assert.equal(manifest.theme_color, brandColor('miss-uwh'));
   assert.equal(manifest.background_color, themeById('miss-uwh').light.bg);
+});
+
+test('le NOM du manifest est lu au catalogue, pas déduit de l’identifiant', () => {
+  // Le défaut que ces lignes ferment : sans `name`, le manifeste retombait sur
+  // l'identifiant du dépôt. Huit apps du parc se sont installées sous leur
+  // slug — « mister-settle », « mister-doc », « CIM10 » — et personne ne le
+  // voyait avant d'avoir l'icône sur son écran d'accueil.
+  const manifest = pwaManifest({ id: 'miss-uwh', screenshots: false });
+  assert.equal(manifest.name, appById('miss-uwh').name);
+  // C'est `short_name` que lit le raccourci : il doit porter le nom entier.
+  assert.equal(manifest.short_name, appById('miss-uwh').name);
+});
+
+test('un nom explicite l’emporte sur le catalogue, dans les deux sens', () => {
+  const nomme = pwaManifest({
+    id: 'miss-uwh',
+    name: 'Autre',
+    screenshots: false,
+  });
+  assert.equal(nomme.name, 'Autre');
+  assert.equal(nomme.short_name, 'Autre');
+  // `shortName` seul renseigne les deux : une app qui ne veut qu'un nom court
+  // n'a pas à l'écrire deux fois.
+  const court = pwaManifest({
+    id: 'miss-uwh',
+    shortName: 'UWH',
+    screenshots: false,
+  });
+  assert.equal(court.short_name, 'UWH');
+  assert.equal(court.name, 'UWH');
+});
+
+test('hors catalogue et sans nom, l’identifiant sert de repli — en le disant', () => {
+  const original = console.warn;
+  const messages = [];
+  console.warn = message => messages.push(String(message));
+  let manifest;
+  try {
+    manifest = pwaManifest({
+      id: 'app-inconnue',
+      css: ':root { --dwc-primary: #111111; --dwc-bg: #ffffff }',
+      screenshots: false,
+    });
+  } finally {
+    console.warn = original;
+  }
+  assert.equal(manifest.name, 'app-inconnue');
+  const nom = messages.filter(m => m.includes('nom introuvable'));
+  assert.equal(nom.length, 1);
+  // L'avertissement doit dire ce qu'on VERRA, pas seulement ce qui manque.
+  assert.match(nom[0], /raccourci installé/);
+  assert.match(nom[0], /app-inconnue/);
+  assert.match(nom[0], /catalogue/);
 });
 
 test('une couleur explicite l’emporte sur le relevé', () => {
