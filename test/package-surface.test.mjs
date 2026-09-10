@@ -254,9 +254,16 @@ test('l’écran de secours ne lit aucune prop absente de ses types', () => {
  * jugement de l'auteur — seule sa PRÉSENCE est vérifiée.
  */
 test('tout sous-chemin publié figure dans la table « Exports npm »', () => {
-  const readme = readFileSync(at('README.md'), 'utf8');
+  // La table a quitté le README le 10/09/2026 : il faisait 252 kB et servait à
+  // la fois de vitrine, d'index et de manuel de 151 sous-chemins. Elle vit dans
+  // `docs/EXPORTS.md`, où le README l'envoie — la promesse est la même, c'est
+  // sa page qui a changé.
+  const readme = readFileSync(at('docs/EXPORTS.md'), 'utf8');
   const start = readme.indexOf('## Exports npm');
-  assert.ok(start > 0, 'section « Exports npm » introuvable dans le README');
+  assert.ok(
+    start > 0,
+    'section « Exports npm » introuvable dans docs/EXPORTS.md'
+  );
   const table = readme.slice(start, readme.indexOf('\n## ', start + 1));
 
   const documented = new Set(
