@@ -18,8 +18,11 @@
  *     silencieux — connexions anonymes désactivées au niveau du projet →
  *     l'appel échoue OU lève, et ni l'un ni l'autre ne doit remonter comme
  *     une panne ;
- *   - `mfaRequired` : la lecture locale du niveau d'assurance de
- *     `mister-doc/backend/mfa.ts` (aucun appel réseau).
+ *   - `mfaRequired` : le niveau d'assurance, calculé SUR PLACE depuis la
+ *     session (`assuranceLevelFromSession`). Il passait par
+ *     `getAuthenticatorAssuranceLevel()`, sous un commentaire qui affirmait
+ *     « aucun appel réseau » — c'était faux, cette méthode commence par
+ *     `getSession()`.
  *
  * LES ERREURS SONT RENDUES, PAS LEVÉES : `{ ok, error }` avec le code stable
  * ET le message d'origine — c'est ce couple que `frAuthError`
@@ -27,7 +30,30 @@
  * ordinaire, pas une exception (même choix que `push/`, où refuser les
  * notifications n'est pas une panne).
  */
-import { mfaChallengeNeeded } from './mfa.js';
+import { assuranceLevelFromSession, mfaChallengeNeeded } from './mfa.js';
+import {
+  navigateurHorsLigne,
+  storedSupabaseSession,
+} from './stored-session.js';
+
+/**
+ * COMBIEN DE TEMPS ON ACCEPTE D'ATTENDRE `auth.getSession()`.
+ *
+ * Ce n'est pas une lecture : jeton d'accès périmé, elle part le RENOUVELER,
+ * avec des reprises à intervalle croissant bornées par la fenêtre de
+ * rafraîchissement de Supabase — une trentaine de secondes. `navigator.onLine`
+ * ne suffit pas à s'en prémunir : il est vrai derrière un portail captif comme
+ * sur un Wi-Fi qui ne route rien.
+ *
+ * Passé ce délai, on rend la session écrite sur l'appareil. Ce n'est pas un
+ * pis-aller : c'est la même session, simplement pas encore renouvelée, et
+ * `onAuthStateChange` corrigera — `TOKEN_REFRESHED` au retour du réseau,
+ * `SIGNED_OUT` si le jeton de rafraîchissement a été révoqué.
+ */
+const ATTENTE_SESSION_MS = 5_000;
+
+/** Marqueur d'attente dépassée, distinct de `null` (« pas de session »). */
+const TROP_LONG = Symbol('attente dépassée');
 
 /** `{ code, message }` — le couple que `frAuthError` sait traduire. */
 const toError = error =>
@@ -43,27 +69,45 @@ const toError = error =>
  * @param {{ client: { auth: object } }} options Le client Supabase de l'app.
  */
 export function supabaseAuthAdapter(options) {
-  const { client } = options ?? {};
+  const { client, sessionTimeoutMs = ATTENTE_SESSION_MS } = options ?? {};
   if (!client?.auth) {
     throw new Error('auth/supabase: un client Supabase est requis');
   }
   /** @type {any} L'API `auth` v2 du client injecté. */
   const auth = client.auth;
 
+  /**
+   * La session, SANS JAMAIS DÉPENDRE DU RÉSEAU POUR L'OBTENIR.
+   *
+   * Trois chemins, du plus sûr au plus lent :
+   *   1. le navigateur se dit hors ligne → on lit le stockage, point ;
+   *   2. sinon on demande à Supabase, mais l'attente est BORNÉE — un réseau
+   *      présent-mais-mort coûtait une demi-minute de sablier ;
+   *   3. l'appel lève → le stockage, comme au premier chemin.
+   *
+   * Une session illisible reste une session absente : les cinq apps relevées
+   * lisent `data.session` sans regarder l'erreur.
+   */
+  const lireSession = async () => {
+    if (navigateurHorsLigne()) return storedSupabaseSession();
+    let minuteur;
+    try {
+      const issue = await Promise.race([
+        auth.getSession().then(r => r?.data?.session ?? null),
+        new Promise(resoudre => {
+          minuteur = setTimeout(() => resoudre(TROP_LONG), sessionTimeoutMs);
+        }),
+      ]);
+      return issue === TROP_LONG ? storedSupabaseSession() : issue;
+    } catch {
+      return storedSupabaseSession();
+    } finally {
+      clearTimeout(minuteur);
+    }
+  };
+
   return {
-    /**
-     * La session courante, ou `null`. Une session illisible est une session
-     * absente : les cinq apps relevées lisent `data.session` sans regarder
-     * l'erreur.
-     */
-    async getSession() {
-      try {
-        const { data } = await auth.getSession();
-        return data?.session ?? null;
-      } catch {
-        return null;
-      }
-    },
+    getSession: lireSession,
 
     /** Câble `onAuthStateChange` et rend le désabonnement. */
     onAuthStateChange(callback) {
@@ -74,19 +118,24 @@ export function supabaseAuthAdapter(options) {
     },
 
     /**
-     * Le défi TOTP est-il encore à franchir ? Lecture **locale** de la
-     * session (claim `aal` + facteurs) : aucun appel réseau. L'échec remonte
-     * — c'est le port qui le traduit en « pas de défi » (on ne verrouille
-     * jamais l'app hors-ligne).
+     * Le défi TOTP est-il encore à franchir ? Lecture VRAIMENT locale : le
+     * claim `aal` du jeton et les facteurs de la session, sans appel réseau.
+     *
+     * Ce commentaire affirmait déjà « aucun appel réseau » alors que le code
+     * appelait `getAuthenticatorAssuranceLevel()` — qui commence par
+     * `getSession()`. C'est cette phrase, plus que le code, qui a laissé
+     * `mister-doc` bloquer une demi-minute au démarrage hors ligne.
+     *
+     * LE DÉFI N'EST PAS CONTOURNÉ POUR AUTANT : une session en `aal1` avec un
+     * facteur vérifié rend toujours `true`, sans réseau comme avec.
      */
-    async mfaRequired() {
-      if (!auth.mfa?.getAuthenticatorAssuranceLevel) return false;
-      const { data, error } = await auth.mfa.getAuthenticatorAssuranceLevel();
-      if (error) throw new Error(error.message);
-      return mfaChallengeNeeded({
-        current: data?.currentLevel ?? null,
-        next: data?.nextLevel ?? null,
-      });
+    async mfaRequired(session) {
+      // LA SESSION QUE LE PORT TIENT DÉJÀ. Son contrat la passe en argument
+      // (`mfaRequired?(session)`) : la redemander serait un second appel pour
+      // une donnée en main — et, hors ligne, une seconde attente.
+      return mfaChallengeNeeded(
+        assuranceLevelFromSession(session ?? (await lireSession()))
+      );
     },
 
     /** Connexion e-mail + mot de passe. */

@@ -61,6 +61,111 @@ test('getSession : la session de `data.session`, sinon null', async () => {
   assert.equal(await quiLeve.getSession(), null);
 });
 
+/*
+ * L'AMORÇAGE NE DOIT JAMAIS DÉPENDRE DU RÉSEAU. `auth.getSession()` n'est pas
+ * une lecture : jeton d'accès périmé, il part le RENOUVELER, avec des reprises
+ * à intervalle croissant. Mesuré sur la production de `mister-doc` : 27 s de
+ * « Chargement… », puis l'écran de connexion — infranchissable hors ligne.
+ */
+const SESSION_RANGEE = {
+  access_token: 'entete.charge.signature',
+  refresh_token: 'jeton-de-rafraichissement',
+  expires_at: 1,
+  user: { id: 'range' },
+};
+
+function avecStockage(session) {
+  const brut = JSON.stringify(session);
+  globalThis.localStorage = {
+    length: 1,
+    key: i => (i === 0 ? 'sb-projetdetest-auth-token' : null),
+    getItem: k => (k === 'sb-projetdetest-auth-token' ? brut : null),
+  };
+  return () => delete globalThis.localStorage;
+}
+
+function avecReseau(onLine) {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { onLine },
+  });
+  return () => {
+    if (original) Object.defineProperty(globalThis, 'navigator', original);
+    else delete globalThis.navigator;
+  };
+}
+
+test('getSession : hors ligne, on lit le stockage sans rien demander', async () => {
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(false);
+  try {
+    const { client, calls } = fakeClient({
+      getSession: async () => ({
+        data: { session: { user: { id: 'reseau' } } },
+      }),
+    });
+    const adapter = supabaseAuthAdapter({ client });
+    assert.deepEqual(await adapter.getSession(), SESSION_RANGEE);
+    // Le point du correctif : Supabase n'est même pas appelé.
+    assert.deepEqual(calls, []);
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
+test('getSession : l’attente est BORNÉE quand le réseau ment', async () => {
+  // `navigator.onLine` est vrai derrière un portail captif comme sur un Wi-Fi
+  // qui ne route rien : l'appel part et ne revient jamais.
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(true);
+  try {
+    const { client } = fakeClient({ getSession: () => new Promise(() => {}) });
+    const adapter = supabaseAuthAdapter({ client, sessionTimeoutMs: 20 });
+    const debut = Date.now();
+    assert.deepEqual(await adapter.getSession(), SESSION_RANGEE);
+    assert.ok(Date.now() - debut < 1000, 'le repli doit être immédiat');
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
+test('getSession : un appel qui LÈVE retombe sur le stockage', async () => {
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(true);
+  try {
+    const { client } = fakeClient({
+      getSession: async () => {
+        throw new Error('Failed to fetch');
+      },
+    });
+    const adapter = supabaseAuthAdapter({ client });
+    assert.deepEqual(await adapter.getSession(), SESSION_RANGEE);
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
+test('getSession : en ligne, c’est Supabase qui fait foi', async () => {
+  // Le repli ne doit pas devenir le chemin normal.
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(true);
+  try {
+    const duReseau = { user: { id: 'reseau' } };
+    const { client } = fakeClient({
+      getSession: async () => ({ data: { session: duReseau } }),
+    });
+    const adapter = supabaseAuthAdapter({ client });
+    assert.equal(await adapter.getSession(), duReseau);
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
 test('onAuthStateChange : câblé au vrai format v2, désabonnement compris', () => {
   let handler = null;
   let unsubscribed = 0;
@@ -99,38 +204,62 @@ test('onAuthStateChange : câblé au vrai format v2, désabonnement compris', ()
 
 /* ── mfaRequired ───────────────────────────────────────────────────────── */
 
-test('mfaRequired : vrai seulement pour aal1 → aal2', async () => {
-  const level = (currentLevel, nextLevel) => {
-    const { client } = fakeClient({});
-    client.auth.mfa = {
-      getAuthenticatorAssuranceLevel: async () => ({
-        data: { currentLevel, nextLevel },
-      }),
-    };
-    return supabaseAuthAdapter({ client });
-  };
-
-  assert.equal(await level('aal1', 'aal2').mfaRequired(), true);
-  assert.equal(await level('aal2', 'aal2').mfaRequired(), false);
-  assert.equal(await level('aal1', 'aal1').mfaRequired(), false);
-  assert.equal(await level(null, null).mfaRequired(), false);
+// Le niveau d'assurance ne se DEMANDE plus : il se calcule depuis la session.
+// `getAuthenticatorAssuranceLevel()` commençait par `getSession()` — donc par
+// un renouvellement de jeton contre le réseau, une demi-minute hors ligne.
+const jeton = aal => {
+  const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+  return `${b64({ alg: 'HS256' })}.${b64({ sub: 'u1', aal })}.signature`;
+};
+const sessionAal = (aal, facteurs) => ({
+  access_token: jeton(aal),
+  user: { id: 'u1', ...(facteurs ? { factors: facteurs } : {}) },
 });
 
-test('mfaRequired : sans API `auth.mfa`, jamais de défi', async () => {
+test('mfaRequired : vrai seulement pour aal1 avec un facteur vérifié', async () => {
   const adapter = supabaseAuthAdapter({ client: fakeClient({}).client });
-  assert.equal(await adapter.mfaRequired(), false);
+
+  const verifie = [{ status: 'verified' }];
+  assert.equal(await adapter.mfaRequired(sessionAal('aal1', verifie)), true);
+  // Code déjà saisi : la session est montée en aal2.
+  assert.equal(await adapter.mfaRequired(sessionAal('aal2', verifie)), false);
+  // Opt-in : sans facteur vérifié, jamais de défi.
+  assert.equal(await adapter.mfaRequired(sessionAal('aal1')), false);
+  // Enrôlement en cours, pas encore vérifié : pas de défi non plus.
+  assert.equal(
+    await adapter.mfaRequired(sessionAal('aal1', [{ status: 'unverified' }])),
+    false
+  );
 });
 
-test('mfaRequired : l’erreur remonte — c’est le PORT qui décide de ne pas bloquer', async () => {
-  const { client } = fakeClient({});
-  client.auth.mfa = {
-    getAuthenticatorAssuranceLevel: async () => ({
-      data: null,
-      error: { message: 'refresh_token_not_found' },
-    }),
-  };
+test('mfaRequired : aucun appel réseau, même sans API `auth.mfa`', async () => {
+  // C'est le point du changement : l'adaptateur ne touche NI `auth.mfa`, NI
+  // `auth.getSession` quand le port lui tend déjà la session.
+  const { client, calls } = fakeClient({
+    getSession: async () => ({ data: { session: null } }),
+  });
   const adapter = supabaseAuthAdapter({ client });
-  await assert.rejects(() => adapter.mfaRequired(), /refresh_token_not_found/);
+
+  assert.equal(
+    await adapter.mfaRequired(sessionAal('aal1', [{ status: 'verified' }])),
+    true
+  );
+  assert.deepEqual(calls, []);
+});
+
+test('mfaRequired : jeton illisible ou session absente → pas de défi', async () => {
+  // Ne jamais verrouiller sur une lecture ratée : le serveur, lui, refusera
+  // les écritures d'une session insuffisante.
+  const adapter = supabaseAuthAdapter({
+    client: fakeClient({
+      getSession: async () => ({ data: { session: null } }),
+    }).client,
+  });
+  assert.equal(
+    await adapter.mfaRequired({ access_token: 'pas-un-jeton' }),
+    false
+  );
+  assert.equal(await adapter.mfaRequired(null), false);
 });
 
 /* ── Les variantes de connexion ────────────────────────────────────────── */
@@ -343,16 +472,16 @@ test('l’adaptateur nourrit la machine d’état du port sans adaptation', asyn
       return { data: { subscription: { unsubscribe: () => {} } } };
     },
   });
-  client.auth.mfa = {
-    getAuthenticatorAssuranceLevel: async () => ({
-      data: { currentLevel: 'aal1', nextLevel: 'aal2' },
-    }),
-  };
-
   const auth = createAuthClient({ adapter: supabaseAuthAdapter({ client }) });
   assert.equal((await auth.start()).status, AUTH_STATUS.signedOut);
 
-  handler('SIGNED_IN', session);
+  // Le niveau d'assurance se lit DANS la session que le port relaie : jeton en
+  // aal1, facteur vérifié. Plus aucun `auth.mfa` à truquer.
+  handler('SIGNED_IN', {
+    ...session,
+    access_token: jeton('aal1'),
+    user: { ...session.user, factors: [{ status: 'verified' }] },
+  });
   await new Promise(resolve => setTimeout(resolve, 0));
   // Facteur vérifié, session encore aal1 : le défi TOTP barre l'accès.
   assert.equal(auth.getSnapshot().status, AUTH_STATUS.needsMfa);

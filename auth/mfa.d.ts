@@ -10,6 +10,18 @@ export interface AssuranceLevel {
  */
 export declare function mfaChallengeNeeded(level: AssuranceLevel): boolean;
 
+/**
+ * Le niveau d'assurance calculé SUR PLACE depuis une session (claim `aal` du
+ * jeton + facteurs vérifiés), sans le moindre appel réseau — contrairement à
+ * `getAuthenticatorAssuranceLevel()`, qui commence par `getSession()`.
+ */
+export declare function assuranceLevelFromSession(
+  session: {
+    access_token?: string;
+    user?: { factors?: Array<{ status?: string }> };
+  } | null
+): { current: string | null; next: string | null };
+
 /** Un facteur MFA tel que Supabase le liste. */
 export interface MfaFactor {
   id: string;

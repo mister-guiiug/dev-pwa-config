@@ -62,6 +62,16 @@ export interface SupabaseAuthAdapterOptions {
    * recopier sa signature la figerait à une version.
    */
   client: { auth: object };
+  /**
+   * Combien de temps attendre `auth.getSession()` avant de rendre la session
+   * écrite sur l'appareil. Défaut : 5 000 ms.
+   *
+   * Cet appel n'est pas une lecture — jeton périmé, il part le renouveler
+   * contre le réseau, une trentaine de secondes durant. `navigator.onLine` ne
+   * protège que du cas franc ; ce délai protège du portail captif et du Wi-Fi
+   * qui ne route rien.
+   */
+  sessionTimeoutMs?: number;
 }
 
 /** Adaptateur Supabase Auth v2 pour `createAuthClient` (`auth/index`). */

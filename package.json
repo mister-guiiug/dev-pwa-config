@@ -191,6 +191,10 @@
       "types": "./auth/index.d.ts",
       "default": "./auth/index.js"
     },
+    "./auth/stored-session": {
+      "types": "./auth/stored-session.d.ts",
+      "default": "./auth/stored-session.js"
+    },
     "./auth/supabase": {
       "types": "./auth/supabase.d.ts",
       "default": "./auth/supabase.js"

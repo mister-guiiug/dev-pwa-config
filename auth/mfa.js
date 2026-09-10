@@ -42,6 +42,51 @@ export function mfaChallengeNeeded(level) {
 }
 
 /**
+ * LE NIVEAU D'ASSURANCE CALCULÉ SUR PLACE, à partir d'une session déjà en main.
+ *
+ * Reproduit à l'identique la règle de `@supabase/auth-js` : le niveau COURANT
+ * est le claim `aal` du jeton d'accès ; le niveau ATTEIGNABLE vaut `aal2` dès
+ * qu'un facteur vérifié existe sur l'utilisateur de la session.
+ *
+ * POURQUOI NE PAS APPELER `getAuthenticatorAssuranceLevel()`. Parce qu'il
+ * commence par `auth.getSession()`, lequel RENOUVELLE le jeton périmé contre
+ * le réseau : une demi-minute de sablier au démarrage hors ligne. La seule
+ * chose que la bibliothèque fait de plus que ce calcul, c'est aller chercher
+ * la session — précisément ce qu'on veut éviter.
+ *
+ * LE DÉFI TOTP N'EST DONC PAS CONTOURNÉ SANS RÉSEAU. Une session restée en
+ * `aal1` avec un facteur vérifié rend toujours « défi requis ». C'est ce qui
+ * distingue ce calcul d'un « pas de défi » de confort.
+ *
+ * Le jeton n'est pas VÉRIFIÉ ici — sa signature ne se contrôle que côté
+ * serveur, et on ne lui fait pas confiance pour autant : c'est le serveur qui
+ * refuse les écritures d'une session `aal1`, et hors ligne il n'y a de toute
+ * façon rien à écrire.
+ *
+ * @param {{ access_token?: string, user?: { factors?: Array<{ status?: string }> } } | null} session
+ * @returns {{ current: string | null, next: string | null }}
+ */
+export function assuranceLevelFromSession(session) {
+  const current = claimAal(session?.access_token);
+  const verifie = session?.user?.factors?.some(f => f?.status === 'verified');
+  return { current, next: verifie ? 'aal2' : current };
+}
+
+/** Le claim `aal` du jeton, ou `null` si le jeton n'est pas lisible. */
+function claimAal(accessToken) {
+  if (typeof accessToken !== 'string') return null;
+  try {
+    const charge = accessToken.split('.')[1];
+    if (!charge) return null;
+    const json = globalThis.atob(charge.replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(json);
+    return typeof payload?.aal === 'string' ? payload.aal : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * L'API TOTP, liée au client Supabase de l'app — jamais un second.
  *
  * @param {{ client: { auth: { mfa: object } } }} options

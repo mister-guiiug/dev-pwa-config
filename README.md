@@ -890,6 +890,7 @@ Restent deux gestes, volontairement hors du générateur :
 | `@mister-guiiug/dev-pwa-config/sync-queue`                   | `.js` + `.d.ts` | File d'écritures hors-ligne (chemin montant), agnostique du transport, avec le backoff que la deuxième copie du parc avait perdu                                                                                                                                                   |
 | `@mister-guiiug/dev-pwa-config/auth`                         | `.js` + `.d.ts` | Authentification — le **port**, agnostique du service ; promu de cinq implémentations toutes en production                                                                                                                                                                         |
 | `@mister-guiiug/dev-pwa-config/auth/supabase`                | `.js` + `.d.ts` | Adaptateur Supabase Auth (API v2) — client **injecté**, peer optionnelle `@supabase/supabase-js`                                                                                                                                                                                   |
+| `@mister-guiiug/dev-pwa-config/auth/stored-session`          | `.js` + `.d.ts` | La session Supabase lue **dans le stockage**, sans passer par la bibliothèque — `getSession()` renouvelle le jeton contre le réseau, et coûtait 27 s au démarrage hors ligne                                                                                                       |
 | `@mister-guiiug/dev-pwa-config/auth/mfa`                     | `.js` + `.d.ts` | MFA TOTP par-dessus un client injecté — promu de `mister-doc`, éprouvé en production                                                                                                                                                                                               |
 | `@mister-guiiug/dev-pwa-config/auth/errors-fr`               | `.js` + `.d.ts` | Erreurs d'authentification en français : fusion de deux tables écrites indépendamment                                                                                                                                                                                              |
 | `@mister-guiiug/dev-pwa-config/react/use-auth`               | `.js` + `.d.ts` | `useAuth` — l'état de session dans React, branché sur le port ; quatre apps portaient chacune leur pont                                                                                                                                                                            |
@@ -2223,14 +2224,15 @@ quatre recopient exactement le même câblage : `getSession()` initial,
 ré-hydratation par `onAuthStateChange`, désabonnement au démontage. Le module
 promeut ce câblage en **port + adaptateurs**, comme `realtime/` et `push/` :
 
-| Sous-chemin        | Rôle                                                                                   |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| `/auth`            | le PORT : machine d'état `loading` → `signed-out` \| `signed-in` \| `needs-mfa`        |
-| `/auth/supabase`   | adaptateur Supabase v2 à **client injecté** (peer optionnelle)                         |
-| `/auth/mfa`        | TOTP : enrôlement (QR/secret/uri), défi, facteurs — fidèle à mister-doc                |
-| `/auth/errors-fr`  | erreurs Auth en français (fusion doc + carbook, codes **et** sous-chaînes)             |
-| `/react/use-auth`  | le hook (`useSyncExternalStore`) — deux composants, un client, aucun Provider          |
-| `/react/auth-gate` | la garde non stylée `loading`/`fallback`/`mfa`/`children` (généralise uwh + lookhouse) |
+| Sous-chemin            | Rôle                                                                                   |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `/auth`                | le PORT : machine d'état `loading` → `signed-out` \| `signed-in` \| `needs-mfa`        |
+| `/auth/supabase`       | adaptateur Supabase v2 à **client injecté** (peer optionnelle)                         |
+| `/auth/stored-session` | la session lue dans le stockage, sans appel réseau (démarrage hors ligne)              |
+| `/auth/mfa`            | TOTP : enrôlement (QR/secret/uri), défi, facteurs — fidèle à mister-doc                |
+| `/auth/errors-fr`      | erreurs Auth en français (fusion doc + carbook, codes **et** sous-chaînes)             |
+| `/react/use-auth`      | le hook (`useSyncExternalStore`) — deux composants, un client, aucun Provider          |
+| `/react/auth-gate`     | la garde non stylée `loading`/`fallback`/`mfa`/`children` (généralise uwh + lookhouse) |
 
 Bout en bout :
 
