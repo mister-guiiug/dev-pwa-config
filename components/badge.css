@@ -1,0 +1,100 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : Badge.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── Badge ─────────────────────────────────────────────────────────────── *
+   * Un ton SÉMANTIQUE (ce que la pastille veut dire), décliné en trois
+   * intensités. La couleur du ton est résolue une fois dans `--_dwc-tone`,
+   * puis réutilisée par les trois variantes.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='badge'] {
+    --_dwc-tone: var(--dwc-text-soft, GrayText);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+
+  /* L'axe de taille demandé par mister-doc pour ses pastilles de calendrier :
+     `md` est l'ancien rendu, `xs` tient dans une case de 1,5 rem. */
+  [data-dwc='badge'][data-size='sm'] {
+    padding: 0.1rem 0.45rem;
+    font-size: var(--text-fluid-2xs, 0.72rem);
+  }
+  [data-dwc='badge'][data-size='xs'] {
+    gap: 0.2rem;
+    padding: 0 0.35rem;
+    font-size: 0.68rem;
+    line-height: 1.4;
+  }
+
+  [data-dwc='badge'][data-tone='brand'] {
+    --_dwc-tone: var(--dwc-primary, CanvasText);
+  }
+  [data-dwc='badge'][data-tone='success'] {
+    --_dwc-tone: var(--dwc-success, light-dark(#15803d, #4ade80));
+  }
+  [data-dwc='badge'][data-tone='warning'] {
+    --_dwc-tone: var(--dwc-warning, light-dark(#b45309, #fbbf24));
+  }
+  [data-dwc='badge'][data-tone='danger'] {
+    --_dwc-tone: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+  [data-dwc='badge'][data-tone='info'] {
+    --_dwc-tone: var(--dwc-info, light-dark(#1d4ed8, #60a5fa));
+  }
+
+  /*
+   * Deux variantes seulement, et c'est un choix.
+   *
+   * Une variante « pleine » (ton en aplat, texte inversé) a été essayée puis
+   * retirée : avec UNE seule couleur par ton, le texte posé dessus ne peut pas
+   * tenir 4,5:1 partout. Le contrôle de contraste du showroom la voyait échouer
+   * dans 11 thèmes sur 14 — un ambre ou un vert clair ne portent pas de texte
+   * blanc. Il aurait fallu une seconde couleur par ton (« 600 » pour le fond),
+   * c'est-à-dire doubler le contrat pour un gain cosmétique.
+   *
+   * Les pastilles réellement utilisées dans la famille sont d'ailleurs
+   * teintées, pas pleines (miss-uwh : fond à 14 %, texte foncé).
+   */
+  /*
+   * Le texte n'est PAS le ton brut. Un ambre ou un vert de marque posés tels
+   * quels sur un fond clair tombent à 2:1 — mesuré sur les 14 thèmes du
+   * showroom. On mélange donc le ton avec la couleur de texte du thème :
+   * quasi-noire en clair, quasi-blanche en sombre. La teinte est conservée,
+   * le contraste devient tenable, et aucun `light-dark()` n'est nécessaire
+   * puisque `--dwc-text` suit déjà le schéma.
+   *
+   * C'est exactement ce que miss-uwh faisait à la main (#166534 au lieu de son
+   * vert de token) — sauf qu'ici c'est dérivé, donc valable pour tout thème.
+   */
+  [data-dwc='badge'] {
+    --_dwc-tone-ink: color-mix(
+      in srgb,
+      var(--_dwc-tone) 48%,
+      var(--dwc-text, CanvasText)
+    );
+  }
+
+  [data-dwc='badge'][data-variant='soft'] {
+    background: color-mix(in srgb, var(--_dwc-tone) 16%, transparent);
+    color: var(--_dwc-tone-ink);
+  }
+
+  [data-dwc='badge'][data-variant='outline'] {
+    color: var(--_dwc-tone-ink);
+    border-color: color-mix(in srgb, var(--_dwc-tone) 55%, transparent);
+  }
+}

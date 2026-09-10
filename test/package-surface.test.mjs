@@ -49,6 +49,17 @@ test('aucun sous-chemin ne pointe vers un fichier absent', () => {
   for (const [subpath, target] of Object.entries(PKG.exports)) {
     const files = typeof target === 'string' ? [target] : Object.values(target);
     for (const file of files) {
+      // Un sous-chemin générique (`./components/*.css`) désigne un dossier :
+      // il tient si le dossier existe et porte au moins un fichier.
+      if (subpath.includes('*')) {
+        const dossier = at(file.replace(/^\.\//, '').split('/*')[0]);
+        assert.ok(existsSync(dossier), `${subpath} : ${dossier} n'existe pas`);
+        assert.ok(
+          readdirSync(dossier).length > 0,
+          `${subpath} : ${dossier} est vide`
+        );
+        continue;
+      }
       assert.ok(
         existsSync(at(file)),
         `${subpath} pointe vers ${file}, qui n'existe pas`

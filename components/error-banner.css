@@ -1,0 +1,69 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : ErrorBanner.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── ErrorBanner ───────────────────────────────────────────────────────── */
+
+  [data-dwc='error-banner'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: var(--spacing-fluid-sm, 0.75rem) var(--spacing-fluid-md, 1rem);
+    border: 1px solid;
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  /* La sévérité n'est jamais portée par la seule couleur : le composant pose
+     aussi `role=alert` vs `role=status`, et le message reste explicite. */
+  [data-dwc='error-banner'][data-severity='error'] {
+    border-color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+    background: color-mix(
+      in srgb,
+      var(--dwc-danger, light-dark(#b91c1c, #fb7185)) 12%,
+      var(--dwc-surface, Canvas)
+    );
+  }
+
+  [data-dwc='error-banner'][data-severity='warning'] {
+    border-color: var(--dwc-warning, light-dark(#b45309, #fbbf24));
+    background: color-mix(
+      in srgb,
+      var(--dwc-warning, light-dark(#b45309, #fbbf24)) 14%,
+      var(--dwc-surface, Canvas)
+    );
+  }
+
+  [data-dwc='error-banner'][data-severity='info'] {
+    border-color: var(--dwc-primary, CanvasText);
+    background: var(
+      --dwc-primary-soft,
+      color-mix(in srgb, CanvasText 6%, Canvas)
+    );
+  }
+
+  [data-dwc='error-banner-message'] {
+    flex: 1 1 16rem;
+  }
+
+  [data-dwc='error-banner-dismiss'] {
+    font: inherit;
+    font-size: 1.1rem;
+    line-height: 1;
+    min-width: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+}

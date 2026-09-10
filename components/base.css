@@ -1,0 +1,307 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Sections : Bases partagées, Animations, Contraste forcé, Impression.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── Bases partagées ───────────────────────────────────────────────────── */
+
+  /*
+   * Toute commande du paquet respecte la cible tactile de 2,75 rem (~44 px).
+   * C'est le principal intérêt d'une base partagée : une taille `sm` locale
+   * finit toujours par passer sous le seuil.
+   */
+  :where(
+    [data-dwc='error-banner-retry'],
+    [data-dwc='error-banner-dismiss'],
+    [data-dwc='error-boundary-reset'],
+    [data-dwc='error-boundary-backup'],
+    [data-dwc='share-button'],
+    [data-dwc='update-banner-update'],
+    [data-dwc='update-button'],
+    [data-dwc='update-banner-dismiss'],
+    [data-dwc='update-banner-ignore'],
+    [data-dwc='offline-ready-dismiss'],
+    [data-dwc='pwa-install-actions'] button,
+    [data-dwc='footer-source'],
+    [data-dwc='footer-sponsor'],
+    [data-dwc='footer-issues'],
+    [data-dwc='family-source'],
+    [data-dwc='family-sponsor'],
+    [data-dwc='family-app'],
+    [data-dwc='family-app-repo']
+  ) {
+    min-height: 2.75rem;
+  }
+
+  :where(
+    [data-dwc='error-banner-retry'],
+    [data-dwc='error-boundary-reset'],
+    [data-dwc='error-boundary-backup'],
+    [data-dwc='share-button'],
+    [data-dwc='update-banner-update'],
+    [data-dwc='update-button'],
+    [data-dwc='update-banner-dismiss'],
+    [data-dwc='update-banner-ignore'],
+    [data-dwc='offline-ready-dismiss'],
+    [data-dwc='pwa-install-actions'] button
+  ) {
+    font: inherit;
+    font-size: 0.875em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.85rem;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    cursor: pointer;
+  }
+
+  /* ── Animations ────────────────────────────────────────────────────────── */
+
+  @keyframes dwc-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes dwc-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  /* DEUX CHOIX À NE PAS « CORRIGER ».
+   *
+   * 1. Pas d'image-clé `to`. L'état final est celui de l'élément lui-même,
+   *    quel qu'il soit : l'app peut décaler ou incliner un panneau sans que
+   *    l'animation ne réécrive sa position d'arrivée.
+   *
+   * 2. `animation-fill-mode: backwards`, jamais `both` ni `forwards`.
+   *    C'est la seule chose qui compte pour l'imbrication, et elle ne se
+   *    devine pas : `forwards` RETIENT la valeur d'arrivée après la fin, et
+   *    une transformation retenue reste une transformation — même réduite à
+   *    l'identité. Un `transform` autre que `none` fait de l'élément le bloc
+   *    conteneur de ses descendants `position: fixed` et lui ouvre un
+   *    contexte d'empilement. Mesuré : `both` laisse
+   *    `matrix(1, 0, 0, 1, 0, 0)` sur le panneau, `backwards` laisse `none`.
+   *
+   *    Ce que ça cassait : `ConfirmDialog` est `position: fixed; inset: 0;
+   *    z-index: 60`, et on l'ouvre le plus souvent DEPUIS une feuille, donc
+   *    à l'intérieur de `sheet-panel`. Avec `both`, son voile se repliait sur
+   *    les dimensions de la feuille au lieu de couvrir l'écran, et son
+   *    `z-index` restait prisonnier du panneau : la boîte de confirmation
+   *    s'affichait en transparence, par-dessus le formulaire. Idem pour
+   *    `toast-viewport`, `fixed` lui aussi.
+   *
+   *    `backwards` ne coûte rien à l'entrée : sans `to`, l'état d'arrivée de
+   *    l'animation est DÉJÀ l'état naturel de l'élément — il n'y a donc rien
+   *    à retenir, et rien ne saute à la fin. Les deux choix se tiennent.
+   *
+   * Une app qui réécrit l'entrée en CSS non « layered » écrase cette règle et
+   * rouvre la brèche. Le garde-fou de `test/components-css.test.mjs` ne voit
+   * que ce fichier ; côté app, c'est à relire à la main. */
+  @keyframes dwc-rise {
+    from {
+      transform: translateY(1rem);
+      opacity: 0;
+    }
+  }
+
+  /* Le mouvement est un confort, jamais une information : on le retire quand
+     l'utilisateur l'a demandé, sans rien casser d'autre.
+     LA LISTE DOIT SUIVRE `dwc-rise`. Elle ne couvrait que `sheet-panel`, alors
+     que `confirm-panel` et `toast` portent la MÊME entrée : une alerte et un
+     message surgissaient donc toujours, réglage ignoré. Relevé par la
+     migration de mister-puzzle (#14), qui a dû reposer la règle chez elle.
+     Depuis, `test/components-css.test.mjs` exige que chaque règle animée y
+     figure — le bandeau de mise à jour y est entré avec son entrée. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-dwc='button-spinner'],
+    [data-dwc='skeleton'],
+    [data-dwc='sheet-panel'],
+    [data-dwc='confirm-panel'],
+    [data-dwc='toast'],
+    [data-dwc='update-banner'],
+    [data-dwc='offline-ready'] {
+      animation-duration: 0.001ms;
+      animation-iteration-count: 1;
+    }
+  }
+
+  /* ── Contraste forcé ───────────────────────────────────────────────────── *
+   * En contraste forcé (« contraste élevé » de Windows, thèmes à contraste
+   * accru), le navigateur REMPLACE d'autorité `color`, `background-color`,
+   * `border-color`, et SUPPRIME `box-shadow`. Ce fichier repose entièrement sur
+   * des variables et des `color-mix()` : tout cela est donc écrasé.
+   *
+   * L'essentiel survit — c'est le bénéfice d'avoir bâti sur les couleurs
+   * système. Trois régressions subsistent pourtant, et elles ne se devinent
+   * pas :
+   *
+   *   1. `transparent` n'est PAS forcé. Un bouton primaire perd son aplat,
+   *      garde sa bordure transparente, et devient un simple texte flottant.
+   *      Idem pour la pastille `soft`, qui perd sa forme.
+   *   2. `box-shadow` disparaît. Le panneau modal n'a aucune bordure : il se
+   *      confond avec son propre voile, lui aussi ramené à `Canvas`.
+   *   3. Ce qui n'existait QUE par sa couleur de fond n'existe plus : le
+   *      squelette de chargement et la pastille de synchro.
+   *
+   * La correction consiste à NOMMER les couleurs système — elles, conservées
+   * telles quelles — plutôt qu'à figer nos teintes avec `forced-color-adjust:
+   * none`, qui reviendrait à passer outre le réglage de l'utilisateur.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  @media (forced-colors: active) {
+    /* 1 — rendre le contour visible là où il était transparent. Une seule
+       règle suffit : les variantes qui posent déjà `border-color` sont plus
+       spécifiques, et leur couleur est de toute façon forcée. */
+    [data-dwc='button'],
+    [data-dwc='badge'],
+    [data-dwc='theme-toggle'] {
+      border-color: currentColor;
+    }
+
+    /* `filter` n'est pas forcé : `brightness()` viendrait délaver une palette
+       que l'utilisateur a précisément choisie. La paire système prévue pour
+       la mise en évidence dit la même chose, en respectant son réglage. */
+    [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
+      filter: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+
+    /* `opacity` n'est pas forcé non plus : le bouton désactivé resterait à
+       pleine couleur système sous 45 % d'opacité, donc lisible et trompeur.
+       `GrayText` est le signal que les technologies d'assistance attendent. */
+    [data-dwc='button']:disabled,
+    [data-dwc='button'][aria-disabled='true'] {
+      opacity: 1;
+      color: GrayText;
+      border-color: GrayText;
+    }
+
+    /* 2 — séparer le panneau de son voile. `outline` avec un décalage négatif
+       plutôt qu'une bordure : dessiné à l'intérieur, il ne décale rien et ne
+       peut pas être rogné par le bord de l'écran. */
+    [data-dwc='sheet-panel'] {
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
+    }
+
+    /* 3 — redonner un corps à ce qui n'était qu'un aplat. La pastille de
+       synchro perd en revanche sa distinction par ton : c'est sans perte, le
+       composant écrit toujours l'état en toutes lettres à côté. */
+    [data-dwc='skeleton'] {
+      outline: 1px solid GrayText;
+      outline-offset: -1px;
+    }
+
+    [data-dwc='sync-status']::before {
+      background: CanvasText;
+    }
+
+    /* 4 — les surfaces ajoutées ensuite, même raison qu'au point 2 : la boîte
+       de confirmation, la notification, le tiroir de navigation, et le bandeau
+       de mise à jour depuis qu'il flotte au-dessus de la barre collée. */
+    [data-dwc='confirm-panel'],
+    [data-dwc='toast'],
+    [data-dwc='bottom-nav-drawer'],
+    [data-dwc='update-banner'],
+    [data-dwc='offline-ready'] {
+      outline: 1px solid CanvasText;
+      outline-offset: -1px;
+    }
+
+    /* 5 — l'onglet courant. En contraste forcé, `--dwc-primary` et
+       `--dwc-text-soft` sont remplacés par la MÊME encre système : la
+       distinction par la couleur disparaît entièrement. Le trait, lui, reste —
+       et c'est précisément pourquoi le composant le double d'un texte lu. */
+    [data-dwc='bottom-nav-item'][data-current],
+    [data-dwc='bottom-nav-more'][data-current] {
+      border-block-start-color: Highlight;
+    }
+
+    /* 6 — barres et jauge n'existaient que par leurs aplats, comme le
+       squelette : encre système sur le remplissage, contour sur le rail. La
+       courbe, elle, est un trait `currentColor` : déjà forcée correctement. */
+    [data-dwc='bars-bar'],
+    [data-dwc='gauge-fill'] {
+      background: CanvasText;
+    }
+
+    [data-dwc='gauge'] {
+      outline: 1px solid GrayText;
+      outline-offset: -1px;
+    }
+  }
+
+  /* ── Impression ────────────────────────────────────────────────────────── *
+   * Les navigateurs SUPPRIMENT les fonds à l'impression, mais gardent la
+   * couleur du texte. Un libellé blanc posé sur la primaire devient donc blanc
+   * sur blanc : le bouton s'imprime vide. C'est le seul défaut réellement
+   * invisible à l'écran de toute cette feuille.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  @media print {
+    /* Ce qui n'a de sens que devant un écran. Une invitation à installer
+       l'application n'a rien à faire sur un bilan imprimé. */
+    [data-dwc='sheet'],
+    [data-dwc='confirm'],
+    [data-dwc='toast-viewport'],
+    [data-dwc='bottom-nav'],
+    [data-dwc='pwa-install-prompt'],
+    [data-dwc='update-banner'],
+    [data-dwc='offline-ready'],
+    [data-dwc='update-button-group'] {
+      display: none;
+    }
+
+    /* Texte sur aplat → encre système, et contour pour compenser le fond
+       disparu. Sélecteurs alignés sur ceux des variantes, sinon ces dernières
+       l'emporteraient. */
+    [data-dwc='button'][data-variant='primary'],
+    [data-dwc='button'][data-variant='danger'],
+    [data-dwc='confirm-confirm'],
+    [data-dwc='bottom-nav-badge'],
+    span[data-dwc='family-app-icon'] {
+      color: CanvasText;
+      border-color: CanvasText;
+    }
+
+    /* L'animation se fige à l'opacité qu'elle avait au moment du rendu : le
+       squelette s'imprimerait plus ou moins pâle, au hasard. */
+    [data-dwc='skeleton'] {
+      animation: none;
+      opacity: 1;
+    }
+
+    [data-dwc='stat'],
+    [data-dwc='sheet-panel'],
+    [data-dwc='pwa-install-prompt'] {
+      box-shadow: none;
+    }
+  }
+
+  /*
+   * DERNIÈRE RÈGLE DU FICHIER, et c'est délibéré.
+   *
+   * L'attribut `hidden` ne masque que via la feuille de style du navigateur :
+   * la moindre règle d'auteur posant un `display` le neutralise, et l'élément
+   * réapparaît. Presque tous les composants ci-dessus déclarent un `display` —
+   * la feuille modale du showroom s'affichait ainsi par-dessus la page dès le
+   * chargement, alors qu'elle portait bien `hidden`.
+   *
+   * Une seule règle couvre tout le jeu. Placée en dernier, elle l'emporte aussi
+   * sur les sélecteurs de même spécificité (`[data-dwc='x'][data-y]`).
+   */
+  [data-dwc][hidden] {
+    display: none;
+  }
+}

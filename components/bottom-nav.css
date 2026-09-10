@@ -1,0 +1,169 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : BottomNav.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── BottomNav ─────────────────────────────────────────────────────────── *
+   * L'onglet actif n'est JAMAIS distingué par la seule couleur : le composant
+   * pose `aria-current`, ajoute un texte lu, et l'habillage ci-dessous y
+   * ajoute un trait. Quatre des sept copies mesurées n'avaient que l'encre.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='bottom-nav'] {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    background: var(--dwc-surface, Canvas);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  /* Collée au bas de la fenêtre : `placement="fixed"`. Le socle habillait la
+     barre sans la placer, et huit dépôts recopiaient cette règle (sept apps
+     et le squelette, relevé du 05/09/2026). La place qu'elle occupe se
+     réserve côté contenu : `<PageContainer reserve="bottom-nav">`. */
+  [data-dwc='bottom-nav'][data-placement='fixed'] {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+  }
+
+  /*
+   * L'EMPREINTE DE LA BARRE, ÉCRITE UNE FOIS. Trois règles ont besoin de la
+   * même hauteur : la réserve de `PageContainer`, le plancher des toasts et
+   * celui du bandeau de mise à jour. Figée à trois endroits, elle finirait par
+   * diverger — c'est ce qui est arrivé aux replis de couleur (audit du
+   * 06/09/2026). Deux variables PRIVÉES (`--_dwc-*`, hors du contrat) :
+   *
+   *   --_dwc-bottom-nav-reserve   ce que la barre couvre : 4,5 rem + zone sûre ;
+   *   --_dwc-bottom-clearance     ce que les surfaces flottantes dégagent en
+   *                               bas — la zone sûre seule, ou la barre entière
+   *                               quand il y en a une.
+   *
+   * SUR LA RACINE, ET PAS SUR LA BARRE. Une propriété personnalisée ne descend
+   * que vers les descendants : posée sur `[data-placement='fixed']`, elle
+   * n'atteindrait ni le bandeau ni les toasts, qui sont ses voisins. `:has()`
+   * remonte donc la condition à `:root`. Un navigateur qui l'ignore (Firefox
+   * avant 121 — largement disponible depuis 2026) jette cette seule règle : le
+   * plancher reste la zone sûre, rien d'autre ne casse. D'où une règle À PART,
+   * jamais glissée dans une liste de sélecteurs partagée — une liste est tout
+   * ou rien, et `test/components-css.test.mjs` y veille.
+   */
+  :root {
+    --_dwc-bottom-nav-reserve: calc(
+      4.5rem + max(env(safe-area-inset-bottom), 0px)
+    );
+    --_dwc-bottom-clearance: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  :root:has([data-dwc='bottom-nav'][data-placement='fixed']) {
+    --_dwc-bottom-clearance: var(--_dwc-bottom-nav-reserve);
+  }
+
+  [data-dwc='bottom-nav-item'],
+  [data-dwc='bottom-nav-more'] {
+    font: inherit;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    font-weight: 600;
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    /* Au-delà des 2,75 rem du contrat : une barre d'onglets se vise au pouce,
+       et la plus petite copie mesurée tombait à ~38 px. */
+    min-height: 3.25rem;
+    padding: 0.35rem 0.25rem;
+    border: 0;
+    /* Le trait actif est réservé dès le repos : l'onglet ne bouge pas de deux
+       pixels quand il devient courant. */
+    border-block-start: 2px solid transparent;
+    background: none;
+    color: var(--dwc-text-soft, GrayText);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  [data-dwc='bottom-nav-item'][data-current],
+  [data-dwc='bottom-nav-more'][data-current] {
+    color: var(--dwc-primary, CanvasText);
+    border-block-start-color: var(--dwc-primary, CanvasText);
+  }
+
+  [data-dwc='bottom-nav-icon'] {
+    display: inline-flex;
+    line-height: 0;
+  }
+
+  /* Le libellé d'un onglet ne pousse pas la barre : à cinq entrées sur un
+     écran de 320 px, un mot long débordait sur son voisin. */
+  [data-dwc='bottom-nav-label'] {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-dwc='bottom-nav-badge'] {
+    position: absolute;
+    transform: translate(0.9rem, -0.6rem);
+    min-width: 1.05rem;
+    padding-inline: 0.2rem;
+    font-size: 0.65rem;
+    line-height: 1.05rem;
+    text-align: center;
+    border-radius: 999px;
+    background: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  [data-dwc='bottom-nav-drawer'] {
+    position: absolute;
+    inset-inline: 0.5rem;
+    bottom: calc(100% + 0.5rem);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.35rem;
+    background: var(--dwc-surface, Canvas);
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: var(--dwc-radius, 0.75rem);
+    box-shadow: var(--dwc-shadow, none);
+  }
+
+  [data-dwc='bottom-nav-drawer-item'] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding-inline: 0.6rem;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
+    color: var(--dwc-text, CanvasText);
+    text-decoration: none;
+  }
+
+  [data-dwc='bottom-nav-drawer-item'][data-current] {
+    color: var(--dwc-primary, CanvasText);
+  }
+
+  /* Lu, pas vu — l'état courant et le sens d'une pastille. */
+  [data-dwc='bottom-nav-sr'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

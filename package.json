@@ -627,6 +627,7 @@
     "./tailwind-preset.css": "./tailwind-preset.css",
     "./tokens.css": "./tokens.css",
     "./components.css": "./components.css",
+    "./components/*.css": "./components/*.css",
     "./issue-report": {
       "types": "./issue-report.d.ts",
       "default": "./issue-report.js"
@@ -713,6 +714,7 @@
     "tailwind-preset.css",
     "tokens.css",
     "components.css",
+    "components",
     "scripts/generate-pwa-icons.mjs",
     "scripts/check-bundle-budget.mjs",
     "storage.js",

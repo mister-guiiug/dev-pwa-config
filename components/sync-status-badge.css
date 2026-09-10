@@ -1,0 +1,44 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : SyncStatusBadge.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── SyncStatusBadge ───────────────────────────────────────────────────── */
+
+  [data-dwc='sync-status'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    font-size: var(--text-fluid-xs, 0.8rem);
+  }
+
+  /* La pastille double le libellé, elle ne le remplace pas. */
+  [data-dwc='sync-status']::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='sync-status'][data-status='synced']::before {
+    background: var(--dwc-success, light-dark(#15803d, #4ade80));
+  }
+
+  [data-dwc='sync-status'][data-status='pending']::before {
+    background: var(--dwc-warning, light-dark(#b45309, #fbbf24));
+  }
+
+  [data-dwc='sync-status'][data-status='error']::before {
+    background: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+}

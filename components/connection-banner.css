@@ -1,0 +1,42 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : ConnectionBanner.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── ConnectionBanner ─────────────────────────────────────────────────── *
+   * Ton « avertissement », pas « erreur » : être hors ligne est un état,
+   * pas une faute. Le composant ne se rend qu'après son délai anti-
+   * clignotement — aucune animation à neutraliser ici.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='connection-banner'] {
+    /*
+     * `flex` centré plutôt que `block` + `text-align`. Le `label` accepte un
+     * nœud React, et la copie dont ce composant est promu (mister-qowa) y
+     * passait une icône SUIVIE d'un texte : en `block`, l'icône se posait sur
+     * la ligne de base au lieu d'être centrée avec le texte, et l'app devait
+     * remettre un `flex items-center justify-center gap-2` par-dessus. Pour un
+     * enfant textuel unique — le cas de toutes les autres apps — le rendu est
+     * identique : un seul enfant en ligne, centré.
+     */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--dwc-warning, light-dark(#b45309, #fbbf24));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+    background: color-mix(
+      in srgb,
+      var(--dwc-warning, light-dark(#b45309, #fbbf24)) 14%,
+      var(--dwc-surface, Canvas)
+    );
+    color: var(--dwc-text, CanvasText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+    text-align: center;
+  }
+}

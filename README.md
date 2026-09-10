@@ -992,6 +992,7 @@ Restent deux gestes, volontairement hors du générateur :
 | `@mister-guiiug/dev-pwa-config/tailwind-preset.css`          | `.css`          | Preset CSS Tailwind 4 : `@theme` (typo/spacing fluides) + utilitaires `*-safe` / `touch-target`                                                                                                                                                                                    |
 | `@mister-guiiug/dev-pwa-config/tokens.css`                   | `.css`          | Jeu de tokens **neutre** pour le contrat de couleur `--dwc-*` — à importer quand l'app n'a pas déjà sa palette                                                                                                                                                                     |
 | `@mister-guiiug/dev-pwa-config/components.css`               | `.css`          | Habillage **opt-in** des composants, entièrement dans `@layer components` : le CSS non layered de l'app gagne toujours                                                                                                                                                             |
+| `@mister-guiiug/dev-pwa-config/components/*.css`             | `.css`          | Le MÊME habillage, par composant (`base.css` + `button.css`, `field.css`, `toast.css`… — 24 morceaux engendrés) : Tailwind n'élague pas ce qui est écrit dans `@layer components`, donc une app qui monte huit composants payait les quinze autres                                 |
 
 ## Bin
 
@@ -1707,6 +1708,43 @@ bonne volonté : tout est confiné dans `@layer components`, chaque
 contrat documenté. Un quatrième test impose la **cible tactile de 2,75 rem** à
 toutes les commandes — c'est le principal intérêt d'une base partagée, une
 taille `sm` locale finissant toujours par passer sous le seuil.
+
+#### N'importer que ce qu'on monte (4.10.0)
+
+**Tailwind 4 n'élague PAS ce qui est écrit à la main dans `@layer components`.**
+Mesuré le 10/09/2026 sur un build réel : une page qui n'utilise aucun composant
+du paquet reçoit quand même **141 des 143 sélecteurs `[data-dwc]`** — 5,3 kB
+gzip, 42,6 kB bruts. Le fichier entier part avec chaque application, quels que
+soient les composants qu'elle monte.
+
+Les mêmes règles sont donc aussi publiées **par composant**, engendrées depuis
+`components.css` par `npm run sync` :
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
+
+/* Toujours en premier : variables de repli, focus, animations, contraste
+   forcé, impression — ce que toutes les autres sections supposent. */
+@import '@mister-guiiug/dev-pwa-config/components/base.css';
+
+/* Puis un fichier par composant monté. */
+@import '@mister-guiiug/dev-pwa-config/components/button.css';
+@import '@mister-guiiug/dev-pwa-config/components/field.css';
+@import '@mister-guiiug/dev-pwa-config/components/toast.css';
+```
+
+Mesure de l'écart, même build : **2,6 kB gzip** pour une app à onze sections sur
+vingt-sept, contre 5,3 pour le fichier entier — 2,7 kB gzip et 26,7 kB bruts
+qu'elle ne transfère ni ne parse. C'est modeste, et c'est dit tel quel : ce
+n'est pas un chantier de performance, c'est la fin d'un gaspillage sans
+contrepartie.
+
+`components.css` **ne bouge pas** : il reste le fichier entier, et reste le
+défaut recommandé pour une app qui monte l'essentiel du catalogue. Les morceaux
+sont des DÉRIVÉS, jamais une seconde source — `test/components-css.test.mjs`
+les recompose règle pour règle et refuse la moindre perte, et l'étape « les
+fichiers engendrés sont à jour » de la CI refuse une découpe périmée.
 
 #### Contraste forcé et impression
 

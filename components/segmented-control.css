@@ -1,0 +1,57 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : SegmentedControl.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── SegmentedControl ─────────────────────────────────────────────────── *
+   * Onglets « pilule » : le conteneur porte le fond en retrait, le segment
+   * actif est marqué par `aria-selected` — l'état accessible EST l'état
+   * visuel, il n'y a pas de classe à synchroniser.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='segmented'] {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: 999px;
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+  }
+
+  [data-dwc='segmented'][data-full-width] {
+    display: flex;
+    width: 100%;
+  }
+
+  [data-dwc='segmented'][data-full-width] > [data-dwc='segmented-tab'] {
+    flex: 1;
+  }
+
+  [data-dwc='segmented-tab'] {
+    font: inherit;
+    min-height: 2.25rem;
+    padding-inline: 0.9rem;
+    border: none;
+    border-radius: 999px;
+    background: none;
+    color: var(--dwc-text-soft, GrayText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+    cursor: pointer;
+  }
+
+  [data-dwc='segmented'][data-size='sm'] > [data-dwc='segmented-tab'] {
+    min-height: 1.9rem;
+    padding-inline: 0.7rem;
+  }
+
+  [data-dwc='segmented-tab'][aria-selected='true'] {
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    box-shadow: 0 1px 2px color-mix(in srgb, CanvasText 20%, transparent);
+  }
+}

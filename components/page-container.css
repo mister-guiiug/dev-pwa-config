@@ -1,0 +1,52 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : PageContainer.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── PageContainer ─────────────────────────────────────────────────────── *
+   * Centré, borné à un palier, zones sûres comprises — celle du bas surtout,
+   * sans laquelle le dernier bouton d'une vue colle à la barre d'onglets.
+   * ─────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='page-container'] {
+    width: 100%;
+    margin-inline: auto;
+    padding: var(--spacing-fluid-md, 1rem)
+      max(env(safe-area-inset-right, 0px), 1rem)
+      calc(var(--spacing-fluid-lg, 1.5rem) + env(safe-area-inset-bottom, 0px))
+      max(env(safe-area-inset-left, 0px), 1rem);
+  }
+
+  [data-dwc='page-container'][data-padding='none'] {
+    padding: 0;
+  }
+
+  [data-dwc='page-container'][data-width='sm'] {
+    max-width: 28rem;
+  }
+  [data-dwc='page-container'][data-width='md'] {
+    max-width: 36rem;
+  }
+  [data-dwc='page-container'][data-width='lg'] {
+    max-width: 48rem;
+  }
+  [data-dwc='page-container'][data-width='xl'] {
+    max-width: 64rem;
+  }
+  [data-dwc='page-container'][data-width='full'] {
+    max-width: none;
+  }
+
+  /* La place d'une barre basse collée (`BottomNav placement="fixed"`) : sans
+     ce dégagement, le dernier élément de la vue passe sous la barre. Après
+     `data-padding='none'` exprès — réserver n'est pas une marge. L'empreinte
+     elle-même n'est écrite qu'une fois, sur `:root`, dans la section BottomNav :
+     les toasts et le bandeau de mise à jour lisent la même. */
+  [data-dwc='page-container'][data-reserve='bottom-nav'] {
+    padding-bottom: var(--_dwc-bottom-nav-reserve);
+  }
+}

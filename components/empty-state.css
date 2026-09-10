@@ -1,0 +1,53 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : EmptyState.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── EmptyState ────────────────────────────────────────────────────────── */
+
+  [data-dwc='empty-state'] {
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    text-align: center;
+    padding: var(--spacing-fluid-lg, 1.5rem);
+    border: 1px dashed
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+  }
+
+  [data-dwc='empty-state-icon'] {
+    color: var(--dwc-primary, CanvasText);
+    line-height: 0;
+  }
+
+  [data-dwc='empty-state-title'] {
+    margin: 0;
+    font-size: var(--text-fluid-lg, 1.125rem);
+    font-weight: 600;
+  }
+
+  [data-dwc='empty-state-desc'] {
+    margin: 0;
+    max-width: 40ch;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  /* Le contenu libre glissé dans l'état vide. Sans règle, il héritait du
+     `justify-items: center` de la grille et se rétrécissait à son contenu :
+     un tableau ou un formulaire posé là arrivait comprimé au milieu. */
+  [data-dwc='empty-state-body'] {
+    justify-self: stretch;
+    margin-top: var(--spacing-fluid-sm, 0.75rem);
+  }
+
+  [data-dwc='empty-state-action'] {
+    margin-top: var(--spacing-fluid-sm, 0.75rem);
+  }
+}
