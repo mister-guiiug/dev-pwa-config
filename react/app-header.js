@@ -1,6 +1,6 @@
 import { createElement as h } from 'react';
 import { useIcon } from './icons-context.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * L'en-tête d'application : le troisième côté du cadre, après `BottomNav` et

@@ -1,21 +1,5 @@
 import { createElement as h } from 'react';
-
-/**
- * Vrai hors production. Le paquet est servi tel quel, sans étape de build : on
- * ne peut pas compter sur un seul indicateur. `import.meta.env` couvre Vite,
- * `process.env` couvre Node (tests, SSR) ; les deux sont gardés par `typeof`
- * pour rester inoffensifs dans un navigateur sans bundler.
- */
-function isDev() {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.DEV === true;
-  }
-  return (
-    typeof process !== 'undefined' &&
-    process.env &&
-    process.env.NODE_ENV !== 'production'
-  );
-}
+import { isDev } from './dev-mode.js';
 
 /**
  * Bouton de la famille.

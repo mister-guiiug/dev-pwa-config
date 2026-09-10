@@ -2,7 +2,7 @@ import { createElement as h } from 'react';
 import { formatVersion } from '../version.js';
 import { formatDate } from '../format.js';
 import { useAppVersion } from './version.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * Retire les `/` de fin, SANS expression régulière.

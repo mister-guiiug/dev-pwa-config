@@ -6,7 +6,7 @@ import {
   useState,
 } from 'react';
 import { shareOrCopy } from '../share.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * Bouton « Partager », branché sur `shareOrCopy`.

@@ -1,5 +1,5 @@
 import { createElement as h } from 'react';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * Badge d'état de synchronisation (non stylé : cibler `[data-dwc="sync-status"]`

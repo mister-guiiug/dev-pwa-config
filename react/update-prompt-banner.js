@@ -1,6 +1,6 @@
 import { createElement as h, useState } from 'react';
 import { useUpdatePrompt } from './use-update-prompt.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 import { useAppUpdates } from './app-updates.js';
 
 /**

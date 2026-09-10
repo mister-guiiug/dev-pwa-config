@@ -9,7 +9,8 @@ import {
   useState,
 } from 'react';
 import { Icon } from './icons-context.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
+import { isDev } from './dev-mode.js';
 
 /**
  * Le ton qui exige une lecture : il reste affiché jusqu'à fermeture et part en
@@ -80,18 +81,6 @@ const grave = tone => tone === 'danger' || tone === 'error';
  *
  * Non stylé : cibler `[data-dwc="toast-viewport"]` et descendants.
  */
-
-/** Vrai hors production — voir `button.js`, même garde. */
-function isDev() {
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env.DEV === true;
-  }
-  return (
-    typeof process !== 'undefined' &&
-    process.env &&
-    process.env.NODE_ENV !== 'production'
-  );
-}
 
 const DEFAULT_DURATION = 5000;
 

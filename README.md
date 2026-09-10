@@ -853,6 +853,14 @@ Restent deux gestes, volontairement hors du générateur :
 | `@mister-guiiug/dev-pwa-config/react/toast`                  | `.js` + `.d.ts` | `ToastProvider` / `ToastViewport` / `useToast` : pile bornée, deux régions vivantes, rebours suspendu au survol, et une `action` facultative — « Annuler » plutôt que « êtes-vous sûr ? », huit secondes au minimum                                                                |
 | `@mister-guiiug/dev-pwa-config/react/bottom-nav`             | `.js` + `.d.ts` | `BottomNav` : barre d'onglets agnostique de routeur, onglet courant jamais distingué par la seule couleur ; `placement="fixed"` la colle au bas de la fenêtre (huit dépôts recopiaient la règle) et emmène au-dessus d'elle le bandeau de mise à jour et les toasts                |
 | `@mister-guiiug/dev-pwa-config/react/labels`                 | `.js` + `.d.ts` | `LabelsProvider` / `useLabels` : libellés des composants du paquet en sept langues (fr, en, es, de, it, pt, nl — prop > contexte > français)                                                                                                                                       |
+| `@mister-guiiug/dev-pwa-config/react/labels-core`            | `.js` + `.d.ts` | Le NOYAU des libellés : `LabelsProvider` (prop `dictionary`) / `useLabels` / `mergeLabels`, **français seul embarqué** — ce qu'importent les composants du paquet, pour qu'une app ne paie pas sept langues derrière un `<ErrorBanner>`                                            |
+| `@mister-guiiug/dev-pwa-config/react/labels-fr`              | `.js` + `.d.ts` | Le dictionnaire français, en module à part (`export default`) — à passer à `dictionary` du noyau                                                                                                                                                                                   |
+| `@mister-guiiug/dev-pwa-config/react/labels-en`              | `.js` + `.d.ts` | Le dictionnaire anglais, en module à part                                                                                                                                                                                                                                          |
+| `@mister-guiiug/dev-pwa-config/react/labels-es`              | `.js` + `.d.ts` | Le dictionnaire espagnol, en module à part                                                                                                                                                                                                                                         |
+| `@mister-guiiug/dev-pwa-config/react/labels-de`              | `.js` + `.d.ts` | Le dictionnaire allemand, en module à part                                                                                                                                                                                                                                         |
+| `@mister-guiiug/dev-pwa-config/react/labels-it`              | `.js` + `.d.ts` | Le dictionnaire italien, en module à part                                                                                                                                                                                                                                          |
+| `@mister-guiiug/dev-pwa-config/react/labels-pt`              | `.js` + `.d.ts` | Le dictionnaire portugais, en module à part                                                                                                                                                                                                                                        |
+| `@mister-guiiug/dev-pwa-config/react/labels-nl`              | `.js` + `.d.ts` | Le dictionnaire néerlandais, en module à part                                                                                                                                                                                                                                      |
 | `@mister-guiiug/dev-pwa-config/react/sponsor`                | `.js` + `.d.ts` | `SponsorProvider` / `useSponsorUrl` : le lien de soutien déclaré une fois — `handle` pour un autre pseudo Buy Me a Coffee, `url` pour une autre plateforme, `url={null}` pour n'en afficher aucun (prop > contexte > famille)                                                      |
 | `@mister-guiiug/dev-pwa-config/sw-update`                    | `.js` + `.d.ts` | `applyUpdate` / `hardNavigate` / `unregisterServiceWorkers` : appliquer une mise à jour de service worker, ou tout désinscrire en dev — **sans React ni module virtuel**                                                                                                           |
 | `@mister-guiiug/dev-pwa-config/theme-boot`                   | `.js` + `.d.ts` | `themeBootScript` / `themeBootSource` / `themeColorMetaTags` — le script anti-FOUC **engendré** (13 apps sur 16 le recopient), avec `legacyKeys` pour migrer les **6 clés de stockage** distinctes de la famille                                                                   |
@@ -2864,6 +2872,38 @@ contexte isolé par app, que le paquet ne peut pas lire et dans lequel il n'a pa
 `LabelsProvider` avec sa locale : le câblage manuel ci-dessus n'est plus
 nécessaire (`labels: false` pour le désactiver). Il reste utile pour un
 `overrides`, ou hors `createI18n`.
+
+**Sept langues, et ce qu'elles pesaient (4.10.0).** Les sept dictionnaires
+vivaient dans un unique objet littéral. Un objet littéral est UNE liaison :
+aucun bundler ne peut en retirer six langues. Or quinze composants du paquet
+appellent `useLabels` — `ErrorBanner`, `Sheet`, `ConfirmDialog`, `AppHeader`,
+`BottomNav`, `ThemeToggle`… — donc **toute app qui montait un seul d'entre eux
+embarquait les sept**, soit 6,2 kB gzip là où le français seul en pèse 1,8.
+
+Chaque langue est désormais un module (`react/labels-fr` … `react/labels-nl`),
+et le contexte vit dans `react/labels-core`, qui n'embarque que le français.
+**Rien ne change à l'usage** : `react/labels` exporte toujours `LABELS`,
+`labelsFor` et un `LabelsProvider` qui résout les sept langues synchronement —
+aucun chargement différé n'a été introduit, les libellés d'un bouton ne peuvent
+pas arriver après lui. Ce qui change est ce qu'une app PAIE : les composants
+n'atteignent plus que le français.
+
+Une app qui parle une seule autre langue peut n'embarquer que celle-là :
+
+```tsx
+import es from '@mister-guiiug/dev-pwa-config/react/labels-es';
+import { LabelsProvider } from '@mister-guiiug/dev-pwa-config/react/labels-core';
+
+<LabelsProvider dictionary={es}>
+  <App />
+</LabelsProvider>;
+```
+
+Le noyau ne résout que le français : lui passer `locale="es"` sans `dictionary`
+rend le français **et le dit en développement** — le repli silencieux est le
+défaut que la version à sept langues avait fermé, il n'est pas rouvert par la
+petite porte. `createI18n`, lui, monte le provider complet : il reçoit la locale
+de l'app et doit la résoudre pour de bon.
 
 Pour l'accord en nombre, `plural` (exporté par `react/i18n`) s'appuie sur
 `Intl.PluralRules` — le ternaire `n > 1` des apps donne « 0 éléments » en

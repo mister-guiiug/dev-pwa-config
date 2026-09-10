@@ -1,6 +1,6 @@
 import { createElement as h } from 'react';
 import { Icon } from './icons-context.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 import { interpolate } from './i18n-core.js';
 import { useTheme } from './use-theme.js';
 import { useThemeContext } from './theme-provider.js';
