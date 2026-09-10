@@ -274,20 +274,31 @@ test('tout sous-chemin publié figure dans la table « Exports npm »', () => {
  * plutôt qu'à laisser un trou que personne ne compte.
  */
 const SANS_TEST_DIRECT = new Set([
-  // Impossible à éprouver utilement dans Node : l'API n'y existe pas, et la
-  // simuler ne prouverait que le bouchon (voir `test/image.test.mjs`).
-  'audio', // Web Audio : oscillateurs et enveloppes
-  'react/use-shake', // DeviceMotion + autorisation iOS
-  'react/use-qr-scanner', // caméra, via une peer optionnelle
-  'react/use-pull-to-refresh', // gestes tactiles et amorti élastique
-  'react/use-install-prompt', // `beforeinstallprompt`, jamais émis hors navigateur
-  'react/use-prefetch', // la décision vit dans `prefetch.js`, lui testé
-  // Enveloppes fines : elles ne décident de rien que leur socle ne décide déjà.
-  'react/use-feedback', // table de l'app → `haptics` + `audio`, tous deux testés
   // Transport nécessitant un SDK complet ; ses jumeaux `local` et `supabase`
   // couvrent le contrat du port.
   'realtime/firebase',
 ]);
+
+/**
+ * SEPT EXEMPTIONS SONT TOMBÉES LE 10/09/2026, et la raison qui les portait
+ * était fausse. Elle disait : « impossible à éprouver utilement dans Node,
+ * l'API n'y existe pas, et la simuler ne prouverait que le bouchon ». C'est
+ * vrai de l'API — personne ne teste ici que Web Audio synthétise un son, ni
+ * que la caméra décode un QR. Ce n'est pas ce qui casse.
+ *
+ * CE QUI CASSE EST LE BRANCHEMENT, et il est parfaitement testable : le verrou
+ * d'affichage de l'invite, le décodeur câblé sur une `<video>` pas encore
+ * commitée, l'écouteur reposé à chaque rendu, le chargeur qui change
+ * d'identité et cesse de dédoublonner, la caméra laissée allumée au démontage.
+ * Chacun de ces défauts a été payé dans une app avant d'être promu ici, aucun
+ * ne se relit, et tous se prouvent avec jsdom et `act()` — l'outillage était
+ * déjà là (`test/helpers/dom.mjs`).
+ *
+ * La preuve que l'exemption coûtait : le premier de ces sept tests a trouvé un
+ * défaut. `touchcancel` partageait son gestionnaire avec `touchend`, et un
+ * tirage interrompu par le système lançait un rafraîchissement que personne
+ * n'avait demandé.
+ */
 
 test('tout module JS publié est ouvert par un test, ou déclaré sans', () => {
   const sources = readdirSync(at('test'))

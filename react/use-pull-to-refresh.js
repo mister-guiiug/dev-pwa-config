@@ -60,12 +60,17 @@ export function usePullToRefresh(options) {
       setProgress(Math.min(1, distance.current / threshold));
     };
 
-    const onTouchEnd = async () => {
-      const reached = distance.current >= threshold;
+    /** Rend l'état propre, sans rien décider. */
+    const reinitialiser = () => {
       startY.current = null;
       distance.current = 0;
       setPulling(false);
       setProgress(0);
+    };
+
+    const onTouchEnd = async () => {
+      const reached = distance.current >= threshold;
+      reinitialiser();
       if (!reached || refreshing) return;
       setRefreshing(true);
       try {
@@ -75,16 +80,27 @@ export function usePullToRefresh(options) {
       }
     };
 
+    /**
+     * `touchcancel` N'EST PAS UN RELÂCHEMENT. Le système reprend la main — un
+     * appel qui arrive, une alerte, un geste de bord, un doigt de trop : le
+     * geste n'a jamais été achevé, et personne n'a demandé de rafraîchir. Les
+     * deux évènements partageaient le même gestionnaire, donc un tirage
+     * interrompu au-delà du seuil lançait `onRefresh` — sur les écrans où il
+     * recharge depuis le réseau, c'est une requête que l'utilisateur n'a pas
+     * faite, au moment précis où son attention est ailleurs.
+     */
+    const onTouchCancel = () => reinitialiser();
+
     window.addEventListener('touchstart', onTouchStart, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: true });
     window.addEventListener('touchend', onTouchEnd);
-    window.addEventListener('touchcancel', onTouchEnd);
+    window.addEventListener('touchcancel', onTouchCancel);
 
     return () => {
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
-      window.removeEventListener('touchcancel', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchCancel);
       html.style.overscrollBehaviorY = prevHtml;
       body.style.overscrollBehaviorY = prevBody;
     };
