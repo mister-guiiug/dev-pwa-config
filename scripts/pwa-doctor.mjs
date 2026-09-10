@@ -565,23 +565,72 @@ export function specJouee(text, filtre) {
 }
 
 /**
- * Le diagnostic d'un dépôt. Pur au sens utile : il lit le disque, n'écrit
- * rien, ne touche pas au réseau.
+ * LE CONTEXTE : tout ce que le diagnostic lit sur le disque, lu UNE fois.
  *
- * `faits` porte ce que le disque ne dit pas — aujourd'hui le seul réglage de
- * dépôt qui produise un défaut visible par l'utilisateur (`hasIssues`). Il est
- * PASSÉ, pas cherché : c'est ce qui garde cette fonction pure et testable, et
- * ce qui fait que « je ne sais pas » (`null`, `undefined`) reste distinct de
- * « c'est faux ».
+ * C'est la partie chère — `walk()` parcourt `src/`, les workflows et les specs.
+ * L'isoler permet aux familles de règles de n'être que des fonctions de ce
+ * contexte : elles se jouent séparément, dans un test, sans relire un octet.
  *
  * @param {string} dir Racine de l'app.
  * @param {{ hasIssues?: boolean | null, repo?: string | null }} [faits]
- * @returns {{ dir: string, findings: Array<{ level: 'défaut'|'dette'|'info',
- *   id: string, message: string, fix?: string }>, build: boolean }}
  */
-export function diagnose(dir, faits = {}) {
+export function contexteDepot(dir, faits = {}) {
   const root = resolve(dir);
   const pkg = readJson(root, 'package.json') ?? {};
+
+  const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+  const source = walk(root, ['src']);
+  const srcText = source.map(f => f.text).join('\n');
+  const viteConfig =
+    ['vite.config.ts', 'vite.config.mts', 'vite.config.js', 'vite.config.mjs']
+      .map(name => readText(root, name))
+      .find(Boolean) ?? '';
+  const indexHtml = readText(root, 'index.html') ?? '';
+  const workflows = walk(root, ['.github/workflows'], /\.ya?ml$/);
+  const wfText = workflows.map(w => w.text).join('\n');
+  const specs = walk(
+    root,
+    ['e2e', 'tests', 'test', 'playwright'],
+    /\.(spec|test)\.[jt]sx?$/
+  );
+  // FAIT, PAS RÈGLE : deux familles s'en servent — « pas de spec a11y » (dépôt)
+  // et « e2e installé mais jamais joué en CI » (workflows). Le calculer dans la
+  // première et le lire dans la seconde les rendait indissociables.
+  const playwright = Boolean(deps['@playwright/test']);
+  return {
+    root,
+    pkg,
+    faits,
+    deps,
+    source,
+    srcText,
+    viteConfig,
+    indexHtml,
+    workflows,
+    wfText,
+    specs,
+    playwright,
+  };
+}
+
+/**
+ * LE JOURNAL : où atterrit un constat, et ce qui peut l'en empêcher.
+ *
+ * Deux filtres, qui ne disent pas la même chose. Le REFUS vient du dépôt
+ * examiné (`pwaDoctor.refus`) : il est motivé, il survit dans la sortie, il
+ * n'est pas un silence. `--only` et `--skip` viennent de la ligne de commande :
+ * ils servent à travailler SUR un contrôle — le déboguer, écrire son correctif,
+ * mesurer ce qu'il coûte — jamais à faire taire un défaut en CI, puisque
+ * personne ne les écrit dans un workflow. Le premier est une décision, les
+ * seconds un outil.
+ *
+ * @param {Record<string, any>} pkg `package.json` du dépôt examiné.
+ * @param {{ only?: string[], skip?: string[] }} [options]
+ */
+export function journal(pkg, options = {}) {
+  const only = new Set(options.only ?? []);
+  const skip = new Set(options.skip ?? []);
+  const retenu = id => (only.size === 0 || only.has(id)) && !skip.has(id);
 
   // Le refus MOTIVÉ. `pwaDoctor.refus` de package.json associe l'id d'un
   // contrôle à la raison de ne pas le suivre ICI :
@@ -622,25 +671,38 @@ export function diagnose(dir, faits = {}) {
     }
     findings.push({ level, id, message, fix });
   };
-  const defaut = (id, message, fix) => add('défaut', id, message, fix);
-  const dette = (id, message, fix) => add('dette', id, message, fix);
-  const info = (id, message, fix) => add('info', id, message, fix);
+  return {
+    findings,
+    refus,
+    refusServis,
+    api: {
+      defaut: (id, message, fix) =>
+        retenu(id) && add('défaut', id, message, fix),
+      dette: (id, message, fix) => retenu(id) && add('dette', id, message, fix),
+      info: (id, message, fix) => retenu(id) && add('info', id, message, fix),
+    },
+  };
+}
 
-  const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
-  const source = walk(root, ['src']);
-  const srcText = source.map(f => f.text).join('\n');
-  const viteConfig =
-    ['vite.config.ts', 'vite.config.mts', 'vite.config.js', 'vite.config.mjs']
-      .map(name => readText(root, name))
-      .find(Boolean) ?? '';
-  const indexHtml = readText(root, 'index.html') ?? '';
-  const workflows = walk(root, ['.github/workflows'], /\.ya?ml$/);
-  const wfText = workflows.map(w => w.text).join('\n');
-  const specs = walk(
-    root,
-    ['e2e', 'tests', 'test', 'playwright'],
-    /\.(spec|test)\.[jt]sx?$/
-  );
+/**
+ * LES QUATRE FAMILLES DE RÈGLES.
+ *
+ * `diagnose()` faisait 617 lignes d'un seul tenant : aucune de ses règles ne
+ * pouvait être jouée seule, ni nommée, ni corrigée sans lire les six cents
+ * autres. Elles sont réparties ici en quatre familles, à comportement
+ * strictement inchangé — l'ordre d'exécution est le même, et il compte : un
+ * identifiant déjà émis est ignoré (`seen`), donc le `theme-color` vu dans la
+ * source l'emporte sur celui du build, exactement comme avant.
+ *
+ * Chaque famille prend le contexte et l'API, et n'écrit rien d'autre. C'est ce
+ * qui rend `pwa-doctor --fix` écrivable règle par règle plutôt qu'au milieu
+ * d'un bloc de six cents lignes, et c'est la seule raison de ce découpage.
+ */
+
+/** Famille « dépôt » : les fichiers que tout dépôt du parc doit porter. */
+export function reglesDepot(ctx, api) {
+  const { root, pkg, viteConfig, specs, playwright } = ctx;
+  const { defaut, dette, info } = api;
 
   /* ── 1. Le dépôt ──────────────────────────────────────────────────────── */
 
@@ -696,7 +758,6 @@ export function diagnose(dir, faits = {}) {
       'copier celui du gabarit (a11y ≥ 0,9 en erreur)'
     );
   }
-  const playwright = Boolean(deps['@playwright/test']);
   if (playwright) {
     if (!specs.some(f => /a11y|accessib/i.test(basename(f.rel)))) {
       dette(
@@ -741,6 +802,12 @@ export function diagnose(dir, faits = {}) {
       );
     }
   }
+}
+
+/** Famille « workflows » : ce que la CI, le déploiement et les mesures posent. */
+export function reglesWorkflows(ctx, api) {
+  const { deps, workflows, wfText, specs, playwright } = ctx;
+  const { defaut, dette } = api;
 
   /* ── 2. Les workflows ─────────────────────────────────────────────────── */
 
@@ -866,6 +933,12 @@ export function diagnose(dir, faits = {}) {
       );
     }
   }
+}
+
+/** Famille « source » : ce que le code de l'app dit d'elle-même. */
+export function reglesSource(ctx, api) {
+  const { root, pkg, faits, source, srcText, viteConfig, indexHtml } = ctx;
+  const { defaut, dette, info } = api;
 
   /* ── 3. La source ─────────────────────────────────────────────────────── */
 
@@ -1020,6 +1093,16 @@ export function diagnose(dir, faits = {}) {
       'createVersionedStore (versioned-store) — migrations, validation, sauvegarde avant perte'
     );
   }
+}
+
+/**
+ * Famille « build » : ce que `dist/` sert vraiment.
+ *
+ * @returns {boolean} Vrai si un build a été trouvé — le rapport le porte.
+ */
+export function reglesBuild(ctx, api) {
+  const { root, srcText, wfText } = ctx;
+  const { defaut, dette, info } = api;
 
   /* ── 4. Le build ──────────────────────────────────────────────────────── */
 
@@ -1180,6 +1263,144 @@ export function diagnose(dir, faits = {}) {
     }
   }
 
+  return build;
+}
+
+/** Les quatre familles, dans l'ordre où elles s'exécutent. */
+export const FAMILLES = [
+  { nom: 'dépôt', regles: reglesDepot },
+  { nom: 'workflows', regles: reglesWorkflows },
+  { nom: 'source', regles: reglesSource },
+  { nom: 'build', regles: reglesBuild },
+];
+
+/**
+ * LE CATALOGUE : ce que le docteur contrôle, nommé.
+ *
+ * Un identifiant sert à trois choses qui n'existaient pas tant qu'il ne vivait
+ * qu'au fond d'une fonction de six cents lignes : écrire un refus motivé dans
+ * `package.json`, restreindre une exécution (`--only`), et savoir ce que
+ * l'outil regarde SANS lire son code (`pwa-doctor --regles`).
+ *
+ * Il est FIGÉ ici, et non déduit à l'exécution : une liste engendrée à la volée
+ * ne dirait rien d'un contrôle disparu par accident. `test/pwa-doctor.test.mjs`
+ * la compare aux familles et refuse le moindre écart, dans les deux sens.
+ *
+ * Le niveau est celui du contrôle À SA SOURCE : un refus le change en `refus`,
+ * et deux familles peuvent porter le même identifiant — la source l'emporte sur
+ * le build, par l'ordre d'exécution, et le catalogue garde la première.
+ */
+export const CATALOGUE = [
+  { id: 'editorconfig', famille: 'dépôt', niveau: 'dette' },
+  { id: 'nvmrc', famille: 'dépôt', niveau: 'dette' },
+  { id: 'gitattributes', famille: 'dépôt', niveau: 'dette' },
+  { id: 'gitignore-worktrees', famille: 'dépôt', niveau: 'dette' },
+  { id: 'renovate', famille: 'dépôt', niveau: 'dette' },
+  { id: 'renovate-preset', famille: 'dépôt', niveau: 'défaut' },
+  { id: 'renovate-local', famille: 'dépôt', niveau: 'info' },
+  { id: 'lighthouserc', famille: 'dépôt', niveau: 'dette' },
+  { id: 'a11y-spec', famille: 'dépôt', niveau: 'dette' },
+  { id: 'bundle-budget', famille: 'dépôt', niveau: 'dette' },
+  { id: 'engines', famille: 'dépôt', niveau: 'info' },
+  { id: 'dev-port', famille: 'dépôt', niveau: 'info' },
+  { id: 'workflows', famille: 'workflows', niveau: 'dette' },
+  { id: 'wf-lighthouse', famille: 'workflows', niveau: 'dette' },
+  { id: 'wf-cleanup', famille: 'workflows', niveau: 'dette' },
+  { id: 'wf-keepalive', famille: 'workflows', niveau: 'dette' },
+  { id: 'wf-e2e', famille: 'workflows', niveau: 'dette' },
+  { id: 'e2e-hors-filtre', famille: 'workflows', niveau: 'dette' },
+  { id: 'wf-deploy-maison', famille: 'workflows', niveau: 'dette' },
+  { id: 'wf-v3', famille: 'workflows', niveau: 'dette' },
+  { id: 'secrets-inherit', famille: 'workflows', niveau: 'défaut' },
+  { id: 'vite-en-secret', famille: 'workflows', niveau: 'dette' },
+  { id: 'auto-update', famille: 'source', niveau: 'dette' },
+  { id: 'seo-plugin', famille: 'source', niveau: 'dette' },
+  { id: 'theme-color', famille: 'source', niveau: 'dette' },
+  { id: 'csp', famille: 'source', niveau: 'dette' },
+  { id: 'version-manifest', famille: 'source', niveau: 'dette' },
+  { id: 'env-example', famille: 'source', niveau: 'dette' },
+  { id: 'env-example-incomplet', famille: 'source', niveau: 'dette' },
+  { id: 'liens-famille', famille: 'source', niveau: 'dette' },
+  { id: 'issues-desactivees', famille: 'source', niveau: 'défaut' },
+  { id: 'locale-figee', famille: 'source', niveau: 'info' },
+  { id: 'console', famille: 'source', niveau: 'info' },
+  { id: 'main-chunk-budget', famille: 'source', niveau: 'info' },
+  { id: 'local-storage-direct', famille: 'source', niveau: 'info' },
+  { id: 'no-build', famille: 'build', niveau: 'info' },
+  { id: 'html-lang', famille: 'build', niveau: 'défaut' },
+  { id: 'viewport', famille: 'build', niveau: 'défaut' },
+  { id: 'description', famille: 'build', niveau: 'dette' },
+  { id: 'ios-icon', famille: 'build', niveau: 'défaut' },
+  { id: 'theme-color', famille: 'build', niveau: 'dette' },
+  { id: 'csp', famille: 'build', niveau: 'dette' },
+  { id: 'og-image', famille: 'build', niveau: 'dette' },
+  { id: 'canonical', famille: 'build', niveau: 'dette' },
+  { id: 'assets-hors-site', famille: 'build', niveau: 'défaut' },
+  { id: 'manifest-link', famille: 'build', niveau: 'défaut' },
+  { id: 'manifest-href', famille: 'build', niveau: 'défaut' },
+  { id: 'manifest-illisible', famille: 'build', niveau: 'défaut' },
+  { id: 'manifest-icons', famille: 'build', niveau: 'défaut' },
+  { id: 'manifest-png', famille: 'build', niveau: 'dette' },
+  { id: 'manifest-maskable', famille: 'build', niveau: 'dette' },
+  { id: 'manifest-id', famille: 'build', niveau: 'dette' },
+  { id: 'manifest-lang', famille: 'build', niveau: 'défaut' },
+  { id: 'manifest-screenshots', famille: 'build', niveau: 'dette' },
+  { id: 'version-manifest', famille: 'build', niveau: 'dette' },
+  { id: 'spa-404', famille: 'build', niveau: 'défaut' },
+];
+
+/** Le catalogue, lisible en terminal, groupé par famille. */
+export function formatCatalogue(catalogue = CATALOGUE) {
+  const par = new Map();
+  for (const regle of catalogue) {
+    if (!par.has(regle.famille)) par.set(regle.famille, []);
+    par.get(regle.famille).push(regle);
+  }
+  const lignes = [`${catalogue.length} contrôles, en ${par.size} familles :`];
+  for (const [famille, regles] of par) {
+    lignes.push('', `── ${famille} (${regles.length})`);
+    for (const { id, niveau } of regles) {
+      lignes.push(`  ${MARK[niveau] ?? ' '} ${id.padEnd(24)} ${niveau}`);
+    }
+  }
+  lignes.push(
+    '',
+    'Refuser un contrôle ICI, avec sa raison, l’éteint sans le cacher :',
+    '  "pwaDoctor": { "refus": { "<id>": "<pourquoi pas ici>" } }',
+    '`--only` et `--skip` servent à travailler SUR un contrôle, pas à s’en taire.'
+  );
+  return lignes.join('\n');
+}
+
+/**
+ * Le diagnostic d'un dépôt. Pur au sens utile : il lit le disque, n'écrit
+ * rien, ne touche pas au réseau.
+ *
+ * `faits` porte ce que le disque ne dit pas — aujourd'hui le seul réglage de
+ * dépôt qui produise un défaut visible par l'utilisateur (`hasIssues`). Il est
+ * PASSÉ, pas cherché : c'est ce qui garde cette fonction pure et testable, et
+ * ce qui fait que « je ne sais pas » (`null`, `undefined`) reste distinct de
+ * « c'est faux ».
+ *
+ * @param {string} dir Racine de l'app.
+ * @param {{ hasIssues?: boolean | null, repo?: string | null }} [faits]
+ * @param {{ only?: string[], skip?: string[] }} [options] Restreindre aux
+ *   identifiants donnés, ou en écarter — pour travailler sur un contrôle, pas
+ *   pour faire taire un défaut.
+ * @returns {{ dir: string, findings: Array<{ level: 'défaut'|'dette'|'info'|'refus',
+ *   id: string, message: string, fix?: string }>, build: boolean }}
+ */
+export function diagnose(dir, faits = {}, options = {}) {
+  const ctx = contexteDepot(dir, faits);
+  const { findings, refus, refusServis, api } = journal(ctx.pkg, options);
+  const { info } = api;
+
+  let build = false;
+  for (const famille of FAMILLES) {
+    const rendu = famille.regles(ctx, api);
+    if (famille.nom === 'build') build = Boolean(rendu);
+  }
+
   // Un refus qui n'excuse plus rien reste écrit, et personne ne le relit : la
   // liste d'exceptions grossit d'un cran à chaque décision et ne redescend
   // jamais. Il se signale donc lui-même, en info — le geste étant de retirer
@@ -1194,7 +1415,7 @@ export function diagnose(dir, faits = {}) {
     }
   }
 
-  return { dir: root, findings, build };
+  return { dir: ctx.root, findings, build };
 }
 
 const MARK = { défaut: '✖', dette: '•', info: 'i', refus: '–' };
@@ -1245,21 +1466,53 @@ export async function faitsDepot(root, options = {}) {
   return { repo, hasIssues };
 }
 
+/** Une liste d'identifiants passée en ligne de commande : `a,b` ou `a b`. */
+export function identifiants(valeur) {
+  return String(valeur ?? '')
+    .split(',')
+    .map(x => x.trim())
+    .filter(Boolean);
+}
+
 export async function run(args = []) {
   const at = flag =>
     args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined;
   const dir = at('--dir') ?? process.cwd();
   const strict = args.includes('--strict');
+
+  // `--regles` ne lit aucun dépôt : c'est le catalogue du docteur, pour savoir
+  // ce qui est contrôlé AVANT de le lancer, et pour écrire un `--only` ou un
+  // refus sans deviner l'identifiant.
+  if (args.includes('--regles')) {
+    console.log(formatCatalogue());
+    return 0;
+  }
+
   try {
     statSync(dir);
   } catch {
     console.error(`pwa-doctor : dossier introuvable : ${dir}`);
     return 2;
   }
+  const options = {
+    only: identifiants(at('--only')),
+    skip: identifiants(at('--skip')),
+  };
+  const inconnus = [...options.only, ...options.skip].filter(
+    id => !CATALOGUE.some(r => r.id === id)
+  );
+  if (inconnus.length) {
+    // Un identifiant mal orthographié dans `--only` ne filtrerait rien et
+    // rendrait un rapport vide : silencieux, et faux.
+    console.error(
+      `pwa-doctor : identifiant inconnu : ${inconnus.join(', ')} — \`pwa-doctor --regles\` les liste tous.`
+    );
+    return 2;
+  }
   const faits = await faitsDepot(resolve(dir), {
     offline: args.includes('--no-github'),
   });
-  const report = diagnose(dir, faits);
+  const report = diagnose(dir, faits, options);
   if (args.includes('--json')) console.log(JSON.stringify(report, null, 2));
   else console.log(format(report));
   const defauts = report.findings.some(f => f.level === 'défaut');

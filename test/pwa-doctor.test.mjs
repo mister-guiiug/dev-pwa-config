@@ -5,7 +5,13 @@
 // définition exécutable de « conforme au parc »).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -1304,4 +1310,122 @@ test('faitsDepot ne consulte rien hors ligne, et rend le dépôt qu’il a nomm�
       assert.deepEqual(sansJeton, { repo: 'o/r', hasIssues: null });
     }
   );
+});
+
+/* ── Le registre : quatre familles, un catalogue, deux filtres ─────────── */
+
+/**
+ * `diagnose()` faisait 617 lignes d'un seul tenant. Les tests ci-dessus n'ont
+ * pas changé d'une ligne au découpage — c'est eux qui prouvent que le
+ * comportement est identique. Ceux qui suivent gardent ce que le découpage
+ * APPORTE, et qui n'existait pas : des règles nommées, jouables famille par
+ * famille, et un catalogue qui ne peut pas mentir.
+ */
+test('le catalogue nomme exactement ce que les familles émettent', async () => {
+  const { CATALOGUE, FAMILLES } = await import('../scripts/pwa-doctor.mjs');
+  const source = readFileSync(
+    new URL('../scripts/pwa-doctor.mjs', import.meta.url),
+    'utf8'
+  );
+
+  for (const { nom, regles } of FAMILLES) {
+    const debut = source.indexOf(`export function ${regles.name}(ctx, api) {`);
+    assert.ok(debut > 0, `famille ${nom} introuvable dans la source`);
+    const suite = source.indexOf('\nexport function ', debut + 10);
+    const corps = source.slice(debut, suite > 0 ? suite : undefined);
+
+    const emis = [];
+    for (const m of corps.matchAll(
+      /\b(defaut|dette|info)\(\s*'([a-z0-9-]+)'/g
+    )) {
+      if (!emis.includes(m[2])) emis.push(m[2]);
+    }
+    const catalogues = CATALOGUE.filter(r => r.famille === nom).map(r => r.id);
+    assert.deepEqual(
+      catalogues,
+      emis,
+      `famille ${nom} : le catalogue a divergé de ce qu'elle émet`
+    );
+  }
+});
+
+test('chaque famille se joue seule, sur le contexte lu une fois', async () => {
+  const { contexteDepot, journal, reglesDepot, reglesWorkflows } = await import(
+    '../scripts/pwa-doctor.mjs'
+  );
+  await repo({ 'package.json': { name: 'vide' } }, async root => {
+    const ctx = contexteDepot(root);
+    const seul = journal(ctx.pkg);
+    reglesDepot(ctx, seul.api);
+    const ids = seul.findings.map(f => f.id);
+    assert.ok(ids.includes('editorconfig'), 'la famille dépôt doit parler');
+    assert.ok(
+      !ids.includes('workflows'),
+      'et ne rien dire de ce qui ne la regarde pas'
+    );
+
+    // La suivante, sur le MÊME contexte : rien n'est relu sur le disque.
+    const autre = journal(ctx.pkg);
+    reglesWorkflows(ctx, autre.api);
+    assert.ok(autre.findings.map(f => f.id).includes('workflows'));
+  });
+});
+
+test('--only restreint, --skip écarte, et ni l’un ni l’autre n’invente', async () => {
+  await repo({ 'package.json': { name: 'vide' } }, async root => {
+    const tout = diagnose(root).findings.map(f => f.id);
+    assert.ok(tout.length > 5);
+
+    const un = diagnose(root, {}, { only: ['nvmrc'] });
+    assert.deepEqual(
+      un.findings.map(f => f.id),
+      ['nvmrc'],
+      '`--only` doit tout écarter sauf ce qu’il nomme'
+    );
+
+    const sans = diagnose(root, {}, { skip: ['nvmrc', 'editorconfig'] });
+    const ids = sans.findings.map(f => f.id);
+    assert.ok(!ids.includes('nvmrc') && !ids.includes('editorconfig'));
+    assert.equal(ids.length, tout.length - 2, 'rien d’autre ne doit bouger');
+
+    // Le build reste rapporté même si toutes ses règles sont écartées : c'est
+    // un fait sur le dépôt, pas un constat.
+    assert.equal(diagnose(root, {}, { only: ['nvmrc'] }).build, false);
+  });
+});
+
+test('un identifiant inconnu dans --only est une erreur, pas un rapport vide', async () => {
+  await repo({ 'package.json': { name: 'vide' } }, async root => {
+    const erreurs = [];
+    const console_error = console.error;
+    console.error = m => erreurs.push(String(m));
+    try {
+      const code = await run(['--dir', root, '--no-github', '--only', 'nvmcr']);
+      assert.equal(code, 2, 'un filtre qui ne filtre rien doit se voir');
+      assert.match(erreurs.join('\n'), /identifiant inconnu.*nvmcr/s);
+    } finally {
+      console.error = console_error;
+    }
+  });
+});
+
+test('--regles rend le catalogue sans lire aucun dépôt', async () => {
+  const { CATALOGUE } = await import('../scripts/pwa-doctor.mjs');
+  const sorties = [];
+  const console_log = console.log;
+  console.log = m => sorties.push(String(m));
+  try {
+    // `--dir` désigne exprès un dossier qui n'existe pas : s'il était lu, la
+    // commande sortirait en 2.
+    const code = await run(['--regles', '--dir', '/nulle-part-du-tout']);
+    assert.equal(code, 0);
+    const texte = sorties.join('\n');
+    assert.match(texte, new RegExp(`${CATALOGUE.length} contrôles`));
+    for (const famille of ['dépôt', 'workflows', 'source', 'build']) {
+      assert.match(texte, new RegExp(`── ${famille}`));
+    }
+    assert.match(texte, /pwaDoctor/, 'le geste du refus doit être rappelé');
+  } finally {
+    console.log = console_log;
+  }
 });
