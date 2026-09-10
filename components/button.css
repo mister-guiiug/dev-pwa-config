@@ -1,0 +1,116 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : Button.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── Button ────────────────────────────────────────────────────────────── *
+   * Quatre apps avaient convergé sur `primary | secondary | ghost | danger`.
+   * `outline` complète le jeu. La cible tactile tient à TOUTES les tailles :
+   * c'est le défaut que les copies locales laissaient passer en `sm`.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='button'] {
+    font: inherit;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
+    cursor: pointer;
+    text-decoration: none;
+    /* `sm` reste tapable : on joue sur le padding, jamais sous 2,75 rem. */
+    min-height: 2.75rem;
+  }
+
+  [data-dwc='button'][data-size='sm'] {
+    font-size: var(--text-fluid-xs, 0.8rem);
+    padding-inline: 0.75rem;
+  }
+
+  [data-dwc='button'][data-size='md'] {
+    font-size: var(--text-fluid-sm, 0.9rem);
+    padding-inline: 1rem;
+  }
+
+  [data-dwc='button'][data-size='lg'] {
+    font-size: var(--text-fluid-base, 1rem);
+    padding-inline: 1.5rem;
+    min-height: 3.25rem;
+  }
+
+  [data-dwc='button'][data-block] {
+    width: 100%;
+  }
+
+  [data-dwc='button'][data-icon-only] {
+    padding-inline: 0;
+    aspect-ratio: 1;
+    min-width: 2.75rem;
+  }
+
+  [data-dwc='button'][data-variant='primary'] {
+    background: var(--dwc-primary, CanvasText);
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  [data-dwc='button'][data-variant='secondary'] {
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    color: var(--dwc-text, CanvasText);
+    /* Contour d'un contrôle : même règle que le champ de saisie. */
+    border-color: var(
+      --dwc-border-strong,
+      var(--dwc-border, color-mix(in srgb, CanvasText 40%, Canvas))
+    );
+  }
+
+  [data-dwc='button'][data-variant='outline'] {
+    background: transparent;
+    color: var(--dwc-primary, CanvasText);
+    border-color: currentColor;
+  }
+
+  [data-dwc='button'][data-variant='ghost'] {
+    background: transparent;
+    color: var(--dwc-text, CanvasText);
+  }
+
+  [data-dwc='button'][data-variant='danger'] {
+    background: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
+    filter: brightness(1.08);
+  }
+
+  /*
+   * LES DEUX FAÇONS D'ÊTRE BLOQUÉ, habillées pareil. Seul `:disabled` l'était,
+   * alors que ce bouton bloque AUSSI par `aria-disabled` — pour `loading`, et
+   * depuis peu pour le `disabledProps` de `react/use-action-guard`. Un bouton
+   * gardé avait donc l'air ACTIF tout en étant inerte : le pire des deux
+   * mondes, et exactement ce qui a fait retomber `bac-sable` (#23) sur
+   * `disabled` natif, qui vole le focus et empêche de découvrir le motif.
+   */
+  [data-dwc='button']:disabled,
+  [data-dwc='button'][aria-disabled='true'] {
+    opacity: 0.45;
+    filter: none;
+    cursor: not-allowed;
+  }
+
+  [data-dwc='button-spinner'] {
+    width: 1em;
+    height: 1em;
+    flex: none;
+    border-radius: 999px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: dwc-spin 0.7s linear infinite;
+  }
+}

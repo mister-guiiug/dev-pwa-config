@@ -6,7 +6,7 @@ import {
   useState,
 } from 'react';
 import { shareOrCopy } from '../share.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * Bouton « Partager », branché sur `shareOrCopy`.
@@ -75,7 +75,7 @@ export function ShareButton(props = {}) {
     if (text !== undefined) data.text = text;
     if (url !== undefined) data.url = url;
 
-    let result = 'failed';
+    let result;
     try {
       result = await share(data);
     } catch {

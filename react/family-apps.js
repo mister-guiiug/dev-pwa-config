@@ -1,4 +1,4 @@
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 import { createElement as h, useState } from 'react';
 import { Icon } from './icons-context.js';
 import { FAMILY_APPS, otherApps, sortApps } from '../apps-catalog.js';

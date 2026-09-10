@@ -202,7 +202,7 @@ export async function dumpAppState(page, options = {}) {
             return '<stockage indisponible>';
           }
         };
-        let storageKeys = [];
+        let storageKeys;
         try {
           storageKeys = Object.keys(localStorage);
         } catch {

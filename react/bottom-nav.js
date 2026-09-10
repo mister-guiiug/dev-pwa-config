@@ -1,5 +1,5 @@
 import { createElement as h, useEffect, useId, useRef, useState } from 'react';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * Barre de navigation basse — la coque de toutes les apps mobiles de la famille.

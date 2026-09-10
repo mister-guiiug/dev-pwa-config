@@ -1,0 +1,75 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : Sparkline, BarChart & Gauge.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── Sparkline, BarChart & Gauge ───────────────────────────────────────── *
+   * Les composants (`/react/sparkline`) rendent la géométrie, jamais la
+   * couleur : tout leur tracé passe par `currentColor`. L'habillage pose donc
+   * UNE encre — la primaire — sur le conteneur ; recolorer un graphique, c'est
+   * une règle `color` de l'app, rien de plus. Les dimensions sont des défauts
+   * (courbe et jauge portent les leurs par props), pas des contraintes.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='sparkline'] {
+    display: inline-flex;
+    color: var(--dwc-primary, CanvasText);
+    line-height: 0;
+    vertical-align: middle;
+  }
+
+  [data-dwc='bars'] {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 0.125rem;
+    width: 7.5rem;
+    height: 2rem;
+    color: var(--dwc-primary, CanvasText);
+    vertical-align: middle;
+  }
+
+  /* La hauteur vient du composant (proportion en %) ; la largeur d'ici. */
+  [data-dwc='bars-bar'] {
+    flex: 1 1 0;
+    min-width: 0.125rem;
+    background: currentColor;
+    border-radius: 0.125rem 0.125rem 0 0;
+  }
+
+  [data-dwc='gauge'] {
+    display: inline-block;
+    width: 7.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    color: var(--dwc-primary, CanvasText);
+    overflow: hidden;
+    vertical-align: middle;
+  }
+
+  [data-dwc='gauge-fill'] {
+    display: block;
+    height: 100%;
+    background: currentColor;
+    border-radius: inherit;
+  }
+
+  /* L'alternative textuelle calculée par `describeSeries` : lue, pas vue —
+     même motif que `skeleton-label`. Le composant pose aussi `sr-only`, mais
+     l'habillage ne doit pas dépendre d'un utilitaire que l'app a pu purger. */
+  [data-dwc='sparkline-text'],
+  [data-dwc='bars-text'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

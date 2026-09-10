@@ -8,6 +8,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const at = chemin => fileURLToPath(new URL(`../${chemin}`, import.meta.url));
 
 const read = name =>
   readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
@@ -539,5 +543,122 @@ test('la liste des dispenses ne survit pas à ce qu’elle protège', () => {
       !stylés.has(nom),
       `« ${nom} » est désormais habillé : le retirer de SANS_REGLE`
     );
+  }
+});
+
+/* ── Les morceaux : ce que paie une app qui monte huit composants ──────── */
+
+/**
+ * `components.css` est écrit d'un seul tenant, et Tailwind 4 l'émet TEL QUEL :
+ * mesuré le 10/09/2026, 141 des 143 sélecteurs `[data-dwc]` se retrouvent dans
+ * la feuille construite d'une app qui n'en utilise aucun. Les morceaux
+ * engendrés (`components/*.css`) permettent de n'importer que ce qu'on monte —
+ * 2,6 kB gzip au lieu de 5,3 pour une app à onze sections sur vingt-sept.
+ *
+ * Ce que ces tests gardent : que la découpe ne PERDE rien. Un morceau est un
+ * dérivé, jamais une source ; s'il divergeait, une app importerait une règle
+ * qui n'existe plus, ou en perdrait une sans que rien ne le dise.
+ */
+test('les morceaux recomposent le fichier entier, règle pour règle', () => {
+  const sansCommentaires = css => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const lignesUtiles = css =>
+    sansCommentaires(css)
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l && l !== '}' && l !== '{');
+
+  const compte = lignes => {
+    const c = new Map();
+    for (const l of lignes) c.set(l, (c.get(l) ?? 0) + 1);
+    return c;
+  };
+
+  const attendu = compte(lignesUtiles(RAW));
+  const obtenu = compte(
+    lignesUtiles(
+      readdirSync(at('components'))
+        .filter(nom => nom.endsWith('.css'))
+        .map(nom => readFileSync(join(at('components'), nom), 'utf8'))
+        .join('\n')
+    )
+  );
+
+  const perdues = [...attendu]
+    .filter(([ligne, n]) => (obtenu.get(ligne) ?? 0) < n)
+    .map(([ligne]) => ligne);
+  assert.deepEqual(
+    perdues,
+    [],
+    `ces lignes de components.css ne sont dans aucun morceau : ${perdues.slice(0, 5).join(' | ')}`
+  );
+
+  // Les seules lignes en trop sont les enveloppes `@layer` de chaque morceau.
+  const enTrop = [...obtenu]
+    .filter(([ligne, n]) => n > (attendu.get(ligne) ?? 0))
+    .map(([ligne]) => ligne);
+  assert.deepEqual(enTrop, ['@layer components {']);
+});
+
+test('chaque morceau est valide seul : accolades équilibrées, dans @layer', () => {
+  for (const nom of readdirSync(at('components')).filter(n =>
+    n.endsWith('.css')
+  )) {
+    const css = readFileSync(join(at('components'), nom), 'utf8');
+    assert.match(
+      css,
+      /^\/\*\n \* ENGENDRÉ par `npm run sync`/,
+      `${nom} : en-tête`
+    );
+    assert.match(css, /@layer components \{/, `${nom} : hors @layer`);
+    const sansCom = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.equal(
+      (sansCom.match(/\{/g) ?? []).length - (sansCom.match(/\}/g) ?? []).length,
+      0,
+      `${nom} : accolades déséquilibrées`
+    );
+  }
+});
+
+test('toute section porte un nom de fichier, et tout nom vient d’une section', async () => {
+  const { MORCEAUX_CSS, morceauxCss } = await import(
+    '../scripts/sync-generated.mjs'
+  );
+  const titres = [...RAW.matchAll(/^\s*\/\* ── ([^─]+?) ─+ \*?\/?\s*$/gm)].map(
+    m => m[1].trim()
+  );
+  const sansNom = titres.filter(t => !(t in MORCEAUX_CSS));
+  assert.deepEqual(
+    sansNom,
+    [],
+    `section(s) sans nom de fichier : ${sansNom.join(', ')} — les inscrire dans MORCEAUX_CSS`
+  );
+  const perimes = Object.keys(MORCEAUX_CSS).filter(t => !titres.includes(t));
+  assert.deepEqual(perimes, [], `MORCEAUX_CSS nomme des sections disparues`);
+
+  // Le fichier engendré sur le disque est bien celui que le script produit.
+  for (const { nom, css } of morceauxCss(RAW)) {
+    const surDisque = readFileSync(
+      join(at('components'), `${nom}.css`),
+      'utf8'
+    );
+    assert.equal(
+      css.replace(/\s+/g, ' ').trim(),
+      surDisque.replace(/\s+/g, ' ').trim(),
+      `components/${nom}.css a divergé — lancer \`npm run sync\``
+    );
+  }
+});
+
+test('base.css porte ce que les autres morceaux supposent', () => {
+  const base = readFileSync(join(at('components'), 'base.css'), 'utf8');
+  // Les quatre sections transversales : sans elles, un morceau importé seul
+  // perdrait le focus visible, les animations, le contraste forcé, l'impression.
+  for (const section of [
+    'Bases partagées',
+    'Animations',
+    'Contraste forcé',
+    'Impression',
+  ]) {
+    assert.ok(base.includes(section), `base.css sans « ${section} »`);
   }
 });

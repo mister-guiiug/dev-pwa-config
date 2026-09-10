@@ -59,6 +59,12 @@ import {
 } from 'react';
 import { createFormatters, setDefaultLocale } from '../format.js';
 import { createTranslator, plural } from './i18n-core.js';
+// LE PROVIDER COMPLET, ET C'EST VOULU. `createI18n` reçoit la locale de
+// l'app et doit la résoudre pour de bon : une app qui parle espagnol passe
+// `locale="es"` et attend des libellés espagnols, pas un repli. C'est donc le
+// provider aux sept langues qui est monté ici — celui de `labels-core` n'en
+// porte qu'une. Une app multilingue paie les sept dictionnaires ; une app qui
+// ne monte que des composants, elle, n'en paie plus aucun.
 import { LabelsProvider } from './labels.js';
 
 export { createTranslator, plural } from './i18n-core.js';

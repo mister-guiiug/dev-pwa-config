@@ -4,7 +4,7 @@
 // (résolution des subpaths depuis le tarball installé) vit dans ci.yml.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -16,9 +16,25 @@ const exportTargets = target =>
     ? { default: target }
     : { default: target.default, types: target.types };
 
+/**
+ * Un sous-chemin GÉNÉRIQUE (`./components/*.css`) ne désigne pas un fichier
+ * mais un dossier : il est satisfait si le dossier existe et n'est pas vide.
+ * Le vérifier autrement reviendrait à réécrire ici la résolution de Node.
+ */
+const dossierDuMotif = motif => motif.replace(/^\.\//, '').split('/*')[0];
+
 test('chaque subpath de "exports" pointe vers un fichier existant', () => {
   for (const [sub, target] of Object.entries(pkg.exports)) {
     const { default: file, types } = exportTargets(target);
+    if (sub.includes('*')) {
+      const dossier = join(root, dossierDuMotif(file));
+      assert.ok(existsSync(dossier), `export ${sub} → ${dossier} introuvable`);
+      assert.ok(
+        readdirSync(dossier).some(nom => nom.endsWith('.css')),
+        `export ${sub} : ${dossier} ne contient aucun fichier`
+      );
+      continue;
+    }
     assert.ok(
       existsSync(join(root, file)),
       `export ${sub} → ${file} introuvable`

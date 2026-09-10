@@ -367,6 +367,38 @@
       "types": "./react/labels.d.ts",
       "default": "./react/labels.js"
     },
+    "./react/labels-core": {
+      "types": "./react/labels-core.d.ts",
+      "default": "./react/labels-core.js"
+    },
+    "./react/labels-fr": {
+      "types": "./react/labels-fr.d.ts",
+      "default": "./react/labels-fr.js"
+    },
+    "./react/labels-en": {
+      "types": "./react/labels-en.d.ts",
+      "default": "./react/labels-en.js"
+    },
+    "./react/labels-es": {
+      "types": "./react/labels-es.d.ts",
+      "default": "./react/labels-es.js"
+    },
+    "./react/labels-de": {
+      "types": "./react/labels-de.d.ts",
+      "default": "./react/labels-de.js"
+    },
+    "./react/labels-it": {
+      "types": "./react/labels-it.d.ts",
+      "default": "./react/labels-it.js"
+    },
+    "./react/labels-pt": {
+      "types": "./react/labels-pt.d.ts",
+      "default": "./react/labels-pt.js"
+    },
+    "./react/labels-nl": {
+      "types": "./react/labels-nl.d.ts",
+      "default": "./react/labels-nl.js"
+    },
     "./react/sponsor": {
       "types": "./react/sponsor.d.ts",
       "default": "./react/sponsor.js"
@@ -595,6 +627,7 @@
     "./tailwind-preset.css": "./tailwind-preset.css",
     "./tokens.css": "./tokens.css",
     "./components.css": "./components.css",
+    "./components/*.css": "./components/*.css",
     "./issue-report": {
       "types": "./issue-report.d.ts",
       "default": "./issue-report.js"
@@ -681,6 +714,7 @@
     "tailwind-preset.css",
     "tokens.css",
     "components.css",
+    "components",
     "scripts/generate-pwa-icons.mjs",
     "scripts/check-bundle-budget.mjs",
     "storage.js",

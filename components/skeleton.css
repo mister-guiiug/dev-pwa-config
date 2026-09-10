@@ -1,0 +1,48 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : Skeleton.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── Skeleton ──────────────────────────────────────────────────────────── */
+
+  [data-dwc='skeleton-group'] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Le libellé est pour les lecteurs d'écran uniquement. */
+  [data-dwc='skeleton-label'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  [data-dwc='skeleton'] {
+    display: block;
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    animation: dwc-pulse 1.6s ease-in-out infinite;
+  }
+
+  [data-dwc='skeleton'][data-radius='sm'] {
+    border-radius: 0.25rem;
+  }
+  [data-dwc='skeleton'][data-radius='md'] {
+    border-radius: 0.5rem;
+  }
+  [data-dwc='skeleton'][data-radius='lg'] {
+    border-radius: var(--dwc-radius, 0.75rem);
+  }
+  [data-dwc='skeleton'][data-radius='full'] {
+    border-radius: 999px;
+  }
+}

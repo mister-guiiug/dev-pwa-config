@@ -1,0 +1,303 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : AppFooter & FamilyApps.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── AppFooter & FamilyApps ────────────────────────────────────────────── */
+
+  [data-dwc='app-footer'],
+  [data-dwc='family-links'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-fluid-md, 1rem);
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  /*
+   * `footer-issues` EST DANS CETTE LISTE DEPUIS QU'IL EXISTE, ET IL Y MANQUAIT.
+   *
+   * `AppFooter issues` (4.4.0) pose un troisième lien à côté de `footer-source`
+   * et `footer-sponsor` ; seuls les deux premiers étaient habillés. Le
+   * troisième héritait donc de la couleur du texte courant : sur un fond
+   * sombre, noir sur violet nuit — contraste 1,08, relevé « serious » par axe
+   * sur mister-qowa. Huit applications l'affichent en production.
+   *
+   * La leçon n'est pas le lien manquant, c'est qu'aucun test ne pouvait le
+   * voir : rien ne croisait les marqueurs que `react/` ÉMET avec ceux que
+   * cette feuille habille. C'est désormais le rôle de `marqueursOrphelins`
+   * dans `test/components-css.test.mjs`, avec la liste écrite de ceux qui
+   * n'ont volontairement pas de règle ici.
+   */
+  [data-dwc='footer-source'],
+  [data-dwc='footer-sponsor'],
+  [data-dwc='footer-issues'],
+  [data-dwc='family-source'],
+  [data-dwc='family-sponsor'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--dwc-text-soft, GrayText);
+    text-decoration: none;
+  }
+
+  [data-dwc='footer-source']:hover,
+  [data-dwc='footer-sponsor']:hover,
+  [data-dwc='footer-issues']:hover,
+  [data-dwc='family-source']:hover,
+  [data-dwc='family-sponsor']:hover {
+    color: var(--dwc-primary, CanvasText);
+    text-decoration: underline;
+  }
+
+  /*
+   * Le numéro de version : discret par défaut, lisible quand même.
+   *
+   * `--dwc-text-soft` est un gris SECONDAIRE, pas un gris décoratif : il tient
+   * le 4.5:1 dans les seize palettes. Le pied de page est justement l'endroit
+   * où l'on est tenté de descendre plus bas — c'est aussi celui qu'on lit quand
+   * on remplit un rapport de bug.
+   */
+  /*
+   * Le retour du partage : un TEXTE, jamais une couleur seule. La région
+   * `status` existe dès le premier rendu — insérée en même temps que son
+   * message, elle ne serait pas lue de façon fiable — d'où le `:not(:empty)`
+   * qui ne l'habille que lorsqu'elle dit quelque chose.
+   */
+  [data-dwc='share-button-group'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='share-button-status']:not(:empty) {
+    color: var(--dwc-text-soft, GrayText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  [data-dwc='app-version'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem;
+    margin: 0;
+    color: var(--dwc-text-soft, GrayText);
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  [data-dwc='app-version-value'] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a[data-dwc='app-version-value'] {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a[data-dwc='app-version-value']:hover {
+    color: var(--dwc-primary, CanvasText);
+    text-decoration: underline;
+  }
+
+  /*
+   * `[data-dwc='app-version-details']` n'a PLUS de règle, et c'est délibéré :
+   * il portait `opacity: 0.85`. Le bloc `app-version` est déjà en
+   * `--dwc-text-soft` ; une opacité par-dessus compose une TROISIÈME couleur,
+   * plus pâle que le rôle « soft » choisi par la palette, et sur laquelle
+   * aucune palette ne s'est prononcée. À 0.85 elle tombait sous 4,5:1 dans
+   * QUATORZE des trente-six palettes du parc — relevé par axe sur `/profil` de
+   * mister-family-map le 06/09/2026 (#707871 sur #fefcf6 : 4,43 pour 4,5
+   * exigé), à la première exécution réelle d'une suite a11y qui n'avait jamais
+   * tourné en CI. La discrétion voulue est le rôle du jeton, pas d'un voile
+   * posé dessus. `themes.test.mjs` interdit son retour.
+   */
+
+  /*
+   * Les deux annonces portent leur TEXTE : la pastille colorée n'est qu'un
+   * renfort. C'est la règle que `Badge` a fait respecter après l'échec de
+   * contraste d'une variante pleine dans onze thèmes sur quatorze.
+   */
+  [data-dwc='app-version-updated'],
+  [data-dwc='app-version-available'] {
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: var(
+      --dwc-primary-soft,
+      color-mix(in srgb, CanvasText 6%, Canvas)
+    );
+    color: var(--dwc-text, CanvasText);
+    font-size: 0.85em;
+  }
+
+  [data-dwc='family-apps-title'] {
+    margin: var(--spacing-fluid-sm, 0.75rem) 0;
+    font-size: var(--text-fluid-lg, 1.125rem);
+  }
+
+  [data-dwc='family-app-list'] {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  }
+
+  [data-dwc='family-app'] {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    text-decoration: none;
+    color: inherit;
+  }
+
+  [data-dwc='family-app']:hover {
+    border-color: var(--dwc-primary, CanvasText);
+  }
+
+  /*
+   * Variante `showRepoLinks` : la carte gagne un second lien, vers le DÉPÔT.
+   * Deux destinations distinctes = deux ancres, jamais une ancre imbriquée
+   * (invalide, et un lecteur d'écran n'en annonce qu'une). C'est donc le `<li>`
+   * qui devient la carte visible, et le lien application qui rend sa bordure.
+   */
+  [data-dwc='family-app-item'][data-with-repo] {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding-inline-end: 0.35rem;
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+  }
+
+  [data-dwc='family-app-item'][data-with-repo]:hover {
+    border-color: var(--dwc-primary, CanvasText);
+  }
+
+  [data-dwc='family-app-item'][data-with-repo] > [data-dwc='family-app'] {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-color: transparent;
+    background: none;
+  }
+
+  [data-dwc='family-app-repo'] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-width: 2.75rem;
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.6);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='family-app-repo']:hover {
+    color: var(--dwc-primary, CanvasText);
+    background: var(
+      --dwc-primary-soft,
+      color-mix(in srgb, CanvasText 6%, Canvas)
+    );
+  }
+
+  [data-dwc='family-app-icon'] {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: none;
+    border-radius: 0.7rem;
+  }
+
+  /* Repli du composant quand l'icône distante échoue : initiale du nom. */
+  span[data-dwc='family-app-icon'] {
+    display: grid;
+    place-items: center;
+    background: var(--dwc-primary, CanvasText);
+    color: var(--dwc-primary-contrast, Canvas);
+    font-weight: 700;
+  }
+
+  [data-dwc='family-app-body'] {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  [data-dwc='family-app-head'] {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  [data-dwc='family-app-name'] {
+    font-weight: 600;
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  [data-dwc='family-app-desc'] {
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-text-soft, GrayText);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-dwc='maturity'] {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+  }
+
+  /*
+   * `--dwc-success` et `--dwc-warning` sont des couleurs de SIGNAL, calibrées
+   * pour une pastille ou un liseré — pas pour du texte de 0.68rem (~10,9 px),
+   * que WCAG soumet au seuil 4,5:1. Employées telles quelles, elles tombaient
+   * sous ce seuil dans quinze palettes sur trente-six (`stable`) et douze
+   * (`beta`) : le libellé de maturité était illisible dans presque la moitié
+   * du parc, sur l'écran même qui liste les autres apps.
+   *
+   * Le mélange vers `--dwc-text` corrige sans imposer de couleur : il pousse
+   * la teinte vers celle du texte de l'app, donc vers le contraste, dans les
+   * deux schémas — plus sombre en clair, plus clair en sombre. 60 % est le
+   * point où les TRENTE-SIX palettes passent (mesuré, cf. `themes.test.mjs`),
+   * en gardant la teinte reconnaissable ; ne pas remonter cette valeur sans
+   * rejouer le test.
+   */
+  [data-dwc='maturity'][data-maturity='stable'] {
+    color: color-mix(
+      in srgb,
+      var(--dwc-success, light-dark(#15803d, #4ade80)) 60%,
+      var(--dwc-text, CanvasText)
+    );
+  }
+
+  [data-dwc='maturity'][data-maturity='beta'] {
+    color: color-mix(
+      in srgb,
+      var(--dwc-warning, light-dark(#b45309, #fbbf24)) 60%,
+      var(--dwc-text, CanvasText)
+    );
+  }
+
+  [data-dwc='maturity'][data-maturity='alpha'] {
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='family-app-arrow'] {
+    color: var(--dwc-text-soft, GrayText);
+    line-height: 0;
+    flex: none;
+  }
+}

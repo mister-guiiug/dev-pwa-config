@@ -1,4 +1,4 @@
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 import { createElement as h, useId } from 'react';
 import { useInstallPrompt } from './use-install-prompt.js';
 

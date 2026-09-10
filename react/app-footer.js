@@ -1,4 +1,4 @@
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 import { createElement as h } from 'react';
 import { Icon } from './icons-context.js';
 import { AppVersion } from './app-version.js';

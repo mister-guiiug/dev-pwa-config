@@ -1,7 +1,7 @@
 import { createElement as h, useId, useState } from 'react';
 import { Button } from './button.js';
 import { TextField } from './field.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * Le `FormData` du DOCUMENT du formulaire, pas celui du processus : sous

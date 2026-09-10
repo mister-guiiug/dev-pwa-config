@@ -28,7 +28,7 @@
  *
  * Non publié (absent de `files`) : outil de développement du dépôt.
  */
-import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   FAMILY_APPS,
@@ -366,6 +366,128 @@ export function withJsonLd(html, json) {
   return html.slice(0, start + JSONLD_START.length) + script + html.slice(end);
 }
 
+/* ── Le CSS des composants, en morceaux ─────────────────────────────────── */
+
+/**
+ * `components.css` est écrit d'un seul tenant, et c'est bien ainsi : une seule
+ * source, un seul endroit où chercher. Mais Tailwind 4 émet TEL QUEL ce qui est
+ * écrit à la main dans `@layer components` — mesuré le 10/09/2026 : 141 des 143
+ * sélecteurs `[data-dwc]` se retrouvent dans la feuille construite d'une app
+ * qui n'en utilise aucun. Une app qui monte huit composants sur vingt-trois
+ * paie donc les quinze autres : 5,3 kB gzip (42,6 kB bruts) au lieu de 2,6.
+ *
+ * Les morceaux sont donc ENGENDRÉS depuis le fichier entier, jamais tenus à la
+ * main : les bornes existent déjà dans la source, sous forme de titres de
+ * section. Rien à maintenir en double, et `test/components-css.test.mjs`
+ * recompose le tout pour vérifier qu'aucune règle ne s'est perdue en route.
+ */
+
+/**
+ * Le nom de fichier de chaque section, décidé ici et non deviné.
+ *
+ * Un titre de section est une phrase (« AppFooter & FamilyApps ») ; un
+ * sous-chemin public est un nom stable. Les lier à la main est ce qui permet
+ * de renommer une section sans casser l'import d'une app — et une section
+ * ajoutée sans nom de fichier fait échouer `npm test`, ce qui est le but.
+ */
+export const MORCEAUX_CSS = {
+  'Bases partagées': 'base',
+  Animations: 'base',
+  'Contraste forcé': 'base',
+  Impression: 'base',
+  EmptyState: 'empty-state',
+  ErrorBanner: 'error-banner',
+  'ErrorBoundary (UI de repli)': 'error-boundary',
+  SyncStatusBadge: 'sync-status-badge',
+  'PwaInstallPrompt & UpdatePromptBanner': 'install-prompt',
+  'AppFooter & FamilyApps': 'app-footer',
+  Button: 'button',
+  Field: 'field',
+  Skeleton: 'skeleton',
+  Sheet: 'sheet',
+  Stat: 'stat',
+  Card: 'card',
+  'Sparkline, BarChart & Gauge': 'sparkline',
+  Badge: 'badge',
+  ConfirmDialog: 'confirm-dialog',
+  Toast: 'toast',
+  AppHeader: 'app-header',
+  PageContainer: 'page-container',
+  'LoginForm & MfaChallenge': 'login-form',
+  BottomNav: 'bottom-nav',
+  ThemeToggle: 'theme-toggle',
+  SegmentedControl: 'segmented-control',
+  ConnectionBanner: 'connection-banner',
+};
+
+const sansCommentaires = css => css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+/**
+ * Découpe `components.css` en morceaux, un par nom de fichier.
+ *
+ * @param {string} source Le fichier entier.
+ * @returns {{ nom: string, sections: string[], css: string }[]}
+ */
+export function morceauxCss(source) {
+  const lignes = source.split('\n');
+  const ouverture = lignes.findIndex(l => l.startsWith('@layer components'));
+  if (ouverture < 0)
+    throw new Error('components.css : `@layer components` introuvable');
+
+  // `[^─]+?` ET NON `.+?` : un titre ne contient jamais de tiret de
+  // séparation, et le lui interdire retire au moteur toute possibilité de
+  // revenir en arrière sur la frontière titre/tirets. Avec `.+?`, un
+  // appariement raté coûte un temps quadratique en la longueur de la ligne —
+  // sur un fichier lu depuis le disque, c'est ce que CodeQL relève comme
+  // « expression polynomiale sur une entrée non contrôlée », et il a raison :
+  // ce script tourne aussi sur des dépôts qu'il n'a pas écrits.
+  const titres = [];
+  for (const [i, ligne] of lignes.entries()) {
+    const m = ligne.match(/^\s*\/\* ── ([^─]+?) ─+ \*?\/?\s*$/);
+    if (m) titres.push([i, m[1].trim()]);
+  }
+  if (!titres.length) throw new Error('components.css : aucune section titrée');
+
+  /** @type {Map<string, { sections: string[], corps: string[] }>} */
+  const parNom = new Map();
+  for (const [rang, [i, titre]] of titres.entries()) {
+    const nom = MORCEAUX_CSS[titre];
+    if (!nom)
+      throw new Error(
+        `components.css : section « ${titre} » sans nom de fichier (voir MORCEAUX_CSS)`
+      );
+    const finBrute =
+      rang + 1 < titres.length ? titres[rang + 1][0] : lignes.length;
+    let corps = lignes.slice(i, finBrute);
+    // La dernière section porte le `}` qui referme `@layer` : il appartient à
+    // l'enveloppe, pas à la section.
+    const solde = () => {
+      const t = sansCommentaires(corps.join('\n'));
+      return (t.match(/\{/g) ?? []).length - (t.match(/\}/g) ?? []).length;
+    };
+    while (solde() < 0) {
+      const dernier = corps.map(l => l.trim()).lastIndexOf('}');
+      corps = [...corps.slice(0, dernier), ...corps.slice(dernier + 1)];
+    }
+    const entree = parNom.get(nom) ?? { sections: [], corps: [] };
+    entree.sections.push(titre);
+    entree.corps.push(corps.join('\n').replace(/\s+$/, ''));
+    parNom.set(nom, entree);
+  }
+
+  return [...parNom].map(([nom, { sections, corps }]) => ({
+    nom,
+    sections,
+    css:
+      `/*\n * ENGENDRÉ par \`npm run sync\` depuis \`components.css\` — ne pas éditer.\n` +
+      ` * Section${sections.length > 1 ? 's' : ''} : ${sections.join(', ')}.\n` +
+      ` *\n` +
+      ` * Importer \`components/base.css\` d'abord : il porte ce que toutes les\n` +
+      ` * sections supposent (variables de repli, focus, animations, contraste\n` +
+      ` * forcé, impression).\n */\n@layer components {\n${corps.join('\n\n')}\n}\n`,
+  }));
+}
+
 async function format(source, filepath) {
   try {
     const prettier = await import('prettier');
@@ -380,6 +502,14 @@ async function format(source, filepath) {
 
 async function main() {
   copyFileSync(at('components.css'), at('showroom/components.css'));
+
+  const entier = readFileSync(at('components.css'), 'utf8');
+  mkdirSync(at('components'), { recursive: true });
+  const morceaux = morceauxCss(entier);
+  for (const { nom, css } of morceaux) {
+    const chemin = at(`components/${nom}.css`);
+    writeFileSync(chemin, await format(css, chemin));
+  }
 
   const mirror = at('showroom/apps.js');
   const body = `${HEADER}${JSON.stringify(showroomAppsData(), null, 2)};\n`;
@@ -407,8 +537,9 @@ async function main() {
   );
 
   console.log(
-    `showroom/components.css, showroom/apps.js, showroom/themes.js, le JSON-LD ` +
-      `et le tableau du README régénérés (${FAMILY_APPS.length} apps, ` +
+    `showroom/components.css, components/*.css (${morceaux.length}), ` +
+      `showroom/apps.js, showroom/themes.js, le JSON-LD et le tableau du ` +
+      `README régénérés (${FAMILY_APPS.length} apps, ` +
       `${FAMILY_THEMES.length} thèmes, ${CONFIG_SUBPATHS.length} sous-chemins).`
   );
 }

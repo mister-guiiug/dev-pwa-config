@@ -1,0 +1,114 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : Sheet.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── Sheet ─────────────────────────────────────────────────────────────── */
+
+  [data-dwc='sheet'] {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  @media (min-width: 40rem) {
+    [data-dwc='sheet'] {
+      align-items: center;
+    }
+  }
+
+  [data-dwc='sheet-backdrop'] {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  [data-dwc='sheet-panel'] {
+    position: relative;
+    width: 100%;
+    max-height: 88dvh;
+    /* Colonne, et c'est le CORPS qui défile : un pied épinglé dans un panneau
+       défilant défilerait avec lui, ce qui est exactement ce qu'on veut éviter. */
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-fluid-md, 1rem);
+    /* Home bar iOS : le contenu ne se glisse pas dessous. */
+    padding-bottom: calc(
+      var(--spacing-fluid-md, 1rem) + max(env(safe-area-inset-bottom), 0px)
+    );
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 1.6)
+      calc(var(--dwc-radius, 0.75rem) * 1.6) 0 0;
+    box-shadow: var(--dwc-shadow, none);
+    outline: none;
+    /* `backwards`, jamais `both` — voir « Animations » en fin de fichier : un
+       panneau qui garde une transformation après son entrée emprisonne les
+       descendants `position: fixed`, dont le ConfirmDialog qu'on ouvre depuis
+       une feuille. */
+    animation: dwc-rise 0.22s ease-out backwards;
+  }
+
+  @media (min-width: 40rem) {
+    [data-dwc='sheet-panel'] {
+      max-width: 30rem;
+      border-radius: calc(var(--dwc-radius, 0.75rem) * 1.6);
+    }
+  }
+
+  [data-dwc='sheet-head'] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: var(--spacing-fluid-sm, 0.75rem);
+  }
+
+  [data-dwc='sheet-title'] {
+    margin: 0;
+    font-size: var(--text-fluid-lg, 1.125rem);
+  }
+
+  [data-dwc='sheet-body'] {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    /* Le défilement tactile ne doit pas entraîner la page derrière. */
+    overscroll-behavior: contain;
+  }
+
+  /* Barre d'actions épinglée : reste visible pendant que le corps défile.
+     Quinze des vingt-trois feuilles de miss-uwh en dépendent. */
+  [data-dwc='sheet-footer'] {
+    flex: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: var(--spacing-fluid-sm, 0.75rem);
+    padding-top: var(--spacing-fluid-sm, 0.75rem);
+    border-top: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+  }
+
+  [data-dwc='sheet-close'] {
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    flex: none;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--dwc-text-soft, GrayText);
+    cursor: pointer;
+  }
+}

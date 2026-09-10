@@ -56,7 +56,7 @@ export async function repoMetrics(id) {
   if (!repo) return null;
 
   // La dernière release est facultative ; son absence n'invalide pas le reste.
-  let release = null;
+  let release;
   try {
     release = await api(`/repos/${GITHUB_OWNER}/${id}/releases/latest`);
   } catch {

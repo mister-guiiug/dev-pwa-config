@@ -20,7 +20,15 @@ const PKG = JSON.parse(readFileSync(at('package.json'), 'utf8'));
  * Les lister ici est une DÉCISION, pas un oubli — c'est ce qui distingue « pas
  * encore exporté » de « délibérément privé ».
  */
-const INTERNAL = new Set(['index', 'icons', 'i18n-core', 'use-dialog']);
+const INTERNAL = new Set([
+  'index',
+  'icons',
+  'i18n-core',
+  'use-dialog',
+  // « Sommes-nous hors production ? », écrit une fois pour `button`, `toast`
+  // et `labels-core` — une garde, pas une API.
+  'dev-mode',
+]);
 
 const reactModules = readdirSync(at('react'))
   .filter(name => name.endsWith('.js'))
@@ -41,6 +49,17 @@ test('aucun sous-chemin ne pointe vers un fichier absent', () => {
   for (const [subpath, target] of Object.entries(PKG.exports)) {
     const files = typeof target === 'string' ? [target] : Object.values(target);
     for (const file of files) {
+      // Un sous-chemin générique (`./components/*.css`) désigne un dossier :
+      // il tient si le dossier existe et porte au moins un fichier.
+      if (subpath.includes('*')) {
+        const dossier = at(file.replace(/^\.\//, '').split('/*')[0]);
+        assert.ok(existsSync(dossier), `${subpath} : ${dossier} n'existe pas`);
+        assert.ok(
+          readdirSync(dossier).length > 0,
+          `${subpath} : ${dossier} est vide`
+        );
+        continue;
+      }
       assert.ok(
         existsSync(at(file)),
         `${subpath} pointe vers ${file}, qui n'existe pas`
@@ -235,9 +254,16 @@ test('l’écran de secours ne lit aucune prop absente de ses types', () => {
  * jugement de l'auteur — seule sa PRÉSENCE est vérifiée.
  */
 test('tout sous-chemin publié figure dans la table « Exports npm »', () => {
-  const readme = readFileSync(at('README.md'), 'utf8');
+  // La table a quitté le README le 10/09/2026 : il faisait 252 kB et servait à
+  // la fois de vitrine, d'index et de manuel de 151 sous-chemins. Elle vit dans
+  // `docs/EXPORTS.md`, où le README l'envoie — la promesse est la même, c'est
+  // sa page qui a changé.
+  const readme = readFileSync(at('docs/EXPORTS.md'), 'utf8');
   const start = readme.indexOf('## Exports npm');
-  assert.ok(start > 0, 'section « Exports npm » introuvable dans le README');
+  assert.ok(
+    start > 0,
+    'section « Exports npm » introuvable dans docs/EXPORTS.md'
+  );
   const table = readme.slice(start, readme.indexOf('\n## ', start + 1));
 
   const documented = new Set(
@@ -274,20 +300,31 @@ test('tout sous-chemin publié figure dans la table « Exports npm »', () => {
  * plutôt qu'à laisser un trou que personne ne compte.
  */
 const SANS_TEST_DIRECT = new Set([
-  // Impossible à éprouver utilement dans Node : l'API n'y existe pas, et la
-  // simuler ne prouverait que le bouchon (voir `test/image.test.mjs`).
-  'audio', // Web Audio : oscillateurs et enveloppes
-  'react/use-shake', // DeviceMotion + autorisation iOS
-  'react/use-qr-scanner', // caméra, via une peer optionnelle
-  'react/use-pull-to-refresh', // gestes tactiles et amorti élastique
-  'react/use-install-prompt', // `beforeinstallprompt`, jamais émis hors navigateur
-  'react/use-prefetch', // la décision vit dans `prefetch.js`, lui testé
-  // Enveloppes fines : elles ne décident de rien que leur socle ne décide déjà.
-  'react/use-feedback', // table de l'app → `haptics` + `audio`, tous deux testés
   // Transport nécessitant un SDK complet ; ses jumeaux `local` et `supabase`
   // couvrent le contrat du port.
   'realtime/firebase',
 ]);
+
+/**
+ * SEPT EXEMPTIONS SONT TOMBÉES LE 10/09/2026, et la raison qui les portait
+ * était fausse. Elle disait : « impossible à éprouver utilement dans Node,
+ * l'API n'y existe pas, et la simuler ne prouverait que le bouchon ». C'est
+ * vrai de l'API — personne ne teste ici que Web Audio synthétise un son, ni
+ * que la caméra décode un QR. Ce n'est pas ce qui casse.
+ *
+ * CE QUI CASSE EST LE BRANCHEMENT, et il est parfaitement testable : le verrou
+ * d'affichage de l'invite, le décodeur câblé sur une `<video>` pas encore
+ * commitée, l'écouteur reposé à chaque rendu, le chargeur qui change
+ * d'identité et cesse de dédoublonner, la caméra laissée allumée au démontage.
+ * Chacun de ces défauts a été payé dans une app avant d'être promu ici, aucun
+ * ne se relit, et tous se prouvent avec jsdom et `act()` — l'outillage était
+ * déjà là (`test/helpers/dom.mjs`).
+ *
+ * La preuve que l'exemption coûtait : le premier de ces sept tests a trouvé un
+ * défaut. `touchcancel` partageait son gestionnaire avec `touchend`, et un
+ * tirage interrompu par le système lançait un rafraîchissement que personne
+ * n'avait demandé.
+ */
 
 test('tout module JS publié est ouvert par un test, ou déclaré sans', () => {
   const sources = readdirSync(at('test'))

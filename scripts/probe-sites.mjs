@@ -88,7 +88,7 @@ export async function probe(app, fetchImpl = fetch) {
   for (const name of ['robots.txt', 'sitemap.xml', 'version.json', 'sw.js']) {
     annex[name] = await status(base + name, fetchImpl);
   }
-  let fallback = 'absent';
+  let fallback;
   try {
     const nf = await fetchImpl(base + 'quelque-chose-qui-n-existe-pas', {
       redirect: 'follow',

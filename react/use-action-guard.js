@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 import { useOnline } from './use-online.js';
 
 /**

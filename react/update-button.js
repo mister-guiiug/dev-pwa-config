@@ -1,7 +1,7 @@
 import { createElement as h } from 'react';
 import { useUpdatePrompt } from './use-update-prompt.js';
 import { useAppUpdates } from './app-updates.js';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 
 /**
  * Bouton « Forcer la mise à jour » des écrans de réglages.

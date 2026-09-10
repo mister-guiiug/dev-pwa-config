@@ -1,0 +1,125 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : ConfirmDialog.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── ConfirmDialog ─────────────────────────────────────────────────────── *
+   * Même charpente que `Sheet` (voile + panneau centré), rôle différent :
+   * `alertdialog`. Les sept copies mesurées divergeaient sur le bouton mis en
+   * avant — ici c'est TOUJOURS l'annulation qui reçoit le focus, et c'est la
+   * confirmation qui est peinte, jamais l'inverse.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='confirm'] {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(env(safe-area-inset-top), 1rem)
+      max(env(safe-area-inset-right), 1rem)
+      max(env(safe-area-inset-bottom), 1rem)
+      max(env(safe-area-inset-left), 1rem);
+  }
+
+  [data-dwc='confirm-backdrop'] {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.55);
+  }
+
+  [data-dwc='confirm-panel'] {
+    position: relative;
+    width: 100%;
+    max-width: 24rem;
+    max-height: 88dvh;
+    overflow-y: auto;
+    padding: var(--spacing-fluid-md, 1rem);
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 1.4);
+    box-shadow: var(--dwc-shadow, none);
+    outline: none;
+    animation: dwc-rise 0.18s ease-out backwards;
+  }
+
+  [data-dwc='confirm-title'] {
+    margin: 0;
+    font-size: var(--text-fluid-lg, 1.125rem);
+  }
+
+  [data-dwc='confirm-body'] {
+    margin-top: 0.35rem;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='confirm-actions'] {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: var(--spacing-fluid-md, 1rem);
+  }
+
+  [data-dwc='confirm-cancel'],
+  [data-dwc='confirm-confirm'] {
+    font: inherit;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding-inline: 1rem;
+    border-radius: var(--dwc-radius, 0.75rem);
+    cursor: pointer;
+  }
+
+  [data-dwc='confirm-cancel'] {
+    border: 1px solid
+      var(
+        --dwc-border-strong,
+        var(--dwc-border, color-mix(in srgb, CanvasText 40%, Canvas))
+      );
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+  }
+
+  [data-dwc='confirm-confirm'] {
+    border: 1px solid var(--dwc-primary, CanvasText);
+    background: var(--dwc-primary, CanvasText);
+    color: var(--dwc-primary-contrast, Canvas);
+  }
+
+  /* Mono-action (`cancelLabel: null`) : seul dans la rangée, le bouton la
+     prend en entier — le rendu de l'`ErrorModal` de mister-puzzle, dont
+     l'action unique était déjà pleine largeur. `:only-child` suffit : pas de
+     nouvel attribut.
+     CE N'EST PAS UN RENDU UNIVERSEL. L'alerte de mister-cim10 était au
+     contraire COMPACTE et alignée à droite (`justify-content: flex-end` de la
+     rangée + `min-width: 86px`), comme la confirmation à deux boutons juste à
+     côté ; sa migration (#27) a donc dû reposer l'écart chez elle. C'est une
+     identité d'app, pas un défaut : `flex: 0 0 auto; min-width: …` en CSS non
+     « layered » reprend la main en deux lignes. */
+  [data-dwc='confirm-confirm']:only-child {
+    flex: 1;
+  }
+
+  /* Destructif : la couleur ne porte pas seule le sens — le libellé passe à
+     « Supprimer » côté composant. Elle le renforce, c'est tout. */
+  [data-dwc='confirm'][data-destructive] [data-dwc='confirm-confirm'] {
+    border-color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+    background: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+
+  [data-dwc='confirm-cancel'][aria-disabled='true'],
+  [data-dwc='confirm-confirm'][aria-disabled='true'] {
+    opacity: 0.55;
+    cursor: progress;
+  }
+}

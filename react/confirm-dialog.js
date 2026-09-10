@@ -1,5 +1,5 @@
 import { createElement as h, useId, useRef } from 'react';
-import { useLabels } from './labels.js';
+import { useLabels } from './labels-core.js';
 import { useDialogBehaviour } from './use-dialog.js';
 
 /**

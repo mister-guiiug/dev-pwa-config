@@ -264,7 +264,7 @@ export function rememberVersion(version, options = {}) {
   const current = text(version);
   const store = safeStorage(storage);
 
-  let previous = '';
+  let previous;
   try {
     previous = text(store?.getItem(key));
   } catch {

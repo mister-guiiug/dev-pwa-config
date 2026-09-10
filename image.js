@@ -243,7 +243,7 @@ export async function compressImageToMaxBytes(
     now = () => Date.now(),
   } = options;
 
-  let bitmap = null;
+  let bitmap;
   try {
     bitmap = await decode(file);
   } catch {

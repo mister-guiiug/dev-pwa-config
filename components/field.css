@@ -1,0 +1,81 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : Field.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── Field ─────────────────────────────────────────────────────────────── */
+
+  [data-dwc='field'] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  [data-dwc='field-label'] {
+    font-size: var(--text-fluid-sm, 0.9rem);
+    font-weight: 600;
+  }
+
+  [data-dwc='field-control'] {
+    font: inherit;
+    /* 16 px minimum : en dessous, iOS zoome au focus. */
+    font-size: max(1rem, var(--text-fluid-sm, 0.9rem));
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--dwc-text, CanvasText);
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    /*
+     * `border-strong`, pas `border` : le pourtour d'un champ est la seule chose
+     * qui dit où cliquer. WCAG 1.4.11 lui demande 3:1 — ce qu'un filet de
+     * séparation discret ne tient pas (test/tokens.test.mjs).
+     */
+    border: 1px solid
+      var(
+        --dwc-border-strong,
+        var(--dwc-border, color-mix(in srgb, CanvasText 40%, Canvas))
+      );
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.7);
+  }
+
+  [data-dwc='field-control'][data-multiline] {
+    min-height: 5rem;
+    resize: vertical;
+  }
+
+  [data-dwc='field'][data-invalid] [data-dwc='field-control'] {
+    border-color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+
+  [data-dwc='field-hint'] {
+    margin: 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  /* Le bouton « forcer la mise à jour » et sa phrase d'explication : empilés,
+     l'indice sous le bouton. Le groupe n'avait qu'une règle d'impression — il
+     s'affichait donc en ligne, l'indice collé au bouton. */
+  [data-dwc='update-button-group'] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  [data-dwc='update-button-hint'] {
+    margin: 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='field-error'] {
+    margin: 0;
+    font-size: var(--text-fluid-xs, 0.8rem);
+    color: var(--dwc-danger, light-dark(#b91c1c, #fb7185));
+  }
+}
