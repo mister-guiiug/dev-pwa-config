@@ -1,5 +1,224 @@
 # Changelog
 
+## 4.10.0
+
+### Minor Changes
+
+- 82048a4: **`components.css` est aussi publié par composant : une app n'importe plus que
+  ce qu'elle monte.**
+
+  **Tailwind 4 n'élague pas ce qui est écrit à la main dans `@layer components`**
+  — vérifié sur un build réel, pas déduit : une page qui n'utilise aucun
+  composant du paquet reçoit quand même **141 des 143 sélecteurs `[data-dwc]`**,
+  soit 5,3 kB gzip et 42,6 kB bruts. Le fichier entier partait avec chaque
+  application, quels que soient les composants montés.
+
+  Les mêmes règles sont donc publiées en 24 morceaux, `components/base.css` puis
+  un fichier par composant :
+
+  ```css
+  @import '@mister-guiiug/dev-pwa-config/components/base.css';
+  @import '@mister-guiiug/dev-pwa-config/components/button.css';
+  @import '@mister-guiiug/dev-pwa-config/components/field.css';
+  ```
+
+  Mesure de l'écart, même build : **2,6 kB gzip** pour une app à onze sections
+  sur vingt-sept, contre 5,3 pour le fichier entier — **2,7 kB gzip et 26,7 kB
+  bruts**. C'est modeste, et c'est dit tel quel : l'estimation qui a lancé ce
+  chantier parlait de 8 à 12 kB gzip, la mesure l'a ramenée au tiers. Ce n'est
+  pas un chantier de performance ; c'est la fin d'un gaspillage sans
+  contrepartie.
+
+  **`components.css` ne bouge pas** : il reste le fichier entier, et le défaut
+  recommandé pour une app qui monte l'essentiel du catalogue. Les morceaux sont
+  des DÉRIVÉS engendrés par `npm run sync`, jamais une seconde source à
+  maintenir : le test les recompose règle pour règle et refuse la moindre perte,
+  et la CI refuse une découpe périmée. `base.css` porte les quatre sections
+  transversales (bases partagées, animations, contraste forcé, impression) : il
+  s'importe toujours en premier.
+
+- 82048a4: **Les 56 contrôles de `pwa-doctor` sont nommés, groupés, et jouables un par
+  un.**
+
+  `diagnose()` faisait **617 lignes d'un seul tenant** — l'instrument le plus
+  exécuté du parc, lancé au `postbuild` de chaque application, et dont aucune
+  règle ne pouvait être jouée seule, nommée dans une commande, ni corrigée sans
+  lire les six cents autres.
+
+  Il se compose désormais d'un **contexte lu une fois** (`contexteDepot`) et de
+  **quatre familles** de règles (dépôt, workflows, source, build), toutes
+  exportées et jouables séparément sur ce contexte. Le comportement est
+  strictement inchangé : l'ordre d'exécution est le même — et il compte, un
+  identifiant déjà émis étant ignoré — et les 38 tests existants n'ont pas bougé
+  d'une ligne. Ce sont eux qui le prouvent.
+
+  Trois entrées nouvelles en ligne de commande :
+
+  ```bash
+  npx pwa-doctor --regles                      # les 56 contrôles, par famille
+  npx pwa-doctor --only spa-404,manifest-lang  # travailler sur deux d'entre eux
+  npx pwa-doctor --skip wf-lighthouse          # en écarter un, le temps d'un essai
+  ```
+
+  `--only` et `--skip` servent à travailler **sur** un contrôle — le déboguer,
+  mesurer ce qu'il coûte, écrire son correctif. Ce ne sont pas un moyen de se
+  taire en CI : personne ne les écrit dans un workflow, et un identifiant inconnu
+  fait échouer la commande (code 2) au lieu de rendre un rapport vide et faux.
+  Pour ne pas suivre un contrôle ici, le geste reste le **refus motivé** de
+  `package.json`, qui l'éteint sans le cacher.
+
+  Le catalogue est figé dans le code et non déduit à l'exécution — une liste
+  engendrée à la volée ne dirait rien d'un contrôle disparu par accident : le
+  test le compare aux familles **dans les deux sens** et refuse le moindre écart.
+
+  **Pourquoi maintenant.** `pwa-doctor --fix` est un chantier ouvert
+  (`STRATEGIE.md` § 8). Il s'écrit règle par règle, ou pas du tout : ce découpage
+  en est la condition, et c'est sa seule raison d'être.
+
+- 19bcb58: **ESLint 10 est autorisé — et la recette qui le permet tient en trois gestes, pas
+  deux.**
+
+  Les peers `eslint` et `@eslint/js` acceptent désormais `^9.39.4 || ^10.0.0`, et
+  le socle tourne lui-même en `eslint@10.10.0` / `@eslint/js@10.0.1` : installation
+  propre sans `--legacy-peer-deps`, lint vert, 1363 tests verts sur Node 22 et 24.
+  ESLint 9 est sorti du support et l'annonçait à chaque installation depuis des
+  mois.
+
+  **Ce que la première tentative avait raté**, et que la CI a refusé : élargir les
+  peers ne suffit pas. La plage élargie autorise la 10, npm prend donc la plus
+  haute, et bute sur `eslint-plugin-jsx-a11y@6.10.2`, qui plafonne à `^9` —
+  `ERESOLVE`. Une app qui déclare `eslint` elle-même n'est pas touchée ; celle qui
+  s'en remet à la peer du socle, si.
+
+  **Et l'override seul est INERTE.** `$eslint` désigne la plage que le projet
+  racine déclare en dépendance directe : sans déclaration, il ne renvoie à rien.
+  D'où trois gestes côté app, et non deux :
+
+  ```json
+  "devDependencies": {
+    "eslint": "^10.10.0",
+    "@eslint/js": "^10.0.1"
+  },
+  "overrides": {
+    "eslint-plugin-jsx-a11y": { "eslint": "$eslint" }
+  }
+  ```
+
+  **Éprouvé de bout en bout** sur `pwa-starter-kit`, installé sur le paquet
+  candidat : `npm install` résout sans forcer, puis lint (ESLint 10), `tsc -b`, ses
+  28 tests, son build, son budget de poids et `pwa-doctor --strict` passent tous —
+  0 défaut, 0 dette, 0 info.
+
+  **Ce que ça demande aux apps.** Celles qui déclarent déjà `eslint@^9.39.4` : rien,
+  elles montent quand elles veulent. Celles qui s'en remettent à la peer du socle :
+  les trois gestes, sans quoi leur prochain `npm install` échoue. `ESLINT-10.md`
+  porte la recette corrigée et l'ordre des opérations qui va avec.
+
+- 82048a4: **Les sept langues ne voyagent plus ensemble : une app qui n'en parle qu'une ne
+  paie plus les six autres.**
+
+  Les sept dictionnaires de `react/labels` vivaient dans un unique objet
+  littéral. Un objet littéral est UNE liaison : aucun bundler ne peut en retirer
+  six langues, quelle que soit la finesse de son élagage. Or quinze modules
+  `react/` appellent `useLabels` — `ErrorBanner`, `Sheet`, `ConfirmDialog`,
+  `AppHeader`, `BottomNav`, `ThemeToggle`, `Toast`… — donc **toute application
+  qui montait un seul d'entre eux embarquait les sept langues**, y compris le
+  néerlandais dans une app qui ne parle que français.
+
+  Mesuré le 10/09/2026 : **4,9 kB gzip** entre ce que le chemin des composants
+  tire aujourd'hui (noyau + français, 3,8 kB) et ce qu'il tirait hier (8,8 kB).
+
+  Chaque langue est désormais un module — `react/labels-fr` … `react/labels-nl`,
+  huit nouveaux sous-chemins avec `react/labels-core`, qui porte le contexte et
+  le français seul. Les composants importent le noyau.
+
+  **Rien n'est retiré à personne, et rien ne devient asynchrone.** `react/labels`
+  exporte toujours `LABELS`, `labelsFor`, `mergeLabels`, `useLabels` et un
+  `LabelsProvider` qui résout les sept langues **synchronement** : les libellés
+  d'un bouton ne peuvent pas arriver après lui. `createI18n` monte ce provider
+  complet, comme avant — il reçoit la locale de l'app et doit la résoudre pour de
+  bon. Une app multilingue n'a donc rien à changer ; elle paie ce qu'elle
+  utilise, et c'est nouveau.
+
+  **La voie légère**, pour une app qui parle une seule autre langue :
+
+  ```tsx
+  import es from '@mister-guiiug/dev-pwa-config/react/labels-es';
+  import { LabelsProvider } from '@mister-guiiug/dev-pwa-config/react/labels-core';
+
+  <LabelsProvider dictionary={es}>…</LabelsProvider>;
+  ```
+
+  Le noyau ne résout que le français : lui passer `locale="es"` sans `dictionary`
+  rend le français **et le dit en développement**. Le repli silencieux est le
+  défaut que la version à sept langues avait fermé le 02/09 ; il n'est pas
+  rouvert par la petite porte.
+
+  Deux gardes tiennent le découpage : aucun composant ne peut réimporter
+  `./labels.js` (le test échoue en nommant le fichier fautif), et les sept
+  dictionnaires ne peuvent pas diverger d'une clé.
+
+- 82048a4: **Les plafonds du socle cessent d'être invisibles — et le premier d'entre eux
+  s'est révélé plus coûteux que prévu.**
+
+  Une `peerDependency` est un plafond pour les vingt applications : `"vitest":
+"^4.0.0"` leur interdit Vitest 5, qu'elles le veuillent ou non. Et un plafond
+  ne fait aucun bruit — ni au `npm install`, ni en CI, ni dans une app : il se
+  découvre le jour où quelqu'un tente de monter, en conflit de peers, très loin
+  d'ici.
+
+  `node scripts/plafonds.mjs` compare chaque plage déclarée à la version publiée
+  sous `latest` et ne retient que les plafonds qui excluent la majeure courante.
+  Le premier relevé en a trouvé **neuf** : `eslint` et `@eslint/js` (9 → 10),
+  `@commitlint/cli` et sa config (19 → 21), `@testing-library/jest-dom` (6 → 7),
+  `vitest` et `@vitest/browser` (4 → 5), `typescript` (~6.0.3 → 7), `web-vitals`
+  (4 → 6). Aucun n'était une décision : ils avaient cessé d'être regardés,
+  Renovate n'ayant jamais tourné faute de `RENOVATE_TOKEN`. La sonde ferme ce
+  trou **sans** jeton.
+
+  Le workflow `Plafonds` la rejoue chaque lundi et sur toute PR qui touche
+  `package.json`, et **reste vert** : un plafond assumé n'est pas un défaut, il
+  doit seulement rester une décision.
+
+  **Ce que la sonde a permis de mesurer tout de suite.** Lever le plafond
+  d'ESLint a été tenté puis annulé dans la même passe : élargir les peers en
+  `^9.39.4 || ^10.0.0` autorise npm à prendre la 10, qui bute sur le plafond de
+  `eslint-plugin-jsx-a11y@6.10.2` (`^9`) — `ERESOLVE` sur toute app qui ne
+  déclare pas `eslint` elle-même, à commencer par `pwa-starter-kit`. Le socle ne
+  peut pas ouvrir cette porte seul : il faut la même passe pour lui et le
+  squelette. Les peers restent donc en `^9.39.4`, et
+  [`ESLINT-10.md`](../blob/main/ESLINT-10.md) porte désormais ce que l'essai a
+  démenti.
+
+  **Ce qui est gardé du chantier**, parce que ça vaut dans les deux cas : les
+  **dix** `no-useless-assignment` du socle sont corrigés — la règle entre dans
+  `recommended` avec ESLint 10, et le dossier en annonçait sept le 03/09, trois
+  fichiers écrits depuis s'y étaient ajoutés — et les deux autres règles
+  entrantes sont vérifiées à zéro occurrence.
+
+  **Et la CI éprouve enfin ce que le paquet promet.** `engines` dit `>=22` et
+  seul Node 22 était joué : le job `validate` tourne maintenant sur **22 et 24**.
+
+### Patch Changes
+
+- 82048a4: **Un tirer-pour-rafraîchir interrompu par le système ne rafraîchit plus.**
+
+  `usePullToRefresh` posait le MÊME gestionnaire sur `touchend` et sur
+  `touchcancel`. Or `touchcancel` ne dit pas « l'utilisateur a lâché » : il dit
+  que le système a repris la main — un appel qui arrive, une alerte, un geste de
+  bord, un doigt de trop. Un tirage interrompu au-delà du seuil lançait donc
+  `onRefresh` : sur les écrans où il recharge depuis le réseau, une requête que
+  personne n'avait demandée, au moment précis où l'attention est ailleurs.
+
+  `touchcancel` remet désormais l'état à zéro, sans rien décider ; `touchend`
+  seul rafraîchit. Le geste suivant repart proprement.
+
+  **Trouvé en écrivant le premier des sept tests** qui couvrent les sept
+  sous-chemins que le paquet publiait sans en éprouver un seul — `audio`,
+  `react/use-feedback`, `react/use-install-prompt`, `react/use-prefetch`,
+  `react/use-pull-to-refresh`, `react/use-qr-scanner`, `react/use-shake`. Les 144
+  sous-chemins JS du paquet sont maintenant ouverts par un test.
+
 ## 4.9.0
 
 ### Minor Changes
