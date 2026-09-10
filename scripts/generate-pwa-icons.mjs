@@ -24,7 +24,7 @@
  * Convention de nommage : <prefix><size>.png (ex. icon-192.png), plus
  * icon-maskable.png si --maskable.
  */
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 
@@ -114,6 +114,12 @@ async function main() {
   const sharp = await loadSharp();
   const sourcePath = resolve(process.cwd(), args.source);
   const outDir = resolve(process.cwd(), args.out);
+  // LE DOSSIER DE SORTIE SE CRÉE, IL NE SE SUPPOSE PAS. `sharp` échoue sur un
+  // « No such file or directory » qui ne nomme pas le dossier manquant : la
+  // valeur par défaut (`public`) existe toujours, donc le défaut ne se voyait
+  // qu'en visant un sous-dossier — exactement ce que la convention d'icônes du
+  // socle (`icons/…`) demande de faire.
+  mkdirSync(outDir, { recursive: true });
   const svgBuffer = readFileSync(sourcePath);
 
   console.log(`🎨 Génération des icônes depuis ${args.source}`);
