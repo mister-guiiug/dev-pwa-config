@@ -104,6 +104,17 @@ relève les exports que personne n'appelle. Ce que ces sondes ont trouvé le
 02/09/2026 — Renovate jamais actif, une app non installable, un relevé
 d'adoption qui comptait 19 copies pour 34 — est classé dans `PARC.md`.
 
+**Ce que le socle INTERDIT encore, depuis le 10/09/2026.**
+`node scripts/plafonds.mjs` compare chaque plage déclarée (`peerDependencies`,
+et `--dev` pour la chaîne de développement) à la version publiée sous
+l'étiquette `latest`, et ne retient que les plafonds qui excluent la majeure
+courante. Une `peerDependency` est un plafond pour les vingt apps, et un
+plafond ne fait aucun bruit : il se découvre le jour où quelqu'un tente de
+monter, en conflit de peers, très loin d'ici. Le premier relevé en a trouvé
+neuf, dont `eslint@^9` sorti du support ; le workflow `Plafonds` le rejoue
+chaque lundi et sur toute PR qui touche `package.json`. Il reste vert : un
+plafond assumé n'est pas un défaut — il doit seulement rester une décision.
+
 <!-- ADOPTION:DÉBUT — engendré par `npm run sync` depuis showroom/adoption.js -->
 
 _Relevé du 2026-09-07 sur 20 dépôts, par `npm run adoption`._
@@ -438,15 +449,34 @@ la vitrine n'affiche alors simplement aucune mesure.
 Les configs imposent / supposent les versions suivantes côté projet consommateur :
 
 ```
-Node ≥22 (engines + .nvmrc + CI)
+Node ≥22 (engines + .nvmrc ; CI du socle éprouvée sur 22 ET 24)
 TypeScript ~6.0.3 strict + verbatimModuleSyntax + noUncheckedIndexedAccess, cible ES2025 + lib ES2025
-ESLint 9 (flat config) + typescript-eslint 8.58
+ESLint 9 OU 10 (flat config) + typescript-eslint 8.58
 eslint-plugin-react-hooks 7.0 (configs.flat.recommended) + eslint-plugin-react-refresh 0.5
 Vite 8 (Rolldown) + Vitest 4 (jsdom + globals + setupFiles)
 Zod 4 (peer)
 Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowParens 'avoid')
 Tailwind 4 (@tailwindcss/vite) + lucide-react (icônes — standard famille)
 ```
+
+> **4.10.0 — ESLint 10 est AUTORISÉ, pas imposé.** Les peers `eslint` et
+> `@eslint/js` acceptent désormais `^9.39.4 || ^10.0.0` : une app qui ne
+> change rien continue d'installer sa 9. Pour monter, deux gestes — la montée
+> des deux paquets, et l'override qui lève la déclaration périmée de
+> `eslint-plugin-jsx-a11y`, seul paquet de la chaîne à s'arrêter à `^9` alors
+> que son code fonctionne :
+>
+> ```json
+> "overrides": { "eslint-plugin-jsx-a11y": { "eslint": "$eslint" } }
+> ```
+>
+> `$eslint` renvoie à la version que l'app installe : le jour où le plugin
+> republie, la ligne se retire sans autre changement. Le socle lui-même est
+> monté ainsi — installation propre, sans `--legacy-peer-deps`. Ce qui coûte,
+> c'est `no-useless-assignment`, entrée dans `recommended` : dix occurrences
+> ici, toutes du même motif (`let x = …` réaffecté dans un `try`), corrigées
+> en déclarant `let x;`. Le dossier complet est dans
+> [ESLINT-10.md](./ESLINT-10.md).
 
 > **3.0.0 (breaking)** — `tsconfig-app`/`tsconfig-node` activent
 > **`verbatimModuleSyntax`** et **`noUncheckedIndexedAccess`** (de nouvelles

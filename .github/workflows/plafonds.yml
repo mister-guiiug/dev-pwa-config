@@ -1,0 +1,50 @@
+# Ce que le socle interdit encore aux vingt apps.
+#
+# Une `peerDependency` est un plafond, et un plafond ne fait aucun bruit : il se
+# découvre le jour où une app tente de monter, sous la forme d'un conflit de
+# peers, très loin d'ici. Le relevé du 10/09/2026 en a trouvé neuf derrière la
+# majeure publiée, dont `eslint@^9`, sorti du support — aucun n'était une
+# décision, ils avaient seulement cessé d'être regardés.
+#
+# CE JOB NE MONTE RIEN. Il nomme, une fois par semaine, ce qu'un humain doit
+# trancher : garder le plafond (et l'écrire quelque part) ou le lever. Il reste
+# VERT dans les deux cas — un job rouge en permanence finit ignoré, et un
+# plafond assumé n'est pas un défaut. Le relevé se lit dans le résumé du job,
+# et chaque ligne pose une annotation.
+name: Plafonds
+
+on:
+  schedule:
+    # Lundi matin : le relevé est là quand la semaine commence.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+  # Sur les PR qui touchent les déclarations elles-mêmes : c'est le moment où
+  # un plafond se pose ou se lève, donc le moment où le relevé est utile.
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'scripts/plafonds.mjs'
+      - '.github/workflows/plafonds.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  plafonds:
+    name: Plages déclarées contre versions publiées
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Aucune dépendance n'est installée : la sonde n'utilise que `fetch` et
+      # `node:fs`. Une semaine où npm est indisponible rend « inconnue », pas
+      # une fausse alerte.
+      - name: Relever les plafonds
+        run: |
+          node scripts/plafonds.mjs | tee "$GITHUB_STEP_SUMMARY"

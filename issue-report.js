@@ -107,7 +107,7 @@ export function describeEnvironment(options = {}) {
   if (ua.includes('iPad') || ua.includes('Tablet')) appareil = 'tablette';
   else if (ua.includes('Mobi') || ua.includes('iPhone')) appareil = 'téléphone';
 
-  let installee = false;
+  let installee;
   try {
     installee =
       win?.matchMedia?.('(display-mode: standalone)')?.matches === true ||

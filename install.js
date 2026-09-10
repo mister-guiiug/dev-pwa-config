@@ -215,7 +215,7 @@ function getStorage(options = {}) {
  * lecture fidèle : il a dit plus tard, plus tard commence maintenant.
  */
 function migrate(state, storage, legacyKey, cadence, now) {
-  let legacy = null;
+  let legacy;
   try {
     legacy = storage?.getItem(legacyKey);
   } catch {

@@ -75,7 +75,7 @@ export function ShareButton(props = {}) {
     if (text !== undefined) data.text = text;
     if (url !== undefined) data.url = url;
 
-    let result = 'failed';
+    let result;
     try {
       result = await share(data);
     } catch {

@@ -153,7 +153,7 @@ export function createAuthClient(options) {
   /** Relit la session et recalcule l'état. */
   async function refresh() {
     const at = ++epoch;
-    let session = null;
+    let session;
     try {
       session = (await adapter.getSession()) ?? null;
     } catch {

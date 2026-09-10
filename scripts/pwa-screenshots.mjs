@@ -285,7 +285,7 @@ export async function run(argv = [], cwd = process.cwd()) {
     let baseServie = options.base;
     if (!baseServie) {
       const index = join(cwd, options.dist, 'index.html');
-      let html = '';
+      let html;
       try {
         html = readFileSync(index, 'utf8');
       } catch {

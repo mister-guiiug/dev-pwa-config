@@ -10,8 +10,18 @@ permissions:
 
 jobs:
   validate:
-    name: In-repo config parse
+    name: In-repo config parse (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      # LE PAQUET PROMET `engines: >=22` ET N'ÉPROUVAIT QUE 22. Les runners du
+      # parc sont en 22, mais la promesse publiée est plus large : une app qui
+      # passe en 24 exécute des bins et des configs que personne n'avait
+      # lancés dessus. Deux minutes de CI achètent la certitude que la
+      # promesse tient — et le jour où une API retirée mord, c'est ici que ça
+      # rougit, pas dans la vingtième app.
+      fail-fast: false
+      matrix:
+        node: ['22', '24']
     steps:
       - uses: actions/checkout@v5
         with:
@@ -19,7 +29,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node }}
           # Le lockfile est désormais commité : installs reproductibles, et le
           # cache npm redevient possible. Deux exécutions à une semaine d'écart
           # installaient auparavant des arbres différents.
