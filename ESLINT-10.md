@@ -2,39 +2,43 @@
 
 _Dossier instruit le 03/09/2026. Tout ce qui suit a été mesuré ou éprouvé dans un bac à sable, jamais déduit d'un fichier de métadonnées._
 
-> **CE QUE LA PREMIÈRE TENTATIVE A DÉMENTI — 10/09/2026.** L'étape 1 a été
-> jouée pour de vrai, et elle a échoué : élargir les peers du socle en
-> `^9.39.4 || ^10.0.0` **casse l'installation d'une app qui n'a pas encore
-> l'override**. La recette ci-dessous le disait sans le mesurer — « une app qui
-> n'a pas encore migré doit continuer d'installer le socle sans rien changer »
-> est vrai d'un `npm ci` (le lockfile fige la 9) et **faux d'un `npm install`**,
-> c'est-à-dire du geste même par lequel une app monte de version.
+> **PASSE EXÉCUTÉE LE 10/09/2026 — socle et squelette. Deux choses que ce
+> dossier disait, et qui étaient fausses.**
 >
-> Le mécanisme, relevé sur le job « Le squelette, construit sur ce paquet »
-> (run 34521501702) : la plage élargie autorise la 10, npm prend donc la plus
-> haute — `eslint@10.10.0` — puis bute sur `eslint-plugin-jsx-a11y@6.10.2`, qui
-> plafonne à `^9`. `ERESOLVE`, installation refusée. npm ne revient pas en
-> arrière pour choisir la 9 : il prend le plus haut, puis vérifie.
+> **1. Le socle ne peut pas ouvrir la porte seul.** L'ordre des opérations
+> ci-dessous commençait par « le socle d'abord, publier », en promettant
+> qu'« une app qui n'a pas encore migré doit continuer d'installer le socle sans
+> rien changer ». C'est vrai d'un `npm ci` — le lockfile fige la 9 — et **faux
+> d'un `npm install`**, le geste même par lequel une app monte de version : la
+> plage élargie autorise la 10, npm prend donc la plus haute, et bute sur le
+> plafond de `jsx-a11y`. `ERESOLVE`, installation refusée. Constaté sur
+> `pwa-starter-kit` par le job « Le squelette, construit sur ce paquet »
+> (run 34521501702), qui a refusé la première tentative — et bien fait.
 >
-> **Qui casse, et qui ne casse pas.** Une app qui déclare `eslint` elle-même
-> (`"eslint": "^9.39.4"` en devDependencies, ce que fait `bac-sable`) n'est pas
-> touchée : npm résout SA plage. Cassent celles qui s'en remettent à la peer du
-> socle — dont `pwa-starter-kit`, le squelette, donc **le modèle de toute
-> application à naître**.
+> **2. L'override est INERTE si l'app ne déclare pas `eslint` elle-même.**
+> C'est le point que personne n'avait vu, et il change la recette. `$eslint`
+> désigne la plage que le PROJET RACINE déclare en dépendance directe : sans
+> déclaration, il ne renvoie à rien et l'override ne s'applique pas. Or le
+> squelette — comme toute app née de lui — ne déclarait pas `eslint`, le laissant
+> s'installer par la peer du socle. Vérifié : override seul → `ERESOLVE` ;
+> override **plus** `eslint` et `@eslint/js` déclarés → installation propre.
 >
-> **Ce que cela change pour ce dossier.** L'élargissement des peers n'est pas un
-> geste que le socle peut poser seul : il n'est publiable qu'AVEC l'override
-> côté consommateur, dans la même passe. Les peers ont donc été laissées en
-> `^9.39.4` ; ce qui a été gardé du chantier est ce qui vaut dans les deux cas :
-> les dix `no-useless-assignment` sont corrigés (`recommended` d'ESLint 10 les
-> fera entrer sans rien coûter le jour venu), les deux autres règles entrantes
-> ont été vérifiées à zéro occurrence, et `scripts/plafonds.mjs` surveille
-> désormais le plafond au lieu de l'oublier.
+> **La recette corrigée tient donc en TROIS gestes, et deux dépôts dans la même
+> version** — le § « La recette, éprouvée » ci-dessous les porte.
 >
-> **L'ordre des opérations en sort corrigé** : ce n'est pas « le socle, puis une
-> app pilote, puis les seize autres », c'est **le socle ET le squelette dans la
-> même version**, puis les apps qui ne déclarent pas `eslint` elles-mêmes, puis
-> le reste. Le socle seul ne peut pas ouvrir cette porte.
+> **Ce que la passe a livré, et prouvé.** Le socle élargit ses deux peers et
+> tourne lui-même en `eslint@10.10.0` / `@eslint/js@10.0.1` : installation sans
+> `--legacy-peer-deps`, lint vert, 1363 tests verts sur Node 22 et 24. Le
+> squelette, installé sur le paquet candidat avec les trois gestes, passe
+> **lint (ESLint 10), `tsc -b`, ses 28 tests, son build, son budget de poids et
+> `pwa-doctor --strict` — 0 défaut, 0 dette, 0 info**. Les dix
+> `no-useless-assignment` du socle étaient déjà corrigés ; le squelette n'en
+> avait aucun, et les deux autres règles entrantes ne mordent nulle part.
+>
+> **Restent les apps** : celles qui déclarent `eslint` elles-mêmes (comme
+> `bac-sable`) ne voient rien tant qu'elles ne montent pas ; celles qui s'en
+> remettent à la peer du socle ont besoin des trois gestes. `scripts/plafonds.mjs`
+> dira le jour où `jsx-a11y` republie et rend l'override inutile.
 
 ## Pourquoi maintenant
 
@@ -113,7 +117,7 @@ comportement. Sept dans le socle : `auth/index.js`, `image.js`,
 
 ## La recette, éprouvée
 
-Elle tient en deux gestes, et l'installation se fait **proprement** — sans
+Elle tient en **trois gestes**, et l'installation se fait **proprement** — sans
 `--legacy-peer-deps`, qui masquerait les vrais conflits à venir.
 
 **1. Le socle élargit ses peers** (`package.json`) :
@@ -125,10 +129,22 @@ Elle tient en deux gestes, et l'installation se fait **proprement** — sans
 }
 ```
 
-Les deux plages, pas seulement la 10 : une app qui n'a pas encore migré doit
-continuer d'installer le socle sans rien changer.
+Les deux plages, pas seulement la 10 : une app qui déclare `eslint@^9.39.4`
+elle-même continue d'installer le socle sans rien changer. Celle qui ne déclare
+rien, en revanche, se verra proposer la 10 par npm — d'où les deux gestes
+suivants, **dans la même version**.
 
-**2. Chaque app lève la déclaration périmée de jsx-a11y** :
+**2. L'app DÉCLARE `eslint` et `@eslint/js`** — c'est ce geste qui manquait à ce
+dossier, et sans lui le troisième ne fait rien :
+
+```json
+"devDependencies": {
+  "eslint": "^10.10.0",
+  "@eslint/js": "^10.0.1"
+}
+```
+
+**3. L'app lève la déclaration périmée de jsx-a11y** :
 
 ```json
 "overrides": {
@@ -136,25 +152,34 @@ continuer d'installer le socle sans rien changer.
 }
 ```
 
-`$eslint` renvoie à la version que l'app installe elle-même : l'override ne fige
-rien, il dit « ce plugin suivra ma version d'ESLint ». Le jour où jsx-a11y
-publie une version compatible, la ligne se retire sans autre changement.
+`$eslint` renvoie à la version que l'app déclare **au geste 2** : l'override ne
+fige rien, il dit « ce plugin suivra ma version d'ESLint ». Sans déclaration
+directe, `$eslint` ne renvoie à rien et l'override est inerte — c'est
+exactement ce qui a fait échouer la première tentative sur le squelette. Le jour
+où jsx-a11y publie une version compatible, la ligne se retire sans autre
+changement, et `scripts/plafonds.mjs` le dira.
 
-Vérifié dans un bac à sable : avec ces deux gestes, `npm install` résout sans
-forcer (`eslint 10.9.1`, `@eslint/js 10.0.1`, `jsx-a11y 6.10.2`) et le lint
-tourne, règles a11y comprises.
+Éprouvé pour de bon le 10/09/2026 sur `pwa-starter-kit`, installé sur le paquet
+candidat : `npm install` résout sans forcer (`eslint 10.10.0`, `@eslint/js
+10.0.1`, `jsx-a11y 6.10.2`), puis lint, types, tests, build, budget et
+`pwa-doctor --strict` passent tous.
 
 ## L'ordre des opérations
 
-1. **Le socle d'abord** : corriger ses sept `no-useless-assignment`, élargir les
-   deux peers, publier. Tant qu'il déclare `^9` seul, aucune app ne peut monter
-   proprement.
-2. **Une app pilote** — miss-dice, qui n'a aucune erreur nouvelle et le plus
-   petit code : l'override, la montée d'`eslint` et `@eslint/js`, la CI verte.
-3. **Les seize autres**, une PR chacune, en corrigeant au passage les
-   `no-useless-assignment` du dépôt.
-4. **Le gabarit** (`templates/`) et la checklist du README, pour que le prochain
-   projet naisse en 10.
+**Corrigé le 10/09/2026**, après l'échec de la première tentative : ce n'est pas
+« le socle, puis une app pilote ». Le socle seul casse les apps qui ne déclarent
+pas `eslint`.
+
+1. **Le socle ET le squelette, dans la même version** : peers élargies d'un côté,
+   les gestes 2 et 3 de l'autre. Le job « Le squelette, construit sur ce paquet »
+   installe le squelette sur le paquet candidat — il refuse la CI tant que les
+   deux ne sont pas d'accord, ce qui rend l'ordre impossible à ignorer.
+2. **Les apps qui ne déclarent pas `eslint`**, une PR chacune : les gestes 2 et 3.
+   Ce sont elles qui cassent au prochain `npm install`, et elles seules.
+3. **Les apps qui déclarent déjà `eslint@^9.39.4`** (`bac-sable` en est) : rien
+   ne presse, elles montent quand elles veulent, avec les mêmes deux gestes.
+4. **Le gabarit** et la checklist du README, pour que le prochain projet naisse
+   en 10 — le squelette étant le gabarit vivant, le point 1 y pourvoit déjà.
 
 ## Ce qui peut mal tourner
 
