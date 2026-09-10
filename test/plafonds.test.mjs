@@ -79,8 +79,52 @@ test('versionsPubliees lit dist-tags.latest, et encaisse une panne', async () =>
     casse: null,
     absent: null,
   });
-  // La barre du scope est encodée : sans cela le registre rend un 404.
-  assert.ok(vus.includes('https://registre.test/@scope%2fpaquet'));
+  // Le chemin est reconstruit segment par segment : sans la barre encodée, le
+  // registre rend un 404 ; sans l'arobase encodée non plus — les deux formes
+  // sont acceptées, on prend celle qui n'interpole rien de brut.
+  assert.ok(vus.includes('https://registre.test/%40scope%2fpaquet'));
+});
+
+test('un nom qui n’est pas un nom de paquet n’est JAMAIS interrogé', async () => {
+  // Ce script lit un fichier et met ce qu'il y trouve dans une URL qu'il
+  // appelle. Sans garde, une entrée malformée de `package.json` désignerait une
+  // tout autre ressource que le paquet qu'on croit interroger.
+  const vus = [];
+  const fetchImpl = async url => {
+    vus.push(url);
+    return {
+      ok: true,
+      json: async () => ({ 'dist-tags': { latest: '1.0.0' } }),
+    };
+  };
+  const versions = await versionsPubliees(
+    [
+      'vitest',
+      '../../ailleurs',
+      'https://autre.test/x',
+      'nom?query',
+      'nom#ancre',
+      'MAJUSCULES',
+      '',
+    ],
+    { fetchImpl, registre: 'https://registre.test' }
+  );
+  assert.deepEqual(vus, ['https://registre.test/vitest'], 'une seule requête');
+  assert.equal(versions.vitest, '1.0.0');
+  for (const refuse of [
+    '../../ailleurs',
+    'https://autre.test/x',
+    'nom?query',
+    'nom#ancre',
+    'MAJUSCULES',
+    '',
+  ]) {
+    assert.equal(
+      versions[refuse],
+      null,
+      `${refuse} ne doit pas être interrogé`
+    );
+  }
 });
 
 test('format : le tableau ne montre que ce qui est en retard', () => {

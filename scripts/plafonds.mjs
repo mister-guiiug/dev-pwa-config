@@ -102,6 +102,23 @@ export function enRetard(plage, publiee) {
 }
 
 /**
+ * La forme d'un nom de paquet npm, et rien d'autre.
+ *
+ * POURQUOI UNE GARDE ICI. Ce script lit `package.json` — un fichier — et met ce
+ * qu'il y trouve dans une URL qu'il appelle. Un contrôle de sécurité relève ce
+ * chemin (« données de fichier dans une requête sortante »), et il a raison de
+ * le faire : rien ne garantissait, avant cette ligne, que la clé lue soit un
+ * nom de paquet. Une entrée malformée — `../../autre-chose`, une URL complète,
+ * un nom porteur d'un `?` ou d'un `#` — était interpolée telle quelle et
+ * pouvait désigner une tout autre ressource que celle qu'on croit interroger.
+ *
+ * La règle est celle de npm : un nom, éventuellement précédé d'un scope, en
+ * minuscules, sans caractère qui ait un sens dans une URL. Ce qui n'y répond
+ * pas n'est PAS interrogé — la ligne dira « inconnue », ce qui est exact.
+ */
+const NOM_NPM = /^(?:@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+
+/**
  * Interroge le registre pour l'étiquette `latest` de chaque paquet.
  *
  * Une requête par paquet, en parallèle, sur le point d'entrée « abrégé » du
@@ -116,17 +133,16 @@ export async function versionsPubliees(noms, options = {}) {
   const { fetchImpl = fetch, registre = REGISTRE } = options;
   const entrees = await Promise.all(
     noms.map(async nom => {
+      if (!NOM_NPM.test(nom)) return [nom, null];
+      // Le chemin est RECONSTRUIT à partir de ce que la garde vient de
+      // reconnaître, segment par segment : `@scope/nom` devient
+      // `@scope%2fnom`, et rien d'autre ne peut s'y glisser.
+      const segments = nom.split('/');
+      const chemin = segments.map(s => encodeURIComponent(s)).join('%2f');
       try {
-        // `replaceAll` et non `replace` : un nom de paquet npm ne porte qu'une
-        // barre (`@scope/nom`), mais encoder « la première occurrence » est une
-        // approximation qui ne dit pas ce qu'elle veut dire — et qu'un contrôle
-        // de sécurité relève, à raison.
-        const reponse = await fetchImpl(
-          `${registre}/${nom.replaceAll('/', '%2f')}`,
-          {
-            headers: { accept: 'application/vnd.npm.install-v1+json' },
-          }
-        );
+        const reponse = await fetchImpl(`${registre}/${chemin}`, {
+          headers: { accept: 'application/vnd.npm.install-v1+json' },
+        });
         if (!reponse?.ok) return [nom, null];
         const corps = await reponse.json();
         return [nom, corps?.['dist-tags']?.latest ?? null];
