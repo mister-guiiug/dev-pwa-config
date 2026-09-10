@@ -474,32 +474,13 @@ Les configs imposent / supposent les versions suivantes côté projet consommate
 ```
 Node ≥22 (engines + .nvmrc ; CI du socle éprouvée sur 22 ET 24)
 TypeScript ~6.0.3 strict + verbatimModuleSyntax + noUncheckedIndexedAccess, cible ES2025 + lib ES2025
-ESLint 9 OU 10 (flat config) + typescript-eslint 8.58
+ESLint 9 (flat config) + typescript-eslint 8.58 — la 10 est instruite, pas ouverte (ESLINT-10.md)
 eslint-plugin-react-hooks 7.0 (configs.flat.recommended) + eslint-plugin-react-refresh 0.5
 Vite 8 (Rolldown) + Vitest 4 (jsdom + globals + setupFiles)
 Zod 4 (peer)
 Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowParens 'avoid')
 Tailwind 4 (@tailwindcss/vite) + lucide-react (icônes — standard famille)
 ```
-
-> **4.10.0 — ESLint 10 est AUTORISÉ, pas imposé.** Les peers `eslint` et
-> `@eslint/js` acceptent désormais `^9.39.4 || ^10.0.0` : une app qui ne
-> change rien continue d'installer sa 9. Pour monter, deux gestes — la montée
-> des deux paquets, et l'override qui lève la déclaration périmée de
-> `eslint-plugin-jsx-a11y`, seul paquet de la chaîne à s'arrêter à `^9` alors
-> que son code fonctionne :
->
-> ```json
-> "overrides": { "eslint-plugin-jsx-a11y": { "eslint": "$eslint" } }
-> ```
->
-> `$eslint` renvoie à la version que l'app installe : le jour où le plugin
-> republie, la ligne se retire sans autre changement. Le socle lui-même est
-> monté ainsi — installation propre, sans `--legacy-peer-deps`. Ce qui coûte,
-> c'est `no-useless-assignment`, entrée dans `recommended` : dix occurrences
-> ici, toutes du même motif (`let x = …` réaffecté dans un `try`), corrigées
-> en déclarant `let x;`. Le dossier complet est dans
-> [ESLINT-10.md](./ESLINT-10.md).
 
 > **3.0.0 (breaking)** — `tsconfig-app`/`tsconfig-node` activent
 > **`verbatimModuleSyntax`** et **`noUncheckedIndexedAccess`** (de nouvelles
@@ -724,10 +705,23 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 ESLint 9 est sorti du support (`npm` le dit à chaque installation). La montée
 est instruite dans [ESLINT-10.md](ESLINT-10.md) : un seul paquet de la chaîne
 refuse la 10 — `eslint-plugin-jsx-a11y`, dont la déclaration s'arrête à `^9` —
-et l'essai montre que **le blocage est déclaratif, pas réel**. La recette
-éprouvée tient en deux gestes (peers élargis côté socle, `overrides` côté app)
-et le seul coût mesuré est la nouvelle règle `no-useless-assignment` :
-sept occurrences dans le socle, deux dans miss-uwh, zéro dans miss-dice.
+et l'essai montre que **le blocage est déclaratif, pas réel**.
+
+**Le socle ne peut pas ouvrir cette porte seul, et la tentative du 10/09/2026
+l'a prouvé.** Élargir ses peers en `^9.39.4 || ^10.0.0` autorise npm à prendre
+la 10, qui bute alors sur le plafond de jsx-a11y : `ERESOLVE`, installation
+refusée — sur `pwa-starter-kit`, donc sur le modèle de toute application à
+naître. Une app qui déclare `eslint` elle-même n'est pas touchée ; celles qui
+s'en remettent à la peer du socle le sont. Les peers restent donc en `^9.39.4`
+tant que la passe n'est pas décidée : **le socle et le squelette doivent monter
+dans la même version**, puis les apps.
+
+Ce qui est déjà fait, et qui vaut dans les deux cas : les **dix**
+`no-useless-assignment` du socle sont corrigés (la règle entre dans
+`recommended` avec ESLint 10 — le dossier en annonçait sept le 03/09, trois
+fichiers écrits depuis s'y étaient ajoutés), les deux autres règles entrantes
+sont vérifiées à zéro occurrence, et `scripts/plafonds.mjs` surveille désormais
+ce plafond au lieu de l'oublier.
 
 ## Secrets et variables — la ligne de partage
 

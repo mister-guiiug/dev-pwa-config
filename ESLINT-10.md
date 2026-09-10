@@ -2,23 +2,39 @@
 
 _Dossier instruit le 03/09/2026. Tout ce qui suit a été mesuré ou éprouvé dans un bac à sable, jamais déduit d'un fichier de métadonnées._
 
-> **Étape 1 exécutée le 10/09/2026.** Le socle élargit ses deux peers en
-> `^9.39.4 || ^10.0.0`, et **il est lui-même monté** : `eslint@10.10.0`,
-> `@eslint/js@10.0.1`, override `jsx-a11y` posé, `npm install` propre sans
-> `--legacy-peer-deps`, lint vert. La recette ci-dessous n'est donc plus une
-> promesse de bac à sable — elle a été jouée sur un vrai dépôt.
+> **CE QUE LA PREMIÈRE TENTATIVE A DÉMENTI — 10/09/2026.** L'étape 1 a été
+> jouée pour de vrai, et elle a échoué : élargir les peers du socle en
+> `^9.39.4 || ^10.0.0` **casse l'installation d'une app qui n'a pas encore
+> l'override**. La recette ci-dessous le disait sans le mesurer — « une app qui
+> n'a pas encore migré doit continuer d'installer le socle sans rien changer »
+> est vrai d'un `npm ci` (le lockfile fige la 9) et **faux d'un `npm install`**,
+> c'est-à-dire du geste même par lequel une app monte de version.
 >
-> **Ce que l'exécution a démenti.** Le tableau ci-dessous annonçait **sept**
-> `no-useless-assignment` dans le socle ; il y en avait **dix** le 10/09 —
-> `install.js`, `issue-report.js` et `scripts/pwa-screenshots.mjs` se sont
-> ajoutés aux sept nommés, tous écrits après le 03/09. Le motif, lui, n'a pas
-> varié d'une ligne : `let x = valeur;` réaffecté dans un `try`. Les deux
-> autres règles entrantes — `no-unassigned-vars`, `preserve-caught-error` — ne
-> mordent toujours pas : zéro occurrence, vérifié règle par règle.
+> Le mécanisme, relevé sur le job « Le squelette, construit sur ce paquet »
+> (run 34521501702) : la plage élargie autorise la 10, npm prend donc la plus
+> haute — `eslint@10.10.0` — puis bute sur `eslint-plugin-jsx-a11y@6.10.2`, qui
+> plafonne à `^9`. `ERESOLVE`, installation refusée. npm ne revient pas en
+> arrière pour choisir la 9 : il prend le plus haut, puis vérifie.
 >
-> **Restent les étapes 2 à 4** : l'app pilote, les seize autres, le gabarit.
-> Le plafond `jsx-a11y` est inchangé (6.10.2, toujours `^9`), donc l'override
-> reste nécessaire — et `scripts/plafonds.mjs` le dira le jour où il tombe.
+> **Qui casse, et qui ne casse pas.** Une app qui déclare `eslint` elle-même
+> (`"eslint": "^9.39.4"` en devDependencies, ce que fait `bac-sable`) n'est pas
+> touchée : npm résout SA plage. Cassent celles qui s'en remettent à la peer du
+> socle — dont `pwa-starter-kit`, le squelette, donc **le modèle de toute
+> application à naître**.
+>
+> **Ce que cela change pour ce dossier.** L'élargissement des peers n'est pas un
+> geste que le socle peut poser seul : il n'est publiable qu'AVEC l'override
+> côté consommateur, dans la même passe. Les peers ont donc été laissées en
+> `^9.39.4` ; ce qui a été gardé du chantier est ce qui vaut dans les deux cas :
+> les dix `no-useless-assignment` sont corrigés (`recommended` d'ESLint 10 les
+> fera entrer sans rien coûter le jour venu), les deux autres règles entrantes
+> ont été vérifiées à zéro occurrence, et `scripts/plafonds.mjs` surveille
+> désormais le plafond au lieu de l'oublier.
+>
+> **L'ordre des opérations en sort corrigé** : ce n'est pas « le socle, puis une
+> app pilote, puis les seize autres », c'est **le socle ET le squelette dans la
+> même version**, puis les apps qui ne déclarent pas `eslint` elles-mêmes, puis
+> le reste. Le socle seul ne peut pas ouvrir cette porte.
 
 ## Pourquoi maintenant
 
