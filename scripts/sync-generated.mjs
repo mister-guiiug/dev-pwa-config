@@ -434,9 +434,16 @@ export function morceauxCss(source) {
   if (ouverture < 0)
     throw new Error('components.css : `@layer components` introuvable');
 
+  // `[^─]+?` ET NON `.+?` : un titre ne contient jamais de tiret de
+  // séparation, et le lui interdire retire au moteur toute possibilité de
+  // revenir en arrière sur la frontière titre/tirets. Avec `.+?`, un
+  // appariement raté coûte un temps quadratique en la longueur de la ligne —
+  // sur un fichier lu depuis le disque, c'est ce que CodeQL relève comme
+  // « expression polynomiale sur une entrée non contrôlée », et il a raison :
+  // ce script tourne aussi sur des dépôts qu'il n'a pas écrits.
   const titres = [];
   for (const [i, ligne] of lignes.entries()) {
-    const m = ligne.match(/^\s*\/\* ── (.+?) ─+ \*?\/?\s*$/);
+    const m = ligne.match(/^\s*\/\* ── ([^─]+?) ─+ \*?\/?\s*$/);
     if (m) titres.push([i, m[1].trim()]);
   }
   if (!titres.length) throw new Error('components.css : aucune section titrée');

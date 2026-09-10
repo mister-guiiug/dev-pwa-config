@@ -623,8 +623,8 @@ test('toute section porte un nom de fichier, et tout nom vient d’une section',
   const { MORCEAUX_CSS, morceauxCss } = await import(
     '../scripts/sync-generated.mjs'
   );
-  const titres = [...RAW.matchAll(/^\s*\/\* ── (.+?) ─+ \*?\/?\s*$/gm)].map(m =>
-    m[1].trim()
+  const titres = [...RAW.matchAll(/^\s*\/\* ── ([^─]+?) ─+ \*?\/?\s*$/gm)].map(
+    m => m[1].trim()
   );
   const sansNom = titres.filter(t => !(t in MORCEAUX_CSS));
   assert.deepEqual(
