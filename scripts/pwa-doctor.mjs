@@ -789,7 +789,12 @@ export function reglesDepot(ctx, api) {
       (/"port"\s*:\s*(\d+)/.exec(launch) ?? /--port",\s*"(\d+)"/.exec(launch));
     if (dansLaunch)
       declares.push(['.claude/launch.json', Number(dansLaunch[1])]);
-    const dansVite = /server\s*:\s*\{[^}]*?\bport\s*:\s*(\d+)/s.exec(
+    // `[^}]{0,500}?` ET NON `[^}]*?` : sans borne, le moteur reprend son essai
+    // à chaque position d'un fichier qui ne contient pas de bloc `server`, et
+    // le coût devient quadratique en sa longueur. La borne ne change aucun
+    // appariement réel — un bloc `server: { … port: … }` de plus de 500
+    // caractères avant le port n'existe pas — et elle rend le pire cas fini.
+    const dansVite = /server\s*:\s*\{[^}]{0,500}?\bport\s*:\s*(\d+)/s.exec(
       viteConfig
     );
     if (dansVite) declares.push(['vite.config', Number(dansVite[1])]);
@@ -877,8 +882,14 @@ export function reglesWorkflows(ctx, api) {
         'deploy.yml → pwa-deploy.yml@v4 (use-base-path: true ; ce qui précède le build en pre-build)'
       );
     }
+    // `[^\s@]+` pour le chemin : un chemin de workflow ne contient pas d'arobase,
+    // et le lui interdire retire l'ambiguïté entre `\S+` et le `@` qui suit —
+    // c'est elle qui rendait l'échec quadratique sur une longue suite sans
+    // espace. Les DEUX parties sont bornées, et il le faut : un chemin non
+    // borné laisse le moteur reprendre à chaque répétition du préfixe. Aucun
+    // chemin de workflow ne fait 200 caractères, aucune étiquette n'en fait 40.
     const vieux = wfText.match(
-      /mister-guiiug\/dev-pwa-config\/\S+@(?!v4\b)\S+/g
+      /mister-guiiug\/dev-pwa-config\/[^\s@]{1,200}@(?!v4\b)\S{1,40}/g
     );
     if (vieux) {
       dette(
