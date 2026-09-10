@@ -117,8 +117,12 @@ export async function versionsPubliees(noms, options = {}) {
   const entrees = await Promise.all(
     noms.map(async nom => {
       try {
+        // `replaceAll` et non `replace` : un nom de paquet npm ne porte qu'une
+        // barre (`@scope/nom`), mais encoder « la première occurrence » est une
+        // approximation qui ne dit pas ce qu'elle veut dire — et qu'un contrôle
+        // de sécurité relève, à raison.
         const reponse = await fetchImpl(
-          `${registre}/${nom.replace('/', '%2f')}`,
+          `${registre}/${nom.replaceAll('/', '%2f')}`,
           {
             headers: { accept: 'application/vnd.npm.install-v1+json' },
           }

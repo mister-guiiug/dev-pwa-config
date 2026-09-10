@@ -918,11 +918,13 @@ export function reglesWorkflows(ctx, api) {
 
     // Une VITE_* rangée en secret n'est pas protégée : Vite la copie dans le
     // bundle. Le secret masque les journaux, pas la valeur.
+    // Le nom est LU DANS LE GROUPE de capture, pas retiré à la main du texte
+    // apparié : `match(…, 'g')` jette les groupes, d'où le `replace` qui
+    // traînait ici — et qu'un contrôle de sécurité relève à juste titre comme
+    // une découpe de chaîne approximative.
     const publiques = [
       ...new Set(
-        (wfText.match(/secrets\.(VITE_[A-Z0-9_]+)/g) ?? []).map(m =>
-          m.replace('secrets.', '')
-        )
+        [...wfText.matchAll(/secrets\.(VITE_[A-Z0-9_]+)/g)].map(m => m[1])
       ),
     ];
     if (publiques.length) {
@@ -983,8 +985,8 @@ export function reglesSource(ctx, api) {
   // seule documentation qu'un nouveau venu lira.
   const lues = [
     ...new Set(
-      (srcText.match(/import\.meta\.env\.(VITE_[A-Z0-9_]+)/g) ?? []).map(m =>
-        m.replace('import.meta.env.', '')
+      [...srcText.matchAll(/import\.meta\.env\.(VITE_[A-Z0-9_]+)/g)].map(
+        m => m[1]
       )
     ),
   ].sort();
