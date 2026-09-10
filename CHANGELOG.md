@@ -1,5 +1,86 @@
 # Changelog
 
+## 4.9.0
+
+### Minor Changes
+
+- 23d9770: **Le nom du manifeste se lit au catalogue. Sans lui, huit applications se sont
+  installées sous leur identifiant de dépôt.**
+
+  `pwaBaseOptions({ id })` rendait `name: name ?? shortName ?? id`. Une app qui
+  ne passait pas `name` — c'est-à-dire toute app fidèle à la promesse « le
+  manifeste sort entier de `pwaBaseOptions({ id })` » — obtenait donc son SLUG.
+  Sur un téléphone, le raccourci de l'écran d'accueil lit `short_name` : les
+  gens ont eu **« mister-settle »** et **« mister-doc »** écrits sous l'icône.
+
+  Le catalogue connaissait pourtant le nom depuis toujours ; il n'était lu que
+  pour les couleurs. Il l'est maintenant aussi pour le nom, dans le même ordre
+  que le reste : **l'explicite, puis le catalogue, puis l'identifiant**.
+
+  ```js
+  pwaBaseOptions({ id: 'miss-uwh' }); // name et short_name : « Miss UWH »
+  pwaBaseOptions({ id: 'miss-uwh', name: 'Autre' }); // l'explicite gagne
+  pwaBaseOptions({ id: 'miss-uwh', shortName: 'UWH' }); // renseigne les deux
+  ```
+
+  **Et le dernier recours s'annonce.** Une app hors catalogue et sans `name`
+  reçoit désormais un avertissement au build, qui dit ce qu'on VERRA plutôt que
+  ce qui manque : « le raccourci installé affichera _app-inconnue_ sous l'icône ».
+  C'est le seul défaut du parc qui ne se voyait qu'une fois l'application
+  installée — il a vécu dans huit dépôts jusqu'au 09/09/2026.
+
+  **Ce que ça change pour les apps.** Celles qui passent `name` : rien. Celles
+  qui n'en passent pas et figurent au catalogue : leur manifeste porte enfin leur
+  nom, à leur prochaine construction — vérifier au passage que le catalogue dit
+  bien ce qu'on veut voir sous l'icône, puisque c'est lui qui fait foi.
+
+- 3600e55: **`auth.getSession()` n'est pas une lecture, et l'adaptateur le traitait comme
+  telle. Une app sans réseau démarrait sur son écran de connexion.**
+
+  Jeton d'accès périmé — et il ne vit qu'une heure — `getSession()` part le
+  RENOUVELER contre le réseau, avec des reprises à intervalle croissant bornées
+  par la fenêtre de rafraîchissement de Supabase. Sans réseau, aucune ne peut
+  aboutir. Mesuré sur la production de `mister-doc` le 2026-09-10 : **27 secondes
+  de « Chargement… », puis l'écran de connexion** — qu'on ne peut pas franchir
+  hors ligne. Une application dont toutes les données étaient pourtant en cache
+  sur l'appareil.
+
+  Le même piège attendait une porte plus loin : `getAuthenticatorAssuranceLevel()`
+  et tout appel PostgREST commencent eux aussi par `getSession()`, pour joindre le
+  jeton.
+
+  **`auth/stored-session` (nouveau sous-chemin)** lit la session écrite sur
+  l'appareil sans passer par la bibliothèque. Le nom de case est RECONNU
+  (`sb-<ref>-auth-token`), pas recalculé : reproduire la formule engagerait à la
+  suivre à chaque version, et imposer `storageKey` aux apps déconnecterait d'un
+  coup tous ceux dont la session est rangée sous l'ancien nom. La session est
+  rendue **même périmée** — hors ligne, un jeton expiré ne dit rien de
+  l'utilisateur, il dit qu'une heure a passé.
+
+  **`supabaseAuthAdapter.getSession()`** ne dépend plus du réseau pour obtenir la
+  session : hors ligne (`navigator.onLine === false`) il lit le stockage ; sinon
+  il demande à Supabase mais **borne l'attente** — nouvelle option
+  `sessionTimeoutMs`, 5 s par défaut. `navigator.onLine` ne protège que du cas
+  franc : il est vrai derrière un portail captif comme sur un Wi-Fi qui ne route
+  rien.
+
+  **`supabaseAuthAdapter.mfaRequired(session)`** calcule le niveau d'assurance sur
+  place — claim `aal` du jeton, facteurs vérifiés de la session — au lieu
+  d'appeler `getAuthenticatorAssuranceLevel()`. Son commentaire affirmait déjà
+  « aucun appel réseau » ; c'est cette phrase, plus que le code, qui a laissé la
+  panne s'installer. Le calcul est publié à part :
+  `assuranceLevelFromSession` dans `auth/mfa`.
+
+  **Le défi TOTP n'est pas contourné pour autant.** Une session en `aal1` avec un
+  facteur vérifié rend toujours « défi requis », sans réseau comme avec — c'est ce
+  qui distingue ce calcul d'un « pas de défi » de confort, et un test le fixe.
+
+  **Changement de comportement à noter** : `mfaRequired()` ne consulte plus
+  `auth.mfa` et ne lève plus l'erreur de l'API. Il lit la session que le port lui
+  tend déjà (`mfaRequired?(session)`, contrat inchangé). Une app qui truquait
+  `getAuthenticatorAssuranceLevel()` dans ses tests doit désormais donner un jeton
+  et des facteurs à sa session.
+
 ## 4.8.0
 
 ### Minor Changes
