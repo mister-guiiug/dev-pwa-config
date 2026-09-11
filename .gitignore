@@ -9,3 +9,10 @@ node_modules
 # worktree`. Elles étaient masquées par `.git/info/exclude`, qui est LOCAL :
 # invisible à `git status` sur cette machine, et absent partout ailleurs.
 .claude/worktrees/
+
+# La sortie de `npm pack`, qui se dépose à la RACINE du dépôt. Ce n'est pas un
+# geste rare : le job « Le squelette, construit sur ce paquet » empaquette la
+# version candidate à chaque CI, et quiconque veut éprouver le paquet avant de
+# le publier fait de même. Un demi-mégaoctet d'archive attendait donc le
+# prochain `git add -A`.
+*.tgz
