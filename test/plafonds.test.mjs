@@ -2,9 +2,11 @@
 // publie. Aucun accès réseau ici — `fetch` est injecté.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   analyse,
+  DECISIONS,
   enRetard,
   format,
   plafond,
@@ -129,13 +131,115 @@ test('un nom qui n’est pas un nom de paquet n’est JAMAIS interrogé', async 
 
 test('format : le tableau ne montre que ce qui est en retard', () => {
   const sortie = format([
-    { nom: 'vitest', plage: '^4.0.0', publiee: '5.0.0', verdict: 'retard' },
-    { nom: 'react', plage: '^19.0.0', publiee: '19.2.0', verdict: 'ok' },
-    { nom: 'sharp', plage: '>=0.33', publiee: null, verdict: 'inconnue' },
+    {
+      nom: 'vitest',
+      plage: '^4.0.0',
+      publiee: '5.0.0',
+      verdict: 'retard',
+      portee: 'dur',
+    },
+    {
+      nom: 'react',
+      plage: '^19.0.0',
+      publiee: '19.2.0',
+      verdict: 'ok',
+      portee: 'mou',
+    },
+    {
+      nom: 'sharp',
+      plage: '>=0.33',
+      publiee: null,
+      verdict: 'inconnue',
+      portee: 'mou',
+    },
   ]);
   assert.match(sortie, /vitest/);
   assert.doesNotMatch(sortie, /\| `react`/);
   assert.match(sortie, /sharp/);
+});
+
+test('une peer OPTIONNELLE ne mord pas, une peer dure oui', () => {
+  // Le point qui manquait à cette sonde, et qui a coûté un ordonnancement :
+  // npm refuse l'installation sur une peer non optionnelle, et laisse passer
+  // une peer optionnelle. Les deux étaient signalées à l'identique.
+  const lignes = analyse(
+    { vitest: '^4.0.0', 'jest-dom': '^6.0.0', prettier: '^3.0.0' },
+    { vitest: '5.0.0', 'jest-dom': '7.0.1', prettier: '4.0.0' },
+    { optionnelles: ['jest-dom'] }
+  );
+  assert.deepEqual(
+    lignes.map(l => [l.nom, l.portee]),
+    [
+      ['jest-dom', 'mou'],
+      ['prettier', 'dur'],
+      ['vitest', 'dur'],
+    ]
+  );
+  const sortie = format(lignes);
+  assert.match(sortie, /dont 2 qui mordent/);
+  assert.match(sortie, /`jest-dom`.*non \(peer optionnelle\)/);
+  assert.match(sortie, /`vitest`.*ERESOLVE/);
+});
+
+test('une devDependency du socle n’engage aucune app', () => {
+  const lignes = analyse(
+    { vitest: '^4.0.0', jsdom: '^26.0.0' },
+    { vitest: '5.0.0', jsdom: '30.0.1' },
+    { peers: ['vitest'] }
+  );
+  assert.deepEqual(
+    lignes.map(l => [l.nom, l.portee]),
+    [
+      ['jsdom', 'interne'],
+      ['vitest', 'dur'],
+    ]
+  );
+});
+
+test('un plafond inscrit dans DECISIONS est assumé, pas une chose à faire', () => {
+  const lignes = analyse(
+    { typescript: '~6.0.3', jsdom: '^26.0.0' },
+    { typescript: '7.0.2', jsdom: '30.0.1' },
+    { decisions: { typescript: 'TypeScript 7 est un chantier à part.' } }
+  );
+  const parNom = Object.fromEntries(lignes.map(l => [l.nom, l]));
+  assert.equal(parNom.typescript.verdict, 'assume');
+  assert.equal(
+    parNom.typescript.raison,
+    'TypeScript 7 est un chantier à part.'
+  );
+  assert.equal(parNom.jsdom.verdict, 'retard');
+
+  // Le tableau d'action ne le porte plus ; le pied de page le rappelle.
+  const sortie = format(lignes);
+  assert.doesNotMatch(sortie, /\| `typescript`/);
+  assert.match(sortie, /1 plafond assumé/);
+  assert.match(sortie, /TypeScript 7 est un chantier à part\./);
+});
+
+test('un parc entièrement assumé ne montre aucun tableau d’action', () => {
+  const lignes = analyse(
+    { vitest: '^4.0.0' },
+    { vitest: '5.0.0' },
+    { decisions: { vitest: 'la 4 vient d’être adoptée' } }
+  );
+  const sortie = format(lignes);
+  assert.match(sortie, /aucun plafond à trancher/);
+  assert.match(sortie, /la 4 vient d’être adoptée/);
+});
+
+test('DECISIONS ne nomme que des paquets réellement déclarés', () => {
+  // Une décision qui porte sur un paquet retiré des peers ne serait jamais
+  // relue : elle deviendrait un commentaire mort qui dit le contraire du réel.
+  const pkg = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+  );
+  for (const nom of Object.keys(DECISIONS)) {
+    assert.ok(
+      nom in pkg.peerDependencies,
+      `${nom} est dans DECISIONS mais n’est plus une peer`
+    );
+  }
 });
 
 test('format : le silence est explicite quand tout est à jour', () => {

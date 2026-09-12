@@ -13,6 +13,22 @@
  * sous l'étiquette `latest`. Rien d'autre : ni vulnérabilité (c'est `npm
  * audit`), ni mise à jour de patch (c'est Renovate).
  *
+ * TOUS LES PLAFONDS NE SE VALENT PAS, et l'avoir ignoré a coûté un
+ * ordonnancement entier. Ce dépôt déclare trente-deux peers dont vingt-deux
+ * OPTIONNELLES : une peer optionnelle en conflit **n'arrête pas** `npm install`
+ * — elle dit seulement que le socle se décrit mal. Une peer non optionnelle,
+ * elle, fait échouer l'installation (`ERESOLVE`) et interdit réellement la
+ * montée. Le 12/09/2026, sept plafonds étaient signalés ici, **deux seulement
+ * mordaient** ; un chantier a été planifié derrière `@testing-library/jest-dom
+ * ^6.0.0` comme s'il s'agissait d'un mur, alors que la résolution réelle passe
+ * sans broncher. D'où la colonne « Mord ? ».
+ *
+ * ET UN PLAFOND ASSUMÉ N'EST PLUS UN OUBLI. `DECISIONS` porte ceux qu'on garde
+ * volontairement, avec leur raison et leur date : la sonde les sort du tableau
+ * d'action et les rappelle à part. Sans cet endroit, « écrire la décision
+ * quelque part » n'arrive jamais, et la même ligne rouge revient chaque lundi
+ * jusqu'à ce que plus personne ne la lise.
+ *
  * POURQUOI ELLE EXISTE. Le relevé du 10/09/2026 a trouvé neuf plafonds
  * derrière la majeure courante — dont `eslint@^9`, sorti du support, qui
  * affichait son avertissement de dépréciation à chaque installation depuis des
@@ -35,6 +51,24 @@ import { fileURLToPath } from 'node:url';
 import { estPointDEntree } from './entree.mjs';
 
 const REGISTRE = 'https://registry.npmjs.org';
+
+/**
+ * Les plafonds GARDÉS, et pourquoi.
+ *
+ * Une entrée ici est une position tenue, pas une dette : la sonde la sort du
+ * tableau d'action et la rappelle en bas, avec sa raison. La retirer relance
+ * le signal — c'est le geste qui rouvre la question.
+ *
+ * @type {Record<string, string>}
+ */
+export const DECISIONS = {
+  typescript:
+    'TypeScript 7 est une réécriture du compilateur : chantier à part, pas un effet de bord d’une montée de socle (12/09/2026).',
+  vitest:
+    'Le parc vient d’arriver en Vitest 4 ; la 5 se décidera une fois cette montée digérée (12/09/2026).',
+  '@vitest/browser':
+    'Suit `vitest` : même version majeure, donc même décision (12/09/2026).',
+};
 
 /**
  * La plus haute version que la plage accepte, sous une forme comparable.
@@ -159,49 +193,99 @@ export async function versionsPubliees(noms, options = {}) {
 /**
  * Confronte les plages déclarées aux versions publiées.
  *
+ * `portee` dit ce qu'un dépassement COÛTE, et c'est la moitié utile du relevé :
+ *
+ * - `dur`   — peer non optionnelle : un conflit fait échouer `npm install`
+ *             (`ERESOLVE`). L'app ne peut pas monter avant le socle.
+ * - `mou`   — peer optionnelle : npm laisse passer. Le socle se décrit mal,
+ *             rien n'est bloqué.
+ * - `interne` — devDependency du socle (`--dev`) : n'engage aucune app.
+ *
+ * Un paquet nommé dans `decisions` rend le verdict `assume` : le plafond est
+ * tenu volontairement, il n'a pas à figurer parmi les choses à faire.
+ *
  * @param {Record<string, string>} declarations
  * @param {Record<string, string | null>} publiees
- * @returns {{ nom: string, plage: string, publiee: string | null, verdict: 'retard' | 'ok' | 'inconnue' }[]}
+ * @param {{ optionnelles?: Iterable<string>, peers?: Iterable<string>, decisions?: Record<string, string> }} [options]
+ * @returns {{ nom: string, plage: string, publiee: string | null, verdict: 'retard' | 'assume' | 'ok' | 'inconnue', portee: 'dur' | 'mou' | 'interne', raison?: string }[]}
  */
-export function analyse(declarations, publiees) {
+export function analyse(declarations, publiees, options = {}) {
+  const optionnelles = new Set(options.optionnelles ?? []);
+  // Sans liste de peers explicite, tout ce qui est déclaré est traité comme
+  // une peer : c'est le cas du relevé par défaut (sans `--dev`).
+  const peers = options.peers ? new Set(options.peers) : null;
+  const decisions = options.decisions ?? {};
   return Object.entries(declarations)
     .map(([nom, plage]) => {
       const publiee = publiees[nom] ?? null;
-      const verdict = !publiee
-        ? 'inconnue'
-        : enRetard(plage, publiee)
-          ? 'retard'
-          : 'ok';
-      return { nom, plage, publiee, verdict };
+      const portee =
+        peers && !peers.has(nom)
+          ? 'interne'
+          : optionnelles.has(nom)
+            ? 'mou'
+            : 'dur';
+      let verdict = 'ok';
+      if (!publiee) verdict = 'inconnue';
+      else if (enRetard(plage, publiee))
+        verdict = nom in decisions ? 'assume' : 'retard';
+      const ligne = { nom, plage, publiee, verdict, portee };
+      if (verdict === 'assume') ligne.raison = decisions[nom];
+      return ligne;
     })
     .sort((a, b) => a.nom.localeCompare(b.nom));
 }
 
+/** Ce qu'un dépassement coûte, en clair dans le tableau. */
+const MORD = {
+  dur: '**oui — `ERESOLVE`**',
+  mou: 'non (peer optionnelle)',
+  interne: 'non (interne au socle)',
+};
+
 /** Le tableau, en Markdown : lisible en terminal comme en résumé de job. */
 export function format(lignes) {
   const retards = lignes.filter(l => l.verdict === 'retard');
+  const assumes = lignes.filter(l => l.verdict === 'assume');
   const inconnues = lignes.filter(l => l.verdict === 'inconnue');
-  if (!retards.length) {
-    return `✅ ${lignes.length} plages examinées, aucun plafond derrière la majeure publiée.${
-      inconnues.length
-        ? `\n(${inconnues.length} version${inconnues.length > 1 ? 's' : ''} non lue${inconnues.length > 1 ? 's' : ''} : ${inconnues.map(l => l.nom).join(', ')})`
-        : ''
-    }`;
-  }
-  const table = [
-    '| Paquet | Déclaré | Publié |',
-    '| --- | --- | --- |',
-    ...retards.map(l => `| \`${l.nom}\` | \`${l.plage}\` | **${l.publiee}** |`),
-  ].join('\n');
-  return [
-    `${retards.length} plafond${retards.length > 1 ? 's' : ''} sur ${lignes.length} interdi${retards.length > 1 ? 'sent' : 't'} la majeure publiée :`,
-    '',
-    table,
-    '',
-    'Chacun est soit une décision (à écrire quelque part), soit un oubli (à monter).',
+  const pied = [
+    assumes.length
+      ? `\n${assumes.length} plafond${assumes.length > 1 ? 's' : ''} assumé${assumes.length > 1 ? 's' : ''} :\n` +
+        assumes
+          .map(
+            l =>
+              `- \`${l.nom}\` \`${l.plage}\` (publié ${l.publiee}) — ${l.raison}`
+          )
+          .join('\n')
+      : '',
     inconnues.length
       ? `\n${inconnues.length} version non lue : ${inconnues.map(l => l.nom).join(', ')}`
       : '',
+  ].filter(Boolean);
+
+  if (!retards.length) {
+    return [
+      `✅ ${lignes.length} plages examinées, aucun plafond à trancher.`,
+      ...pied,
+    ].join('\n');
+  }
+  const durs = retards.filter(l => l.portee === 'dur').length;
+  const table = [
+    '| Paquet | Déclaré | Publié | Mord ? |',
+    '| --- | --- | --- | --- |',
+    ...retards.map(
+      l =>
+        `| \`${l.nom}\` | \`${l.plage}\` | **${l.publiee}** | ${MORD[l.portee] ?? '—'} |`
+    ),
+  ].join('\n');
+  return [
+    `${retards.length} plafond${retards.length > 1 ? 's' : ''} sur ${lignes.length} interdi${retards.length > 1 ? 'sent' : 't'} la majeure publiée — dont ${durs} qui ${durs > 1 ? 'mordent' : 'mord'} :`,
+    '',
+    table,
+    '',
+    'Un plafond DUR est un mur : aucune app ne peut monter avant que le socle n’élargisse.',
+    'Un plafond MOU est une incohérence : le socle interdit peut-être ce qu’il pratique.',
+    'Chacun est soit une décision (à inscrire dans `DECISIONS`), soit un oubli (à monter).',
+    ...pied,
   ]
     .filter(Boolean)
     .join('\n');
@@ -225,18 +309,26 @@ export async function run(args = []) {
     ...(avecDev ? pkg.devDependencies : {}),
   };
   const publiees = await versionsPubliees(Object.keys(declarations));
-  const lignes = analyse(declarations, publiees);
+  const lignes = analyse(declarations, publiees, {
+    peers: Object.keys(pkg.peerDependencies ?? {}),
+    optionnelles: Object.entries(pkg.peerDependenciesMeta ?? {})
+      .filter(([, meta]) => meta?.optional)
+      .map(([nom]) => nom),
+    decisions: DECISIONS,
+  });
 
   if (json) console.log(JSON.stringify({ racine, lignes }, null, 2));
   else console.log(format(lignes));
 
+  // Un plafond ASSUMÉ n'est pas une chose à faire : ni annotation, ni rougeur.
+  // C'est tout l'objet de `DECISIONS`.
   const retards = lignes.filter(l => l.verdict === 'retard');
   // Les annotations rendent le relevé visible sur la page du job, sans quoi il
   // faut ouvrir les journaux — ce que personne ne fait pour un job vert.
   if (process.env.GITHUB_ACTIONS === 'true') {
     for (const l of retards) {
       console.log(
-        `::warning title=Plafond derrière la majeure publiée::${l.nom} : le socle déclare ${l.plage}, npm publie ${l.publiee}`
+        `::warning title=Plafond ${l.portee === 'dur' ? 'DUR (bloque les apps)' : 'derrière la majeure publiée'}::${l.nom} : le socle déclare ${l.plage}, npm publie ${l.publiee}`
       );
     }
   }
