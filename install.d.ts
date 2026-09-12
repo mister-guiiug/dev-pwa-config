@@ -47,11 +47,7 @@ export interface InstallState {
 }
 
 export type InstallEvent =
-  | 'visit'
-  | 'shown'
-  | 'snooze'
-  | 'dismiss'
-  | 'installed';
+  'visit' | 'shown' | 'snooze' | 'dismiss' | 'installed';
 
 export interface InstallStateOptions {
   /** Défaut : {@link INSTALL_STATE_KEY}. */

@@ -9,9 +9,7 @@ export declare function normalizeName(value: unknown): string;
 export declare function nameSimilarity(a: unknown, b: unknown): number;
 
 export type SimilarityReason =
-  | 'same-name'
-  | 'very-close'
-  | 'similar-name-nearby';
+  'same-name' | 'very-close' | 'similar-name-nearby';
 
 export declare const REASONS: {
   readonly sameName: 'same-name';

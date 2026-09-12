@@ -40,8 +40,10 @@ export declare class ErrorBoundary extends Component<
  * valeur légitime — elle n'existe pas sur `ErrorBoundary`, qui reçoit soit une
  * chaîne, soit rien.
  */
-export interface ObservabilityBoundaryProps
-  extends Omit<ErrorBoundaryProps, 'reference'> {
+export interface ObservabilityBoundaryProps extends Omit<
+  ErrorBoundaryProps,
+  'reference'
+> {
   /** Contexte ajouté à l'entrée du journal ; masqué avant écriture. */
   context?: Record<string, unknown>;
   /**

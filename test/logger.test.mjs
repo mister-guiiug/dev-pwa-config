@@ -4,9 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const { createLogger, setLogLevel, getLogLevel } = await import('../logger.js');
-const { getBreadcrumbs, clearBreadcrumbs } = await import(
-  '../react/observability.js'
-);
+const { getBreadcrumbs, clearBreadcrumbs } =
+  await import('../react/observability.js');
 
 test('chaque ligne part dans le fil d’Ariane, nommée et estampillée', () => {
   clearBreadcrumbs();

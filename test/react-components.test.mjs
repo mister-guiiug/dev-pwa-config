@@ -131,9 +131,8 @@ test('ObservabilityBoundary affiche la référence à citer au support', async t
   const { createElement: h } = await import('react');
   const dom = setupDom();
   try {
-    const { ObservabilityBoundary } = await import(
-      '../react/error-boundary.js'
-    );
+    const { ObservabilityBoundary } =
+      await import('../react/error-boundary.js');
     // Un crash sans référence oblige l'utilisateur à décrire « ça a planté » ;
     // l'identifiant affiché est le MÊME que celui parti en en-tête et en Sentry.
     const Boom = () => {

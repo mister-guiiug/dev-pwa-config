@@ -402,9 +402,8 @@ test('filterApps({config}) retient les dépôts qui consomment le sous-chemin', 
  * Il est désormais engendré ; ce test refuse une version périmée.
  */
 test('le tableau du README est celui qu’engendre le catalogue', async () => {
-  const { consumersTable, README_START, README_END } = await import(
-    '../scripts/sync-generated.mjs'
-  );
+  const { consumersTable, README_START, README_END } =
+    await import('../scripts/sync-generated.mjs');
   const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
   const start = readme.indexOf(README_START);
   const end = readme.indexOf(README_END);
@@ -439,9 +438,8 @@ test('le tableau du README est celui qu’engendre le catalogue', async () => {
  * n'exécute pas le script ne le voit pas.
  */
 test('le JSON-LD de la vitrine décrit les seize apps', async () => {
-  const { appsJsonLd, JSONLD_START, JSONLD_END } = await import(
-    '../scripts/sync-generated.mjs'
-  );
+  const { appsJsonLd, JSONLD_START, JSONLD_END } =
+    await import('../scripts/sync-generated.mjs');
   const html = readFileSync(
     new URL('../showroom/index.html', import.meta.url),
     'utf8'

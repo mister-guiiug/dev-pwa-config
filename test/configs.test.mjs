@@ -130,9 +130,8 @@ test('pwaRegisterAlias désigne un fichier réel, et le bon', async () => {
   // avec son `fileURLToPath(...)`. La forme documentée jusqu'ici demandait à
   // l'app de résoudre un sous-chemin d'export depuis SON `vitest.config.ts` ;
   // celle-ci résout depuis le paquet, donc partout où il est installé.
-  const { pwaRegisterAlias, PWA_REGISTER_STUB } = await import(
-    '../vitest-base.js'
-  );
+  const { pwaRegisterAlias, PWA_REGISTER_STUB } =
+    await import('../vitest-base.js');
 
   assert.deepEqual(Object.keys(pwaRegisterAlias), ['virtual:pwa-register']);
   assert.equal(pwaRegisterAlias['virtual:pwa-register'], PWA_REGISTER_STUB);

@@ -1,10 +1,10 @@
 name: 'Setup PWA project'
-description: 'Checkout + setup Node 22 (avec scope @mister-guiiug + GitHub Packages) + npm ci'
+description: 'Checkout + setup Node 26.2.0 (avec scope @mister-guiiug + GitHub Packages) + npm ci'
 inputs:
   node-version:
     description: 'Version de Node à installer'
     required: false
-    default: '22'
+    default: '26.2.0'
   github-token:
     description: 'Token avec read:packages (généralement secrets.GITHUB_TOKEN)'
     required: true

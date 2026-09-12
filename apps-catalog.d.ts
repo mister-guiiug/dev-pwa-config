@@ -3,13 +3,7 @@ export type Maturity = 'alpha' | 'beta' | 'stable';
 
 /** Domaine d'usage (éditorial). Identifiant ASCII stable, libellé côté UI. */
 export type Category =
-  | 'sante'
-  | 'sport'
-  | 'jeux'
-  | 'education'
-  | 'loisirs'
-  | 'outils'
-  | 'dev';
+  'sante' | 'sport' | 'jeux' | 'education' | 'loisirs' | 'outils' | 'dev';
 
 /** Famille de persistance, relevée dans le code de l'application. */
 export type Backend = 'supabase' | 'firebase' | 'local' | 'api';

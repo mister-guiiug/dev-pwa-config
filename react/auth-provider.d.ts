@@ -17,8 +17,10 @@ export interface AuthActionResult<S = unknown> {
   error: AuthActionError | null;
 }
 
-export interface AuthContextValue<S = unknown, U = unknown>
-  extends AuthSnapshot<S, U> {
+export interface AuthContextValue<
+  S = unknown,
+  U = unknown,
+> extends AuthSnapshot<S, U> {
   status: AuthStatus;
   /** Le port a fini sa première lecture : on peut décider. */
   ready: boolean;

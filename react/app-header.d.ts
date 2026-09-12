@@ -5,8 +5,10 @@ import type { ElementType, FC, HTMLAttributes, ReactNode } from 'react';
  * infobulle en chaîne, celui-ci est le titre de la page, et peut porter un
  * nœud.
  */
-export interface AppHeaderProps
-  extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
+export interface AppHeaderProps extends Omit<
+  HTMLAttributes<HTMLElement>,
+  'title'
+> {
   /** Le titre de la page — rendu dans un `h1` (`as` pour un autre niveau). */
   title?: ReactNode;
   as?: ElementType;

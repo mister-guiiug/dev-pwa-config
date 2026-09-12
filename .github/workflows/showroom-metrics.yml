@@ -41,7 +41,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: '26.2.0'
 
       # Aucune dépendance à installer : `fetch` et `node:fs` suffisent.
       - name: Relever l'état des dépôts

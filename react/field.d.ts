@@ -16,17 +16,20 @@ interface FieldCommon {
 }
 
 export interface TextFieldProps
-  extends FieldCommon,
+  extends
+    FieldCommon,
     Omit<InputHTMLAttributes<HTMLInputElement>, 'className'> {}
 
 export interface SelectFieldProps
-  extends FieldCommon,
+  extends
+    FieldCommon,
     Omit<SelectHTMLAttributes<HTMLSelectElement>, 'className'> {
   children?: ReactNode;
 }
 
 export interface TextAreaFieldProps
-  extends FieldCommon,
+  extends
+    FieldCommon,
     Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'className'> {}
 
 /** Champ texte labellisé et accessible (`[data-dwc="field"]`). */
