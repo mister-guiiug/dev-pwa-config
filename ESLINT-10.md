@@ -2,6 +2,38 @@
 
 _Dossier instruit le 03/09/2026. Tout ce qui suit a été mesuré ou éprouvé dans un bac à sable, jamais déduit d'un fichier de métadonnées._
 
+> **ACHEVÉ LE 12/09/2026 — le socle ET le squelette sont en ESLint 10, et la
+> preuve est un job vert.**
+>
+> `pwa-starter-kit` a reçu les trois gestes par ses PR **#20** (socle en
+> `^4.10.0`) et **#21** (Node 26.2.0, Prettier 3.9.6, ESLint 10). Son `main`
+> (`79e5966`) déclare `eslint@^10.10.0` et `@eslint/js@^10.0.1`, porte
+> l'override de `jsx-a11y`, et son lockfile a résolu exactement ce que la recette
+> annonçait : **eslint 10.10.0, `@eslint/js` 10.0.1, `jsx-a11y` 6.10.2 conservé,
+> socle 4.10.0**.
+>
+> Ce qui le prouve n'est pas une déclaration mais **le job « Le squelette,
+> construit sur ce paquet », passé au vert sur `main`** — exécution 591, tête
+> `73fd17d`. Ses onze étapes passent, dont la sixième, « Installer le squelette
+> SUR le paquet empaqueté », qui portait l'`ERESOLVE` depuis la fusion de #248,
+> puis « Lint · types · tests » et « Build, budget de poids et diagnostic
+> strict ». C'est la garde de ce dépôt qui l'atteste, sur le paquet empaqueté ici.
+>
+> **L'alarme du bloc « CORRECTION DU 12/09 » est donc levée** : une app née du
+> générateur naît désormais en ESLint 10, et le point 4 de « L'ordre des
+> opérations » est enfin vrai. Restent les apps du parc, et elles seules.
+>
+> **`jsx-a11y` n'a toujours pas republié** — vérifié au registre le 12/09/2026 :
+> `latest` vaut encore **6.10.2**, et sa peer `eslint` encore
+> `^3 || … || ^9`. L'override reste donc nécessaire, et `scripts/plafonds.mjs`
+> dira le jour où il cesse de l'être.
+>
+> _Ce qui suit est l'histoire de cette montée : les deux erreurs que ce dossier
+> portait, puis une troisième. C'est gardé parce que c'est ce qui explique la
+> recette ; l'état, c'est ce qui précède._
+
+---
+
 > **PASSE EXÉCUTÉE LE 10/09/2026 — socle et squelette. Deux choses que ce
 > dossier disait, et qui étaient fausses.**
 >
@@ -52,6 +84,9 @@ _Dossier instruit le 03/09/2026. Tout ce qui suit a été mesuré ou éprouvé d
 > Le point 4 de « L'ordre des opérations » ci-dessous affirme que « le point 1 y
 > pourvoit déjà » : c'est faux tant que la PR sur le squelette n'est pas
 > fusionnée. C'est par lui que doit commencer la montée des consommateurs.
+>
+> **Levé le jour même** : le squelette a été modifié par #20 puis #21, et le job
+> de ce dépôt est passé au vert. Voir le bloc d'ouverture.
 
 ## Pourquoi maintenant
 
@@ -60,7 +95,8 @@ _Dossier instruit le 03/09/2026. Tout ce qui suit a été mesuré ou éprouvé d
 > npm warn deprecated eslint@9.39.5: This version is no longer supported.
 
 ESLint 9 est sorti du support, ESLint 10.9.1 est publié. Le parc — le socle et
-ses dix-sept dépôts — est sur la 9.
+ses dix-sept dépôts — est sur la 9. _(Vrai le 03/09. Depuis le 12/09, le socle et
+le squelette sont en 10 ; ce constat ne vaut plus que pour les apps.)_
 
 ## Le blocage apparent, et ce qu'il vaut
 
@@ -93,13 +129,13 @@ C'est sa déclaration de compatibilité qui n'a pas suivi, pas son code.
 
 ## Ce qu'ESLint 10 change, et ce que ça coûte ici
 
-| Rupture                                       | Le parc                                           |
-| --------------------------------------------- | ------------------------------------------------- |
-| Node ≥ 20.19 / 22.13 / 24                     | ✅ Node 22 partout (`.nvmrc`, runners en 22.23.2) |
-| `.eslintrc` supprimé                          | ✅ tout le parc est en flat config                |
-| Commentaires `eslint-env` → erreurs           | ✅ aucun dans le parc                             |
-| API de règles retirée (`context.getCwd()`, …) | ✅ le socle n'écrit aucune règle                  |
-| `eslint:recommended` : trois règles de plus   | ⚠️ **le seul vrai coût** — voir ci-dessous        |
+| Rupture                                       | Le parc                                                    |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| Node ≥ 20.19 / 22.13 / 24                     | ✅ `.nvmrc` épingle 26.2.0 ; la CI d'ici joue 22 ET 26.2.0 |
+| `.eslintrc` supprimé                          | ✅ tout le parc est en flat config                         |
+| Commentaires `eslint-env` → erreurs           | ✅ aucun dans le parc                                      |
+| API de règles retirée (`context.getCwd()`, …) | ✅ le socle n'écrit aucune règle                           |
+| `eslint:recommended` : trois règles de plus   | ⚠️ **le seul vrai coût** — voir ci-dessous                 |
 
 `no-unassigned-vars`, `no-useless-assignment` et `preserve-caught-error`
 entrent dans `recommended`. Mesuré en installant réellement ESLint 10 :
@@ -177,22 +213,36 @@ candidat : `npm install` résout sans forcer (`eslint 10.10.0`, `@eslint/js
 10.0.1`, `jsx-a11y 6.10.2`), puis lint, types, tests, build, budget et
 `pwa-doctor --strict` passent tous.
 
+**Et en vigueur depuis le 12/09/2026** : le squelette porte ces gestes sur son
+`main`, et son lockfile a résolu les mêmes versions que l'essai annonçait. La
+recette n'est donc plus une proposition — c'est ce que le gabarit fait.
+
 ## L'ordre des opérations
 
 **Corrigé le 10/09/2026**, après l'échec de la première tentative : ce n'est pas
 « le socle, puis une app pilote ». Le socle seul casse les apps qui ne déclarent
 pas `eslint`.
 
-1. **Le socle ET le squelette, dans la même version** : peers élargies d'un côté,
-   les gestes 2 et 3 de l'autre. Le job « Le squelette, construit sur ce paquet »
-   installe le squelette sur le paquet candidat — il refuse la CI tant que les
-   deux ne sont pas d'accord, ce qui rend l'ordre impossible à ignorer.
+1. ~~**Le socle ET le squelette, dans la même version**~~ — **FAIT.** Peers
+   élargies ici par #248 et la 4.10.0 publiée ; les gestes 2 et 3 posés sur le
+   squelette par #20 et #21. Le job « Le squelette, construit sur ce paquet »
+   installe le squelette sur le paquet candidat : il a refusé la CI tant que les
+   deux n'étaient pas d'accord, et il est vert depuis qu'ils le sont. C'est lui
+   qui a rendu l'ordre impossible à ignorer, et lui qui atteste la fin.
 2. **Les apps qui ne déclarent pas `eslint`**, une PR chacune : les gestes 2 et 3.
-   Ce sont elles qui cassent au prochain `npm install`, et elles seules.
-3. **Les apps qui déclarent déjà `eslint@^9.39.4`** (`bac-sable` en est) : rien
-   ne presse, elles montent quand elles veulent, avec les mêmes deux gestes.
-4. **Le gabarit** et la checklist du README, pour que le prochain projet naisse
-   en 10 — le squelette étant le gabarit vivant, le point 1 y pourvoit déjà.
+   Ce sont elles qui cassent au prochain `npm install`, et elles seules. Attention
+   au recensement : la campagne du 12/09 a épinglé des apps en `^9.39.4`
+   explicitement, ce qui les fait passer au point 3 — se fier à leur
+   `package.json`, pas à ce dossier.
+3. **Les apps qui déclarent déjà `eslint@^9.39.4`** : rien ne presse, elles
+   montent quand elles veulent, avec les mêmes gestes 2 et 3 — pour elles le
+   geste 2 est une simple montée de plage, la déclaration existant déjà.
+   `bac-sable` en est — vérifié le 12/09 : `eslint@^9.39.4`,
+   `@eslint/js@^9.39.4`, aucun override.
+4. ~~**Le gabarit** et la checklist du README~~ — **FAIT par le point 1.** Le
+   squelette étant le gabarit vivant, une app qui en naît naît maintenant en
+   ESLint 10. Ce point était faux entre le 10 et le 12/09, et le bloc
+   « CORRECTION DU 12/09 » dit pourquoi.
 
 ## Ce qui peut mal tourner
 
