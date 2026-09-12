@@ -2,8 +2,7 @@ import type { FC } from 'react';
 import type { DescribeOptions, ProjectOptions } from '../sparkline.js';
 
 export interface SparklineProps<T = unknown>
-  extends ProjectOptions<T>,
-    DescribeOptions<T> {
+  extends ProjectOptions<T>, DescribeOptions<T> {
   values: ReadonlyArray<number | null | undefined | T>;
   /** Marquer le dernier point. Défaut : `true`. */
   showLast?: boolean;
@@ -14,8 +13,7 @@ export interface SparklineProps<T = unknown>
 export declare const Sparkline: FC<SparklineProps>;
 
 export interface BarChartProps<T = unknown>
-  extends ProjectOptions<T>,
-    DescribeOptions<T> {
+  extends ProjectOptions<T>, DescribeOptions<T> {
   values: ReadonlyArray<number | null | undefined | T>;
   className?: string;
 }

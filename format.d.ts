@@ -12,9 +12,7 @@
 export declare function formatCurrency(
   amount: number,
   locale?:
-    | string
-    | string[]
-    | (Intl.NumberFormatOptions & { decimals?: number }),
+    string | string[] | (Intl.NumberFormatOptions & { decimals?: number }),
   currency?: string | (Intl.NumberFormatOptions & { decimals?: number }),
   options?: Intl.NumberFormatOptions & { decimals?: number }
 ): string;
@@ -29,9 +27,7 @@ export declare function formatCurrency(
 export declare function formatNumber(
   value: number,
   locale?:
-    | string
-    | string[]
-    | (Intl.NumberFormatOptions & { decimals?: number }),
+    string | string[] | (Intl.NumberFormatOptions & { decimals?: number }),
   options?: Intl.NumberFormatOptions & { decimals?: number }
 ): string;
 

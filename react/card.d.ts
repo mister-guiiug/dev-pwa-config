@@ -15,8 +15,10 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
  * `title` est RETIRÉ des attributs HTML puis redéclaré : celui du DOM est une
  * infobulle en chaîne, celui-ci est le titre rendu, et peut porter un nœud.
  */
-export interface CardHeaderProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
+export interface CardHeaderProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'title'
+> {
   /** Rendu dans un vrai titre — `h3` par défaut, `as` pour le niveau. */
   title: ReactNode;
   subtitle?: ReactNode;

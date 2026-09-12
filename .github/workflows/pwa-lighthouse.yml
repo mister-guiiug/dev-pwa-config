@@ -36,7 +36,7 @@ on:
       node-version:
         type: string
         required: false
-        default: '22'
+        default: '26.2.0'
       base-path:
         description: 'VITE_BASE_PATH pour le build mesuré (LHCI sert dist/ à la racine)'
         type: string

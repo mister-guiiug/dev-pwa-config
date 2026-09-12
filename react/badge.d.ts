@@ -1,12 +1,7 @@
 import type { FC, HTMLAttributes, ReactNode } from 'react';
 
 export type BadgeTone =
-  | 'brand'
-  | 'success'
-  | 'warning'
-  | 'danger'
-  | 'info'
-  | 'muted';
+  'brand' | 'success' | 'warning' | 'danger' | 'info' | 'muted';
 
 /**
  * Pas de variante « pleine » : avec une seule couleur par ton, le texte posé

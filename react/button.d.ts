@@ -1,16 +1,14 @@
 import type { ButtonHTMLAttributes, FC } from 'react';
 
 export type ButtonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'outline'
-  | 'ghost'
-  | 'danger';
+  'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonBaseProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-busy'> {
+interface ButtonBaseProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'aria-busy'
+> {
   /**
    * Bloque le bouton SANS lui voler le focus — le clic est neutralisé ici.
    *

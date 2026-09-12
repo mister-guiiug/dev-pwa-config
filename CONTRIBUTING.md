@@ -13,7 +13,9 @@ npm run validate   # format + lint + types + tests — ce que la CI exécute
 npm run showroom   # la vitrine, sur http://localhost:4173
 ```
 
-Node 22 minimum (`.nvmrc`).
+Node 26.2.0 (`.nvmrc`), que la CI installe partout. Le paquet publié, lui,
+promet toujours `engines: >=22` : c'est un plancher de compatibilité, pas la
+version sur laquelle on développe, et le relever serait une rupture.
 
 ## Les quatre règles du dépôt
 

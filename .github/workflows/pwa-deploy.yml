@@ -19,7 +19,7 @@ on:
       node-version:
         type: string
         required: false
-        default: '22'
+        default: '26.2.0'
       use-base-path:
         description: 'Définir VITE_BASE_PATH=/<repo-name>/'
         type: boolean

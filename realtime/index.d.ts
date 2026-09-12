@@ -50,8 +50,7 @@ export interface RealtimeTransport<M, C = unknown> {
 }
 
 export interface ChannelOptions<M, C = unknown>
-  extends BackoffOptions,
-    Partial<RealtimeTransport<M, C>> {
+  extends BackoffOptions, Partial<RealtimeTransport<M, C>> {
   connect: RealtimeTransport<M, C>['connect'];
   onMessage?: (message: M) => void;
   onStatus?: (status: ChannelStatus, info?: Record<string, unknown>) => void;

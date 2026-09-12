@@ -1350,9 +1350,8 @@ test('le catalogue nomme exactement ce que les familles émettent', async () => 
 });
 
 test('chaque famille se joue seule, sur le contexte lu une fois', async () => {
-  const { contexteDepot, journal, reglesDepot, reglesWorkflows } = await import(
-    '../scripts/pwa-doctor.mjs'
-  );
+  const { contexteDepot, journal, reglesDepot, reglesWorkflows } =
+    await import('../scripts/pwa-doctor.mjs');
   await repo({ 'package.json': { name: 'vide' } }, async root => {
     const ctx = contexteDepot(root);
     const seul = journal(ctx.pkg);

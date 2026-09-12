@@ -43,8 +43,7 @@ export interface RestoreOptions {
 }
 
 export type RestoreResult =
-  | { ok: true; restored: number }
-  | { ok: false; problems: string[] };
+  { ok: true; restored: number } | { ok: false; problems: string[] };
 
 /** Valide d'abord, écrit ensuite — jamais d'état intermédiaire. */
 export declare function restoreBackup(

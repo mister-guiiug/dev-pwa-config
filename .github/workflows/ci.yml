@@ -13,15 +13,16 @@ jobs:
     name: In-repo config parse (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
-      # LE PAQUET PROMET `engines: >=22` ET N'ÉPROUVAIT QUE 22. Les runners du
-      # parc sont en 22, mais la promesse publiée est plus large : une app qui
-      # passe en 24 exécute des bins et des configs que personne n'avait
-      # lancés dessus. Deux minutes de CI achètent la certitude que la
-      # promesse tient — et le jour où une API retirée mord, c'est ici que ça
-      # rougit, pas dans la vingtième app.
+      # LE PAQUET PROMET `engines: >=22` ET LE PARC ÉPINGLE 26.2.0 : les deux
+      # entrées ci-dessous sont exactement ces deux nombres. La promesse
+      # publiée reste plus large que l'épingle, et c'est délibéré — la relever
+      # serait une rupture, donc un `v5` et une migration des `uses:` sur
+      # vingt et un dépôts pour un plancher que rien dans ce paquet n'exige.
+      # Tant qu'on promet 22, on l'éprouve ; le jour où une API retirée mord,
+      # c'est ici que ça rougit, pas dans la vingtième app.
       fail-fast: false
       matrix:
-        node: ['22', '24']
+        node: ['22', '26.2.0']
     steps:
       - uses: actions/checkout@v5
         with:
@@ -93,7 +94,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: '26.2.0'
           cache: npm
 
       - name: Empaqueter la version candidate
@@ -120,13 +121,16 @@ jobs:
           # la modification en cours.
           npm pkg set "devDependencies.@mister-guiiug/dev-pwa-config=file:$TARBALL"
 
-          # NPM 11 POUR CETTE INSTALLATION. Node 22 embarque npm 10.9.8, dont
-          # Arborist échoue sur « Cannot read properties of null (reading
-          # 'edgesOut') » face à une dépendance `file:`. Le job éprouve le
-          # paquet, pas le gestionnaire : on prend celui qui sait lire l'arbre.
           # `npm install` et non `ci` : le lockfile ne correspond plus, c'est le
           # but.
-          npx --yes npm@11 install --no-audit --no-fund
+          #
+          # CE JOB APPELAIT `npx --yes npm@11` — ce n'est plus utile. Node 22
+          # embarquait npm 10.9.8, dont Arborist échouait sur « Cannot read
+          # properties of null (reading 'edgesOut') » face à une dépendance
+          # `file:` ; Node 26.2.0 embarque npm 11.13.0, qui sait lire l'arbre.
+          # Le détour coûtait un téléchargement par exécution et masquait quel
+          # gestionnaire éprouve réellement le paquet.
+          npm install --no-audit --no-fund
 
       # Ce que la fixture vérifiait, rejoué là où les peers sont déjà installées.
       - name: Chaque sous-chemin JS s'importe

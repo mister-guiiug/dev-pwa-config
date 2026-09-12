@@ -144,9 +144,8 @@ test('un stockage qui jette n’empêche pas d’obtenir un identifiant', async 
     },
   });
   try {
-    const { getSessionId: freshId } = await import(
-      '../correlation.js?storage-throws'
-    );
+    const { getSessionId: freshId } =
+      await import('../correlation.js?storage-throws');
     assert.ok(freshId(), 'repli mémoire');
   } finally {
     if (previous) Object.defineProperty(globalThis, 'sessionStorage', previous);

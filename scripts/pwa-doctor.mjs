@@ -710,7 +710,7 @@ export function reglesDepot(ctx, api) {
     dette('editorconfig', 'pas de .editorconfig', 'copier celui du gabarit');
   }
   if (!exists(root, '.nvmrc')) {
-    dette('nvmrc', 'pas de .nvmrc', 'écrire « 22 »');
+    dette('nvmrc', 'pas de .nvmrc', 'écrire « 26.2.0 »');
   }
   const attributes = readText(root, '.gitattributes') ?? '';
   if (!/eol=lf/.test(attributes)) {

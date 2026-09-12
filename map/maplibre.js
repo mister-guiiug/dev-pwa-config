@@ -26,9 +26,8 @@ const DEFAULT_MOUNT_TIMEOUT_MS = 10_000;
  */
 async function resolveWorkerUrl(override) {
   if (override) return override;
-  const mod = await import(
-    'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-  );
+  const mod =
+    await import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url');
   return mod.default;
 }
 
