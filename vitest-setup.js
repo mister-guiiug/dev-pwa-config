@@ -113,6 +113,34 @@ class NoopObserver {
 if (typeof globalThis.ResizeObserver === 'undefined') {
   globalThis.ResizeObserver = NoopObserver;
 }
+
+/*
+ * `AnimationEvent` — RETIRÉ par jsdom 30, et sa disparition est SILENCIEUSE.
+ *
+ * jsdom 30 n'expose plus ce constructeur (`TransitionEvent`, lui, est resté).
+ * React choisit le nom de l'événement d'animation d'après sa présence : sans
+ * lui, il écoute la variante préfixée (`webkitAnimationEnd`) et n'entend jamais
+ * `animationend`. Conséquence mesurée le 12/09/2026 en montant `mister-miss-koh`
+ * de jsdom 26 à 30 : `fireEvent.animationEnd(bouton)` continue d'atteindre un
+ * `addEventListener` natif — ce qui brouille la piste — mais `onAnimationEnd`
+ * ne se déclenche plus. Rien ne lève ; le test échoue sur l'assertion suivante,
+ * très loin de la cause.
+ *
+ * Un seul dépôt en dépendait ce jour-là, parce qu'un seul teste une animation.
+ * Le trou attendait tous les autres.
+ */
+if (typeof globalThis.AnimationEvent === 'undefined') {
+  class AnimationEvent extends Event {
+    constructor(type, init = {}) {
+      super(type, init);
+      this.animationName = init.animationName ?? '';
+      this.elapsedTime = init.elapsedTime ?? 0;
+      this.pseudoElement = init.pseudoElement ?? '';
+    }
+  }
+  globalThis.AnimationEvent = AnimationEvent;
+  if (typeof window !== 'undefined') window.AnimationEvent = AnimationEvent;
+}
 if (typeof globalThis.IntersectionObserver === 'undefined') {
   globalThis.IntersectionObserver = NoopObserver;
 }

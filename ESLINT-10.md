@@ -39,6 +39,19 @@ _Dossier instruit le 03/09/2026. Tout ce qui suit a été mesuré ou éprouvé d
 > `bac-sable`) ne voient rien tant qu'elles ne montent pas ; celles qui s'en
 > remettent à la peer du socle ont besoin des trois gestes. `scripts/plafonds.mjs`
 > dira le jour où `jsx-a11y` republie et rend l'override inutile.
+>
+> **CORRECTION DU 12/09/2026 — « socle ET squelette » est trompeur.** Le
+> squelette a été ÉPROUVÉ le 10/09, dans le job « Le squelette, construit sur ce
+> paquet », qui l'installe depuis `main` sur le paquet candidat. Il n'a pas été
+> MODIFIÉ : son `package.json` n'a jamais porté ESLint 10 — dix commits le
+> touchent, aucun ne le fait. Il est resté en `^9.39.4`, et la campagne du
+> 12/09 l'y a épinglé explicitement, comme les dix-huit apps.
+>
+> Conséquence à ne pas perdre de vue : `pwa-starter-kit` est le gabarit vivant
+> du générateur, donc **toute app née depuis naît en ESLint 9, hors support**.
+> Le point 4 de « L'ordre des opérations » ci-dessous affirme que « le point 1 y
+> pourvoit déjà » : c'est faux tant que la PR sur le squelette n'est pas
+> fusionnée. C'est par lui que doit commencer la montée des consommateurs.
 
 ## Pourquoi maintenant
 

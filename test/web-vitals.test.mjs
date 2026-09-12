@@ -136,15 +136,33 @@ test('web-vitals est une peer OPTIONNELLE, et le module l’importe paresseuseme
   const pkg = JSON.parse(
     readFileSync(new URL('../package.json', import.meta.url), 'utf8')
   );
-  assert.equal(pkg.peerDependencies['web-vitals'], '^4.2.0');
+  // CE QUI EST FIGÉ ICI EST UN CONTRAT, PAS UNE LIMITE. La version antérieure
+  // de ce test exigeait la plage LITTÉRALE `^4.2.0` : élargir la peer à la v6
+  // — une montée délibérée, mesurée — faisait rougir la CI sans qu'aucune
+  // promesse de ce module ne soit rompue. Ce qui compte vraiment tient en
+  // trois points.
+  const plage = pkg.peerDependencies['web-vitals'];
+  // 1. La v4 reste acceptée : quatre apps y sont, et rien ne les force à monter.
+  assert.match(
+    plage,
+    /\^4\.2\./,
+    `la plage doit continuer d'accepter la v4 (lue : ${plage})`
+  );
+  // 2. La peer reste OPTIONNELLE : une app qui ne mesure rien ne l'installe pas.
   assert.equal(pkg.peerDependenciesMeta['web-vitals'].optional, true);
   const source = readFileSync(
     new URL('../web-vitals.js', import.meta.url),
     'utf8'
   );
+  // 3. L'import reste PARESSEUX : un import statique embarquerait la
+  //    bibliothèque dans toutes les apps, y compris celles qui ne mesurent rien.
   assert.doesNotMatch(
     source,
     /^import .*'web-vitals'/m,
     'un import statique embarquerait la bibliothèque dans toutes les apps'
   );
+  // Et le module ne nomme aucune fonction en dur : il cherche `on${NOM}` et
+  // saute ce qui manque. C'est ce qui lui permet de survivre au retrait
+  // d'`onFID` en v5 — vérifié contre web-vitals 6.0.0 avant d'élargir la peer.
+  assert.match(source, /lib\[`on\$\{name\}`\]/);
 });
