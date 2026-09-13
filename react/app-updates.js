@@ -44,6 +44,38 @@ export function parseInterval(value) {
 }
 
 /**
+ * La vérification périodique, extraite pour avoir DEUX appelants et une seule
+ * implémentation.
+ *
+ * Elle ne vivait que dans `AppUpdates`. Or neuf applications du parc posent
+ * `UpdatePromptBanner` seul : elles n'avaient aucun moyen d'écrire
+ * `checkEvery`, donc leur bandeau attendait un démarrage à froid pour
+ * apparaître — ce qui, sur une PWA installée et laissée ouverte, peut ne
+ * jamais arriver.
+ *
+ * @param {string|number|undefined} checkEvery
+ */
+export function useUpdateCheck(checkEvery) {
+  const everyMs = parseInterval(checkEvery);
+  useEffect(() => {
+    if (!everyMs) return undefined;
+    const sw = globalThis.navigator?.serviceWorker;
+    if (!sw?.getRegistration) return undefined;
+    const tick = async () => {
+      try {
+        const registration = await sw.getRegistration();
+        await registration?.update?.();
+      } catch {
+        // Une vérification ratée n'est pas un incident : la suivante viendra,
+        // et le rechargement manuel reste possible.
+      }
+    };
+    const id = setInterval(tick, everyMs);
+    return () => clearInterval(id);
+  }, [everyMs]);
+}
+
+/**
  * @param {{ registerSW?: Function, snoozeHours?: number, snoozeKey?: string,
  *   checkEvery?: string|number, banner?: boolean,
  *   bannerProps?: object, children?: import('react').ReactNode,
@@ -83,23 +115,7 @@ export function AppUpdates(props = {}) {
     onRegistered,
   });
 
-  const everyMs = parseInterval(checkEvery);
-  useEffect(() => {
-    if (!everyMs) return undefined;
-    const sw = globalThis.navigator?.serviceWorker;
-    if (!sw?.getRegistration) return undefined;
-    const tick = async () => {
-      try {
-        const registration = await sw.getRegistration();
-        await registration?.update?.();
-      } catch {
-        // Une vérification ratée n'est pas un incident : la suivante viendra,
-        // et le rechargement manuel reste possible.
-      }
-    };
-    const id = setInterval(tick, everyMs);
-    return () => clearInterval(id);
-  }, [everyMs]);
+  useUpdateCheck(checkEvery);
 
   return h(
     UpdatesContext.Provider,

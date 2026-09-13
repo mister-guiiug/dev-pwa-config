@@ -26,6 +26,7 @@ import {
   parseInterval,
   useAppUpdates,
 } from '../react/app-updates.js';
+import { UpdatePromptBanner } from '../react/update-prompt-banner.js';
 import { IconsProvider, Icon, useIcon } from '../react/icons-context.js';
 import { themeBootSource, themeBootScript } from '../theme-boot.js';
 
@@ -241,6 +242,64 @@ test('AppUpdates vérifie périodiquement, et arrête au démontage', async () =
     const apres = checks;
     await new Promise(r => setTimeout(r, 90));
     assert.equal(checks, apres, 'la minuterie a survécu au démontage');
+  } finally {
+    dom.restore();
+  }
+});
+
+test('le bandeau autonome vérifie aussi, et ne double pas sous le fournisseur', async () => {
+  // NEUF APPS DU PARC posent `UpdatePromptBanner` seul : `checkEvery` n'existait
+  // que sur `AppUpdates`, donc elles n'avaient AUCUN moyen de l'écrire et leur
+  // bandeau attendait un démarrage à froid — qui, sur une PWA installée laissée
+  // ouverte, peut ne jamais venir.
+  const dom = setupDom();
+  let checks = 0;
+  Object.defineProperty(globalThis.navigator, 'serviceWorker', {
+    value: {
+      addEventListener() {},
+      removeEventListener() {},
+      getRegistration: () =>
+        Promise.resolve({
+          update: () => {
+            checks += 1;
+            return Promise.resolve();
+          },
+        }),
+    },
+    configurable: true,
+  });
+  try {
+    const seul = await mount(h(UpdatePromptBanner, { checkEvery: 30 }));
+    await seul.act(() => new Promise(r => setTimeout(r, 110)));
+    assert.ok(
+      checks >= 2,
+      `bandeau autonome : vérifications attendues, obtenu ${checks}`
+    );
+    await seul.unmount();
+
+    // Sous le fournisseur, l'enregistrement appartient à `AppUpdates` : le
+    // bandeau ne doit PAS relancer sa propre minuterie, sinon deux intervalles
+    // tournent pour un seul service worker.
+    checks = 0;
+    const sous = await mount(
+      h(AppUpdates, { checkEvery: 30 }, h('p', {}, 'app'))
+    );
+    await sous.act(() => new Promise(r => setTimeout(r, 110)));
+    const avecFournisseur = checks;
+    await sous.unmount();
+
+    checks = 0;
+    const reference = await mount(
+      h(AppUpdates, { checkEvery: 30, banner: false }, h('p', {}, 'app'))
+    );
+    await reference.act(() => new Promise(r => setTimeout(r, 110)));
+    const sansBandeau = checks;
+    await reference.unmount();
+
+    assert.ok(
+      Math.abs(avecFournisseur - sansBandeau) <= 1,
+      `le bandeau a doublé l’intervalle : ${avecFournisseur} contre ${sansBandeau} sans lui`
+    );
   } finally {
     dom.restore();
   }

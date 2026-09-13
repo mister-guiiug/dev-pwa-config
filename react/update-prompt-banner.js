@@ -1,7 +1,7 @@
 import { createElement as h, useState } from 'react';
 import { useUpdatePrompt } from './use-update-prompt.js';
 import { useLabels } from './labels-core.js';
-import { useAppUpdates } from './app-updates.js';
+import { useAppUpdates, useUpdateCheck } from './app-updates.js';
 
 /**
  * Bandeau « Mise à jour disponible », branché sur `useUpdatePrompt`.
@@ -173,6 +173,10 @@ function StandaloneBanner(props) {
     onRegisteredSW: props.onRegisteredSW,
     onRegistered: props.onRegistered,
   });
+  // C'est ce mode — et lui seul — qui possède l'enregistrement, donc c'est ici
+  // que la vérification périodique a sa place. Sous `AppUpdates`, le
+  // fournisseur la tient déjà : la relancer ici doublerait l'intervalle.
+  useUpdateCheck(props.checkEvery);
   return h(Banner, { ...props, ...state });
 }
 
