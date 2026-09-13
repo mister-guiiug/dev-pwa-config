@@ -149,23 +149,35 @@ const CHECKS = {
   // existe pour ce cas), laisser la CI de `main` produire le nouveau contexte,
   // puis relancer ce script.
   //
-  // UN JOB MATRICIEL NE RAPPORTE PAS SON `name:`, il en rapporte un PAR ENTRÉE,
-  // suffixé de la valeur de matrice. Le premier job a gagné sa matrice le
-  // 10/09/2026 (#247) : `In-repo config parse` a cessé d'exister ce jour-là au
-  // profit de `In-repo config parse (Node 22)` et `(Node 24)`, puis `(Node
-  // 26.2.0)` le 12/09 (#251). Personne n'a relancé ce script — le ruleset a
-  // continué d'exiger le nom nu, que plus aucun job ne produisait, et TOUTES
-  // les PR du dépôt sont restées BLOCKED du 10 au 13/09, franchies au seul
-  // contournement admin. Donner un `name:` fixe au job ne sauverait rien :
-  // GitHub suffixerait quand même chaque entrée pour les distinguer. Il faut
-  // donc bien DEUX contextes, et ils portent le numéro de version — donc le
-  // prochain relèvement de Node redemande un passage ici. C'est ce que
-  // `--audit` surveille, pour que l'oubli se voie au lieu de geler le dépôt.
-  [SELF]: [
-    'In-repo config parse (Node 22)',
-    'In-repo config parse (Node 26.2.0)',
-    'Le squelette, construit sur ce paquet',
-  ],
+  // UN SEUL CONTEXTE, ET IL NE PORTE PLUS DE NUMÉRO DE VERSION. Un job
+  // matriciel ne rapporte pas son `name:` : il en rapporte un PAR ENTRÉE,
+  // suffixé de la valeur de matrice. `validate` a gagné sa matrice le
+  // 10/09/2026 (#247) — `In-repo config parse` a cessé d'exister au profit de
+  // `(Node 22)` et `(Node 24)`, puis `(Node 26.2.0)` le 12/09 (#251) — et le
+  // ruleset a continué d'exiger le nom nu : toutes les PR du dépôt sont
+  // restées BLOCKED du 10 au 13/09, franchies au seul contournement admin.
+  //
+  // Exiger les deux noms matriciels réparait l'instance et gardait la classe :
+  // le numéro de Node était DANS le contexte, donc le prochain relèvement
+  // refaisait la panne. `ci.yml` porte désormais `tout-vert`, un job sans
+  // matrice ni version qui `needs:` les deux autres et rougit si l'un d'eux
+  // n'est pas vert. Le contrat tient en un nom stable, et la matrice peut
+  // bouger sans que personne touche à une protection de branche.
+  //
+  // L'ORDRE DE BASCULE N'EST PAS NÉGOCIABLE, pour la même raison que ci-dessus :
+  // un `pull_request` exécute le workflow de SA branche, donc une PR partie
+  // d'un `main` sans `tout-vert` ne produirait pas ce contexte et gèlerait.
+  // Fusionner d'abord, laisser la CI de `main` produire le nom, relancer
+  // ensuite. Appliquer avant la fusion gèlerait toutes les PR suivantes — et
+  // le garde ne le verrait pas : depuis qu'il lit aussi les PR récentes, il
+  // observe `tout-vert` sur la PR qui l'introduit, ce qui ne dit rien de
+  // `main`.
+  [SELF]: ['Toute la CI est verte'],
+  // MÊME FRAGILITÉ QU'ICI AVANT `tout-vert`, et elle est intacte : ces deux
+  // noms sont matriciels, donc le jour où ce dépôt relève son Node, son
+  // ruleset exige deux contextes que plus rien ne produit et toutes ses PR
+  // gèlent. Y porter le même job d'agrégation réglerait la question ; en
+  // attendant, `--audit` est ce qui le dira.
   'mister-quota': [
     'typecheck · test · build (20.x)',
     'typecheck · test · build (22.x)',
