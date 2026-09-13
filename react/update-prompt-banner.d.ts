@@ -30,6 +30,17 @@ export interface UpdatePromptBannerProps {
   /** Forme historique de `onRegisteredSW`, sans l'URL du script. */
   onRegistered?: (registration?: ServiceWorkerRegistration) => void;
   /**
+   * Vérification périodique d'une nouvelle version : `'1h'`, `'30m'`, `'45s'`
+   * ou un nombre de millisecondes. Sans elle, une PWA installée ouverte
+   * plusieurs jours ne découvre rien avant son prochain démarrage à froid — le
+   * bandeau n'apparaît alors jamais.
+   *
+   * N'a d'effet QUE sur un bandeau autonome, qui possède l'enregistrement.
+   * Sous `AppUpdates`, c'est le fournisseur qui la tient : écrire `checkEvery`
+   * ici serait sans effet, et l'y poser deux fois doublerait l'intervalle.
+   */
+  checkEvery?: string | number;
+  /**
    * Nombre de sorties offertes à côté de « Recharger ».
    *
    * - `'auto'` (défaut) — une seule : le report si `snoozeHours > 0`, sinon

@@ -55,6 +55,13 @@ export interface AppUpdatesProps {
 /** Millisecondes d'un intervalle `'1h'` / `'30m'` / `'45s'` ; `0` si illisible. */
 export declare function parseInterval(value: string | number): number;
 
+/**
+ * Redemande au service worker s'il existe une nouvelle version, à intervalle
+ * régulier. Une seule implémentation pour ses deux appelants : `AppUpdates` et
+ * le bandeau autonome.
+ */
+export declare function useUpdateCheck(checkEvery?: string | number): void;
+
 /** Un enregistrement, un bandeau, et le bouton posable n'importe où. */
 export declare const AppUpdates: FC<AppUpdatesProps>;
 
