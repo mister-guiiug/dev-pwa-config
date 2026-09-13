@@ -195,3 +195,59 @@ jobs:
       - name: Build, budget de poids et diagnostic strict
         working-directory: starter-kit
         run: npm run build
+
+  # ── LE SEUL CONTEXTE QUE LE RULESET EXIGE ───────────────────────────────────
+  #
+  # POURQUOI CE JOB EXISTE. Un job matriciel ne rapporte pas son `name:` : il en
+  # rapporte un PAR ENTRÉE, suffixé de la valeur de matrice, puisque c'est tout
+  # ce qui les distingue. Le nom de chaque contexte porte donc un numéro de
+  # version de Node — et le ruleset, qui les exige nommément, devient faux à
+  # chaque relèvement. C'est arrivé le 10/09/2026 : `validate` a gagné sa
+  # matrice, `In-repo config parse` a cessé d'exister, et le ruleset a continué
+  # de l'attendre. Un contexte exigé qui n'arrive jamais ne rougit pas, il reste
+  # EN ATTENTE : toutes les PR du dépôt sont restées BLOCKED trois jours,
+  # franchies au seul contournement admin, sans un message nulle part.
+  #
+  # Ce job n'a ni matrice ni version dans son nom. Le ruleset n'exige que lui,
+  # et `validate` peut désormais changer de matrice — passer à trois entrées,
+  # relever Node, en retirer une — sans que personne ait à retoucher une
+  # protection de branche. La classe entière de panne disparaît avec le numéro
+  # de version qui était dans le contexte.
+  #
+  # LE CONTRAT SE DÉPLACE ICI : c'est ce `name:` qui ne doit plus bouger, et le
+  # `needs:` qui doit rester complet. Un job ajouté à ce fichier mais absent du
+  # `needs:` ci-dessous serait vert pour GitHub sans que personne le regarde.
+  # `npm run rulesets:audit` reste le filet, mais il se lance à la main.
+  tout-vert:
+    name: Toute la CI est verte
+    needs: [validate, starter-kit]
+    # `always()` N'EST PAS UNE COMMODITÉ, C'EST LA CONDITION DE SÛRETÉ. Sans
+    # lui, un `validate` rouge fait SAUTER ce job — et GitHub compte un job
+    # sauté comme un check RÉUSSI. Le portail laisserait alors passer très
+    # exactement ce qu'il existe pour retenir, et il le ferait en silence.
+    if: always()
+    runs-on: ubuntu-latest
+    # Ce job ne lit rien et n'écrit rien : il ne fait que relire des résultats
+    # déjà calculés.
+    permissions: {}
+    steps:
+      - name: Résultat de chaque job requis
+        env:
+          RESULTATS: ${{ toJSON(needs) }}
+        run: echo "$RESULTATS"
+
+      # `skipped` COMPTE COMME ROUGE, délibérément. Ni `validate` ni
+      # `starter-kit` n'a de `if:` — s'ils sautent, c'est que quelque chose est
+      # cassé en amont, et fusionner du code que personne n'a éprouvé serait le
+      # trou que ce portail ferme. Le jour où un job conditionnel entre dans le
+      # `needs:`, ce portail rougira : ce sera le bon moment pour décider s'il
+      # doit y figurer, pas six mois plus tard devant une PR verte à tort.
+      #
+      # Et ce rouge-là se DIAGNOSTIQUE — le job tourne, le log nomme le
+      # coupable. C'est toute la différence avec le gel de septembre, où un
+      # contexte simplement absent laissait la PR en attente sans rien dire.
+      - name: Un seul job non vert suffit à faire rougir ce portail
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: |
+          echo "::error::Un job requis n'est pas vert — voir les résultats ci-dessus."
+          exit 1
