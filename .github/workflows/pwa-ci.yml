@@ -33,6 +33,19 @@
 # tournant sur le même binaire. Coût mesuré de ce second projet : sept
 # secondes, dans un job qui en coûte soixante dont quarante de mise en place.
 # Le défaut reste `chromium` : un socle ne rend pas rouges les CI qu'il sert.
+#
+# UN QUATRIÈME, mesuré le 13/09/2026 pendant la montée du parc en Vitest 5 :
+# ce workflow lance `npm run test`, et rien d'autre. Or Vitest ne calcule
+# aucune couverture sans `--coverage`, donc n'en compare aucun seuil : un
+# `thresholds` inscrit dans `vitest.config.ts` n'était VÉRIFIÉ que si le script
+# `test` du dépôt portait lui-même le drapeau. Six dépôts déclaraient des
+# seuils ; UN SEUL les jouait (`mister-footcoach`). Les cinq autres écrivaient
+# un script `test:coverage` que personne n'appelait — et TROIS échouaient à
+# leur propre plancher depuis toujours, sans qu'aucun job ne rougisse.
+# D'où `run-coverage`. Elle est opt-in, comme `run-doctor` : un socle ne rend
+# pas rouges les CI qu'il sert. Mais elle refuse de démarrer quand le script
+# manque, plutôt que de retomber en silence sur `npm run test` — une garde qui
+# se tait reproduirait exactement la panne qu'elle est censée réparer.
 name: Reusable PWA CI
 
 on:
@@ -58,6 +71,18 @@ on:
         type: boolean
         required: false
         default: true
+      run-coverage:
+        description: >-
+          Joue `npm run test:coverage` à la place de `npm run test`, pour que
+          les seuils déclarés dans `vitest.config.ts` soient VÉRIFIÉS. Sans
+          cette entrée un plancher de couverture n'est qu'un commentaire :
+          Vitest ne mesure rien sans `--coverage`, donc ne compare rien, et le
+          job sort vert. Exige un script `test:coverage` dans le `package.json`
+          du dépôt — son absence fait échouer le job avec un message clair,
+          jamais un repli silencieux sur `npm run test`.
+        type: boolean
+        required: false
+        default: false
       run-build:
         type: boolean
         required: false
@@ -224,9 +249,36 @@ jobs:
         if: ${{ inputs.run-type-check }}
         run: npm run type-check
 
+      # Le contrat de `run-coverage` se vérifie AVANT de lancer la suite : un
+      # dépôt qui la demande sans script `test:coverage` — ou qui a coupé ses
+      # tests — croirait ses seuils gardés pendant que rien ne les lit. C'est
+      # la panne que cette entrée répare ; la rejouer ici serait absurde.
+      - name: run-coverage est tenable
+        if: ${{ inputs.run-coverage }}
+        env:
+          RUN_TESTS: ${{ inputs.run-tests }}
+        run: |
+          if [ "$RUN_TESTS" != "true" ]; then
+            echo "::error::run-coverage demandé avec run-tests: false — aucun test ne tourne, donc aucun seuil n'est vérifié. Choisir l'un ou l'autre."
+            exit 1
+          fi
+          # `npm pkg get` rend `{}` pour une clé absente, et sort 0 dans les
+          # deux cas : c'est la VALEUR qu'il faut lire, pas le code de retour.
+          if [ "$(npm pkg get scripts.test:coverage)" = '{}' ]; then
+            echo "::error::run-coverage demandé, mais package.json n'a pas de script « test:coverage ». L'ajouter : vitest run --coverage."
+            exit 1
+          fi
+          echo "✅ npm run test:coverage — les seuils de vitest.config.ts seront vérifiés."
+
       - name: Test
-        if: ${{ inputs.run-tests }}
+        if: ${{ inputs.run-tests && !inputs.run-coverage }}
         run: npm run test
+
+      # Deux étapes plutôt qu'un `if` dans le script : le journal de la CI dit
+      # alors lequel des deux régimes a tourné, sans qu'il faille le déduire.
+      - name: Test (couverture et seuils)
+        if: ${{ inputs.run-tests && inputs.run-coverage }}
+        run: npm run test:coverage
 
       - name: Build
         if: ${{ inputs.run-build }}

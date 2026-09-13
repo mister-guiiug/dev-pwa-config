@@ -908,6 +908,10 @@ jobs:
     # secrets du dépôt à un workflow qui n'en demande aucun.
     with:
       run-doctor: true # la checklist du parc, lue sur le dépôt et sur dist/
+      # À poser DÈS que `vitest.config.ts` déclare des `thresholds` : sans
+      # elle la CI lance `npm run test`, Vitest ne mesure aucune couverture et
+      # le plancher n'est jamais comparé. Exige un script `test:coverage`.
+      run-coverage: true
       run-e2e: false # passer à true quand Playwright est en place
       # e2e-grep vaut '@critical|@a11y' par défaut ; un filtre qui ne trouve
       # aucun test fait ÉCHOUER le job, au lieu de le laisser vert.
@@ -1045,7 +1049,11 @@ plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
 ## Inputs notables des reusables
 
 - **`pwa-ci.yml`** — `run-doctor` (`pwa-doctor` après le build ; opt-in en
-  4.x) et `doctor-strict` ; `e2e-grep` (défaut `@critical|@a11y`, et un
+  4.x) et `doctor-strict` ; `run-coverage` (joue `npm run test:coverage` au
+  lieu de `npm run test`, pour que les `thresholds` de `vitest.config.ts`
+  soient **vérifiés** — sans quoi Vitest ne mesure rien, donc ne compare rien,
+  et le job sort vert ; exige le script, dont l'absence fait échouer le job) ;
+  `e2e-grep` (défaut `@critical|@a11y`, et un
   filtre sans test fait échouer le job) ; `e2e-project` (défaut `chromium`,
   mais accepte une **liste** : `chromium mobile-chrome` joue le bureau et le
   téléphone, et n'installe qu'un navigateur — Pixel 5 tourne sur le chromium

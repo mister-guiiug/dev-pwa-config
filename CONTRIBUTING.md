@@ -50,8 +50,16 @@ npm run validate
 npm run changeset  # si le contenu PUBLIÉ change (cf. `files` de package.json)
 ```
 
-Pas de changeset pour ce qui ne sort pas du dépôt — showroom, workflows, README.
-Le CHANGELOG le dirait à tort.
+Pas de changeset pour ce qui ne sort pas du dépôt — showroom, README, et les
+workflows PROPRES à ce dépôt (`ci.yml`, `publish.yml`, `security.yml`…). Le
+CHANGELOG le dirait à tort.
+
+**Les workflows RÉUTILISABLES (`pwa-*.yml`), eux, en demandent un.** Ils ne
+sortent pas par le paquet npm mais par l'étiquette mobile `v4` — et
+`publish.yml` ne la fait avancer qu'au terme d'une publication, qu'il REFUSE
+quand la version est déjà taguée. Sans montée de version, une correction de
+`pwa-ci.yml` reste donc sur `main` sans atteindre un seul des dix-neuf
+consommateurs, et rien ne le signale.
 
 Commits au format [Conventional Commits](https://www.conventionalcommits.org/fr/)
 (`feat:`, `fix:`, `refactor:`, `chore:`…), sujet en français, à l'impératif. Le
