@@ -115,11 +115,15 @@ on:
         default: true
       run-npm-audit:
         description: >-
-          Lance `npm audit` (SCA) sur les dépendances de production. Opt-in :
-          désactivé par défaut le temps de résorber les vulnérabilités existantes.
+          Lance `npm audit` (SCA) sur les dépendances de PRODUCTION. Actif par
+          défaut depuis le 13/09/2026. Il a longtemps été opt-in « le temps de
+          résorber les vulnérabilités existantes » : ce temps est écoulé — les
+          27 copies du parc ont été auditées ce jour-là, 24 sont sans
+          `high`/`critical` en production. Une app qui doit rester rouge le
+          temps d'un correctif écrit `run-npm-audit: false` avec la raison.
         type: boolean
         required: false
-        default: false
+        default: true
       npm-audit-level:
         description: "Seuil d'échec de npm audit (low|moderate|high|critical)."
         type: string
