@@ -7,9 +7,9 @@
  *
  * Fournit :
  *  - les matchers jest-dom,
- *  - un `localStorage`/`sessionStorage` en mémoire si l'environnement n'en
- *    fournit pas de fonctionnel (sous Vitest 4 + jsdom, `localStorage` peut
- *    exister sans `getItem`/`setItem` opérationnels → tests de persistance KO),
+ *  - le `localStorage`/`sessionStorage` de jsdom même quand Vitest ne l'a pas
+ *    recopié sur `globalThis` (Node 26 l'y masque), et un secours en mémoire
+ *    quand il n'y a aucun jsdom sous la main — voir `ensureStorage`,
  *  - un stub `window.matchMedia` (absent de jsdom — casse `useTheme`,
  *    `prefers-reduced-motion`, les media queries…),
  *  - un mock de `virtual:pwa-register/react` (`useRegisterSW`), le seul des deux
@@ -42,28 +42,8 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-// Storage en mémoire — installé UNIQUEMENT si l'env n'expose pas de Storage
-// fonctionnel (no-op quand jsdom en fournit déjà un correct).
-function ensureStorage(name) {
-  const existing = globalThis[name];
-  if (existing && typeof existing.getItem === 'function') return;
-  const store = new Map();
-  const storage = {
-    get length() {
-      return store.size;
-    },
-    key: i => Array.from(store.keys())[i] ?? null,
-    getItem: k => (store.has(String(k)) ? store.get(String(k)) : null),
-    setItem: (k, v) => {
-      store.set(String(k), String(v));
-    },
-    removeItem: k => {
-      store.delete(String(k));
-    },
-    clear: () => {
-      store.clear();
-    },
-  };
+/** Pose `storage` sous ce nom, sur `globalThis` et sur `window` s'il existe. */
+function installStorage(name, storage) {
   Object.defineProperty(globalThis, name, {
     value: storage,
     writable: true,
@@ -80,6 +60,79 @@ function ensureStorage(name) {
       /* window[name] non redéfinissable : globalThis suffit */
     }
   }
+}
+
+/**
+ * Le secours : l'INTERFACE `Storage`, adossée à une `Map`.
+ *
+ * Ce n'est pas un `Storage` — un vrai expose aussi ses clés comme propriétés
+ * nommées (`storage.maClé`, `Object.keys(storage)`, `{ ...storage }`). Il ne
+ * sert que là où aucun vrai n'est à portée, et `ensureStorage` le garde en
+ * dernier recours pour cette raison.
+ */
+function createMemoryStorage() {
+  const store = new Map();
+  return {
+    get length() {
+      return store.size;
+    },
+    key: i => Array.from(store.keys())[i] ?? null,
+    getItem: k => (store.has(String(k)) ? store.get(String(k)) : null),
+    setItem: (k, v) => {
+      store.set(String(k), String(v));
+    },
+    removeItem: k => {
+      store.delete(String(k));
+    },
+    clear: () => {
+      store.clear();
+    },
+  };
+}
+
+/*
+ * `localStorage` / `sessionStorage` — CELUI DE JSDOM D'ABORD, le secours ensuite.
+ *
+ * L'ordre compte, et il a coûté une CI rouge pendant trois commits.
+ *
+ * **Node 26 pose lui-même ces deux noms sur `globalThis`.** Sans
+ * `--localstorage-file`, `localStorage` se contente d'avertir
+ * (« ExperimentalWarning: localStorage is not available because
+ * --localstorage-file was not provided. », visible dans le journal de CI, une
+ * fois par processus de travail) et rend `undefined` — mais la PROPRIÉTÉ
+ * existe. Or `populateGlobal` de Vitest ne recopie une clé de la fenêtre jsdom
+ * que si elle n'est pas déjà sur `globalThis` (`if (k in global) return
+ * keysArray.includes(k)`), et ni `localStorage` ni `sessionStorage` ne
+ * figurent dans sa liste d'exceptions. **Depuis Node 26, le vrai `Storage` de
+ * jsdom n'arrive donc plus jusqu'aux tests.**
+ *
+ * Le secours en mémoire prenait le relais, et c'est là que ça fait mal : il
+ * honore l'interface, pas l'objet exotique. `Object.keys(localStorage)` rend
+ * `['length','key','getItem','setItem','removeItem','clear']` au lieu des clés
+ * stockées. Rien ne lève, rien ne prévient : toute la suite se met à éprouver
+ * une `Map` au lieu du stockage du navigateur. Mesuré le 13/09/2026 sur
+ * `miss-badminton`, seul dépôt dont un test lisait ses clés autrement que par
+ * `getItem` — il est tombé trois étages sous la cause, et les vingt autres
+ * n'ont rien vu.
+ *
+ * Le vrai n'est pourtant jamais loin : l'environnement jsdom de Vitest laisse
+ * son instance sur `globalThis.jsdom` (et la retire à la fermeture). On la
+ * préfère à tout le reste — **y compris à un secours déjà en place**, qui,
+ * dans un processus de travail réutilisé d'un fichier de test au suivant,
+ * traînerait les données du fichier précédent.
+ */
+function ensureStorage(name) {
+  const real = globalThis.jsdom?.window?.[name];
+  if (real && typeof real.getItem === 'function') {
+    // Cas ordinaire (jsdom recopié par Vitest) : c'est déjà lui, on ne pose
+    // rien — l'accesseur de `populateGlobal` reste en place et sa fermeture
+    // le retirera.
+    if (globalThis[name] !== real) installStorage(name, real);
+    return;
+  }
+  const existing = globalThis[name];
+  if (existing && typeof existing.getItem === 'function') return;
+  installStorage(name, createMemoryStorage());
 }
 
 ensureStorage('localStorage');
