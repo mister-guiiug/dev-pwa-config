@@ -17,24 +17,36 @@
  *                       Défaut: 96,144,192,256,384,512
  *   --maskable          Génère aussi icon-maskable.png (zone de sécurité 87,5%).
  *   --maskable-size <n> Taille du maskable. Défaut: 512
+ *   --no-apple          N'écrit PAS apple-touch-icon.png (écrite par défaut).
+ *   --apple-size <n>    Taille de l'icône Apple. Défaut: 180
  *   --bg <r,g,b>        Couleur de fond (fit cover / maskable). Défaut: 12,18,34
  *   --prefix <str>      Préfixe des fichiers. Défaut: icon-
  *   --help              Affiche cette aide.
  *
  * Convention de nommage : <prefix><size>.png (ex. icon-192.png), plus
- * icon-maskable.png si --maskable.
+ * icon-maskable.png si --maskable, plus apple-touch-icon.png sauf --no-apple.
+ *
+ * Pourquoi l'icône Apple est produite par DÉFAUT, contrairement au maskable :
+ * iOS n'a pas de manifeste pour l'icône d'accueil, il ne lit que
+ * `<link rel="apple-touch-icon">`. Sans ce fichier, il prend une capture
+ * d'écran de la page. `pwa-doctor` réclame d'ailleurs cette balise en
+ * annonçant « pwa-icons la génère » — ce qui n'était pas vrai jusqu'ici.
  */
 import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 
-function parseArgs(argv) {
+import { estPointDEntree } from './entree.mjs';
+
+export function parseArgs(argv) {
   const args = {
     source: 'public/favicon.svg',
     out: 'public',
     sizes: [96, 144, 192, 256, 384, 512],
     maskable: false,
     maskableSize: 512,
+    apple: true,
+    appleSize: 180,
     bg: { r: 12, g: 18, b: 34, alpha: 1 },
     prefix: 'icon-',
   };
@@ -64,6 +76,12 @@ function parseArgs(argv) {
         break;
       case '--maskable-size':
         args.maskableSize = parseInt(next(), 10);
+        break;
+      case '--no-apple':
+        args.apple = false;
+        break;
+      case '--apple-size':
+        args.appleSize = parseInt(next(), 10);
         break;
       case '--prefix':
         args.prefix = next();
@@ -158,10 +176,26 @@ async function main() {
     console.log(`  ✓ icon-maskable.png (${size}×${size}, safe-zone 87.5%)`);
   }
 
+  if (args.apple) {
+    const size = args.appleSize;
+    // `flatten` n'est pas décoratif : iOS IGNORE la transparence et compose un
+    // PNG à canal alpha sur du NOIR. Une icône claire à fond transparent
+    // arrive donc cernée de sombre sur l'écran d'accueil, alors qu'elle est
+    // correcte partout ailleurs. C'est la seule icône du lot à être opaque.
+    await sharp(svgBuffer)
+      .resize(size, size, { fit: 'cover', background: args.bg })
+      .flatten({ background: args.bg })
+      .png()
+      .toFile(resolve(outDir, 'apple-touch-icon.png'));
+    console.log(`  ✓ apple-touch-icon.png (${size}×${size}, opaque)`);
+  }
+
   console.log('✨ Icônes générées.');
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+if (estPointDEntree(import.meta.url)) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
