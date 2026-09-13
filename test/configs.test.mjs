@@ -230,3 +230,49 @@ test('`.claude/worktrees` est ignoré, et le reste du dépôt ne l’est pas', a
     );
   }
 });
+
+/**
+ * `coverage/` — MÊME ANGLE MORT QUE CI-DESSUS, MÊME PREUVE.
+ *
+ * Le rapporteur HTML d'istanbul écrit ses propres `.js` dans `coverage/`, et
+ * chacun s'ouvre par un `eslint-disable` qui ne désactive rien ici : ESLint le
+ * déclare « inutilisé » et rend un avertissement par fichier. Six par dépôt,
+ * mesurés sur `mister-molkky` le 13/09/2026 — dans le même total que les vingt
+ * qui, eux, portent sur le code de l'app.
+ *
+ * Le troisième cas est celui qui donne sa valeur au test. Le motif est NU
+ * (`coverage`, comme `dist`), et en flat config un ignore est relatif au
+ * dossier de la config : il ne vise que la racine. Le jour où quelqu'un le
+ * réécrira en `**\/coverage` — le réflexe, et ce qu'exigerait un ignore façon
+ * `.gitignore` — une app dont le domaine métier parle de couverture verrait
+ * son propre code cesser d'être analysé sans qu'un seul message le dise.
+ */
+test('`coverage` est ignoré à la racine, et nulle part ailleurs', async () => {
+  const { ESLint } = await import('eslint');
+
+  for (const nom of ['eslint-base.js', 'eslint-react.js']) {
+    const baseConfig = (await import(`../${nom}`)).default;
+    const eslint = new ESLint({
+      overrideConfigFile: true,
+      baseConfig,
+      cwd: root,
+    });
+
+    for (const genere of [
+      'coverage/block-navigation.js',
+      'coverage/lcov-report/sorter.js',
+    ]) {
+      assert.equal(
+        await eslint.isPathIgnored(genere),
+        true,
+        `${nom} : le rapport de couverture engendré doit être ignoré (${genere})`
+      );
+    }
+
+    assert.equal(
+      await eslint.isPathIgnored('src/features/coverage/Garanties.tsx'),
+      false,
+      `${nom} : l'ignore ne doit pas déborder sur un dossier métier nommé « coverage »`
+    );
+  }
+});

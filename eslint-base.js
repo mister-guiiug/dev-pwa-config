@@ -25,8 +25,41 @@ export default defineConfig([
    * L'ignore est volontairement étroit. `.claude` tout entier couperait aussi
    * ce qu'un dépôt y écrit à la main et versionne (`launch.json`, `skills/`) ;
    * seul `worktrees` est engendré par la machine.
+   *
+   * `coverage` EST LE MÊME ANGLE MORT, POUR LA MÊME RAISON.
+   *
+   * Il est dans le `.gitignore` des dépôts — mais ESLint ne lit toujours pas
+   * `.gitignore`. Le rapporteur HTML d'istanbul y dépose ses propres assets
+   * (`block-navigation.js`, `prettify.js`, `sorter.js`, à la racine ET sous
+   * `lcov-report/`) et chacun s'ouvre par un commentaire `eslint-disable`.
+   * Comme aucun bloc `files` ci-dessous ne cible le `.js`, ces directives ne
+   * désactivent rien : ESLint les compte « inutilisées » et rend six
+   * avertissements par dépôt.
+   *
+   * Mesuré le 13/09/2026 sur `mister-molkky` après `npm run test:coverage` :
+   * « ✖ 26 problems », dont SIX venus de `coverage/` — et « 6 warnings
+   * potentially fixable with --fix », c'est-à-dire que `eslint --fix`
+   * réécrirait des fichiers engendrés. Le bruit noie les vingt avertissements
+   * qui, eux, portent sur le code de l'application.
+   *
+   * La CI ne le voit pas : dans `pwa-ci.yml`, l'étape `Lint` passe AVANT
+   * `Test`, donc le dossier n'existe pas encore sur le runner. C'est en local
+   * — seul endroit où les deux commandes se suivent — que le défaut se voit,
+   * et il se généralise maintenant que le réutilisable sait jouer
+   * `run-coverage` : six dépôts produisent désormais ce rapport.
+   *
+   * Motif nu (`coverage`, comme `dist`) : en flat config les ignores sont
+   * relatifs au dossier de la config, ils ne visent donc QUE la racine. Un
+   * dépôt qui aurait un domaine métier sous `src/.../coverage/` reste analysé,
+   * et `test/configs.test.mjs` le vérifie.
    */
-  globalIgnores(['dist', 'node_modules', 'dev-dist', '.claude/worktrees']),
+  globalIgnores([
+    'dist',
+    'node_modules',
+    'dev-dist',
+    'coverage',
+    '.claude/worktrees',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
