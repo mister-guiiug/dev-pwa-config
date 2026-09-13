@@ -32,6 +32,11 @@
  *   node scripts/apply-rulesets.mjs --dry-run       # preview sans modif
  *   node scripts/apply-rulesets.mjs --force         # passe outre le garde-fou
  *                                                   # des checks (cf. plus bas)
+ *   node scripts/apply-rulesets.mjs --audit         # N'ÉCRIT RIEN : relit les
+ *                                                   # rulesets EN VIGUEUR et sort
+ *                                                   # en échec si l'un exige un
+ *                                                   # contexte que plus aucun job
+ *                                                   # ne produit (cf. plus bas)
  */
 import { execFileSync } from 'node:child_process';
 import { GITHUB_OWNER } from '../apps-catalog.js';
@@ -143,7 +148,24 @@ const CHECKS = {
   // dépôt — d'où l'ordre : fusionner d'abord (par le contournement admin, qui
   // existe pour ce cas), laisser la CI de `main` produire le nouveau contexte,
   // puis relancer ce script.
-  [SELF]: ['In-repo config parse', 'Le squelette, construit sur ce paquet'],
+  //
+  // UN JOB MATRICIEL NE RAPPORTE PAS SON `name:`, il en rapporte un PAR ENTRÉE,
+  // suffixé de la valeur de matrice. Le premier job a gagné sa matrice le
+  // 10/09/2026 (#247) : `In-repo config parse` a cessé d'exister ce jour-là au
+  // profit de `In-repo config parse (Node 22)` et `(Node 24)`, puis `(Node
+  // 26.2.0)` le 12/09 (#251). Personne n'a relancé ce script — le ruleset a
+  // continué d'exiger le nom nu, que plus aucun job ne produisait, et TOUTES
+  // les PR du dépôt sont restées BLOCKED du 10 au 13/09, franchies au seul
+  // contournement admin. Donner un `name:` fixe au job ne sauverait rien :
+  // GitHub suffixerait quand même chaque entrée pour les distinguer. Il faut
+  // donc bien DEUX contextes, et ils portent le numéro de version — donc le
+  // prochain relèvement de Node redemande un passage ici. C'est ce que
+  // `--audit` surveille, pour que l'oubli se voie au lieu de geler le dépôt.
+  [SELF]: [
+    'In-repo config parse (Node 22)',
+    'In-repo config parse (Node 26.2.0)',
+    'Le squelette, construit sur ce paquet',
+  ],
   'mister-quota': [
     'typecheck · test · build (20.x)',
     'typecheck · test · build (22.x)',
@@ -193,26 +215,73 @@ const CHECKS = {
  * début ; l'énumération automatique en a fait un risque permanent, alors elle
  * doit venir avec sa vérification.
  *
- * Un check qui ne s'exécute QUE sur `pull_request` n'apparaît pas ici : le
- * garde refuse alors à tort, ce qui se lève par `--force`. Refuser d'appliquer
- * est réversible ; geler les PR d'un dépôt ne l'est qu'en touchant au ruleset.
+ * LES PR RÉCENTES SONT LUES AUSSI, et c'est ce qui rend le garde utilisable.
+ * `main` ne porte que les checks déclenchés par `push` ; un check qui ne
+ * s'exécute que sur `pull_request` n'y figure pas, le garde refusait donc à
+ * tort et la parade était `--force`. Or `--force` ne désarme pas un contexte,
+ * il les désarme TOUS : la seule issue laissée à un refus légitime était aussi
+ * celle qui laissait passer un nom faux. Observer les deux endroits supprime
+ * ce faux refus, donc le réflexe qui le contournait.
  */
+function checksSurRef(repo, ref) {
+  const noms = new Set();
+  for (const [chemin, filtre] of [
+    [`commits/${ref}/check-runs?per_page=100`, '.check_runs[].name'],
+    // Les `statuses` de l'API v3 : ce ne sont pas des check-runs, mais un
+    // ruleset les exige sous le même nom de « contexte ». `miss-contraction`
+    // en expose un (`commits`), et lui seul.
+    [`commits/${ref}/status`, '.statuses[].context'],
+  ]) {
+    try {
+      const out = execFileSync(
+        'gh',
+        ['api', `repos/${OWNER}/${repo}/${chemin}`, '--jq', filtre],
+        { encoding: 'utf8' }
+      );
+      for (const n of out.split('\n').filter(Boolean)) noms.add(n);
+    } catch {
+      // Référence sans check, ou dépôt sans droit de lecture : rien à ajouter.
+    }
+  }
+  return noms;
+}
+
 function checksObserves(repo) {
+  const noms = checksSurRef(repo, 'HEAD');
   try {
     const out = execFileSync(
       'gh',
       [
         'api',
-        `repos/${OWNER}/${repo}/commits/HEAD/check-runs`,
+        `repos/${OWNER}/${repo}/pulls?state=all&sort=updated&direction=desc&per_page=5`,
         '--jq',
-        '.check_runs[].name',
+        '.[].head.sha',
       ],
       { encoding: 'utf8' }
     );
-    return new Set(out.split('\n').filter(Boolean));
+    for (const sha of out.split('\n').filter(Boolean)) {
+      for (const n of checksSurRef(repo, sha)) noms.add(n);
+    }
   } catch {
-    return new Set();
+    // Dépôt sans aucune PR : `main` seul fait foi.
   }
+  return noms;
+}
+
+/**
+ * UN JOB QUI GAGNE UNE MATRICE PERD SON NOM. GitHub ne rapporte alors plus
+ * `Foo` mais un contexte par entrée — `Foo (22)`, `Foo (26.2.0)` — car il n'a
+ * que la valeur de matrice pour les distinguer. Le nom nu cesse d'exister
+ * SANS QUE RIEN NE LE DISE, et le ruleset qui l'exigeait gèle le dépôt : c'est
+ * arrivé ici le 10/09/2026. Le message le nomme donc, plutôt que de laisser
+ * relire un YAML pour comprendre pourquoi un nom pourtant « toujours là » ne
+ * correspond à rien.
+ */
+function indiceMatrice(contexte, vus) {
+  const variantes = [...vus].filter(n => n.startsWith(`${contexte} (`));
+  return variantes.length
+    ? `\n      → ce job est devenu MATRICIEL ; exiger plutôt : ${variantes.map(v => `« ${v} »`).join(', ')}`
+    : '';
 }
 
 function rulesetFor(repo) {
@@ -269,6 +338,7 @@ function rulesetFor(repo) {
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const FORCE = args.includes('--force');
+const AUDIT = args.includes('--audit');
 const onlyRepo = args.find(a => !a.startsWith('--'));
 
 /**
@@ -326,6 +396,83 @@ function gh(path, method = 'GET', body = null) {
   });
 }
 
+/**
+ * AUDIT : confronter les rulesets EN VIGUEUR aux checks réellement rapportés.
+ *
+ * POURQUOI CE MODE EXISTE. Le garde ci-dessus ne s'exécute qu'au moment où ce
+ * script écrit ; il ne protège donc que l'instant de l'écriture. Le 05/09/2026
+ * il a laissé passer `In-repo config parse` À JUSTE TITRE — le job s'appelait
+ * bien ainsi. Le 10/09, ce job a gagné une matrice dans `ci.yml` et le contexte
+ * a changé de nom ; personne n'a relancé ce script, et rien ne le demandait.
+ * Le ruleset a continué d'exiger un nom que plus aucun job ne produisait :
+ * toutes les PR du dépôt sont restées BLOCKED trois jours, franchies au seul
+ * contournement admin, sans un message nulle part.
+ *
+ * LE DÉFAUT N'ÉTAIT PAS DANS LE GARDE, IL ÉTAIT DANS SA DATE. Un ruleset juste
+ * le jour où on le pose pourrit dès que le workflow change, et rien ne relie
+ * une modification de `.github/workflows/` à une réexécution d'ici. Ce mode
+ * coupe ce lien manquant : il ne lit pas `CHECKS` — la table peut avoir raison
+ * pendant que le ruleset a tort — mais bien ce que GitHub applique, et il sort
+ * en échec.
+ *
+ * RIEN NE LE LANCE ENCORE, et il faut le dire plutôt que le laisser croire :
+ * en l'état c'est un outil qu'on invoque à la main, donc le même oubli reste
+ * possible, simplement diagnosticable en une commande au lieu d'une enquête.
+ * L'automatiser demande un arbitrage qui n'appartient pas à ce fichier : le
+ * `GITHUB_TOKEN` d'Actions ne porte que le dépôt courant, balayer le parc
+ * depuis ici exigerait donc un PAT en secret — un jeton d'administration de
+ * vingt-cinq dépôts, pour un audit en lecture seule.
+ *
+ *   node scripts/apply-rulesets.mjs --audit          # tout le parc
+ *   node scripts/apply-rulesets.mjs --audit <repo>   # un dépôt
+ */
+if (AUDIT) {
+  let derives = 0;
+  for (const repo of targets) {
+    let vus = null; // relevé au plus une fois par dépôt, et seulement si besoin
+    try {
+      const rulesets = JSON.parse(
+        gh(`repos/${OWNER}/${repo}/rulesets`) ?? '[]'
+      );
+      for (const meta of rulesets) {
+        const rs = JSON.parse(gh(`repos/${OWNER}/${repo}/rulesets/${meta.id}`));
+        const regle = (rs.rules ?? []).find(
+          r => r.type === 'required_status_checks'
+        );
+        const exiges = (regle?.parameters?.required_status_checks ?? []).map(
+          c => c.context
+        );
+        // Un ruleset sans check exigé ne peut pas geler : `.github` et le
+        // miroir sont dans ce cas, délibérément.
+        if (!exiges.length) continue;
+
+        vus ??= checksObserves(repo);
+        const absents = exiges.filter(c => !vus.has(c));
+        if (!absents.length) {
+          console.log(`✓ ${OWNER}/${repo} · ${exiges.length} contexte(s)`);
+          continue;
+        }
+        derives++;
+        console.error(
+          `✗ ${OWNER}/${repo} — ruleset #${meta.id} « ${rs.name} » exige un contexte que rien ne rapporte :`
+        );
+        for (const c of absents) {
+          console.error(`    · « ${c} »${indiceMatrice(c, vus)}`);
+        }
+      }
+    } catch (e) {
+      derives++;
+      console.error(`✗ ${OWNER}/${repo} — ${e.message.split('\n')[0]}`);
+    }
+  }
+  console.log(
+    derives
+      ? `\n❌ ${derives} dérive(s). Ces dépôts ont toutes leurs PR BLOCKED : corriger CHECKS puis relancer sans --audit.`
+      : '\n✅ Aucun contexte exigé ne manque à l’appel.'
+  );
+  process.exit(derives ? 1 : 0);
+}
+
 for (const repo of targets) {
   const path = `repos/${OWNER}/${repo}/rulesets`;
   const ruleset = rulesetFor(repo);
@@ -345,9 +492,10 @@ for (const repo of targets) {
     const absents = contexts.filter(c => !vus.has(c));
     if (absents.length) {
       console.error(
-        `  ✗ REFUSÉ — ces contextes ne s'exécutent pas sur ce dépôt : ${absents.join(', ')}.
-    Les exiger gèlerait toutes ses PR. Corriger CHECKS['${repo}'] (ou [] s'il n'a pas de CI),
-    ou passer --force si le check ne tourne QUE sur pull_request.`
+        `  ✗ REFUSÉ — ces contextes ne sont rapportés par aucun job de ce dépôt :
+${absents.map(c => `    · « ${c} »${indiceMatrice(c, vus)}`).join('\n')}
+    Les exiger gèlerait toutes ses PR. Corriger CHECKS['${repo}'] (ou [] s'il n'a pas de CI).
+    --force passe outre, mais il désarme le garde pour TOUS les contextes de ce dépôt.`
       );
       continue;
     }
