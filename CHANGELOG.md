@@ -1,5 +1,51 @@
 # Changelog
 
+## 4.12.0
+
+### Minor Changes
+
+- 05106d4: Ouvrir la porte à Vitest 5, et monter `@types/react` en 19.3.
+  
+  Les deux peers passent à **`^4.0.0 || ^5.0.0`** — `vitest` et `@vitest/browser`.
+  Les deux plages, pas seulement la 5 : une app qui reste en 4 continue
+  d'installer le socle sans rien changer, exactement comme la 4.10.0 l'avait fait
+  pour ESLint 9 et 10. `@vitest/browser` et `@vitest/coverage-v8` épinglent
+  `vitest` à la version EXACTE (`5.0.0`) : ces trois-là montent ensemble ou pas
+  du tout, il n'y a pas de demi-mesure possible côté app.
+  
+  `@testing-library/jest-dom` acceptait déjà `^6.0.0 || ^7.0.0` ; rien à y faire.
+  
+  Côté devDependencies : `@types/react` et `@types/react-dom` en 19.3.0,
+  `eslint-plugin-react-hooks` en 7.1.1. Les 1369 tests passent.
+  
+  **TypeScript reste en `~6.0.3`, et ce n'est pas un oubli.** `typescript@7.0.2`
+  est le portage natif : son entrée principale n'exporte plus que
+  `{ version, versionMajorMinor }`, l'API compilateur est passée sous
+  `./unstable/*`, et `typescript-eslint@8.70.0` — la dernière publiée — déclare
+  `typescript: ">=4.8.4 <6.1.0"` puis **refuse la 7.0 par une assertion à
+  l'import**, ce qui fait échouer le chargement de la config ESLint pour tous les
+  fichiers. Support amont suivi pour TS ≥ 7.1.
+
+### Patch Changes
+
+- 4f0889f: Aligner les outils du socle sur leur dernière version.
+  
+  `react` et `react-dom` en 19.3.0, `@types/node` en 26.5.1, `typescript-eslint`
+  en 8.70.0, `globals` en 17.12.0, `eslint-plugin-react-refresh` en 0.5.6 — et
+  `@changesets/cli` en **3.0.2**, une majeure. Éprouvée avant d'être posée :
+  `changeset status` lit la configuration existante sans broncher et annonce bien
+  le mineur en attente. Le pointeur `$schema` de `.changeset/config.json` suit le
+  paquet installé, passé en 4.0.0.
+  
+  Rien ne sort du contenu publié : ce sont toutes des devDependencies, et les
+  1369 tests passent. Le changeset existe pour que la release qui LIVRE
+  l'élargissement `vitest ^4 || ^5` emporte aussi ces montées — sans publication,
+  le parc reste bloqué sur Vitest 4.
+  
+  TypeScript reste en `~6.0.3` : la 7.0.2 est le portage natif, son entrée
+  principale n'expose plus que `{ version, versionMajorMinor }`, et
+  typescript-eslint la refuse par une assertion à l'import.
+
 ## 4.11.0
 
 ### Minor Changes
