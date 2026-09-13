@@ -40,6 +40,10 @@
  */
 import { execFileSync } from 'node:child_process';
 import { GITHUB_OWNER } from '../apps-catalog.js';
+// Les deux règles de NOMMAGE vivent à part, et sont éprouvées par
+// `test/rulesets-contextes.test.mjs` : ce fichier-ci appelle `gh` au
+// chargement, donc il ne s'importe pas dans un test.
+import { indiceMatrice, jamaisHorsPROuverte } from './rulesets-contextes.mjs';
 
 const OWNER = GITHUB_OWNER;
 const SELF = 'dev-pwa-config';
@@ -139,7 +143,16 @@ const REPOS = reposDuCompte();
  *
  * `mister-quota` a sa propre CI : une matrice Node, et un job `package
  * desktop` conditionné à `refs/tags/v*` — donc JAMAIS exécuté sur une PR. Il
- * est délibérément absent de la liste.
+ * n'a jamais figuré parmi les contextes exigés, et ne figure pas davantage
+ * dans le `needs:` du portail qu'il a reçu : un job sauté y compterait comme
+ * rouge, et il est sauté sur CHAQUE PR.
+ *
+ * DEUX DÉPÔTS N'EXIGENT PLUS QU'UN SEUL CONTEXTE, « Toute la CI est verte ».
+ * C'est un job d'agrégation, sans matrice ni version dans son nom, qui `needs:`
+ * les autres et rougit si l'un d'eux ne l'est pas. Il existe parce qu'un nom
+ * matriciel porte un numéro de version DANS une protection de branche : le
+ * relever fait disparaître le contexte exigé, et une PR qui attend un contexte
+ * disparu ne rougit pas — elle reste en attente, pour toujours.
  */
 const CHECKS = {
   // Le second job a été RENOMMÉ le 05/09/2026 : la fixture jetable
@@ -173,15 +186,19 @@ const CHECKS = {
   // observe `tout-vert` sur la PR qui l'introduit, ce qui ne dit rien de
   // `main`.
   [SELF]: ['Toute la CI est verte'],
-  // MÊME FRAGILITÉ QU'ICI AVANT `tout-vert`, et elle est intacte : ces deux
-  // noms sont matriciels, donc le jour où ce dépôt relève son Node, son
-  // ruleset exige deux contextes que plus rien ne produit et toutes ses PR
-  // gèlent. Y porter le même job d'agrégation réglerait la question ; en
-  // attendant, `--audit` est ce qui le dira.
-  'mister-quota': [
-    'typecheck · test · build (20.x)',
-    'typecheck · test · build (22.x)',
-  ],
+  // Ce dépôt portait la même fragilité, et ARMÉE : son ruleset exigeait
+  // `typecheck · test · build (20.x)` et `(22.x)`, deux noms matriciels, quand
+  // son `.nvmrc` dit 26.2.0 depuis son #22. L'alignement de la matrice sur le
+  // `.nvmrc` — qui viendra — aurait fait sauter les deux contextes d'un coup.
+  // Il a reçu le même portail (mister-quota#25), au même nom, et n'exige plus
+  // que lui.
+  //
+  // SON `needs:` EXCLUT `package desktop`, délibérément : ce job est
+  // conditionné à `refs/tags/v*`, donc toujours SAUTÉ en PR. L'y inclure
+  // rendrait le portail rouge sur chaque PR, puisqu'un job sauté y compte comme
+  // rouge. C'est la raison pour laquelle ce dépôt figure ici et non dans
+  // `CHECKS.default`.
+  'mister-quota': ['Toute la CI est verte'],
 
   // Les quatre dépôts HORS PWA. Chaque nom est relevé sur une PR RÉELLE (ou,
   // à défaut de PR fusionnée, sur le job d'un `ci.yml` déclenché par
@@ -258,42 +275,40 @@ function checksSurRef(repo, ref) {
   return noms;
 }
 
+/**
+ * Rend TROIS ensembles, et la séparation n'est pas cosmétique : elle est ce qui
+ * distingue un check légitimement réservé aux PR d'un job qui n'a pas encore
+ * atterri. Voir `jamaisHorsPROuverte`.
+ */
 function checksObserves(repo) {
-  const noms = checksSurRef(repo, 'HEAD');
+  const defaut = checksSurRef(repo, 'HEAD');
+  const fermees = new Set();
+  const ouvertes = new Set();
   try {
     const out = execFileSync(
       'gh',
       [
         'api',
-        `repos/${OWNER}/${repo}/pulls?state=all&sort=updated&direction=desc&per_page=5`,
+        `repos/${OWNER}/${repo}/pulls?state=all&sort=updated&direction=desc&per_page=10`,
+        // Concaténation plutôt qu'interpolation jq : `"\(…)"` traverserait mal
+        // la chaîne JS, qui mangerait l'antislash avant que jq ne le voie.
         '--jq',
-        '.[].head.sha',
+        '.[] | .state + " " + .head.sha',
       ],
       { encoding: 'utf8' }
     );
-    for (const sha of out.split('\n').filter(Boolean)) {
-      for (const n of checksSurRef(repo, sha)) noms.add(n);
+    for (const ligne of out.split('\n').filter(Boolean)) {
+      const [etat, sha] = ligne.split(' ');
+      // Une PR fusionnée est `closed` : les deux se valent ici, seul compte le
+      // fait qu'elle ne soit plus en vol.
+      const cible = etat === 'open' ? ouvertes : fermees;
+      for (const n of checksSurRef(repo, sha)) cible.add(n);
     }
   } catch {
-    // Dépôt sans aucune PR : `main` seul fait foi.
+    // Dépôt sans aucune PR : la branche par défaut seule fait foi.
   }
-  return noms;
-}
-
-/**
- * UN JOB QUI GAGNE UNE MATRICE PERD SON NOM. GitHub ne rapporte alors plus
- * `Foo` mais un contexte par entrée — `Foo (22)`, `Foo (26.2.0)` — car il n'a
- * que la valeur de matrice pour les distinguer. Le nom nu cesse d'exister
- * SANS QUE RIEN NE LE DISE, et le ruleset qui l'exigeait gèle le dépôt : c'est
- * arrivé ici le 10/09/2026. Le message le nomme donc, plutôt que de laisser
- * relire un YAML pour comprendre pourquoi un nom pourtant « toujours là » ne
- * correspond à rien.
- */
-function indiceMatrice(contexte, vus) {
-  const variantes = [...vus].filter(n => n.startsWith(`${contexte} (`));
-  return variantes.length
-    ? `\n      → ce job est devenu MATRICIEL ; exiger plutôt : ${variantes.map(v => `« ${v} »`).join(', ')}`
-    : '';
+  const toutes = new Set([...defaut, ...fermees, ...ouvertes]);
+  return { defaut, fermees, ouvertes, toutes };
 }
 
 function rulesetFor(repo) {
@@ -459,7 +474,7 @@ if (AUDIT) {
         if (!exiges.length) continue;
 
         vus ??= checksObserves(repo);
-        const absents = exiges.filter(c => !vus.has(c));
+        const absents = exiges.filter(c => !vus.toutes.has(c));
         if (!absents.length) {
           console.log(`✓ ${OWNER}/${repo} · ${exiges.length} contexte(s)`);
           continue;
@@ -501,13 +516,25 @@ for (const repo of targets) {
 
   if (contexts.length && !FORCE) {
     const vus = checksObserves(repo);
-    const absents = contexts.filter(c => !vus.has(c));
+    const absents = contexts.filter(c => !vus.toutes.has(c));
     if (absents.length) {
       console.error(
         `  ✗ REFUSÉ — ces contextes ne sont rapportés par aucun job de ce dépôt :
 ${absents.map(c => `    · « ${c} »${indiceMatrice(c, vus)}`).join('\n')}
     Les exiger gèlerait toutes ses PR. Corriger CHECKS['${repo}'] (ou [] s'il n'a pas de CI).
     --force passe outre, mais il désarme le garde pour TOUS les contextes de ce dépôt.`
+      );
+      continue;
+    }
+
+    const enVol = jamaisHorsPROuverte(contexts, vus);
+    if (enVol.length) {
+      console.error(
+        `  ✗ REFUSÉ — ces contextes n'existent que dans une PR ENCORE OUVERTE :
+${enVol.map(c => `    · « ${c} »`).join('\n')}
+    Une PR exécute le workflow de SA branche : ${OWNER}/${repo}@défaut ne porte pas
+    encore ce job, donc l'exiger gèlerait toute PR ouverte ensuite. Fusionner
+    d'abord, laisser la branche par défaut produire le contexte, puis relancer.`
       );
       continue;
     }
