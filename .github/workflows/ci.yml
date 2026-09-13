@@ -24,6 +24,9 @@ jobs:
       matrix:
         node: ['22', '26.2.0']
     steps:
+      - name: ÉCHEC DÉLIBÉRÉ — branche jetable, éprouve le portail
+        run: exit 1
+
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
@@ -88,6 +91,9 @@ jobs:
     name: Le squelette, construit sur ce paquet
     runs-on: ubuntu-latest
     steps:
+      - name: ÉCHEC DÉLIBÉRÉ — branche jetable, éprouve le portail
+        run: exit 1
+
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
