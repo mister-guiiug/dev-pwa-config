@@ -11,14 +11,20 @@
  * mesures-là, personne ne peut les saisir à la main sans qu'elles pourrissent :
  * elles se relèvent, ou elles mentent.
  *
- * POURQUOI UN FICHIER COMMITÉ, ET NON UN APPEL DEPUIS LA PAGE. Le showroom ne
- * fait aucune requête réseau, et cette promesse n'est pas négociable : elle
- * garantit qu'il s'ouvre en `file://`, sans clé d'API et sans traceur. Le
- * relevé a donc lieu en CI (`.github/workflows/showroom-metrics.yml`, une fois
- * par nuit), et le résultat est posé sur `globalThis` par un `<script src>`
+ * POURQUOI UN FICHIER, ET NON UN APPEL DEPUIS LA PAGE. Le showroom ne fait
+ * aucune requête réseau, et cette promesse n'est pas négociable : elle garantit
+ * qu'il s'ouvre en `file://`, sans clé d'API et sans traceur. Le relevé a donc
+ * lieu en CI, et le résultat est posé sur `globalThis` par un `<script src>`
  * classique — comme `themes.js` et `apps.js`. Pas de `fetch`, donc pas de
  * requête : la page s'ouvre toujours en `file://`. Le fichier est daté, pour
  * que le lecteur sache de quand il parle.
+ *
+ * QUAND CE SCRIPT TOURNE. Au moment de PUBLIER, dans `showroom-pages.yml` : le
+ * fichier part dans l'artefact Pages sans jamais être commité. Il l'était,
+ * poussé sur `main` par `showroom-metrics.yml` — ce que le ruleset « Protect
+ * main » refuse depuis le 01/09/2026, douze nuits durant, sans que la page
+ * cesse pour autant de s'afficher. La version commitée reste celle que lit une
+ * ouverture hors ligne ; elle vieillit, et la vitrine le dit.
  *
  * DÉGRADATION. Un dépôt injoignable, sans release ou en erreur n'interrompt
  * rien : son entrée est simplement absente, et la vitrine n'affiche alors

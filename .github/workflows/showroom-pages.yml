@@ -54,6 +54,27 @@ jobs:
           node --test test/showroom.test.mjs test/components-css.test.mjs
           test/showroom-i18n.test.mjs test/apps-catalog.test.mjs
 
+      # LE RELEVÉ A LIEU ICI, ET N'EST PAS COMMITÉ. Il l'était, par un push
+      # direct sur `main` depuis `showroom-metrics.yml` — que le ruleset
+      # « Protect main » refuse depuis le 01/09/2026 (« Changes must be made
+      # through a pull request »). Le job rougissait chaque nuit sans que la
+      # page cesse de s'afficher, et la vitrine a servi douze jours de mesures
+      # figées au 1er septembre.
+      #
+      # Produire le fichier au moment de publier supprime le besoin d'écrire
+      # sur une branche protégée : ce qui part dans l'artefact est frais par
+      # construction. Le `metrics.js` du dépôt reste la version hors ligne,
+      # pour que la page s'ouvre en `file://` — c'est la promesse qui interdit
+      # d'appeler l'API depuis le navigateur.
+      - name: Relever l'état des dépôts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/fetch-metrics.mjs
+
+      # Le fichier part dans l'artefact : il doit rester lisible par la page.
+      - name: Vérifier le fichier produit
+        run: node --test test/showroom-metrics.test.mjs
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:

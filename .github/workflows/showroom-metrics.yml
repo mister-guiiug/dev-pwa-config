@@ -5,12 +5,22 @@
 # saisies à la main sans pourrir : dernière release, dernier push, dépôt
 # archivé.
 #
-# Le relevé a lieu ICI et non dans la page : le showroom ne fait aucune requête
-# réseau, c'est ce qui lui permet de s'ouvrir en `file://` sans clé d'API. Il ne
-# lit donc qu'un fichier statique, daté et commité.
+# Le relevé a lieu en CI et non dans la page : le showroom ne fait aucune
+# requête réseau, c'est ce qui lui permet de s'ouvrir en `file://` sans clé
+# d'API. Il ne lit donc qu'un fichier statique et daté.
 #
-# Sans commit à faire, le job se termine sans rien pousser — pas de commit vide
-# quotidien dans l'historique.
+# CE WORKFLOW NE COMMITE PLUS RIEN, ET C'EST LA CORRECTION D'UNE PANNE. Il
+# poussait `showroom/metrics.js` directement sur `main` ; le ruleset « Protect
+# main », posé le 01/09/2026, refuse ce push (« Changes must be made through a
+# pull request »). Dernier succès le 01/09, puis douze échecs nocturnes
+# consécutifs que personne n'a vus — la vitrine continuait de s'afficher, avec
+# des mesures figées au 1er septembre.
+#
+# Le relevé est donc produit par `showroom-pages.yml`, au moment d'empaqueter
+# l'artefact : ce qui est publié est frais par construction, et aucune écriture
+# sur une branche protégée n'est nécessaire. Ce workflow-ci ne garde qu'un
+# rôle, celui de la cadence — relever pour savoir s'il y a du neuf, et ne
+# republier que dans ce cas.
 name: Showroom metrics
 
 on:
@@ -21,11 +31,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  # Redéclencher la publication Pages. Un push fait avec le `GITHUB_TOKEN` ne
-  # déclenche AUCUN autre workflow (protection anti-récursion de GitHub
-  # Actions) : sans ce droit et sans l'étape finale, le relevé serait commité
-  # mais jamais publié — la page servirait indéfiniment un `metrics.js` vide.
+  # Lecture seule : plus rien n'est écrit dans le dépôt.
+  contents: read
+  # Redéclencher la publication Pages, seul effet de ce workflow.
   actions: write
 
 concurrency:
@@ -34,7 +42,7 @@ concurrency:
 
 jobs:
   refresh:
-    name: Relever et commiter
+    name: Relever et republier si besoin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -53,30 +61,49 @@ jobs:
       - name: Vérifier le fichier produit
         run: node --test test/showroom-metrics.test.mjs
 
-      - name: Commiter si quelque chose a changé
-        id: commit
+      # LA COMPARAISON PORTE SUR CE QUI EST PUBLIÉ, PAS SUR LE DÉPÔT — et c'est
+      # la seconde correction. L'ancienne comparait le relevé frais au fichier
+      # commité, en croyant ne republier qu'en cas de nouveauté. Or le fichier
+      # porte sa propre date de génération, réécrite à chaque exécution : la
+      # comparaison était TOUJOURS différente, et la condition n'a jamais pu
+      # être fausse une seule nuit. Le fichier du dépôt, désormais figé, aurait
+      # rendu ce défaut permanent.
+      #
+      # La question utile est « la page en ligne dit-elle encore vrai ? ». On
+      # la pose donc à la page, en écartant la ligne de date, qui ne dit rien
+      # de l'état des dépôts.
+      #
+      # Page injoignable ou jamais publiée : on republie, c'est le cas où il
+      # faut le plus le faire.
+      - name: La page en ligne dit-elle encore vrai ?
+        id: releve
+        env:
+          PAGE: https://mister-guiiug.github.io/dev-pwa-config/metrics.js
         run: |
-          if git diff --quiet -- showroom/metrics.js; then
-            echo "Aucun changement : rien à commiter."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+          sans_date() { grep -v '"generatedAt"' "$1"; }
+          if ! curl -fsS "$PAGE" -o /tmp/publie.js; then
+            echo "Page injoignable ou jamais publiée — publication demandée."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add showroom/metrics.js
-          git commit -m "chore(showroom): relevé nocturne de l'état des dépôts"
-          git push
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+          if diff -q <(sans_date /tmp/publie.js) \
+                     <(sans_date showroom/metrics.js) > /dev/null; then
+            echo "La page en ligne est à jour — rien à republier."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "L'état des dépôts a bougé — publication demandée."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      # Le commit ci-dessus ne réveille pas `showroom-pages.yml` : les
-      # événements produits par le `GITHUB_TOKEN` n'enclenchent pas de nouveau
-      # workflow. On demande donc la publication explicitement — un
-      # `workflow_dispatch` par l'API, lui, s'exécute bien.
+      # C'est `showroom-pages.yml` qui refait le relevé et le publie. On le
+      # demande explicitement — un `workflow_dispatch` par l'API s'exécute
+      # bien, là où un push fait avec le `GITHUB_TOKEN` ne déclencherait aucun
+      # autre workflow (protection anti-récursion de GitHub Actions).
       #
       # Seulement quand le relevé a CHANGÉ : republier une page identique
       # chaque nuit ne ferait que du bruit dans l'historique des déploiements.
       - name: Republier le showroom
-        if: steps.commit.outputs.changed == 'true'
+        if: steps.releve.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run showroom-pages.yml --ref main

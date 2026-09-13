@@ -455,17 +455,28 @@ npm run screenshots -- miss-dice
 node scripts/fetch-metrics.mjs # état des dépôts → showroom/metrics.js
 ```
 
-Le second tourne **une fois par nuit** en CI (`showroom-metrics.yml`) et commite
-`showroom/metrics.js` : version publiée, date du dernier push, dépôt archivé.
-La page ne fait toujours aucune requête — le relevé est posé sur `globalThis`
-par un `<script src>`, comme `themes.js`. Un fichier vide est un état valide :
-la vitrine n'affiche alors simplement aucune mesure.
+Le second est rejoué **au moment de publier** par `showroom-pages.yml` :
+version publiée, date du dernier push, dépôt archivé. Ce qui part dans
+l'artefact est donc frais par construction. La page ne fait toujours aucune
+requête — le relevé est posé sur `globalThis` par un `<script src>`, comme
+`themes.js`. Un fichier vide est un état valide : la vitrine n'affiche alors
+simplement aucune mesure.
 
-> Le workflow redemande **explicitement** la publication Pages après avoir
-> commité. Un push effectué avec le `GITHUB_TOKEN` ne déclenche aucun autre
-> workflow — c'est la protection anti-récursion de GitHub Actions — et le
-> relevé serait donc commité sans jamais être publié. Un `workflow_dispatch`
-> par l'API, lui, s'exécute normalement.
+Le `showroom/metrics.js` du dépôt sert la lecture **hors ligne**, quand la page
+s'ouvre en `file://` ou depuis un clone. Il n'est plus rafraîchi
+automatiquement, et la vitrine affiche la date de son relevé pour que personne
+ne la prenne pour celle du jour.
+
+> **Le relevé n'est plus commité, et c'est la trace d'une panne.**
+> `showroom-metrics.yml` poussait `showroom/metrics.js` directement sur `main`.
+> Le ruleset « Protect main », posé le 01/09/2026, refuse ce push. Le job a
+> échoué douze nuits de suite sans que rien ne s'arrête : la page s'affichait
+> toujours, avec des mesures figées. Produire le fichier à la publication
+> supprime le besoin d'écrire sur une branche protégée.
+>
+> `showroom-metrics.yml` ne garde que la cadence : chaque nuit, il relève,
+> compare à **ce que la page en ligne affiche** — pas au dépôt — et ne demande
+> la publication que si l'état des dépôts a bougé.
 
 ## Stack cible (juin 2026)
 
