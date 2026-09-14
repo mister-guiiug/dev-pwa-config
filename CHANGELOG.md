@@ -1,5 +1,55 @@
 # Changelog
 
+## 4.16.1
+
+### Patch Changes
+
+- 19f9276: **`/qr` retrouve les défauts de `qrcode` : marge 4 modules, correction `'M'`.**
+  
+  La 4.16.0 promettait de garder « le vocabulaire d'options de `qrcode` ». Elle a
+  gardé les noms, pas les valeurs : une option omise laissait `uqr` appliquer le
+  sien — 1 module de marge au lieu de 4, correction `'L'` au lieu de `'M'`. Le
+  vocabulaire commun masquait l'écart, qui ne se découvre qu'au lecteur qui
+  peine à scanner.
+  
+  Quatre modules parce que la « quiet zone » d'ISO 18004 les demande : c'est elle
+  qui permet au lecteur de trouver les bords du code, et sur un fond chargé un
+  seul module n'y suffit pas.
+  
+  **Ce qui change chez les consommateurs.** Un seul des quatre appelants du parc
+  omettait une de ces options : `mister-molkky` laissait la correction au défaut
+  et produisait donc du `'L'` depuis la 4.16.0. Son QR revient en `'M'` — même
+  taille de code pour son URL, 34 % des modules redessinés, et 15 % de perte
+  tolérée au lieu de 7. Les trois autres fixent les deux options et ne bougent
+  pas.
+  
+  `margin: 0` reste une valeur et non une absence : c'est `??` et non `||` qui
+  pose le défaut, sinon le zéro explicite de `miss-ticket-pwa` et de
+  `mister-qowa` gagnerait une marge que personne n'a demandée. Un test le tient.
+- e096396: **`qr.d.ts` décrivait encore `qrcode` et une data-URL PNG.**
+  
+  La 4.16.0 a fait passer `/qr` sur `uqr` et changé le rendu de `qrToDataUrl`
+  de PNG en SVG. Le fichier de types, lui, est resté en arrière : il annonçait
+  des options « passées telles quelles à `qrcode` », une data-URL PNG, et une
+  peer `qrcode` dont l'absence lèverait. C'est précisément ce qu'un consommateur
+  TypeScript lit au survol, donc la seule documentation que beaucoup verront.
+  
+  Trois corrections, aucune ligne de code exécutée :
+  
+  - Les types nomment `uqr`, le rendu SVG, et le fait que le vocabulaire
+    `qrcode` est **traduit** et non transmis.
+  - **Les défauts sont ceux d'`uqr`, et ils diffèrent** : marge de 1 module au
+    lieu de 4, correction d'erreur `'L'` au lieu de `'M'`. Mesuré contre le vrai
+    `uqr`, pas lu dans sa documentation. Les deux écarts se voient au scanner et
+    nulle part ailleurs ; ils sont désormais écrits sur les options concernées.
+  - Le commentaire de `qr.js` affirmait que le SVG donnait « une URL plus
+    courte ». Mesuré sur trois longueurs d'URL, c'est l'inverse : de 2,4 à 3,2
+    fois plus longue. La ligne dit maintenant le vrai, et ce que cela coûte.
+  
+  L'exemple de `docs/DONNEES.md` passe `margin` et `errorCorrectionLevel`
+  explicitement, faute de quoi il enseignait à s'en remettre à des défauts qui
+  ont changé.
+
 ## 4.16.0
 
 ### Minor Changes
