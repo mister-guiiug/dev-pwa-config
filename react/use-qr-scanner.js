@@ -9,16 +9,33 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * dépôt de 897 ; il fonctionne, ne porte aucune alerte de sécurité, et vit
  * derrière ce hook, donc il se remplace en touchant ce seul fichier.
  *
- * Les deux relèves examinées coûtent plus cher qu'elles ne rapportent :
+ * QUATRE relèves ont été examinées, aucune ne rapporte ce qu'elle coûte. Les
+ * poids sont mesurés à l'identique — esbuild, minifié, secoué, gzip -9 — et pas
+ * lus dans le `unpackedSize` du registre, qui compte les sources et tous les
+ * formats de build : `@zxing/library` y pèse 11,8 Mo pour quelques dizaines de
+ * ko réellement embarqués.
+ *
+ * L'ÉTALON : `qr-scanner` coûte **25,4 ko** — 15,4 de module, 10,0 de worker,
+ * un second fichier que le bundler recopie et qui ne descend qu'au scan.
  *
  * - `BarcodeDetector`, l'API NATIVE, n'est exposée par Chrome que sur Android,
  *   ChromeOS et macOS — mesuré absent de Chrome 152 sous Windows — et Safari ne
  *   l'implémente pas. Sur un parc de PWA ouvertes sur iPhone et sur poste, le
  *   natif serait l'exception.
  * - Le ponyfill `barcode-detector` retombe donc sur ZXing en WebAssembly :
- *   15,1 ko de JS gzippé, mais **1,04 Mo de WASM** au premier scan, contre
- *   ~29 ko pour `qr-scanner` (module + worker). Pour un écran d'un seul dépôt,
- *   c'est un mauvais échange.
+ *   15,1 ko de JS gzippé, mais **1,04 Mo de WASM** au premier scan. Pour un
+ *   écran d'un seul dépôt, c'est un mauvais échange.
+ * - `@zxing/browser` est le seul candidat VIVANT — 0.2.1 le 06/07/2026, après
+ *   deux ans de sommeil. Mais son `BrowserQRCodeReader`, importé seul, pèse
+ *   **122,9 ko**, soit presque CINQ fois l'étalon. Et ce poids descend au
+ *   moment précis où l'utilisateur veut la caméra tout de suite.
+ * - `html5-qrcode` pèse **107,2 ko** et n'a rien publié depuis le 15/04/2023 :
+ *   il est plus endormi que ce qu'il remplacerait. Échanger un paquet dormant
+ *   contre un autre, quatre fois plus lourd, ne s'achète pas.
+ *
+ * ET AUCUN DES QUATRE NE FORCE LA MAIN : `npm audit` ne rend aucune alerte, sur
+ * `qr-scanner` comme sur les trois relèves. La question est donc entièrement un
+ * arbitrage poids contre maintenance, et le poids tranche.
  *
  * LE SIGNAL QUI INVERSE LE CALCUL : `BarcodeDetector` disponible sur Safari iOS.
  * Le ponyfill devient alors gratuit là où il sert, et ce fichier change.
