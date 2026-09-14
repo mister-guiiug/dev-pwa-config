@@ -874,7 +874,7 @@ test('les deux sorties ne disent pas la même chose', async () => {
     await view.act(() => state.needRefresh());
 
     const labels = boutons(view.container);
-    assert.deepEqual(labels, ['Reload', 'Later', 'Dismiss']);
+    assert.deepEqual(labels, ['Update', 'Later (24 h)', 'Dismiss']);
     assert.equal(
       new Set(labels).size,
       labels.length,
@@ -917,10 +917,46 @@ test('par défaut, le bandeau garde son unique sortie', async () => {
     );
     await view.act(() => state.needRefresh());
 
-    assert.deepEqual(boutons(view.container), ['Recharger', 'Plus tard']);
+    assert.deepEqual(boutons(view.container), [
+      'Mettre à jour',
+      'Plus tard (24 h)',
+    ]);
     await view.unmount();
   } finally {
     env.restore();
+  }
+});
+
+test('le report dit sa durée, l’écartement non', async () => {
+  // LE DÉFAUT REPRODUIT. Sous le même « Plus tard », miss-supatool reportait
+  // de 4 h, mister-family-map de 6 h, miss-supaboss de 24 h, et onze apps
+  // écartaient pour la seule session : deux gestes, un mot. Seul mister-puzzle
+  // annonçait la durée, en passant son propre libellé.
+  const cas = [
+    { props: { snoozeHours: 6 }, attendu: 'Plus tard (6 h)' },
+    { props: {}, attendu: 'Plus tard' },
+    // Un libellé de l'app passe par le même remplissage…
+    {
+      props: { snoozeHours: 24, snoozeLabel: 'Me le rappeler dans {hours} h' },
+      attendu: 'Me le rappeler dans 24 h',
+    },
+    // …et sort tel quel s'il ne porte pas le gabarit.
+    {
+      props: { snoozeHours: 24, snoozeLabel: 'Plus tard (demain)' },
+      attendu: 'Plus tard (demain)',
+    },
+  ];
+  for (const { props, attendu } of cas) {
+    const env = setupSw();
+    try {
+      const { state, registerSW } = fakeRegisterSW();
+      const view = await mount(h(UpdatePromptBanner, { registerSW, ...props }));
+      await view.act(() => state.needRefresh());
+      assert.deepEqual(boutons(view.container), ['Mettre à jour', attendu]);
+      await view.unmount();
+    } finally {
+      env.restore();
+    }
   }
 });
 

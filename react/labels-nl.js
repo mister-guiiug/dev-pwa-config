@@ -38,9 +38,9 @@ const labels = {
   },
   update: {
     title: 'Update beschikbaar',
-    update: 'Herladen',
+    update: 'Bijwerken',
     updating: 'Bijwerken…',
-    snooze: 'Later',
+    snooze: 'Later ({hours} u)',
     dismiss: 'Later',
     ignore: 'Negeren',
     force: 'Update forceren',

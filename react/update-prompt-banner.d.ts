@@ -41,7 +41,7 @@ export interface UpdatePromptBannerProps {
    */
   checkEvery?: string | number;
   /**
-   * Nombre de sorties offertes à côté de « Recharger ».
+   * Nombre de sorties offertes à côté de « Mettre à jour ».
    *
    * - `'auto'` (défaut) — une seule : le report si `snoozeHours > 0`, sinon
    *   l'écartement pour la session.
@@ -60,10 +60,19 @@ export interface UpdatePromptBannerProps {
    * mêmes props et écraserait l'interrupteur.
    */
   showOfflineReady?: boolean;
+  /** Défaut « Mise à jour disponible ». */
   title?: ReactNode;
+  /** Défaut « Mettre à jour ». */
   updateLabel?: string;
+  /** Pendant l'opération (défaut « Mise à jour… »). */
   updatingLabel?: string;
+  /**
+   * Bouton du report, quand `snoozeHours > 0`. Défaut « Plus tard ({hours} h) » ;
+   * `{hours}` est rempli avec `snoozeHours`, dans ce libellé comme dans celui
+   * du socle. Sans le gabarit, il sort tel quel.
+   */
   snoozeLabel?: string;
+  /** Bouton d'écartement pour la session, quand `snoozeHours` vaut 0 (défaut « Plus tard »). */
   dismissLabel?: string;
   /** Seconde sortie de `secondaryActions: 'both'` (défaut « Ignorer »). */
   ignoreLabel?: string;

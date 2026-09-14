@@ -324,6 +324,12 @@ import { UpdatePromptBanner } from '@mister-guiiug/dev-pwa-config/react';
 />;
 ```
 
+**Le report dit sa durée.** Avec `snoozeHours={24}`, le bouton secondaire vaut
+« Plus tard (24 h) » ; sans report (`snoozeHours` à 0), il écarte pour la seule
+session et dit simplement « Plus tard ». Un `snoozeLabel` fourni passe par le
+même remplissage : `{hours}` y est remplacé, et sans le gabarit il sort tel
+quel.
+
 **Deux sorties au lieu d'une**, avec `secondaryActions="both"` : le report
 persisté ET l'écartement pour la seule session. `mister-puzzle` offrait les deux
 et a dû abandonner le second en migrant.
@@ -332,7 +338,7 @@ et a dû abandonner le second en migrant.
 <UpdatePromptBanner
   registerSW={registerSW}
   snoozeHours={24}
-  secondaryActions="both" // « Recharger » · « Plus tard » · « Ignorer »
+  secondaryActions="both" // « Mettre à jour » · « Plus tard (24 h) » · « Ignorer »
 />
 ```
 
