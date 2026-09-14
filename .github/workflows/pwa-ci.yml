@@ -46,6 +46,17 @@
 # pas rouges les CI qu'il sert. Mais elle refuse de démarrer quand le script
 # manque, plutôt que de retomber en silence sur `npm run test` — une garde qui
 # se tait reproduirait exactement la panne qu'elle est censée réparer.
+#
+# UN CINQUIÈME, mesuré le 14/09/2026, au lendemain de l'activation des alertes
+# Dependabot sur les vingt-huit dépôts : l'étape d'audit ne s'exécutait QU'À LA
+# RACINE. Le lot facile vidé, les vingt-cinq alertes restantes du parc étaient
+# TOUTES dans un second manifeste, aucune à la racine — `mister-puzzle/server`
+# (neuf, toutes en portée `runtime` : socket.io, engine.io, ws, qs,
+# body-parser), `miss-genius/worker` (quinze) et `miss-supatool/proxy` (une).
+# `npm audit --omit=dev` à la racine rendait « 0 vulnérabilité » dans les trois
+# cas, et c'était EXACT. Or `mister-puzzle` déclare `server-dir: server` : le
+# réutilisable savait où était le backend, il l'y type-vérifiait, il ne l'y
+# auditait pas. L'audit suit désormais `server-dir`.
 name: Reusable PWA CI
 
 on:
@@ -115,12 +126,15 @@ on:
         default: true
       run-npm-audit:
         description: >-
-          Lance `npm audit` (SCA) sur les dépendances de PRODUCTION. Actif par
-          défaut depuis le 13/09/2026. Il a longtemps été opt-in « le temps de
-          résorber les vulnérabilités existantes » : ce temps est écoulé — les
-          27 copies du parc ont été auditées ce jour-là, 24 sont sans
-          `high`/`critical` en production. Une app qui doit rester rouge le
-          temps d'un correctif écrit `run-npm-audit: false` avec la raison.
+          Lance `npm audit` (SCA) sur les dépendances de PRODUCTION — à la
+          racine, ET dans `server-dir` quand cette entrée est renseignée : les
+          vingt-cinq alertes restantes du parc au 14/09/2026 vivaient toutes
+          dans un second manifeste, jamais à la racine. Actif par défaut depuis
+          le 13/09/2026. Il a longtemps été opt-in « le temps de résorber les
+          vulnérabilités existantes » : ce temps est écoulé — les 27 copies du
+          parc ont été auditées ce jour-là, 24 sont sans `high`/`critical` en
+          production. Une app qui doit rester rouge le temps d'un correctif
+          écrit `run-npm-audit: false` avec la raison.
         type: boolean
         required: false
         default: true
@@ -171,8 +185,12 @@ on:
         default: ''
       server-dir:
         description: >-
-          Dossier d'un backend annexe (ex. "server") à installer et type-checker
-          (npm ci + tsc --noEmit). Vide = pas de job serveur.
+          Dossier d'un backend annexe (ex. "server") à installer, type-checker
+          (npm ci + tsc --noEmit) et AUDITER — son `package.json` est un second
+          manifeste, que l'audit de la racine ne voit pas. Vide = pas de job
+          serveur. Le dossier doit porter son lockfile : sans lui `npm audit`
+          n'a rien à lire, et l'étape échoue en le disant plutôt que de sauter
+          en silence — `npm ci` l'exigeait déjà de toute façon.
         type: string
         required: false
         default: ''
@@ -309,9 +327,44 @@ jobs:
             npx pwa-doctor
           fi
 
+      # Le seuil part par `env:` : c'est du texte d'appelant, il n'a rien à
+      # faire dans une ligne de commande — la règle est la même que pour
+      # `build-env` et les entrées `e2e-*`.
       - name: Audit dependencies (SCA)
         if: ${{ inputs.run-npm-audit }}
-        run: npm audit --omit=dev --audit-level=${{ inputs.npm-audit-level }}
+        env:
+          AUDIT_LEVEL: ${{ inputs.npm-audit-level }}
+        run: npm audit --omit=dev --audit-level="$AUDIT_LEVEL"
+
+      # Le second manifeste. Deux étapes plutôt qu'une boucle : le journal dit
+      # alors lequel des deux a parlé, comme le couple `Test` / `Test
+      # (couverture et seuils)`.
+      #
+      # Avant `npm ci`, à dessein : `npm audit` lit le LOCKFILE et n'a besoin
+      # d'aucune installation (mesuré). Sans lockfile il répondrait `ENOLOCK`
+      # — un rouge sans explication au milieu d'un job ; la garde le dit en
+      # clair. Elle ne fabrique surtout pas un lockfile à la volée : auditer
+      # des versions résolues du jour rendrait un vert qui ne parle pas de ce
+      # que le dépôt livre. Et ce n'est pas un rouge neuf — l'étape suivante
+      # fait `npm ci`, qui refuse déjà ce cas, plus bas et moins clairement.
+      #
+      # Le `./` du motif n'est pas décoratif : `server-dir` vide donnerait
+      # `/package.json`, un chemin ABSOLU, que `hashFiles` refuse hors du
+      # workspace — une erreur d'évaluation, pas une condition fausse. Le test
+      # `inputs.server-dir != ''` passe d'abord et court-circuite, mais une
+      # condition ne doit pas dépendre de l'ordre d'évaluation pour être sûre.
+      - name: Audit dependencies (SCA — ${{ inputs.server-dir }})
+        if: ${{ inputs.run-npm-audit && inputs.server-dir != '' && hashFiles(format('./{0}/package.json', inputs.server-dir)) != '' }}
+        working-directory: ${{ inputs.server-dir }}
+        env:
+          AUDIT_LEVEL: ${{ inputs.npm-audit-level }}
+          SERVER_DIR: ${{ inputs.server-dir }}
+        run: |
+          if [ ! -f package-lock.json ] && [ ! -f npm-shrinkwrap.json ]; then
+            echo "::error::$SERVER_DIR n'a pas de lockfile : npm audit ne peut rien lire (ENOLOCK), et l'étape « Server — install & type-check » échouerait de même sur npm ci. Committer le package-lock.json de ce dossier."
+            exit 1
+          fi
+          npm audit --omit=dev --audit-level="$AUDIT_LEVEL"
 
       - name: Server — install & type-check
         if: ${{ inputs.server-dir != '' }}

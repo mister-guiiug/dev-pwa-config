@@ -1060,7 +1060,11 @@ plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
   déjà là) avec `e2e-install` pour les projets maison dont le nom n'est pas
   celui d'un navigateur ; `build-env` (variables `KEY=VALUE`, une par ligne,
   injectées avant build/test pour les apps Firebase/Supabase) ; `server-dir`
-  (install + `tsc --noEmit` d'un backend annexe).
+  (install + `tsc --noEmit` + **`npm audit`** d'un backend annexe — son
+  `package.json` est un second manifeste, que l'audit de la racine ne voit pas :
+  au 14/09/2026 les vingt-cinq alertes restantes du parc y vivaient TOUTES, et
+  la racine rendait « 0 vulnérabilité » sans se tromper. Le dossier doit porter
+  son lockfile).
 - **`pwa-lighthouse.yml`** — `build-env` (même usage) → Lighthouse activable sur
   les apps à secrets ; `public-report` (défaut `false`) pour publier en plus le
   rapport sur le stockage public temporaire de Lighthouse CI. Par défaut le
