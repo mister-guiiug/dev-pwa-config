@@ -31,7 +31,7 @@
  *    elle est simplement écartée, et la saisie continue.
  *
  * SANS DÉPENDANCE, SANS DOM. Le QR se génère dans `./qr` (peer optionnelle
- * `qrcode`) et se scanne dans `./react/use-qr-scanner` (peer optionnelle
+ * `uqr`) et se scanne dans `./react/use-qr-scanner` (peer optionnelle
  * `qr-scanner`).
  */
 

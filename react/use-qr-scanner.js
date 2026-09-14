@@ -4,6 +4,25 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * Scan de QR par la caméra — la peer OPTIONNELLE `qr-scanner`, sous cycle de
  * vie géré.
  *
+ * `qr-scanner` EST DORMANT, ET ON LE GARDE QUAND MÊME — décision du 14/09/2026,
+ * à revoir sur un signal précis. Sa dernière version date de 1 391 jours et son
+ * dépôt de 897 ; il fonctionne, ne porte aucune alerte de sécurité, et vit
+ * derrière ce hook, donc il se remplace en touchant ce seul fichier.
+ *
+ * Les deux relèves examinées coûtent plus cher qu'elles ne rapportent :
+ *
+ * - `BarcodeDetector`, l'API NATIVE, n'est exposée par Chrome que sur Android,
+ *   ChromeOS et macOS — mesuré absent de Chrome 152 sous Windows — et Safari ne
+ *   l'implémente pas. Sur un parc de PWA ouvertes sur iPhone et sur poste, le
+ *   natif serait l'exception.
+ * - Le ponyfill `barcode-detector` retombe donc sur ZXing en WebAssembly :
+ *   15,1 ko de JS gzippé, mais **1,04 Mo de WASM** au premier scan, contre
+ *   ~29 ko pour `qr-scanner` (module + worker). Pour un écran d'un seul dépôt,
+ *   c'est un mauvais échange.
+ *
+ * LE SIGNAL QUI INVERSE LE CALCUL : `BarcodeDetector` disponible sur Safari iOS.
+ * Le ponyfill devient alors gratuit là où il sert, et ce fichier change.
+ *
  * PROVENANCE : mister-molkky (`src/react/views/JoinLiveView.tsx`), seul scan
  * caméra de la famille, avec deux pièges payés là-bas et repris ici :
  *

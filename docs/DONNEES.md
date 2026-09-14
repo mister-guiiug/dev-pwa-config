@@ -663,7 +663,7 @@ avec son alphabet, son tirage et son parseur : le PIN numérique de
 mister-qowa, le code 6 caractères de mister-molkky, l'appairage
 `missticket:pair?…` de miss-ticket-pwa. Le socle unifie le tout en pur
 (`/pairing`) et isole les deux peers **optionnelles**, chargées
-paresseusement : `qrcode` (génération, `/qr`) et `qr-scanner` (scan,
+paresseusement : `uqr` (génération, `/qr`) et `qr-scanner` (scan,
 `/react/use-qr-scanner`) — jamais dans le bundle initial, et une erreur
 explicite (pas un import cassé) quand la peer manque.
 
@@ -729,4 +729,4 @@ return scanning ? (
 
 Les peers sont déclarées dans `peerDependenciesMeta` : une app qui ne fait
 pas d'appairage n'installe rien ; une app qui génère sans scanner n'installe
-que `qrcode`.
+que `uqr`.
