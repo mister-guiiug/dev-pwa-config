@@ -3,9 +3,11 @@
  * applications employaient déjà ; `qr.js` le traduit vers celui d'`uqr`, la
  * peer optionnelle qui rend réellement le code depuis la 4.16.0.
  *
- * LES DÉFAUTS, EUX, SONT CEUX D'`uqr` — et ce ne sont pas ceux de `qrcode`.
- * Une option absente n'est pas transmise, donc `uqr` applique le sien. Deux
- * écarts se voient à l'œil ou au scanner, et sont donc nommés ci-dessous.
+ * LES DÉFAUTS AUSSI sont ceux de `qrcode`, depuis la correction du 15/09/2026.
+ * Ils ne l'ont pas toujours été : entre la 4.16.0 et elle, une option omise
+ * laissait `uqr` appliquer le sien — 1 module de marge au lieu de 4, correction
+ * `'L'` au lieu de `'M'`. Le vocabulaire commun masquait l'écart, et il ne se
+ * découvrait qu'au lecteur qui peine.
  *
  * `loader` sert aux tests et aux bundlers qui exigent un import
  * statiquement analysable.
@@ -19,16 +21,20 @@ export interface QrOptions {
    */
   width?: number;
   /**
-   * Marge autour du motif, en modules. **Défaut `uqr` : 1**, là où `qrcode`
-   * en posait 4. La norme recommande 4 : passer la valeur explicitement quand
-   * le code doit être scanné depuis un écran ou une impression chargée.
+   * Marge autour du motif, en modules. **Défaut : 4**, la « quiet zone » de la
+   * norme ISO 18004 — c'est elle qui permet au lecteur de trouver les bords du
+   * code. `0` est une valeur admise, et non une absence.
    */
   margin?: number;
-  /** Pixels par module (`pixelSize` chez `uqr`). Défaut : 10. */
+  /**
+   * Pixels par module (`pixelSize` chez `uqr`, défaut 10). Ne change que
+   * l'échelle du `viewBox` : le rendu, lui, suit `width` ou le conteneur.
+   */
   scale?: number;
   /**
-   * Robustesse au salissement et à l'occultation. **Défaut `uqr` : `'L'`**
-   * (7 % de perte tolérée), là où `qrcode` retenait `'M'` (15 %).
+   * Robustesse au salissement et à l'occultation. **Défaut : `'M'`**, soit
+   * 15 % de perte tolérée — `'L'` en tolère 7, `'Q'` 25, `'H'` 30. Monter d'un
+   * cran densifie le motif à contenu égal.
    */
   errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
   /** Couleurs des modules (`blackColor` / `whiteColor` chez `uqr`). */

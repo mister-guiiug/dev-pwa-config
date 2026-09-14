@@ -80,25 +80,38 @@ test('les options `qrcode` sont traduites vers `uqr`', async () => {
   ]);
 });
 
-test('une option absente n’est pas transmise', async () => {
-  // Écraser un défaut d'`uqr` par `undefined` le perdrait : `border: undefined`
-  // n'est pas « pas de bordure », c'est une bordure cassée.
+test('sans options, les défauts posés sont ceux de `qrcode`', async () => {
+  // LE DÉFAUT REPRODUIT. Entre la 4.16.0 et le 15/09/2026, rien n'était
+  // transmis ici et `uqr` appliquait les SIENS : 1 module de marge au lieu de
+  // 4, correction `'L'` au lieu de `'M'`. Mesuré contre le vrai `uqr`, en
+  // cherchant une longueur de contenu où L et M donnent des tailles
+  // différentes — à 43 caractères, 31 modules contre 35.
   //
-  // CE QUE CE `{}` VEUT DIRE À L'ÉCRAN, et que le vocabulaire commun masque :
-  // les défauts appliqués sont ceux d'`uqr`, PAS ceux de `qrcode`. Mesuré le
-  // 14/09/2026 contre le vrai `uqr` — marge de 1 module au lieu de 4,
-  // correction `'L'` au lieu de `'M'`. Les quatre appelants du parc fixent
-  // leur marge ; un seul, mister-molkky, laisse la correction au défaut et a
-  // donc glissé de M à L en migrant. `qr.d.ts` nomme les deux écarts.
+  // Le vocabulaire commun masquait l'écart : garder les noms de `qrcode` sans
+  // garder ses valeurs était une promesse à moitié tenue. mister-molkky, seul
+  // appelant à laisser la correction au défaut, avait glissé de M à L.
   const f = fauxUqr();
   await qrToSvg('texte', { loader: async () => f.module });
-  assert.deepEqual(f.appels[0].opts, {});
+  assert.deepEqual(f.appels[0].opts, { ecc: 'M', border: 4 });
 });
 
 test('`margin: 0` passe — c’est une valeur, pas une absence', async () => {
+  // C'est `??` et non `||` qui pose le défaut : un `||` remplacerait ce zéro
+  // explicite par quatre, et le QR de miss-ticket-pwa gagnerait une marge que
+  // personne n'a demandée.
   const f = fauxUqr();
   await qrToSvg('texte', { loader: async () => f.module, margin: 0 });
-  assert.deepEqual(f.appels[0].opts, { border: 0 });
+  assert.equal(f.appels[0].opts.border, 0);
+});
+
+test('les options fournies l’emportent sur les défauts', async () => {
+  const f = fauxUqr();
+  await qrToSvg('texte', {
+    loader: async () => f.module,
+    margin: 1,
+    errorCorrectionLevel: 'H',
+  });
+  assert.deepEqual(f.appels[0].opts, { ecc: 'H', border: 1 });
 });
 
 /**

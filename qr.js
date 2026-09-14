@@ -64,16 +64,25 @@ async function loadUqr(loader) {
  *
  * Les correspondances sont directes, à un détail près : `errorCorrectionLevel`
  * et `ecc` partagent le MÊME alphabet `L | M | Q | H`, et `margin` comme
- * `border` se comptent en modules, pas en pixels. Une option absente n'est pas
- * transmise — `uqr` a ses propres défauts, les écraser par `undefined` les
- * perdrait.
+ * `border` se comptent en modules, pas en pixels.
  *
- * CE QUI SIGNIFIE QUE LES DÉFAUTS ONT CHANGÉ, et le vocabulaire commun le
- * masque : sans `margin`, la marge tombe de 4 modules à 1 ; sans
- * `errorCorrectionLevel`, la correction passe de `'M'` à `'L'`. Les quatre
- * appelants du parc fixent leur marge ; un seul, mister-molkky, laisse la
- * correction au défaut et a donc glissé de M à L. `qr.d.ts` nomme les deux
- * écarts, faute de quoi ils ne se découvrent qu'au scanner.
+ * LES DEUX DÉFAUTS SONT POSÉS ICI, ET C'EST LE CORRECTIF DU 15/09/2026. Garder
+ * le vocabulaire de `qrcode` sans garder ses valeurs par défaut était une
+ * promesse à moitié tenue : sans `margin`, la marge tombait de 4 modules à 1 ;
+ * sans `errorCorrectionLevel`, la correction passait de `'M'` à `'L'`. Rien ne
+ * le signalait, et les deux écarts ne se découvrent qu'au lecteur qui peine.
+ * mister-molkky, seul appelant à laisser la correction au défaut, avait glissé
+ * de M à L en migrant.
+ *
+ * QUATRE MODULES DE MARGE, PARCE QUE LA NORME LES DEMANDE : la « quiet zone »
+ * d'ISO 18004 vaut quatre modules, et c'est elle qui permet au lecteur de
+ * trouver les bords du code. `uqr` en pose un, ce qui suffit souvent et pas
+ * toujours — sur un fond chargé, jamais.
+ *
+ * `margin: 0` RESTE UNE VALEUR, pas une absence : c'est `!= null` et non un
+ * `||` qui départage, sinon un zéro explicite se verrait remplacé par quatre.
+ * `scale` n'a pas de défaut à restaurer — chez `uqr` il ne change que l'échelle
+ * du `viewBox`, jamais ce qui s'affiche.
  *
  * `width` n'a pas d'équivalent : `uqr` raisonne en pixels PAR MODULE
  * (`pixelSize`), pas en largeur d'image. Il est donc appliqué après coup, sur
@@ -81,8 +90,8 @@ async function loadUqr(loader) {
  */
 function versUqr({ margin, errorCorrectionLevel, color, scale } = {}) {
   return {
-    ...(errorCorrectionLevel ? { ecc: errorCorrectionLevel } : {}),
-    ...(margin != null ? { border: margin } : {}),
+    ecc: errorCorrectionLevel ?? 'M',
+    border: margin ?? 4,
     ...(scale != null ? { pixelSize: scale } : {}),
     ...(color?.dark ? { blackColor: color.dark } : {}),
     ...(color?.light ? { whiteColor: color.light } : {}),
