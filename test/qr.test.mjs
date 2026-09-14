@@ -83,6 +83,13 @@ test('les options `qrcode` sont traduites vers `uqr`', async () => {
 test('une option absente n’est pas transmise', async () => {
   // Écraser un défaut d'`uqr` par `undefined` le perdrait : `border: undefined`
   // n'est pas « pas de bordure », c'est une bordure cassée.
+  //
+  // CE QUE CE `{}` VEUT DIRE À L'ÉCRAN, et que le vocabulaire commun masque :
+  // les défauts appliqués sont ceux d'`uqr`, PAS ceux de `qrcode`. Mesuré le
+  // 14/09/2026 contre le vrai `uqr` — marge de 1 module au lieu de 4,
+  // correction `'L'` au lieu de `'M'`. Les quatre appelants du parc fixent
+  // leur marge ; un seul, mister-molkky, laisse la correction au défaut et a
+  // donc glissé de M à L en migrant. `qr.d.ts` nomme les deux écarts.
   const f = fauxUqr();
   await qrToSvg('texte', { loader: async () => f.module });
   assert.deepEqual(f.appels[0].opts, {});

@@ -25,9 +25,14 @@
  * SEUL CHANGEMENT VISIBLE : `qrToDataUrl` rend désormais une data-URL **SVG**
  * et non plus PNG. Les trois appelants la posent dans un `<img src>`, où les
  * deux marchent — vérifié — et le SVG y est plus net à l'impression comme sur
- * un grand écran, pour une URL plus courte. Le préciser importe : qui
- * attendrait un PNG binaire (un `fetch` + `toBlob`, un envoi serveur) doit le
- * savoir.
+ * un grand écran. Le préciser importe : qui attendrait un PNG binaire (un
+ * `fetch` + `toBlob`, un envoi serveur) doit le savoir.
+ *
+ * LA DATA-URL EST PLUS LONGUE, ET NON PLUS COURTE — cette ligne a d'abord
+ * affirmé l'inverse, sans l'avoir mesuré. Sur trois longueurs d'URL, le SVG
+ * encodé pèse 2,4 à 3,2 fois la PNG équivalente (5 à 12 ko contre 2 à 4). Rien
+ * qui pèse sur une chaîne posée une fois dans un attribut, mais qui compte
+ * pour qui la stocke, la transmet ou l'inscrit dans un document.
  *
  * PEER ABSENTE : erreur EXPLICITE, qui nomme le paquet et la commande —
  * plutôt qu'un « Failed to fetch dynamically imported module » cryptique
@@ -62,6 +67,13 @@ async function loadUqr(loader) {
  * `border` se comptent en modules, pas en pixels. Une option absente n'est pas
  * transmise — `uqr` a ses propres défauts, les écraser par `undefined` les
  * perdrait.
+ *
+ * CE QUI SIGNIFIE QUE LES DÉFAUTS ONT CHANGÉ, et le vocabulaire commun le
+ * masque : sans `margin`, la marge tombe de 4 modules à 1 ; sans
+ * `errorCorrectionLevel`, la correction passe de `'M'` à `'L'`. Les quatre
+ * appelants du parc fixent leur marge ; un seul, mister-molkky, laisse la
+ * correction au défaut et a donc glissé de M à L. `qr.d.ts` nomme les deux
+ * écarts, faute de quoi ils ne se découvrent qu'au scanner.
  *
  * `width` n'a pas d'équivalent : `uqr` raisonne en pixels PAR MODULE
  * (`pixelSize`), pas en largeur d'image. Il est donc appliqué après coup, sur

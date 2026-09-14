@@ -681,8 +681,13 @@ import { qrToDataUrl } from '@mister-guiiug/dev-pwa-config/qr';
 // chiffré se tire avec { alphabet: 'numeric' }. Aléa crypto, tirage sans
 // biais, `random` injectable pour les tests.
 const code = generateCode(6);
+// `margin` et `errorCorrectionLevel` valent la peine d'être écrits : sans eux,
+// ce sont les défauts d'`uqr` qui s'appliquent — 1 module de marge et la
+// correction `'L'`, quand `qrcode` posait 4 et `'M'`.
 const qr = await qrToDataUrl(`${location.origin}/join?code=${code}`, {
   width: 240,
+  margin: 4,
+  errorCorrectionLevel: 'M',
 });
 
 // Invité : la saisie se normalise au fil de l'eau — majuscules, confusions
