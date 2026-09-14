@@ -47,14 +47,19 @@ const labels = {
   },
   update: {
     title: 'Mise à jour disponible',
-    update: 'Recharger',
+    // « Mettre à jour », pas « Recharger » : le titre annonce une mise à jour
+    // et l'état transitoire en est une ; le bouton nommait le mécanisme là où
+    // ses deux voisins nomment l'intention. Quatre apps l'avaient déjà choisi.
+    update: 'Mettre à jour',
     updating: 'Mise à jour…',
-    snooze: 'Plus tard',
+    // Le report DIT SA DURÉE : le bandeau remplit `{hours}` avec `snoozeHours`.
+    // Sous le même « Plus tard », quatre apps reportaient de 4 à 24 h et onze
+    // écartaient pour la session ; rien à l'écran ne les distinguait, et seul
+    // mister-puzzle annonçait la durée, en passant son propre libellé.
+    snooze: 'Plus tard ({hours} h)',
     dismiss: 'Plus tard',
-    // `snooze` et `dismiss` disent tous deux « Plus tard » : chacun est SEUL
-    // à l'écran, et c'est bien ce qu'ils font. `ignore` n'existe que pour le
-    // mode à deux sorties, où les deux boutons se côtoient — deux « Plus
-    // tard » côte à côte ne diraient plus lequel persiste.
+    // `ignore` n'existe que pour le mode à deux sorties, où le report et
+    // l'écartement se côtoient : il faut bien dire lequel ne persiste pas.
     ignore: 'Ignorer',
     force: 'Forcer la mise à jour',
     forceHint:

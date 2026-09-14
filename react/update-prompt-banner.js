@@ -95,9 +95,18 @@ function Banner(props) {
   // reste que l'écartement, soit exactement ce que fait `'auto'`. Deux boutons
   // qui écartent tous deux pour la session ne diraient rien de plus.
   const bothExits = secondaryActions === 'both' && snoozeHours > 0;
+  // LE REPORT DIT SA DURÉE. Le même « Plus tard » servait deux gestes — un
+  // report de 4, 6 ou 24 h, persisté, et un écartement pour la seule session —
+  // et rien à l'écran ne les distinguait. `{hours}` est rempli ici, avec la
+  // valeur que le hook applique : le libellé ne peut pas mentir sur la durée.
+  // Un `snoozeLabel` de l'app passe par le même remplissage, qu'il porte le
+  // gabarit ou non — sans lui, il sort tel quel.
   const secondaryLabel =
     snoozeHours > 0
-      ? (snoozeLabel ?? labels.snooze)
+      ? (snoozeLabel ?? labels.snooze).replaceAll(
+          '{hours}',
+          String(snoozeHours)
+        )
       : (dismissLabel ?? labels.dismiss);
   const onSecondary = snoozeHours > 0 ? snooze : dismiss;
 
