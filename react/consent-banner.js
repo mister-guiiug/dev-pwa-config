@@ -45,19 +45,47 @@ import { readRaw, removeKey, writeRaw } from '../storage.js';
  * Non stylé : cibler `[data-dwc="consent-banner"]`.
  */
 
-/** La clé de stockage, au format du parc (`dwc_*`). */
+/** Le préfixe de la clé de stockage, au format du parc (`dwc_*`). */
 export const CONSENT_KEY = 'dwc_consent';
 
+/**
+ * LA CLÉ PORTE L'APPLICATION, ET C'EST UNE NÉCESSITÉ, PAS UN CONFORT.
+ *
+ * `localStorage` est cloisonné par ORIGINE. Les vingt sites de la famille sont
+ * servis sous `https://<compte>.github.io/<dépôt>/` : une seule origine pour
+ * tous. Une clé nue y est donc COMMUNE. Mesuré en navigateur le 15/09/2026 :
+ * accepter sur une app faisait disparaître le bandeau de la suivante, qui
+ * chargeait son propre tag sans avoir rien demandé. Un consentement donné à un
+ * service en valait dix-huit autres — ce que le RGPD n'admet pas.
+ *
+ * `import.meta.env.BASE_URL` vaut `/<dépôt>/` dans le build de chaque app, et
+ * `/` en développement — où le cloisonnement vient déjà du port. Vérifié dans
+ * un build réel : Vite remplace bien la valeur À L'INTÉRIEUR du code du socle
+ * livré depuis `node_modules`, forme optionnelle comprise.
+ *
+ * `scope` explicite l'emporte : c'est ce qui rend le comportement testable, et
+ * ce qui permet à deux apps de PARTAGER délibérément un choix si elles le
+ * décident un jour.
+ *
+ * @param {string} [scope] Portée explicite ; sinon le chemin de base de l'app.
+ */
+export function consentKey(scope) {
+  const base =
+    scope ??
+    ((typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/');
+  return base && base !== '/' ? `${CONSENT_KEY}:${base}` : CONSENT_KEY;
+}
+
 /** @returns {'granted'|'denied'|null} Le choix mémorisé, s'il y en a un. */
-export function readConsentChoice() {
-  const value = readRaw(CONSENT_KEY);
+export function readConsentChoice(scope) {
+  const value = readRaw(consentKey(scope));
   return value === 'granted' || value === 'denied' ? value : null;
 }
 
 /** Mémorise un choix. @param {'granted'|'denied'} choice */
-export function writeConsentChoice(choice) {
+export function writeConsentChoice(choice, scope) {
   if (choice !== 'granted' && choice !== 'denied') return false;
-  return writeRaw(CONSENT_KEY, choice);
+  return writeRaw(consentKey(scope), choice);
 }
 
 /**
@@ -69,8 +97,8 @@ export function writeConsentChoice(choice) {
  * Pour couper la collecte, il faut AUSSI `setAnalyticsConsent('denied')` — ce
  * que fait le bouton « Refuser » du bandeau.
  */
-export function clearConsentChoice() {
-  return removeKey(CONSENT_KEY);
+export function clearConsentChoice(scope) {
+  return removeKey(consentKey(scope));
 }
 
 /**
@@ -79,14 +107,15 @@ export function clearConsentChoice() {
  * Utilisable seul, pour une page de confidentialité qui veut offrir le choix
  * ailleurs que dans le bandeau.
  *
- * @param {{ gaMeasurementId?: string, gtmContainerId?: string }} [options]
+ * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
+ *   scope?: string }} [options]
  * @returns {{ choice: 'granted'|'denied'|null, configured: boolean,
  *   needed: boolean, accept: () => void, refuse: () => void,
  *   reset: () => void }}
  */
 export function useConsentChoice(options = {}) {
-  const { gaMeasurementId, gtmContainerId } = options;
-  const [choice, setChoice] = useState(() => readConsentChoice());
+  const { gaMeasurementId, gtmContainerId, scope } = options;
+  const [choice, setChoice] = useState(() => readConsentChoice(scope));
   const [configured, setConfigured] = useState(false);
 
   useEffect(() => {
@@ -102,22 +131,25 @@ export function useConsentChoice(options = {}) {
     // Le choix d'hier, rejoué : sans ça le tag n'est jamais injecté, quel que
     // soit ce que l'utilisateur a accepté la dernière fois. Un refus, lui, n'a
     // rien à rejouer — `initAnalytics` part déjà de `denied`.
-    if (readConsentChoice() === 'granted')
+    if (readConsentChoice(scope) === 'granted')
       setAnalyticsConsent({ analytics: true });
-  }, [gaMeasurementId, gtmContainerId]);
+  }, [gaMeasurementId, gtmContainerId, scope]);
 
-  const decide = useCallback(next => {
-    writeConsentChoice(next);
-    setChoice(next);
-    setAnalyticsConsent(next === 'granted' ? { analytics: true } : 'denied');
-  }, []);
+  const decide = useCallback(
+    next => {
+      writeConsentChoice(next, scope);
+      setChoice(next);
+      setAnalyticsConsent(next === 'granted' ? { analytics: true } : 'denied');
+    },
+    [scope]
+  );
 
   const accept = useCallback(() => decide('granted'), [decide]);
   const refuse = useCallback(() => decide('denied'), [decide]);
   const reset = useCallback(() => {
-    clearConsentChoice();
+    clearConsentChoice(scope);
     setChoice(null);
-  }, []);
+  }, [scope]);
 
   return {
     choice,
@@ -131,7 +163,7 @@ export function useConsentChoice(options = {}) {
 
 /**
  * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
- *   policyHref?: string, className?: string,
+ *   scope?: string, policyHref?: string, className?: string,
  *   title?: import('react').ReactNode, message?: import('react').ReactNode,
  *   acceptLabel?: string, refuseLabel?: string, policyLabel?: string }} props
  */
@@ -139,6 +171,7 @@ export function ConsentBanner(props) {
   const {
     gaMeasurementId,
     gtmContainerId,
+    scope,
     policyHref,
     className,
     title,
@@ -152,6 +185,7 @@ export function ConsentBanner(props) {
   const { needed, accept, refuse } = useConsentChoice({
     gaMeasurementId,
     gtmContainerId,
+    scope,
   });
 
   if (!needed) return null;

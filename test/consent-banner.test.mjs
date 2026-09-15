@@ -12,7 +12,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement as h } from 'react';
 
-import { ConsentBanner, CONSENT_KEY } from '../react/consent-banner.js';
+import {
+  ConsentBanner,
+  CONSENT_KEY,
+  consentKey,
+} from '../react/consent-banner.js';
 import { resetAnalytics } from '../analytics.js';
 import { mount, setupDom } from './helpers/dom.mjs';
 
@@ -23,11 +27,12 @@ const tagCharge = () =>
   document.head.querySelector('script[src*="googletagmanager.com"]');
 
 /** Un DOM neuf, un module d'analytics neuf, un stockage neuf. */
-function prepare(choixMemorise) {
+function prepare(choixMemorise, scope) {
   const dom = setupDom();
   resetAnalytics();
   delete globalThis.dataLayer;
-  if (choixMemorise) window.localStorage.setItem(CONSENT_KEY, choixMemorise);
+  if (choixMemorise)
+    window.localStorage.setItem(consentKey(scope), choixMemorise);
   return dom;
 }
 
@@ -176,5 +181,56 @@ test('le lien de confidentialité n’apparaît que si on le fournit', async () 
   assert.equal(lien?.getAttribute('href'), '/confidentialite');
   await avec.unmount();
 
+  dom.restore();
+});
+
+test('la clé de stockage porte le chemin de l’application', () => {
+  // Sans portée (développement, racine), la clé reste nue : le cloisonnement
+  // vient déjà du port, et deux apps locales ne se marchent pas dessus.
+  assert.equal(consentKey('/'), CONSENT_KEY);
+  assert.equal(consentKey(), CONSENT_KEY);
+  // Déployées, les vingt apps partagent l'origine `<compte>.github.io` : c'est
+  // le chemin de base qui les distingue, et donc la clé.
+  assert.equal(consentKey('/miss-uwh/'), `${CONSENT_KEY}:/miss-uwh/`);
+  assert.notEqual(consentKey('/miss-uwh/'), consentKey('/mister-doc/'));
+});
+
+test('un accord donné à une app ne vaut PAS pour une autre', async () => {
+  // LE DÉFAUT QUE CE TEST REND IMPOSSIBLE, mesuré en production le 15/09/2026 :
+  // accepter sur mister-cim10 faisait disparaître le bandeau de miss-contraction,
+  // qui chargeait son propre tag sans avoir rien demandé à personne.
+  const dom = prepare('granted', '/mister-cim10/');
+  const vue = await mount(
+    h(ConsentBanner, { gaMeasurementId: GA, scope: '/miss-contraction/' })
+  );
+
+  assert.ok(
+    vue.container.querySelector('[data-dwc="consent-banner"]'),
+    'la seconde app doit poser sa propre question'
+  );
+  // Et la mesure qui compte : rien n'est parti chez Google entre-temps.
+  assert.equal(tagCharge(), null);
+
+  await vue.unmount();
+  dom.restore();
+});
+
+test('sous la MÊME portée, le choix d’hier est rejoué', async () => {
+  // La contre-épreuve du test précédent. Cloisonner ne doit pas casser le
+  // rejeu : sans lui, l'acceptation d'hier serait reperdue à chaque visite et
+  // le tag ne partirait jamais.
+  const dom = prepare('granted', '/miss-uwh/');
+  const vue = await mount(
+    h(ConsentBanner, { gaMeasurementId: GA, scope: '/miss-uwh/' })
+  );
+
+  assert.equal(
+    vue.container.querySelector('[data-dwc="consent-banner"]'),
+    null,
+    'la question a déjà été posée, elle ne se repose pas'
+  );
+  assert.ok(tagCharge(), 'le tag doit être chargé, le choix ayant été rejoué');
+
+  await vue.unmount();
   dom.restore();
 });

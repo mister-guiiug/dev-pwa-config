@@ -301,6 +301,32 @@ Si les deux sont posées, **seul GTM est chargé** — GA4 se configure dedans, 
 les fournir toutes deux au tag compterait chaque événement deux fois. Le code
 tranche seul, il n'y a rien à arbitrer au déploiement.
 
+**ET LA VARIABLE DOIT ATTEINDRE LE BUILD, ce qui ne va pas de soi.** Posée sur
+le dépôt, elle ne fait rien tant que le workflow appelant ne la passe pas en
+`build-env` : `pwa-deploy.yml` n'injecte que ce qu'on lui donne. Relevé le
+15/09/2026 : **zéro dépôt sur vingt** le faisait, y compris les deux dont la
+variable était déjà posée — elles ne mesuraient donc rien, sans le moindre
+signe. La ligne à écrire dans l'appelant :
+
+```yaml
+with:
+  build-env: |
+    VITE_GA_MEASUREMENT_ID=${{ vars.VITE_GA_MEASUREMENT_ID }}
+```
+
+Aucun commentaire à l'intérieur du bloc : `build-env` est un bloc littéral, un
+`#` y serait du texte passé au script, qui refuserait la ligne. Et documentez
+la variable dans `.env.example` — `pwa-doctor` compare les deux, et la CI des
+dépôts qui le jouent en strict sort rouge sinon.
+
+**Le consentement est cloisonné par application depuis la 4.17.1**, et il
+fallait l'être : `localStorage` est cloisonné par ORIGINE, or les vingt sites
+sont servis sous `https://<compte>.github.io/<dépôt>/` — une seule origine. Une
+clé nue y était commune, et accepter sur une app faisait taire la question sur
+les dix-neuf autres, qui chargeaient leur tag sans rien demander. La clé porte
+désormais `import.meta.env.BASE_URL`. Rien à faire côté application ; une
+portée explicite reste possible par la prop `scope`.
+
 **E. Une valeur qui n'est lue que par un serveur annexe** (`CORS_ORIGINS` du
 serveur de puzzle) : `phase: "server"` au manifeste, pour qu'un audit ne la
 compte pas comme orpheline.
