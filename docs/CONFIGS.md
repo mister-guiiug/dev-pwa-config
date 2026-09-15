@@ -211,6 +211,26 @@ portent les marqueurs `__ANALYTICS_*__`, trois ont recopié un extrait `gtag` en
 dur, sept n'ont rien — et **aucune** n'envoie le moindre événement ni la moindre
 vue de page après le chargement initial.
 
+**La voie courte : monter le bandeau, et rien d'autre.** `ConsentBanner` appelle
+`initAnalytics` lui-même s'il le faut, rejoue le choix mémorisé et pose la
+question quand il n'y en a pas. Une ligne par application.
+
+```tsx
+import { ConsentBanner } from '@mister-guiiug/dev-pwa-config/react/consent-banner';
+
+<ConsentBanner
+  gaMeasurementId={import.meta.env.VITE_GA_MEASUREMENT_ID}
+  policyHref="/confidentialite"
+/>;
+```
+
+Sans `VITE_GA_MEASUREMENT_ID`, il ne rend **rien** : il n'y a rien à mesurer,
+donc rien à demander. Une app peut donc le monter avant que l'identifiant
+n'existe.
+
+**La voie longue**, pour une app qui gère l'accord ailleurs (une CMP, un écran
+de réglages) :
+
 ```ts
 // main.tsx
 import {
@@ -224,6 +244,12 @@ initAnalytics({ gaMeasurementId: import.meta.env.VITE_GA_MEASUREMENT_ID });
 // …quand l'utilisateur accepte, où que ce soit dans l'app :
 setAnalyticsConsent({ analytics: true }); // le tag est chargé à cet instant
 ```
+
+⚠️ **Un accord ne survit pas tout seul.** `initAnalytics` repart toujours de
+`denied` : au chargement suivant, l'accord d'hier doit être **rejoué** par un
+`setAnalyticsConsent`, sinon le tag n'est jamais injecté et la mesure s'arrête
+sans que rien ne le signale. `ConsentBanner` le fait ; une implémentation
+maison doit y penser.
 
 ```tsx
 // Une vue de page par navigation — GA4 n'en envoie qu'une par chargement de

@@ -333,6 +333,10 @@
       "types": "./react/confirm-dialog.d.ts",
       "default": "./react/confirm-dialog.js"
     },
+    "./react/consent-banner": {
+      "types": "./react/consent-banner.d.ts",
+      "default": "./react/consent-banner.js"
+    },
     "./react/empty-state": {
       "types": "./react/empty-state.d.ts",
       "default": "./react/empty-state.js"

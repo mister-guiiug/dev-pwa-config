@@ -114,6 +114,14 @@ const labels = {
     current: 'Pagina corrente',
     more: 'Altro',
   },
+  consent: {
+    title: 'Misurazione del pubblico',
+    message:
+      'Questa applicazione può misurare il proprio utilizzo per migliorare. Non viene inviato nulla finché non accetti.',
+    accept: 'Accetta',
+    refuse: 'Rifiuta',
+    policy: 'Scopri di più',
+  },
 };
 
 export default labels;

@@ -135,6 +135,17 @@ const labels = {
     current: 'Page actuelle',
     more: 'Plus',
   },
+  // Le bandeau de consentement. « Rien n’est envoyé tant que » n’est pas une
+  // formule de style : `analytics.js` n’injecte pas le tag avant l’accord, et
+  // le message doit dire ce que le code fait, pas ce qui rassure.
+  consent: {
+    title: 'Mesure d’audience',
+    message:
+      'Cette application peut mesurer sa fréquentation pour s’améliorer. Rien n’est envoyé tant que vous n’avez pas accepté.',
+    accept: 'Accepter',
+    refuse: 'Refuser',
+    policy: 'En savoir plus',
+  },
 };
 
 export default labels;

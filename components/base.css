@@ -25,6 +25,8 @@
     [data-dwc='update-banner-dismiss'],
     [data-dwc='update-banner-ignore'],
     [data-dwc='offline-ready-dismiss'],
+    [data-dwc='consent-accept'],
+    [data-dwc='consent-refuse'],
     [data-dwc='pwa-install-actions'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
@@ -47,6 +49,13 @@
     [data-dwc='update-banner-dismiss'],
     [data-dwc='update-banner-ignore'],
     [data-dwc='offline-ready-dismiss'],
+    /* Accepter et refuser partagent la MÊME règle, donc la même taille, le
+       même contraste et la même cible tactile. C'est la traduction en CSS de
+       « refuser coûte un clic comme accepter » : un bouton de refus plus
+       discret rendrait le consentement irrégulier sans qu'aucun test de
+       comportement ne s'en aperçoive. */
+    [data-dwc='consent-accept'],
+    [data-dwc='consent-refuse'],
     [data-dwc='pwa-install-actions'] button
   ) {
     font: inherit;

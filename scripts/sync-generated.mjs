@@ -400,6 +400,7 @@ export const MORCEAUX_CSS = {
   'ErrorBoundary (UI de repli)': 'error-boundary',
   SyncStatusBadge: 'sync-status-badge',
   'PwaInstallPrompt & UpdatePromptBanner': 'install-prompt',
+  ConsentBanner: 'consent-banner',
   'AppFooter & FamilyApps': 'app-footer',
   Button: 'button',
   Field: 'field',
