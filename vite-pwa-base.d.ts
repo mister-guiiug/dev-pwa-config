@@ -13,6 +13,14 @@ export function resolveSeoPublicUrls(
   logoUrl?: string;
 };
 
+/**
+ * @deprecated Préférer `react/consent-banner`, qui n'injecte rien avant un
+ * accord explicite. Ces fragments-ci sont écrits dans le HTML AU BUILD : le
+ * tag de Google part au chargement de la page, précédé d'un `consent default`
+ * tout refusé — donc sans collecte, mais chargé quand même. Aucune app du parc
+ * ne les utilise depuis septembre 2026, et `templates/index.html` ne porte
+ * plus les marqueurs `__ANALYTICS_*__` qui les recevaient.
+ */
 export function buildAnalyticsHtmlFragments(overrides?: {
   gtmContainerId?: string;
   gaMeasurementId?: string;

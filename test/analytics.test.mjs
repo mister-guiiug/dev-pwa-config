@@ -2,10 +2,16 @@
  * GA4 / GTM : le consentement d'abord, la mesure ensuite.
  *
  * CE QUE CES TESTS PROTÈGENT. Les fragments d'injection existaient depuis
- * longtemps (neuf apps portent les marqueurs `__ANALYTICS_*__`), mais aucune
- * app ne mesurait quoi que ce soit : zéro `trackEvent`, zéro vue de page sur
- * changement de route, zéro consentement. Les deux règles qui comptent ici :
- * rien ne part avant l'accord, et une vue de page par navigation.
+ * longtemps — neuf apps portaient les marqueurs `__ANALYTICS_*__` — mais
+ * aucune app ne mesurait quoi que ce soit : zéro `trackEvent`, zéro vue de
+ * page sur changement de route, zéro consentement. Les deux règles qui
+ * comptent ici : rien ne part avant l'accord, et une vue de page par
+ * navigation.
+ *
+ * Depuis septembre 2026, plus aucune app ne porte ces marqueurs, et le gabarit
+ * non plus : `ConsentBanner` est la seule voie en service.
+ * `buildAnalyticsHtmlFragments` n'est gardée que parce qu'elle est exportée —
+ * ces tests continuent donc de la couvrir, obsolète ou pas.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

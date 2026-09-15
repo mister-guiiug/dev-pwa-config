@@ -9,9 +9,21 @@
    - liens icônes (générées par `pwa-icons`)
    - clé localStorage du thème (défaut `dwc_theme`, alignée sur useTheme)
    - CSP : voir le commentaire dédié (offline-first vs Supabase/Firebase)
-   - placeholders SEO/analytics __ANALYTICS_*__ / __SEO_HOME_URL__ :
+   - placeholders SEO __SEO_HOME_URL__ / __SEO_LOGO_URL__ / __PWA_ICON_QS__ :
      remplis à la build par pwaSeoPlugin() — À SUPPRIMER si l'app n'utilise
      pas vite-pwa-base (sinon les marqueurs restent en clair dans le HTML).
+
+  LA MESURE D'AUDIENCE N'EST PAS ICI, ET C'EST VOULU. Ce gabarit portait
+  __ANALYTICS_HEAD__ / __ANALYTICS_BODY__, que pwaSeoPlugin() remplaçait à la
+  build par le tag de Google dès qu'un identifiant était posé. Le tag partait
+  alors au CHARGEMENT DE LA PAGE, avant tout consentement — précédé d'un
+  `consent default` tout refusé, donc sans collecte, mais parti quand même.
+  Les vingt et une apps du parc les ont retirés en septembre 2026 ; les laisser
+  ici faisait naître chaque app neuve avec la voie qu'on venait de fermer.
+
+  La voie en service est `react/consent-banner` : <ConsentBanner
+  gaMeasurementId={import.meta.env.VITE_GA_MEASUREMENT_ID} />, qui n'injecte
+  RIEN avant un accord explicite, plus usePageViews(pathname) pour les vues.
 -->
 <html lang="fr">
   <head>
@@ -66,9 +78,6 @@
       })();
     </script>
 
-    <!-- Analytics (GTM/GA4) injecté par pwaSeoPlugin() — supprimer si non utilisé. -->
-    __ANALYTICS_HEAD__
-
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link
       rel="icon"
@@ -106,8 +115,6 @@
     <title>__APP_NAME__</title>
   </head>
   <body>
-    <!-- Analytics body (noscript GTM) injecté par pwaSeoPlugin() — supprimer si non utilisé. -->
-    __ANALYTICS_BODY__
     <div id="app"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
