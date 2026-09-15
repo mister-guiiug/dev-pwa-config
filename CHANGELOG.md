@@ -1,5 +1,41 @@
 # Changelog
 
+## 4.17.1
+
+### Patch Changes
+
+- **Le consentement est désormais cloisonné par application.**
+  
+  `localStorage` est cloisonné par ORIGINE. Les vingt sites de la famille sont
+  servis sous `https://<compte>.github.io/<dépôt>/` : une seule origine pour tous.
+  La clé `dwc_consent`, écrite nue, y était donc COMMUNE aux vingt.
+  
+  Mesuré en production le 15/09/2026, dans un navigateur : après avoir accepté sur
+  `mister-cim10`, l'ouverture de `miss-contraction` ne montrait **aucun bandeau**
+  et chargeait son propre tag d'emblée — `consentLu: "granted"`, `scriptsGoogle:
+  ["…/gtag/js?id=G-B44CK4VR08"]`. Un accord donné à un service en valait dix-neuf
+  autres, ce que le RGPD n'admet pas. Le défaut allait s'aggraver : avec dix-sept
+  identifiants de plus à poser, un seul clic aurait activé tout le parc.
+  
+  La clé porte maintenant le chemin de base de l'app — `dwc_consent:/miss-uwh/`.
+  Rien à changer côté application : `import.meta.env.BASE_URL` vaut `/<dépôt>/`
+  dans chaque build, et `/` en développement, où le cloisonnement vient déjà du
+  port. Vérifié dans un build réel avant d'écrire une ligne : Vite remplace bien
+  la valeur À L'INTÉRIEUR du code du socle livré depuis `node_modules`, forme
+  optionnelle comprise — sans quoi le correctif serait retombé sur la clé nue sans
+  le moindre signe.
+  
+  `consentKey()` est exportée, et une prop `scope` permet une portée explicite :
+  c'est ce qui rend le comportement testable, et ce qui laisse deux applications
+  partager délibérément un choix si elles le décident un jour.
+  
+  **Effet de bord assumé** : les choix déjà mémorisés sous la clé nue ne sont pas
+  migrés. Les visiteurs des deux applications qui mesuraient reverront la
+  question — une fois, et pour la bonne application cette fois.
+  
+  `readConsentChoice`, `writeConsentChoice` et `clearConsentChoice` acceptent la
+  portée en argument optionnel : aucune signature existante ne change.
+
 ## 4.17.0
 
 ### Minor Changes
