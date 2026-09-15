@@ -77,6 +77,18 @@ export function resolveSeoPublicUrls(arg) {
 }
 
 /**
+ * @deprecated Préférer `react/consent-banner`. Cette voie-ci injecte le tag AU
+ * BUILD, dans le HTML : il part donc au chargement de la page, avant tout
+ * accord. Le `consent default` tout refusé posé juste avant empêche la
+ * collecte, mais le script de Google est chargé quand même — ce que le RGPD ne
+ * regarde pas de la même façon. `ConsentBanner` n'injecte rien avant un accord
+ * explicite, et c'est la seule voie en service dans le parc depuis
+ * septembre 2026, où les vingt et une apps ont retiré leurs marqueurs
+ * `__ANALYTICS_*__`.
+ *
+ * Conservée parce qu'elle est exportée : la retirer serait un MAJEUR. Le
+ * gabarit `templates/index.html` ne la câble plus.
+ *
  * Fragments HTML analytics (GTM et/ou GA4) à injecter dans <head>/<body>.
  * Si GTM ET GA4 sont définis : seul GTM est chargé (configurez GA4 dans GTM
  * pour éviter le double comptage).
