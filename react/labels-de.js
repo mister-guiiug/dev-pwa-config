@@ -116,6 +116,14 @@ const labels = {
     current: 'Aktuelle Seite',
     more: 'Mehr',
   },
+  consent: {
+    title: 'Reichweitenmessung',
+    message:
+      'Diese App kann ihre Nutzung messen, um besser zu werden. Es wird nichts gesendet, bevor Sie zustimmen.',
+    accept: 'Zustimmen',
+    refuse: 'Ablehnen',
+    policy: 'Mehr erfahren',
+  },
 };
 
 export default labels;

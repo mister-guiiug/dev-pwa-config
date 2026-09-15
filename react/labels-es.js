@@ -114,6 +114,14 @@ const labels = {
     current: 'Página actual',
     more: 'Más',
   },
+  consent: {
+    title: 'Medición de audiencia',
+    message:
+      'Esta aplicación puede medir su uso para mejorar. No se envía nada hasta que lo aceptes.',
+    accept: 'Aceptar',
+    refuse: 'Rechazar',
+    policy: 'Más información',
+  },
 };
 
 export default labels;

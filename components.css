@@ -81,6 +81,8 @@
     [data-dwc='update-banner-dismiss'],
     [data-dwc='update-banner-ignore'],
     [data-dwc='offline-ready-dismiss'],
+    [data-dwc='consent-accept'],
+    [data-dwc='consent-refuse'],
     [data-dwc='pwa-install-actions'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
@@ -103,6 +105,13 @@
     [data-dwc='update-banner-dismiss'],
     [data-dwc='update-banner-ignore'],
     [data-dwc='offline-ready-dismiss'],
+    /* Accepter et refuser partagent la MÊME règle, donc la même taille, le
+       même contraste et la même cible tactile. C'est la traduction en CSS de
+       « refuser coûte un clic comme accepter » : un bouton de refus plus
+       discret rendrait le consentement irrégulier sans qu'aucun test de
+       comportement ne s'en aperçoive. */
+    [data-dwc='consent-accept'],
+    [data-dwc='consent-refuse'],
     [data-dwc='pwa-install-actions'] button
   ) {
     font: inherit;
@@ -424,6 +433,62 @@
   [data-dwc='offline-ready-title'] {
     flex: 1 1 12rem;
     font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  /* ── ConsentBanner ─────────────────────────────────────────────────────── */
+
+  /*
+   * SA PROPRE SECTION, ET PAS UN AJOUT À CELLE DU BANDEAU DE MISE À JOUR.
+   * Les deux se ressemblent — même boîte, même disposition — et il aurait été
+   * plus court de les mettre sur la même règle. Mais la découpe en morceaux
+   * suit les sections : le consentement aurait alors demandé d'importer
+   * `install-prompt.css`, et une app qui ne monte ni invite d'installation ni
+   * bandeau de mise à jour aurait payé les deux. Quatorze lignes redites
+   * valent mieux qu'un morceau qui ment sur son nom.
+   *
+   * Les DEUX boutons, eux, restent sur la règle partagée des « Bases » : c'est
+   * elle qui garantit qu'accepter et refuser ont la même taille, le même
+   * contraste et la même cible tactile.
+   */
+  [data-dwc='consent-banner'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: var(--spacing-fluid-md, 1rem);
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: var(
+      --dwc-primary-soft,
+      color-mix(in srgb, CanvasText 6%, Canvas)
+    );
+    box-shadow: var(--dwc-shadow, none);
+  }
+
+  [data-dwc='consent-message'] {
+    margin: 0;
+    flex: 1 1 18rem;
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  /*
+   * `flex-wrap` sur le bandeau ET sur ses actions : sous 360 px, le message
+   * passe au-dessus et les deux boutons restent côte à côte. Les empiler
+   * mettrait « Refuser » sous la ligne de flottaison sur un petit écran —
+   * autrement dit un refus plus coûteux qu'une acceptation, obtenu par la mise
+   * en page plutôt que par le nombre de clics.
+   */
+  [data-dwc='consent-actions'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='consent-policy'] {
+    font-size: 0.875em;
+    color: inherit;
   }
 
   /* ── AppFooter & FamilyApps ────────────────────────────────────────────── */

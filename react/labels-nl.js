@@ -116,6 +116,14 @@ const labels = {
     current: 'Huidige pagina',
     more: 'Meer',
   },
+  consent: {
+    title: 'Publieksmeting',
+    message:
+      'Deze app kan het gebruik meten om te verbeteren. Er wordt niets verzonden totdat u akkoord gaat.',
+    accept: 'Accepteren',
+    refuse: 'Weigeren',
+    policy: 'Meer informatie',
+  },
 };
 
 export default labels;

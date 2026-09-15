@@ -282,6 +282,25 @@ Bearer : ne pas la confondre avec un jeton.
 **D. L'observabilité.** `VITE_SENTRY_DSN` en `vars`, facultative, **jamais**
 dans `required-env` : absente, Sentry n'est pas chargé et l'application tourne.
 
+**D bis. La mesure d'audience.** `VITE_GA_MEASUREMENT_ID` (`G-…`) ou
+`VITE_GTM_CONTAINER_ID` (`GTM-…`), en `vars`, facultatives, **jamais** dans
+`required-env` non plus : absentes, `ConsentBanner` ne rend rien et aucune
+question n'est posée à l'utilisateur.
+
+Elles manquaient à ce document jusqu'au 15/09/2026, et c'est une des raisons
+pour lesquelles **aucune des vingt et une applications du parc n'en portait** :
+le module existait, la marche à suivre pour l'alimenter n'était écrite nulle
+part d'opérationnel.
+
+**Une par site, jamais partagée.** C'est ce qui rend le suivi indépendant : une
+propriété GA4 par application, donc un `G-…` par dépôt. Deux applications qui
+partageraient un identifiant mélangeraient leurs audiences sans qu'aucun
+rapport ne le signale.
+
+Si les deux sont posées, **seul GTM est chargé** — GA4 se configure dedans, et
+les fournir toutes deux au tag compterait chaque événement deux fois. Le code
+tranche seul, il n'y a rien à arbitrer au déploiement.
+
 **E. Une valeur qui n'est lue que par un serveur annexe** (`CORS_ORIGINS` du
 serveur de puzzle) : `phase: "server"` au manifeste, pour qu'un audit ne la
 compte pas comme orpheline.

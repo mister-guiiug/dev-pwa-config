@@ -113,6 +113,14 @@ const labels = {
     current: 'Current page',
     more: 'More',
   },
+  consent: {
+    title: 'Audience measurement',
+    message:
+      'This app can measure its traffic to improve. Nothing is sent until you accept.',
+    accept: 'Accept',
+    refuse: 'Decline',
+    policy: 'Learn more',
+  },
 };
 
 export default labels;

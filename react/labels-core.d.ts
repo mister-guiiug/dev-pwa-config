@@ -66,6 +66,16 @@ export interface LabelGroups {
     next: string;
   };
   nav: { label: string; current: string; more: string; back: string };
+  /** Le bandeau de consentement à la mesure d'audience. */
+  consent: {
+    title: string;
+    message: string;
+    accept: string;
+    /** Au MÊME niveau qu'`accept` : refuser doit coûter un clic, pas deux. */
+    refuse: string;
+    /** Lien facultatif vers la page de confidentialité. */
+    policy: string;
+  };
   auth: {
     title: string;
     signUpTitle: string;
