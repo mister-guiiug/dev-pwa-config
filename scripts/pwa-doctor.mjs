@@ -144,6 +144,9 @@ const count = (text, re) => (text.match(re) ?? []).length;
  */
 const sansCommentaires = {
   yaml: text => text.replace(/^[ \t]*#.*$/gm, ''),
+  // CSS n'a QUE la forme de bloc — `//` y est une erreur de syntaxe, pas un
+  // commentaire, et le retirer avalerait `url(https://…)`.
+  css: text => text.replace(/\/\*(?:(?!\*\/)[\s\S])*\*\//g, ''),
   source: text =>
     text
       .replace(/\/\*(?:(?!\*\/)[\s\S])*\*\//g, '')
@@ -581,6 +584,12 @@ export function contexteDepot(dir, faits = {}) {
   const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
   const source = walk(root, ['src']);
   const srcText = source.map(f => f.text).join('\n');
+  // LES FEUILLES DE STYLE, parce qu'une règle de mise en page peut CONTREDIRE
+  // ce que le composant déclare. Le seul contrôle qui s'en sert aujourd'hui est
+  // `bottom-nav-muette` ; il n'existait pas tant que le docteur ne lisait que
+  // du JavaScript, et le défaut qu'il attrape a vécu deux ans pour ça.
+  const styles = walk(root, ['src'], /\.css$/);
+  const cssText = styles.map(f => f.text).join('\n');
   const viteConfig =
     ['vite.config.ts', 'vite.config.mts', 'vite.config.js', 'vite.config.mjs']
       .map(name => readText(root, name))
@@ -604,6 +613,8 @@ export function contexteDepot(dir, faits = {}) {
     deps,
     source,
     srcText,
+    styles,
+    cssText,
     viteConfig,
     indexHtml,
     workflows,
@@ -950,7 +961,8 @@ export function reglesWorkflows(ctx, api) {
 
 /** Famille « source » : ce que le code de l'app dit d'elle-même. */
 export function reglesSource(ctx, api) {
-  const { root, pkg, faits, source, srcText, viteConfig, indexHtml } = ctx;
+  const { root, pkg, faits, source, srcText, cssText, viteConfig, indexHtml } =
+    ctx;
   const { defaut, dette, info } = api;
 
   /* ── 3. La source ─────────────────────────────────────────────────────── */
@@ -961,6 +973,46 @@ export function reglesSource(ctx, api) {
       "registerType: 'autoUpdate' recharge la page en pleine saisie",
       "'prompt' + UpdatePromptBanner (react/update-prompt-banner)"
     );
+  }
+  // LA BARRE COLLÉE QUI NE LE DIT PAS.
+  //
+  // `BottomNav` n'émet `data-placement="fixed"` que si l'app passe la prop
+  // (react/bottom-nav.js). Tout le dégagement du socle est gardé là-dessus :
+  // `--_dwc-bottom-clearance` et la position du bandeau de mise à jour sont
+  // sous `:root:has([data-dwc='bottom-nav'][data-placement='fixed'])`.
+  //
+  // Une app qui colle sa barre dans SA feuille obtient donc une barre fixe et
+  // un dégagement NUL — et toutes les surfaces flottantes passent dessous. Une
+  // garde CSS ne peut pas lire une position calculée ; ce contrôle-ci le peut,
+  // parce qu'il lit les deux sources à la fois.
+  //
+  // Mesuré en production sur mister-cim10 le 16/09/2026, en 375×812 : barre
+  // fixe de 56 px, `--_dwc-bottom-clearance` à `max(0px, 0px)`, bandeau de
+  // consentement recouvert et 79 px sous la ligne de flottaison. Même défaut
+  // sur miss-contraction, signalé par le propriétaire — un bouton
+  // « Mettre à jour » qu'aucun clic n'atteignait.
+  const nav = sansCommentaires.source(srcText);
+  if (/<BottomNav/.test(nav) && !/placement=\{?['"]fixed['"]\}?/.test(nav)) {
+    // On isole le bloc de la règle : un `position: fixed` voisin ne doit pas
+    // être mis au compte de la barre. `[^}]*` avant l'accolade interdit de
+    // franchir une fin de règle.
+    const blocs =
+      sansCommentaires.css(cssText).match(/[^}]*bottom-nav[^{]*\{[^}]*\}/g) ??
+      [];
+    // `fixed` SEUL, et `sticky` délibérément pas. Une barre collante RESTE dans
+    // le flux : elle réserve sa propre hauteur, et le dégagement du socle la
+    // compterait une seconde fois. miss-genius est dans ce cas
+    // (`position: sticky; bottom: 0`, index.css) et n'a rien à corriger — lui
+    // conseiller `placement="fixed"` changerait sa mise en page au lieu de la
+    // réparer. Le défaut visé est précis : une barre RETIRÉE du flux sans le
+    // dire.
+    if (blocs.some(b => /position\s*:\s*fixed/.test(b))) {
+      defaut(
+        'bottom-nav-muette',
+        'barre basse collée par le CSS de l’app sans placement="fixed" : le dégagement du socle vaut zéro, les surfaces flottantes passent dessous',
+        '<BottomNav placement="fixed"> puis retirer le position: fixed local — c’est lui qui publie --_dwc-bottom-clearance'
+      );
+    }
   }
   if (viteConfig && !/pwaSeoPlugin/.test(viteConfig)) {
     dette(
@@ -1327,6 +1379,7 @@ export const CATALOGUE = [
   { id: 'secrets-inherit', famille: 'workflows', niveau: 'défaut' },
   { id: 'vite-en-secret', famille: 'workflows', niveau: 'dette' },
   { id: 'auto-update', famille: 'source', niveau: 'dette' },
+  { id: 'bottom-nav-muette', famille: 'source', niveau: 'défaut' },
   { id: 'seo-plugin', famille: 'source', niveau: 'dette' },
   { id: 'theme-color', famille: 'source', niveau: 'dette' },
   { id: 'csp', famille: 'source', niveau: 'dette' },

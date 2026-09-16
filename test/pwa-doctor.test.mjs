@@ -1037,6 +1037,96 @@ test('version.json : sans versionPlugin, l’app ne sait pas ce qui est en ligne
   );
 });
 
+test('une barre basse collée par le CSS de l’app, sans le dire, est un DÉFAUT', async () => {
+  // Le cas mesuré : `position: fixed` dans la feuille de l'app, pas de
+  // `placement` sur le composant, donc `data-placement` jamais émis et
+  // `--_dwc-bottom-clearance` à zéro. Les surfaces flottantes passent sous la
+  // barre. mister-cim10 et miss-contraction, 16/09/2026.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx': '<BottomNav items={items} />',
+      'src/styles.css': '.bottom-nav { position: fixed; bottom: 0; }',
+    },
+    root => {
+      assert.ok(ids(diagnose(root), 'défaut').includes('bottom-nav-muette'));
+    }
+  );
+
+  // La MÊME feuille, avec la déclaration : le socle voit la barre, le
+  // dégagement existe, il n'y a rien à dire. C'est aussi l'état de
+  // mister-settle et du squelette, qui collent la barre ET le déclarent.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx': '<BottomNav placement="fixed" items={items} />',
+      'src/styles.css': '.bottom-nav { position: fixed; bottom: 0; }',
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
+    }
+  );
+
+  // Une barre DANS LE FLUX ne pose aucun problème de dégagement : quatre apps
+  // du parc sont dans ce cas et n'ont rien à corriger.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx': '<BottomNav items={items} />',
+      'src/styles.css': '.bottom-nav { display: flex; }',
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
+    }
+  );
+
+  // `sticky` NON PLUS, et c'est la distinction qui compte : une barre collante
+  // réserve sa hauteur dans le flux, là où une barre fixe la retire. Le
+  // dégagement du socle la compterait deux fois. C'est miss-genius, relevé le
+  // 16/09/2026 — la première écriture de ce contrôle le flaguait à tort.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx': '<BottomNav items={items} />',
+      'src/styles.css':
+        "[data-dwc='bottom-nav'] { position: sticky; bottom: 0; z-index: 30; }",
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
+    }
+  );
+
+  // Un `position: fixed` VOISIN n'est pas celui de la barre : l'en-tête collé
+  // est la composition la plus courante du parc, et l'attribuer à la barre
+  // ferait sortir le défaut sur des apps saines.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx': '<BottomNav items={items} />',
+      'src/styles.css':
+        '.bottom-nav { display: flex; }\n.header { position: fixed; top: 0; }',
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
+    }
+  );
+
+  // Et un COMMENTAIRE qui raconte le défaut ne l'est pas — la règle du parc
+  // depuis le 05/09/2026, ici des deux côtés : la source ET la feuille.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx':
+        '// <BottomNav /> sans placement collerait la barre en muet\nexport const rien = 1;',
+      'src/styles.css':
+        '/* ne jamais écrire .bottom-nav { position: fixed } ici */\n.x { color: red; }',
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
+    }
+  );
+});
+
 test('deux informations : un budget sans plafond initial, localStorage sans magasin versionné', async () => {
   await repo(
     {
