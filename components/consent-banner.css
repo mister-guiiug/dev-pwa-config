@@ -38,6 +38,67 @@
     box-shadow: var(--dwc-shadow, none);
   }
 
+  /*
+   * SA PLACE — ET IL N'EN AVAIT AUCUNE.
+   *
+   * Cette section habillait la boîte du bandeau et ne la plaçait pas :
+   * `position: static`, donc en fin de flux, là où les apps le montent —
+   * c'est-à-dire sous le pied de page. Mesuré en production sur mister-cim10
+   * le 16/09/2026, en 375 × 812 : boîte de 753 à 891 px pour une fenêtre de
+   * 812, recouverte par la barre basse dont le bord haut est à 756. Le bandeau
+   * qui DEMANDE le consentement était sous la ligne de flottaison ET derrière
+   * la navigation.
+   *
+   * LES MÊMES VALEURS QUE LE BANDEAU DE MISE À JOUR, REDITES. La découpe en
+   * morceaux suit les sections : partager le bloc obligerait une app qui ne
+   * monte que le consentement à importer `install-prompt.css`. C'est le même
+   * arbitrage qu'en tête de section, et la même conclusion — mais ici la
+   * duplication porte des NOMBRES, alors on la dit.
+   */
+  [data-dwc='consent-banner'][data-placement='fixed'] {
+    position: fixed;
+    /* Voir la règle jumelle du bandeau de mise à jour : sans préréglage,
+       `width` s'ajoute au `padding` et la boîte sort de l'écran. */
+    box-sizing: border-box;
+    inset-inline: 0;
+    bottom: calc(
+      var(--_dwc-bottom-clearance, max(env(safe-area-inset-bottom), 0px)) +
+        0.5rem
+    );
+    z-index: 26;
+    width: min(100% - 2 * var(--spacing-fluid-sm, 0.75rem), 40rem);
+    height: max-content;
+    margin-inline: auto;
+    /* `backwards`, jamais `both` — voir « Animations » en fin de fichier. */
+    animation: dwc-rise 0.22s ease-out backwards;
+  }
+
+  /*
+   * LA QUESTION PASSE DEVANT — PRÉCÉDENCE, PAS EMPILEMENT.
+   *
+   * Les deux bandeaux visent désormais le même bas d'écran. Un empilement
+   * demanderait la HAUTEUR de celui du dessous, que CSS ne connaît pas : tout
+   * décalage serait un nombre magique, faux dès que le message passe à la
+   * ligne.
+   *
+   * La précédence, elle, est exacte — et c'est déjà l'idiome du composant :
+   * `update-prompt-banner.js` fait taire le « prêt hors ligne » dès qu'une
+   * version attend. Même raisonnement ici, d'un cran au-dessus : le
+   * consentement est TRANSIENT par construction (un clic et il ne revient
+   * plus), là où le bandeau de mise à jour revient à la vérification suivante.
+   * Rien n'est perdu, et la question qu'il faut trancher reste lisible.
+   *
+   * SEULEMENT ENTRE SURFACES DU SOCLE : les deux côtés exigent
+   * `data-placement="fixed"`. Une app qui place elle-même son bandeau garde
+   * exactement ce qu'elle avait.
+   */
+  :root:has([data-dwc='consent-banner'][data-placement='fixed'])
+    [data-dwc='update-banner'][data-placement='fixed'],
+  :root:has([data-dwc='consent-banner'][data-placement='fixed'])
+    [data-dwc='offline-ready'][data-placement='fixed'] {
+    display: none;
+  }
+
   [data-dwc='consent-message'] {
     margin: 0;
     flex: 1 1 18rem;

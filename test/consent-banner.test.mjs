@@ -233,6 +233,39 @@ test('un accord donné à une app ne vaut PAS pour une autre', async () => {
   dom.restore();
 });
 
+test('placement="fixed" : le bandeau demande sa place, et l’oublie sans la prop', async () => {
+  // LE DÉFAUT MESURÉ. Cette section habillait la boîte sans la placer :
+  // `position: static`, donc en fin de flux, là où les apps le montent —
+  // sous le pied de page. mister-cim10 en production, 375 × 812 : boîte de 753
+  // à 891 px pour une fenêtre de 812, recouverte par la barre basse dont le
+  // bord haut est à 756.
+  let dom = prepare();
+  let vue = await mount(
+    h(ConsentBanner, { gaMeasurementId: GA, placement: 'fixed' })
+  );
+  assert.equal(
+    vue.container.querySelector('[data-dwc="consent-banner"]').dataset
+      .placement,
+    'fixed'
+  );
+  await vue.unmount();
+  dom.restore();
+
+  // Opt-in : miss-dice pose le sien EN HAUT dans sa propre feuille. Un
+  // attribut qui apparaîtrait sans être demandé lui ferait subir un `bottom`
+  // par-dessus son `top`.
+  dom = prepare();
+  vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  assert.equal(
+    vue.container
+      .querySelector('[data-dwc="consent-banner"]')
+      .hasAttribute('data-placement'),
+    false
+  );
+  await vue.unmount();
+  dom.restore();
+});
+
 /* ── ConsentSettings : revenir sur son choix ───────────────────────────── */
 
 const reglage = container =>

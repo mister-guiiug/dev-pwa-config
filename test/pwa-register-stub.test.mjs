@@ -52,6 +52,85 @@ test('le double fait apparaître le bandeau, ce que les douze copies muettes ne 
   }
 });
 
+test('placement="fixed" : le bandeau DEMANDE sa place, sans dépendre d’une barre basse', async () => {
+  // LE DÉFAUT QUE CETTE PROP REFERME. Le socle ne plaçait ce bandeau que sous
+  // `:root:has([data-dwc='bottom-nav'][data-placement='fixed'])` — cinq apps
+  // sur vingt au relevé du 16/09/2026. Les autres recevaient une boîte habillée
+  // POSÉE DANS LE FLUX, en fin de document, et six ont réécrit le placement à
+  // la main avec des `z-index` de 25 à 9999.
+  const dom = setupDom();
+  swStub.reset();
+  try {
+    const vue = await mount(
+      h(UpdatePromptBanner, { registerSW, placement: 'fixed' })
+    );
+    await vue.act(() => swStub.needRefresh());
+
+    const bandeau = vue.container.querySelector('[data-dwc="update-banner"]');
+    assert.equal(
+      bandeau.dataset.placement,
+      'fixed',
+      'c’est cet attribut, et lui seul, que la règle CSS vise'
+    );
+    await vue.unmount();
+  } finally {
+    swStub.reset();
+    dom.restore();
+  }
+});
+
+test('le message « prêt hors ligne » suit la même règle', async () => {
+  // Il occupe le même bas d'écran : le laisser dans le flux pendant que son
+  // voisin flotte donnerait deux endroits différents à deux messages du même
+  // composant.
+  //
+  // UN TEST À PART, et pas la suite du précédent : `needRefresh` reste vrai
+  // dans le double une fois déclenché, et la précédence du bandeau fait alors
+  // TAIRE le message hors ligne. Les enchaîner dans le même `swStub` rendait
+  // ce test faux pour une raison qui n'est pas la sienne.
+  const dom = setupDom();
+  swStub.reset();
+  try {
+    const vue = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        placement: 'fixed',
+        showOfflineReady: true,
+      })
+    );
+    await vue.act(() => swStub.offlineReady());
+
+    assert.equal(
+      vue.container.querySelector('[data-dwc="offline-ready"]').dataset
+        .placement,
+      'fixed'
+    );
+    await vue.unmount();
+  } finally {
+    swStub.reset();
+    dom.restore();
+  }
+});
+
+test('sans la prop, RIEN ne bouge : l’attribut est absent', async () => {
+  // Les treize apps qui placent le bandeau elles-mêmes ne doivent pas voir un
+  // attribut apparaître sous leurs règles. La prop est opt-in, et ce test est
+  // ce qui le garantit.
+  const dom = setupDom();
+  swStub.reset();
+  try {
+    const vue = await mount(h(UpdatePromptBanner, { registerSW }));
+    await vue.act(() => swStub.needRefresh());
+
+    const bandeau = vue.container.querySelector('[data-dwc="update-banner"]');
+    assert.equal(bandeau.hasAttribute('data-placement'), false);
+    await vue.unmount();
+  } finally {
+    swStub.reset();
+    dom.restore();
+  }
+});
+
 test('le double LÈVE quand personne n’a injecté registerSW', async () => {
   // LE DÉFAUT QUE CE DOUBLE REND IMPOSSIBLE À MANQUER. Oublier la prop
   // `registerSW` ne casse ni la compilation, ni le typage, ni le rendu : le

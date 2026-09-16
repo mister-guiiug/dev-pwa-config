@@ -419,8 +419,52 @@
   :root:has([data-dwc='bottom-nav'][data-placement='fixed'])
     [data-dwc='offline-ready'] {
     position: fixed;
+    /* Voir la règle du placement demandé, plus bas : les deux font la même
+       chose et ne doivent pas diverger sur ce point non plus. */
+    box-sizing: border-box;
     inset-inline: 0;
     bottom: calc(var(--_dwc-bottom-clearance) + 0.5rem);
+    z-index: 25;
+    width: min(100% - 2 * var(--spacing-fluid-sm, 0.75rem), 40rem);
+    height: max-content;
+    margin-inline: auto;
+    /* `backwards`, jamais `both` — voir « Animations » en fin de fichier. */
+    animation: dwc-rise 0.22s ease-out backwards;
+  }
+
+  /*
+   * ET LA MÊME PLACE, DEMANDÉE DIRECTEMENT : `placement="fixed"`.
+   *
+   * La règle ci-dessus exige une barre basse, du socle, ET déclarée : cinq apps
+   * sur vingt remplissaient cette condition au relevé du 16/09/2026. Les quinze
+   * autres recevaient cette boîte DANS LE FLUX, en fin de document — et six ont
+   * réécrit le placement à la main, avec des `z-index` allant de 25 à 9999.
+   * La prop le rend demandable sans barre, et les six copies peuvent partir.
+   *
+   * UNE RÈGLE À PART, ET NON CES SÉLECTEURS AJOUTÉS À LA LISTE DU DESSUS. Une
+   * liste de sélecteurs est tout ou rien : un navigateur sans `:has()` jetterait
+   * la règle ENTIÈRE, et ce placement-ci — qui n'a pourtant besoin de rien de
+   * moderne — tomberait avec elle. `test/components-css.test.mjs` l'interdit,
+   * et il a rattrapé cette faute à l'écriture même de ce bloc.
+   */
+  [data-dwc='update-banner'][data-placement='fixed'],
+  [data-dwc='offline-ready'][data-placement='fixed'] {
+    position: fixed;
+    /*
+     * `border-box` POSÉ ICI, et c'est un banc d'essai qui l'a montré. Le socle
+     * ne pose aucun `box-sizing` : il compte sur le préréglage de l'app, que
+     * les vingt ont. Sur une page qui n'en a pas, `width` s'ajoute au
+     * `padding` — la boîte dépasse de ses trois côtés posés, `margin-inline:
+     * auto` rend un `-10px`, et le bandeau sort de l'écran. C'est précisément
+     * la sur-contrainte contre laquelle la règle voisine met en garde.
+     * Sous un préréglage, cette ligne ne change rien.
+     */
+    box-sizing: border-box;
+    inset-inline: 0;
+    bottom: calc(
+      var(--_dwc-bottom-clearance, max(env(safe-area-inset-bottom), 0px)) +
+        0.5rem
+    );
     z-index: 25;
     width: min(100% - 2 * var(--spacing-fluid-sm, 0.75rem), 40rem);
     height: max-content;
@@ -464,6 +508,67 @@
       color-mix(in srgb, CanvasText 6%, Canvas)
     );
     box-shadow: var(--dwc-shadow, none);
+  }
+
+  /*
+   * SA PLACE — ET IL N'EN AVAIT AUCUNE.
+   *
+   * Cette section habillait la boîte du bandeau et ne la plaçait pas :
+   * `position: static`, donc en fin de flux, là où les apps le montent —
+   * c'est-à-dire sous le pied de page. Mesuré en production sur mister-cim10
+   * le 16/09/2026, en 375 × 812 : boîte de 753 à 891 px pour une fenêtre de
+   * 812, recouverte par la barre basse dont le bord haut est à 756. Le bandeau
+   * qui DEMANDE le consentement était sous la ligne de flottaison ET derrière
+   * la navigation.
+   *
+   * LES MÊMES VALEURS QUE LE BANDEAU DE MISE À JOUR, REDITES. La découpe en
+   * morceaux suit les sections : partager le bloc obligerait une app qui ne
+   * monte que le consentement à importer `install-prompt.css`. C'est le même
+   * arbitrage qu'en tête de section, et la même conclusion — mais ici la
+   * duplication porte des NOMBRES, alors on la dit.
+   */
+  [data-dwc='consent-banner'][data-placement='fixed'] {
+    position: fixed;
+    /* Voir la règle jumelle du bandeau de mise à jour : sans préréglage,
+       `width` s'ajoute au `padding` et la boîte sort de l'écran. */
+    box-sizing: border-box;
+    inset-inline: 0;
+    bottom: calc(
+      var(--_dwc-bottom-clearance, max(env(safe-area-inset-bottom), 0px)) +
+        0.5rem
+    );
+    z-index: 26;
+    width: min(100% - 2 * var(--spacing-fluid-sm, 0.75rem), 40rem);
+    height: max-content;
+    margin-inline: auto;
+    /* `backwards`, jamais `both` — voir « Animations » en fin de fichier. */
+    animation: dwc-rise 0.22s ease-out backwards;
+  }
+
+  /*
+   * LA QUESTION PASSE DEVANT — PRÉCÉDENCE, PAS EMPILEMENT.
+   *
+   * Les deux bandeaux visent désormais le même bas d'écran. Un empilement
+   * demanderait la HAUTEUR de celui du dessous, que CSS ne connaît pas : tout
+   * décalage serait un nombre magique, faux dès que le message passe à la
+   * ligne.
+   *
+   * La précédence, elle, est exacte — et c'est déjà l'idiome du composant :
+   * `update-prompt-banner.js` fait taire le « prêt hors ligne » dès qu'une
+   * version attend. Même raisonnement ici, d'un cran au-dessus : le
+   * consentement est TRANSIENT par construction (un clic et il ne revient
+   * plus), là où le bandeau de mise à jour revient à la vérification suivante.
+   * Rien n'est perdu, et la question qu'il faut trancher reste lisible.
+   *
+   * SEULEMENT ENTRE SURFACES DU SOCLE : les deux côtés exigent
+   * `data-placement="fixed"`. Une app qui place elle-même son bandeau garde
+   * exactement ce qu'elle avait.
+   */
+  :root:has([data-dwc='consent-banner'][data-placement='fixed'])
+    [data-dwc='update-banner'][data-placement='fixed'],
+  :root:has([data-dwc='consent-banner'][data-placement='fixed'])
+    [data-dwc='offline-ready'][data-placement='fixed'] {
+    display: none;
   }
 
   [data-dwc='consent-message'] {
@@ -2180,7 +2285,8 @@
     [data-dwc='confirm-panel'],
     [data-dwc='toast'],
     [data-dwc='update-banner'],
-    [data-dwc='offline-ready'] {
+    [data-dwc='offline-ready'],
+    [data-dwc='consent-banner'] {
       animation-duration: 0.001ms;
       animation-iteration-count: 1;
     }
