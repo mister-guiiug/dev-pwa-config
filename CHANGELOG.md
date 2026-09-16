@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.21.0
+
+### Minor Changes
+
+- `playwright-entree` — la garde de l'écran d'entrée. Elle teste une PLACE, pas un composant.
+  
+  **TROIS FOIS EN UN MOIS, le même défaut, et trois fois trouvé en production.** Une pièce à effet de bord montée derrière la porte de l'app :
+  
+  1. `UpdatePrompt` — donc `registerSW` — dans le gabarit d'écran : **aucun service worker** ne s'enregistrait tant que l'accueil n'était pas franchi, donc rien n'était mis en cache et l'app n'existait pas hors ligne.
+  2. `ConsentBanner` derrière la porte : **quatre apps ne posaient jamais la question** du consentement.
+  3. `usePageViews` derrière la porte : **trois apps n'envoyaient aucune vue de page**, même après le correctif de la 4.20.0 — il rejoue une vue *tentée*, et aucune ne l'était.
+  
+  À chaque fois le composant est bien écrit, les tests unitaires passent, la CI est verte. Le défaut n'est pas dans le code, il est dans l'endroit où il est monté — et seul un chargement RÉEL, en état « pas encore entré », le voit. Aucun test ne gardait cette propriété nulle part.
+  
+  ```ts
+  import { expectEcranEntreeCable } from '@mister-guiiug/dev-pwa-config/playwright-entree';
+  
+  test('@critical l’écran d’entrée est câblé', async ({ page }) => {
+    await expectEcranEntreeCable(page, expect, { url: '/mon-app/' });
+  });
+  ```
+  
+  Trois vérifications sur l'écran d'entrée : la question du consentement est posée, une vue de page part après l'accord, un service worker s'enregistre. Les messages d'échec nomment la cause et le remède plutôt que de rendre `0 !== 1`.
+  
+  **Le build e2e doit porter un identifiant de mesure factice** (`VITE_GA_MEASUREMENT_ID=G-E2E0000000`) : sans lui `ConsentBanner` ne rend rien et les deux premières vérifications n'ont pas d'objet. Le trafic vers Google est intercepté par la garde — rien ne sort, aucune propriété réelle n'est touchée — et elle lit `dataLayer`, que `gtag` remplit avant tout appel réseau. `{ consentement: false }` ne garde que le service worker ; demander la vue de page sans le consentement **lève**, parce que rien ne part avant l'accord et que la vérification passerait toujours.
+  
+  **Éprouvée sur une app réelle avant d'être publiée, et elle a servi tout de suite** : posée sur `miss-uwh`, elle a échoué alors que l'app venait d'être corrigée. Cette app a DEUX portes — connexion et onboarding — et le correctif n'en couvrait qu'une. Le remède qui tient : faire **déclarer sa vue par l'écran** plutôt que de recopier au-dessus de la porte une condition qui devrait suivre chaque porte.
+  
+  Le socle n'ayant pas Playwright, les parties pures sont couvertes ici par une fausse page (les deux formes de `dataLayer`, l'ordre des appels, le refus des options contradictoires) ; le reste l'est dans l'app.
+
 ## 4.20.0
 
 ### Minor Changes
