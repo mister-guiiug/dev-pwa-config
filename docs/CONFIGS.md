@@ -407,6 +407,50 @@ test('@a11y accueil sans violation WCAG A/AA', async ({ page }) => {
 });
 ```
 
+### Garde de l'écran d'entrée — `playwright-entree`
+
+Trois fois en un mois, une pièce à effet de bord s'est retrouvée montée
+**derrière la porte** d'une app : `registerSW` (aucun service worker enregistré
+tant que l'accueil n'était pas franchi), `ConsentBanner` (quatre apps ne posaient
+jamais la question), `usePageViews` (trois apps n'envoyaient aucune vue). À
+chaque fois le composant était bien écrit, la CI verte, et le défaut trouvé
+**en production**. Cette garde teste une PLACE, pas un composant.
+
+```ts
+// e2e/entree.spec.ts
+import { test, expect } from '@playwright/test';
+import { expectEcranEntreeCable } from '@mister-guiiug/dev-pwa-config/playwright-entree';
+
+test('@critical l’écran d’entrée est câblé', async ({ page }) => {
+  await expectEcranEntreeCable(page, expect, { url: '/mon-app/' });
+});
+```
+
+Elle vérifie, sur l'écran d'entrée : la question du consentement est posée, une
+vue de page part après l'accord, un service worker s'enregistre.
+
+**Il faut un identifiant de mesure au build e2e**, sinon `ConsentBanner` ne rend
+rien — il n'y a rien à demander — et les deux premières vérifications n'ont pas
+d'objet. Poser une valeur factice dans le `.env` du mode e2e :
+
+```sh
+VITE_GA_MEASUREMENT_ID=G-E2E0000000
+```
+
+Le trafic vers Google est intercepté par la garde elle-même : rien ne sort, et
+aucune propriété réelle n'est touchée. Elle lit `dataLayer`, que `gtag` remplit
+avant tout appel réseau.
+
+Pour une app sans mesure, `{ consentement: false }` ne garde que le service
+worker — et la vue de page devient invérifiable, ce que la garde refuse de
+faire semblant de vérifier.
+
+**Une app peut avoir PLUSIEURS portes.** `miss-uwh` en a deux — connexion et
+onboarding — et corriger la première a laissé la seconde muette ; c'est la garde
+qui l'a trouvée. Le remède qui tient : faire **déclarer sa vue par l'écran**
+(`usePageViews('/connexion')` dans l'écran de connexion), plutôt que de recopier
+au-dessus de la porte une condition qui devrait suivre chaque porte.
+
 ### `package.json` (icônes PWA)
 
 ```jsonc

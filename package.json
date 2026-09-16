@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-pwa-config",
-  "version": "4.20.0",
+  "version": "4.21.0",
   "private": false,
   "engines": {
     "node": ">=22"
@@ -601,6 +601,10 @@
       "types": "./playwright-a11y.d.ts",
       "default": "./playwright-a11y.js"
     },
+    "./playwright-entree": {
+      "types": "./playwright-entree.d.ts",
+      "default": "./playwright-entree.js"
+    },
     "./vite-pwa-base": {
       "types": "./vite-pwa-base.d.ts",
       "default": "./vite-pwa-base.js"
@@ -710,6 +714,8 @@
     "playwright-base.js",
     "playwright-base.d.ts",
     "playwright-a11y.js",
+    "playwright-entree.js",
+    "playwright-entree.d.ts",
     "playwright-a11y.d.ts",
     "vite-pwa-base.js",
     "vite-pwa-base.d.ts",
