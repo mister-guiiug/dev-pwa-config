@@ -123,6 +123,9 @@ const labels = {
     accept: 'Accepteren',
     refuse: 'Weigeren',
     policy: 'Meer informatie',
+    stateGranted: 'Publieksmeting: geaccepteerd',
+    stateDenied: 'Publieksmeting: geweigerd',
+    manage: 'Mijn keuze wijzigen',
   },
 };
 

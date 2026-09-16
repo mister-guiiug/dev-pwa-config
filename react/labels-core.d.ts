@@ -75,6 +75,12 @@ export interface LabelGroups {
     refuse: string;
     /** Lien facultatif vers la page de confidentialité. */
     policy: string;
+    /** `ConsentSettings` : l'état courant, accord donné. */
+    stateGranted: string;
+    /** `ConsentSettings` : l'état courant, accord refusé. */
+    stateDenied: string;
+    /** `ConsentSettings` : ce que le clic fait — rappeler le bandeau. */
+    manage: string;
   };
   auth: {
     title: string;

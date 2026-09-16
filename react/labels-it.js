@@ -121,6 +121,9 @@ const labels = {
     accept: 'Accetta',
     refuse: 'Rifiuta',
     policy: 'Scopri di più',
+    stateGranted: 'Misurazione del pubblico: accettata',
+    stateDenied: 'Misurazione del pubblico: rifiutata',
+    manage: 'Modifica la mia scelta',
   },
 };
 
