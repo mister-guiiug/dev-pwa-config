@@ -19,6 +19,12 @@ export interface EcranEntreeOptions {
   timeout?: number;
 }
 
+/**
+ * Les hôtes de Google, ANCRÉS sur le schéma et l'hôte entier : une regex d'URL
+ * sans ancre reconnaît aussi `evil-googletagmanager.com.attaquant.net`.
+ */
+export const HOTES_GOOGLE: RegExp;
+
 /** Intercepte tout trafic vers Google : la garde lit `dataLayer`, pas le réseau. */
 export function bloqueGoogle(page: unknown): Promise<void>;
 
