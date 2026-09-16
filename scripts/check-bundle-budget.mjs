@@ -18,20 +18,37 @@
  * ce qu'il attend avant le premier rendu. Chacune est facultative ; un
  * budget sans aucune borne n'échoue jamais et le dit.
  *
+ * ET UNE TROISIÈME, `preloadGzipKb`, PARCE QUE LES DEUX PREMIÈRES ONT LAISSÉ
+ * PASSER UN DÉFAUT DE SIX MOIS. Le total additionne TOUS les morceaux,
+ * asynchrones compris : sortir 150 kB du chemin critique ne le fait pas
+ * bouger d'un octet, et l'y remettre non plus. C'est exactement ce qui est
+ * arrivé au parc — le `manualChunks` de deux apps renvoyait Sentry vers
+ * `vendor`, qui est PRÉCHARGÉ, défaisant l'`import()` paresseux du socle sans
+ * qu'aucune borne ne s'en aperçoive. Le chunk principal, lui, ne voit que
+ * lui-même : `vendor` a pu doubler à côté.
+ *
+ * `preloadGzipKb` mesure ce que `dist/index.html` RÉFÉRENCE — scripts,
+ * `modulepreload` et feuilles de style — c'est-à-dire ce que le navigateur va
+ * chercher avant le premier rendu. CSS COMPRIS, et c'est voulu : une feuille
+ * de style bloque le rendu autant qu'un script. Cette borne n'est donc pas
+ * comparable à `totalGzipKb`, qui ne compte que le JS.
+ *
  * LE BUDGET SE LIT DANS `package.json` (`bundleBudget`), pas en ligne de
  * commande : il doit être relu et discuté dans une PR, pas dans un script
  * `npm` que personne n'ouvre. Les options en ligne de commande servent à
  * l'essai (`--dir`, `--total-gzip-kb`, `--main-chunk-kb`, `--main-chunk`).
  *
- *   bundleBudget.dir           dossier des assets (défaut `dist/assets`)
- *   bundleBudget.totalGzipKb   plafond du total gzip de tout le JS
- *   bundleBudget.mainChunkKb   plafond du chunk principal (brut, comme qowa)
- *   bundleBudget.mainChunk     préfixe du chunk principal (ex. `app-` ; défaut : index-, app-, main-)
+ *   bundleBudget.dir            dossier des assets (défaut `dist/assets`)
+ *   bundleBudget.totalGzipKb    plafond du total gzip de tout le JS
+ *   bundleBudget.mainChunkKb    plafond du chunk principal (brut, comme qowa)
+ *   bundleBudget.mainChunk      préfixe du chunk principal (ex. `app-` ; défaut : index-, app-, main-)
+ *   bundleBudget.preloadGzipKb  plafond du gzip RÉFÉRENCÉ par index.html (JS + CSS)
+ *   bundleBudget.html           le document à lire (défaut : `index.html` à côté du dossier des assets)
  *
  * Publié comme bin `pwa-bundle-budget` — la mécanique de `pwa-icons`.
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { estPointDEntree } from './entree.mjs';
 
@@ -82,17 +99,82 @@ export function measureBundle(dir) {
 }
 
 /**
+ * Ce que `index.html` demande au navigateur d'aller chercher : scripts,
+ * `modulepreload`, feuilles de style.
+ *
+ * RÉSOUDRE LE CHEMIN, ET NON LE DEVINER. Une référence peut être absolue avec
+ * le chemin de base du déploiement (`/miss-uwh/assets/x.js`) ou relative
+ * (`./assets/x.js`) : on essaie les suffixes du chemin, du plus long au plus
+ * court, jusqu'à en trouver un qui existe sous le dossier du document. Une
+ * référence introuvable est RENDUE, jamais ignorée — un fichier qu'on ne sait
+ * pas peser ne doit pas se compter pour zéro.
+ *
+ * @param {string} htmlPath
+ * @returns {{ files: Array<{ name: string, gzipKb: number }>,
+ *   manquants: string[], gzipKb: number }}
+ */
+export function measurePreload(htmlPath) {
+  let html;
+  try {
+    html = readFileSync(htmlPath, 'utf8');
+  } catch {
+    throw new Error(
+      `[budget] « ${htmlPath} » introuvable — lancez le build avant.`
+    );
+  }
+  const racine = dirname(resolve(htmlPath));
+
+  const refs = new Set();
+  for (const m of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
+    const propre = m[1].split('?')[0].split('#')[0];
+    if (/\.(js|css)$/.test(propre)) refs.add(propre);
+  }
+
+  const files = [];
+  const manquants = [];
+  for (const ref of [...refs].sort()) {
+    const segments = ref.split('/').filter(s => s && s !== '.' && s !== '..');
+    let trouve = null;
+    for (let i = 0; i < segments.length && !trouve; i++) {
+      const essai = join(racine, ...segments.slice(i));
+      try {
+        statSync(essai);
+        trouve = essai;
+      } catch {
+        /* suffixe suivant */
+      }
+    }
+    if (!trouve) {
+      manquants.push(ref);
+      continue;
+    }
+    files.push({
+      name: segments.at(-1),
+      gzipKb: gzipSync(readFileSync(trouve)).length / 1024,
+    });
+  }
+  files.sort((a, b) => b.gzipKb - a.gzipKb);
+  return {
+    files,
+    manquants,
+    gzipKb: files.reduce((sum, f) => sum + f.gzipKb, 0),
+  };
+}
+
+/**
  * Confronte une mesure au budget. Rend les problèmes — TOUS, pas le premier —
  * pour qu'une PR qui dépasse deux bornes le sache d'un coup.
  *
  * @param {ReturnType<typeof measureBundle>} measure
- * @param {{ totalGzipKb?: number, mainChunkKb?: number, mainChunk?: string }} budget
+ * @param {{ totalGzipKb?: number, mainChunkKb?: number, mainChunk?: string,
+ *   preloadGzipKb?: number }} budget
  *   `mainChunk` est un PRÉFIXE de nom de fichier (`app-`).
+ * @param {ReturnType<typeof measurePreload> | null} [preload]
  * @returns {{ ok: boolean, problems: string[], main: { name: string, rawKb: number } | null }}
  */
-export function checkBudget(measure, budget = {}) {
+export function checkBudget(measure, budget = {}, preload = null) {
   const problems = [];
-  const { totalGzipKb, mainChunkKb, mainChunk } = budget;
+  const { totalGzipKb, mainChunkKb, mainChunk, preloadGzipKb } = budget;
 
   if (Number.isFinite(totalGzipKb) && measure.totalGzipKb > totalGzipKb) {
     problems.push(
@@ -114,9 +196,35 @@ export function checkBudget(measure, budget = {}) {
     }
   }
 
-  if (!Number.isFinite(totalGzipKb) && !Number.isFinite(mainChunkKb)) {
+  if (Number.isFinite(preloadGzipKb)) {
+    if (!preload) {
+      problems.push(
+        'preloadGzipKb demandé mais le document n’a pas été lu — préciser bundleBudget.html'
+      );
+    } else {
+      // UN FICHIER QU'ON NE SAIT PAS PESER NE VAUT PAS ZÉRO. Sans ce refus, un
+      // changement de chemin de base ferait tomber la mesure à presque rien et
+      // la borne passerait au vert en annonçant le contraire de la vérité.
+      if (preload.manquants.length) {
+        problems.push(
+          `référencés par index.html mais introuvables : ${preload.manquants.join(', ')}`
+        );
+      }
+      if (preload.gzipKb > preloadGzipKb) {
+        problems.push(
+          `préchargé ${preload.gzipKb.toFixed(1)} kB > budget ${preloadGzipKb} kB`
+        );
+      }
+    }
+  }
+
+  if (
+    !Number.isFinite(totalGzipKb) &&
+    !Number.isFinite(mainChunkKb) &&
+    !Number.isFinite(preloadGzipKb)
+  ) {
     problems.push(
-      'aucune borne : renseigner bundleBudget.totalGzipKb et/ou bundleBudget.mainChunkKb dans package.json'
+      'aucune borne : renseigner bundleBudget.totalGzipKb, bundleBudget.preloadGzipKb et/ou bundleBudget.mainChunkKb dans package.json'
     );
   }
 
@@ -135,9 +243,9 @@ export function checkBudget(measure, budget = {}) {
  * budget lui-même.
  *
  * @param {ReturnType<typeof measureBundle>} measure
- * @param {{ totalGzipKb?: number, mainChunkKb?: number }} budget
+ * @param {{ totalGzipKb?: number, mainChunkKb?: number, preloadGzipKb?: number }} budget
  * @param {{ name: string, rawKb: number } | null} main
- * @param {{ marge?: number }} [options]
+ * @param {{ marge?: number, preload?: ReturnType<typeof measurePreload> | null }} [options]
  * @returns {Array<{ key: string, measured: number, current: number, proposed: number }>}
  */
 export function proposeBudget(measure, budget = {}, main = null, options = {}) {
@@ -168,6 +276,17 @@ export function proposeBudget(measure, budget = {}, main = null, options = {}) {
       });
     }
   }
+  if (Number.isFinite(budget.preloadGzipKb) && options.preload) {
+    const proposed = serre(options.preload.gzipKb);
+    if (proposed < budget.preloadGzipKb) {
+      proposals.push({
+        key: 'preloadGzipKb',
+        measured: options.preload.gzipKb,
+        current: budget.preloadGzipKb,
+        proposed,
+      });
+    }
+  }
   return proposals;
 }
 
@@ -194,11 +313,17 @@ export function readBudget(cwd, argv = []) {
     return i === -1 ? undefined : argv[i + 1];
   };
   const number = value => (value === undefined ? undefined : Number(value));
+  const dir = flag('--dir') ?? fromPackage.dir ?? DEFAULT_DIR;
   return {
-    dir: flag('--dir') ?? fromPackage.dir ?? DEFAULT_DIR,
+    dir,
     totalGzipKb: number(flag('--total-gzip-kb')) ?? fromPackage.totalGzipKb,
     mainChunkKb: number(flag('--main-chunk-kb')) ?? fromPackage.mainChunkKb,
     mainChunk: flag('--main-chunk') ?? fromPackage.mainChunk,
+    preloadGzipKb:
+      number(flag('--preload-gzip-kb')) ?? fromPackage.preloadGzipKb,
+    // Le document vit À CÔTÉ du dossier des assets, pas dedans :
+    // `dist/assets` → `dist/index.html`.
+    html: flag('--html') ?? fromPackage.html ?? join(dir, '..', 'index.html'),
   };
 }
 
@@ -215,7 +340,23 @@ export function run(argv = [], cwd = process.cwd()) {
   console.log(`  ${'─'.repeat(10)}`);
   console.log(`  ${measure.totalGzipKb.toFixed(1).padStart(7)} kB  TOTAL gzip`);
 
-  const verdict = checkBudget(measure, budget);
+  // Le préchargé n'est mesuré que s'il est borné : lire le document pour ne
+  // rien en faire coûterait une lecture et un gzip par fichier, et ferait
+  // échouer les apps dont le build n'émet pas d'`index.html`.
+  let preload = null;
+  if (Number.isFinite(budget.preloadGzipKb)) {
+    preload = measurePreload(resolve(cwd, budget.html));
+    console.log('\nRéférencé par index.html (gzip) :');
+    for (const f of preload.files) {
+      console.log(`  ${f.gzipKb.toFixed(1).padStart(7)} kB  ${f.name}`);
+    }
+    for (const m of preload.manquants)
+      console.log(`  ${'?'.padStart(7)}     ${m}`);
+    console.log(`  ${'─'.repeat(10)}`);
+    console.log(`  ${preload.gzipKb.toFixed(1).padStart(7)} kB  PRÉCHARGÉ`);
+  }
+
+  const verdict = checkBudget(measure, budget, preload);
   if (!verdict.ok) {
     for (const problem of verdict.problems)
       console.error(`[budget] ❌ ${problem}`);
@@ -226,11 +367,13 @@ export function run(argv = [], cwd = process.cwd()) {
       `total gzip ≤ ${budget.totalGzipKb} kB`,
     Number.isFinite(budget.mainChunkKb) &&
       `${verdict.main?.name ?? 'chunk principal'} ≤ ${budget.mainChunkKb} kB`,
+    Number.isFinite(budget.preloadGzipKb) &&
+      `préchargé ≤ ${budget.preloadGzipKb} kB`,
   ].filter(Boolean);
   console.log(`[budget] ✅ sous le budget (${bornes.join(', ')}).`);
 
   if (argv.includes('--ratchet')) {
-    const proposals = proposeBudget(measure, budget, verdict.main);
+    const proposals = proposeBudget(measure, budget, verdict.main, { preload });
     if (!proposals.length) {
       console.log(
         '[budget] ↔ rien à resserrer : le build est à moins de dix pour cent du budget.'
