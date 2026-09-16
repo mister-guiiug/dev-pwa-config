@@ -1,5 +1,41 @@
 # Changelog
 
+## 4.20.0
+
+### Minor Changes
+
+- ae62853: `react/privacy-notice` — le panneau qui dit au visiteur ce que la mesure d'audience fait. Et `ConsentBanner` gagne une prop `policy` pour le déplier sur place.
+  
+  **Le relevé qui l'a fait naître, 16/09/2026.** Dix-huit apps du parc mesurent après consentement. **Aucune ne dit ce qu'elle mesure** : zéro passe `policyHref` au bandeau — les deux occurrences que `git grep` rend sont des commentaires expliquant pourquoi la prop est absente. Le bandeau demandait donc un accord sans qu'aucun texte ne dise à quoi.
+  
+  **Un panneau, pas une page, et le routage ne laissait pas le choix** : neuf apps en `HashRouter`, sept en `BrowserRouter`, deux en `createBrowserRouter`, et **trois sans aucun routeur** — `miss-dice`, `miss-ticket-pwa`, `mister-puzzle`. Il n'y a pas d'URL à leur donner. `mister-doc`, la seule app qui ait déjà écrit une politique, l'a faite en dialogue pour la même raison.
+  
+  **Ce qu'il affiche est mesuré, pas supposé** : rien ne part avant le clic, `gtag/js` après, le cookie `_ga`, le choix rangé sous `dwc_consent:/<app>/`, et la conservation — 14 mois, la valeur posée le même jour sur les vingt propriétés GA4 du compte, et relue une par une. `retentionMonths` reste une prop : une app restée au défaut de GA4 doit pouvoir dire « 2 » plutôt que mentir.
+  
+  **Deux mentions n'appartiennent pas au socle** : le responsable du traitement et l'adresse où exercer ses droits. Sans elles, le panneau affiche `[À compléter]` **à l'écran** plutôt que de se taire — l'idiome d'`exploitant.ts` de `mister-doc`. Les inventer publierait une information juridique fausse, ce qui est pire que de ne rien publier. Le marqueur est traduit dans les sept langues, et `MARQUEUR_MOTIF` les couvre toutes : un test refuse qu'une locale s'ajoute sans y être inscrite.
+  
+  **Il n'ajoute aucune décision.** Le choix se fait au bandeau et se reprend par `ConsentSettings`, rendu en fin de panneau. Deux surfaces de décision demanderaient d'être tenues à l'équilibre l'une de l'autre — même taille, même contraste, même coût au clic — sous peine de refaire par la mise en page ce que le bandeau évite par construction. Un test compte les boutons, et le repli `policy` est rendu **après** les actions pour ne pas s'interposer entre la question et ses réponses.
+  
+  Habillé dans `components.css`, contrairement au contrat habituel du paquet : un texte de conformité rendu en `<dl>` nu est illisible, et un texte illisible ne vaut pas information.
+- La vue de page d'arrivée n'était jamais envoyée : elle est désormais rejouée à l'accord, et `page_location` porte enfin le chemin de base.
+  
+  **AUCUNE DES DIX-HUIT APPS NE REMONTAIT QUOI QUE CE SOIT.** Relevé en production le 16/09/2026 sur `mister-molkky` et `miss-uwh` : identifiant présent dans le bundle servi, bannière affichée, choix mémorisé, balise Google chargée, mode consentement passé à `granted` — et **zéro envoi**. La preuve tient en une ligne : rien au chargement, des `page_view` normaux dès qu'une navigation côté client a lieu.
+  
+  La cause est un ordre, pas un câblage. `initAnalytics` pose délibérément `send_page_view: false` — sain, sinon une PWA à routeur ne compterait que le chargement du document et aucun parcours. La première vue doit donc passer par `usePageViews`. Or le hook retenait le chemin AVANT de savoir si l'envoi avait abouti :
+  
+  ```js
+  previous.current = path;      // retenu d'abord
+  trackPageView(path, title);   // ne fait rien sans consentement
+  ```
+  
+  Au montage, le consentement ne peut pas être accordé : **un premier visiteur n'a pas encore cliqué**. L'appel sortait donc à vide, le chemin était marqué « déjà vu », et rien ne le redéclenchait. Une visite d'un seul écran — la majorité sur ces applications — ne produisait aucune donnée. Le défaut est indépendant de l'ordre des composants : pour un nouveau visiteur, l'accord suit toujours le montage.
+  
+  **Le rejeu vit dans `setAnalyticsConsent`**, seul endroit qui sait que l'accord vient d'arriver ; le hook, lui, ne se réveille qu'au changement de chemin. Une seule vue est mise de côté — celle de l'écran où la question est posée — et un refus la jette : elle partirait sinon à un accord ultérieur, pour un écran quitté depuis longtemps. `usePageViews` ne retient plus le chemin que si l'envoi a réussi ; `trackPageView` rendait déjà ce booléen, personne ne le lisait.
+  
+  **`page_location` PORTE LE CHEMIN DE BASE.** Une app servie sous `/mister-molkky/` enregistrait `https://<compte>.github.io/history` — une URL qui n'existe pas. Les vingt sites partagent l'origine : c'est la même famille de défaut que les clés `localStorage` nues, corrigée en 4.17.1 puis en 4.19.0, sur une troisième valeur. La composition passe par `import.meta.env.BASE_URL`, comme `appScopedKey`.
+  
+  Aucune app n'a à changer : les deux correctifs sont dans le socle.
+
 ## 4.19.0
 
 ### Minor Changes

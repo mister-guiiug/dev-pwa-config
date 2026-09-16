@@ -56,6 +56,14 @@ const CONSENT_ALIASES = {
 /** @type {{ mode: 'gtm'|'ga4'|null, id: string|null, loaded: boolean, granted: boolean }} */
 const state = { mode: null, id: null, loaded: false, granted: false };
 
+/**
+ * La vue d'arrivée mise de côté faute de consentement, rejouée par
+ * `setAnalyticsConsent` dès l'accord. Une seule : c'est l'écran sur lequel
+ * l'utilisateur répond à la question, et les suivants passent par le hook.
+ * @type {{ path: string, title: string }|null}
+ */
+let attente = null;
+
 /** Conteneur GTM valide (GTM-XXXX) ou null. */
 export function parseGtmContainerId(raw) {
   if (!raw) return null;
@@ -217,6 +225,19 @@ export function setAnalyticsConsent(consent) {
   if (next.analytics_storage === 'granted') {
     state.granted = true;
     loadTag();
+    // LE REJEU DE LA VUE D'ARRIVÉE. C'est le seul endroit qui sait que l'accord
+    // vient d'arriver ; le hook, lui, ne se réveille qu'au changement de
+    // chemin. Sans ces trois lignes, une visite d'un seul écran ne produit
+    // aucune donnée, quoi que fasse l'application.
+    if (attente) {
+      const { path, title } = attente;
+      attente = null;
+      envoieVue(path, title);
+    }
+  } else {
+    // Un refus ne garde pas une vue en réserve : elle partirait à un accord
+    // ultérieur pour un écran que l'utilisateur a quitté depuis longtemps.
+    attente = null;
   }
   return next;
 }
@@ -252,10 +273,41 @@ export function trackPageView(path, title) {
   if (typeof window === 'undefined') return false;
   const location = path ?? window.location?.pathname ?? '/';
   const name = title ?? document?.title ?? '';
+
+  // LA VUE D'ARRIVÉE EST TOUJOURS TENTÉE TROP TÔT. Un premier visiteur n'a pas
+  // encore cliqué « Accepter » quand le hook se monte : l'appel sort sans rien
+  // envoyer, et plus rien ne le redéclenche — le chemin n'a pas changé. Mesuré
+  // en production le 16/09/2026 sur mister-molkky et miss-uwh : zéro `page_view`
+  // au chargement, et des `page_view` normaux dès qu'on navigue. Une visite d'un
+  // seul écran — la majorité — ne remontait donc RIEN.
+  //
+  // On la met de côté, et `setAnalyticsConsent` la rejoue au moment de l'accord.
+  if (!state.granted) {
+    attente = { path: location, title: name };
+    return false;
+  }
+
+  return envoieVue(location, name);
+}
+
+/**
+ * L'envoi proprement dit, partagé par l'appel direct et par le rejeu.
+ *
+ * `page_location` PORTE LE CHEMIN DE BASE. Sans lui, une app servie sous
+ * `/mister-molkky/` enregistrait `https://<compte>.github.io/history` — une URL
+ * qui n'existe pas. Les vingt sites partagent l'origine : c'est la même famille
+ * de défaut que les clés `localStorage` nues, corrigées en 4.17.1 puis 4.19.0,
+ * sur une troisième valeur.
+ */
+function envoieVue(path, title) {
+  const base =
+    (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
+  const racine = base.endsWith('/') ? base.slice(0, -1) : base;
+  const chemin = path.startsWith('/') ? path : `/${path}`;
   return trackEvent('page_view', {
-    page_path: location,
-    page_title: name,
-    page_location: `${window.location?.origin ?? ''}${location}`,
+    page_path: path,
+    page_title: title,
+    page_location: `${window.location?.origin ?? ''}${racine}${chemin}`,
   });
 }
 
@@ -281,4 +333,7 @@ export function resetAnalytics() {
   state.id = null;
   state.loaded = false;
   state.granted = false;
+  // Sans cette ligne, la vue mise de côté par un test fuiterait dans le
+  // suivant — et y partirait au premier accord.
+  attente = null;
 }
