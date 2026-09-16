@@ -991,8 +991,23 @@ export function reglesSource(ctx, api) {
   // consentement recouvert et 79 px sous la ligne de flottaison. Même défaut
   // sur miss-contraction, signalé par le propriétaire — un bouton
   // « Mettre à jour » qu'aucun clic n'atteignait.
+  //
+  // ENCORE FAUT-IL QUE L'APP CHARGE CETTE MACHINERIE. Première écriture du
+  // contrôle, le 16/09/2026 : il flaguait miss-contraction, qui n'importe
+  // AUCUNE feuille du socle. Là-bas il n'y a pas de dégagement à zéro, il n'y a
+  // pas de dégagement du tout — l'app place sa barre et ses bandeaux elle-même,
+  // de bout en bout, et `placement="fixed"` n'y aurait rien réparé. Un contrôle
+  // dont le conseil ne s'applique pas est pire qu'un contrôle absent : il fait
+  // écrire une prop pour éteindre un voyant.
+  const feuilleDuSocle =
+    /dev-pwa-config\/components\.css/.test(srcText + cssText) ||
+    /dev-pwa-config\/components\/bottom-nav\.css/.test(srcText + cssText);
   const nav = sansCommentaires.source(srcText);
-  if (/<BottomNav/.test(nav) && !/placement=\{?['"]fixed['"]\}?/.test(nav)) {
+  if (
+    feuilleDuSocle &&
+    /<BottomNav/.test(nav) &&
+    !/placement=\{?['"]fixed['"]\}?/.test(nav)
+  ) {
     // On isole le bloc de la règle : un `position: fixed` voisin ne doit pas
     // être mis au compte de la barre. `[^}]*` avant l'accolade interdit de
     // franchir une fin de règle.
