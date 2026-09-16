@@ -152,6 +152,34 @@ const labels = {
     stateDenied: 'Mesure d’audience : refusée',
     manage: 'Modifier mon choix',
   },
+  /**
+   * Le panneau qui dit ce que la mesure d'audience fait. `{months}` porte la
+   * conservation réglée dans GA4, `{contact}` l'adresse où exercer ses droits
+   * — deux valeurs que le code ne peut pas connaître, d'où l'interpolation.
+   */
+  privacy: {
+    title: 'Mesure d’audience',
+    what: 'Ce qui est mesuré',
+    whatText:
+      'Les pages que vous consultez et la façon dont vous y circulez, par Google Analytics. Jamais ce que vous saisissez dans l’application.',
+    basis: 'À quel titre',
+    basisText:
+      'Votre consentement, et lui seul. Vous pouvez le retirer à tout moment, aussi facilement que vous l’avez donné.',
+    recipient: 'Qui les reçoit',
+    recipientText:
+      'Google, qui les traite pour le compte de l’éditeur de cette application.',
+    retention: 'Combien de temps',
+    retentionText:
+      'Les données détaillées sont conservées {months} mois, puis supprimées.',
+    stored: 'Ce qui est déposé sur votre appareil',
+    storedText:
+      'Un cookie de Google, et votre choix, gardé dans ce navigateur pour ne pas vous reposer la question à chaque visite.',
+    controller: 'Responsable du traitement',
+    rights: 'Vos droits',
+    rightsText:
+      'Accès, rectification, effacement, opposition : écrivez à {contact}.',
+    missing: '[À compléter]',
+  },
 };
 
 export default labels;

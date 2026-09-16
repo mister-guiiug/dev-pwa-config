@@ -165,4 +165,28 @@
   [data-dwc='consent-settings-action'] {
     text-decoration: underline;
   }
+
+  /*
+   * LE REPLI D'INFORMATION, SUR SA PROPRE LIGNE.
+   *
+   * `flex-basis: 100%` et `order: 1` le posent SOUS les deux boutons. Sans eux
+   * il s'insérerait dans le flex du bandeau, entre le message et les actions
+   * sur un écran large : « En savoir plus » viendrait s'intercaler entre la
+   * question et les réponses. Ce serait rendre l'acceptation plus proche que
+   * le refus par la mise en page — exactement ce que le composant évite par
+   * le nombre de clics.
+   */
+  [data-dwc='consent-policy-details'] {
+    flex-basis: 100%;
+    order: 1;
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  [data-dwc='consent-policy-summary'] {
+    cursor: pointer;
+    /* Cible tactile : un résumé se touche au doigt, pas seulement au curseur. */
+    padding-block: 0.5rem;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
 }

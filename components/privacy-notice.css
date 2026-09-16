@@ -1,0 +1,64 @@
+/*
+ * ENGENDRÉ par `npm run sync` depuis `components.css` — ne pas éditer.
+ * Section : PrivacyNotice.
+ *
+ * Importer `components/base.css` d'abord : il porte ce que toutes les
+ * sections supposent (variables de repli, focus, animations, contraste
+ * forcé, impression).
+ */
+@layer components {
+  /* ── PrivacyNotice ─────────────────────────────────────────────────────── */
+
+  /*
+   * HABILLÉ ICI, ET C'EST UNE EXCEPTION ASSUMÉE.
+   *
+   * Le contrat du paquet est que les composants ne posent que des marqueurs,
+   * à charge de l'app de les habiller. Celui-ci est un texte de CONFORMITÉ :
+   * rendu en `<dl>` nu, les descriptions se décalent d'une tabulation et les
+   * termes ne se distinguent pas du corps. Un texte illisible ne vaut pas
+   * information, et c'est une information que le RGPD exige. Tout reste
+   * écrasable, et aucune couleur de marque n'est imposée.
+   */
+  [data-dwc='privacy-notice'] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  [data-dwc='privacy-notice-title'] {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  [data-dwc='privacy-notice-list'] {
+    margin: 0;
+    display: grid;
+    gap: 0.5rem 1rem;
+  }
+
+  /*
+   * Deux colonnes dès qu'il y a la place, une seule en dessous : un terme de
+   * six mots et sa description de trente ne tiennent pas côte à côte sur un
+   * téléphone.
+   */
+  @media (min-width: 32rem) {
+    [data-dwc='privacy-notice-list'] {
+      grid-template-columns: minmax(8rem, 14rem) 1fr;
+    }
+  }
+
+  [data-dwc='privacy-notice-term'] {
+    font-weight: 600;
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  /*
+   * Un `<dd>` porte un `margin-inline-start: 40px` par défaut du navigateur :
+   * dans une grille, il décale la colonne de droite sans aucune raison.
+   */
+  [data-dwc='privacy-notice-detail'] {
+    margin: 0;
+  }
+}

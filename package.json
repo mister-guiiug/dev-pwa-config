@@ -337,6 +337,10 @@
       "types": "./react/consent-banner.d.ts",
       "default": "./react/consent-banner.js"
     },
+    "./react/privacy-notice": {
+      "types": "./react/privacy-notice.d.ts",
+      "default": "./react/privacy-notice.js"
+    },
     "./react/empty-state": {
       "types": "./react/empty-state.d.ts",
       "default": "./react/empty-state.js"

@@ -72,8 +72,16 @@ export interface ConsentBannerProps {
   placement?: 'static' | 'fixed';
   title?: ReactNode;
   message?: ReactNode;
+  /**
+   * L'information dépliée SUR PLACE, pour les apps qui n'ont pas d'URL —
+   * `PrivacyNotice` en général. Ce repli n'offre aucun choix : il informe, et
+   * refuser reste à un clic, au même niveau qu'accepter. Rendu APRÈS les
+   * actions, pour ne pas s'interposer entre la question et les réponses.
+   */
+  policy?: ReactNode;
   acceptLabel?: string;
   refuseLabel?: string;
+  /** Sert au lien `policyHref` ET au résumé du repli `policy`. */
   policyLabel?: string;
 }
 

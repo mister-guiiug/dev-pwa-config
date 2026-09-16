@@ -125,6 +125,29 @@ const labels = {
     stateDenied: 'Medición de audiencia: rechazada',
     manage: 'Cambiar mi elección',
   },
+  privacy: {
+    title: 'Medición de audiencia',
+    what: 'Qué se mide',
+    whatText:
+      'Las páginas que consulta y cómo se desplaza entre ellas, mediante Google Analytics. Nunca lo que escribe en la aplicación.',
+    basis: 'Con qué fundamento',
+    basisText:
+      'Su consentimiento, y solo él. Puede retirarlo en cualquier momento, con la misma facilidad con que lo dio.',
+    recipient: 'Quién los recibe',
+    recipientText:
+      'Google, que los trata por cuenta del editor de esta aplicación.',
+    retention: 'Durante cuánto tiempo',
+    retentionText:
+      'Los datos detallados se conservan {months} meses y luego se eliminan.',
+    stored: 'Qué se guarda en su dispositivo',
+    storedText:
+      'Una cookie de Google y su elección, guardada en este navegador para no repetir la pregunta en cada visita.',
+    controller: 'Responsable del tratamiento',
+    rights: 'Sus derechos',
+    rightsText:
+      'Acceso, rectificación, supresión, oposición: escriba a {contact}.',
+    missing: '[Por completar]',
+  },
 };
 
 export default labels;

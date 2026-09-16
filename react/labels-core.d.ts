@@ -82,6 +82,36 @@ export interface LabelGroups {
     /** `ConsentSettings` : ce que le clic fait — rappeler le bandeau. */
     manage: string;
   };
+  /**
+   * `PrivacyNotice` : ce que la mesure fait, dit au visiteur. Les paires
+   * terme/texte sont rendues en `<dt>`/`<dd>` — les séparer est ce qui rend le
+   * panneau lisible au lecteur d'écran.
+   */
+  privacy: {
+    title: string;
+    what: string;
+    whatText: string;
+    /** La base légale — ici le consentement, et rien d'autre. */
+    basis: string;
+    basisText: string;
+    recipient: string;
+    recipientText: string;
+    retention: string;
+    /** `{months}` remplacé par la conservation réglée dans GA4. */
+    retentionText: string;
+    stored: string;
+    storedText: string;
+    /** Terme seul : la valeur vient de l'exploitant, par prop. */
+    controller: string;
+    rights: string;
+    /** `{contact}` remplacé par l'adresse où exercer ses droits. */
+    rightsText: string;
+    /**
+     * Le marqueur affiché quand l'exploitant n'a pas fourni sa mention —
+     * VISIBLE à l'écran, délibérément : un trou silencieux ne se comble jamais.
+     */
+    missing: string;
+  };
   auth: {
     title: string;
     signUpTitle: string;

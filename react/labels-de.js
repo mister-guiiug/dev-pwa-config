@@ -127,6 +127,29 @@ const labels = {
     stateDenied: 'Reichweitenmessung: abgelehnt',
     manage: 'Meine Auswahl ändern',
   },
+  privacy: {
+    title: 'Reichweitenmessung',
+    what: 'Was gemessen wird',
+    whatText:
+      'Die Seiten, die Sie aufrufen, und wie Sie sich zwischen ihnen bewegen — über Google Analytics. Niemals das, was Sie in der Anwendung eingeben.',
+    basis: 'Auf welcher Grundlage',
+    basisText:
+      'Ihre Einwilligung, und nur diese. Sie können sie jederzeit widerrufen, so einfach wie Sie sie erteilt haben.',
+    recipient: 'Wer sie erhält',
+    recipientText:
+      'Google, das sie im Auftrag des Herausgebers dieser Anwendung verarbeitet.',
+    retention: 'Wie lange',
+    retentionText:
+      'Detaillierte Daten werden {months} Monate gespeichert und danach gelöscht.',
+    stored: 'Was auf Ihrem Gerät gespeichert wird',
+    storedText:
+      'Ein Cookie von Google und Ihre Wahl, in diesem Browser gespeichert, damit die Frage nicht bei jedem Besuch erneut gestellt wird.',
+    controller: 'Verantwortlicher',
+    rights: 'Ihre Rechte',
+    rightsText:
+      'Auskunft, Berichtigung, Löschung, Widerspruch: schreiben Sie an {contact}.',
+    missing: '[Zu ergänzen]',
+  },
 };
 
 export default labels;

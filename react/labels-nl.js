@@ -127,6 +127,29 @@ const labels = {
     stateDenied: 'Publieksmeting: geweigerd',
     manage: 'Mijn keuze wijzigen',
   },
+  privacy: {
+    title: 'Bezoekmeting',
+    what: 'Wat wordt gemeten',
+    whatText:
+      'De pagina’s die u bekijkt en hoe u ertussen navigeert, via Google Analytics. Nooit wat u in de applicatie typt.',
+    basis: 'Op welke grond',
+    basisText:
+      'Uw toestemming, en niets anders. U kunt die op elk moment intrekken, net zo eenvoudig als u haar gaf.',
+    recipient: 'Wie ze ontvangt',
+    recipientText:
+      'Google, dat ze verwerkt namens de uitgever van deze applicatie.',
+    retention: 'Hoe lang',
+    retentionText:
+      'Gedetailleerde gegevens worden {months} maanden bewaard en daarna verwijderd.',
+    stored: 'Wat op uw apparaat wordt opgeslagen',
+    storedText:
+      'Een cookie van Google, en uw keuze, bewaard in deze browser zodat de vraag niet bij elk bezoek terugkomt.',
+    controller: 'Verwerkingsverantwoordelijke',
+    rights: 'Uw rechten',
+    rightsText:
+      'Inzage, rectificatie, wissing, bezwaar: schrijf naar {contact}.',
+    missing: '[Aan te vullen]',
+  },
 };
 
 export default labels;
