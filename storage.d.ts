@@ -65,6 +65,13 @@ export interface Store {
  * quand plusieurs apps de la famille partagent un domaine, donc un
  * `localStorage`.
  */
+/**
+ * Une clé qui porte son application. `localStorage` est cloisonné par ORIGINE,
+ * et les vingt sites de la famille en partagent une : une clé nue y est
+ * commune. `scope` explicite l'emporte ; sinon `import.meta.env.BASE_URL`.
+ */
+export declare function appScopedKey(prefix: string, scope?: string): string;
+
 export declare function createStore(
   prefix: string,
   options?: StoreOptions

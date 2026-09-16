@@ -26,7 +26,11 @@ import { setupDom, mount, renderHook } from './helpers/dom.mjs';
 import { registerSW, swStub } from '../testing/pwa-register.js';
 import { pwaRegisterAlias } from '../vitest-base.js';
 import { UpdatePromptBanner } from '../react/update-prompt-banner.js';
-import { useUpdatePrompt } from '../react/use-update-prompt.js';
+import {
+  SNOOZE_KEY,
+  snoozeKeyFor,
+  useUpdatePrompt,
+} from '../react/use-update-prompt.js';
 
 test('le double fait apparaître le bandeau, ce que les douze copies muettes ne pouvaient pas', async () => {
   const dom = setupDom();
@@ -73,6 +77,51 @@ test('placement="fixed" : le bandeau DEMANDE sa place, sans dépendre d’une ba
       'c’est cet attribut, et lui seul, que la règle CSS vise'
     );
     await vue.unmount();
+  } finally {
+    swStub.reset();
+    dom.restore();
+  }
+});
+
+test('LE REPORT EST CLOISONNÉ : celui d’une app ne fait plus taire les autres', async () => {
+  // LE DÉFAUT MESURÉ. `snoozeKey` valait `dwc_sw_update_snoozed_until`, une clé
+  // NUE, et les vingt sites partagent l'origine `<compte>.github.io` : reporter
+  // sur mister-puzzle — 24 h — silenciait aussi miss-supaboss, miss-supatool et
+  // mister-family-map. Relevé du 16/09/2026 : aucune des quatre apps à report
+  // ne passe de `snoozeKey`, elles lisaient toutes celle-là.
+  assert.equal(snoozeKeyFor('/'), SNOOZE_KEY, 'à la racine, la clé reste nue');
+  assert.equal(
+    snoozeKeyFor('/mister-puzzle/'),
+    `${SNOOZE_KEY}:/mister-puzzle/`
+  );
+  assert.notEqual(
+    snoozeKeyFor('/mister-puzzle/'),
+    snoozeKeyFor('/miss-supaboss/')
+  );
+
+  // Et la contre-épreuve en situation : un report posé sous la clé d'une app
+  // laisse le bandeau de sa voisine apparaître.
+  const dom = setupDom();
+  swStub.reset();
+  try {
+    window.localStorage.setItem(
+      snoozeKeyFor('/mister-puzzle/'),
+      String(Date.now() + 86_400_000)
+    );
+    const voisine = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        snoozeHours: 24,
+        snoozeKey: snoozeKeyFor('/miss-supaboss/'),
+      })
+    );
+    await voisine.act(() => swStub.needRefresh());
+
+    assert.ok(
+      voisine.container.querySelector('[data-dwc="update-banner"]'),
+      'le report du voisin ne doit rien faire taire ici'
+    );
+    await voisine.unmount();
   } finally {
     swStub.reset();
     dom.restore();

@@ -12,15 +12,39 @@ export declare const CONSENT_KEY: string;
  */
 export declare function consentKey(scope?: string): string;
 
-/** Le choix mémorisé, s'il y en a un. */
+export interface ConsentRecord {
+  choice: 'granted' | 'denied';
+  /** `null` pour un choix mémorisé avant que la date existe. */
+  at: number | null;
+  /** `null` si l'app ne versionne pas ses finalités. */
+  version: number | null;
+}
+
+/**
+ * Le choix mémorisé avec sa date et sa version. Trois formes de stockage se
+ * lisent : `choix`, `choix;date`, `choix;date;version`.
+ */
+export declare function readConsentRecord(scope?: string): ConsentRecord | null;
+
+/** Le choix mémorisé, s'il y en a un — sans regarder sa fraîcheur. */
 export declare function readConsentChoice(
   scope?: string
 ): 'granted' | 'denied' | null;
 
-/** Mémorise un choix. Rend `false` si la valeur n'est pas reconnue. */
+/** Mémorise un choix, daté. Rend `false` si la valeur n'est pas reconnue. */
 export declare function writeConsentChoice(
   choice: 'granted' | 'denied',
-  scope?: string
+  scope?: string,
+  options?: { version?: number; at?: number }
+): boolean;
+
+/**
+ * Un choix a-t-il cessé de valoir ? Treize mois par défaut — la durée de vie
+ * maximale admise pour un traceur. Un choix sans date n'est jamais périmé.
+ */
+export declare function consentPerime(
+  record: ConsentRecord | null,
+  regles?: { maxAgeDays?: number; purposeVersion?: number }
 ): boolean;
 
 /**
@@ -55,6 +79,10 @@ export declare function useConsentChoice(options?: {
   gaMeasurementId?: string;
   gtmContainerId?: string;
   scope?: string;
+  /** Âge maximal du choix, en jours. Défaut 395 (treize mois). 0 désactive. */
+  maxAgeDays?: number;
+  /** Version des finalités : un choix d'une autre version est reposé. */
+  purposeVersion?: number;
 }): ConsentChoice;
 
 export interface ConsentBannerProps {
@@ -62,6 +90,10 @@ export interface ConsentBannerProps {
   gtmContainerId?: string;
   /** Portée explicite de la clé ; sinon le chemin de base de l'app. */
   scope?: string;
+  /** Âge maximal du choix, en jours. Défaut 395 (treize mois). 0 désactive. */
+  maxAgeDays?: number;
+  /** Version des finalités : un choix d'une autre version est reposé. */
+  purposeVersion?: number;
   /** Lien vers la page de confidentialité, facultatif. */
   policyHref?: string;
   className?: string;
@@ -87,6 +119,8 @@ export interface ConsentSettingsProps {
   gaMeasurementId?: string;
   gtmContainerId?: string;
   scope?: string;
+  maxAgeDays?: number;
+  purposeVersion?: number;
   className?: string;
   /** Remplace l'état affiché (« Mesure d'audience : acceptée »). */
   stateLabel?: string;

@@ -17,6 +17,10 @@ import {
   ConsentSettings,
   CONSENT_KEY,
   consentKey,
+  consentPerime,
+  readConsentChoice,
+  readConsentRecord,
+  writeConsentChoice,
 } from '../react/consent-banner.js';
 import { resetAnalytics } from '../analytics.js';
 import { mount, setupDom } from './helpers/dom.mjs';
@@ -110,7 +114,13 @@ test('accepter charge le tag et mémorise le choix', async () => {
   const script = tagCharge();
   assert.ok(script, 'le tag doit être injecté après l’accord');
   assert.match(script.src, /gtag\/js\?id=G-TEST12345/);
-  assert.equal(window.localStorage.getItem(CONSENT_KEY), 'granted');
+  // La valeur brute porte sa DATE depuis le 16/09/2026 (`granted;<ms>`) : on
+  // vérifie le choix par le lecteur, et la date à part.
+  assert.equal(readConsentChoice(), 'granted');
+  assert.ok(
+    Math.abs(Date.now() - readConsentRecord().at) < 5_000,
+    'le choix doit être daté de maintenant'
+  );
   assert.equal(
     vue.container.querySelector('[data-dwc="consent-banner"]'),
     null
@@ -127,7 +137,7 @@ test('refuser ne charge rien, et le bandeau ne revient pas', async () => {
   await vue.act(() => bouton(vue.container, 'refuse').click());
 
   assert.equal(tagCharge(), null);
-  assert.equal(window.localStorage.getItem(CONSENT_KEY), 'denied');
+  assert.equal(readConsentChoice(), 'denied');
   assert.equal(
     vue.container.querySelector('[data-dwc="consent-banner"]'),
     null
@@ -228,6 +238,105 @@ test('un accord donné à une app ne vaut PAS pour une autre', async () => {
   );
   // Et la mesure qui compte : rien n'est parti chez Google entre-temps.
   assert.equal(tagCharge(), null);
+
+  await vue.unmount();
+  dom.restore();
+});
+
+/* ── La fraîcheur du choix ─────────────────────────────────────────────── */
+
+const JOUR = 86_400_000;
+
+test('consentPerime : treize mois, et un choix sans date n’expire jamais', () => {
+  const hier = { choice: 'granted', at: Date.now() - JOUR, version: null };
+  const vieux = {
+    choice: 'granted',
+    at: Date.now() - 400 * JOUR,
+    version: null,
+  };
+  const sansDate = { choice: 'granted', at: null, version: null };
+
+  assert.equal(consentPerime(hier), false);
+  assert.equal(
+    consentPerime(vieux),
+    true,
+    '400 jours : au-delà des treize mois'
+  );
+  // Un choix mémorisé avant que la date existe : le compter comme expiré ferait
+  // reparaître le bandeau chez tout le monde le jour de la montée.
+  assert.equal(consentPerime(sansDate), false);
+  assert.equal(consentPerime(null), false);
+
+  // Le REFUS expire au même âge, jamais avant.
+  assert.equal(
+    consentPerime({ ...vieux, choice: 'denied' }),
+    true,
+    'un refus de quatre cents jours a cessé de valoir, comme un accord'
+  );
+
+  // Réglable, et débrayable.
+  assert.equal(consentPerime(hier, { maxAgeDays: 0 }), false);
+  assert.equal(consentPerime(hier, { maxAgeDays: 0.5 }), true);
+});
+
+test('consentPerime : une version de finalités qui a changé repose la question', () => {
+  const v1 = { choice: 'granted', at: Date.now(), version: 1 };
+  assert.equal(consentPerime(v1, { purposeVersion: 1 }), false);
+  assert.equal(
+    consentPerime(v1, { purposeVersion: 2 }),
+    true,
+    'l’accord d’hier ne porte pas sur ce qu’on mesure aujourd’hui'
+  );
+  // Une app qui se met à versionner ses finalités repose la question aux choix
+  // qui n'en portent pas : c'est le seul sens sûr.
+  assert.equal(
+    consentPerime({ ...v1, version: null }, { purposeVersion: 2 }),
+    true
+  );
+  // Et une app qui ne versionne rien ne voit aucune différence.
+  assert.equal(consentPerime({ ...v1, version: null }), false);
+});
+
+test('un accord PÉRIMÉ ne rouvre pas la collecte, et repose la question', async () => {
+  // C'est toute la différence entre dater un choix et le faire compter : un
+  // `readConsentChoice` nu aurait rejoué `granted` et rechargé le tag.
+  const dom = prepare();
+  writeConsentChoice('granted', undefined, { at: Date.now() - 400 * JOUR });
+  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+
+  assert.equal(
+    tagCharge(),
+    null,
+    'rien ne doit être chargé sur un accord périmé'
+  );
+  assert.ok(
+    vue.container.querySelector('[data-dwc="consent-banner"]'),
+    'la question doit être reposée'
+  );
+  assert.equal(readConsentChoice(), null, 'le choix périmé est oublié');
+
+  await vue.unmount();
+  dom.restore();
+});
+
+test('un choix SANS DATE est re-daté d’aujourd’hui, pas expiré', async () => {
+  // Les choix d'avant cette version n'ont pas de date. L'horloge doit partir de
+  // la montée : sans ça, soit ils n'expirent jamais, soit ils expirent tous le
+  // même jour.
+  const dom = prepare('granted');
+  assert.equal(readConsentRecord().at, null, 'la forme ancienne, sans date');
+
+  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+
+  assert.ok(tagCharge(), 'l’accord d’hier vaut toujours');
+  assert.equal(
+    vue.container.querySelector('[data-dwc="consent-banner"]'),
+    null
+  );
+  assert.ok(
+    Math.abs(Date.now() - readConsentRecord().at) < 5_000,
+    'il doit désormais porter la date du jour'
+  );
 
   await vue.unmount();
   dom.restore();
