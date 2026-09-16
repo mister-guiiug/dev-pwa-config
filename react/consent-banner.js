@@ -95,7 +95,8 @@ export function writeConsentChoice(choice, scope) {
  * évalué, il ne se décharge pas. C'est le comportement documenté du mode
  * consentement, et `setAnalyticsConsent` le dit déjà dans ses propres termes.
  * Pour couper la collecte, il faut AUSSI `setAnalyticsConsent('denied')` — ce
- * que fait le bouton « Refuser » du bandeau.
+ * que fait le bouton « Refuser » du bandeau, et ce que fait `reset()` du hook
+ * depuis qu'il existe une surface pour l'appeler.
  */
 export function clearConsentChoice(scope) {
   return removeKey(consentKey(scope));
@@ -113,10 +114,41 @@ export function clearConsentChoice(scope) {
  *   needed: boolean, accept: () => void, refuse: () => void,
  *   reset: () => void }}
  */
+/**
+ * LES INSTANCES MONTÉES DU HOOK, pour qu'un choix fait ICI se voie LÀ.
+ *
+ * `useConsentChoice` tient son choix dans un `useState` local. Le bandeau et le
+ * réglage du pied de page sont donc DEUX instances, chacune avec sa copie :
+ * sans ce registre, cliquer « Modifier mon choix » dans le pied vidait bien le
+ * stockage, et le bandeau — qui n'en savait rien — ne revenait pas. Le bouton
+ * n'aurait rien fait de visible, c'est-à-dire rien du tout.
+ *
+ * La diffusion porte la CLÉ, pas la portée : deux apps qui cloisonnent leur
+ * consentement (voir `consentKey`) ne doivent pas s'entendre l'une l'autre.
+ *
+ * Entre ONGLETS, rien n'est fait ici : `localStorage` émet déjà `storage` pour
+ * ça, et le prochain rendu à froid relit le stockage de toute façon.
+ */
+const abonnes = new Set();
+function diffuser(cle, choix) {
+  for (const abonne of abonnes) abonne(cle, choix);
+}
+
 export function useConsentChoice(options = {}) {
   const { gaMeasurementId, gtmContainerId, scope } = options;
   const [choice, setChoice] = useState(() => readConsentChoice(scope));
   const [configured, setConfigured] = useState(false);
+
+  useEffect(() => {
+    const cle = consentKey(scope);
+    const ecouter = (autre, choix) => {
+      if (autre === cle) setChoice(choix);
+    };
+    abonnes.add(ecouter);
+    return () => {
+      abonnes.delete(ecouter);
+    };
+  }, [scope]);
 
   useEffect(() => {
     // SI L'APPLICATION A DÉJÀ APPELÉ `initAnalytics`, ON NE LE REFAIT PAS.
@@ -139,6 +171,7 @@ export function useConsentChoice(options = {}) {
     next => {
       writeConsentChoice(next, scope);
       setChoice(next);
+      diffuser(consentKey(scope), next);
       setAnalyticsConsent(next === 'granted' ? { analytics: true } : 'denied');
     },
     [scope]
@@ -146,9 +179,31 @@ export function useConsentChoice(options = {}) {
 
   const accept = useCallback(() => decide('granted'), [decide]);
   const refuse = useCallback(() => decide('denied'), [decide]);
+
+  /**
+   * REVENIR SUR SON CHOIX — ET LA COLLECTE S'ARRÊTE PENDANT CE TEMPS.
+   *
+   * `reset` se contentait d'oublier le choix. Sur un accord déjà donné, ça
+   * laissait la mesure ACTIVE pendant toute la session : l'utilisateur avait
+   * demandé à revoir sa décision, le stockage ne disait plus rien, et Google
+   * continuait de recevoir. Un rechargement finissait par l'éteindre —
+   * `initAnalytics` part de `denied` — mais l'utilisateur qui s'en va sans
+   * rien choisir était mesuré jusqu'au bout.
+   *
+   * Refuser d'abord, oublier ensuite : quelle que soit la suite — choisir à
+   * nouveau, fermer l'onglet, partir — rien n'est collecté tant que le
+   * consentement n'est pas redonné. C'est la seule lecture qui rend le retrait
+   * aussi simple que l'accord, ce que demande l'article 7.3 du RGPD.
+   *
+   * AUCUN CONSOMMATEUR NE CHANGE DE COMPORTEMENT : relevé du 16/09/2026, zéro
+   * app du parc appelait `reset`, `clearConsentChoice` ou `useConsentChoice`.
+   * La porte de sortie existait et n'était branchée nulle part.
+   */
   const reset = useCallback(() => {
+    setAnalyticsConsent('denied');
     clearConsentChoice(scope);
     setChoice(null);
+    diffuser(consentKey(scope), null);
   }, [scope]);
 
   return {
@@ -222,6 +277,90 @@ export function ConsentBanner(props) {
             policyLabel ?? labels.policy
           )
         : null
+    )
+  );
+}
+
+/**
+ * REVENIR SUR SON CHOIX — la pièce qui manquait au bandeau.
+ *
+ * LE RELEVÉ QUI L'A FAIT NAÎTRE. Le 16/09/2026, sur les vingt et une apps du
+ * parc : dix-neuf montent `ConsentBanner`, et **zéro** référence `reset`,
+ * `clearConsentChoice` ou `useConsentChoice`. Un visiteur qui avait accepté —
+ * ou refusé — ne pouvait plus jamais changer d'avis, par aucun chemin. Les
+ * pièces existaient depuis la 4.17.0 et n'étaient branchées nulle part.
+ *
+ * L'article 7.3 du RGPD demande que le retrait soit AUSSI SIMPLE que l'accord.
+ * Ici il était impossible : ce n'est pas un défaut d'ergonomie, c'en est un de
+ * conformité, et c'est le seul de son espèce dans le parc.
+ *
+ * POURQUOI UN BOUTON QUI RAPPELLE LE BANDEAU, ET PAS UN INTERRUPTEUR. Un
+ * interrupteur dans un pied de page serait une SECONDE surface de décision, à
+ * tenir à l'équilibre du bandeau — même taille, même contraste, même coût au
+ * clic — sous peine de refaire par la mise en page ce que le bandeau évite par
+ * construction. Rappeler le bandeau garantit l'égalité sans avoir à la
+ * maintenir : c'est le MÊME écran qui repose la question.
+ *
+ * ET LA COLLECTE S'ARRÊTE ENTRE-TEMPS : `reset` refuse avant d'oublier, donc
+ * l'utilisateur qui ouvre la question et s'en va n'est pas mesuré pendant ce
+ * temps.
+ *
+ * SANS CHOIX FAIT, IL NE REND RIEN. Le bandeau est alors à l'écran en train de
+ * poser la question : un « modifier mon choix » à côté d'elle n'aurait pas de
+ * référent.
+ *
+ * `gaMeasurementId` EST À PASSER, comme au bandeau. Le hook retombe sur
+ * l'identifiant déjà posé par `initAnalytics` s'il y en a un, mais l'ordre des
+ * effets entre deux branches de l'arbre n'est pas une garantie : le premier
+ * rendu du pied de page peut précéder celui du bandeau.
+ *
+ * Non stylé : cibler `[data-dwc="consent-settings"]`.
+ *
+ * @param {{ gaMeasurementId?: string, gtmContainerId?: string, scope?: string,
+ *   className?: string, stateLabel?: string, actionLabel?: string }} props
+ */
+export function ConsentSettings(props = {}) {
+  const {
+    gaMeasurementId,
+    gtmContainerId,
+    scope,
+    className,
+    stateLabel,
+    actionLabel,
+  } = props;
+
+  const labels = useLabels('consent');
+  const { choice, configured, reset } = useConsentChoice({
+    gaMeasurementId,
+    gtmContainerId,
+    scope,
+  });
+
+  if (!configured || choice === null) return null;
+
+  const etat =
+    stateLabel ??
+    (choice === 'granted' ? labels.stateGranted : labels.stateDenied);
+
+  return h(
+    'button',
+    {
+      type: 'button',
+      className,
+      'data-dwc': 'consent-settings',
+      // L'état en attribut : une app peut colorer l'accord et le refus
+      // différemment sans relire le stockage.
+      'data-choice': choice,
+      onClick: reset,
+    },
+    // DEUX morceaux, et le second n'est pas décoratif : « Mesure d'audience :
+    // acceptée » dit l'état sans dire ce que le clic fait. Le nom accessible du
+    // bouton est la somme des deux.
+    h('span', { 'data-dwc': 'consent-settings-state' }, etat),
+    h(
+      'span',
+      { 'data-dwc': 'consent-settings-action' },
+      actionLabel ?? labels.manage
     )
   );
 }

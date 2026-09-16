@@ -121,6 +121,9 @@ const labels = {
     accept: 'Aceitar',
     refuse: 'Recusar',
     policy: 'Saber mais',
+    stateGranted: 'Medição de audiência: aceite',
+    stateDenied: 'Medição de audiência: recusada',
+    manage: 'Alterar a minha escolha',
   },
 };
 

@@ -123,6 +123,9 @@ const labels = {
     accept: 'Zustimmen',
     refuse: 'Ablehnen',
     policy: 'Mehr erfahren',
+    stateGranted: 'Reichweitenmessung: zugestimmt',
+    stateDenied: 'Reichweitenmessung: abgelehnt',
+    manage: 'Meine Auswahl ändern',
   },
 };
 

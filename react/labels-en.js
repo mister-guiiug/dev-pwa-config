@@ -120,6 +120,9 @@ const labels = {
     accept: 'Accept',
     refuse: 'Decline',
     policy: 'Learn more',
+    stateGranted: 'Audience measurement: accepted',
+    stateDenied: 'Audience measurement: declined',
+    manage: 'Change my choice',
   },
 };
 

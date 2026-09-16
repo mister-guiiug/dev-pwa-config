@@ -62,4 +62,46 @@
     font-size: 0.875em;
     color: inherit;
   }
+
+  /*
+   * LE RÉGLAGE : UN BOUTON QUI DOIT AVOIR L'AIR D'UN LIEN DE PIED DE PAGE.
+   *
+   * C'est un `<button>` et non un `<a>` — il ne mène nulle part, il rappelle le
+   * bandeau — mais sa place est la rangée de liens du pied, à côté de
+   * `footer-source` et `footer-issues`. Sans ce dégraissage il y arriverait
+   * avec le fond, le cadre et la police du système : un gros bouton gris au
+   * milieu de trois liens.
+   *
+   * IL N'EST PAS SUR LA RÈGLE PARTAGÉE DES BOUTONS, et c'est la raison d'être
+   * de ces lignes. Cette règle-là garantit qu'« Accepter » et « Refuser » ont
+   * la même taille et la même cible tactile — l'égalité que la CNIL demande
+   * ENTRE LES DEUX FACES d'un choix. Ici il n'y a pas deux faces : un seul
+   * bouton, qui rouvre la question. Lui donner la stature des deux autres le
+   * ferait passer pour une troisième option.
+   */
+  [data-dwc='consent-settings'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--dwc-text-soft, GrayText);
+    cursor: pointer;
+  }
+
+  [data-dwc='consent-settings']:hover {
+    color: var(--dwc-primary, CanvasText);
+  }
+
+  /*
+   * L'ACTION EST SOULIGNÉE, L'ÉTAT NE L'EST PAS. Les deux morceaux ne jouent
+   * pas le même rôle : « Mesure d'audience : acceptée » est un constat,
+   * « Modifier mon choix » est ce sur quoi on clique. Souligner l'ensemble
+   * ferait du constat une promesse de navigation.
+   */
+  [data-dwc='consent-settings-action'] {
+    text-decoration: underline;
+  }
 }

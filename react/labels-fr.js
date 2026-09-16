@@ -145,6 +145,12 @@ const labels = {
     accept: 'Accepter',
     refuse: 'Refuser',
     policy: 'En savoir plus',
+    // `ConsentSettings` : l'état, puis ce que le clic fait. Deux chaînes
+    // entières et pas une composition `{title} : {état}` — l'ordre des mots et
+    // la ponctuation ne survivent pas à la traduction.
+    stateGranted: 'Mesure d’audience : acceptée',
+    stateDenied: 'Mesure d’audience : refusée',
+    manage: 'Modifier mon choix',
   },
 };
 

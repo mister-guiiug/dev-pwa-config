@@ -497,6 +497,10 @@ const SANS_REGLE = new Map([
   ['visually-hidden', 'habillé par `.dwc-sr-only` dans tokens.css'],
   ['skip-link', 'habillé par `.dwc-skip-link` dans tokens.css'],
   ['app-version-label', 'un <span> dans app-version : il hérite, exprès'],
+  [
+    'consent-settings-state',
+    'un <span> dans consent-settings : il hérite, exprès — seule l’action est soulignée',
+  ],
   ['family-apps', 'conteneur <section> ; ses enfants portent les règles'],
   ['sparkline-last', 'un <circle> SVG, peint par son attribut fill'],
 ]);
