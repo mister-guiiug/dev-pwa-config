@@ -1,5 +1,47 @@
 # Changelog
 
+## 4.18.0
+
+### Minor Changes
+
+- **`pwa-bundle-budget` : une troisième borne, `preloadGzipKb`.**
+  
+  Les deux bornes existantes sont aveugles au chemin critique. `totalGzipKb`
+  additionne TOUS les morceaux, asynchrones compris : sortir 150 kB du chemin
+  critique ne le fait pas bouger d'un octet, et les y remettre non plus.
+  `mainChunkKb` ne voit que le chunk principal — `vendor` peut doubler à côté.
+  
+  Mesuré sur `miss-uwh`, avec `@sentry/react` installé et le même code :
+  
+  | | total gzip | préchargé |
+  | --- | --- | --- |
+  | Sentry dans `vendor` (préchargé) | 444,3 kB | 381,9 kB |
+  | Sentry dans son propre morceau | 444,2 kB | 227,2 kB |
+  
+  Un dixième de kilo-octet d'écart sur la borne qui existait, 154,7 kB sur celle
+  qui manquait. C'est ainsi que le `manualChunks` de deux apps du parc a pu
+  renvoyer Sentry vers `vendor` — défaisant l'`import()` paresseux de
+  `react/observability` — sans qu'aucune garde ne s'en aperçoive.
+  
+  `preloadGzipKb` mesure ce que `dist/index.html` référence : scripts,
+  `modulepreload` et feuilles de style. **CSS compris**, et c'est voulu — une
+  feuille bloque le rendu autant qu'un script. Cette borne n'est donc pas
+  comparable à `totalGzipKb`, qui ne compte que le JS.
+  
+  Deux décisions de conception :
+  
+  - **Une référence introuvable FAIT ÉCHOUER**, elle ne compte pas zéro. Sans ce
+    refus, un changement de chemin de base ferait tomber la mesure à presque rien
+    et la borne passerait au vert en annonçant l'inverse du vrai.
+  - **Le document n'est lu que si la borne est écrite.** Le chercher pour ne rien
+    en faire coûterait un gzip par fichier, et ferait échouer les paquets dont le
+    build n'émet pas d'`index.html`.
+  
+  `bundleBudget.html` vise un autre document ; `--preload-gzip-kb` et `--html`
+  servent à l'essai. Le cliquet (`--ratchet`) resserre cette borne comme les
+  autres. Aucune borne existante ne change de comportement, et un budget qui n'en
+  déclare aucune le dit toujours.
+
 ## 4.17.2
 
 ### Patch Changes

@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import {
   checkBudget,
   measureBundle,
+  measurePreload,
   proposeBudget,
   readBudget,
   writeBudget,
@@ -146,6 +147,10 @@ test('readBudget : package.json d’abord, la ligne de commande par-dessus', asy
       totalGzipKb: 255,
       mainChunkKb: undefined,
       mainChunk: 'app-',
+      preloadGzipKb: undefined,
+      // Le document se déduit du dossier des assets : `dist/assets` est dans
+      // `dist`, où Vite écrit `index.html`.
+      html: join('dist', 'assets', '..', 'index.html'),
     });
     const cli = readBudget(root, [
       '--main-chunk-kb',
@@ -156,5 +161,141 @@ test('readBudget : package.json d’abord, la ligne de commande par-dessus', asy
     assert.equal(cli.mainChunkKb, 300);
     assert.equal(cli.dir, 'build/js');
     assert.equal(cli.totalGzipKb, 255, 'le package.json reste pour le reste');
+    // `--dir` déplace le document avec lui : sans ça, un dossier d'assets
+    // ailleurs ferait lire un `index.html` qui n'est pas le sien.
+    assert.equal(cli.html, join('build', 'js', '..', 'index.html'));
   });
+});
+
+// ── preloadGzipKb : ce que le document va réellement chercher ────────────────
+
+/** Un `dist` jetable : des chunks, et un index.html qui n'en référence qu'une
+ *  partie — la situation exacte que les deux premières bornes ne voyaient pas. */
+function distJetable({
+  base = '',
+  referencer = ['app.js', 'app.css'],
+  chunks,
+} = {}) {
+  const root = mkdtempSync(join(tmpdir(), 'dwc-preload-'));
+  mkdirSync(join(root, 'assets'));
+  for (const [nom, taille] of Object.entries(chunks)) {
+    writeFileSync(join(root, 'assets', nom), 'x'.repeat(taille));
+  }
+  const liens = referencer
+    .map(n =>
+      n.endsWith('.css')
+        ? `<link rel="stylesheet" href="${base}assets/${n}">`
+        : `<script type="module" src="${base}assets/${n}"></script>`
+    )
+    .join('');
+  writeFileSync(
+    join(root, 'index.html'),
+    `<!doctype html><html><head>${liens}</head></html>`
+  );
+  return root;
+}
+
+test('measurePreload ne compte QUE ce qu’index.html référence', () => {
+  // LE DÉFAUT QUE CETTE BORNE REND VISIBLE : `sentry.js` pèse plus que tout le
+  // reste, mais n'est tiré que par un `import()`. Le total gzip le compte, la
+  // borne du chunk principal l'ignore — aucune des deux ne dit s'il est sur le
+  // chemin critique. Celle-ci le dit.
+  const root = distJetable({
+    chunks: { 'app.js': 20_000, 'app.css': 4_000, 'sentry.js': 400_000 },
+  });
+  try {
+    const preload = measurePreload(join(root, 'index.html'));
+    assert.deepEqual(preload.files.map(f => f.name).sort(), [
+      'app.css',
+      'app.js',
+    ]);
+    assert.deepEqual(preload.manquants, []);
+
+    // Et la contre-épreuve : le total, lui, embarque bien les 400 ko.
+    const total = measureBundle(join(root, 'assets'));
+    assert.ok(
+      total.totalGzipKb > preload.gzipKb * 5,
+      'le total doit être très au-dessus du préchargé'
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('une référence préfixée du chemin de base se résout quand même', () => {
+  // GitHub Pages sert sous `/<dépôt>/` : `index.html` porte alors
+  // `/miss-uwh/assets/app.js`, qui n'existe pas tel quel sur le disque.
+  const root = distJetable({
+    base: '/miss-uwh/',
+    chunks: { 'app.js': 20_000, 'app.css': 4_000 },
+  });
+  try {
+    const preload = measurePreload(join(root, 'index.html'));
+    assert.deepEqual(preload.manquants, []);
+    assert.equal(preload.files.length, 2);
+    assert.ok(preload.gzipKb > 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('un fichier référencé mais introuvable FAIT ÉCHOUER, il ne vaut pas zéro', () => {
+  // Sans ce refus, un changement de chemin de base ferait tomber la mesure à
+  // presque rien et la borne passerait au vert en annonçant l'inverse du vrai.
+  const root = distJetable({
+    referencer: ['app.js', 'disparu.js'],
+    chunks: { 'app.js': 20_000 },
+  });
+  try {
+    const preload = measurePreload(join(root, 'index.html'));
+    assert.deepEqual(preload.manquants, ['assets/disparu.js']);
+
+    const verdict = checkBudget(
+      { totalGzipKb: 0, files: [] },
+      { preloadGzipKb: 999 },
+      preload
+    );
+    assert.equal(verdict.ok, false);
+    assert.match(verdict.problems.join(' '), /introuvables/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('checkBudget : la borne du préchargé tranche, et le dit séparément', () => {
+  const preload = { files: [], manquants: [], gzipKb: 230 };
+  const measure = { totalGzipKb: 444, files: [] };
+
+  // Le total passe, le préchargé aussi : rien à signaler.
+  assert.equal(
+    checkBudget(measure, { totalGzipKb: 450, preloadGzipKb: 240 }, preload).ok,
+    true
+  );
+
+  // Le préchargé dépasse SEUL : c'est bien lui qui est nommé.
+  const verdict = checkBudget(
+    measure,
+    { totalGzipKb: 450, preloadGzipKb: 220 },
+    preload
+  );
+  assert.equal(verdict.ok, false);
+  assert.equal(verdict.problems.length, 1);
+  assert.match(verdict.problems[0], /préchargé 230\.0 kB > budget 220 kB/);
+
+  // Bornée sans mesure : on refuse plutôt que de laisser passer en silence.
+  assert.match(
+    checkBudget(measure, { preloadGzipKb: 220 }, null).problems.join(' '),
+    /n’a pas été lu/
+  );
+});
+
+test('le cliquet resserre aussi le préchargé', () => {
+  const measure = { totalGzipKb: 100, files: [] };
+  const preload = { files: [], manquants: [], gzipKb: 200 };
+  assert.deepEqual(
+    proposeBudget(measure, { preloadGzipKb: 300 }, null, { preload }),
+    [{ key: 'preloadGzipKb', measured: 200, current: 300, proposed: 220 }]
+  );
+  // Sans mesure du préchargé, rien à proposer pour lui.
+  assert.deepEqual(proposeBudget(measure, { preloadGzipKb: 300 }), []);
 });
