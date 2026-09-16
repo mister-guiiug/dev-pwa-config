@@ -1,5 +1,70 @@
 # Changelog
 
+## 4.19.0
+
+### Minor Changes
+
+- 77d31d0: Le choix de consentement porte sa date ; le report ne fuit plus d'une app à l'autre, et dure quatre heures par défaut.
+  
+  **Le report d'une app faisait taire celui des autres.** `snoozeKey` valait `'dwc_sw_update_snoozed_until'`, une clé **nue**. Les vingt sites de la famille partagent l'origine `<compte>.github.io` : reporter sur `mister-puzzle` — qui reporte 24 h — silenciait donc aussi `miss-supaboss`, `miss-supatool` et `mister-family-map`, les trois autres apps à report du parc. Aucune des quatre ne passe de `snoozeKey` : elles lisaient toutes celle-là. C'est le **même défaut** que celui du consentement, corrigé en 4.17.1 sur l'autre clé, et il a survécu sur celle-ci faute d'avoir cherché ses semblables. Le calcul vit désormais dans `storage.appScopedKey`, et les deux l'appellent.
+  
+  Aucune reprise de l'ancienne clé, délibérément : la valeur qui s'y trouve peut être le report d'une **autre** app, et la recopier perpétuerait la fuite qu'on ferme. Au pire un report en cours est oublié une fois.
+  
+  **`snoozeHours` vaut 4 par défaut, et plus 0.** À zéro, le second bouton n'écarte que pour la session : le bandeau revient au rechargement suivant. Seize apps sur vingt étaient dans ce cas faute d'avoir écrit la prop — aucune ne l'avait choisi, et le libellé « Plus tard » promettait pourtant une durée. Quatre heures est la plus courte des quatre valeurs déjà en service. `snoozeHours={0}` reste disponible. La valeur vit dans une constante unique : le hook, le fournisseur, le bandeau autonome et le bandeau portaient chacun leur `= 0`, et le libellé se calcule dans le dernier tandis que le report s'applique dans le premier.
+  
+  **Le choix de consentement porte sa date, et sa version de finalités.** Le stockage ne contenait que `granted` ou `denied` : un accord de 2026 valait indéfiniment, et si une finalité s'ajoutait, rien ne permettait de reposer la question. Trois formes se lisent — `choix`, `choix;date`, `choix;date;version` — et la première est l'ancienne : un choix mémorisé avant cette version reste valide.
+  
+  Treize mois par défaut (`maxAgeDays`), la durée de vie maximale admise pour un traceur ; le refus expire au même âge, jamais avant. Un choix **sans date** n'est pas périmé : il est **re-daté d'aujourd'hui**, pour que l'horloge parte de la montée et non du néant — sinon le bandeau reparaîtrait chez tout le monde le même jour, pour une raison que l'utilisateur n'a pas vécue. Un accord périmé ne rejoue **pas** le tag : c'est toute la différence entre dater un choix et le faire compter.
+- 3d3ae4e: `ConsentSettings` : le bouton qui rappelle le bandeau, pour revenir sur son choix.
+  
+  **Le relevé qui l'a fait naître.** Le 16/09/2026, sur les vingt et une apps du parc : dix-neuf montent `ConsentBanner`, et **zéro** référence `reset`, `clearConsentChoice` ou `useConsentChoice`. Un visiteur qui avait accepté — ou refusé — ne pouvait plus jamais changer d'avis, par aucun chemin. Les pièces existaient depuis la 4.17.0 et n'étaient branchées nulle part.
+  
+  L'article 7.3 du RGPD demande que le retrait soit **aussi simple que l'accord**. Ici il était impossible : ce n'est pas un défaut d'ergonomie, c'en est un de conformité.
+  
+  **Un bouton qui rappelle le bandeau, et pas un interrupteur.** Un interrupteur dans un pied de page serait une seconde surface de décision, à tenir à l'équilibre du bandeau — même taille, même contraste, même coût au clic — sous peine de refaire par la mise en page ce que le bandeau évite par construction. Rappeler le bandeau garantit l'égalité sans avoir à la maintenir : c'est le même écran qui repose la question.
+  
+  **`reset()` refuse avant d'oublier — changement de comportement.** Il se contentait d'oublier le choix, ce qui laissait la mesure active pendant toute la session : l'utilisateur avait demandé à revoir sa décision, le stockage ne disait plus rien, et Google continuait de recevoir. Zéro app du parc l'appelait, donc aucune ne change de comportement.
+  
+  **Les instances du hook se synchronisent.** `useConsentChoice` tient son choix dans un `useState` local : le bandeau et le réglage sont deux instances. Sans registre d'abonnés, cliquer « Modifier mon choix » vidait le stockage et le bandeau ne revenait pas — le bouton n'aurait rien fait de visible. La diffusion porte la **clé** et non la portée, pour que deux apps qui cloisonnent leur consentement ne s'entendent pas l'une l'autre.
+  
+  Le pied de page n'est **pas** touché : `AppFooter` a déjà `links` et `after`, et y importer `ConsentSettings` aurait tiré `analytics.js` dans le bundle des vingt apps, y compris celles sans mesure.
+  
+  Au passage, `consent-banner.d.ts` déclare enfin `scope` et `consentKey`, absents des types depuis leur arrivée en 4.17.1.
+- ffbf8cf: `pwa-doctor` attrape la barre basse collée par le CSS de l'app sans `placement="fixed"` — nouveau contrôle `bottom-nav-muette`, au niveau **défaut**.
+  
+  `BottomNav` n'émet `data-placement="fixed"` que si l'app passe la prop. Or tout le dégagement du socle est gardé là-dessus : `--_dwc-bottom-clearance` et la position du bandeau de mise à jour vivent sous `:root:has([data-dwc='bottom-nav'][data-placement='fixed'])`. Une app qui colle sa barre dans **sa** feuille de style obtient donc une barre fixe et un dégagement **nul** : toutes les surfaces flottantes passent dessous.
+  
+  Mesuré en production sur `mister-cim10` le 16/09/2026, en 375 × 812 : barre fixe de 56 px, `--_dwc-bottom-clearance` à `max(0px, 0px)`, bandeau de consentement recouvert et 79 px sous la ligne de flottaison. Même défaut sur `miss-contraction`, signalé par le propriétaire — un bouton « Mettre à jour » qu'aucun clic n'atteignait. Ce sont les deux seules apps du parc dans ce cas, et le contrôle les nomme toutes les deux.
+  
+  Une garde CSS ne peut pas lire une position calculée. Ce contrôle le peut, parce qu'il lit les deux sources à la fois : c'est pourquoi `contexteDepot` collecte désormais aussi les feuilles de style de `src/` (`ctx.styles`, `ctx.cssText`).
+  
+  **`sticky` n'est pas visé, et c'est délibéré.** Une barre collante reste dans le flux : elle réserve sa propre hauteur, et le dégagement du socle la compterait une seconde fois. `miss-genius` est dans ce cas ; la première écriture du contrôle le flaguait à tort, et lui conseiller `placement="fixed"` aurait changé sa mise en page au lieu de la réparer.
+- 23846df: `placement="fixed"` sur `UpdatePromptBanner` et `ConsentBanner` : la place, enfin demandable.
+  
+  **Le bandeau de mise à jour.** Le socle le plaçait déjà, mais seulement sous `:root:has([data-dwc='bottom-nav'][data-placement='fixed'])` : il fallait une barre basse, du socle, **et** déclarée. Relevé du 16/09/2026 : cinq apps sur vingt remplissaient cette condition. Les autres recevaient une boîte habillée **posée dans le flux**, en fin de document — et six ont réécrit le placement à la main (miss-badminton, miss-carbook, miss-contraction, miss-dice sous un `className`, mister-miss-koh, mister-molkky), avec des `z-index` allant de 25 à 9999.
+  
+  **Le bandeau de consentement n'avait, lui, aucune position du tout.** `position: static`, donc en fin de flux, là où les apps le montent — c'est-à-dire sous le pied de page. Mesuré en production sur `mister-cim10`, en 375 × 812 : boîte de 753 à 891 px pour une fenêtre de 812, recouverte par la barre basse dont le bord haut est à 756. Le bandeau qui **demande** le consentement était sous la ligne de flottaison et derrière la navigation.
+  
+  La prop dit la même chose que celle de `BottomNav`, et le même mot. Elle ne dépend d'aucune barre — c'était tout le problème — mais elle en tient compte s'il y en a une, le plancher venant de `--_dwc-bottom-clearance`.
+  
+  **Pas de mode « en haut », et c'est le corpus qui l'a tranché** : les six placements maison relevés collent le bandeau en bas, sans exception. Seul `miss-dice` place son bandeau de consentement en haut, dans sa propre feuille — son CSS n'étant pas « layered », il garde la main.
+  
+  **La question passe devant.** Les deux bandeaux visent le même bas d'écran. Un empilement demanderait la hauteur de celui du dessous, que CSS ne connaît pas : tout décalage serait un nombre magique, faux dès que le message passe à la ligne. La précédence, elle, est exacte, et c'est déjà l'idiome du composant — `update-prompt-banner.js` fait taire le « prêt hors ligne » dès qu'une version attend. Même raisonnement d'un cran au-dessus : le consentement est transient par construction, le bandeau de mise à jour revient à la vérification suivante.
+  
+  **`box-sizing: border-box` sur les surfaces flottantes.** Le socle ne posait aucun `box-sizing`, comptant sur le préréglage de l'app. Sur une page qui n'en a pas, `width` s'ajoute au `padding`, les trois côtés posés se sur-contraignent, `margin-inline: auto` rend un `-10px` et le bandeau sort de l'écran — mesuré sur un banc d'essai sans préréglage. Sous un préréglage, la ligne ne change rien.
+
+### Patch Changes
+
+- 767a389: `bottom-nav-muette` ne se déclenche que si l'app charge la feuille du socle.
+  
+  Première écriture du contrôle, quelques heures plus tôt : il flaguait `miss-contraction`, qui n'importe **aucune** feuille du socle. Là-bas il n'y a pas de dégagement à zéro — il n'y a pas de dégagement du tout. L'app place sa barre et ses bandeaux elle-même, de bout en bout, et `placement="fixed"` n'y aurait rien réparé : il aurait posé l'attribut sans qu'aucune règle ne le lise.
+  
+  Un contrôle dont le conseil ne s'applique pas est pire qu'un contrôle absent : il fait écrire une prop pour éteindre un voyant.
+  
+  La condition est désormais celle qui rend le défaut réel — `components.css` ou `components/bottom-nav.css` importé, puisque c'est ce morceau qui porte `--_dwc-bottom-clearance`. Sur les dix-neuf apps du parc, le contrôle ne nomme plus que `mister-cim10`, où il est exact et mesuré.
+  
+  Les cinq cas de silence du test portent tous la feuille du socle désormais : sans elle, ils passaient pour la mauvaise raison.
+
 ## 4.18.0
 
 ### Minor Changes
