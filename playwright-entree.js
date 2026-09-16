@@ -42,6 +42,19 @@ const BANDEAU = '[data-dwc="consent-banner"]';
 const ACCEPTER = '[data-dwc="consent-accept"]';
 
 /**
+ * Les hôtes de Google, ANCRÉS.
+ *
+ * `/googletagmanager\.com|google-analytics\.com/` paraît suffisant et ne l'est
+ * pas : sans ancre, il reconnaît aussi `https://evil-googletagmanager.com.
+ * attaquant.net/…`. Ici la conséquence serait bénigne — on bloquerait trop —
+ * mais une regex d'URL non ancrée est un défaut qui se recopie, et CodeQL a
+ * raison de le refuser. On ancre donc sur le schéma, l'hôte entier, et la barre
+ * qui le termine.
+ */
+const HOTES_GOOGLE =
+  /^https?:\/\/([a-z0-9-]+\.)*(googletagmanager|google-analytics)\.com\//u;
+
+/**
  * Coupe tout trafic vers Google. La garde lit `window.dataLayer`, que `gtag`
  * remplit AVANT que le script distant soit chargé : bloquer ne cache donc rien
  * et rend la vérification déterministe, sans dépendre du réseau en CI.
@@ -49,10 +62,13 @@ const ACCEPTER = '[data-dwc="consent-accept"]';
  * @param {any} page Page Playwright.
  */
 export async function bloqueGoogle(page) {
-  await page.route(/googletagmanager\.com|google-analytics\.com/u, route =>
+  await page.route(HOTES_GOOGLE, route =>
     route.fulfill({ status: 204, body: '' })
   );
 }
+
+/** Exposé pour être éprouvé : une regex d'URL se vérifie, elle ne se relit pas. */
+export { HOTES_GOOGLE };
 
 /**
  * Les vues de page présentes dans `dataLayer`, quelle que soit la forme.

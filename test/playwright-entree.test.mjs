@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import {
   bloqueGoogle,
   expectEcranEntreeCable,
+  HOTES_GOOGLE,
   litServiceWorkers,
   litVuesDePage,
 } from '../playwright-entree.js';
@@ -112,12 +113,32 @@ test('les service workers sont comptés', async () => {
   assert.equal(await litServiceWorkers(faussePage({ serviceWorkers: 0 })), 0);
 });
 
-test('bloqueGoogle intercepte les deux domaines', async () => {
+test('bloqueGoogle pose bien une route', async () => {
   const page = faussePage();
   await bloqueGoogle(page);
   const motif = page.journal.find(l => l.startsWith('route'));
   assert.match(motif, /googletagmanager/u);
   assert.match(motif, /google-analytics/u);
+});
+
+test('le motif d’hôtes est ANCRÉ, et ne se laisse pas imiter', () => {
+  for (const url of [
+    'https://www.googletagmanager.com/gtag/js?id=G-ABC1234567',
+    'http://google-analytics.com/g/collect',
+    'https://region1.google-analytics.com/g/collect?v=2',
+  ]) {
+    assert.ok(HOTES_GOOGLE.test(url), `devrait reconnaître ${url}`);
+  }
+  // Sans ancre, les trois premières passaient : c'est exactement le défaut que
+  // CodeQL a refusé.
+  for (const url of [
+    'https://evil-googletagmanager.com.attaquant.net/x',
+    'https://attaquant.net/?u=https://www.googletagmanager.com/gtag/js',
+    'https://googletagmanager.com.attaquant.net/',
+    'https://notgoogle-analytics.com/g/collect',
+  ]) {
+    assert.ok(!HOTES_GOOGLE.test(url), `ne devrait PAS reconnaître ${url}`);
+  }
 });
 
 test('vérifier la vue sans le consentement est refusé', async () => {
