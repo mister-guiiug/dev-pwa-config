@@ -401,6 +401,7 @@ export const MORCEAUX_CSS = {
   SyncStatusBadge: 'sync-status-badge',
   'PwaInstallPrompt & UpdatePromptBanner': 'install-prompt',
   ConsentBanner: 'consent-banner',
+  PrivacyNotice: 'privacy-notice',
   'AppFooter & FamilyApps': 'app-footer',
   Button: 'button',
   Field: 'field',

@@ -124,6 +124,28 @@ const labels = {
     stateDenied: 'Audience measurement: declined',
     manage: 'Change my choice',
   },
+  privacy: {
+    title: 'Audience measurement',
+    what: 'What is measured',
+    whatText:
+      'The pages you visit and how you move between them, through Google Analytics. Never what you type into the application.',
+    basis: 'On what grounds',
+    basisText:
+      'Your consent, and nothing else. You can withdraw it at any time, as easily as you gave it.',
+    recipient: 'Who receives it',
+    recipientText:
+      'Google, which processes it on behalf of this application’s publisher.',
+    retention: 'For how long',
+    retentionText: 'Detailed data is kept for {months} months, then deleted.',
+    stored: 'What is stored on your device',
+    storedText:
+      'A cookie from Google, and your choice, kept in this browser so the question is not asked again on every visit.',
+    controller: 'Data controller',
+    rights: 'Your rights',
+    rightsText:
+      'Access, rectification, erasure, objection: write to {contact}.',
+    missing: '[To complete]',
+  },
 };
 
 export default labels;

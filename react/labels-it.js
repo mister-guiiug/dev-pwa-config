@@ -125,6 +125,29 @@ const labels = {
     stateDenied: 'Misurazione del pubblico: rifiutata',
     manage: 'Modifica la mia scelta',
   },
+  privacy: {
+    title: 'Misurazione del pubblico',
+    what: 'Che cosa viene misurato',
+    whatText:
+      'Le pagine che consulta e come si sposta tra di esse, tramite Google Analytics. Mai ciò che digita nell’applicazione.',
+    basis: 'A quale titolo',
+    basisText:
+      'Il suo consenso, e null’altro. Può revocarlo in qualsiasi momento, con la stessa facilità con cui l’ha dato.',
+    recipient: 'Chi li riceve',
+    recipientText:
+      'Google, che li tratta per conto dell’editore di questa applicazione.',
+    retention: 'Per quanto tempo',
+    retentionText:
+      'I dati dettagliati sono conservati {months} mesi, poi cancellati.',
+    stored: 'Che cosa viene salvato sul suo dispositivo',
+    storedText:
+      'Un cookie di Google e la sua scelta, conservata in questo browser per non riproporre la domanda a ogni visita.',
+    controller: 'Titolare del trattamento',
+    rights: 'I suoi diritti',
+    rightsText:
+      'Accesso, rettifica, cancellazione, opposizione: scriva a {contact}.',
+    missing: '[Da completare]',
+  },
 };
 
 export default labels;

@@ -341,10 +341,28 @@ export function useConsentChoice(options = {}) {
 }
 
 /**
+ * `policy` — L'INFORMATION SUR PLACE, POUR LES APPS QUI N'ONT PAS D'URL.
+ *
+ * `policyHref` suppose une page ; le parc n'en a pas. Relevé du 16/09/2026 :
+ * trois apps n'ont AUCUN routeur (`miss-dice`, `miss-ticket-pwa`,
+ * `mister-puzzle`) et `mister-doc`, la seule à avoir écrit une politique, l'a
+ * faite en dialogue — « il n'y a pas d'URL à mettre dans un lien », dit son
+ * commentaire. Résultat : zéro app sur dix-huit passait `policyHref`, et le
+ * bandeau demandait un accord sans qu'aucun texte ne dise à quoi.
+ *
+ * `policy` accepte donc un nœud — `PrivacyNotice` en général — déplié sur
+ * place. **Ce n'est PAS la « gestion des préférences » que la décision 3
+ * écarte** : ce repli n'offre aucun choix, il informe. Aucune décision ne se
+ * prend derrière, et refuser reste à un clic, au même niveau qu'accepter.
+ *
+ * Les deux coexistent : `policyHref` pour qui a une vraie page, `policy` pour
+ * qui n'en a pas. Fournir les deux affiche le lien ET le repli.
+ *
  * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
  *   scope?: string, policyHref?: string, className?: string,
  *   placement?: 'static'|'fixed',
  *   title?: import('react').ReactNode, message?: import('react').ReactNode,
+ *   policy?: import('react').ReactNode,
  *   acceptLabel?: string, refuseLabel?: string, policyLabel?: string }} props
  */
 export function ConsentBanner(props) {
@@ -359,6 +377,7 @@ export function ConsentBanner(props) {
     placement,
     title,
     message,
+    policy,
     acceptLabel,
     refuseLabel,
     policyLabel,
@@ -408,7 +427,21 @@ export function ConsentBanner(props) {
             policyLabel ?? labels.policy
           )
         : null
-    )
+    ),
+    // Après les actions, jamais avant : le repli ne doit pas s'interposer
+    // entre la question et les deux boutons qui y répondent.
+    policy
+      ? h(
+          'details',
+          { 'data-dwc': 'consent-policy-details' },
+          h(
+            'summary',
+            { 'data-dwc': 'consent-policy-summary' },
+            policyLabel ?? labels.policy
+          ),
+          policy
+        )
+      : null
   );
 }
 
