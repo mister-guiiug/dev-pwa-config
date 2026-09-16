@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.21.1
+
+### Patch Changes
+
+- `playwright-entree` : le motif d'hôtes Google est ANCRÉ.
+  
+  CodeQL a refusé `/googletagmanager\.com|google-analytics\.com/` — sans ancre, il reconnaît aussi `https://evil-googletagmanager.com.attaquant.net/…`.
+  
+  La conséquence serait bénigne ici, la garde ne faisant que BLOQUER : au pire elle bloquerait trop. Mais une regex d'URL non ancrée est un défaut qui se recopie, et il ne sera pas bénin au prochain endroit. Le motif est désormais ancré sur le schéma, l'hôte entier et la barre qui le termine, et **exporté pour être éprouvé** : sept URL, trois qui doivent être reconnues — dont `region1.google-analytics.com`, l'hôte réel de la collecte GA4 — et quatre imitations qui ne doivent pas l'être. Une regex d'URL se vérifie, elle ne se relit pas.
+  
+  La 4.21.0 n'a jamais été publiée : son contenu est vrai, il est livré par celle-ci.
+
 ## 4.21.0
 
 ### Minor Changes
