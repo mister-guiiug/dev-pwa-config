@@ -889,11 +889,19 @@ test('les deux sorties ne disent pas la même chose', async () => {
 test('sans report à offrir, « both » ne double pas l’écartement', async () => {
   // `snoozeHours` à 0 : il n'y a rien à reporter. Deux boutons qui écartent
   // tous deux pour la session ne diraient rien de plus que le seul d'« auto ».
+  //
+  // ÉCRIT EXPLICITEMENT depuis le 16/09/2026 : le défaut du parc vaut 4 h, et
+  // ce test porte sur le cas CONTRAIRE. L'omettre le rendait muet sur ce qu'il
+  // prétend garder.
   const env = setupSw();
   try {
     const { state, registerSW } = fakeRegisterSW();
     const view = await mount(
-      h(UpdatePromptBanner, { registerSW, secondaryActions: 'both' })
+      h(UpdatePromptBanner, {
+        registerSW,
+        snoozeHours: 0,
+        secondaryActions: 'both',
+      })
     );
     await view.act(() => state.needRefresh());
 
@@ -934,7 +942,12 @@ test('le report dit sa durée, l’écartement non', async () => {
   // annonçait la durée, en passant son propre libellé.
   const cas = [
     { props: { snoozeHours: 6 }, attendu: 'Plus tard (6 h)' },
-    { props: {}, attendu: 'Plus tard' },
+    // LE DÉFAUT DU PARC, depuis le 16/09/2026 : quatre heures, annoncées.
+    // Seize apps sur vingt étaient à zéro faute d'avoir écrit la prop, et leur
+    // « Plus tard » ne durait que la session.
+    { props: {}, attendu: 'Plus tard (4 h)' },
+    // Zéro reste demandable, et dit alors autre chose.
+    { props: { snoozeHours: 0 }, attendu: 'Plus tard' },
     // Un libellé de l'app passe par le même remplissage…
     {
       props: { snoozeHours: 24, snoozeLabel: 'Me le rappeler dans {hours} h' },

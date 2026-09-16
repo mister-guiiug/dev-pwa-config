@@ -1,5 +1,5 @@
 import { createElement as h, useState } from 'react';
-import { useUpdatePrompt } from './use-update-prompt.js';
+import { DEFAULT_SNOOZE_HOURS, useUpdatePrompt } from './use-update-prompt.js';
 import { useLabels } from './labels-core.js';
 import { useAppUpdates, useUpdateCheck } from './app-updates.js';
 
@@ -58,7 +58,7 @@ import { useAppUpdates, useUpdateCheck } from './app-updates.js';
  */
 function Banner(props) {
   const {
-    snoozeHours = 0,
+    snoozeHours = DEFAULT_SNOOZE_HOURS,
     secondaryActions = 'auto',
     showOfflineReady = false,
     placement,
@@ -207,7 +207,7 @@ function Banner(props) {
 function StandaloneBanner(props) {
   const state = useUpdatePrompt({
     registerSW: props.registerSW,
-    snoozeHours: props.snoozeHours ?? 0,
+    snoozeHours: props.snoozeHours ?? DEFAULT_SNOOZE_HOURS,
     snoozeKey: props.snoozeKey,
     updateOptions: props.updateOptions,
     onRegisterError: props.onRegisterError,

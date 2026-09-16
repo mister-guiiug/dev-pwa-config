@@ -5,7 +5,7 @@ import {
   initAnalytics,
   setAnalyticsConsent,
 } from '../analytics.js';
-import { readRaw, removeKey, writeRaw } from '../storage.js';
+import { appScopedKey, readRaw, removeKey, writeRaw } from '../storage.js';
 
 /**
  * Le bandeau qui DEMANDE le consentement — la pièce qui manquait à `analytics`.
@@ -65,41 +65,109 @@ export const CONSENT_KEY = 'dwc_consent';
 /**
  * LA CLÉ PORTE L'APPLICATION, ET C'EST UNE NÉCESSITÉ, PAS UN CONFORT.
  *
- * `localStorage` est cloisonné par ORIGINE. Les vingt sites de la famille sont
- * servis sous `https://<compte>.github.io/<dépôt>/` : une seule origine pour
- * tous. Une clé nue y est donc COMMUNE. Mesuré en navigateur le 15/09/2026 :
- * accepter sur une app faisait disparaître le bandeau de la suivante, qui
- * chargeait son propre tag sans avoir rien demandé. Un consentement donné à un
- * service en valait dix-huit autres — ce que le RGPD n'admet pas.
+ * Mesuré en navigateur le 15/09/2026 : accepter sur une app faisait disparaître
+ * le bandeau de la suivante, qui chargeait son propre tag sans avoir rien
+ * demandé. Un consentement donné à un service en valait dix-huit autres — ce
+ * que le RGPD n'admet pas.
  *
- * `import.meta.env.BASE_URL` vaut `/<dépôt>/` dans le build de chaque app, et
- * `/` en développement — où le cloisonnement vient déjà du port. Vérifié dans
- * un build réel : Vite remplace bien la valeur À L'INTÉRIEUR du code du socle
- * livré depuis `node_modules`, forme optionnelle comprise.
- *
- * `scope` explicite l'emporte : c'est ce qui rend le comportement testable, et
- * ce qui permet à deux apps de PARTAGER délibérément un choix si elles le
- * décident un jour.
+ * Le calcul lui-même vit dans `storage.appScopedKey` depuis le 16/09/2026 : le
+ * bandeau de mise à jour avait exactement le même besoin, et exactement le même
+ * défaut. Deux écritures du même geste, dont une seule était juste.
  *
  * @param {string} [scope] Portée explicite ; sinon le chemin de base de l'app.
  */
 export function consentKey(scope) {
-  const base =
-    scope ??
-    ((typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/');
-  return base && base !== '/' ? `${CONSENT_KEY}:${base}` : CONSENT_KEY;
+  return appScopedKey(CONSENT_KEY, scope);
+}
+
+/**
+ * LE CHOIX PORTE SA DATE — ET, SI L'APP LE DEMANDE, SA VERSION DE FINALITÉS.
+ *
+ * Le stockage ne contenait que `granted` ou `denied`. Un accord donné en 2026
+ * valait donc indéfiniment, et si une finalité s'ajoutait un jour, rien ne
+ * permettait de reposer la question : on ne pouvait pas distinguer « il a dit
+ * oui à CE qu'on mesure aujourd'hui » de « il a dit oui à autre chose ».
+ *
+ * FORME : `choix`, `choix;date`, ou `choix;date;version`. Les trois se lisent,
+ * et la PREMIÈRE est l'ancienne — un choix mémorisé avant cette version reste
+ * valide et n'a pas à être redemandé. Une forme à séparateur plutôt que du JSON
+ * pour que la valeur reste lisible à l'œil dans l'inspecteur, comme elle l'a
+ * toujours été.
+ *
+ * @returns {{ choice: 'granted'|'denied', at: number|null,
+ *   version: number|null } | null}
+ */
+export function readConsentRecord(scope) {
+  const brut = readRaw(consentKey(scope));
+  if (typeof brut !== 'string' || brut === '') return null;
+  const [choice, date, version] = brut.split(';');
+  if (choice !== 'granted' && choice !== 'denied') return null;
+  const at = Number(date);
+  const v = Number(version);
+  return {
+    choice,
+    at: Number.isFinite(at) && at > 0 ? at : null,
+    version: Number.isFinite(v) ? v : null,
+  };
 }
 
 /** @returns {'granted'|'denied'|null} Le choix mémorisé, s'il y en a un. */
 export function readConsentChoice(scope) {
-  const value = readRaw(consentKey(scope));
-  return value === 'granted' || value === 'denied' ? value : null;
+  return readConsentRecord(scope)?.choice ?? null;
 }
 
-/** Mémorise un choix. @param {'granted'|'denied'} choice */
-export function writeConsentChoice(choice, scope) {
+/**
+ * Mémorise un choix, daté.
+ *
+ * @param {'granted'|'denied'} choice
+ * @param {string} [scope]
+ * @param {{ version?: number, at?: number }} [options]
+ */
+export function writeConsentChoice(choice, scope, options = {}) {
   if (choice !== 'granted' && choice !== 'denied') return false;
-  return writeRaw(consentKey(scope), choice);
+  const at = Number.isFinite(options.at) ? options.at : Date.now();
+  const version = Number.isFinite(options.version) ? options.version : null;
+  const valeur =
+    version === null ? `${choice};${at}` : `${choice};${at};${version}`;
+  return writeRaw(consentKey(scope), valeur);
+}
+
+/**
+ * LA FRAÎCHEUR D'UN CHOIX — la règle, isolée pour être éprouvable seule.
+ *
+ * TREIZE MOIS PAR DÉFAUT. C'est la durée de vie maximale que la CNIL admet pour
+ * un traceur : passé ce délai, l'accord d'hier ne couvre plus rien, et le
+ * conserver reviendrait à mesurer sans base. Le REFUS expire au même âge —
+ * jamais avant : « un refus qu'on redemande à chaque visite n'est pas un refus,
+ * c'est du harcèlement », et treize mois n'est pas « à chaque visite ».
+ *
+ * UN CHOIX SANS DATE N'EST PAS PÉRIMÉ. Les choix mémorisés avant cette version
+ * n'en portent pas ; les compter comme expirés ferait reparaître le bandeau
+ * chez tout le monde le jour de la montée, pour une raison que l'utilisateur
+ * n'a pas vécue. Le hook les RE-DATE d'aujourd'hui : l'horloge part de la
+ * montée, pas du néant.
+ *
+ * @param {{ at: number|null, version: number|null } | null} record
+ * @param {{ maxAgeDays?: number, purposeVersion?: number }} regles
+ */
+export function consentPerime(record, regles = {}) {
+  if (!record) return false;
+  const { maxAgeDays = 395, purposeVersion } = regles;
+
+  // Les finalités ont changé : l'accord d'hier ne porte pas sur ce qu'on
+  // mesure aujourd'hui. Un choix sans version répond à une app qui n'en
+  // demandait pas — il n'y a rien à comparer.
+  if (
+    Number.isFinite(purposeVersion) &&
+    record.version !== null &&
+    record.version !== purposeVersion
+  )
+    return true;
+  if (Number.isFinite(purposeVersion) && record.version === null) return true;
+
+  if (!Number.isFinite(maxAgeDays) || maxAgeDays <= 0) return false;
+  if (record.at === null) return false;
+  return Date.now() - record.at > maxAgeDays * 86_400_000;
 }
 
 /**
@@ -148,9 +216,28 @@ function diffuser(cle, choix) {
   for (const abonne of abonnes) abonne(cle, choix);
 }
 
+/**
+ * Le choix retenu APRÈS la règle de fraîcheur — sans rien écrire.
+ *
+ * L'initialiseur de `useState` s'exécute PENDANT le rendu, et React 19 le joue
+ * deux fois en mode strict : l'entretien du stockage (oublier un choix périmé,
+ * re-dater un choix sans date) n'a rien à y faire. Il est fait dans l'effet,
+ * une fois.
+ */
+function choixFrais(scope, maxAgeDays, purposeVersion) {
+  const record = readConsentRecord(scope);
+  if (!record) return null;
+  return consentPerime(record, { maxAgeDays, purposeVersion })
+    ? null
+    : record.choice;
+}
+
 export function useConsentChoice(options = {}) {
-  const { gaMeasurementId, gtmContainerId, scope } = options;
-  const [choice, setChoice] = useState(() => readConsentChoice(scope));
+  const { gaMeasurementId, gtmContainerId, scope, maxAgeDays, purposeVersion } =
+    options;
+  const [choice, setChoice] = useState(() =>
+    choixFrais(scope, maxAgeDays, purposeVersion)
+  );
   const [configured, setConfigured] = useState(false);
 
   useEffect(() => {
@@ -163,6 +250,25 @@ export function useConsentChoice(options = {}) {
       abonnes.delete(ecouter);
     };
   }, [scope]);
+
+  // L'ENTRETIEN DU STOCKAGE, une fois, hors du rendu.
+  useEffect(() => {
+    const record = readConsentRecord(scope);
+    if (!record) return;
+    if (consentPerime(record, { maxAgeDays, purposeVersion })) {
+      // Périmé : on oublie, et le bandeau repose la question. Pas de
+      // `setAnalyticsConsent` ici — le tag n'a pas été rejoué, donc il n'y a
+      // rien à couper ; `initAnalytics` part de `denied`.
+      clearConsentChoice(scope);
+      setChoice(null);
+      return;
+    }
+    // Un choix d'avant cette version n'a pas de date. Le re-dater
+    // d'aujourd'hui fait partir l'horloge de la montée : sans ça, soit il
+    // n'expire jamais, soit il expire pour tout le monde le même jour.
+    if (record.at === null)
+      writeConsentChoice(record.choice, scope, { version: purposeVersion });
+  }, [scope, maxAgeDays, purposeVersion]);
 
   useEffect(() => {
     // SI L'APPLICATION A DÉJÀ APPELÉ `initAnalytics`, ON NE LE REFAIT PAS.
@@ -177,18 +283,22 @@ export function useConsentChoice(options = {}) {
     // Le choix d'hier, rejoué : sans ça le tag n'est jamais injecté, quel que
     // soit ce que l'utilisateur a accepté la dernière fois. Un refus, lui, n'a
     // rien à rejouer — `initAnalytics` part déjà de `denied`.
-    if (readConsentChoice(scope) === 'granted')
+    //
+    // `choixFrais` et non `readConsentChoice` : un accord PÉRIMÉ ne doit pas
+    // rouvrir la collecte. C'est toute la différence entre dater un choix et
+    // le faire compter.
+    if (choixFrais(scope, maxAgeDays, purposeVersion) === 'granted')
       setAnalyticsConsent({ analytics: true });
-  }, [gaMeasurementId, gtmContainerId, scope]);
+  }, [gaMeasurementId, gtmContainerId, scope, maxAgeDays, purposeVersion]);
 
   const decide = useCallback(
     next => {
-      writeConsentChoice(next, scope);
+      writeConsentChoice(next, scope, { version: purposeVersion });
       setChoice(next);
       diffuser(consentKey(scope), next);
       setAnalyticsConsent(next === 'granted' ? { analytics: true } : 'denied');
     },
-    [scope]
+    [scope, purposeVersion]
   );
 
   const accept = useCallback(() => decide('granted'), [decide]);
@@ -242,6 +352,8 @@ export function ConsentBanner(props) {
     gaMeasurementId,
     gtmContainerId,
     scope,
+    maxAgeDays,
+    purposeVersion,
     policyHref,
     className,
     placement,
@@ -257,6 +369,8 @@ export function ConsentBanner(props) {
     gaMeasurementId,
     gtmContainerId,
     scope,
+    maxAgeDays,
+    purposeVersion,
   });
 
   if (!needed) return null;
@@ -341,6 +455,8 @@ export function ConsentSettings(props = {}) {
     gaMeasurementId,
     gtmContainerId,
     scope,
+    maxAgeDays,
+    purposeVersion,
     className,
     stateLabel,
     actionLabel,
@@ -351,6 +467,8 @@ export function ConsentSettings(props = {}) {
     gaMeasurementId,
     gtmContainerId,
     scope,
+    maxAgeDays,
+    purposeVersion,
   });
 
   if (!configured || choice === null) return null;

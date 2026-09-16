@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { applyUpdate } from '../sw-update.js';
+import { appScopedKey } from '../storage.js';
 
 /**
  * Mise à jour du service worker : état du bandeau, report, application.
@@ -119,6 +120,51 @@ function connect(registerSW, handlers) {
   return connection;
 }
 
+/** La clé nue du report, au format du parc. */
+export const SNOOZE_KEY = 'dwc_sw_update_snoozed_until';
+
+/**
+ * QUATRE HEURES PAR DÉFAUT, ET PLUS ZÉRO.
+ *
+ * À zéro, le second bouton n'écarte que pour la SESSION : le bandeau revient au
+ * rechargement suivant. Relevé du 16/09/2026 : seize apps sur vingt étaient
+ * dans ce cas, faute d'avoir écrit la prop — aucune ne l'avait choisi, et le
+ * libellé « Plus tard » promettait pourtant une durée.
+ *
+ * Quatre heures est la plus COURTE des quatre valeurs déjà en service
+ * (miss-supatool ; les trois autres tiennent 6 ou 24 h) : celle qui honore la
+ * promesse du bouton sans jamais retarder une version d'une journée entière.
+ * `snoozeHours={0}` reste disponible pour qui veut l'écartement de session.
+ *
+ * UNE SEULE CONSTANTE POUR QUATRE ENDROITS. Le hook, le fournisseur, le bandeau
+ * autonome et le bandeau lui-même portaient chacun leur `= 0`. Le libellé du
+ * bouton se calcule dans le dernier, le report dans le premier : deux défauts
+ * qui divergent, et le bouton annonce une durée que personne n'applique.
+ */
+export const DEFAULT_SNOOZE_HOURS = 4;
+
+/**
+ * LE REPORT D'UNE APP FAISAIT TAIRE CELUI DES AUTRES.
+ *
+ * `snoozeKey` valait `'dwc_sw_update_snoozed_until'`, une clé NUE. Les vingt
+ * sites de la famille partagent l'origine `<compte>.github.io` : reporter sur
+ * mister-puzzle — qui reporte 24 h — silenciait donc aussi miss-supaboss,
+ * miss-supatool et mister-family-map, les trois autres apps à report du parc.
+ * Relevé du 16/09/2026 : aucune des quatre ne passe de `snoozeKey`, elles
+ * lisent toutes celle-ci.
+ *
+ * C'est le MÊME défaut que celui du consentement, corrigé en 4.17.1 sur l'autre
+ * clé, et il a survécu sur celle-ci faute d'avoir cherché ses semblables.
+ *
+ * AUCUNE REPRISE DE L'ANCIENNE CLÉ, ET C'EST DÉLIBÉRÉ. La valeur qui s'y trouve
+ * peut être le report d'une AUTRE app : la recopier perpétuerait la fuite qu'on
+ * ferme. Le coût du refus est qu'un report en cours est oublié une fois — le
+ * bandeau reparaît une visite plus tôt, et rien d'autre.
+ */
+export function snoozeKeyFor(scope) {
+  return appScopedKey(SNOOZE_KEY, scope);
+}
+
 function readSnooze(key) {
   try {
     const value = globalThis.localStorage?.getItem(key);
@@ -151,8 +197,8 @@ function writeSnooze(key, until) {
 export function useUpdatePrompt(options = {}) {
   const {
     registerSW,
-    snoozeHours = 0,
-    snoozeKey = 'dwc_sw_update_snoozed_until',
+    snoozeHours = DEFAULT_SNOOZE_HOURS,
+    snoozeKey = snoozeKeyFor(),
     updateOptions,
     onRegisterError,
     onRegisteredSW,

@@ -4,7 +4,7 @@ import {
   useContext,
   useEffect,
 } from 'react';
-import { useUpdatePrompt } from './use-update-prompt.js';
+import { DEFAULT_SNOOZE_HOURS, useUpdatePrompt } from './use-update-prompt.js';
 import { UpdatePromptBanner } from './update-prompt-banner.js';
 
 /**
@@ -88,7 +88,7 @@ export function useUpdateCheck(checkEvery) {
 export function AppUpdates(props = {}) {
   const {
     registerSW,
-    snoozeHours = 0,
+    snoozeHours = DEFAULT_SNOOZE_HOURS,
     snoozeKey,
     checkEvery,
     banner = true,

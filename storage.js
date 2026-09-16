@@ -148,6 +148,38 @@ export function listKeys(kind = 'local') {
 }
 
 /**
+ * UNE CLÉ QUI PORTE SON APPLICATION — le geste, écrit une fois.
+ *
+ * `localStorage` est cloisonné par ORIGINE. Les vingt sites de la famille sont
+ * servis sous `https://<compte>.github.io/<dépôt>/` : une seule origine pour
+ * tous, donc une clé nue y est COMMUNE. C'est le défaut qui a fait disparaître
+ * le bandeau de consentement d'une app parce qu'on avait accepté sur une autre
+ * (mesuré le 15/09/2026), puis celui qui fait taire le bandeau de mise à jour
+ * de quatre apps quand une seule reporte (relevé du 16/09/2026).
+ *
+ * Deux modules écrivaient ce calcul chacun de leur côté — l'un bien, l'autre
+ * pas du tout. Il vit ici, et les deux l'appellent.
+ *
+ * `import.meta.env.BASE_URL` vaut `/<dépôt>/` dans le build de chaque app, et
+ * `/` en développement — où le cloisonnement vient déjà du port. Vérifié dans
+ * un build réel : Vite remplace bien la valeur À L'INTÉRIEUR du code du socle
+ * livré depuis `node_modules`, forme optionnelle comprise.
+ *
+ * `scope` explicite l'emporte : c'est ce qui rend le comportement testable, et
+ * ce qui permet à deux apps de PARTAGER délibérément une clé si elles le
+ * décident un jour.
+ *
+ * @param {string} prefix La clé nue, au format du parc (`dwc_*`).
+ * @param {string} [scope] Portée explicite ; sinon le chemin de base de l'app.
+ */
+export function appScopedKey(prefix, scope) {
+  const base =
+    scope ??
+    ((typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/');
+  return base && base !== '/' ? `${prefix}:${base}` : prefix;
+}
+
+/**
  * Un magasin dont toutes les clés portent le même préfixe.
  *
  * POURQUOI LE PRÉFIXE COMPTE. Les seize apps sont servies depuis le MÊME

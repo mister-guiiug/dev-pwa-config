@@ -1,5 +1,20 @@
 import type { ApplyUpdateOptions, ApplyUpdateResult } from '../sw-update.js';
 
+/** La clé nue du report, au format du parc. */
+export declare const SNOOZE_KEY: string;
+
+/**
+ * Quatre heures : le report par défaut du parc depuis le 16/09/2026. À zéro, le
+ * second bouton n'écarte que pour la session.
+ */
+export declare const DEFAULT_SNOOZE_HOURS: number;
+
+/**
+ * La clé du report, cloisonnée par application. Une clé nue faisait taire le
+ * bandeau des vingt sites dès qu'un seul reportait.
+ */
+export declare function snoozeKeyFor(scope?: string): string;
+
 /** Signature de `registerSW`, exportée par `virtual:pwa-register`. */
 export type RegisterSW = (options?: {
   immediate?: boolean;
