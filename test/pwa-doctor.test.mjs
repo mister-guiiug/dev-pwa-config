@@ -1046,7 +1046,38 @@ test('une barre basse collée par le CSS de l’app, sans le dire, est un DÉFAU
     {
       'package.json': { name: 'miss-x' },
       'src/App.tsx': '<BottomNav items={items} />',
+      'src/styles.css':
+        "@import '@mister-guiiug/dev-pwa-config/components.css';\n.bottom-nav { position: fixed; bottom: 0; }",
+    },
+    root => {
+      assert.ok(ids(diagnose(root), 'défaut').includes('bottom-nav-muette'));
+    }
+  );
+
+  // SANS FEUILLE DU SOCLE, LE CONSEIL NE S'APPLIQUE PAS. Il n'y a alors pas de
+  // dégagement à zéro : il n'y en a pas du tout. L'app place sa barre et ses
+  // bandeaux elle-même, de bout en bout — c'est miss-contraction, que la
+  // première écriture de ce contrôle flaguait à tort le 16/09/2026. Un contrôle
+  // dont le conseil ne s'applique pas fait écrire une prop pour éteindre un
+  // voyant.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx': '<BottomNav items={items} />',
       'src/styles.css': '.bottom-nav { position: fixed; bottom: 0; }',
+    },
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
+    }
+  );
+
+  // Le morceau seul suffit : c'est lui qui porte `--_dwc-bottom-clearance`.
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/App.tsx': '<BottomNav items={items} />',
+      'src/styles.css':
+        "@import '@mister-guiiug/dev-pwa-config/components/bottom-nav.css';\n.bottom-nav { position: fixed; }",
     },
     root => {
       assert.ok(ids(diagnose(root), 'défaut').includes('bottom-nav-muette'));
@@ -1060,7 +1091,8 @@ test('une barre basse collée par le CSS de l’app, sans le dire, est un DÉFAU
     {
       'package.json': { name: 'miss-x' },
       'src/App.tsx': '<BottomNav placement="fixed" items={items} />',
-      'src/styles.css': '.bottom-nav { position: fixed; bottom: 0; }',
+      'src/styles.css': `@import '@mister-guiiug/dev-pwa-config/components.css';
+.bottom-nav { position: fixed; bottom: 0; }`,
     },
     root => {
       assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
@@ -1073,7 +1105,8 @@ test('une barre basse collée par le CSS de l’app, sans le dire, est un DÉFAU
     {
       'package.json': { name: 'miss-x' },
       'src/App.tsx': '<BottomNav items={items} />',
-      'src/styles.css': '.bottom-nav { display: flex; }',
+      'src/styles.css': `@import '@mister-guiiug/dev-pwa-config/components.css';
+.bottom-nav { display: flex; }`,
     },
     root => {
       assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
@@ -1088,8 +1121,8 @@ test('une barre basse collée par le CSS de l’app, sans le dire, est un DÉFAU
     {
       'package.json': { name: 'miss-x' },
       'src/App.tsx': '<BottomNav items={items} />',
-      'src/styles.css':
-        "[data-dwc='bottom-nav'] { position: sticky; bottom: 0; z-index: 30; }",
+      'src/styles.css': `@import '@mister-guiiug/dev-pwa-config/components.css';
+[data-dwc='bottom-nav'] { position: sticky; bottom: 0; z-index: 30; }`,
     },
     root => {
       assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
@@ -1103,8 +1136,9 @@ test('une barre basse collée par le CSS de l’app, sans le dire, est un DÉFAU
     {
       'package.json': { name: 'miss-x' },
       'src/App.tsx': '<BottomNav items={items} />',
-      'src/styles.css':
-        '.bottom-nav { display: flex; }\n.header { position: fixed; top: 0; }',
+      'src/styles.css': `@import '@mister-guiiug/dev-pwa-config/components.css';
+.bottom-nav { display: flex; }
+.header { position: fixed; top: 0; }`,
     },
     root => {
       assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
@@ -1118,8 +1152,9 @@ test('une barre basse collée par le CSS de l’app, sans le dire, est un DÉFAU
       'package.json': { name: 'miss-x' },
       'src/App.tsx':
         '// <BottomNav /> sans placement collerait la barre en muet\nexport const rien = 1;',
-      'src/styles.css':
-        '/* ne jamais écrire .bottom-nav { position: fixed } ici */\n.x { color: red; }',
+      'src/styles.css': `@import '@mister-guiiug/dev-pwa-config/components.css';
+/* ne jamais écrire .bottom-nav { position: fixed } ici */
+.x { color: red; }`,
     },
     root => {
       assert.ok(!ids(diagnose(root)).includes('bottom-nav-muette'));
