@@ -161,6 +161,91 @@ test('usePageViews envoie une vue par navigation, pas par rendu', async () => {
   }
 });
 
+test('la vue d’arrivée est rejouée à l’accord, pas perdue', async () => {
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    // Comme en vrai : la mesure attend le consentement, et le visiteur n'a pas
+    // encore répondu quand l'écran d'arrivée se monte.
+    initAnalytics({ gaMeasurementId: 'G-ABC123' });
+
+    function Probe({ path }) {
+      usePageViews(path);
+      return h('span', null, path);
+    }
+    const view = await mount(h(Probe, { path: '/accueil' }));
+    const vues = () =>
+      commands()
+        .filter(c => c[0] === 'event' && c[1] === 'page_view')
+        .map(c => c[2]);
+
+    // Rien ne part avant l'accord — c'est la règle, et elle tient.
+    assert.equal(vues().length, 0);
+
+    // L'accord arrive APRÈS le montage : sans rejeu, cette vue serait perdue
+    // pour toujours, le chemin n'ayant plus de raison de changer.
+    setAnalyticsConsent('granted');
+    assert.equal(vues().length, 1);
+    assert.equal(vues().at(-1).page_path, '/accueil');
+
+    // Et elle ne part qu'UNE fois : une navigation ultérieure ne la rejoue pas.
+    await view.rerender(h(Probe, { path: '/suite' }));
+    assert.equal(vues().length, 2);
+    assert.deepEqual(
+      vues().map(v => v.page_path),
+      ['/accueil', '/suite']
+    );
+    await view.unmount();
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('un refus jette la vue mise de côté', () => {
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    initAnalytics({ gaMeasurementId: 'G-ABC123' });
+    assert.equal(trackPageView('/accueil'), false);
+
+    // Refuser, puis accepter plus tard : la vue de l'écran d'arrivée ne doit
+    // pas ressurgir — l'utilisateur l'a quitté depuis longtemps.
+    setAnalyticsConsent('denied');
+    setAnalyticsConsent('granted');
+    assert.equal(
+      commands().filter(c => c[0] === 'event' && c[1] === 'page_view').length,
+      0
+    );
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('page_location porte le chemin de base de l’app', () => {
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    initAnalytics({ gaMeasurementId: 'G-ABC123', requireConsent: false });
+    trackPageView('/history');
+    const vue = commands()
+      .filter(c => c[0] === 'event' && c[1] === 'page_view')
+      .map(c => c[2])
+      .at(-1);
+
+    // Les vingt sites partagent l'origine : sans le chemin de base, l'URL
+    // enregistrée n'existe pas. `BASE_URL` vaut « / » hors build, donc on
+    // vérifie ici que la composition est correcte et sans double barre.
+    assert.equal(vue.page_path, '/history');
+    assert.equal(vue.page_location, `${window.location.origin}/history`);
+    assert.ok(!vue.page_location.includes('//history'));
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
 test('les fragments de build déclarent le consentement avant le tag', () => {
   const gtm = buildAnalyticsHtmlFragments({ gtmContainerId: 'GTM-ABC123' });
   const posConsent = gtm.head.indexOf("gtag('consent', 'default'");

@@ -30,7 +30,11 @@ export function usePageViews(path, options = {}) {
     // Le même chemin deux fois de suite n'est pas une vue de plus : un rendu
     // provoqué par autre chose (un état, un thème) doublerait sinon le compte.
     if (previous.current === path) return;
-    previous.current = path;
-    trackPageView(path, title);
+    // NE RETENIR LE CHEMIN QUE SI LA VUE EST PARTIE. Le retenir d'abord faisait
+    // perdre définitivement la vue d'arrivée : sans consentement, l'envoi ne
+    // part pas, et le chemin marqué « déjà vu » empêchait toute reprise. Le
+    // rejeu vit dans `setAnalyticsConsent`, seul endroit qui sait que l'accord
+    // vient d'arriver ; ici on se contente de ne pas mentir.
+    if (trackPageView(path, title)) previous.current = path;
   }, [path, title]);
 }
