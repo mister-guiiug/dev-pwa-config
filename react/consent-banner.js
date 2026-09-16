@@ -42,6 +42,20 @@ import { readRaw, removeKey, writeRaw } from '../storage.js';
  * pour l'obtenir est précisément la figure que le RGPD appelle un « dark
  * pattern ».
  *
+ * `placement="fixed"` — SANS ÇA, IL TOMBE OÙ L'APP LE MONTE.
+ *
+ * Le socle habillait sa boîte et ne la plaçait PAS : `position: static`, donc
+ * en fin de flux, là où les apps le montent — c'est-à-dire sous le pied de
+ * page. Mesuré en production sur mister-cim10 le 16/09/2026, en 375 × 812 :
+ * boîte de 753 à 891 px pour une fenêtre de 812, recouverte par la barre basse
+ * dont le bord haut est à 756. Le bandeau qui demande le consentement était à
+ * la fois sous la ligne de flottaison ET derrière la navigation.
+ *
+ * `fixed` le met au-dessus du contenu, dégagé de la barre basse s'il y en a
+ * une. Il reste OPT-IN : miss-dice pose le sien EN HAUT dans sa propre feuille,
+ * et son CSS n'étant pas « layered », il garde la main — mais une app qui a son
+ * placement n'a rien à demander ici.
+ *
  * Non stylé : cibler `[data-dwc="consent-banner"]`.
  */
 
@@ -219,6 +233,7 @@ export function useConsentChoice(options = {}) {
 /**
  * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
  *   scope?: string, policyHref?: string, className?: string,
+ *   placement?: 'static'|'fixed',
  *   title?: import('react').ReactNode, message?: import('react').ReactNode,
  *   acceptLabel?: string, refuseLabel?: string, policyLabel?: string }} props
  */
@@ -229,6 +244,7 @@ export function ConsentBanner(props) {
     scope,
     policyHref,
     className,
+    placement,
     title,
     message,
     acceptLabel,
@@ -254,6 +270,7 @@ export function ConsentBanner(props) {
       role: 'region',
       'aria-label': typeof title === 'string' ? title : labels.title,
       'data-dwc': 'consent-banner',
+      'data-placement': placement === 'fixed' ? 'fixed' : undefined,
       className,
     },
     h('p', { 'data-dwc': 'consent-message' }, message ?? labels.message),

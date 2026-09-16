@@ -14,6 +14,27 @@ import { useAppUpdates, useUpdateCheck } from './app-updates.js';
  *
  * Non stylé : cibler `[data-dwc="update-banner"]`.
  *
+ * `placement="fixed"` — LA PLACE, ENFIN DEMANDABLE.
+ *
+ * Le socle plaçait déjà ce bandeau, mais seulement sous
+ * `:root:has([data-dwc='bottom-nav'][data-placement='fixed'])` : il fallait
+ * une barre basse, du socle, ET déclarée. Relevé du 16/09/2026 : cinq apps sur
+ * vingt remplissaient cette condition. Les autres recevaient une boîte
+ * habillée POSÉE DANS LE FLUX, en fin de document, sous le pied de page — et
+ * six d'entre elles ont réécrit le placement à la main : miss-badminton,
+ * miss-carbook, miss-contraction, miss-dice (sous un `className`),
+ * mister-miss-koh, mister-molkky. Six copies, six jeux de valeurs, des
+ * `z-index` allant de 25 à 9999.
+ *
+ * La prop dit la même chose que celle de `BottomNav`, et le même mot : collé
+ * en bas de la fenêtre. Elle ne dépend d'AUCUNE barre — c'était tout le
+ * problème — mais elle en tient compte s'il y en a une, le plancher venant de
+ * `--_dwc-bottom-clearance`.
+ *
+ * PAS DE MODE « EN HAUT », et c'est le corpus qui l'a tranché : les six
+ * placements maison relevés collent le bandeau EN BAS, sans exception. Un mode
+ * que personne n'utilise est un mode qu'on maintient pour rien.
+ *
  * DEUX SORTIES, SUR DEMANDE. `secondaryActions: 'both'` rend le report ET
  * l'écartement pour la session, au lieu du seul report. `mister-puzzle` offrait
  * les deux — « Plus tard (24 h) », persisté, et « Ignorer », le temps de la
@@ -28,6 +49,7 @@ import { useAppUpdates, useUpdateCheck } from './app-updates.js';
  *
  * @param {{ registerSW?: Function, snoozeHours?: number, snoozeKey?: string,
  *   secondaryActions?: 'auto'|'both', showOfflineReady?: boolean,
+ *   placement?: 'static'|'fixed',
  *   title?: import('react').ReactNode, updateLabel?: string,
  *   updatingLabel?: string, snoozeLabel?: string, dismissLabel?: string,
  *   ignoreLabel?: string, offlineReadyTitle?: import('react').ReactNode,
@@ -39,6 +61,7 @@ function Banner(props) {
     snoozeHours = 0,
     secondaryActions = 'auto',
     showOfflineReady = false,
+    placement,
     title,
     updateLabel,
     updatingLabel,
@@ -52,6 +75,10 @@ function Banner(props) {
 
   const labels = useLabels('update');
   const { visible, updating, update, snooze, dismiss } = props;
+
+  // `placement="fixed"` : le bandeau flotte au-dessus du contenu, dégagé de la
+  // barre basse quand il y en a une. Voir le bloc de documentation ci-dessus.
+  const colle = placement === 'fixed' ? 'fixed' : undefined;
 
   // `offlineReady` et `needRefresh` viennent de l'ÉTAT du hook, versé sur les
   // mêmes props : c'est pourquoi l'interrupteur s'appelle `showOfflineReady` et
@@ -73,6 +100,7 @@ function Banner(props) {
         role: 'status',
         'aria-live': 'polite',
         'data-dwc': 'offline-ready',
+        'data-placement': colle,
       },
       h(
         'span',
@@ -112,7 +140,12 @@ function Banner(props) {
 
   return h(
     'div',
-    { className, role: 'status', 'data-dwc': 'update-banner' },
+    {
+      className,
+      role: 'status',
+      'data-dwc': 'update-banner',
+      'data-placement': colle,
+    },
     h('span', { 'data-dwc': 'update-banner-title' }, title ?? labels.title),
     h(
       'button',

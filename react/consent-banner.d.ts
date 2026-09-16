@@ -65,6 +65,11 @@ export interface ConsentBannerProps {
   /** Lien vers la page de confidentialité, facultatif. */
   policyHref?: string;
   className?: string;
+  /**
+   * `'fixed'` : flotte au-dessus du contenu, dégagé de la barre basse s'il y
+   * en a une. Par défaut le bandeau reste dans le flux, là où l'app le monte.
+   */
+  placement?: 'static' | 'fixed';
   title?: ReactNode;
   message?: ReactNode;
   acceptLabel?: string;

@@ -138,7 +138,8 @@
     [data-dwc='confirm-panel'],
     [data-dwc='toast'],
     [data-dwc='update-banner'],
-    [data-dwc='offline-ready'] {
+    [data-dwc='offline-ready'],
+    [data-dwc='consent-banner'] {
       animation-duration: 0.001ms;
       animation-iteration-count: 1;
     }

@@ -91,8 +91,52 @@
   :root:has([data-dwc='bottom-nav'][data-placement='fixed'])
     [data-dwc='offline-ready'] {
     position: fixed;
+    /* Voir la règle du placement demandé, plus bas : les deux font la même
+       chose et ne doivent pas diverger sur ce point non plus. */
+    box-sizing: border-box;
     inset-inline: 0;
     bottom: calc(var(--_dwc-bottom-clearance) + 0.5rem);
+    z-index: 25;
+    width: min(100% - 2 * var(--spacing-fluid-sm, 0.75rem), 40rem);
+    height: max-content;
+    margin-inline: auto;
+    /* `backwards`, jamais `both` — voir « Animations » en fin de fichier. */
+    animation: dwc-rise 0.22s ease-out backwards;
+  }
+
+  /*
+   * ET LA MÊME PLACE, DEMANDÉE DIRECTEMENT : `placement="fixed"`.
+   *
+   * La règle ci-dessus exige une barre basse, du socle, ET déclarée : cinq apps
+   * sur vingt remplissaient cette condition au relevé du 16/09/2026. Les quinze
+   * autres recevaient cette boîte DANS LE FLUX, en fin de document — et six ont
+   * réécrit le placement à la main, avec des `z-index` allant de 25 à 9999.
+   * La prop le rend demandable sans barre, et les six copies peuvent partir.
+   *
+   * UNE RÈGLE À PART, ET NON CES SÉLECTEURS AJOUTÉS À LA LISTE DU DESSUS. Une
+   * liste de sélecteurs est tout ou rien : un navigateur sans `:has()` jetterait
+   * la règle ENTIÈRE, et ce placement-ci — qui n'a pourtant besoin de rien de
+   * moderne — tomberait avec elle. `test/components-css.test.mjs` l'interdit,
+   * et il a rattrapé cette faute à l'écriture même de ce bloc.
+   */
+  [data-dwc='update-banner'][data-placement='fixed'],
+  [data-dwc='offline-ready'][data-placement='fixed'] {
+    position: fixed;
+    /*
+     * `border-box` POSÉ ICI, et c'est un banc d'essai qui l'a montré. Le socle
+     * ne pose aucun `box-sizing` : il compte sur le préréglage de l'app, que
+     * les vingt ont. Sur une page qui n'en a pas, `width` s'ajoute au
+     * `padding` — la boîte dépasse de ses trois côtés posés, `margin-inline:
+     * auto` rend un `-10px`, et le bandeau sort de l'écran. C'est précisément
+     * la sur-contrainte contre laquelle la règle voisine met en garde.
+     * Sous un préréglage, cette ligne ne change rien.
+     */
+    box-sizing: border-box;
+    inset-inline: 0;
+    bottom: calc(
+      var(--_dwc-bottom-clearance, max(env(safe-area-inset-bottom), 0px)) +
+        0.5rem
+    );
     z-index: 25;
     width: min(100% - 2 * var(--spacing-fluid-sm, 0.75rem), 40rem);
     height: max-content;

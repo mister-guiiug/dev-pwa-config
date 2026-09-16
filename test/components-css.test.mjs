@@ -300,11 +300,17 @@ test('aucune animation ne retient sa valeur d’arrivée', () => {
 
   // Le motif doit rester détectable : si les animations changent de forme, la
   // garde ci-dessus passerait au vert sans plus rien vérifier.
+  // SIX depuis le 16/09/2026 : les deux placements demandables
+  // (`update-banner[data-placement=fixed]` et
+  // `consent-banner[data-placement=fixed]`) ont rejoint la feuille, la
+  // confirmation, le toast et le bandeau sous barre collée. Ce nombre fige une
+  // LIMITE, pas un contrat : le faire monter avec une entrée animée de plus est
+  // normal, le voir tomber ne l'est pas.
   const fills = [...CSS.matchAll(/animation:[^;}]*\bbackwards\b/g)];
   assert.equal(
     fills.length,
-    4,
-    'les quatre entrées (feuille, confirmation, toast, bandeau) devraient porter `backwards` — le motif a changé'
+    6,
+    'toute entrée animée doit porter `backwards` — le motif a changé'
   );
 });
 

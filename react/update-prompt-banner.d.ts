@@ -60,6 +60,13 @@ export interface UpdatePromptBannerProps {
    * mêmes props et écraserait l'interrupteur.
    */
   showOfflineReady?: boolean;
+  /**
+   * `'fixed'` : le bandeau flotte en bas de la fenêtre, dégagé de la barre
+   * basse s'il y en a une — sans dépendre de sa présence. Sans lui, il reste
+   * dans le flux, sauf sous une `BottomNav placement="fixed"` qui déclenche la
+   * règle conditionnelle du socle.
+   */
+  placement?: 'static' | 'fixed';
   /** Défaut « Mise à jour disponible ». */
   title?: ReactNode;
   /** Défaut « Mettre à jour ». */
