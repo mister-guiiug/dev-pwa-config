@@ -194,6 +194,79 @@ if (typeof globalThis.AnimationEvent === 'undefined') {
   globalThis.AnimationEvent = AnimationEvent;
   if (typeof window !== 'undefined') window.AnimationEvent = AnimationEvent;
 }
+/*
+ * `URL.createObjectURL` — CASSÉ PAR LE COUPLE Vitest 5.0.1 / jsdom 30.1.0.
+ *
+ * jsdom n'a JAMAIS implémenté `createObjectURL` : c'est Vitest qui la fournit,
+ * dans son environnement jsdom. Pour retrouver l'objet d'implémentation d'un
+ * Blob de jsdom, il prend « le premier symbole propre » de l'instance — sa
+ * propre source commente ce passage par « this is cursed » :
+ *
+ *   const implSymbol = Object.getOwnPropertySymbols(
+ *     Object.getOwnPropertyDescriptors(new window.Blob())
+ *   )[0];
+ *
+ * jsdom 30.0.1 exposait un `Symbol(impl)`. jsdom 30.1.0 n'en expose PLUS AUCUN :
+ * `implSymbol` vaut `undefined`, `blob[undefined]` aussi, et l'appel lève
+ * `Cannot read properties of undefined (reading '_buffer')`. Mesuré en isolant
+ * la seule variable — 30.0.1 vert, 30.1.0 rouge, tout le reste égal — le
+ * 18/09/2026, sur `miss-uwh` : son test de téléchargement de bilan PDF passe
+ * par `downloadBlob`, donc par cette API. Un seul dépôt du parc y touchait ce
+ * jour-là ; les dix-neuf autres attendaient leur tour, comme pour
+ * `AnimationEvent` ci-dessus.
+ *
+ * ON SONDE PLUTÔT QUE D'ÉCRASER. L'implémentation n'est remplacée que si elle
+ * est absente ou si elle LÈVE : le jour où Vitest cessera de chercher un
+ * symbole, le socle s'effacera de lui-même sans qu'on ait à y revenir.
+ */
+export function urlObjetUtilisable(portee = globalThis) {
+  const { URL: U, Blob: B } = portee;
+  if (typeof U?.createObjectURL !== 'function') return false;
+  if (typeof B !== 'function') return true; // rien à sonder : on ne touche pas
+  try {
+    const url = U.createObjectURL(new B(['sonde']));
+    if (typeof url !== 'string' || !url) return false;
+    U.revokeObjectURL?.(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Pose une `createObjectURL` de test : une URL `blob:` unique par objet, et une
+ * `revokeObjectURL` qui la retire pour de bon. Les tests de téléchargement
+ * n'ont besoin de rien de plus — personne ne DÉRÉFÉRENCE ces URL sous jsdom.
+ */
+export function installeUrlObjet(portee = globalThis) {
+  const vivantes = new Map();
+  let compteur = 0;
+  const creer = objet => {
+    const url = `blob:dwc-test/${++compteur}`;
+    vivantes.set(url, objet);
+    return url;
+  };
+  const revoquer = url => {
+    vivantes.delete(url);
+  };
+  for (const cible of [portee.URL, portee.window?.URL]) {
+    if (typeof cible !== 'function' && typeof cible !== 'object') continue;
+    Object.defineProperty(cible, 'createObjectURL', {
+      value: creer,
+      writable: true,
+      configurable: true,
+    });
+    Object.defineProperty(cible, 'revokeObjectURL', {
+      value: revoquer,
+      writable: true,
+      configurable: true,
+    });
+  }
+  return vivantes;
+}
+
+if (!urlObjetUtilisable()) installeUrlObjet();
+
 if (typeof globalThis.IntersectionObserver === 'undefined') {
   globalThis.IntersectionObserver = NoopObserver;
 }
