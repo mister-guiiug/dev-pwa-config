@@ -173,7 +173,7 @@ export default defineConfig({
       basePath: '/mister-puzzle/', // sinon VITE_BASE_PATH
       logoPath: '/logo.svg', // → __SEO_LOGO_URL__ (OG/Twitter/JSON-LD)
       iconQuery: '?v=1.0.1', // → __PWA_ICON_QS__ (cache-busting)
-      gtmContainerId: 'GTM-XXXXXXX', // ID explicite (sinon VITE_GTM_CONTAINER_ID)
+      gaMeasurementId: 'G-XXXXXXXXXX', // ID explicite (sinon VITE_GA_MEASUREMENT_ID)
       llms: '# Mon app\n…', // génère dist/llms.txt
 
       // Le script anti-FOUC, injecté en tête de <head>. `legacyKeys` migre la
@@ -189,17 +189,17 @@ export default defineConfig({
 });
 ```
 
-**Le consentement précède le tag.** Les fragments GTM/GA4 sont désormais
+**Le consentement précède le tag.** Les fragments GA4 sont désormais
 précédés d'un `gtag('consent', 'default', …)` où tous les signaux sont `denied`.
 C'est la seule position où le mode consentement de Google en tient compte : une
 commande postérieure au chargement n'a pas d'effet rétroactif. `consent: false`
 restaure le comportement d'avant, pour un déploiement qui gère le consentement
-ailleurs (une CMP, GTM).
+ailleurs (une CMP).
 
 Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
 `__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
 `__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt` (+ `llms.txt` si `llms`).
-Variables d'env de build : `VITE_GTM_CONTAINER_ID`, `VITE_GA_MEASUREMENT_ID`,
+Variables d'env de build : `VITE_GA_MEASUREMENT_ID`,
 `VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
 `htmlTrackingPlugin()`), désormais factorisés ici.
@@ -267,9 +267,10 @@ Trois règles que le module tient à votre place :
 - **Rien avant l'accord.** `trackEvent` et `trackPageView` renvoient `false`
   tant que `analytics_storage` n'est pas accordé, et le `<script>` n'est même
   pas créé. Les hooks peuvent donc être montés sans condition.
-- **GTM l'emporte sur GA4** quand les deux identifiants sont fournis — GA4 se
-  configure _dans_ GTM, sinon chaque événement est compté deux fois. C'est déjà
-  l'arbitrage des fragments de build ; il est le même ici.
+- **Chaque événement porte `app_name`**, déduit du chemin de base
+  (`/mister-cim10/` → `mister-cim10`). Les sites du parc partagent une propriété
+  GA4 : sans cette dimension, le total est lisible et le détail ne l'est plus.
+  Pas `page_path`, dont la cardinalité finit dans « (other) ».
 - **Une seule vue par navigation.** GA4 est configuré avec
   `send_page_view: false`, pour que la page d'entrée passe par le même chemin
   que les autres au lieu d'être comptée deux fois.
@@ -343,7 +344,7 @@ export default defineConfig(({ command }) => ({
     cspPlugin({
       dev: command === 'serve',
       connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
-      analytics: true, // ← si pwaSeoPlugin injecte GTM ou GA4
+      analytics: true, // ← si pwaSeoPlugin injecte GA4
     }),
     VitePWA({ ... }),
   ],
@@ -353,10 +354,10 @@ export default defineConfig(({ command }) => ({
 `cspPlugin` doit venir **après** `pwaSeoPlugin` : il hashe le HTML final, donc
 les scripts inline injectés en amont.
 
-**`analytics: true` n'est pas cosmétique.** GA4 charge un `<script src>` externe
-et GTM un `<iframe>` de repli `noscript` : `default-src 'self'` les bloque tous
-les deux, sans la moindre erreur de build. Activer les deux plugins sans cette
-option coupe donc l'analytics **en silence**. L'option ajoute exactement les
+**`analytics: true` n'est pas cosmétique.** GA4 charge un `<script src>`
+externe, que `default-src 'self'` bloque sans la moindre erreur de build.
+Activer les deux plugins sans cette option coupe donc l'analytics **en
+silence**. L'option ajoute exactement les
 hôtes que `pwaSeoPlugin` injecte (`script`, `img`, `connect`, `frame`).
 
 **Ce qu'une CSP en `<meta>` ne peut pas faire.** La spécification exclut

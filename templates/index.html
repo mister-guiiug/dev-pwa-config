@@ -39,7 +39,7 @@
       Si l'app appelle un backend, ÉLARGIR connect-src :
         - Supabase : connect-src 'self' https://*.supabase.co wss://*.supabase.co
         - Firebase : connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com
-        - GA4/GTM  : `cspPlugin({ analytics: true })` s'en charge (hôtes script,
+        - GA4      : `cspPlugin({ analytics: true })` s'en charge (hôtes script,
                      img, connect et frame). Ne pas les recopier à la main ici.
 
       PAS DE frame-ancestors ICI. La spécification exclut cette directive (comme

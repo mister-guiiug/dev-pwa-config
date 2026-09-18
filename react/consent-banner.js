@@ -190,7 +190,7 @@ export function clearConsentChoice(scope) {
  * Utilisable seul, pour une page de confidentialité qui veut offrir le choix
  * ailleurs que dans le bandeau.
  *
- * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
+ * @param {{ gaMeasurementId?: string,
  *   appName?: string, scope?: string }} [options]
  * @returns {{ choice: 'granted'|'denied'|null, configured: boolean,
  *   needed: boolean, accept: () => void, refuse: () => void,
@@ -233,14 +233,8 @@ function choixFrais(scope, maxAgeDays, purposeVersion) {
 }
 
 export function useConsentChoice(options = {}) {
-  const {
-    gaMeasurementId,
-    gtmContainerId,
-    appName,
-    scope,
-    maxAgeDays,
-    purposeVersion,
-  } = options;
+  const { gaMeasurementId, appName, scope, maxAgeDays, purposeVersion } =
+    options;
   const [choice, setChoice] = useState(() =>
     choixFrais(scope, maxAgeDays, purposeVersion)
   );
@@ -282,10 +276,7 @@ export function useConsentChoice(options = {}) {
     // postérieure à une mise à jour n'a pas de sémantique définie chez Google.
     // On se contente alors de lire l'identifiant qu'elle a posé.
     const deja = getAnalyticsId();
-    const id =
-      deja ??
-      initAnalytics({ gaMeasurementId, gtmContainerId, appName }).id ??
-      null;
+    const id = deja ?? initAnalytics({ gaMeasurementId, appName }).id ?? null;
     setConfigured(Boolean(id));
     if (!id) return;
     // Le choix d'hier, rejoué : sans ça le tag n'est jamais injecté, quel que
@@ -297,14 +288,7 @@ export function useConsentChoice(options = {}) {
     // le faire compter.
     if (choixFrais(scope, maxAgeDays, purposeVersion) === 'granted')
       setAnalyticsConsent({ analytics: true });
-  }, [
-    gaMeasurementId,
-    gtmContainerId,
-    appName,
-    scope,
-    maxAgeDays,
-    purposeVersion,
-  ]);
+  }, [gaMeasurementId, appName, scope, maxAgeDays, purposeVersion]);
 
   const decide = useCallback(
     next => {
@@ -373,7 +357,7 @@ export function useConsentChoice(options = {}) {
  * Les deux coexistent : `policyHref` pour qui a une vraie page, `policy` pour
  * qui n'en a pas. Fournir les deux affiche le lien ET le repli.
  *
- * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
+ * @param {{ gaMeasurementId?: string,
  *   appName?: string,
  *   scope?: string, policyHref?: string, className?: string,
  *   placement?: 'static'|'fixed',
@@ -384,7 +368,6 @@ export function useConsentChoice(options = {}) {
 export function ConsentBanner(props) {
   const {
     gaMeasurementId,
-    gtmContainerId,
     appName,
     scope,
     maxAgeDays,
@@ -403,7 +386,6 @@ export function ConsentBanner(props) {
   const labels = useLabels('consent');
   const { needed, accept, refuse } = useConsentChoice({
     gaMeasurementId,
-    gtmContainerId,
     appName,
     scope,
     maxAgeDays,
@@ -498,13 +480,12 @@ export function ConsentBanner(props) {
  *
  * Non stylé : cibler `[data-dwc="consent-settings"]`.
  *
- * @param {{ gaMeasurementId?: string, gtmContainerId?: string, scope?: string,
+ * @param {{ gaMeasurementId?: string, scope?: string,
  *   className?: string, stateLabel?: string, actionLabel?: string }} props
  */
 export function ConsentSettings(props = {}) {
   const {
     gaMeasurementId,
-    gtmContainerId,
     scope,
     maxAgeDays,
     purposeVersion,
@@ -516,7 +497,6 @@ export function ConsentSettings(props = {}) {
   const labels = useLabels('consent');
   const { choice, configured, reset } = useConsentChoice({
     gaMeasurementId,
-    gtmContainerId,
     scope,
     maxAgeDays,
     purposeVersion,

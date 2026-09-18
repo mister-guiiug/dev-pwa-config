@@ -8,8 +8,8 @@
  * l'importent. La vraie couche PWA est `./vite-pwa` (`pwaBaseOptions`).
  *
  * Généralise les plugins qui étaient dupliqués :
- *   - mister-puzzle/vite-plugin-seo.ts  (GTM/GA4 + sitemap/robots/llms)
- *   - miss-carbook  htmlTrackingPlugin() (GTM/GSC/GA4)
+ *   - mister-puzzle/vite-plugin-seo.ts  (analytics + sitemap/robots/llms)
+ *   - miss-carbook  htmlTrackingPlugin() (GSC/GA4)
  *
  * N'importe PAS `vite` (peerDep côté consumer) — `pwaSeoPlugin()` renvoie un
  * objet Plugin Vite valide structurellement.
@@ -23,7 +23,6 @@
  * Variables d'env lues au build :
  *   VITE_BASE_PATH            ex. /mister-puzzle/   (défaut '/')
  *   VITE_PUBLIC_SITE_ORIGIN   ex. https://mister-guiiug.github.io
- *   VITE_GTM_CONTAINER_ID     ex. GTM-XXXXXXX       (optionnel)
  *   VITE_GA_MEASUREMENT_ID    ex. G-XXXXXXXXXX      (optionnel)
  */
 import {
@@ -35,13 +34,6 @@ import {
 import process from 'node:process';
 
 const DEFAULT_ORIGIN = 'https://mister-guiiug.github.io';
-
-/** Conteneur GTM valide (GTM-XXXX) ou null. */
-export function parseGtmContainerId(raw) {
-  if (!raw) return null;
-  const id = raw.trim().toUpperCase();
-  return /^GTM-[A-Z0-9]+$/.test(id) ? id : null;
-}
 
 /** ID de mesure GA4 valide (G-XXXX) ou null. */
 export function parseGaMeasurementId(raw) {
@@ -89,9 +81,12 @@ export function resolveSeoPublicUrls(arg) {
  * Conservée parce qu'elle est exportée : la retirer serait un MAJEUR. Le
  * gabarit `templates/index.html` ne la câble plus.
  *
- * Fragments HTML analytics (GTM et/ou GA4) à injecter dans <head>/<body>.
- * Si GTM ET GA4 sont définis : seul GTM est chargé (configurez GA4 dans GTM
- * pour éviter le double comptage).
+ * Fragments HTML GA4 à injecter dans <head>/<body>.
+ *
+ * LA MOITIÉ GTM A ÉTÉ RETIRÉE le 18/09/2026 : le compte Tag Manager ne porte
+ * plus aucun conteneur, aucune app n'en câblait, et l'ADR 0011 du squelette
+ * tranche pour gtag en direct. Ce qui restait ici était du code mort dans une
+ * fonction déjà dépréciée.
  *
  * LE CONSENTEMENT PASSE EN PREMIER, ou ne sert à rien. Le mode consentement de
  * Google veut que l'état par défaut soit déclaré AVANT le chargement du tag :
@@ -101,12 +96,9 @@ export function resolveSeoPublicUrls(arg) {
  * détail de configuration.
  *
  * `consent: false` restaure le comportement d'avant, pour un déploiement qui
- * gère le consentement ailleurs (dans GTM, par une CMP).
+ * gère le consentement ailleurs (une CMP).
  */
 export function buildAnalyticsHtmlFragments(overrides = {}) {
-  const gtm = parseGtmContainerId(
-    overrides.gtmContainerId ?? process.env.VITE_GTM_CONTAINER_ID
-  );
   const ga = parseGaMeasurementId(
     overrides.gaMeasurementId ?? process.env.VITE_GA_MEASUREMENT_ID
   );
@@ -124,21 +116,6 @@ export function buildAnalyticsHtmlFragments(overrides = {}) {
 </script>
 `;
 
-  const gtmHead = id => `<!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${id}');</script>
-<!-- End Google Tag Manager -->`;
-
-  const gtmBody = id => `<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${id}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe></noscript>
-<!-- End Google Tag Manager -->`;
-
-  if (gtm) {
-    return { head: consentDefault + gtmHead(gtm), body: gtmBody(gtm) };
-  }
   if (ga) {
     return {
       head:
@@ -164,7 +141,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
  * Placeholders remplacés dans index.html :
  *   __SEO_HOME_URL__     URL d'accueil canonique
  *   __ANALYTICS_HEAD__   snippet analytics <head>
- *   __ANALYTICS_BODY__   snippet analytics <body> (noscript GTM)
+ *   __ANALYTICS_BODY__   snippet analytics <body> (vide depuis le retrait de GTM)
  *
  * Placeholders supplémentaires (si `logoPath`/`iconQuery` fournis) :
  *   __SEO_LOGO_URL__     URL absolue du logo (Open Graph / Twitter / JSON-LD)
@@ -192,7 +169,6 @@ export function pwaSeoPlugin(opts = {}) {
     logoPath,
     iconQuery = '',
     llms,
-    gtmContainerId,
     gaMeasurementId,
     themeBoot,
     themeColor,
@@ -257,7 +233,6 @@ export function pwaSeoPlugin(opts = {}) {
     transformIndexHtml(html) {
       const { homeUrl, logoUrl } = resolveSeoPublicUrls(urlOpts);
       const { head, body } = buildAnalyticsHtmlFragments({
-        gtmContainerId,
         gaMeasurementId,
         consent,
       });

@@ -1,5 +1,5 @@
 /**
- * GA4 / GTM : le consentement d'abord, la mesure ensuite.
+ * GA4 : le consentement d'abord, la mesure ensuite.
  *
  * CE QUE CES TESTS PROTÈGENT. Les fragments d'injection existaient depuis
  * longtemps — neuf apps portaient les marqueurs `__ANALYTICS_*__` — mais
@@ -23,7 +23,6 @@ import {
   isAnalyticsLoaded,
   nomDApp,
   parseGaMeasurementId,
-  parseGtmContainerId,
   resetAnalytics,
   setAnalyticsConsent,
   trackEvent,
@@ -39,15 +38,9 @@ const commands = () =>
     .filter(entry => typeof entry?.length === 'number')
     .map(entry => [...entry]);
 
-const events = () =>
-  (window.dataLayer ?? []).filter(entry => typeof entry?.event === 'string');
-
 test('les identifiants sont validés, pas devinés', () => {
-  assert.equal(parseGtmContainerId('gtm-abc123'), 'GTM-ABC123');
-  assert.equal(parseGtmContainerId('G-ABC123'), null);
   assert.equal(parseGaMeasurementId('g-abc123'), 'G-ABC123');
   assert.equal(parseGaMeasurementId('GTM-ABC'), null);
-  assert.equal(parseGtmContainerId(undefined), null);
 });
 
 test('sans identifiant, rien n’est installé et rien ne jette', () => {
@@ -67,7 +60,7 @@ test('rien ne part avant le consentement, et le tag n’est pas même injecté',
   const dom = setupDom();
   try {
     resetAnalytics();
-    initAnalytics({ gtmContainerId: 'GTM-ABC123' });
+    initAnalytics({ gaMeasurementId: 'G-ABC123' });
 
     assert.equal(isAnalyticsLoaded(), false, 'aucun script injecté');
     assert.equal(document.querySelectorAll('script').length, 0);
@@ -84,11 +77,11 @@ test('rien ne part avant le consentement, et le tag n’est pas même injecté',
     setAnalyticsConsent({ analytics: true });
     assert.equal(isAnalyticsLoaded(), true);
     const script = document.querySelector('script[src]');
-    assert.match(script.src, /googletagmanager\.com\/gtm\.js\?id=GTM-ABC123/u);
-    assert.equal(getAnalyticsId(), 'GTM-ABC123');
+    assert.match(script.src, /googletagmanager\.com\/gtag\/js\?id=G-ABC123/u);
+    assert.equal(getAnalyticsId(), 'G-ABC123');
 
     assert.equal(trackEvent('clic', { cible: 'menu' }), true);
-    assert.deepEqual(events().at(-1), { event: 'clic', cible: 'menu' });
+    assert.deepEqual(commands().at(-1), ['event', 'clic', { cible: 'menu' }]);
   } finally {
     resetAnalytics();
     dom.restore();
@@ -115,37 +108,21 @@ test('requireConsent: false charge tout de suite', () => {
   }
 });
 
-test('GTM l’emporte sur GA4 quand les deux sont fournis', () => {
-  const dom = setupDom();
-  try {
-    resetAnalytics();
-    const state = initAnalytics({
-      gtmContainerId: 'GTM-ABC123',
-      gaMeasurementId: 'G-ABC123',
-      requireConsent: false,
-    });
-    // Charger les deux compterait chaque événement deux fois : GA4 se
-    // configure DANS GTM. C'est déjà l'arbitrage des fragments de build.
-    assert.equal(state.mode, 'gtm');
-    assert.equal(document.querySelectorAll('script[src]').length, 1);
-  } finally {
-    resetAnalytics();
-    dom.restore();
-  }
-});
-
 test('usePageViews envoie une vue par navigation, pas par rendu', async () => {
   const dom = setupDom();
   try {
     resetAnalytics();
-    initAnalytics({ gtmContainerId: 'GTM-ABC123', requireConsent: false });
+    initAnalytics({ gaMeasurementId: 'G-ABC123', requireConsent: false });
 
     function Probe({ path }) {
       usePageViews(path);
       return h('span', null, path);
     }
     const view = await mount(h(Probe, { path: '/a' }));
-    const vues = () => events().filter(e => e.event === 'page_view');
+    const vues = () =>
+      commands()
+        .filter(c => c[0] === 'event' && c[1] === 'page_view')
+        .map(c => c[2]);
     assert.equal(vues().length, 1);
 
     // Même chemin, nouveau rendu : pas de vue de plus.
@@ -248,22 +225,21 @@ test('page_location porte le chemin de base de l’app', () => {
 });
 
 test('les fragments de build déclarent le consentement avant le tag', () => {
-  const gtm = buildAnalyticsHtmlFragments({ gtmContainerId: 'GTM-ABC123' });
-  const posConsent = gtm.head.indexOf("gtag('consent', 'default'");
-  const posTag = gtm.head.indexOf('Google Tag Manager');
+  const ga = buildAnalyticsHtmlFragments({ gaMeasurementId: 'G-ABC123' });
+  const posConsent = ga.head.indexOf("gtag('consent', 'default'");
+  const posTag = ga.head.indexOf('gtag/js');
   assert.ok(posConsent >= 0, 'état par défaut absent');
   assert.ok(posConsent < posTag, 'le consentement doit précéder le tag');
-  assert.match(gtm.head, /analytics_storage: 'denied'/u);
-
-  const ga = buildAnalyticsHtmlFragments({ gaMeasurementId: 'G-ABC123' });
-  assert.ok(ga.head.indexOf("gtag('consent'") < ga.head.indexOf('gtag/js'));
+  assert.match(ga.head, /analytics_storage: 'denied'/u);
+  // Plus de corps : le `noscript` était la moitié GTM, retirée le 18/09/2026.
+  assert.equal(ga.body, '');
 
   // `consent: false` restaure le comportement d'avant, pour une CMP externe.
   const sans = buildAnalyticsHtmlFragments({
-    gtmContainerId: 'GTM-ABC123',
+    gaMeasurementId: 'G-ABC123',
     consent: false,
   });
-  assert.doesNotMatch(sans.head, /consent/u);
+  assert.doesNotMatch(sans.head, /gtag\('consent'/u);
 
   // Sans identifiant : aucun fragment, donc aucun état de consentement inutile.
   assert.deepEqual(buildAnalyticsHtmlFragments({}), { head: '', body: '' });
@@ -312,23 +288,6 @@ test('app_name accompagne CHAQUE événement, vue de page comprise', () => {
     // configuration ne suffirait pas.
     assert.equal(parametres.length, 2);
     assert.ok(parametres.every(p => p.app_name === 'mister-cim10'));
-  } finally {
-    resetAnalytics();
-    dom.restore();
-  }
-});
-
-test('app_name voyage aussi dans la couche de données, en mode GTM', () => {
-  const dom = setupDom();
-  try {
-    resetAnalytics();
-    initAnalytics({
-      gtmContainerId: 'GTM-ABC123',
-      appName: 'miss-dice',
-      requireConsent: false,
-    });
-    trackEvent('lancer');
-    assert.equal(events().at(-1).app_name, 'miss-dice');
   } finally {
     resetAnalytics();
     dom.restore();
