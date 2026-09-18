@@ -538,3 +538,35 @@ test('sous la MÊME portée, le choix d’hier est rejoué', async () => {
   await vue.unmount();
   dom.restore();
 });
+
+test('la prop héritée de GA4 est acceptée UNE version, et elle crie', async () => {
+  const dom = prepare();
+  const avertissements = [];
+  const original = console.warn;
+  console.warn = m => avertissements.push(String(m));
+  try {
+    // Ce que fait une app du parc non encore migrée : elle passe l'ancienne
+    // prop, et rien d'autre.
+    const vue = await mount(
+      h(ConsentBanner, { gaMeasurementId: 'G-TEST12345' })
+    );
+
+    // PAS DE BANDEAU : un `G-…` n'est d'aucun usage à PostHog, il n'y a donc
+    // rien à mesurer et rien à demander. Accepter la prop ne la fait pas
+    // marcher — ça évite seulement de casser dix-neuf `tsc` d'un coup.
+    assert.equal(
+      vue.container.querySelector('[data-dwc="consent-banner"]'),
+      null
+    );
+    // ET ÇA SE DIT. Un arrêt de mesure silencieux est exactement le défaut que
+    // ce parc passe son temps à traquer.
+    assert.equal(avertissements.length, 1);
+    assert.match(avertissements[0], /posthogKey/u);
+    assert.match(avertissements[0], /AUCUNE MESURE/u);
+
+    await vue.unmount();
+  } finally {
+    console.warn = original;
+    dom.restore();
+  }
+});

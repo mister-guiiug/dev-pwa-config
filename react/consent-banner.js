@@ -59,6 +59,31 @@ import { appScopedKey, readRaw, removeKey, writeRaw } from '../storage.js';
  * Non stylé : cibler `[data-dwc="consent-banner"]`.
  */
 
+/**
+ * LA PROP HÉRITÉE DE GA4 EST ACCEPTÉE UNE VERSION, ET ELLE CRIE.
+ *
+ * Les dix-neuf applications du parc passent `gaMeasurementId` aujourd'hui. La
+ * refuser d'emblée casserait leur `tsc` à la seconde où la 6.0.0 est publiée,
+ * toutes en même temps, avant que la campagne de migration ait pu passer.
+ *
+ * Mais l'accepter EN SILENCE serait pire : un `G-…` n'est d'aucun usage à
+ * PostHog, la mesure s'arrêterait donc sans qu'aucun signe ne le dise — le
+ * défaut que ce parc passe son temps à traquer. D'où un avertissement en clair,
+ * une seule fois, qui nomme le remplacement.
+ *
+ * À RETIRER au prochain majeur, une fois la campagne passée.
+ */
+let herite = false;
+function previensSiHerite(gaMeasurementId, posthogKey) {
+  if (!gaMeasurementId || posthogKey || herite) return;
+  herite = true;
+  console.warn(
+    '[dev-pwa-config] `gaMeasurementId` est ignorée depuis la 6.0.0 : la ' +
+      'mesure est passée à PostHog (ADR 0012). AUCUNE MESURE NE PART tant que ' +
+      '`posthogKey` n’est pas fournie — voir `VITE_POSTHOG_KEY`.'
+  );
+}
+
 /** Le préfixe de la clé de stockage, au format du parc (`dwc_*`). */
 export const CONSENT_KEY = 'dwc_consent';
 
@@ -241,7 +266,9 @@ export function useConsentChoice(options = {}) {
     scope,
     maxAgeDays,
     purposeVersion,
+    gaMeasurementId,
   } = options;
+  previensSiHerite(gaMeasurementId, posthogKey);
   const [choice, setChoice] = useState(() =>
     choixFrais(scope, maxAgeDays, purposeVersion)
   );
@@ -392,6 +419,7 @@ export function ConsentBanner(props) {
     scope,
     maxAgeDays,
     purposeVersion,
+    gaMeasurementId,
     policyHref,
     className,
     placement,
@@ -412,6 +440,7 @@ export function ConsentBanner(props) {
     scope,
     maxAgeDays,
     purposeVersion,
+    gaMeasurementId,
   });
 
   if (!needed) return null;
@@ -513,6 +542,7 @@ export function ConsentSettings(props = {}) {
     scope,
     maxAgeDays,
     purposeVersion,
+    gaMeasurementId,
     className,
     stateLabel,
     actionLabel,
@@ -526,6 +556,7 @@ export function ConsentSettings(props = {}) {
     scope,
     maxAgeDays,
     purposeVersion,
+    gaMeasurementId,
   });
 
   if (!configured || choice === null) return null;
