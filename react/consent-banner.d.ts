@@ -78,6 +78,8 @@ export interface ConsentChoice {
 export declare function useConsentChoice(options?: {
   gaMeasurementId?: string;
   gtmContainerId?: string;
+  /** Nom d'app joint aux événements ; sinon le chemin de base. */
+  appName?: string;
   scope?: string;
   /** Âge maximal du choix, en jours. Défaut 395 (treize mois). 0 désactive. */
   maxAgeDays?: number;
@@ -88,6 +90,8 @@ export declare function useConsentChoice(options?: {
 export interface ConsentBannerProps {
   gaMeasurementId?: string;
   gtmContainerId?: string;
+  /** Nom d'app joint aux événements ; sinon le chemin de base. */
+  appName?: string;
   /** Portée explicite de la clé ; sinon le chemin de base de l'app. */
   scope?: string;
   /** Âge maximal du choix, en jours. Défaut 395 (treize mois). 0 désactive. */

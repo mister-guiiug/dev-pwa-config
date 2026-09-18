@@ -15,6 +15,12 @@ export interface InitAnalyticsOptions {
   gtmContainerId?: string;
   /** ID de mesure GA4 (`G-XXXXXXXXXX`). */
   gaMeasurementId?: string;
+  /**
+   * Nom de l'application, joint en `app_name` à chaque événement. Par défaut
+   * le premier segment du chemin de base — donc rien à passer pour une app
+   * servie sous `/<dépôt>/`.
+   */
+  appName?: string;
   /** Consentement connu au démarrage (choix déjà enregistré par l'app). */
   consent?: Consent;
   /**
@@ -37,6 +43,12 @@ export declare function parseGtmContainerId(raw?: string): string | null;
 
 /** ID de mesure GA4 valide, ou `null`. */
 export declare function parseGaMeasurementId(raw?: string): string | null;
+
+/**
+ * Le nom de l'application déduit d'un chemin de base (`/mister-cim10/` →
+ * `mister-cim10`), ou `null` à la racine. Par défaut, le chemin du build.
+ */
+export declare function nomDApp(base?: string): string | null;
 
 /** Pousse un objet dans `dataLayer` (forme GTM). */
 export declare function dataLayerPush(payload: Record<string, unknown>): void;
