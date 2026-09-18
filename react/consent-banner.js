@@ -191,7 +191,7 @@ export function clearConsentChoice(scope) {
  * ailleurs que dans le bandeau.
  *
  * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
- *   scope?: string }} [options]
+ *   appName?: string, scope?: string }} [options]
  * @returns {{ choice: 'granted'|'denied'|null, configured: boolean,
  *   needed: boolean, accept: () => void, refuse: () => void,
  *   reset: () => void }}
@@ -233,8 +233,14 @@ function choixFrais(scope, maxAgeDays, purposeVersion) {
 }
 
 export function useConsentChoice(options = {}) {
-  const { gaMeasurementId, gtmContainerId, scope, maxAgeDays, purposeVersion } =
-    options;
+  const {
+    gaMeasurementId,
+    gtmContainerId,
+    appName,
+    scope,
+    maxAgeDays,
+    purposeVersion,
+  } = options;
   const [choice, setChoice] = useState(() =>
     choixFrais(scope, maxAgeDays, purposeVersion)
   );
@@ -277,7 +283,9 @@ export function useConsentChoice(options = {}) {
     // On se contente alors de lire l'identifiant qu'elle a posé.
     const deja = getAnalyticsId();
     const id =
-      deja ?? initAnalytics({ gaMeasurementId, gtmContainerId }).id ?? null;
+      deja ??
+      initAnalytics({ gaMeasurementId, gtmContainerId, appName }).id ??
+      null;
     setConfigured(Boolean(id));
     if (!id) return;
     // Le choix d'hier, rejoué : sans ça le tag n'est jamais injecté, quel que
@@ -289,7 +297,14 @@ export function useConsentChoice(options = {}) {
     // le faire compter.
     if (choixFrais(scope, maxAgeDays, purposeVersion) === 'granted')
       setAnalyticsConsent({ analytics: true });
-  }, [gaMeasurementId, gtmContainerId, scope, maxAgeDays, purposeVersion]);
+  }, [
+    gaMeasurementId,
+    gtmContainerId,
+    appName,
+    scope,
+    maxAgeDays,
+    purposeVersion,
+  ]);
 
   const decide = useCallback(
     next => {
@@ -359,6 +374,7 @@ export function useConsentChoice(options = {}) {
  * qui n'en a pas. Fournir les deux affiche le lien ET le repli.
  *
  * @param {{ gaMeasurementId?: string, gtmContainerId?: string,
+ *   appName?: string,
  *   scope?: string, policyHref?: string, className?: string,
  *   placement?: 'static'|'fixed',
  *   title?: import('react').ReactNode, message?: import('react').ReactNode,
@@ -369,6 +385,7 @@ export function ConsentBanner(props) {
   const {
     gaMeasurementId,
     gtmContainerId,
+    appName,
     scope,
     maxAgeDays,
     purposeVersion,
@@ -387,6 +404,7 @@ export function ConsentBanner(props) {
   const { needed, accept, refuse } = useConsentChoice({
     gaMeasurementId,
     gtmContainerId,
+    appName,
     scope,
     maxAgeDays,
     purposeVersion,

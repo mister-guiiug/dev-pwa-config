@@ -54,7 +54,13 @@ const CONSENT_ALIASES = {
 };
 
 /** @type {{ mode: 'gtm'|'ga4'|null, id: string|null, loaded: boolean, granted: boolean }} */
-const state = { mode: null, id: null, loaded: false, granted: false };
+const state = {
+  mode: null,
+  id: null,
+  loaded: false,
+  granted: false,
+  appName: null,
+};
 
 /**
  * La vue d'arrivée mise de côté faute de consentement, rejouée par
@@ -76,6 +82,41 @@ export function parseGaMeasurementId(raw) {
   if (!raw) return null;
   const id = String(raw).trim().toUpperCase();
   return /^G-[A-Z0-9]+$/.test(id) ? id : null;
+}
+
+/**
+ * Le nom de l'application, déduit du chemin de base — sans configuration.
+ *
+ * POURQUOI CETTE DIMENSION EXISTE. Les sites du parc partagent une propriété
+ * GA4 (décision : `pwa-starter-kit/docs/adr/0011-mesure-audience.md`) : sans
+ * rien pour les distinguer, le global est lisible et la maille application ne
+ * l'est plus.
+ *
+ * ET POURQUOI PAS `page_path`. Au-delà d'environ 500 lignes, les rapports
+ * standard de GA4 rangent le reste dans « (other) ». Vingt applications aux
+ * chemins distincts y arrivent, et la ventilation devient trouée sans
+ * prévenir. `app_name` a autant de valeurs qu'il y a d'applications : il ne
+ * s'en approche jamais.
+ *
+ * LE CHEMIN DE BASE LE PORTE DÉJÀ. Chaque application est construite avec
+ * `base: '/<dépôt>/'` — `envoieVue` s'en sert plus bas pour reconstruire
+ * `page_location`, et la portée du consentement s'en sert aussi. Une
+ * application de plus arrive donc instrumentée sans que personne n'y pense.
+ *
+ * Rend `null` à la racine (`/`) : là, le chemin ne nomme rien, et inventer un
+ * nom vaudrait moins que le `(not set)` de GA4, qui dit la vérité. Une
+ * application servie à la racine passe `appName` explicitement.
+ *
+ * @param {string} [base] Chemin de base ; par défaut celui du build.
+ * @returns {string|null}
+ */
+export function nomDApp(base) {
+  const brut =
+    base ??
+    (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) ??
+    '/';
+  const segment = String(brut).split('/').filter(Boolean)[0];
+  return segment ?? null;
 }
 
 /**
@@ -218,6 +259,7 @@ function loadTag() {
  *
  * @param {{
  *   gtmContainerId?: string, gaMeasurementId?: string,
+ *   appName?: string,
  *   consent?: 'granted'|'denied'|Record<string, boolean|'granted'|'denied'>,
  *   requireConsent?: boolean,
  *   consentDefaults?: Record<string, 'granted'|'denied'>,
@@ -228,10 +270,15 @@ export function initAnalytics(options = {}) {
   const {
     gtmContainerId,
     gaMeasurementId,
+    appName,
     consent,
     requireConsent = true,
     consentDefaults,
   } = options;
+
+  // Explicite d'abord, chemin de base ensuite : une application servie à la
+  // racine n'a rien à déduire, elle se nomme.
+  state.appName = appName ?? nomDApp();
 
   const gtm = parseGtmContainerId(gtmContainerId);
   const ga = parseGaMeasurementId(gaMeasurementId);
@@ -308,8 +355,14 @@ export function trackEvent(name, params = {}) {
   const event = String(name ?? '').trim();
   if (!event) return false;
   if (!state.granted) return false;
-  if (state.mode === 'ga4') gtag('event', event, params);
-  else dataLayerPush({ event, ...params });
+  // `app_name` sur CHAQUE événement, pas seulement sur la configuration : une
+  // dimension personnalisée de GA4 est à portée ÉVÉNEMENT, elle ne se remplit
+  // que par un paramètre d'événement. L'appelant garde le dernier mot — s'il
+  // nomme lui-même l'application, c'est qu'il sait quelque chose de plus.
+  const charge =
+    state.appName === null ? params : { app_name: state.appName, ...params };
+  if (state.mode === 'ga4') gtag('event', event, charge);
+  else dataLayerPush({ event, ...charge });
   return true;
 }
 
@@ -389,6 +442,7 @@ export function resetAnalytics() {
   state.id = null;
   state.loaded = false;
   state.granted = false;
+  state.appName = null;
   // Sans cette ligne, la vue mise de côté par un test fuiterait dans le
   // suivant — et y partirait au premier accord.
   attente = null;

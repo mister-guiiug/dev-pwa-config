@@ -21,6 +21,7 @@ import {
   getAnalyticsId,
   initAnalytics,
   isAnalyticsLoaded,
+  nomDApp,
   parseGaMeasurementId,
   parseGtmContainerId,
   resetAnalytics,
@@ -266,4 +267,105 @@ test('les fragments de build déclarent le consentement avant le tag', () => {
 
   // Sans identifiant : aucun fragment, donc aucun état de consentement inutile.
   assert.deepEqual(buildAnalyticsHtmlFragments({}), { head: '', body: '' });
+});
+
+/* ---------------------------------------------------------------------------
+ * `app_name` — la maille application dans une propriété commune.
+ *
+ * Les sites du parc partagent une propriété GA4 (ADR 0011 du squelette). Sans
+ * dimension qui les nomme, le total est lisible et le détail ne l'est plus. Et
+ * ce n'est
+ * PAS `page_path` qui peut jouer ce rôle : au-delà d'environ 500 lignes, les
+ * rapports standard rangent le reste dans « (other) ».
+ * ------------------------------------------------------------------------ */
+
+test('le nom d’app se déduit du chemin de base, et rien à la racine', () => {
+  assert.equal(nomDApp('/mister-cim10/'), 'mister-cim10');
+  assert.equal(nomDApp('/miss-dice/'), 'miss-dice');
+  // Sans barre finale, et avec un sous-chemin : le PREMIER segment nomme.
+  assert.equal(nomDApp('/mister-cim10'), 'mister-cim10');
+  assert.equal(nomDApp('/mister-cim10/aide'), 'mister-cim10');
+  // À la racine, le chemin ne nomme rien : `null` plutôt qu'un nom inventé,
+  // et GA4 affichera « (not set) », qui dit la vérité.
+  assert.equal(nomDApp('/'), null);
+  assert.equal(nomDApp(''), null);
+});
+
+test('app_name accompagne CHAQUE événement, vue de page comprise', () => {
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    initAnalytics({
+      gaMeasurementId: 'G-ABC123',
+      appName: 'mister-cim10',
+      requireConsent: false,
+    });
+
+    trackEvent('export');
+    trackPageView('/aide');
+
+    const parametres = commands()
+      .filter(c => c[0] === 'event')
+      .map(c => c[2]);
+    // Une dimension personnalisée de GA4 est à portée ÉVÉNEMENT : elle ne se
+    // remplit que par un paramètre d'événement. La poser une fois sur la
+    // configuration ne suffirait pas.
+    assert.equal(parametres.length, 2);
+    assert.ok(parametres.every(p => p.app_name === 'mister-cim10'));
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('app_name voyage aussi dans la couche de données, en mode GTM', () => {
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    initAnalytics({
+      gtmContainerId: 'GTM-ABC123',
+      appName: 'miss-dice',
+      requireConsent: false,
+    });
+    trackEvent('lancer');
+    assert.equal(events().at(-1).app_name, 'miss-dice');
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('l’appelant garde le dernier mot sur app_name', () => {
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    initAnalytics({
+      gaMeasurementId: 'G-ABC123',
+      appName: 'mister-cim10',
+      requireConsent: false,
+    });
+    // S'il nomme l'application lui-même, c'est qu'il sait quelque chose de
+    // plus — une vue rejouée pour un autre écran, par exemple.
+    trackEvent('clic', { app_name: 'autre-chose' });
+    assert.equal(commands().at(-1)[2].app_name, 'autre-chose');
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('sans nom d’app, aucune clé vide n’est envoyée', () => {
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    // `BASE_URL` vaut « / » hors build : la déduction rend `null`.
+    initAnalytics({ gaMeasurementId: 'G-ABC123', requireConsent: false });
+    trackEvent('clic');
+    // Ni `app_name: null` ni `app_name: ''` : la clé est absente. Une valeur
+    // vide créerait une ligne « (not set) » qu'on croirait significative.
+    assert.ok(!('app_name' in commands().at(-1)[2]));
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
 });
