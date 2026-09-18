@@ -41,6 +41,13 @@ export declare function parseGaMeasurementId(raw?: string): string | null;
 /** Pousse un objet dans `dataLayer` (forme GTM). */
 export declare function dataLayerPush(payload: Record<string, unknown>): void;
 
+/**
+ * Le domaine le plus large où le navigateur accepte réellement un cookie, ou
+ * `'none'` (cookie posé sur l'hôte exact). Mesuré par sonde : un suffixe
+ * public comme `github.io` ne se devine pas en lisant le nom d'hôte.
+ */
+export declare function domaineDeCookie(doc?: Document, hote?: string): string;
+
 /** Prépare la mesure. N'injecte rien tant que le consentement manque. */
 export declare function initAnalytics(
   options?: InitAnalyticsOptions
