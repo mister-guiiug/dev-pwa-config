@@ -104,7 +104,7 @@ test('ignores <script src> and typed scripts (only bare <script> hashed)', () =>
 test('analytics: autorise les hôtes que pwaSeoPlugin injecte réellement', async () => {
   const { buildAnalyticsHtmlFragments } = await import('../vite-pwa-base.js');
   const { head, body } = buildAnalyticsHtmlFragments({
-    gtmContainerId: 'GTM-ABC123',
+    gaMeasurementId: 'G-ABC123',
   });
 
   // Les origines sont COMPARÉES ENTIÈREMENT à ce que le module déclare, jamais
@@ -119,11 +119,13 @@ test('analytics: autorise les hôtes que pwaSeoPlugin injecte réellement', asyn
       )
     ),
   ];
-  assert.deepEqual(origins, ANALYTICS_HOSTS.script, 'fragment GTM attendu');
+  assert.deepEqual(origins, ANALYTICS_HOSTS.script, 'fragment GA4 attendu');
 
-  const iframe = /<iframe[^>]+src="([^"]+)"/.exec(body);
-  assert.ok(iframe, 'repli noscript attendu');
-  assert.deepEqual([new URL(iframe[1]).origin], ANALYTICS_HOSTS.frame);
+  // PLUS DE CORPS depuis le retrait de GTM (18/09/2026) : le `<iframe>` de
+  // repli `noscript` lui appartenait. `ANALYTICS_HOSTS.frame` reste déclaré —
+  // le resserrer touche la CSP de toutes les apps consommatrices, et c'est une
+  // décision à prendre pour elle-même.
+  assert.equal(body, '', 'plus de fragment de corps sans GTM');
 
   // La page réelle : fragments analytics injectés, PUIS la CSP par-dessus.
   const html = `<head><meta charset="utf-8">${head}</head><body>${body}</body>`;

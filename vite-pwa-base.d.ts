@@ -2,7 +2,6 @@
  * Types pour vite-pwa-base. Le plugin est typé structurellement pour éviter
  * d'importer `vite` (peerDep côté consumer).
  */
-export function parseGtmContainerId(raw: string | undefined): string | null;
 export function parseGaMeasurementId(raw: string | undefined): string | null;
 
 export function resolveSeoPublicUrls(
@@ -22,11 +21,10 @@ export function resolveSeoPublicUrls(
  * plus les marqueurs `__ANALYTICS_*__` qui les recevaient.
  */
 export function buildAnalyticsHtmlFragments(overrides?: {
-  gtmContainerId?: string;
   gaMeasurementId?: string;
   /**
    * `false` n'écrit PAS l'état de consentement par défaut. À réserver aux
-   * déploiements qui le gèrent ailleurs (une CMP, GTM). Par défaut, tous les
+   * déploiements qui le gèrent ailleurs (une CMP). Par défaut, tous les
    * signaux sont `denied` avant le chargement du tag — une commande
    * postérieure n'aurait pas d'effet rétroactif.
    */
@@ -43,8 +41,6 @@ export interface PwaSeoPluginOptions {
   logoPath?: string;
   iconQuery?: string;
   llms?: string;
-  /** Force le conteneur GTM (sinon `VITE_GTM_CONTAINER_ID`). */
-  gtmContainerId?: string;
   /** Force l'ID GA4 (sinon `VITE_GA_MEASUREMENT_ID`). */
   gaMeasurementId?: string;
   /** `false` pour ne pas écrire l'état de consentement par défaut. */

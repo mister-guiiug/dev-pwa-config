@@ -11,8 +11,6 @@ export type ConsentValue = boolean | 'granted' | 'denied';
 export type Consent = 'granted' | 'denied' | Record<string, ConsentValue>;
 
 export interface InitAnalyticsOptions {
-  /** Conteneur GTM (`GTM-XXXXXXX`). Prioritaire sur `gaMeasurementId`. */
-  gtmContainerId?: string;
   /** ID de mesure GA4 (`G-XXXXXXXXXX`). */
   gaMeasurementId?: string;
   /**
@@ -33,13 +31,10 @@ export interface InitAnalyticsOptions {
 }
 
 export interface AnalyticsState {
-  mode: 'gtm' | 'ga4' | null;
+  mode: 'ga4' | null;
   id: string | null;
   loaded: boolean;
 }
-
-/** Conteneur GTM valide, ou `null`. */
-export declare function parseGtmContainerId(raw?: string): string | null;
 
 /** ID de mesure GA4 valide, ou `null`. */
 export declare function parseGaMeasurementId(raw?: string): string | null;
@@ -50,7 +45,7 @@ export declare function parseGaMeasurementId(raw?: string): string | null;
  */
 export declare function nomDApp(base?: string): string | null;
 
-/** Pousse un objet dans `dataLayer` (forme GTM). */
+/** Pousse un OBJET dans `dataLayer`, là où `gtag()` y pousse des `arguments`. */
 export declare function dataLayerPush(payload: Record<string, unknown>): void;
 
 /**
@@ -90,7 +85,7 @@ export declare function setUserProperties(
 /** Le tag est-il réellement chargé ? */
 export declare function isAnalyticsLoaded(): boolean;
 
-/** L'identifiant en service (`GTM-…`, `G-…`) ou `null`. */
+/** L'identifiant de mesure en service (`G-…`) ou `null`. */
 export declare function getAnalyticsId(): string | null;
 
 /** Remet le module à zéro. Réservé aux tests. */

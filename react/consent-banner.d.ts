@@ -77,7 +77,6 @@ export interface ConsentChoice {
  */
 export declare function useConsentChoice(options?: {
   gaMeasurementId?: string;
-  gtmContainerId?: string;
   /** Nom d'app joint aux événements ; sinon le chemin de base. */
   appName?: string;
   scope?: string;
@@ -89,7 +88,6 @@ export declare function useConsentChoice(options?: {
 
 export interface ConsentBannerProps {
   gaMeasurementId?: string;
-  gtmContainerId?: string;
   /** Nom d'app joint aux événements ; sinon le chemin de base. */
   appName?: string;
   /** Portée explicite de la clé ; sinon le chemin de base de l'app. */
@@ -129,7 +127,6 @@ export declare const ConsentBanner: FC<ConsentBannerProps>;
 
 export interface ConsentSettingsProps {
   gaMeasurementId?: string;
-  gtmContainerId?: string;
   scope?: string;
   maxAgeDays?: number;
   purposeVersion?: number;

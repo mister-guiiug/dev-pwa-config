@@ -1,15 +1,10 @@
 /**
- * Google Analytics 4 / Tag Manager — le consentement d'abord.
+ * Google Analytics 4 — le consentement d'abord.
  *
- * CE QUI EXISTAIT DÉJÀ, et ce qui manquait. `pwaSeoPlugin` injecte depuis
- * longtemps les fragments GTM/GA4 dans `index.html`, à la place des
- * marqueurs `__ANALYTICS_HEAD__` / `__ANALYTICS_BODY__`. Mesure sur les seize
- * apps : **neuf** portent ces marqueurs, **trois** ont recopié un extrait
- * `gtag` en dur dans leur `index.html` (miss-carbook, miss-contraction,
- * mister-cim10), **sept** n'ont rien. Et surtout, **aucune** ne mesure quoi que
- * ce soit ensuite : zéro `trackEvent`, zéro vue de page sur changement de
- * route, zéro gestion du consentement. Le tag était posé, la mesure n'existait
- * pas.
+ * CE QUI EXISTAIT DÉJÀ, et ce qui manquait. Le tag était posé dans plusieurs
+ * apps, et **aucune** ne mesurait quoi que ce soit ensuite : zéro
+ * `trackEvent`, zéro vue de page sur changement de route, zéro gestion du
+ * consentement. Le tag était là, la mesure n'existait pas.
  *
  * TROIS TROUS, QUE CE MODULE REFERME :
  *
@@ -21,9 +16,24 @@
  *  2. **Les vues de page d'une SPA.** GA4 n'envoie `page_view` qu'au
  *     chargement initial : sur une PWA à routeur, toute la navigation est
  *     invisible. `trackPageView` (et le hook `usePageViews`) la rend visible.
- *  3. **Les événements.** `trackEvent` écrit au bon endroit selon ce qui est
- *     installé — `dataLayer.push({ event })` pour GTM, `gtag('event', …)` pour
- *     GA4 seul — au lieu de laisser chaque app deviner.
+ *  3. **La maille application.** Les sites du parc partagent une propriété :
+ *     `app_name` accompagne chaque événement pour qu'on puisse encore les
+ *     distinguer dedans.
+ *
+ * TAG MANAGER A ÉTÉ RETIRÉ D'ICI le 18/09/2026, et ce n'est pas un oubli.
+ * Ce module portait un second mode, `gtm` : `gtm.js` au lieu de `gtag/js`, et
+ * `dataLayer.push({ event })` au lieu de `gtag('event', …)`. Il n'a **jamais
+ * tourné en production**. Le relevé du 16/09 avait trouvé quatre conteneurs,
+ * un par dépôt, tous les quatre VIDES — zéro balise, zéro déclencheur, zéro
+ * variable — et le compte Tag Manager n'en porte plus aucun depuis. Un chemin
+ * que rien n'exerce et que rien ne peut exercer donne l'apparence d'une
+ * capacité sans en être une.
+ *
+ * La décision, avec la condition précise de son retour, est écrite dans
+ * `pwa-starter-kit/docs/adr/0011-mesure-audience.md` : GTM reviendra le jour
+ * où une balise NON-GA4 devra être posée sans release, et ce jour-là ce sera
+ * un conteneur unique, l'identifiant passé par la couche de données, et
+ * l'export du conteneur committé.
  *
  * SANS DÉPENDANCE, SANS REACT. Le pont React est `react/use-page-views.js`.
  *
@@ -33,7 +43,12 @@
  * aucun script en ligne à hacher.
  */
 
-const GTM_HOST = 'https://www.googletagmanager.com';
+/**
+ * L'hôte qui sert `gtag/js`. Il s'appelle « googletagmanager » même sans Tag
+ * Manager : c'est de là que GA4 se sert, et c'est pourquoi le retirer d'une
+ * CSP éteint la mesure.
+ */
+const TAG_HOST = 'https://www.googletagmanager.com';
 
 /** Les signaux du mode consentement (v2), tous refusés par défaut. */
 export const CONSENT_SIGNALS = [
@@ -53,7 +68,7 @@ const CONSENT_ALIASES = {
   personalization: ['personalization_storage'],
 };
 
-/** @type {{ mode: 'gtm'|'ga4'|null, id: string|null, loaded: boolean, granted: boolean }} */
+/** @type {{ mode: 'ga4'|null, id: string|null, loaded: boolean, granted: boolean }} */
 const state = {
   mode: null,
   id: null,
@@ -69,13 +84,6 @@ const state = {
  * @type {{ path: string, title: string }|null}
  */
 let attente = null;
-
-/** Conteneur GTM valide (GTM-XXXX) ou null. */
-export function parseGtmContainerId(raw) {
-  if (!raw) return null;
-  const id = String(raw).trim().toUpperCase();
-  return /^GTM-[A-Z0-9]+$/.test(id) ? id : null;
-}
 
 /** ID de mesure GA4 valide (G-XXXX) ou null. */
 export function parseGaMeasurementId(raw) {
@@ -123,9 +131,9 @@ export function nomDApp(base) {
  * Écrit dans `dataLayer`.
  *
  * `gtag` DOIT pousser son objet `arguments`, pas un tableau : c'est cette
- * forme exacte que GTM et gtag.js reconnaissent pour les commandes
- * (`consent`, `config`, `event`). Un `push(['consent', …])` est ignoré en
- * silence — l'erreur classique quand on réécrit l'extrait à la main.
+ * forme exacte que gtag.js reconnaît pour les commandes (`consent`, `config`,
+ * `event`). Un `push(['consent', …])` est ignoré en silence — l'erreur
+ * classique quand on réécrit l'extrait à la main.
  */
 function gtag() {
   if (typeof window === 'undefined') return;
@@ -135,7 +143,12 @@ function gtag() {
 }
 
 /**
- * Pousse un objet dans `dataLayer` (forme GTM).
+ * Pousse un OBJET dans `dataLayer`, là où `gtag()` y pousse des `arguments`.
+ *
+ * Plus aucun appel interne depuis le retrait de Tag Manager — c'était la
+ * forme qu'il attendait. Conservée parce qu'elle est exportée et qu'elle reste
+ * la primitive juste pour quiconque doit écrire dans la couche de données.
+ *
  * @param {Record<string, unknown>} payload
  */
 export function dataLayerPush(payload) {
@@ -171,7 +184,7 @@ export function isAnalyticsLoaded() {
   return state.loaded;
 }
 
-/** L'identifiant réellement en service (`GTM-…`, `G-…`) ou `null`. */
+/** L'identifiant de mesure réellement en service (`G-…`) ou `null`. */
 export function getAnalyticsId() {
   return state.id;
 }
@@ -232,25 +245,16 @@ function loadTag() {
   if (state.loaded || !state.id || typeof document === 'undefined') return;
   const script = document.createElement('script');
   script.async = true;
-  script.src =
-    state.mode === 'gtm'
-      ? `${GTM_HOST}/gtm.js?id=${encodeURIComponent(state.id)}`
-      : `${GTM_HOST}/gtag/js?id=${encodeURIComponent(state.id)}`;
+  script.src = `${TAG_HOST}/gtag/js?id=${encodeURIComponent(state.id)}`;
   document.head.append(script);
 
-  if (state.mode === 'gtm') {
-    // L'événement `gtm.js` est ce que GTM attend pour démarrer ses balises ;
-    // l'horodatage sert à ses déclencheurs de temporisation.
-    dataLayerPush({ 'gtm.start': Date.now(), event: 'gtm.js' });
-  } else {
-    gtag('js', new Date());
-    // `cookie_domain` est POSÉ, jamais laissé à `'auto'` : voir
-    // `domaineDeCookie`. Sans lui, gtag vise `github.io` et se fait refuser.
-    gtag('config', state.id, {
-      send_page_view: false,
-      cookie_domain: domaineDeCookie(),
-    });
-  }
+  gtag('js', new Date());
+  // `cookie_domain` est POSÉ, jamais laissé à `'auto'` : voir
+  // `domaineDeCookie`. Sans lui, gtag vise `github.io` et se fait refuser.
+  gtag('config', state.id, {
+    send_page_view: false,
+    cookie_domain: domaineDeCookie(),
+  });
   state.loaded = true;
 }
 
@@ -258,17 +262,16 @@ function loadTag() {
  * Prépare la mesure. N'injecte RIEN tant que le consentement n'est pas donné.
  *
  * @param {{
- *   gtmContainerId?: string, gaMeasurementId?: string,
+ *   gaMeasurementId?: string,
  *   appName?: string,
  *   consent?: 'granted'|'denied'|Record<string, boolean|'granted'|'denied'>,
  *   requireConsent?: boolean,
  *   consentDefaults?: Record<string, 'granted'|'denied'>,
  * }} [options]
- * @returns {{ mode: 'gtm'|'ga4'|null, id: string|null, loaded: boolean }}
+ * @returns {{ mode: 'ga4'|null, id: string|null, loaded: boolean }}
  */
 export function initAnalytics(options = {}) {
   const {
-    gtmContainerId,
     gaMeasurementId,
     appName,
     consent,
@@ -280,13 +283,9 @@ export function initAnalytics(options = {}) {
   // racine n'a rien à déduire, elle se nomme.
   state.appName = appName ?? nomDApp();
 
-  const gtm = parseGtmContainerId(gtmContainerId);
   const ga = parseGaMeasurementId(gaMeasurementId);
-  // Même arbitrage que `buildAnalyticsHtmlFragments` : si les deux sont
-  // fournis, GTM seul est chargé (GA4 se configure DANS GTM), sans quoi les
-  // événements sont comptés deux fois.
-  state.mode = gtm ? 'gtm' : ga ? 'ga4' : null;
-  state.id = gtm ?? ga;
+  state.mode = ga ? 'ga4' : null;
+  state.id = ga;
 
   if (!state.id || typeof window === 'undefined') {
     return { mode: state.mode, id: state.id, loaded: false };
@@ -361,8 +360,10 @@ export function trackEvent(name, params = {}) {
   // nomme lui-même l'application, c'est qu'il sait quelque chose de plus.
   const charge =
     state.appName === null ? params : { app_name: state.appName, ...params };
-  if (state.mode === 'ga4') gtag('event', event, charge);
-  else dataLayerPush({ event, ...charge });
+  // Sans condition de mode : `gtag()` écrit dans `dataLayer`, que le script
+  // distant soit déjà là ou non — c'est exactement ce pour quoi la file
+  // existe, et les commandes en attente se rejouent à son chargement.
+  gtag('event', event, charge);
   return true;
 }
 
@@ -431,8 +432,7 @@ function envoieVue(path, title) {
  */
 export function setUserProperties(properties = {}) {
   if (!state.granted) return false;
-  if (state.mode === 'ga4') gtag('set', 'user_properties', properties);
-  else dataLayerPush({ event: 'user_properties', ...properties });
+  gtag('set', 'user_properties', properties);
   return true;
 }
 

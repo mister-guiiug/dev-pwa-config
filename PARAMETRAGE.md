@@ -282,24 +282,33 @@ Bearer : ne pas la confondre avec un jeton.
 **D. L'observabilité.** `VITE_SENTRY_DSN` en `vars`, facultative, **jamais**
 dans `required-env` : absente, Sentry n'est pas chargé et l'application tourne.
 
-**D bis. La mesure d'audience.** `VITE_GA_MEASUREMENT_ID` (`G-…`) ou
-`VITE_GTM_CONTAINER_ID` (`GTM-…`), en `vars`, facultatives, **jamais** dans
-`required-env` non plus : absentes, `ConsentBanner` ne rend rien et aucune
-question n'est posée à l'utilisateur.
+**D bis. La mesure d'audience.** `VITE_GA_MEASUREMENT_ID` (`G-…`), en `vars`,
+facultative, **jamais** dans `required-env` non plus : absente, `ConsentBanner`
+ne rend rien et aucune question n'est posée à l'utilisateur.
 
 Elles manquaient à ce document jusqu'au 15/09/2026, et c'est une des raisons
 pour lesquelles **aucune des vingt et une applications du parc n'en portait** :
 le module existait, la marche à suivre pour l'alimenter n'était écrite nulle
 part d'opérationnel.
 
-**Une par site, jamais partagée.** C'est ce qui rend le suivi indépendant : une
-propriété GA4 par application, donc un `G-…` par dépôt. Deux applications qui
-partageraient un identifiant mélangeraient leurs audiences sans qu'aucun
-rapport ne le signale.
+**UNE SEULE PROPRIÉTÉ POUR LE PARC, ET LE MÊME `G-…` PARTOUT** — depuis l'ADR
+0011 du squelette, et c'est l'inverse de ce que ce document disait jusqu'au
+18/09/2026.
 
-Si les deux sont posées, **seul GTM est chargé** — GA4 se configure dedans, et
-les fournir toutes deux au tag compterait chaque événement deux fois. Le code
-tranche seul, il n'y a rien à arbitrer au déploiement.
+On lisait ici « une propriété GA4 par application, donc un `G-…` par dépôt ».
+C'est ce qui a été fait les 15 et 16/09 — dix-neuf propriétés — et ça ne donne
+la vue d'ensemble à aucun prix : GA4 gratuit n'a pas de propriété de synthèse,
+et **la somme des dix-neuf est fausse** puisque les sites partagent l'origine,
+donc le cookie `_ga`, donc l'identifiant de client. Un visiteur de trois
+applications y est trois utilisateurs.
+
+Les applications ne se mélangent pas pour autant : `trackEvent` joint
+`app_name` à chaque événement, déduit du chemin de base. Le détail par dépôt
+est une dimension, le total est natif, et les deux sortent des mêmes données.
+
+**Tag Manager n'est plus une option.** `VITE_GTM_CONTAINER_ID` n'est plus lue
+nulle part : le compte n'a plus aucun conteneur, et le socle ne sait plus
+charger `gtm.js`. La condition de son retour est écrite dans l'ADR.
 
 **ET LA VARIABLE DOIT ATTEINDRE LE BUILD, ce qui ne va pas de soi.** Posée sur
 le dépôt, elle ne fait rien tant que le workflow appelant ne la passe pas en
