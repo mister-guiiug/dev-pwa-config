@@ -18,7 +18,7 @@
 #     contents: read
 #   jobs:
 #     cleanup:
-#       uses: mister-guiiug/dev-pwa-config/.github/workflows/cleanup-runs.yml@v5
+#       uses: mister-guiiug/dev-pwa-config/.github/workflows/cleanup-runs.yml@v6
 #       with:
 #         keep: ${{ inputs.keep }}
 #         dry-run: ${{ inputs.dry-run }}

@@ -5,7 +5,7 @@
 # on: [pull_request, push]
 # jobs:
 #   ci:
-#     uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v5
+#     uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v6
 #     with:
 #       run-doctor: true   # la checklist du parc, lue sur le dépôt ET sur dist/
 #       run-e2e: false
@@ -211,7 +211,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v5
+      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -239,7 +239,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v5
+      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -389,7 +389,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v5
+      - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6
         with:
           node-version: ${{ inputs.node-version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
