@@ -1,5 +1,50 @@
 # Changelog
 
+## 5.0.0
+
+### Major Changes
+
+- Tag Manager quitte le socle — il n'a jamais tourné, et il ne le peut plus.
+  
+  Le module portait un second mode, `gtm` : `gtm.js` au lieu de `gtag/js`, et `dataLayer.push({ event })` au lieu de `gtag('event', …)`. Relevé du 18/09/2026 par l'API Tag Manager : **le compte ne porte plus aucun conteneur**. Les quatre qui existaient — un par dépôt, tous les quatre VIDES, zéro balise, zéro déclencheur, zéro variable — ont été supprimés le 16/09.
+  
+  Une capacité que rien n'exerce **et que rien ne peut exercer** n'est pas une capacité : c'est l'apparence d'une, avec des tests verts pour la garantir.
+  
+  **CE QUI DISPARAÎT — c'est un MAJEUR :**
+  
+  - `parseGtmContainerId`, des **deux** modules qui en portaient une copie (`analytics.js` et `vite-pwa-base.js`) ;
+  - l'option `gtmContainerId` — `initAnalytics`, `useConsentChoice`, `ConsentBanner`, `ConsentSettings`, `pwaSeoPlugin` ;
+  - le mode `gtm` de l'état, le chargement de `gtm.js` et le `gtm.start` ;
+  - les branches `dataLayer` de `trackEvent` et `setUserProperties` ;
+  - la moitié GTM de `buildAnalyticsHtmlFragments` et son `<iframe>` `noscript` ;
+  - la variable de build `VITE_GTM_CONTAINER_ID`.
+  
+  **Aucune application du parc n'est cassée** : vérifié, zéro `gtmContainerId` passé nulle part. Le contrat du paquet change quand même, d'où le majeur.
+  
+  **UNE SIMPLIFICATION QUI VA PLUS LOIN QUE LE RETRAIT.** `trackEvent` testait `state.mode === 'ga4'` avant d'appeler `gtag`. La condition tombe, et le résultat est **plus correct qu'avant** : `gtag()` écrit dans `dataLayer` que le script distant soit là ou non — c'est exactement ce pour quoi la file existe, et les commandes en attente se rejouent à son chargement.
+  
+  **CE QUI RESTE, DÉLIBÉRÉMENT.** `dataLayerPush` — exportée, désormais sans appelant interne, mais c'est la primitive juste pour écrire un objet dans la couche de données. `ANALYTICS_HOSTS.frame` de `vite-csp` — il n'existait que pour l'`iframe` `noscript`, mais le resserrer change la CSP de toutes les applications consommatrices : c'est une décision à prendre pour elle-même. `litVuesDePage` de `playwright-entree` continue de lire les deux formes de `dataLayer` : c'est un LECTEUR de page arbitraire, pas un producteur.
+  
+  La décision, avec la condition précise du retour de GTM, est écrite dans `pwa-starter-kit/docs/adr/0011-mesure-audience.md`.
+  
+  **Documentation remise d'aplomb au passage.** `PARAMETRAGE.md` affirmait « une propriété GA4 par application, donc un `G-…` par dépôt » et « si les deux sont posées, seul GTM est chargé ». Les deux sont désormais faux.
+
+### Minor Changes
+
+- `app_name` sur chaque événement, déduit du chemin de base — la maille application dans une propriété commune.
+  
+  Les sites du parc partagent désormais **une seule propriété GA4** (ADR 0011 du squelette) : sans rien pour les distinguer dedans, le total serait lisible et le détail ne le serait plus.
+  
+  `trackEvent` joint donc `app_name` à **chaque** événement, vue de page comprise. Une dimension personnalisée de GA4 est à portée ÉVÉNEMENT : elle ne se remplit que par un paramètre d'événement, la poser une fois sur la configuration ne suffirait pas.
+  
+  **PAS `page_path`.** Au-delà d'environ 500 lignes, les rapports standard rangent le reste dans « (other) » ; vingt applications aux chemins distincts y arrivent, et la ventilation devient trouée sans prévenir. `app_name` a autant de valeurs qu'il y a d'applications.
+  
+  **AUCUNE CONFIGURATION PAR APPLICATION.** La valeur se déduit du chemin de base — `/mister-cim10/` → `mister-cim10`. Chaque app est construite avec `base: '/<dépôt>/'`, et `envoieVue` s'en servait déjà pour reconstruire `page_location`. Une application de plus arrive donc instrumentée sans que personne y pense.
+  
+  `appName` reste passable explicitement, jusqu'à `ConsentBanner` : une application servie à la racine n'a rien à déduire, elle se nomme. Sans nom déductible, la clé est **absente** plutôt que vide — `app_name: ''` créerait une ligne « (not set) » qu'on croirait significative. Et l'appelant garde le dernier mot : s'il nomme lui-même l'application, c'est qu'il sait quelque chose de plus.
+  
+  Cinq tests : la déduction (avec et sans barre finale, sur un sous-chemin, `null` à la racine), `app_name` sur chaque événement, la priorité laissée à l'appelant, et l'absence de clé vide.
+
 ## 4.21.3
 
 ### Patch Changes
