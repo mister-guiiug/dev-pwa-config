@@ -58,10 +58,14 @@ import { createHash } from 'node:crypto';
  * réseau de `mister-cim10` étaient inopérants en production sans que rien ne le
  * dise.
  *
- * `eu-assets` figure en `script-src` par PRUDENCE : quand `posthog-js` est
- * installé en dépendance, tout est dans le bundle et rien n'est chargé de là ;
- * mais la bibliothèque sait aller y chercher des extensions, et se tromper du
- * côté étroit se paie par un silence, pas par un message.
+ * `eu-assets` EN `script-src` N'EST PAS UNE PRUDENCE — mesuré le 19/09/2026
+ * dans un vrai navigateur, sur le squelette construit. Ce commentaire disait
+ * l'inverse : « quand `posthog-js` est installé en dépendance, tout est dans le
+ * bundle et rien n'est chargé de là ». C'est faux. À chaque `init`, la
+ * bibliothèque va chercher sa configuration distante —
+ * `eu-assets.i.posthog.com/array/<clé>/config.js`, relevée en `initiatorType:
+ * "script"`, 200. Retirer cet hôte la ferait bloquer par la CSP, et
+ * l'application n'en dirait rien d'autre qu'une ligne de console.
  *
  * Ni `img` ni `frame` : PostHog n'a besoin d'aucun des deux ici. Le
  * `<iframe>` de la barre d'outils n'existe qu'en développement, où `cspPlugin`
