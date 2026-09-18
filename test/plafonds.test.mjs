@@ -6,11 +6,16 @@ import { readFileSync } from 'node:fs';
 
 import {
   analyse,
+  comparerVeilles,
   DECISIONS,
   enRetard,
   format,
+  formatVeilles,
   plafond,
+  plagesPairPubliees,
+  raisonDe,
   versionsPubliees,
+  veillesDeclarees,
 } from '../scripts/plafonds.mjs';
 
 test('plafond : la borne haute de chaque forme de plage', () => {
@@ -247,4 +252,120 @@ test('format : le silence est explicite quand tout est à jour', () => {
     { nom: 'react', plage: '^19.0.0', publiee: '19.2.0', verdict: 'ok' },
   ]);
   assert.match(sortie, /aucun plafond/);
+});
+
+test('une décision se lit qu’elle porte une veille ou non', () => {
+  assert.equal(raisonDe('parce que.'), 'parce que.');
+  assert.equal(raisonDe({ raison: 'parce que.' }), 'parce que.');
+  // Une forme inattendue ne fait pas tomber le relevé : elle ne dit rien.
+  assert.equal(raisonDe(undefined), '');
+});
+
+test('seules les décisions qui dépendent d’un tiers sont des veilles', () => {
+  const veilles = veillesDeclarees({
+    seul: 'tenu par nous (01/01/2026).',
+    suspendu: {
+      raison: 'tenu par quelqu’un d’autre (01/01/2026).',
+      veille: { paquet: 'un-tiers', pair: 'une-pair', plage: '<2' },
+    },
+  });
+  assert.deepEqual(veilles, [
+    {
+      plafond: 'suspendu',
+      paquet: 'un-tiers',
+      pair: 'une-pair',
+      plage: '<2',
+    },
+  ]);
+});
+
+test('une veille dit TENUE, CHANGÉE, ou qu’elle ne sait pas', () => {
+  const veilles = [
+    { plafond: 'a', paquet: 'p1', pair: 'x', plage: '<2' },
+    { plafond: 'b', paquet: 'p2', pair: 'x', plage: '<2' },
+    { plafond: 'c', paquet: 'p3', pair: 'x', plage: '<2' },
+  ];
+  const vus = comparerVeilles(veilles, {
+    'p1 x': '<2',
+    'p2 x': '<3',
+    'p3 x': null,
+  });
+  assert.deepEqual(
+    vus.map(v => v.etat),
+    ['tenue', 'changee', 'inconnue']
+  );
+  // UNE PANNE N'EST PAS UNE NOUVELLE. Dire « ça a changé » parce que le
+  // registre n'a pas répondu ferait crier le relevé pour rien, et on
+  // cesserait de l'écouter.
+  assert.equal(vus[2].etat, 'inconnue');
+});
+
+test('un changement de veille se lit, et nomme la position à rouvrir', () => {
+  const texte = formatVeilles(
+    comparerVeilles(
+      [
+        {
+          plafond: 'typescript',
+          paquet: 'typescript-eslint',
+          pair: 'typescript',
+          plage: '>=4.8.4 <6.1.0',
+        },
+      ],
+      { 'typescript-eslint typescript': '>=4.8.4 <8.0.0' }
+    )
+  );
+  assert.match(texte, /a bougé/);
+  assert.match(texte, />=4\.8\.4 <8\.0\.0/);
+  assert.match(texte, /rouvrir/);
+  assert.match(texte, /typescript/);
+});
+
+test('une veille tenue le dit sans faire de bruit', () => {
+  const texte = formatVeilles(
+    comparerVeilles([{ plafond: 'a', paquet: 'p', pair: 'x', plage: '<2' }], {
+      'p x': '<2',
+    })
+  );
+  assert.match(texte, /déclare toujours/);
+  assert.doesNotMatch(texte, /bougé/);
+});
+
+test('plagesPairPubliees lit la peer du tiers, et encaisse une panne', async () => {
+  const fetchImpl = async url => {
+    if (url.endsWith('casse')) throw new Error('registre injoignable');
+    return {
+      ok: true,
+      json: async () => ({
+        'dist-tags': { latest: '8.70.0' },
+        versions: {
+          '8.70.0': { peerDependencies: { typescript: '>=4.8.4 <6.1.0' } },
+        },
+      }),
+    };
+  };
+  const plages = await plagesPairPubliees(
+    [
+      { paquet: 'typescript-eslint', pair: 'typescript' },
+      { paquet: 'typescript-eslint', pair: 'absente' },
+      { paquet: 'casse', pair: 'typescript' },
+    ],
+    { fetchImpl, registre: 'https://registre.test' }
+  );
+  assert.equal(plages['typescript-eslint typescript'], '>=4.8.4 <6.1.0');
+  // DEUX VEILLES SUR LE MEME TIERS ne s'ecrasent pas : la cle porte la pair.
+  assert.equal(plages['typescript-eslint absente'], null);
+  assert.equal(plages['casse typescript'], null);
+});
+
+test('la veille de `typescript` nomme bien ce qui commande', () => {
+  // Le plafond `typescript` n'est pas une préférence : `typescript-eslint` a
+  // besoin de l'API que TypeScript 7 a déplacée, et l'interdit donc. Si cette
+  // veille disparaît, la position redevient un avis sans condition — et plus
+  // rien ne préviendra le jour où elle se lève.
+  const veille = veillesDeclarees(DECISIONS).find(
+    v => v.plafond === 'typescript'
+  );
+  assert.ok(veille, 'le plafond `typescript` doit porter une veille');
+  assert.equal(veille.paquet, 'typescript-eslint');
+  assert.equal(veille.pair, 'typescript');
 });

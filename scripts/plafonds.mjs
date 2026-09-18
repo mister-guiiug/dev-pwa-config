@@ -59,16 +59,89 @@ const REGISTRE = 'https://registry.npmjs.org';
  * tableau d'action et la rappelle en bas, avec sa raison. La retirer relance
  * le signal — c'est le geste qui rouvre la question.
  *
- * @type {Record<string, string>}
+ * UNE POSITION PEUT DÉPENDRE DE QUELQU'UN D'AUTRE, et c'est le cas le plus
+ * traître : la raison reste vraie des mois, puis cesse de l'être sans que
+ * personne soit prévenu. Une entrée peut donc porter une `veille` — la plage
+ * d'un TIERS, relevée le jour de la décision. La sonde la relit chaque
+ * semaine : tant qu'elle n'a pas bougé, la position tient ; le jour où elle
+ * change, elle le DIT, parce que c'est précisément ce qu'on attendait.
+ *
+ * On surveille la VALEUR, pas une algèbre de plages : `plafond()` sait lire un
+ * `~` ou un `^`, pas le `<6.1.0` qu'emploient les peers des tiers. Comparer
+ * deux chaînes ne peut pas se tromper ; l'interpréter, si.
+ *
+ * @type {Record<string, string | { raison: string, veille?: { paquet: string, pair: string, plage: string } }>}
  */
 export const DECISIONS = {
-  typescript:
-    'TypeScript 7 est une réécriture du compilateur : chantier à part, pas un effet de bord d’une montée de socle (12/09/2026).',
+  typescript: {
+    raison:
+      'TypeScript 7 est le PORTAGE NATIF : son `exports["."]` ne rend plus que `./lib/version.cjs`, l’API du compilateur est passée sous `./unstable/*`. `typescript-eslint` en a besoin et l’interdit donc — c’est LUI qui commande, pas nous (relevé le 18/09/2026).',
+    veille: {
+      paquet: 'typescript-eslint',
+      pair: 'typescript',
+      plage: '>=4.8.4 <6.1.0',
+    },
+  },
   vitest:
     'Le parc vient d’arriver en Vitest 4 ; la 5 se décidera une fois cette montée digérée (12/09/2026).',
   '@vitest/browser':
     'Suit `vitest` : même version majeure, donc même décision (12/09/2026).',
 };
+
+/**
+ * La raison d'une décision, quelle que soit sa forme.
+ *
+ * @param {string | { raison: string }} decision
+ * @returns {string}
+ */
+export function raisonDe(decision) {
+  return typeof decision === 'string' ? decision : (decision?.raison ?? '');
+}
+
+/**
+ * Les veilles déclarées : les plages de tiers dont des positions dépendent.
+ *
+ * @param {Record<string, string | { raison: string, veille?: { paquet: string, pair: string, plage: string } }>} decisions
+ * @returns {{ plafond: string, paquet: string, pair: string, plage: string }[]}
+ */
+export function veillesDeclarees(decisions) {
+  return Object.entries(decisions)
+    .filter(([, d]) => typeof d !== 'string' && d?.veille)
+    .map(([plafondNom, d]) => ({ plafond: plafondNom, ...d.veille }));
+}
+
+/**
+ * La cle d'une veille : le paquet ET la pair.
+ *
+ * Le seul nom du paquet ne suffit pas — deux positions peuvent dependre du
+ * meme tiers par des pairs differentes, et la seconde ecraserait la premiere.
+ *
+ * @param {{ paquet: string, pair: string }} veille
+ */
+export function cleVeille({ paquet, pair }) {
+  return `${paquet} ${pair}`;
+}
+
+/**
+ * Confronte chaque veille à la plage réellement publiée aujourd'hui.
+ *
+ * Une plage NON LUE — registre injoignable, paquet disparu, peer retirée — ne
+ * dit pas « ça a changé » : elle dit qu'on ne sait pas. Inventer un changement
+ * ferait crier le relevé pour une panne de réseau, et on cesserait de l'écouter.
+ *
+ * @param {{ plafond: string, paquet: string, pair: string, plage: string }[]} veilles
+ * @param {Record<string, string | null>} lues Plage lue, par nom de paquet tiers.
+ */
+export function comparerVeilles(veilles, lues) {
+  return veilles.map(v => {
+    const lue = lues[cleVeille(v)] ?? null;
+    return {
+      ...v,
+      lue,
+      etat: lue === null ? 'inconnue' : lue === v.plage ? 'tenue' : 'changee',
+    };
+  });
+}
 
 /**
  * La plus haute version que la plage accepte, sous une forme comparable.
@@ -191,6 +264,46 @@ export async function versionsPubliees(noms, options = {}) {
 }
 
 /**
+ * La plage qu'un TIERS déclare aujourd'hui pour une de ses peers.
+ *
+ * Même point d'entrée abrégé que `versionsPubliees`, et il porte bien les
+ * `peerDependencies` — vérifié le 18/09/2026. Même garde sur le nom, même
+ * tolérance : une panne rend `null`, pas un changement.
+ *
+ * @param {{ paquet: string, pair: string }[]} veilles
+ * @param {{ fetchImpl?: typeof fetch, registre?: string }} [options]
+ * @returns {Promise<Record<string, string | null>>}
+ */
+export async function plagesPairPubliees(veilles, options = {}) {
+  const { fetchImpl = fetch, registre = REGISTRE } = options;
+  const entrees = await Promise.all(
+    veilles.map(async ({ paquet, pair }) => {
+      const cle = cleVeille({ paquet, pair });
+      if (!NOM_NPM.test(paquet)) return [cle, null];
+      const chemin = paquet
+        .split('/')
+        .map(s => encodeURIComponent(s))
+        .join('%2f');
+      try {
+        const reponse = await fetchImpl(`${registre}/${chemin}`, {
+          headers: { accept: 'application/vnd.npm.install-v1+json' },
+        });
+        if (!reponse?.ok) return [cle, null];
+        const corps = await reponse.json();
+        const latest = corps?.['dist-tags']?.latest;
+        const plage = latest
+          ? (corps?.versions?.[latest]?.peerDependencies?.[pair] ?? null)
+          : null;
+        return [cle, plage];
+      } catch {
+        return [cle, null];
+      }
+    })
+  );
+  return Object.fromEntries(entrees);
+}
+
+/**
  * Confronte les plages déclarées aux versions publiées.
  *
  * `portee` dit ce qu'un dépassement COÛTE, et c'est la moitié utile du relevé :
@@ -229,7 +342,7 @@ export function analyse(declarations, publiees, options = {}) {
       else if (enRetard(plage, publiee))
         verdict = nom in decisions ? 'assume' : 'retard';
       const ligne = { nom, plage, publiee, verdict, portee };
-      if (verdict === 'assume') ligne.raison = decisions[nom];
+      if (verdict === 'assume') ligne.raison = raisonDe(decisions[nom]);
       return ligne;
     })
     .sort((a, b) => a.nom.localeCompare(b.nom));
@@ -242,8 +355,29 @@ const MORD = {
   interne: 'non (interne au socle)',
 };
 
+/**
+ * Ce que les veilles donnent, en une ligne chacune.
+ *
+ * UN CHANGEMENT EST L'ÉVÉNEMENT, pas une anomalie : il se lit avec l'avant et
+ * l'après, parce que c'est lui qui rouvre une position.
+ *
+ * @param {{ plafond: string, paquet: string, pair: string, plage: string, lue: string | null, etat: string }[]} veilles
+ */
+export function formatVeilles(veilles) {
+  if (!veilles.length) return '';
+  const changees = veilles.filter(v => v.etat === 'changee');
+  const lignes = veilles.map(v => {
+    if (v.etat === 'changee')
+      return `- ⚠️ \`${v.paquet}\` a bougé sur \`${v.pair}\` : \`${v.plage}\` → \`${v.lue}\` — la position sur \`${v.plafond}\` est à rouvrir.`;
+    if (v.etat === 'inconnue')
+      return `- \`${v.paquet}\` : plage non lue (registre injoignable) — la position sur \`${v.plafond}\` reste en l'état.`;
+    return `- \`${v.paquet}\` déclare toujours \`${v.pair}\` \`${v.plage}\` — la position sur \`${v.plafond}\` tient.`;
+  });
+  return `\n${veilles.length} veille${veilles.length > 1 ? 's' : ''}${changees.length ? ' — dont une qui a bougé' : ''} :\n${lignes.join('\n')}`;
+}
+
 /** Le tableau, en Markdown : lisible en terminal comme en résumé de job. */
-export function format(lignes) {
+export function format(lignes, veilles = []) {
   const retards = lignes.filter(l => l.verdict === 'retard');
   const assumes = lignes.filter(l => l.verdict === 'assume');
   const inconnues = lignes.filter(l => l.verdict === 'inconnue');
@@ -260,6 +394,7 @@ export function format(lignes) {
     inconnues.length
       ? `\n${inconnues.length} version non lue : ${inconnues.map(l => l.nom).join(', ')}`
       : '',
+    formatVeilles(veilles),
   ].filter(Boolean);
 
   if (!retards.length) {
@@ -317,8 +452,14 @@ export async function run(args = []) {
     decisions: DECISIONS,
   });
 
-  if (json) console.log(JSON.stringify({ racine, lignes }, null, 2));
-  else console.log(format(lignes));
+  // Les veilles : les plages de tiers dont nos positions dépendent.
+  const veilles = comparerVeilles(
+    veillesDeclarees(DECISIONS),
+    await plagesPairPubliees(veillesDeclarees(DECISIONS))
+  );
+
+  if (json) console.log(JSON.stringify({ racine, lignes, veilles }, null, 2));
+  else console.log(format(lignes, veilles));
 
   // Un plafond ASSUMÉ n'est pas une chose à faire : ni annotation, ni rougeur.
   // C'est tout l'objet de `DECISIONS`.
@@ -329,6 +470,13 @@ export async function run(args = []) {
     for (const l of retards) {
       console.log(
         `::warning title=Plafond ${l.portee === 'dur' ? 'DUR (bloque les apps)' : 'derrière la majeure publiée'}::${l.nom} : le socle déclare ${l.plage}, npm publie ${l.publiee}`
+      );
+    }
+    // UNE VEILLE QUI BOUGE EST LA SEULE NOUVELLE DU RELEVÉ : elle mérite son
+    // annotation, même quand tout le reste est vert.
+    for (const v of veilles.filter(v => v.etat === 'changee')) {
+      console.log(
+        `::warning title=Veille levée::${v.paquet} déclare maintenant ${v.pair} ${v.lue} (relevé : ${v.plage}) — rouvrir la position sur ${v.plafond}`
       );
     }
   }
