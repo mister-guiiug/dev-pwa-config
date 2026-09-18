@@ -76,7 +76,18 @@ export interface ConsentChoice {
  * synchronisent : un choix fait dans le pied de page rappelle le bandeau.
  */
 export declare function useConsentChoice(options?: {
+  posthogKey?: string;
+  posthogHost?: string;
+  loader?: () => Promise<unknown>;
+  /**
+   * @deprecated IGNORÉE depuis la 6.0.0 — la mesure est passée à PostHog
+   * (ADR 0012). Acceptée UNE version pour que les consommateurs compilent
+   * pendant la migration, avec un avertissement en console : un `G-…` n'est
+   * d'aucun usage à PostHog, donc **aucune mesure ne part** tant que
+   * `posthogKey` n'est pas fournie. Retirée au prochain majeur.
+   */
   gaMeasurementId?: string;
+
   /** Nom d'app joint aux événements ; sinon le chemin de base. */
   appName?: string;
   scope?: string;
@@ -87,7 +98,18 @@ export declare function useConsentChoice(options?: {
 }): ConsentChoice;
 
 export interface ConsentBannerProps {
+  posthogKey?: string;
+  posthogHost?: string;
+  loader?: () => Promise<unknown>;
+  /**
+   * @deprecated IGNORÉE depuis la 6.0.0 — la mesure est passée à PostHog
+   * (ADR 0012). Acceptée UNE version pour que les consommateurs compilent
+   * pendant la migration, avec un avertissement en console : un `G-…` n'est
+   * d'aucun usage à PostHog, donc **aucune mesure ne part** tant que
+   * `posthogKey` n'est pas fournie. Retirée au prochain majeur.
+   */
   gaMeasurementId?: string;
+
   /** Nom d'app joint aux événements ; sinon le chemin de base. */
   appName?: string;
   /** Portée explicite de la clé ; sinon le chemin de base de l'app. */
@@ -126,7 +148,18 @@ export interface ConsentBannerProps {
 export declare const ConsentBanner: FC<ConsentBannerProps>;
 
 export interface ConsentSettingsProps {
+  posthogKey?: string;
+  posthogHost?: string;
+  loader?: () => Promise<unknown>;
+  /**
+   * @deprecated IGNORÉE depuis la 6.0.0 — la mesure est passée à PostHog
+   * (ADR 0012). Acceptée UNE version pour que les consommateurs compilent
+   * pendant la migration, avec un avertissement en console : un `G-…` n'est
+   * d'aucun usage à PostHog, donc **aucune mesure ne part** tant que
+   * `posthogKey` n'est pas fournie. Retirée au prochain majeur.
+   */
   gaMeasurementId?: string;
+
   scope?: string;
   maxAgeDays?: number;
   purposeVersion?: number;

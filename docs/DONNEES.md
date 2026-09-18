@@ -92,7 +92,7 @@ Après cet appel, le **même** identifiant apparaît dans :
 | ------------------ | ------------------------------------------------- |
 | Erreurs et Sentry  | `correlationSessionId` en contexte de session     |
 | Requêtes sortantes | `X-Correlation-Id` (par requête) + `X-Session-Id` |
-| Télémétrie GA4     | propriété `correlation_session_id`                |
+| Télémétrie PostHog | propriété `correlation_session_id`                |
 | Écran de crash     | la référence que l'utilisateur peut citer         |
 
 `ObservabilityBoundary` affiche la référence automatiquement ; `reference: false`

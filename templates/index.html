@@ -22,7 +22,7 @@
   ici faisait naître chaque app neuve avec la voie qu'on venait de fermer.
 
   La voie en service est `react/consent-banner` : <ConsentBanner
-  gaMeasurementId={import.meta.env.VITE_GA_MEASUREMENT_ID} />, qui n'injecte
+  posthogKey={import.meta.env.VITE_POSTHOG_KEY} />, qui n'injecte
   RIEN avant un accord explicite, plus usePageViews(pathname) pour les vues.
 -->
 <html lang="fr">
@@ -39,7 +39,7 @@
       Si l'app appelle un backend, ÉLARGIR connect-src :
         - Supabase : connect-src 'self' https://*.supabase.co wss://*.supabase.co
         - Firebase : connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com
-        - GA4      : `cspPlugin({ analytics: true })` s'en charge (hôtes script,
+        - PostHog      : `cspPlugin({ analytics: true })` s'en charge (hôtes script,
                      img, connect et frame). Ne pas les recopier à la main ici.
 
       PAS DE frame-ancestors ICI. La spécification exclut cette directive (comme

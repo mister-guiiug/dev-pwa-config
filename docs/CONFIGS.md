@@ -173,7 +173,7 @@ export default defineConfig({
       basePath: '/mister-puzzle/', // sinon VITE_BASE_PATH
       logoPath: '/logo.svg', // → __SEO_LOGO_URL__ (OG/Twitter/JSON-LD)
       iconQuery: '?v=1.0.1', // → __PWA_ICON_QS__ (cache-busting)
-      gaMeasurementId: 'G-XXXXXXXXXX', // ID explicite (sinon VITE_GA_MEASUREMENT_ID)
+      posthogKey: 'phc_…', // ID explicite (sinon VITE_POSTHOG_KEY)
       llms: '# Mon app\n…', // génère dist/llms.txt
 
       // Le script anti-FOUC, injecté en tête de <head>. `legacyKeys` migre la
@@ -189,7 +189,7 @@ export default defineConfig({
 });
 ```
 
-**Le consentement précède le tag.** Les fragments GA4 sont désormais
+**Le consentement précède le tag.** Les fragments PostHog sont désormais
 précédés d'un `gtag('consent', 'default', …)` où tous les signaux sont `denied`.
 C'est la seule position où le mode consentement de Google en tient compte : une
 commande postérieure au chargement n'a pas d'effet rétroactif. `consent: false`
@@ -199,7 +199,7 @@ ailleurs (une CMP).
 Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
 `__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
 `__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt` (+ `llms.txt` si `llms`).
-Variables d'env de build : `VITE_GA_MEASUREMENT_ID`,
+Variables d'env de build : `VITE_POSTHOG_KEY`,
 `VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
 `htmlTrackingPlugin()`), désormais factorisés ici.
@@ -219,12 +219,12 @@ question quand il n'y en a pas. Une ligne par application.
 import { ConsentBanner } from '@mister-guiiug/dev-pwa-config/react/consent-banner';
 
 <ConsentBanner
-  gaMeasurementId={import.meta.env.VITE_GA_MEASUREMENT_ID}
+  posthogKey={import.meta.env.VITE_POSTHOG_KEY}
   policyHref="/confidentialite"
 />;
 ```
 
-Sans `VITE_GA_MEASUREMENT_ID`, il ne rend **rien** : il n'y a rien à mesurer,
+Sans `VITE_POSTHOG_KEY`, il ne rend **rien** : il n'y a rien à mesurer,
 donc rien à demander. Une app peut donc le monter avant que l'identifiant
 n'existe.
 
@@ -238,7 +238,7 @@ import {
   setAnalyticsConsent,
 } from '@mister-guiiug/dev-pwa-config/analytics';
 
-initAnalytics({ gaMeasurementId: import.meta.env.VITE_GA_MEASUREMENT_ID });
+initAnalytics({ posthogKey: import.meta.env.VITE_POSTHOG_KEY });
 // Rien n'est injecté ici : ni script, ni requête, ni cookie.
 
 // …quand l'utilisateur accepte, où que ce soit dans l'app :
@@ -252,7 +252,7 @@ sans que rien ne le signale. `ConsentBanner` le fait ; une implémentation
 maison doit y penser.
 
 ```tsx
-// Une vue de page par navigation — GA4 n'en envoie qu'une par chargement de
+// Une vue de page par navigation — PostHog n'en envoie qu'une par chargement de
 // document, donc toute la navigation d'une PWA est invisible sans ce hook.
 import { usePageViews } from '@mister-guiiug/dev-pwa-config/react/use-page-views';
 
@@ -269,9 +269,9 @@ Trois règles que le module tient à votre place :
   pas créé. Les hooks peuvent donc être montés sans condition.
 - **Chaque événement porte `app_name`**, déduit du chemin de base
   (`/mister-cim10/` → `mister-cim10`). Les sites du parc partagent une propriété
-  GA4 : sans cette dimension, le total est lisible et le détail ne l'est plus.
+  PostHog : sans cette dimension, le total est lisible et le détail ne l'est plus.
   Pas `page_path`, dont la cardinalité finit dans « (other) ».
-- **Une seule vue par navigation.** GA4 est configuré avec
+- **Une seule vue par navigation.** PostHog est configuré avec
   `send_page_view: false`, pour que la page d'entrée passe par le même chemin
   que les autres au lieu d'être comptée deux fois.
 
@@ -344,7 +344,7 @@ export default defineConfig(({ command }) => ({
     cspPlugin({
       dev: command === 'serve',
       connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
-      analytics: true, // ← si pwaSeoPlugin injecte GA4
+      analytics: true, // ← si pwaSeoPlugin injecte PostHog
     }),
     VitePWA({ ... }),
   ],
@@ -354,7 +354,7 @@ export default defineConfig(({ command }) => ({
 `cspPlugin` doit venir **après** `pwaSeoPlugin` : il hashe le HTML final, donc
 les scripts inline injectés en amont.
 
-**`analytics: true` n'est pas cosmétique.** GA4 charge un `<script src>`
+**`analytics: true` n'est pas cosmétique.** PostHog charge un `<script src>`
 externe, que `default-src 'self'` bloque sans la moindre erreur de build.
 Activer les deux plugins sans cette option coupe donc l'analytics **en
 silence**. L'option ajoute exactement les
@@ -435,7 +435,7 @@ rien — il n'y a rien à demander — et les deux premières vérifications n'o
 d'objet. Poser une valeur factice dans le `.env` du mode e2e :
 
 ```sh
-VITE_GA_MEASUREMENT_ID=G-E2E0000000
+VITE_POSTHOG_KEY=G-E2E0000000
 ```
 
 Le trafic vers Google est intercepté par la garde elle-même : rien ne sort, et

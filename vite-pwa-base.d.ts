@@ -2,7 +2,6 @@
  * Types pour vite-pwa-base. Le plugin est typé structurellement pour éviter
  * d'importer `vite` (peerDep côté consumer).
  */
-export function parseGaMeasurementId(raw: string | undefined): string | null;
 
 export function resolveSeoPublicUrls(
   arg?: string | { basePath?: string; logoPath?: string; iconQuery?: string }
@@ -11,25 +10,6 @@ export function resolveSeoPublicUrls(
   homeUrl: string;
   logoUrl?: string;
 };
-
-/**
- * @deprecated Préférer `react/consent-banner`, qui n'injecte rien avant un
- * accord explicite. Ces fragments-ci sont écrits dans le HTML AU BUILD : le
- * tag de Google part au chargement de la page, précédé d'un `consent default`
- * tout refusé — donc sans collecte, mais chargé quand même. Aucune app du parc
- * ne les utilise depuis septembre 2026, et `templates/index.html` ne porte
- * plus les marqueurs `__ANALYTICS_*__` qui les recevaient.
- */
-export function buildAnalyticsHtmlFragments(overrides?: {
-  gaMeasurementId?: string;
-  /**
-   * `false` n'écrit PAS l'état de consentement par défaut. À réserver aux
-   * déploiements qui le gèrent ailleurs (une CMP). Par défaut, tous les
-   * signaux sont `denied` avant le chargement du tag — une commande
-   * postérieure n'aurait pas d'effet rétroactif.
-   */
-  consent?: boolean;
-}): { head: string; body: string };
 
 export interface PwaSeoPluginOptions {
   siteName?: string;
@@ -41,10 +21,6 @@ export interface PwaSeoPluginOptions {
   logoPath?: string;
   iconQuery?: string;
   llms?: string;
-  /** Force l'ID GA4 (sinon `VITE_GA_MEASUREMENT_ID`). */
-  gaMeasurementId?: string;
-  /** `false` pour ne pas écrire l'état de consentement par défaut. */
-  consent?: boolean;
   /**
    * Injecte le script anti-FOUC en tête de `<head>`. `true` pour les valeurs
    * par défaut, ou les options de `themeBootSource` (dont `legacyKeys`, sans

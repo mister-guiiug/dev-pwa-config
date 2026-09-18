@@ -50,22 +50,28 @@
 import { createHash } from 'node:crypto';
 
 /**
- * Hôtes exigés par les fragments analytics qu'injecte `pwaSeoPlugin`.
+ * Hôtes exigés par la mesure d'audience — **PostHog, nuage EUROPÉEN**.
  *
- * Les deux plugins du paquet sont documentés côte à côte, dans le même exemple,
- * et se cassaient mutuellement : GA4 charge un `<script src>` externe et GTM un
- * `<iframe>` de repli `noscript`, tous deux bloqués par `default-src 'self'`.
- * Activer les deux coupait l'analytics sans erreur de build — silencieusement.
+ * `default-src 'self'` les bloque tous, **sans erreur de build** : une CSP trop
+ * étroite coupe la mesure en silence. Le parc l'a payé exactement ainsi avec
+ * GA4, dont la passerelle OMS n'était pas dans `connect-src` — les deux modes
+ * réseau de `mister-cim10` étaient inopérants en production sans que rien ne le
+ * dise.
+ *
+ * `eu-assets` figure en `script-src` par PRUDENCE : quand `posthog-js` est
+ * installé en dépendance, tout est dans le bundle et rien n'est chargé de là ;
+ * mais la bibliothèque sait aller y chercher des extensions, et se tromper du
+ * côté étroit se paie par un silence, pas par un message.
+ *
+ * Ni `img` ni `frame` : PostHog n'a besoin d'aucun des deux ici. Le
+ * `<iframe>` de la barre d'outils n'existe qu'en développement, où `cspPlugin`
+ * pose `'unsafe-inline'` de toute façon.
  */
 export const ANALYTICS_HOSTS = {
-  script: ['https://www.googletagmanager.com'],
-  img: ['https://www.googletagmanager.com', 'https://*.google-analytics.com'],
-  connect: [
-    'https://www.googletagmanager.com',
-    'https://*.google-analytics.com',
-    'https://*.analytics.google.com',
-  ],
-  frame: ['https://www.googletagmanager.com'],
+  script: ['https://eu-assets.i.posthog.com'],
+  img: [],
+  connect: ['https://eu.i.posthog.com', 'https://eu-assets.i.posthog.com'],
+  frame: [],
 };
 
 /** Directives qu'un navigateur ignore dans une CSP posée par `<meta>`. */
@@ -103,8 +109,15 @@ export function cspPlugin(options = {}) {
 
   // `'none'` doit rester seul : mêlé à des hôtes, il produit une directive
   // malformée que les navigateurs interprètent chacun à leur façon.
+  //
+  // ET `'none'` NE SE RETIRE QUE S'IL EST REMPLACÉ. Depuis le passage à
+  // PostHog, `ANALYTICS_HOSTS.frame` est VIDE — plus d'`iframe` `noscript` de
+  // GTM à autoriser. Sans la garde ci-dessous, activer la mesure retirait
+  // `'none'` sans rien mettre à la place : la directive devenait vide, donc
+  // absente, donc `default-src` reprenait la main. On desserrait la politique
+  // en croyant l'étendre.
   const withAnalytics = (list, extra) =>
-    analytics
+    analytics && extra.length > 0
       ? [...new Set([...list.filter(source => source !== "'none'"), ...extra])]
       : list;
 

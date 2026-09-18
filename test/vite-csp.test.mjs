@@ -101,38 +101,16 @@ test('ignores <script src> and typed scripts (only bare <script> hashed)', () =>
 
 /* ── Le couple avec pwaSeoPlugin ────────────────────────────────────────── */
 
-test('analytics: autorise les hôtes que pwaSeoPlugin injecte réellement', async () => {
-  const { buildAnalyticsHtmlFragments } = await import('../vite-pwa-base.js');
-  const { head, body } = buildAnalyticsHtmlFragments({
-    gaMeasurementId: 'G-ABC123',
+test('analytics: autorise exactement les hôtes de PostHog, et rien de plus', () => {
+  // Les origines sont COMPARÉES ENTIÈREMENT à ce que le module déclare, jamais
+  // cherchées comme sous-chaîne : `includes('https://eu.i.posthog.com')`
+  // accepterait `https://eu.i.posthog.com.evil.test`, et CodeQL le signale à
+  // raison. L'égalité de liste est aussi un test plus fort — un hôte en trop
+  // échoue, au lieu de passer inaperçu.
+  const csp = render('<head><meta charset="utf-8"></head>', {
+    analytics: true,
   });
 
-  // Les origines sont COMPARÉES ENTIÈREMENT à ce que le module déclare, jamais
-  // cherchées comme sous-chaîne : `includes('https://www.googletagmanager.com')`
-  // accepterait `https://www.googletagmanager.com.evil.test`, et CodeQL le
-  // signale à raison. L'égalité de liste est aussi un test plus fort — un hôte
-  // en trop échoue, au lieu de passer inaperçu.
-  const origins = [
-    ...new Set(
-      [...head.matchAll(/https:\/\/[^'"\s)]+/g)].map(
-        ([url]) => new URL(url).origin
-      )
-    ),
-  ];
-  assert.deepEqual(origins, ANALYTICS_HOSTS.script, 'fragment GA4 attendu');
-
-  // PLUS DE CORPS depuis le retrait de GTM (18/09/2026) : le `<iframe>` de
-  // repli `noscript` lui appartenait. `ANALYTICS_HOSTS.frame` reste déclaré —
-  // le resserrer touche la CSP de toutes les apps consommatrices, et c'est une
-  // décision à prendre pour elle-même.
-  assert.equal(body, '', 'plus de fragment de corps sans GTM');
-
-  // La page réelle : fragments analytics injectés, PUIS la CSP par-dessus.
-  const html = `<head><meta charset="utf-8">${head}</head><body>${body}</body>`;
-  const csp = render(html, { analytics: true });
-
-  // Sans ces hôtes, activer les deux plugins du paquet coupe l'analytics sans
-  // qu'aucun build n'échoue.
   const hashes = sourcesOf(csp, 'script-src').filter(source =>
     source.startsWith("'sha256-")
   );
@@ -141,17 +119,23 @@ test('analytics: autorise les hôtes que pwaSeoPlugin injecte réellement', asyn
     ...ANALYTICS_HOSTS.script,
     ...hashes,
   ]);
-  assert.deepEqual(sourcesOf(csp, 'frame-src'), ANALYTICS_HOSTS.frame);
   assert.deepEqual(sourcesOf(csp, 'connect-src'), [
     "'self'",
     ...ANALYTICS_HOSTS.connect,
   ]);
-  assert.deepEqual(sourcesOf(csp, 'img-src'), [
-    "'self'",
-    'data:',
-    'blob:',
-    ...ANALYTICS_HOSTS.img,
-  ]);
+
+  // NI IMAGE NI CADRE. Les deux n'existaient que pour Google — le pixel de
+  // `google-analytics.com` et l'`iframe` `noscript` de GTM. Les garder
+  // « au cas où » laisserait une permission que plus rien ne justifie.
+  assert.deepEqual(ANALYTICS_HOSTS.img, []);
+  assert.deepEqual(ANALYTICS_HOSTS.frame, []);
+
+  // Une CSP trop étroite coupe la mesure SANS erreur de build : c'est
+  // exactement ainsi que le parc a perdu la passerelle OMS de mister-cim10.
+  assert.ok(
+    ANALYTICS_HOSTS.connect.every(h => h.startsWith('https://eu')),
+    'le nuage EUROPÉEN, seule raison d’avoir quitté GA4'
+  );
 });
 
 test('sans analytics, rien de Google n’est autorisé', () => {
@@ -168,11 +152,22 @@ test('sans analytics, rien de Google n’est autorisé', () => {
 test("frame-src 'none' ne se mélange jamais à des hôtes", () => {
   // `'none'` mêlé à une liste produit une directive malformée, interprétée
   // différemment selon les navigateurs.
+  //
+  // LA PRÉMISSE S'EST INVERSÉE LE 18/09/2026, et l'invariant, lui, tient. Ce
+  // test gardait le cas « analytics ajoute l'hôte de l'iframe GTM à un
+  // `frame-src` qui valait `'none'` ». PostHog n'a besoin d'aucun cadre :
+  // `frame-src` reste donc `'none'`, ce qui est la bonne réponse et non un
+  // défaut. On vérifie la règle — jamais les deux à la fois — plutôt que la
+  // situation d'hier.
   const csp = render('<head><meta charset="utf-8"></head>', {
     analytics: true,
   });
-  const frameSrc = /frame-src ([^;]+)/.exec(csp)[1];
-  assert.ok(!frameSrc.includes("'none'"), `directive malformée : ${frameSrc}`);
+  const frameSrc = /frame-src ([^;]+)/.exec(csp)[1].trim();
+  const sources = frameSrc.split(/\s+/u);
+  assert.ok(
+    !sources.includes("'none'") || sources.length === 1,
+    `directive malformée : ${frameSrc}`
+  );
 });
 
 test('une directive inerte en <meta> est retirée, et signalée', () => {
