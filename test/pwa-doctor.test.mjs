@@ -29,6 +29,19 @@ import {
   specJouee,
 } from '../scripts/pwa-doctor.mjs';
 
+/**
+ * Le majeur courant du socle, LU — jamais écrit en dur, ici pas plus qu'ailleurs.
+ *
+ * Les dépôts factices « conformes » référencent le réutilisable, et le docteur
+ * compare cette référence au majeur du paquet qui l'exécute. Figée des deux
+ * côtés, l'égalité serait tautologique ; figée d'un seul, elle tombait à chaque
+ * majeur — c'est ce qui vient d'arriver à la 6.0.0, où le docteur exigeait
+ * encore `@v4` et refusait donc les dépôts correctement montés.
+ */
+const MAJEUR = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+).version.split('.')[0];
+
 /** Un dépôt factice à partir d'une carte chemin → contenu. */
 async function repo(files, fn) {
   const root = mkdtempSync(join(tmpdir(), 'dwc-doctor-'));
@@ -149,6 +162,45 @@ test('le fautif : les défauts du 02/09/2026, un par un', async () => {
   );
 });
 
+test('la référence au socle se compare au majeur COURANT, qui est LU', async () => {
+  // LE DÉFAUT QUE CE TEST FERME. La cible était écrite en dur (`v4`) : à la
+  // 6.0.0, un dépôt correctement monté en `@v6` se voyait reprocher la bonne
+  // valeur, et `--strict` refusait son build. Le contrôle accusait ce qu'il
+  // était censé récompenser.
+  const majeur = MAJEUR;
+
+  await repo(
+    {
+      'package.json': { name: 'miss-a-jour' },
+      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v${majeur}`,
+    },
+    root => {
+      assert.ok(
+        !ids(diagnose(root)).includes('wf-v3'),
+        `@v${majeur} est la bonne valeur pour un dépôt qui dépend du socle ${majeur}`
+      );
+    }
+  );
+
+  // Et le majeur PRÉCÉDENT reste une dette : le contrôle n'a pas été désarmé
+  // en route, il a seulement appris à viser.
+  await repo(
+    {
+      'package.json': { name: 'miss-en-retard' },
+      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v${Number(majeur) - 1}`,
+    },
+    root => {
+      const report = diagnose(root);
+      assert.ok(ids(report, 'dette').includes('wf-v3'));
+      assert.match(
+        format(report),
+        new RegExp(`passer en @v${majeur}\\b`),
+        'le geste nomme la cible courante, pas une figée'
+      );
+    }
+  );
+});
+
 test('le manifeste en anglais sur une page en français est un défaut', async () => {
   await repo(
     {
@@ -180,7 +232,7 @@ test('secrets et variables : ce que Vite copie dans le bundle n’est pas un sec
 const k = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const d = import.meta.env.VITE_SENTRY_DSN;`,
       '.env.example': 'VITE_SUPABASE_URL=\n# VITE_SENTRY_DSN= (facultatif)\n',
-      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4
+      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v${MAJEUR}
     secrets: inherit
     with:
       build-env: |
@@ -266,14 +318,10 @@ test('le conforme : silence complet — la définition exécutable de « conform
       '.lighthouserc.json': {},
       // Un titre que le filtre par défaut de la CI (`@critical|@a11y`) joue.
       'e2e/a11y.spec.ts': "test.describe('@a11y accessibilité', () => {});",
-      '.github/workflows/ci.yml':
-        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4\nwith:\n  run-e2e: true',
-      '.github/workflows/lighthouse.yml':
-        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-lighthouse.yml@v4',
-      '.github/workflows/cleanup-runs.yml':
-        'uses: mister-guiiug/dev-pwa-config/.github/workflows/cleanup-runs.yml@v4',
-      '.github/workflows/keepalive.yml':
-        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v4',
+      '.github/workflows/ci.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}\nwith:\n  run-e2e: true`,
+      '.github/workflows/lighthouse.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-lighthouse.yml@v${MAJEUR}`,
+      '.github/workflows/cleanup-runs.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/cleanup-runs.yml@v${MAJEUR}`,
+      '.github/workflows/keepalive.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v${MAJEUR}`,
       'vite.config.ts': `versionPlugin({ manifest: true }); pwaSeoPlugin({ themeColor: { light: '#fff', dark: '#000' } }); cspPlugin(); VitePWA({ registerType: 'prompt' })`,
       // Les trois liens de la famille sont sur DEUX écrans — l'accueil et À
       // propos — et nulle part ailleurs : la coquille ne les rend pas. C'est
@@ -392,7 +440,7 @@ test('un commentaire qui MET EN GARDE contre un défaut n’est pas ce défaut',
         '# Pas de `secrets: inherit` : le réutilisable déclare ce qu’il consomme.',
         'jobs:',
         '  ci:',
-        '    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4',
+        `    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}`,
       ].join('\n'),
       'src/i18n.ts': [
         '/**',
@@ -427,7 +475,7 @@ test('un commentaire qui MET EN GARDE contre un défaut n’est pas ce défaut',
 const AVEC_INHERIT = [
   'jobs:',
   '  ci:',
-  '    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4',
+  `    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}`,
   '    secrets: inherit',
 ].join('\n');
 
@@ -877,8 +925,7 @@ test('un déploiement Pages écrit à la main est une dette ; par le réutilisab
   await repo(
     {
       ...maison,
-      '.github/workflows/deploy.yml':
-        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4',
+      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v${MAJEUR}`,
     },
     root => {
       assert.ok(!ids(diagnose(root)).includes('wf-deploy-maison'));
@@ -886,7 +933,7 @@ test('un déploiement Pages écrit à la main est une dette ; par le réutilisab
   );
 });
 
-test('spa-404 : ce que pwa-deploy.yml@v4 pose au déploiement n’est pas un défaut du build', async () => {
+test('spa-404 : ce que pwa-deploy.yml pose au déploiement n’est pas un défaut du build', async () => {
   const base = {
     'package.json': { name: 'miss-badminton' },
     'src/main.tsx': "import { BrowserRouter } from 'react-router';",
@@ -896,8 +943,7 @@ test('spa-404 : ce que pwa-deploy.yml@v4 pose au déploiement n’est pas un dé
   await repo(
     {
       ...base,
-      '.github/workflows/deploy.yml':
-        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4',
+      '.github/workflows/deploy.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v${MAJEUR}`,
     },
     root => {
       assert.ok(
@@ -934,8 +980,7 @@ test('une spec que le filtre e2e ne joue jamais est une dette ; le défaut du r�
   await repo(
     {
       ...fichiers,
-      '.github/workflows/ci.yml':
-        "uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4\nwith:\n  run-e2e: true\n  e2e-grep: '@critical'",
+      '.github/workflows/ci.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}\nwith:\n  run-e2e: true\n  e2e-grep: '@critical'`,
     },
     root => {
       const d = diagnose(root).findings.find(f => f.id === 'e2e-hors-filtre');
@@ -948,8 +993,7 @@ test('une spec que le filtre e2e ne joue jamais est une dette ; le défaut du r�
   await repo(
     {
       ...fichiers,
-      '.github/workflows/ci.yml':
-        'uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4\nwith:\n  run-e2e: true',
+      '.github/workflows/ci.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}\nwith:\n  run-e2e: true`,
     },
     root => {
       assert.ok(

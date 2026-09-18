@@ -23,7 +23,7 @@
  *   2. LES WORKFLOWS — lighthouse, `cleanup-runs`, le keep-alive Supabase si
  *      l'app en dépend, les e2e en CI (et qu'aucune spec ne reste hors du
  *      filtre `e2e-grep`, donc jamais jouée), un déploiement Pages passé par
- *      le réutilisable, et les références au socle en `@v4` ;
+ *      le réutilisable, et les références au socle au majeur COURANT ;
  *   3. LE BUILD (`dist/`, s'il existe) — la langue, le lien du manifeste (qui
  *      doit rester sous le site), les icônes PNG 192/512 et maskable, `id`,
  *      la langue du manifeste égale à celle de la page, l'icône iOS, le
@@ -78,6 +78,28 @@ import { appById } from '../apps-catalog.js';
 
 export const PRESET =
   'github>mister-guiiug/dev-pwa-config//renovate/default.json';
+
+/**
+ * Le tag majeur du socle — **LU, ET NON FIGÉ**.
+ *
+ * LE DOCTEUR EST LE SOCLE. Il s'exécute depuis le `node_modules` de
+ * l'application, donc sa version EST celle dont l'application dépend : une app
+ * sur `^4.21.3` lance le docteur 4 et doit référencer `@v4` ; une app sur
+ * `^6.0.0` lance le docteur 6 et doit référencer `@v6`. La comparaison est
+ * juste dans les deux cas, à condition de lire.
+ *
+ * ÉCRIT EN DUR, IL SE RETOURNE AU PREMIER MAJEUR SUIVANT, et il l'a fait : la
+ * 6.0.0 exigeait encore `@v4`, si bien qu'un dépôt correctement monté en `@v6`
+ * se voyait reprocher la bonne valeur — et `--strict` refusait son build. Le
+ * contrôle accusait ce qu'il était censé récompenser. C'est le même défaut que
+ * `workflows.test.mjs` portait et qui avait été corrigé de la même façon ; il
+ * restait ici, dans le fichier qui le dit à vingt dépôts.
+ */
+const MAJEUR = `v${
+  JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+  ).version.split('.')[0]
+}`;
 
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
 const SKIP = new Set(['node_modules', 'dist', 'dev-dist', '.git', 'coverage']);
@@ -838,14 +860,14 @@ export function reglesWorkflows(ctx, api) {
       dette(
         'wf-lighthouse',
         'pas de workflow Lighthouse',
-        'lighthouse.yml → pwa-lighthouse.yml@v4'
+        `lighthouse.yml → pwa-lighthouse.yml@${MAJEUR}`
       );
     }
     if (!/cleanup-runs/.test(wfText)) {
       dette(
         'wf-cleanup',
         'pas de nettoyage des runs',
-        'cleanup-runs.yml → cleanup-runs.yml@v4'
+        `cleanup-runs.yml → cleanup-runs.yml@${MAJEUR}`
       );
     }
     if (
@@ -855,7 +877,7 @@ export function reglesWorkflows(ctx, api) {
       dette(
         'wf-keepalive',
         'Supabase sans keep-alive : le projet Free se met en pause après 7 jours',
-        'keepalive.yml → pwa-supabase-keepalive.yml@v4 (miss-carbook en a payé le prix)'
+        `keepalive.yml → pwa-supabase-keepalive.yml@${MAJEUR} (miss-carbook en a payé le prix)`
       );
     }
     if (playwright && !/run-e2e:\s*true|playwright/i.test(wfText)) {
@@ -890,7 +912,7 @@ export function reglesWorkflows(ctx, api) {
       dette(
         'wf-deploy-maison',
         'déploiement Pages écrit à la main : sans le réutilisable, ni repli SPA 404.html, ni required-env, ni base path',
-        'deploy.yml → pwa-deploy.yml@v4 (use-base-path: true ; ce qui précède le build en pre-build)'
+        `deploy.yml → pwa-deploy.yml@${MAJEUR} (use-base-path: true ; ce qui précède le build en pre-build)`
       );
     }
     // `[^\s@]+` pour le chemin : un chemin de workflow ne contient pas d'arobase,
@@ -899,14 +921,22 @@ export function reglesWorkflows(ctx, api) {
     // espace. Les DEUX parties sont bornées, et il le faut : un chemin non
     // borné laisse le moteur reprendre à chaque répétition du préfixe. Aucun
     // chemin de workflow ne fait 200 caractères, aucune étiquette n'en fait 40.
+    //
+    // LA CIBLE SE LIT (`MAJEUR`), et le motif se construit donc à l'exécution.
+    // Les antislashs sont DOUBLÉS : dans un gabarit, `\s` s'évanouit avant
+    // d'atteindre `RegExp`, et le motif se met alors à accepter n'importe quoi
+    // sans qu'un test le voie — le parc a déjà payé exactement cette erreur.
     const vieux = wfText.match(
-      /mister-guiiug\/dev-pwa-config\/[^\s@]{1,200}@(?!v4\b)\S{1,40}/g
+      new RegExp(
+        `mister-guiiug/dev-pwa-config/[^\\s@]{1,200}@(?!${MAJEUR}\\b)\\S{1,40}`,
+        'g'
+      )
     );
     if (vieux) {
       dette(
         'wf-v3',
-        `référence au socle hors @v4 : ${[...new Set(vieux)].join(', ')}`,
-        'passer en @v4 (étiquette flottante déplacée à chaque release)'
+        `référence au socle hors @${MAJEUR} : ${[...new Set(vieux)].join(', ')}`,
+        `passer en @${MAJEUR} (étiquette flottante déplacée à chaque release)`
       );
     }
 
@@ -1327,7 +1357,7 @@ export function reglesBuild(ctx, api) {
         'versionPlugin({ manifest: true }) (vite-version)'
       );
     }
-    // `pwa-deploy.yml@v4` copie `index.html` en `404.html` AU DÉPLOIEMENT :
+    // `pwa-deploy.yml@<majeur>` copie `index.html` en `404.html` AU DÉPLOIEMENT :
     // un build local sans lui n'est pas un défaut pour une app qui déploie
     // par le réutilisable — c'est le cas de badminton, contraction, footcoach.
     if (
@@ -1338,7 +1368,7 @@ export function reglesBuild(ctx, api) {
       defaut(
         'spa-404',
         'routage par chemin sans 404.html : un lien profond sert la page 404 de GitHub',
-        'spaFallbackPlugin() (vite-pwa-base) ou pwa-deploy.yml@v4'
+        `spaFallbackPlugin() (vite-pwa-base) ou pwa-deploy.yml@${MAJEUR}`
       );
     }
   }
