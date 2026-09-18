@@ -31,7 +31,7 @@
 #     contents: read
 #   jobs:
 #     pgtap:
-#       uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-test.yml@v4
+#       uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-test.yml@v5
 #
 # PRÉREQUIS : `supabase/config.toml` (créé par `supabase init`), sans quoi
 # `supabase start` n'a rien à démarrer — le job le dit en clair au lieu

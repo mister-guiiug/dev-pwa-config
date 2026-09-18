@@ -6,8 +6,11 @@
  *
  *   1. un `pwa-*.yml` (et `cleanup-runs.yml`) DOIT déclarer `workflow_call`,
  *      sinon chaque app le recopie entier (douze copies de cleanup-runs) ;
- *   2. les actions du dépôt s'y référencent par `@v4`, jamais par `./` — un
- *      chemin relatif désigne le checkout de l'APPELANT, où l'action n'est pas ;
+ *   2. les actions du dépôt s'y référencent par le tag majeur MOBILE, jamais
+ *      par `./` — un chemin relatif désigne le checkout de l'APPELANT, où
+ *      l'action n'est pas. Le majeur se LIT dans `package.json` : écrit en dur,
+ *      ce test tombait au premier majeur suivant, et faisait passer pour une
+ *      régression ce qui n'était que sa propre péremption ;
  *   3. aucun `secrets: inherit` : le workflow déclare ce qu'il consomme.
  *
  * Et la promesse du 02/09/2026 : `pwa-deploy.yml` écrit `404.html`.
@@ -22,6 +25,9 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 
 const dir = new URL('../.github/workflows/', import.meta.url);
+
+/** Le tag majeur mobile courant, LU et non figé — cf. `workflow-refs.test.mjs`. */
+const MAJEUR = `v${JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version.split('.')[0]}`;
 const read = name => readFileSync(new URL(name, dir), 'utf8');
 
 const GABARIT = readFileSync(
@@ -44,7 +50,7 @@ test('chaque workflow réutilisable déclare workflow_call', () => {
   }
 });
 
-test('les actions du dépôt sont référencées par @v4, jamais par un chemin relatif', () => {
+test(`les actions du dépôt sont référencées par @${MAJEUR}, jamais par un chemin relatif`, () => {
   for (const name of REUTILISABLES) {
     const source = read(name);
     assert.doesNotMatch(
@@ -55,7 +61,7 @@ test('les actions du dépôt sont référencées par @v4, jamais par un chemin r
     for (const match of source.matchAll(
       /uses:\s*mister-guiiug\/dev-pwa-config\/\.github\/actions\/[\w-]+@(\S+)/g
     )) {
-      assert.equal(match[1], 'v4', `${name} : ${match[0]}`);
+      assert.equal(match[1], MAJEUR, `${name} : ${match[0]}`);
     }
   }
 });
@@ -126,9 +132,14 @@ test('le gabarit range les VITE_* en vars, et nomme ses secrets', () => {
   // Et il doit appeler le réutilisable : les quatre dépôts qui nommaient
   // correctement leurs secrets étaient exactement les quatre qui s'en étaient
   // écartés, chacun avec sa copie du job à maintenir.
-  assert.match(
-    GABARIT,
-    /uses:\s*mister-guiiug\/dev-pwa-config\/\.github\/workflows\/pwa-deploy\.yml@v4/
+  // Comparaison LITTÉRALE et non par expression régulière : construire une
+  // regex dans un littéral de gabarit y fait fondre les `\s` et les `\.`, et
+  // le motif obtenu ne veut plus rien dire — mesuré ici même.
+  assert.ok(
+    GABARIT.includes(
+      `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@${MAJEUR}`
+    ),
+    `le gabarit n'appelle pas pwa-deploy.yml@${MAJEUR}`
   );
 });
 
