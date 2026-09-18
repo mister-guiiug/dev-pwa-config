@@ -135,6 +135,57 @@ export function getAnalyticsId() {
   return state.id;
 }
 
+/**
+ * Le domaine le plus large où CE navigateur accepte réellement un cookie.
+ *
+ * LE PARC EST SERVI SOUS `*.github.io`, ET `github.io` EST UN SUFFIXE PUBLIC.
+ * Aucun site ne peut y poser de cookie : c'est la règle qui empêche un
+ * `mechant.github.io` d'écrire un cookie que tous les autres liraient. Or le
+ * défaut de gtag est `cookie_domain: 'auto'`, qui commence par viser le domaine
+ * enregistrable — donc `github.io` — et se fait refuser. Firefox l'annonce à
+ * chaque chargement, en clair dans la console du visiteur :
+ *
+ *   Le cookie « _ga_XXXXXXXX » a été rejeté car le domaine est invalide.
+ *   Le cookie « _ga » a été rejeté car le domaine est invalide.
+ *
+ * On ne devine PAS ce domaine en lisant le nom d'hôte : la liste des suffixes
+ * publics ne se calcule pas (`github.io` en est un, `exemple.com` non, et
+ * `co.uk` aussi). On le MESURE — un cookie jetable par candidat, du plus large
+ * au plus étroit, et le premier qui tient gagne. La sonde reste juste le jour
+ * où le parc passera sur un domaine à lui : elle rendra ce domaine-là, et les
+ * sous-domaines continueront de partager l'identifiant de client.
+ *
+ * @param {Document} [doc]
+ * @param {string} [hote]
+ * @returns {string} un domaine, ou `'none'` (cookie posé sur l'hôte exact)
+ */
+export function domaineDeCookie(
+  doc = globalThis.document,
+  hote = globalThis.location?.hostname
+) {
+  // Pas de DOM, pas d'hôte, une IP ou un nom sans point (`localhost`) : rien à
+  // élargir, et `domain=` y est de toute façon refusé.
+  if (!doc || !hote || !hote.includes('.') || /^[\d.]+$/.test(hote))
+    return 'none';
+
+  const parties = hote.split('.');
+  for (let n = 2; n <= parties.length; n++) {
+    const candidat = parties.slice(parties.length - n).join('.');
+    const nom = `dwc_sonde_${n}`;
+    try {
+      doc.cookie = `${nom}=1; domain=${candidat}; path=/; SameSite=Lax`;
+      if (String(doc.cookie).includes(`${nom}=1`)) {
+        doc.cookie = `${nom}=; domain=${candidat}; path=/; max-age=0`;
+        return candidat;
+      }
+    } catch {
+      // Un document sans cookies accessibles (sandbox) : on n'insiste pas.
+      return 'none';
+    }
+  }
+  return 'none';
+}
+
 /** Injecte le tag, une seule fois. */
 function loadTag() {
   if (state.loaded || !state.id || typeof document === 'undefined') return;
@@ -152,7 +203,12 @@ function loadTag() {
     dataLayerPush({ 'gtm.start': Date.now(), event: 'gtm.js' });
   } else {
     gtag('js', new Date());
-    gtag('config', state.id, { send_page_view: false });
+    // `cookie_domain` est POSÉ, jamais laissé à `'auto'` : voir
+    // `domaineDeCookie`. Sans lui, gtag vise `github.io` et se fait refuser.
+    gtag('config', state.id, {
+      send_page_view: false,
+      cookie_domain: domaineDeCookie(),
+    });
   }
   state.loaded = true;
 }
