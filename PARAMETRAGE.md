@@ -282,7 +282,7 @@ Bearer : ne pas la confondre avec un jeton.
 **D. L'observabilité.** `VITE_SENTRY_DSN` en `vars`, facultative, **jamais**
 dans `required-env` : absente, Sentry n'est pas chargé et l'application tourne.
 
-**D bis. La mesure d'audience.** `VITE_GA_MEASUREMENT_ID` (`G-…`), en `vars`,
+**D bis. La mesure d'audience.** `VITE_POSTHOG_KEY` (`phc_…`), en `vars`,
 facultative, **jamais** dans `required-env` non plus : absente, `ConsentBanner`
 ne rend rien et aucune question n'est posée à l'utilisateur.
 
@@ -291,24 +291,28 @@ pour lesquelles **aucune des vingt et une applications du parc n'en portait** :
 le module existait, la marche à suivre pour l'alimenter n'était écrite nulle
 part d'opérationnel.
 
-**UNE SEULE PROPRIÉTÉ POUR LE PARC, ET LE MÊME `G-…` PARTOUT** — depuis l'ADR
-0011 du squelette, et c'est l'inverse de ce que ce document disait jusqu'au
-18/09/2026.
+**UN SEUL PROJET POUR LE PARC, ET LA MÊME CLÉ PARTOUT** — ADR 0012 du
+squelette, et c'est l'inverse de ce que ce document disait jusqu'au 18/09/2026.
 
 On lisait ici « une propriété GA4 par application, donc un `G-…` par dépôt ».
-C'est ce qui a été fait les 15 et 16/09 — dix-neuf propriétés — et ça ne donne
-la vue d'ensemble à aucun prix : GA4 gratuit n'a pas de propriété de synthèse,
-et **la somme des dix-neuf est fausse** puisque les sites partagent l'origine,
-donc le cookie `_ga`, donc l'identifiant de client. Un visiteur de trois
-applications y est trois utilisateurs.
+C'est ce qui a été fait les 15 et 16/09 — dix-neuf propriétés Google — et ça ne
+donnait la vue d'ensemble à aucun prix : le palier gratuit de GA4 n'a pas de
+propriété de synthèse, et **la somme des dix-neuf était fausse** puisque les
+sites partagent l'origine, donc le cookie, donc l'identifiant de client. Un
+visiteur de trois applications y comptait pour trois.
 
-Les applications ne se mélangent pas pour autant : `trackEvent` joint
-`app_name` à chaque événement, déduit du chemin de base. Le détail par dépôt
-est une dimension, le total est natif, et les deux sortent des mêmes données.
+Les applications ne se mélangent pas pour autant : `app_name`, déduit du chemin
+de base, est enregistré en **super-propriété** et accompagne chaque événement.
+Le détail par dépôt est un filtre, le total est natif, et les deux sortent des
+mêmes données.
 
-**Tag Manager n'est plus une option.** `VITE_GTM_CONTAINER_ID` n'est plus lue
-nulle part : le compte n'a plus aucun conteneur, et le socle ne sait plus
-charger `gtm.js`. La condition de son retour est écrite dans l'ADR.
+**GOOGLE A ENTIÈREMENT QUITTÉ LA MESURE.** `VITE_GA_MEASUREMENT_ID` et
+`VITE_GTM_CONTAINER_ID` ne sont plus lues nulle part. Le motif n'était pas la
+mesure — au volume du parc, GA4 faisait très bien l'affaire — mais la dette
+RGPD qu'il rendait incompressible : un cookie nécessaire donc un bandeau
+obligatoire, un transfert hors UE à assumer, une durée à publier. La balise de
+vérification de propriété Search Console, elle, ne bouge pas : elle ne mesure
+rien.
 
 **ET LA VARIABLE DOIT ATTEINDRE LE BUILD, ce qui ne va pas de soi.** Posée sur
 le dépôt, elle ne fait rien tant que le workflow appelant ne la passe pas en
@@ -320,7 +324,7 @@ signe. La ligne à écrire dans l'appelant :
 ```yaml
 with:
   build-env: |
-    VITE_GA_MEASUREMENT_ID=${{ vars.VITE_GA_MEASUREMENT_ID }}
+    VITE_POSTHOG_KEY=${{ vars.VITE_POSTHOG_KEY }}
 ```
 
 Aucun commentaire à l'intérieur du bloc : `build-env` est un bloc littéral, un

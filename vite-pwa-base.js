@@ -23,7 +23,6 @@
  * Variables d'env lues au build :
  *   VITE_BASE_PATH            ex. /mister-puzzle/   (défaut '/')
  *   VITE_PUBLIC_SITE_ORIGIN   ex. https://mister-guiiug.github.io
- *   VITE_GA_MEASUREMENT_ID    ex. G-XXXXXXXXXX      (optionnel)
  */
 import {
   stripThemeColorMeta,
@@ -34,13 +33,6 @@ import {
 import process from 'node:process';
 
 const DEFAULT_ORIGIN = 'https://mister-guiiug.github.io';
-
-/** ID de mesure GA4 valide (G-XXXX) ou null. */
-export function parseGaMeasurementId(raw) {
-  if (!raw) return null;
-  const id = raw.trim().toUpperCase();
-  return /^G-[A-Z0-9]+$/.test(id) ? id : null;
-}
 
 /**
  * Origin + URL d'accueil (+ URL logo) dérivés des variables d'env.
@@ -69,79 +61,11 @@ export function resolveSeoPublicUrls(arg) {
 }
 
 /**
- * @deprecated Préférer `react/consent-banner`. Cette voie-ci injecte le tag AU
- * BUILD, dans le HTML : il part donc au chargement de la page, avant tout
- * accord. Le `consent default` tout refusé posé juste avant empêche la
- * collecte, mais le script de Google est chargé quand même — ce que le RGPD ne
- * regarde pas de la même façon. `ConsentBanner` n'injecte rien avant un accord
- * explicite, et c'est la seule voie en service dans le parc depuis
- * septembre 2026, où les vingt et une apps ont retiré leurs marqueurs
- * `__ANALYTICS_*__`.
- *
- * Conservée parce qu'elle est exportée : la retirer serait un MAJEUR. Le
- * gabarit `templates/index.html` ne la câble plus.
- *
- * Fragments HTML GA4 à injecter dans <head>/<body>.
- *
- * LA MOITIÉ GTM A ÉTÉ RETIRÉE le 18/09/2026 : le compte Tag Manager ne porte
- * plus aucun conteneur, aucune app n'en câblait, et l'ADR 0011 du squelette
- * tranche pour gtag en direct. Ce qui restait ici était du code mort dans une
- * fonction déjà dépréciée.
- *
- * LE CONSENTEMENT PASSE EN PREMIER, ou ne sert à rien. Le mode consentement de
- * Google veut que l'état par défaut soit déclaré AVANT le chargement du tag :
- * une commande postérieure n'a pas d'effet rétroactif sur ce qui a déjà été
- * collecté. Ces fragments l'écrivaient sans, donc la valeur par défaut de
- * Google s'appliquait — pour des applications françaises, ce n'est pas un
- * détail de configuration.
- *
- * `consent: false` restaure le comportement d'avant, pour un déploiement qui
- * gère le consentement ailleurs (une CMP).
- */
-export function buildAnalyticsHtmlFragments(overrides = {}) {
-  const ga = parseGaMeasurementId(
-    overrides.gaMeasurementId ?? process.env.VITE_GA_MEASUREMENT_ID
-  );
-  const consentDefault =
-    overrides.consent === false
-      ? ''
-      : `<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('consent', 'default', {
-    ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied',
-    analytics_storage: 'denied', functionality_storage: 'denied',
-    personalization_storage: 'denied', wait_for_update: 500
-  });
-</script>
-`;
-
-  if (ga) {
-    return {
-      head:
-        consentDefault +
-        `<!-- Google tag (gtag.js) / GA4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=${ga}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', '${ga}');
-</script>`,
-      body: '',
-    };
-  }
-  return { head: '', body: '' };
-}
-
-/**
  * Plugin Vite : injecte les placeholders d'index.html et génère sitemap.xml /
  * robots.txt en fin de build.
  *
  * Placeholders remplacés dans index.html :
  *   __SEO_HOME_URL__     URL d'accueil canonique
- *   __ANALYTICS_HEAD__   snippet analytics <head>
- *   __ANALYTICS_BODY__   snippet analytics <body> (vide depuis le retrait de GTM)
  *
  * Placeholders supplémentaires (si `logoPath`/`iconQuery` fournis) :
  *   __SEO_LOGO_URL__     URL absolue du logo (Open Graph / Twitter / JSON-LD)
@@ -169,10 +93,8 @@ export function pwaSeoPlugin(opts = {}) {
     logoPath,
     iconQuery = '',
     llms,
-    gaMeasurementId,
     themeBoot,
     themeColor,
-    consent,
     extraReplacements = {},
   } = opts;
   const urlOpts = { basePath, logoPath, iconQuery };
@@ -232,10 +154,6 @@ export function pwaSeoPlugin(opts = {}) {
     },
     transformIndexHtml(html) {
       const { homeUrl, logoUrl } = resolveSeoPublicUrls(urlOpts);
-      const { head, body } = buildAnalyticsHtmlFragments({
-        gaMeasurementId,
-        consent,
-      });
       // Le script anti-FOUC, INJECTÉ plutôt que recopié. Treize apps sur seize
       // en portent un à la main dans leur `index.html`, de dix à trente-trois
       // lignes ; il doit rester inline et synchrone, donc hors de portée d'un
@@ -269,9 +187,7 @@ export function pwaSeoPlugin(opts = {}) {
       out = out
         .replaceAll('__SEO_HOME_URL__', homeUrl)
         .replaceAll('__SEO_LOGO_URL__', logoUrl ?? homeUrl)
-        .replaceAll('__PWA_ICON_QS__', iconQuery)
-        .replaceAll('__ANALYTICS_HEAD__', head)
-        .replaceAll('__ANALYTICS_BODY__', body);
+        .replaceAll('__PWA_ICON_QS__', iconQuery);
       for (const [marker, value] of Object.entries(extraReplacements)) {
         out = out.replaceAll(marker, value);
       }

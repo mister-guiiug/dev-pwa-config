@@ -20,7 +20,7 @@ import { appScopedKey, readRaw, removeKey, writeRaw } from '../storage.js';
  *
  * QUATRE DÉCISIONS, ET AUCUNE N'EST COSMÉTIQUE :
  *
- *  1. **Sans identifiant, pas de bandeau.** Si aucun `VITE_GA_MEASUREMENT_ID`
+ *  1. **Sans identifiant, pas de bandeau.** Si aucun `VITE_POSTHOG_KEY`
  *     n'est posé, il n'y a rien à mesurer et donc rien à demander. Dix des
  *     vingt et une apps partiront sans identifiant : leur poser la question
  *     serait du bruit, et un bruit qui use le consentement des suivantes.
@@ -190,7 +190,7 @@ export function clearConsentChoice(scope) {
  * Utilisable seul, pour une page de confidentialité qui veut offrir le choix
  * ailleurs que dans le bandeau.
  *
- * @param {{ gaMeasurementId?: string,
+ * @param {{ posthogKey?: string, posthogHost?: string,
  *   appName?: string, scope?: string }} [options]
  * @returns {{ choice: 'granted'|'denied'|null, configured: boolean,
  *   needed: boolean, accept: () => void, refuse: () => void,
@@ -233,8 +233,15 @@ function choixFrais(scope, maxAgeDays, purposeVersion) {
 }
 
 export function useConsentChoice(options = {}) {
-  const { gaMeasurementId, appName, scope, maxAgeDays, purposeVersion } =
-    options;
+  const {
+    posthogKey,
+    posthogHost,
+    loader,
+    appName,
+    scope,
+    maxAgeDays,
+    purposeVersion,
+  } = options;
   const [choice, setChoice] = useState(() =>
     choixFrais(scope, maxAgeDays, purposeVersion)
   );
@@ -276,7 +283,10 @@ export function useConsentChoice(options = {}) {
     // postérieure à une mise à jour n'a pas de sémantique définie chez Google.
     // On se contente alors de lire l'identifiant qu'elle a posé.
     const deja = getAnalyticsId();
-    const id = deja ?? initAnalytics({ gaMeasurementId, appName }).id ?? null;
+    const id =
+      deja ??
+      initAnalytics({ posthogKey, posthogHost, appName, loader }).id ??
+      null;
     setConfigured(Boolean(id));
     if (!id) return;
     // Le choix d'hier, rejoué : sans ça le tag n'est jamais injecté, quel que
@@ -288,7 +298,15 @@ export function useConsentChoice(options = {}) {
     // le faire compter.
     if (choixFrais(scope, maxAgeDays, purposeVersion) === 'granted')
       setAnalyticsConsent({ analytics: true });
-  }, [gaMeasurementId, appName, scope, maxAgeDays, purposeVersion]);
+  }, [
+    posthogKey,
+    posthogHost,
+    loader,
+    appName,
+    scope,
+    maxAgeDays,
+    purposeVersion,
+  ]);
 
   const decide = useCallback(
     next => {
@@ -357,7 +375,7 @@ export function useConsentChoice(options = {}) {
  * Les deux coexistent : `policyHref` pour qui a une vraie page, `policy` pour
  * qui n'en a pas. Fournir les deux affiche le lien ET le repli.
  *
- * @param {{ gaMeasurementId?: string,
+ * @param {{ posthogKey?: string, posthogHost?: string,
  *   appName?: string,
  *   scope?: string, policyHref?: string, className?: string,
  *   placement?: 'static'|'fixed',
@@ -367,7 +385,9 @@ export function useConsentChoice(options = {}) {
  */
 export function ConsentBanner(props) {
   const {
-    gaMeasurementId,
+    posthogKey,
+    posthogHost,
+    loader,
     appName,
     scope,
     maxAgeDays,
@@ -385,7 +405,9 @@ export function ConsentBanner(props) {
 
   const labels = useLabels('consent');
   const { needed, accept, refuse } = useConsentChoice({
-    gaMeasurementId,
+    posthogKey,
+    posthogHost,
+    loader,
     appName,
     scope,
     maxAgeDays,
@@ -473,19 +495,21 @@ export function ConsentBanner(props) {
  * poser la question : un « modifier mon choix » à côté d'elle n'aurait pas de
  * référent.
  *
- * `gaMeasurementId` EST À PASSER, comme au bandeau. Le hook retombe sur
+ * `posthogKey` EST À PASSER, comme au bandeau. Le hook retombe sur
  * l'identifiant déjà posé par `initAnalytics` s'il y en a un, mais l'ordre des
  * effets entre deux branches de l'arbre n'est pas une garantie : le premier
  * rendu du pied de page peut précéder celui du bandeau.
  *
  * Non stylé : cibler `[data-dwc="consent-settings"]`.
  *
- * @param {{ gaMeasurementId?: string, scope?: string,
+ * @param {{ posthogKey?: string, posthogHost?: string, scope?: string,
  *   className?: string, stateLabel?: string, actionLabel?: string }} props
  */
 export function ConsentSettings(props = {}) {
   const {
-    gaMeasurementId,
+    posthogKey,
+    posthogHost,
+    loader,
     scope,
     maxAgeDays,
     purposeVersion,
@@ -496,7 +520,9 @@ export function ConsentSettings(props = {}) {
 
   const labels = useLabels('consent');
   const { choice, configured, reset } = useConsentChoice({
-    gaMeasurementId,
+    posthogKey,
+    posthogHost,
+    loader,
     scope,
     maxAgeDays,
     purposeVersion,

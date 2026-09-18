@@ -2,7 +2,7 @@
  * La garde de l'écran d'entrée.
  *
  * Le socle n'a pas Playwright : on ne peut pas jouer la garde en entier ici.
- * Ce qui SE prouve sans lui — la lecture des deux formes de `dataLayer`, le
+ * Ce qui SE prouve sans lui — la lecture de la couture de mesure, le
  * refus d'une combinaison d'options qui ne veut rien dire, l'enchaînement des
  * appels — se prouve avec une fausse page. Le reste est éprouvé dans une app
  * réelle (`miss-uwh`), qui, elle, a Playwright.
@@ -11,19 +11,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  bloqueGoogle,
+  bloqueMesure,
   expectEcranEntreeCable,
-  HOTES_GOOGLE,
+  HOTES_MESURE,
   litServiceWorkers,
   litVuesDePage,
 } from '../playwright-entree.js';
 
 /** Une page Playwright réduite à ce que la garde lui demande. */
-function faussePage({
-  dataLayer = [],
-  serviceWorkers = 0,
-  bandeau = true,
-} = {}) {
+function faussePage({ mesure = [], serviceWorkers = 0, bandeau = true } = {}) {
   const journal = [];
   return {
     journal,
@@ -39,9 +35,9 @@ function faussePage({
       // `navigator` n'a qu'un GETTER sous Node : une affectation simple lève
       // `Cannot set property navigator`. D'où `defineProperty`, et la
       // restitution du descripteur d'origine.
-      const avantDL = globalThis.dataLayer;
+      const avantDL = globalThis.__DWC_MESURE;
       const descNav = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
-      globalThis.dataLayer = dataLayer;
+      globalThis.__DWC_MESURE = mesure;
       Object.defineProperty(globalThis, 'navigator', {
         value: {
           serviceWorker: {
@@ -54,7 +50,7 @@ function faussePage({
       try {
         return await fn();
       } finally {
-        globalThis.dataLayer = avantDL;
+        globalThis.__DWC_MESURE = avantDL;
         if (descNav) Object.defineProperty(globalThis, 'navigator', descNav);
         else delete globalThis.navigator;
       }
@@ -86,26 +82,27 @@ function fauxExpect(echecs) {
   return f;
 }
 
-test('les deux formes de dataLayer sont lues', async () => {
-  // GA4 pousse l'objet `arguments`, GTM pousse un objet : les deux comptent.
+test('seules les vues de page sont retenues, pas les autres événements', async () => {
+  // La couture retient TOUT ce que l'app a demandé d'envoyer ; la garde n'y
+  // cherche que les vues. Un `$pageview` noyé dans des clics doit sortir.
   const page = faussePage({
-    dataLayer: [
-      ['consent', 'update', { analytics_storage: 'granted' }],
-      ['event', 'page_view', { page_path: '/ga4' }],
-      { event: 'page_view', page_path: '/gtm' },
-      { event: 'clic' },
+    mesure: [
+      { event: 'lancer', des: 2 },
+      { event: '$pageview', $pathname: '/accueil' },
+      { event: 'export' },
+      { event: '$pageview', $pathname: '/aide' },
     ],
   });
   const vues = await litVuesDePage(page);
   assert.equal(vues.length, 2);
   assert.deepEqual(
-    vues.map(v => v.page_path),
-    ['/ga4', '/gtm']
+    vues.map(v => v.$pathname),
+    ['/accueil', '/aide']
   );
 });
 
-test('un dataLayer vide ou absent ne lève pas', async () => {
-  assert.deepEqual(await litVuesDePage(faussePage({ dataLayer: [] })), []);
+test('une couture vide ou absente ne lève pas', async () => {
+  assert.deepEqual(await litVuesDePage(faussePage({ mesure: [] })), []);
 });
 
 test('les service workers sont comptés', async () => {
@@ -113,31 +110,30 @@ test('les service workers sont comptés', async () => {
   assert.equal(await litServiceWorkers(faussePage({ serviceWorkers: 0 })), 0);
 });
 
-test('bloqueGoogle pose bien une route', async () => {
+test('bloqueMesure pose bien une route', async () => {
   const page = faussePage();
-  await bloqueGoogle(page);
+  await bloqueMesure(page);
   const motif = page.journal.find(l => l.startsWith('route'));
-  assert.match(motif, /googletagmanager/u);
-  assert.match(motif, /google-analytics/u);
+  assert.match(motif, /posthog/u);
 });
 
 test('le motif d’hôtes est ANCRÉ, et ne se laisse pas imiter', () => {
   for (const url of [
-    'https://www.googletagmanager.com/gtag/js?id=G-ABC1234567',
-    'http://google-analytics.com/g/collect',
-    'https://region1.google-analytics.com/g/collect?v=2',
+    'https://eu.i.posthog.com/e/',
+    'http://posthog.com/x',
+    'https://eu-assets.i.posthog.com/static/array.js',
   ]) {
-    assert.ok(HOTES_GOOGLE.test(url), `devrait reconnaître ${url}`);
+    assert.ok(HOTES_MESURE.test(url), `devrait reconnaître ${url}`);
   }
   // Sans ancre, les trois premières passaient : c'est exactement le défaut que
   // CodeQL a refusé.
   for (const url of [
-    'https://evil-googletagmanager.com.attaquant.net/x',
-    'https://attaquant.net/?u=https://www.googletagmanager.com/gtag/js',
-    'https://googletagmanager.com.attaquant.net/',
-    'https://notgoogle-analytics.com/g/collect',
+    'https://evil-posthog.com.attaquant.net/x',
+    'https://attaquant.net/?u=https://eu.i.posthog.com/e/',
+    'https://posthog.com.attaquant.net/',
+    'https://notposthog.com/e/',
   ]) {
-    assert.ok(!HOTES_GOOGLE.test(url), `ne devrait PAS reconnaître ${url}`);
+    assert.ok(!HOTES_MESURE.test(url), `ne devrait PAS reconnaître ${url}`);
   }
 });
 
@@ -157,7 +153,7 @@ test('vérifier la vue sans le consentement est refusé', async () => {
 test('le parcours complet : question, accord, vue, service worker', async () => {
   const echecs = [];
   const page = faussePage({
-    dataLayer: [['event', 'page_view', { page_path: '/connexion' }]],
+    mesure: [{ event: '$pageview', $pathname: '/connexion' }],
     serviceWorkers: 1,
   });
   await expectEcranEntreeCable(page, fauxExpect(echecs), {
@@ -176,7 +172,7 @@ test('le parcours complet : question, accord, vue, service worker', async () => 
 
 test('sans vue de page, la garde échoue en le disant', async () => {
   const echecs = [];
-  const page = faussePage({ dataLayer: [], serviceWorkers: 1 });
+  const page = faussePage({ mesure: [], serviceWorkers: 1 });
   await expectEcranEntreeCable(page, fauxExpect(echecs), { timeout: 200 });
   assert.equal(echecs.length, 1);
   assert.match(echecs[0], /usePageViews.*n’est pas monté/u);
@@ -185,7 +181,7 @@ test('sans vue de page, la garde échoue en le disant', async () => {
 test('sans service worker, la garde échoue en le disant', async () => {
   const echecs = [];
   const page = faussePage({
-    dataLayer: [['event', 'page_view', {}]],
+    mesure: [{ event: '$pageview' }],
     serviceWorkers: 0,
   });
   await expectEcranEntreeCable(page, fauxExpect(echecs), { timeout: 200 });
@@ -195,7 +191,7 @@ test('sans service worker, la garde échoue en le disant', async () => {
 
 test('une app sans mesure peut ne garder que le service worker', async () => {
   const echecs = [];
-  const page = faussePage({ dataLayer: [], serviceWorkers: 1, bandeau: false });
+  const page = faussePage({ mesure: [], serviceWorkers: 1, bandeau: false });
   await expectEcranEntreeCable(page, fauxExpect(echecs), {
     consentement: false,
     timeout: 200,

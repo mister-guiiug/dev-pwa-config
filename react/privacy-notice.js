@@ -66,7 +66,8 @@ let prevenu = false;
 /**
  * @param {{ controller?: import('react').ReactNode,
  *   contact?: string, retentionMonths?: number,
- *   gaMeasurementId?: string, gtmContainerId?: string, scope?: string,
+ *   posthogKey?: string, posthogHost?: string, loader?: () => Promise<unknown>,
+ *   scope?: string,
  *   className?: string, settingsClassName?: string,
  *   title?: import('react').ReactNode }} props
  */
@@ -75,7 +76,9 @@ export function PrivacyNotice(props = {}) {
     controller,
     contact,
     retentionMonths = RETENTION_DEFAUT,
-    gaMeasurementId,
+    posthogKey,
+    posthogHost,
+    loader,
     gtmContainerId,
     scope,
     className,
@@ -142,7 +145,9 @@ export function PrivacyNotice(props = {}) {
     // La sortie, au même endroit que l'information : elle ne rend rien tant
     // qu'aucun choix n'a été fait, le bandeau étant alors à l'écran.
     h(ConsentSettings, {
-      gaMeasurementId,
+      posthogKey,
+      posthogHost,
+      loader,
       gtmContainerId,
       scope,
       className: settingsClassName,

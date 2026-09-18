@@ -76,7 +76,9 @@ export interface ConsentChoice {
  * synchronisent : un choix fait dans le pied de page rappelle le bandeau.
  */
 export declare function useConsentChoice(options?: {
-  gaMeasurementId?: string;
+  posthogKey?: string;
+  posthogHost?: string;
+  loader?: () => Promise<unknown>;
   /** Nom d'app joint aux événements ; sinon le chemin de base. */
   appName?: string;
   scope?: string;
@@ -87,7 +89,9 @@ export declare function useConsentChoice(options?: {
 }): ConsentChoice;
 
 export interface ConsentBannerProps {
-  gaMeasurementId?: string;
+  posthogKey?: string;
+  posthogHost?: string;
+  loader?: () => Promise<unknown>;
   /** Nom d'app joint aux événements ; sinon le chemin de base. */
   appName?: string;
   /** Portée explicite de la clé ; sinon le chemin de base de l'app. */
@@ -126,7 +130,9 @@ export interface ConsentBannerProps {
 export declare const ConsentBanner: FC<ConsentBannerProps>;
 
 export interface ConsentSettingsProps {
-  gaMeasurementId?: string;
+  posthogKey?: string;
+  posthogHost?: string;
+  loader?: () => Promise<unknown>;
   scope?: string;
   maxAgeDays?: number;
   purposeVersion?: number;

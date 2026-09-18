@@ -23,12 +23,15 @@ export interface EcranEntreeOptions {
  * Les hôtes de Google, ANCRÉS sur le schéma et l'hôte entier : une regex d'URL
  * sans ancre reconnaît aussi `evil-googletagmanager.com.attaquant.net`.
  */
-export const HOTES_GOOGLE: RegExp;
+export const HOTES_MESURE: RegExp;
 
-/** Intercepte tout trafic vers Google : la garde lit `dataLayer`, pas le réseau. */
-export function bloqueGoogle(page: unknown): Promise<void>;
+/**
+ * Intercepte tout trafic vers le sous-traitant de mesure : la garde lit
+ * `window.__DWC_MESURE`, pas le réseau.
+ */
+export function bloqueMesure(page: unknown): Promise<void>;
 
-/** Les vues de page présentes dans `dataLayer` (formes GA4 et GTM). */
+/** Les vues de page demandées, lues dans la couture `window.__DWC_MESURE`. */
 export function litVuesDePage(
   page: unknown
 ): Promise<Array<Record<string, unknown>>>;

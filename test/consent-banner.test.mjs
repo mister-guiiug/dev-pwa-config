@@ -23,19 +23,39 @@ import {
   writeConsentChoice,
 } from '../react/consent-banner.js';
 import { resetAnalytics } from '../analytics.js';
+import {
+  chargeurFactice,
+  fauxPosthog,
+  laisseCharger,
+} from './helpers/posthog.mjs';
 import { mount, setupDom } from './helpers/dom.mjs';
 
-const GA = 'G-TEST12345';
+const CLE = 'phc_abcdefghijklmnopqrstuvwxyz0123456789';
 
-/** Le script du tag, ou `null` — la seule mesure qui compte ici. */
+/** Le double de `posthog-js` du test courant, refait par `prepare()`. */
+let faux;
+
+/** Les props qui branchent le bandeau sur le double. */
+const props = (extra = {}) => ({
+  posthogKey: CLE,
+  loader: chargeurFactice(faux),
+  ...extra,
+});
+
+/**
+ * Le tag est-il chargé ? Du temps de GA4, un `<script src>` dans le `<head>`
+ * en faisait foi. PostHog est importé, pas injecté : le témoin est l'appel à
+ * `init` du double, qui ne part que si le socle a décidé de charger.
+ */
 const tagCharge = () =>
-  document.head.querySelector('script[src*="googletagmanager.com"]');
+  faux.appels.init.length > 0 ? faux.appels.init[0] : null;
 
 /** Un DOM neuf, un module d'analytics neuf, un stockage neuf. */
 function prepare(choixMemorise, scope) {
   const dom = setupDom();
   resetAnalytics();
-  delete globalThis.dataLayer;
+  faux = fauxPosthog();
+  delete globalThis.__DWC_MESURE;
   if (choixMemorise)
     window.localStorage.setItem(consentKey(scope), choixMemorise);
   return dom;
@@ -45,20 +65,21 @@ const bouton = (container, nom) =>
   container.querySelector(`[data-dwc="consent-${nom}"]`);
 
 /**
- * Le DERNIER `consent update` poussé dans `dataLayer`.
+ * Le DERNIER geste de consentement adressé au client.
  *
  * `setAnalyticsConsent` ne rend rien d'observable une fois le script chargé :
- * un refus après un accord ne décharge pas le tag, il coupe la collecte CÔTÉ
- * GOOGLE. Le seul témoin de ce geste est donc l'ordre poussé — et c'est
- * exactement ce qu'il faut vérifier pour un retrait.
+ * un refus après un accord ne décharge pas la bibliothèque, il coupe la
+ * collecte. Le seul témoin est donc l'appel — `opt_out_capturing` pour un
+ * retrait, `opt_in_capturing` pour un retour. C'est exactement ce qu'il faut
+ * vérifier.
  */
 const dernierConsentement = () => {
-  // `window.dataLayer`, et non `globalThis` : `analytics.js` écrit sur la
-  // fenêtre, et le DOM de test n'est pas l'objet global.
-  const ordres = [...(window.dataLayer ?? [])].filter(
-    a => a?.[0] === 'consent' && a?.[1] === 'update'
-  );
-  return ordres.at(-1)?.[2]?.analytics_storage ?? null;
+  // DANS L'ORDRE, jamais par comptage : un refus suivi d'un accord et l'inverse
+  // donnent les mêmes compteurs et des états opposés.
+  if (faux.appels.gestes.length > 0) return faux.appels.gestes.at(-1);
+  // Au tout premier chargement, un accord mémorisé ne produit AUCUN geste : la
+  // bibliothèque démarre en collectant, et `init` est alors le seul témoin.
+  return faux.appels.init.length > 0 ? 'granted' : null;
 };
 
 test('sans identifiant de mesure, aucun bandeau', async () => {
@@ -79,7 +100,7 @@ test('sans identifiant de mesure, aucun bandeau', async () => {
 
 test('avec un identifiant et aucun choix, le bandeau paraît — et rien n’est chargé', async () => {
   const dom = prepare();
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   assert.ok(vue.container.querySelector('[data-dwc="consent-banner"]'));
   // LE POINT ENTIER DU MODULE : le tag n'est pas là AVANT la réponse.
@@ -91,7 +112,7 @@ test('avec un identifiant et aucun choix, le bandeau paraît — et rien n’est
 
 test('refuser et accepter sont au même niveau, dans le même conteneur', async () => {
   const dom = prepare();
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   const accepter = bouton(vue.container, 'accept');
   const refuser = bouton(vue.container, 'refuse');
@@ -107,13 +128,16 @@ test('refuser et accepter sont au même niveau, dans le même conteneur', async 
 
 test('accepter charge le tag et mémorise le choix', async () => {
   const dom = prepare();
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   await vue.act(() => bouton(vue.container, 'accept').click());
 
-  const script = tagCharge();
-  assert.ok(script, 'le tag doit être injecté après l’accord');
-  assert.match(script.src, /gtag\/js\?id=G-TEST12345/);
+  // Le chargement est ASYNCHRONE — `posthog-js` est importé, pas injecté en
+  // `<script src>` : au retour immédiat du clic, rien n'est encore observable.
+  await laisseCharger();
+  const init = tagCharge();
+  assert.ok(init, 'le tag doit être chargé après l’accord');
+  assert.equal(init.cle, CLE);
   // La valeur brute porte sa DATE depuis le 16/09/2026 (`granted;<ms>`) : on
   // vérifie le choix par le lecteur, et la date à part.
   assert.equal(readConsentChoice(), 'granted');
@@ -132,7 +156,7 @@ test('accepter charge le tag et mémorise le choix', async () => {
 
 test('refuser ne charge rien, et le bandeau ne revient pas', async () => {
   const dom = prepare();
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   await vue.act(() => bouton(vue.container, 'refuse').click());
 
@@ -149,7 +173,7 @@ test('refuser ne charge rien, et le bandeau ne revient pas', async () => {
 
 test('un accord mémorisé recharge le tag au montage suivant, sans reposer la question', async () => {
   const dom = prepare('granted');
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   // SANS CE REJEU, le tag ne serait jamais injecté pour un visiteur qui a déjà
   // accepté : `initAnalytics` part toujours de `denied`, et l'accord d'hier ne
@@ -166,7 +190,7 @@ test('un accord mémorisé recharge le tag au montage suivant, sans reposer la q
 
 test('un refus mémorisé ne charge rien et ne repose pas la question', async () => {
   const dom = prepare('denied');
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   assert.equal(tagCharge(), null);
   assert.equal(
@@ -180,7 +204,7 @@ test('un refus mémorisé ne charge rien et ne repose pas la question', async ()
 
 test('le bandeau est une région nommée, pas une boîte modale', async () => {
   const dom = prepare();
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   const bandeau = vue.container.querySelector('[data-dwc="consent-banner"]');
   // Piéger le focus pour obtenir un consentement est la figure que le RGPD
@@ -194,7 +218,7 @@ test('le bandeau est une région nommée, pas une boîte modale', async () => {
 
 test('le lien de confidentialité n’apparaît que si on le fournit', async () => {
   const dom = prepare();
-  const sans = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const sans = await mount(h(ConsentBanner, props()));
   assert.equal(
     sans.container.querySelector('[data-dwc="consent-policy"]'),
     null
@@ -203,7 +227,7 @@ test('le lien de confidentialité n’apparaît que si on le fournit', async () 
 
   resetAnalytics();
   const avec = await mount(
-    h(ConsentBanner, { gaMeasurementId: GA, policyHref: '/confidentialite' })
+    h(ConsentBanner, { ...props(), policyHref: '/confidentialite' })
   );
   const lien = avec.container.querySelector('[data-dwc="consent-policy"]');
   assert.equal(lien?.getAttribute('href'), '/confidentialite');
@@ -229,7 +253,7 @@ test('un accord donné à une app ne vaut PAS pour une autre', async () => {
   // qui chargeait son propre tag sans avoir rien demandé à personne.
   const dom = prepare('granted', '/mister-cim10/');
   const vue = await mount(
-    h(ConsentBanner, { gaMeasurementId: GA, scope: '/miss-contraction/' })
+    h(ConsentBanner, { ...props(), scope: '/miss-contraction/' })
   );
 
   assert.ok(
@@ -302,7 +326,7 @@ test('un accord PÉRIMÉ ne rouvre pas la collecte, et repose la question', asyn
   // `readConsentChoice` nu aurait rejoué `granted` et rechargé le tag.
   const dom = prepare();
   writeConsentChoice('granted', undefined, { at: Date.now() - 400 * JOUR });
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   assert.equal(
     tagCharge(),
@@ -326,7 +350,7 @@ test('un choix SANS DATE est re-daté d’aujourd’hui, pas expiré', async () 
   const dom = prepare('granted');
   assert.equal(readConsentRecord().at, null, 'la forme ancienne, sans date');
 
-  const vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentBanner, props()));
 
   assert.ok(tagCharge(), 'l’accord d’hier vaut toujours');
   assert.equal(
@@ -349,9 +373,7 @@ test('placement="fixed" : le bandeau demande sa place, et l’oublie sans la pro
   // à 891 px pour une fenêtre de 812, recouverte par la barre basse dont le
   // bord haut est à 756.
   let dom = prepare();
-  let vue = await mount(
-    h(ConsentBanner, { gaMeasurementId: GA, placement: 'fixed' })
-  );
+  let vue = await mount(h(ConsentBanner, { ...props(), placement: 'fixed' }));
   assert.equal(
     vue.container.querySelector('[data-dwc="consent-banner"]').dataset
       .placement,
@@ -364,7 +386,7 @@ test('placement="fixed" : le bandeau demande sa place, et l’oublie sans la pro
   // attribut qui apparaîtrait sans être demandé lui ferait subir un `bottom`
   // par-dessus son `top`.
   dom = prepare();
-  vue = await mount(h(ConsentBanner, { gaMeasurementId: GA }));
+  vue = await mount(h(ConsentBanner, props()));
   assert.equal(
     vue.container
       .querySelector('[data-dwc="consent-banner"]')
@@ -392,7 +414,7 @@ test('le réglage ne paraît pas tant qu’il n’y a pas de choix à modifier',
   // de poser la question, un « modifier mon choix » à côté d'elle n'aurait
   // pas de référent.
   dom = prepare();
-  vue = await mount(h(ConsentSettings, { gaMeasurementId: GA }));
+  vue = await mount(h(ConsentSettings, props()));
   assert.equal(reglage(vue.container), null, 'la question est encore ouverte');
   await vue.unmount();
   dom.restore();
@@ -404,7 +426,7 @@ test('le réglage dit l’état, et le dit dans les deux sens', async () => {
     ['denied', /refusée/],
   ]) {
     const dom = prepare(choix);
-    const vue = await mount(h(ConsentSettings, { gaMeasurementId: GA }));
+    const vue = await mount(h(ConsentSettings, props()));
 
     const bouton = reglage(vue.container);
     assert.ok(bouton, `le réglage doit paraître après un ${choix}`);
@@ -427,8 +449,8 @@ test('LE TEST QUI COMPTE : cliquer le réglage RAPPELLE le bandeau', async () =>
   const dom = prepare('granted');
   const vue = await mount(
     h('div', null, [
-      h(ConsentBanner, { key: 'b', gaMeasurementId: GA }),
-      h(ConsentSettings, { key: 'r', gaMeasurementId: GA }),
+      h(ConsentBanner, { key: 'b', ...props() }),
+      h(ConsentSettings, { key: 'r', ...props() }),
     ])
   );
 
@@ -458,10 +480,11 @@ test('LE TEST QUI COMPTE : cliquer le réglage RAPPELLE le bandeau', async () =>
 test('le retrait COUPE LA COLLECTE avant d’oublier le choix', async () => {
   // La raison d'être du refus préalable : l'utilisateur qui rouvre la question
   // et s'en va sans rien choisir ne doit pas être mesuré pendant ce temps. Le
-  // script, lui, reste évalué — c'est le mode consentement de Google, et c'est
-  // pour ça qu'on regarde l'ORDRE poussé et non la présence du tag.
+  // script, lui, reste évalué — on ne décharge pas une bibliothèque importée —
+  // et c'est pour ça qu'on regarde le GESTE et non la présence du tag.
   const dom = prepare('granted');
-  const vue = await mount(h(ConsentSettings, { gaMeasurementId: GA }));
+  const vue = await mount(h(ConsentSettings, props()));
+  await laisseCharger();
 
   assert.equal(dernierConsentement(), 'granted', 'l’accord d’hier est rejoué');
 
@@ -482,7 +505,7 @@ test('le réglage est cloisonné comme le bandeau', async () => {
   // objet — ni, pire, lui laisser modifier le consentement de sa voisine.
   const dom = prepare('granted', '/mister-cim10/');
   const vue = await mount(
-    h(ConsentSettings, { gaMeasurementId: GA, scope: '/miss-contraction/' })
+    h(ConsentSettings, { ...props(), scope: '/miss-contraction/' })
   );
 
   assert.equal(reglage(vue.container), null);
@@ -502,7 +525,7 @@ test('sous la MÊME portée, le choix d’hier est rejoué', async () => {
   // le tag ne partirait jamais.
   const dom = prepare('granted', '/miss-uwh/');
   const vue = await mount(
-    h(ConsentBanner, { gaMeasurementId: GA, scope: '/miss-uwh/' })
+    h(ConsentBanner, { ...props(), scope: '/miss-uwh/' })
   );
 
   assert.equal(

@@ -25,12 +25,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  domaineDeCookie,
-  initAnalytics,
-  resetAnalytics,
-} from '../analytics.js';
-import { setupDom } from './helpers/dom.mjs';
+import { domaineDeCookie } from '../analytics.js';
 
 /**
  * Un document dont `cookie` se comporte comme un navigateur : il REFUSE en
@@ -133,31 +128,16 @@ test('quand RIEN n’est acceptable, elle rend « none » plutôt que d’invent
 });
 
 /*
- * LA SONDE NE SERT À RIEN SI SA VALEUR N'ARRIVE PAS À GTAG. Ce test-ci vérifie
- * le seul point qui compte pour le visiteur : la commande `config` réellement
- * poussée dans `dataLayer` porte un `cookie_domain`. Sans lui, gtag reprend son
- * défaut `'auto'` et vise à nouveau le suffixe public.
+ * LA SONDE NE SERT À RIEN SI PERSONNE N'EN TIENT COMPTE. Du temps de GA4, ce
+ * test vérifiait que la commande `config` poussée portait bien un
+ * `cookie_domain` — sans quoi gtag reprenait son défaut `'auto'` et visait à
+ * nouveau le suffixe public.
+ *
+ * AVEC POSTHOG, LE GESTE EST DIFFÉRENT ET LE PIÈGE EST LE MÊME. On ne lui donne
+ * pas un domaine : on lui INTERDIT d'en chercher un plus large, par
+ * `cross_subdomain_cookie: false`. Le contrôle vit donc dans
+ * `analytics.test.mjs`, avec les autres options d'initialisation, parce que
+ * c'est là qu'il se lit — et la sonde reste ici, exportée et éprouvée, parce
+ * qu'elle redeviendra nécessaire le jour où le parc passera sur un domaine à
+ * lui, où les sous-domaines devront partager l'identifiant de client.
  */
-test('la commande config poussée porte bien cookie_domain', () => {
-  const dom = setupDom();
-  try {
-    resetAnalytics();
-    initAnalytics({ gaMeasurementId: 'G-ABC123', requireConsent: false });
-    const config = (window.dataLayer ?? [])
-      .filter(e => typeof e?.length === 'number')
-      .map(e => [...e])
-      .find(c => c[0] === 'config');
-    assert.ok(config, 'aucune commande config poussée');
-    assert.equal(config[2].send_page_view, false);
-    assert.ok(
-      'cookie_domain' in config[2],
-      'cookie_domain absent : gtag retomberait sur « auto »'
-    );
-    // `exemple.test` est le domaine enregistrable du document de test, et il
-    // accepte le cookie : la sonde doit le rendre, pas « none ».
-    assert.equal(config[2].cookie_domain, 'exemple.test');
-  } finally {
-    resetAnalytics();
-    dom.restore();
-  }
-});

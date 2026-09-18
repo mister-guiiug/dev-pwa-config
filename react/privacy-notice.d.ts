@@ -30,8 +30,9 @@ export interface PrivacyNoticeProps {
    */
   retentionMonths?: number;
   /** Comme pour le bandeau : l'identifiant, pour que la sortie sache quoi couper. */
-  gaMeasurementId?: string;
-  gtmContainerId?: string;
+  posthogKey?: string;
+  posthogHost?: string;
+  loader?: () => Promise<unknown>;
   /** Portée du consentement ; sinon le chemin de base de l'app. */
   scope?: string;
   className?: string;

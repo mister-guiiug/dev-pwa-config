@@ -1,81 +1,88 @@
 /**
- * Google Analytics 4 — le consentement d'abord.
+ * PostHog, en Europe — le consentement d'abord.
  *
- * CE QUI EXISTAIT DÉJÀ, et ce qui manquait. Le tag était posé dans plusieurs
- * apps, et **aucune** ne mesurait quoi que ce soit ensuite : zéro
- * `trackEvent`, zéro vue de page sur changement de route, zéro gestion du
- * consentement. Le tag était là, la mesure n'existait pas.
+ * POURQUOI PAS GA4, ET CE N'EST PAS UNE QUESTION DE MESURE. Décision du
+ * 18/09/2026, `pwa-starter-kit/docs/adr/0012-posthog-en-europe.md`. Au volume
+ * du parc — ~180 événements par jour pour dix-huit applications — GA4 faisait
+ * très bien le travail. Ce qui a tranché, c'est que **aucune application ne
+ * porte de mention légale** alors que `mister-cim10` reçoit du texte clinique,
+ * et que GA4 rend cette dette incompressible : un cookie nécessaire donc un
+ * bandeau obligatoire, un transfert hors UE à assumer, une durée à publier.
  *
- * TROIS TROUS, QUE CE MODULE REFERME :
+ * CE QUE CE MODULE TIENT, ET QUE L'APPLICATION N'A PAS À SAVOIR :
  *
- *  1. **Le consentement.** Ce sont des applications françaises. Le mode
- *     consentement de Google exige que l'état par défaut soit déclaré AVANT
- *     que le tag charge — sinon la valeur par défaut de Google s'applique, et
- *     le refus arrive trop tard. Ici, l'état par défaut est `denied` et le
- *     script n'est même pas injecté tant que rien n'est accordé.
- *  2. **Les vues de page d'une SPA.** GA4 n'envoie `page_view` qu'au
- *     chargement initial : sur une PWA à routeur, toute la navigation est
- *     invisible. `trackPageView` (et le hook `usePageViews`) la rend visible.
- *  3. **La maille application.** Les sites du parc partagent une propriété :
- *     `app_name` accompagne chaque événement pour qu'on puisse encore les
- *     distinguer dedans.
+ *  1. **Rien ne part avant l'accord.** Le script n'est même pas chargé tant que
+ *     `analytics_storage` n'est pas accordé — c'est le `loader` qui n'est pas
+ *     appelé, pas une option qu'on coche.
+ *  2. **Les vues de page d'une PWA à routeur.** `capture_pageview: false` (cf.
+ *     `OPTIONS_VIE_PRIVEE`), et `trackPageView` s'en charge — sinon la page
+ *     d'entrée serait comptée deux fois.
+ *  3. **La maille application.** `app_name`, déduit du chemin de base, est
+ *     enregistré en SUPER-PROPRIÉTÉ : il accompagne chaque événement sans que
+ *     personne y pense.
  *
- * TAG MANAGER A ÉTÉ RETIRÉ D'ICI le 18/09/2026, et ce n'est pas un oubli.
- * Ce module portait un second mode, `gtm` : `gtm.js` au lieu de `gtag/js`, et
- * `dataLayer.push({ event })` au lieu de `gtag('event', …)`. Il n'a **jamais
- * tourné en production**. Le relevé du 16/09 avait trouvé quatre conteneurs,
- * un par dépôt, tous les quatre VIDES — zéro balise, zéro déclencheur, zéro
- * variable — et le compte Tag Manager n'en porte plus aucun depuis. Un chemin
- * que rien n'exerce et que rien ne peut exercer donne l'apparence d'une
- * capacité sans en être une.
+ * L'API PUBLIQUE N'A PAS CHANGÉ en passant de GA4 à PostHog — `initAnalytics`,
+ * `trackEvent`, `trackPageView`, `setAnalyticsConsent`, `usePageViews`,
+ * `ConsentBanner` gardent leurs noms et leurs contrats. C'est tout l'intérêt
+ * d'avoir mis la mesure dans le socle plutôt que dans vingt `index.html` : le
+ * changement d'outil coûte un nom de propriété aux applications.
  *
- * La décision, avec la condition précise de son retour, est écrite dans
- * `pwa-starter-kit/docs/adr/0011-mesure-audience.md` : GTM reviendra le jour
- * où une balise NON-GA4 devra être posée sans release, et ce jour-là ce sera
- * un conteneur unique, l'identifiant passé par la couche de données, et
- * l'export du conteneur committé.
- *
- * SANS DÉPENDANCE, SANS REACT. Le pont React est `react/use-page-views.js`.
- *
- * NOTE CSP. `cspPlugin({ analytics: true })` autorise déjà les hôtes
- * `googletagmanager.com` / `google-analytics.com`. L'injection faite ici crée
- * un `<script src>` vers ces mêmes hôtes : aucun réglage supplémentaire, et
- * aucun script en ligne à hacher.
+ * SANS DÉPENDANCE OBLIGATOIRE. `posthog-js` est une pair OPTIONNELLE, chargée
+ * par `loader` comme `@sentry/react` : une application qui ne mesure pas n'en
+ * paie pas le poids.
  */
+
+/** Le nuage EUROPÉEN. Jamais `us.i.posthog.com` — cf. `OPTIONS_VIE_PRIVEE`. */
+export const HOTE_PAR_DEFAUT = 'https://eu.i.posthog.com';
 
 /**
- * L'hôte qui sert `gtag/js`. Il s'appelle « googletagmanager » même sans Tag
- * Manager : c'est de là que GA4 se sert, et c'est pourquoi le retirer d'une
- * CSP éteint la mesure.
+ * LES RÉGLAGES QUI NE SONT PAS DES PRÉFÉRENCES.
+ *
+ * Ils sont ici, en code et tenus par des tests, et non dans une case à cocher
+ * d'une console web. C'est la leçon que le parc a tirée de Tag Manager le jour
+ * même où il l'a retiré : une configuration que ni la CI ni la revue de PR ne
+ * voient finit par diverger de ce qu'on croit avoir réglé.
+ *
+ *  - `autocapture: false` — ACTIVE PAR DÉFAUT chez PostHog, elle enregistre les
+ *    clics AVEC le texte des éléments. Sur un outil de cotation, elle capterait
+ *    des libellés de diagnostic. C'est le réglage le plus important du fichier.
+ *  - `disable_session_recording: true` — le replay filmerait le compte-rendu
+ *    pendant sa saisie.
+ *  - `capture_pageview: false` — sinon PostHog envoie une vue au chargement ET
+ *    à chaque changement d'historique. Les applications du parc sont en
+ *    `HashRouter` : chaque navigation en déclenche un, et chaque vue serait
+ *    comptée deux fois — celle de PostHog et celle de `usePageViews`. Exactement
+ *    le défaut que GA4 écartait par `send_page_view: false`.
+ *  - `capture_pageleave: false` — même famille, sur la sortie.
+ *  - `cross_subdomain_cookie: false` — LE PARC EST SOUS UN SUFFIXE PUBLIC.
+ *    `github.io` est à la Public Suffix List : un cookie posé plus haut que
+ *    l'hôte exact est REFUSÉ par le navigateur, et Firefox l'annonce dans la
+ *    console de chaque visiteur. C'est ce que `domaineDeCookie` a mesuré pour
+ *    gtag ; ici on empêche simplement PostHog de tenter.
+ *  - `person_profiles: 'identified_only'` — aucun profil de personne n'est créé
+ *    pour un visiteur anonyme, et ce parc n'identifie personne.
  */
-const TAG_HOST = 'https://www.googletagmanager.com';
+export const OPTIONS_VIE_PRIVEE = Object.freeze({
+  autocapture: false,
+  disable_session_recording: true,
+  capture_pageview: false,
+  capture_pageleave: false,
+  cross_subdomain_cookie: false,
+  person_profiles: 'identified_only',
+});
 
-/** Les signaux du mode consentement (v2), tous refusés par défaut. */
-export const CONSENT_SIGNALS = [
-  'ad_storage',
-  'ad_user_data',
-  'ad_personalization',
-  'analytics_storage',
-  'functionality_storage',
-  'personalization_storage',
-];
-
-/** Noms courts → signaux Google, pour ne pas les faire écrire à l'appelant. */
-const CONSENT_ALIASES = {
-  analytics: ['analytics_storage'],
-  ads: ['ad_storage', 'ad_user_data', 'ad_personalization'],
-  functionality: ['functionality_storage'],
-  personalization: ['personalization_storage'],
-};
-
-/** @type {{ mode: 'ga4'|null, id: string|null, loaded: boolean, granted: boolean }} */
+/** @type {{ id: string|null, hote: string, loaded: boolean, granted: boolean, appName: string|null, client: any }} */
 const state = {
-  mode: null,
   id: null,
+  hote: HOTE_PAR_DEFAUT,
   loaded: false,
   granted: false,
   appName: null,
+  client: null,
 };
+
+/** Le `loader` fourni à `initAnalytics`, rappelé au moment de l'accord. */
+let chargeur = null;
 
 /**
  * La vue d'arrivée mise de côté faute de consentement, rejouée par
@@ -85,35 +92,28 @@ const state = {
  */
 let attente = null;
 
-/** ID de mesure GA4 valide (G-XXXX) ou null. */
-export function parseGaMeasurementId(raw) {
+/** Clé de projet PostHog valide (`phc_…`) ou `null`. */
+export function parsePosthogKey(raw) {
   if (!raw) return null;
-  const id = String(raw).trim().toUpperCase();
-  return /^G-[A-Z0-9]+$/.test(id) ? id : null;
+  const id = String(raw).trim();
+  return /^phc_[A-Za-z0-9]{20,}$/.test(id) ? id : null;
 }
 
 /**
  * Le nom de l'application, déduit du chemin de base — sans configuration.
  *
- * POURQUOI CETTE DIMENSION EXISTE. Les sites du parc partagent une propriété
- * GA4 (décision : `pwa-starter-kit/docs/adr/0011-mesure-audience.md`) : sans
- * rien pour les distinguer, le global est lisible et la maille application ne
- * l'est plus.
- *
- * ET POURQUOI PAS `page_path`. Au-delà d'environ 500 lignes, les rapports
- * standard de GA4 rangent le reste dans « (other) ». Vingt applications aux
- * chemins distincts y arrivent, et la ventilation devient trouée sans
- * prévenir. `app_name` a autant de valeurs qu'il y a d'applications : il ne
- * s'en approche jamais.
+ * POURQUOI CETTE PROPRIÉTÉ EXISTE. Les sites du parc partagent UN projet
+ * PostHog (ADR 0012, qui reprend la forme de l'ADR 0011) : sans rien pour les
+ * distinguer, le total est lisible et la maille application ne l'est plus.
  *
  * LE CHEMIN DE BASE LE PORTE DÉJÀ. Chaque application est construite avec
- * `base: '/<dépôt>/'` — `envoieVue` s'en sert plus bas pour reconstruire
- * `page_location`, et la portée du consentement s'en sert aussi. Une
- * application de plus arrive donc instrumentée sans que personne n'y pense.
+ * `base: '/<dépôt>/'` — `envoieVue` s'en sert plus bas pour reconstruire l'URL,
+ * et la portée du consentement s'en sert aussi. Une application de plus arrive
+ * donc instrumentée sans que personne y pense.
  *
  * Rend `null` à la racine (`/`) : là, le chemin ne nomme rien, et inventer un
- * nom vaudrait moins que le `(not set)` de GA4, qui dit la vérité. Une
- * application servie à la racine passe `appName` explicitement.
+ * nom vaudrait moins que l'absence, qui dit la vérité. Une application servie à
+ * la racine passe `appName` explicitement.
  *
  * @param {string} [base] Chemin de base ; par défaut celui du build.
  * @returns {string|null}
@@ -128,86 +128,18 @@ export function nomDApp(base) {
 }
 
 /**
- * Écrit dans `dataLayer`.
- *
- * `gtag` DOIT pousser son objet `arguments`, pas un tableau : c'est cette
- * forme exacte que gtag.js reconnaît pour les commandes (`consent`, `config`,
- * `event`). Un `push(['consent', …])` est ignoré en silence — l'erreur
- * classique quand on réécrit l'extrait à la main.
- */
-function gtag() {
-  if (typeof window === 'undefined') return;
-  window.dataLayer = window.dataLayer || [];
-
-  window.dataLayer.push(arguments);
-}
-
-/**
- * Pousse un OBJET dans `dataLayer`, là où `gtag()` y pousse des `arguments`.
- *
- * Plus aucun appel interne depuis le retrait de Tag Manager — c'était la
- * forme qu'il attendait. Conservée parce qu'elle est exportée et qu'elle reste
- * la primitive juste pour quiconque doit écrire dans la couche de données.
- *
- * @param {Record<string, unknown>} payload
- */
-export function dataLayerPush(payload) {
-  if (typeof window === 'undefined' || !payload) return;
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(payload);
-}
-
-/** Normalise `{ analytics: true }` ou `'granted'` en signaux Google. */
-function toConsentState(consent) {
-  /** @type {Record<string, 'granted'|'denied'>} */
-  const out = {};
-  if (consent === 'granted' || consent === true) {
-    for (const signal of CONSENT_SIGNALS) out[signal] = 'granted';
-    return out;
-  }
-  if (consent === 'denied' || consent == null || consent === false) {
-    for (const signal of CONSENT_SIGNALS) out[signal] = 'denied';
-    return out;
-  }
-  for (const [name, value] of Object.entries(consent)) {
-    const targets = CONSENT_ALIASES[name] ?? [name];
-    for (const signal of targets) {
-      out[signal] =
-        value === true || value === 'granted' ? 'granted' : 'denied';
-    }
-  }
-  return out;
-}
-
-/** Le tag est-il réellement chargé ? Une mesure qui ne part pas est un signal. */
-export function isAnalyticsLoaded() {
-  return state.loaded;
-}
-
-/** L'identifiant de mesure réellement en service (`G-…`) ou `null`. */
-export function getAnalyticsId() {
-  return state.id;
-}
-
-/**
  * Le domaine le plus large où CE navigateur accepte réellement un cookie.
  *
- * LE PARC EST SERVI SOUS `*.github.io`, ET `github.io` EST UN SUFFIXE PUBLIC.
- * Aucun site ne peut y poser de cookie : c'est la règle qui empêche un
- * `mechant.github.io` d'écrire un cookie que tous les autres liraient. Or le
- * défaut de gtag est `cookie_domain: 'auto'`, qui commence par viser le domaine
- * enregistrable — donc `github.io` — et se fait refuser. Firefox l'annonce à
- * chaque chargement, en clair dans la console du visiteur :
+ * GARDÉE APRÈS LE PASSAGE À POSTHOG, parce que le problème n'était pas Google.
+ * Le parc est servi sous `*.github.io`, et `github.io` est un SUFFIXE PUBLIC :
+ * aucun site ne peut y poser de cookie. C'est la règle qui empêche un
+ * `mechant.github.io` d'écrire un cookie que tous les autres liraient.
  *
- *   Le cookie « _ga_XXXXXXXX » a été rejeté car le domaine est invalide.
- *   Le cookie « _ga » a été rejeté car le domaine est invalide.
- *
- * On ne devine PAS ce domaine en lisant le nom d'hôte : la liste des suffixes
- * publics ne se calcule pas (`github.io` en est un, `exemple.com` non, et
- * `co.uk` aussi). On le MESURE — un cookie jetable par candidat, du plus large
- * au plus étroit, et le premier qui tient gagne. La sonde reste juste le jour
- * où le parc passera sur un domaine à lui : elle rendra ce domaine-là, et les
- * sous-domaines continueront de partager l'identifiant de client.
+ * PostHog est réglé avec `cross_subdomain_cookie: false`, ce qui lui évite de
+ * tenter. Cette sonde reste exportée parce qu'elle MESURE au lieu de deviner —
+ * la liste des suffixes publics ne se calcule pas (`github.io` en est un,
+ * `exemple.com` non, `co.uk` aussi) — et parce qu'elle restera juste le jour où
+ * le parc passera sur un domaine à lui.
  *
  * @param {Document} [doc]
  * @param {string} [hote]
@@ -240,141 +172,210 @@ export function domaineDeCookie(
   return 'none';
 }
 
-/** Injecte le tag, une seule fois. */
-function loadTag() {
-  if (state.loaded || !state.id || typeof document === 'undefined') return;
-  const script = document.createElement('script');
-  script.async = true;
-  script.src = `${TAG_HOST}/gtag/js?id=${encodeURIComponent(state.id)}`;
-  document.head.append(script);
+/** Le tag est-il réellement chargé ? Une mesure qui ne part pas est un signal. */
+export function isAnalyticsLoaded() {
+  return state.loaded;
+}
 
-  gtag('js', new Date());
-  // `cookie_domain` est POSÉ, jamais laissé à `'auto'` : voir
-  // `domaineDeCookie`. Sans lui, gtag vise `github.io` et se fait refuser.
-  gtag('config', state.id, {
-    send_page_view: false,
-    cookie_domain: domaineDeCookie(),
-  });
-  state.loaded = true;
+/** La clé de projet réellement en service (`phc_…`) ou `null`. */
+export function getAnalyticsId() {
+  return state.id;
+}
+
+/** Le client PostHog, une fois chargé — `null` avant l'accord. */
+export function getAnalyticsClient() {
+  return state.client;
 }
 
 /**
- * Prépare la mesure. N'injecte RIEN tant que le consentement n'est pas donné.
+ * Charge et initialise PostHog, une seule fois — appelé au premier accord.
+ *
+ * RIEN N'EST CHARGÉ AVANT. C'est la différence qui compte avec une option
+ * `opt_out_capturing_by_default` : là, le script serait téléchargé, évalué, et
+ * n'attendrait qu'un appel pour parler. Ici il n'est pas là.
+ */
+async function chargeTag() {
+  if (state.loaded || !state.id || typeof window === 'undefined') return;
+  let mod;
+  try {
+    // AVEC `loader`, l'import est ANALYSABLE par Vite : le morceau est émis et
+    // rangé où le `manualChunks` de l'app le décide. Sans lui, on retombe sur
+    // un spécificateur volontairement non analysable — nécessaire tant que la
+    // pair optionnelle n'est pas installée, sans quoi le build échouerait à
+    // résoudre un paquet absent. Même motif que `react/observability`.
+    const specificateur = ['posthog', 'js'].join('-');
+    mod = chargeur
+      ? await chargeur()
+      : await import(/* @vite-ignore */ specificateur);
+  } catch {
+    // `posthog-js` absent ou réseau coupé : la mesure se tait, l'app continue.
+    return;
+  }
+  const posthog = mod?.default ?? mod?.posthog ?? mod;
+  if (!posthog || typeof posthog.init !== 'function') return;
+
+  posthog.init(state.id, {
+    ...OPTIONS_VIE_PRIVEE,
+    api_host: state.hote,
+  });
+  state.client = posthog;
+  state.loaded = true;
+
+  // SUPER-PROPRIÉTÉ, et non un paramètre recopié à chaque appel : PostHog la
+  // joint alors à tout ce qui part, y compris à ce que la bibliothèque envoie
+  // d'elle-même.
+  if (state.appName && typeof posthog.register === 'function') {
+    posthog.register({ app_name: state.appName });
+  }
+}
+
+/**
+ * Prépare la mesure. NE CHARGE RIEN tant que le consentement n'est pas donné.
  *
  * @param {{
- *   gaMeasurementId?: string,
+ *   posthogKey?: string, posthogHost?: string,
  *   appName?: string,
  *   consent?: 'granted'|'denied'|Record<string, boolean|'granted'|'denied'>,
  *   requireConsent?: boolean,
- *   consentDefaults?: Record<string, 'granted'|'denied'>,
+ *   loader?: () => Promise<unknown>,
  * }} [options]
- * @returns {{ mode: 'ga4'|null, id: string|null, loaded: boolean }}
+ * @returns {{ id: string|null, loaded: boolean }}
  */
 export function initAnalytics(options = {}) {
   const {
-    gaMeasurementId,
+    posthogKey,
+    posthogHost,
     appName,
     consent,
     requireConsent = true,
-    consentDefaults,
+    loader,
   } = options;
 
   // Explicite d'abord, chemin de base ensuite : une application servie à la
   // racine n'a rien à déduire, elle se nomme.
   state.appName = appName ?? nomDApp();
-
-  const ga = parseGaMeasurementId(gaMeasurementId);
-  state.mode = ga ? 'ga4' : null;
-  state.id = ga;
+  state.id = parsePosthogKey(posthogKey);
+  state.hote = posthogHost || HOTE_PAR_DEFAUT;
+  chargeur = loader ?? null;
 
   if (!state.id || typeof window === 'undefined') {
-    return { mode: state.mode, id: state.id, loaded: false };
+    return { id: state.id, loaded: false };
   }
-
-  // L'état par défaut AVANT tout : une commande `consent default` postérieure
-  // au chargement du tag n'a plus d'effet rétroactif.
-  gtag('consent', 'default', {
-    ...toConsentState('denied'),
-    ...(consentDefaults ?? {}),
-    wait_for_update: 500,
-  });
 
   if (consent !== undefined) setAnalyticsConsent(consent);
   else if (!requireConsent) {
     state.granted = true;
-    loadTag();
+    void chargeTag();
   }
 
-  return { mode: state.mode, id: state.id, loaded: state.loaded };
+  return { id: state.id, loaded: state.loaded };
+}
+
+/**
+ * Normalise `{ analytics: true }`, `'granted'` ou `true` en un booléen.
+ *
+ * Le parc ne mesure QUE l'audience : il n'y a pas de publicité, pas de
+ * personnalisation, donc pas de matrice de finalités à tenir. Les formes
+ * héritées du mode consentement de Google restent acceptées pour que les
+ * applications n'aient rien à réécrire.
+ */
+function estAccorde(consent) {
+  if (consent === 'granted' || consent === true) return true;
+  if (consent === 'denied' || consent === false) return false;
+  if (consent && typeof consent === 'object') {
+    const v = consent.analytics ?? consent.analytics_storage;
+    return v === true || v === 'granted';
+  }
+  return false;
 }
 
 /**
  * Met à jour le consentement, et charge le tag au premier accord.
  *
- *   setAnalyticsConsent({ analytics: true });        // mesure d'audience seule
- *   setAnalyticsConsent('denied');                   // tout refuser
+ *   setAnalyticsConsent({ analytics: true });   // mesure d'audience
+ *   setAnalyticsConsent('denied');              // tout refuser
  *
  * Le refus après un accord ne décharge pas le script — c'est impossible une
- * fois évalué. Il coupe la collecte côté Google, ce qui est le comportement
- * documenté du mode consentement : autant le dire ici plutôt que de laisser
- * croire à un retrait complet.
+ * fois évalué. Il coupe la collecte (`opt_out_capturing`), ce qui est le seul
+ * comportement honnête : autant le dire ici plutôt que de laisser croire à un
+ * retrait complet.
  *
- * @param {'granted'|'denied'|Record<string, boolean|'granted'|'denied'>} consent
+ * @param {'granted'|'denied'|Record<string, boolean|'granted'|'denied'>|boolean} consent
  */
 export function setAnalyticsConsent(consent) {
-  const next = toConsentState(consent);
-  gtag('consent', 'update', next);
-  if (next.analytics_storage === 'granted') {
-    state.granted = true;
-    loadTag();
-    // LE REJEU DE LA VUE D'ARRIVÉE. C'est le seul endroit qui sait que l'accord
-    // vient d'arriver ; le hook, lui, ne se réveille qu'au changement de
-    // chemin. Sans ces trois lignes, une visite d'un seul écran ne produit
-    // aucune donnée, quoi que fasse l'application.
-    if (attente) {
-      const { path, title } = attente;
-      attente = null;
-      envoieVue(path, title);
-    }
-  } else {
-    // Un refus ne garde pas une vue en réserve : elle partirait à un accord
-    // ultérieur pour un écran que l'utilisateur a quitté depuis longtemps.
+  const accorde = estAccorde(consent);
+  state.granted = accorde;
+
+  if (!accorde) {
+    // La vue mise de côté est JETÉE : l'utilisateur a refusé, elle ne doit pas
+    // ressurgir à un accord ultérieur — il aura quitté cet écran depuis
+    // longtemps.
     attente = null;
+    if (state.client?.opt_out_capturing) state.client.opt_out_capturing();
+    return false;
   }
-  return next;
+
+  if (state.client?.opt_in_capturing) state.client.opt_in_capturing();
+  void chargeTag().then(() => {
+    if (!attente) return;
+    const { path, title } = attente;
+    attente = null;
+    envoieVue(path, title);
+  });
+  return true;
 }
 
 /**
  * Un événement de mesure.
  *
- * @param {string} name Nom d'événement GA4 (`snake_case`, 40 caractères max).
+ * @param {string} name Nom d'événement (`snake_case`).
  * @param {Record<string, unknown>} [params]
  */
 export function trackEvent(name, params = {}) {
   const event = String(name ?? '').trim();
   if (!event) return false;
   if (!state.granted) return false;
-  // `app_name` sur CHAQUE événement, pas seulement sur la configuration : une
-  // dimension personnalisée de GA4 est à portée ÉVÉNEMENT, elle ne se remplit
-  // que par un paramètre d'événement. L'appelant garde le dernier mot — s'il
-  // nomme lui-même l'application, c'est qu'il sait quelque chose de plus.
-  const charge =
-    state.appName === null ? params : { app_name: state.appName, ...params };
-  // Sans condition de mode : `gtag()` écrit dans `dataLayer`, que le script
-  // distant soit déjà là ou non — c'est exactement ce pour quoi la file
-  // existe, et les commandes en attente se rejouent à son chargement.
-  gtag('event', event, charge);
+  if (!state.client?.capture) return false;
+  // `app_name` est déjà une super-propriété ; on ne le recopie que si
+  // l'appelant le nomme lui-même — auquel cas c'est LUI qui a raison.
+  state.client.capture(event, params);
+  trace(event, params);
   return true;
+}
+
+/** Ce que la trace retient au plus — bornée, c'est une sonde, pas un journal. */
+const TRACE_MAX = 50;
+
+/**
+ * LA COUTURE D'OBSERVATION DES TESTS DE BOUT EN BOUT.
+ *
+ * GA4 en offrait une gratuitement : `window.dataLayer`, rempli AVANT que le
+ * script distant soit chargé, donc lisible sans réseau et sans deviner le
+ * format d'un corps de requête. La garde partagée `playwright-entree` s'en
+ * servait, et NEUF applications en dépendent.
+ *
+ * PostHog n'a pas d'équivalent : son client vit dans l'état de ce module, hors
+ * de portée d'une page Playwright, et ses envois partent en corps compressé.
+ * Vérifier par le réseau rendrait la garde dépendante d'un format interne.
+ *
+ * On pose donc la couture nous-mêmes : ce que l'application a DEMANDÉ d'envoyer,
+ * dans l'ordre, borné à cinquante entrées. Ce n'est pas un journal et ça ne
+ * remplace pas la preuve réseau — c'est le pendant exact de ce que `dataLayer`
+ * donnait.
+ */
+function trace(event, params) {
+  if (typeof window === 'undefined') return;
+  const liste = (window.__DWC_MESURE ??= []);
+  liste.push({ event, ...params });
+  if (liste.length > TRACE_MAX) liste.splice(0, liste.length - TRACE_MAX);
 }
 
 /**
  * Une vue de page — le geste qui manque à toute PWA à routeur.
  *
- * GA4 n'envoie `page_view` qu'au chargement du document : sans cet appel,
- * toute la navigation interne est invisible, et la durée de session est
- * fausse. `initAnalytics` configure d'ailleurs GA4 avec
- * `send_page_view: false`, pour que la première vue passe par ici comme les
- * autres — sinon la page d'entrée est comptée deux fois.
+ * PostHog est initialisé avec `capture_pageview: false` : sans cet appel, la
+ * navigation interne serait invisible ; avec la sienne EN PLUS, chaque
+ * navigation serait comptée deux fois.
  *
  * @param {string} [path] Défaut : le chemin courant.
  * @param {string} [title] Défaut : le titre du document.
@@ -387,12 +388,12 @@ export function trackPageView(path, title) {
   // LA VUE D'ARRIVÉE EST TOUJOURS TENTÉE TROP TÔT. Un premier visiteur n'a pas
   // encore cliqué « Accepter » quand le hook se monte : l'appel sort sans rien
   // envoyer, et plus rien ne le redéclenche — le chemin n'a pas changé. Mesuré
-  // en production le 16/09/2026 sur mister-molkky et miss-uwh : zéro `page_view`
-  // au chargement, et des `page_view` normaux dès qu'on navigue. Une visite d'un
-  // seul écran — la majorité — ne remontait donc RIEN.
+  // en production le 16/09/2026 sur mister-molkky et miss-uwh : zéro vue au
+  // chargement, et des vues normales dès qu'on navigue. Une visite d'un seul
+  // écran — la majorité — ne remontait donc RIEN.
   //
   // On la met de côté, et `setAnalyticsConsent` la rejoue au moment de l'accord.
-  if (!state.granted) {
+  if (!state.granted || !state.client) {
     attente = { path: location, title: name };
     return false;
   }
@@ -403,46 +404,51 @@ export function trackPageView(path, title) {
 /**
  * L'envoi proprement dit, partagé par l'appel direct et par le rejeu.
  *
- * `page_location` PORTE LE CHEMIN DE BASE. Sans lui, une app servie sous
- * `/mister-molkky/` enregistrait `https://<compte>.github.io/history` — une URL
- * qui n'existe pas. Les vingt sites partagent l'origine : c'est la même famille
- * de défaut que les clés `localStorage` nues, corrigées en 4.17.1 puis 4.19.0,
- * sur une troisième valeur.
+ * `$current_url` PORTE LE CHEMIN DE BASE. Sans lui, une app servie sous
+ * `/mister-molkky/` enregistrerait `https://<compte>.github.io/history` — une
+ * URL qui n'existe pas. Les vingt sites partagent l'origine : c'est la même
+ * famille de défaut que les clés `localStorage` nues.
+ *
+ * `$pathname` reste le chemin INTERNE à l'application, celui qui distingue ses
+ * écrans ; `app_name`, en super-propriété, dit de quelle application il s'agit.
  */
 function envoieVue(path, title) {
   const base =
     (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
   const racine = base.endsWith('/') ? base.slice(0, -1) : base;
   const chemin = path.startsWith('/') ? path : `/${path}`;
-  return trackEvent('page_view', {
-    page_path: path,
+  return trackEvent('$pageview', {
+    $current_url: `${window.location?.origin ?? ''}${racine}${chemin}`,
+    $pathname: path,
     page_title: title,
-    page_location: `${window.location?.origin ?? ''}${racine}${chemin}`,
   });
 }
 
 /**
  * Propriétés d'utilisateur (langue, thème, version…).
  *
- * JAMAIS D'IDENTIFIANT PERSONNEL ici : ces valeurs partent chez Google et y
- * restent. Ce n'est pas une recommandation de style, c'est la condition pour
- * que la mesure reste licite sans base légale supplémentaire.
+ * JAMAIS D'IDENTIFIANT PERSONNEL ici : ces valeurs partent chez le
+ * sous-traitant et y restent. Ce n'est pas une recommandation de style, c'est
+ * la condition pour que la mesure reste licite sans base légale supplémentaire.
  *
  * @param {Record<string, unknown>} properties
  */
 export function setUserProperties(properties = {}) {
   if (!state.granted) return false;
-  gtag('set', 'user_properties', properties);
+  if (!state.client?.register) return false;
+  state.client.register(properties);
   return true;
 }
 
 /** Remet le module à zéro. Réservé aux tests. */
 export function resetAnalytics() {
-  state.mode = null;
   state.id = null;
+  state.hote = HOTE_PAR_DEFAUT;
   state.loaded = false;
   state.granted = false;
   state.appName = null;
+  state.client = null;
+  chargeur = null;
   // Sans cette ligne, la vue mise de côté par un test fuiterait dans le
   // suivant — et y partirait au premier accord.
   attente = null;

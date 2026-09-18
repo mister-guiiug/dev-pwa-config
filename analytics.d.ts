@@ -1,20 +1,40 @@
-/** Les signaux du mode consentement (v2). */
-export declare const CONSENT_SIGNALS: string[];
-
-export type ConsentValue = boolean | 'granted' | 'denied';
+/**
+ * PostHog, en Europe — le consentement d'abord.
+ *
+ * Décision : `pwa-starter-kit/docs/adr/0012-posthog-en-europe.md`.
+ */
 
 /**
- * Consentement : `'granted'` / `'denied'` pour tout, ou par domaine avec les
- * noms courts (`analytics`, `ads`, `functionality`, `personalization`) ou les
- * signaux Google eux-mêmes.
+ * Consentement. Le parc ne mesure QUE l'audience : `'granted'` / `'denied'` ou
+ * un booléen suffisent. Les formes héritées du mode consentement de Google
+ * (`{ analytics: true }`) restent acceptées pour que les applications n'aient
+ * rien à réécrire.
  */
-export type Consent = 'granted' | 'denied' | Record<string, ConsentValue>;
+export type Consent =
+  | 'granted'
+  | 'denied'
+  | boolean
+  | Record<string, boolean | 'granted' | 'denied'>;
+
+/** Le nuage EUROPÉEN de PostHog. Jamais `us.i.posthog.com`. */
+export declare const HOTE_PAR_DEFAUT: string;
+
+/**
+ * Les réglages de vie privée posés à l'initialisation, en CODE et non dans une
+ * console : `autocapture` et l'enregistrement de session désactivés, pas de
+ * vue de page automatique (`usePageViews` s'en charge), pas de cookie
+ * inter-sous-domaines (le parc est sous un suffixe public), et aucun profil de
+ * personne pour un visiteur anonyme.
+ */
+export declare const OPTIONS_VIE_PRIVEE: Readonly<Record<string, unknown>>;
 
 export interface InitAnalyticsOptions {
-  /** ID de mesure GA4 (`G-XXXXXXXXXX`). */
-  gaMeasurementId?: string;
+  /** Clé de projet PostHog (`phc_…`). Publique par conception. */
+  posthogKey?: string;
+  /** Hôte d'ingestion. Défaut : le nuage européen. */
+  posthogHost?: string;
   /**
-   * Nom de l'application, joint en `app_name` à chaque événement. Par défaut
+   * Nom de l'application, enregistré en super-propriété `app_name`. Par défaut
    * le premier segment du chemin de base — donc rien à passer pour une app
    * servie sous `/<dépôt>/`.
    */
@@ -22,31 +42,31 @@ export interface InitAnalyticsOptions {
   /** Consentement connu au démarrage (choix déjà enregistré par l'app). */
   consent?: Consent;
   /**
-   * `false` charge le tag sans attendre de consentement. Défaut `true` : rien
-   * n'est injecté tant que `analytics_storage` n'est pas accordé.
+   * `false` charge le tag sans attendre de consentement. Défaut `true` : RIEN
+   * n'est chargé tant que l'accord n'est pas donné.
    */
   requireConsent?: boolean;
-  /** Surcharge de l'état par défaut, déclaré avant le chargement du tag. */
-  consentDefaults?: Record<string, 'granted' | 'denied'>;
+  /**
+   * `() => import('posthog-js')`. Rend l'import ANALYSABLE par Vite. Sans lui,
+   * le module retombe sur un spécificateur non analysable — nécessaire tant
+   * que la pair optionnelle n'est pas installée.
+   */
+  loader?: () => Promise<unknown>;
 }
 
 export interface AnalyticsState {
-  mode: 'ga4' | null;
   id: string | null;
   loaded: boolean;
 }
 
-/** ID de mesure GA4 valide, ou `null`. */
-export declare function parseGaMeasurementId(raw?: string): string | null;
+/** Clé de projet PostHog valide (`phc_…`), ou `null`. */
+export declare function parsePosthogKey(raw?: string): string | null;
 
 /**
  * Le nom de l'application déduit d'un chemin de base (`/mister-cim10/` →
  * `mister-cim10`), ou `null` à la racine. Par défaut, le chemin du build.
  */
 export declare function nomDApp(base?: string): string | null;
-
-/** Pousse un OBJET dans `dataLayer`, là où `gtag()` y pousse des `arguments`. */
-export declare function dataLayerPush(payload: Record<string, unknown>): void;
 
 /**
  * Le domaine le plus large où le navigateur accepte réellement un cookie, ou
@@ -55,26 +75,21 @@ export declare function dataLayerPush(payload: Record<string, unknown>): void;
  */
 export declare function domaineDeCookie(doc?: Document, hote?: string): string;
 
-/** Prépare la mesure. N'injecte rien tant que le consentement manque. */
+/** Prépare la mesure. Ne CHARGE rien avant le consentement. */
 export declare function initAnalytics(
   options?: InitAnalyticsOptions
 ): AnalyticsState;
 
-/**
- * Met à jour le consentement, et charge le tag au premier accord. Un refus
- * postérieur coupe la collecte mais ne décharge pas le script déjà évalué.
- */
-export declare function setAnalyticsConsent(
-  consent: Consent
-): Record<string, 'granted' | 'denied'>;
+/** Met à jour le consentement, et charge le tag au premier accord. */
+export declare function setAnalyticsConsent(consent: Consent): boolean;
 
-/** Un événement de mesure. `false` si le consentement manque. */
+/** Un événement de mesure. Rend `false` tant que rien n'est accordé. */
 export declare function trackEvent(
   name: string,
   params?: Record<string, unknown>
 ): boolean;
 
-/** Une vue de page. Défauts : chemin courant et titre du document. */
+/** Une vue de page. Mise de côté et rejouée si l'accord n'est pas encore donné. */
 export declare function trackPageView(path?: string, title?: string): boolean;
 
 /** Propriétés d'utilisateur. Jamais d'identifiant personnel ici. */
@@ -85,8 +100,11 @@ export declare function setUserProperties(
 /** Le tag est-il réellement chargé ? */
 export declare function isAnalyticsLoaded(): boolean;
 
-/** L'identifiant de mesure en service (`G-…`) ou `null`. */
+/** La clé de projet en service (`phc_…`) ou `null`. */
 export declare function getAnalyticsId(): string | null;
+
+/** Le client PostHog une fois chargé — `null` avant l'accord. */
+export declare function getAnalyticsClient(): unknown;
 
 /** Remet le module à zéro. Réservé aux tests. */
 export declare function resetAnalytics(): void;

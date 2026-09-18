@@ -165,10 +165,9 @@ test('pwaSeoPlugin.transformIndexHtml remplace les placeholders', async () => {
   const { pwaSeoPlugin } = await import('../vite-pwa-base.js');
   const plugin = pwaSeoPlugin({ basePath: '/app/' });
   const out = plugin.transformIndexHtml(
-    '<link href="__SEO_HOME_URL__"><body>__ANALYTICS_BODY__</body>'
+    '<link href="__SEO_HOME_URL__"><body></body>'
   );
   assert.ok(!out.includes('__SEO_HOME_URL__'), 'home url remplacé');
-  assert.ok(!out.includes('__ANALYTICS_BODY__'), 'analytics body remplacé');
   assert.match(out, /\/app\//, 'basePath injecté');
 });
 

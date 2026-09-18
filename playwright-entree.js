@@ -51,49 +51,42 @@ const ACCEPTER = '[data-dwc="consent-accept"]';
  * raison de le refuser. On ancre donc sur le schéma, l'hôte entier, et la barre
  * qui le termine.
  */
-const HOTES_GOOGLE =
-  /^https?:\/\/([a-z0-9-]+\.)*(googletagmanager|google-analytics)\.com\//u;
+const HOTES_MESURE = /^https?:\/\/([a-z0-9-]+\.)*posthog\.com\//u;
 
 /**
- * Coupe tout trafic vers Google. La garde lit `window.dataLayer`, que `gtag`
- * remplit AVANT que le script distant soit chargé : bloquer ne cache donc rien
- * et rend la vérification déterministe, sans dépendre du réseau en CI.
+ * Coupe tout trafic vers le sous-traitant de mesure. La garde lit
+ * `window.__DWC_MESURE`, que le socle remplit au moment de l'appel : bloquer ne
+ * cache donc rien et rend la vérification déterministe, sans dépendre du réseau
+ * en CI.
  *
  * @param {any} page Page Playwright.
  */
-export async function bloqueGoogle(page) {
-  await page.route(HOTES_GOOGLE, route =>
-    route.fulfill({ status: 204, body: '' })
+export async function bloqueMesure(page) {
+  await page.route(HOTES_MESURE, route =>
+    route.fulfill({ status: 200, body: '{}' })
   );
 }
 
 /** Exposé pour être éprouvé : une regex d'URL se vérifie, elle ne se relit pas. */
-export { HOTES_GOOGLE };
+export { HOTES_MESURE };
 
 /**
- * Les vues de page présentes dans `dataLayer`, quelle que soit la forme.
+ * Les vues de page réellement demandées, lues dans la couture du socle.
  *
- * GA4 pousse l'objet `arguments` (`['event', 'page_view', {…}]`), GTM pousse un
- * objet (`{ event: 'page_view', … }`). Les deux comptent.
+ * POURQUOI PAS LE RÉSEAU. PostHog envoie en corps compressé : vérifier par la
+ * requête lierait cette garde à un format interne, et la ferait tomber à la
+ * première évolution de la bibliothèque. `window.__DWC_MESURE` porte ce que
+ * l'application a DEMANDÉ d'envoyer — c'est le pendant exact de ce que
+ * `dataLayer` donnait du temps de GA4, à ceci près qu'il fallait le poser
+ * nous-mêmes.
  *
  * @param {any} page Page Playwright.
  * @returns {Promise<Array<Record<string, unknown>>>}
  */
 export function litVuesDePage(page) {
-  return page.evaluate(() => {
-    const couche = /** @type {any[]} */ (globalThis.dataLayer ?? []);
-    return couche
-      .map(entree => {
-        if (entree && typeof entree.length === 'number') {
-          const [commande, nom, params] = [...entree];
-          return commande === 'event' && nom === 'page_view'
-            ? (params ?? {})
-            : null;
-        }
-        return entree?.event === 'page_view' ? entree : null;
-      })
-      .filter(Boolean);
-  });
+  return page.evaluate(() =>
+    (globalThis.__DWC_MESURE ?? []).filter(e => e?.event === '$pageview')
+  );
 }
 
 /**
@@ -154,7 +147,7 @@ export async function expectEcranEntreeCable(page, expect, options = {}) {
     );
   }
 
-  await bloqueGoogle(page);
+  await bloqueMesure(page);
   await page.goto(url);
 
   if (consentement) {

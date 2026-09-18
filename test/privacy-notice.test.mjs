@@ -27,12 +27,12 @@ import fr from '../react/labels-fr.js';
 import { resetAnalytics } from '../analytics.js';
 import { mount, setupDom } from './helpers/dom.mjs';
 
-const GA = 'G-TEST12345';
+const CLE = 'phc_abcdefghijklmnopqrstuvwxyz0123456789';
 
 function prepare(choixMemorise) {
   const dom = setupDom();
   resetAnalytics();
-  delete globalThis.dataLayer;
+  delete globalThis.__DWC_MESURE;
   if (choixMemorise) window.localStorage.setItem(consentKey(), choixMemorise);
   return dom;
 }
@@ -42,7 +42,7 @@ const texte = container => container.textContent ?? '';
 test("sans mention de l'exploitant, le panneau le dit à l'écran", async () => {
   const dom = prepare();
   const { container, unmount } = await mount(
-    h(PrivacyNotice, { gaMeasurementId: GA })
+    h(PrivacyNotice, { posthogKey: CLE })
   );
 
   const marqueur = fr.privacy.missing;
@@ -59,7 +59,7 @@ test('les mentions fournies remplacent le marqueur', async () => {
   const dom = prepare();
   const { container, unmount } = await mount(
     h(PrivacyNotice, {
-      gaMeasurementId: GA,
+      posthogKey: CLE,
       controller: 'Association Untel, 1 rue des Lilas',
       contact: 'rgpd@exemple.fr',
     })
@@ -77,14 +77,14 @@ test('les mentions fournies remplacent le marqueur', async () => {
 test("la conservation affichée est celle qu'on lui passe", async () => {
   const dom = prepare();
   const { container, rerender, unmount } = await mount(
-    h(PrivacyNotice, { gaMeasurementId: GA })
+    h(PrivacyNotice, { posthogKey: CLE })
   );
   // Le défaut du socle : les vingt propriétés du parc ont été relevées à 14.
   assert.match(texte(container), /\b14\b/);
 
   // Et une app restée au défaut de GA4 doit pouvoir dire « 2 », sans quoi le
   // panneau mentirait.
-  await rerender(h(PrivacyNotice, { gaMeasurementId: GA, retentionMonths: 2 }));
+  await rerender(h(PrivacyNotice, { posthogKey: CLE, retentionMonths: 2 }));
   const t = texte(container);
   assert.match(t, /\b2\b/);
   assert.ok(!/\b14\b/.test(t), 'la valeur en dur ne doit pas subsister');
@@ -96,7 +96,7 @@ test("la conservation affichée est celle qu'on lui passe", async () => {
 test("tant qu'aucun choix n'est fait, le panneau n'offre aucun bouton", async () => {
   const dom = prepare();
   const { container, unmount } = await mount(
-    h(PrivacyNotice, { gaMeasurementId: GA })
+    h(PrivacyNotice, { posthogKey: CLE })
   );
 
   // Le bandeau est alors à l'écran en train de poser la question : une seconde
@@ -110,7 +110,7 @@ test("tant qu'aucun choix n'est fait, le panneau n'offre aucun bouton", async ()
 test('un choix fait, la sortie est dans le panneau', async () => {
   const dom = prepare('granted');
   const { container, unmount } = await mount(
-    h(PrivacyNotice, { gaMeasurementId: GA })
+    h(PrivacyNotice, { posthogKey: CLE })
   );
 
   const sortie = container.querySelector('[data-dwc="consent-settings"]');
@@ -153,8 +153,8 @@ test('`policy` se déplie après les actions, sans ajouter de décision', async 
   const dom = prepare();
   const { container, unmount } = await mount(
     h(ConsentBanner, {
-      gaMeasurementId: GA,
-      policy: h(PrivacyNotice, { gaMeasurementId: GA, contact: 'x@y.fr' }),
+      posthogKey: CLE,
+      policy: h(PrivacyNotice, { posthogKey: CLE, contact: 'x@y.fr' }),
     })
   );
 
