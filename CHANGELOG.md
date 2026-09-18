@@ -1,5 +1,80 @@
 # Changelog
 
+## 6.0.0
+
+### Major Changes
+
+- PostHog en Europe remplace Google Analytics.
+  
+  Décision du 18/09/2026, `pwa-starter-kit/docs/adr/0012-posthog-en-europe.md`.
+  **Le motif n'est pas la mesure.** Au volume du parc — relevé le même jour, 14 à
+  59 événements par propriété sur trois jours, soit ~180 par jour pour dix-huit
+  applications — GA4 faisait très bien le travail. Ce qui a tranché, c'est que
+  **aucune application ne porte de mention légale** alors que `mister-cim10`
+  reçoit du texte clinique, et que GA4 rend cette dette incompressible : un cookie
+  nécessaire donc un bandeau obligatoire, un transfert hors UE à assumer, une
+  durée à publier.
+  
+  **L'API PUBLIQUE NE CHANGE PAS DE FORME.** `initAnalytics`, `trackEvent`,
+  `trackPageView`, `setAnalyticsConsent`, `usePageViews`, `ConsentBanner`,
+  `ConsentSettings`, `PrivacyNotice` gardent leurs noms et leurs contrats. Une
+  application ne change qu'un nom de propriété — c'est tout l'intérêt d'avoir mis
+  la mesure dans le socle plutôt que dans vingt `index.html`.
+  
+  ### Ce qui change pour une application
+  
+  `gaMeasurementId` → **`posthogKey`** (`phc_…`), variable `VITE_GA_MEASUREMENT_ID`
+  → **`VITE_POSTHOG_KEY`**. `posthogHost` et `loader` sont facultatifs.
+  
+  **`gaMeasurementId` reste acceptée UNE version, et elle crie.** Les dix-neuf
+  applications du parc la passent aujourd'hui : la refuser d'emblée casserait leur
+  `tsc` à la seconde de la publication, toutes en même temps. Mais un `G-…` n'est
+  d'aucun usage à PostHog — un avertissement en console dit donc, en clair, que
+  **aucune mesure ne part** tant que `posthogKey` n'est pas fournie. Retirée au
+  prochain majeur.
+  
+  ### Les réglages qui ne sont pas des préférences
+  
+  `OPTIONS_VIE_PRIVEE` est figé, en code, et un test vérifie ce qui arrive
+  RÉELLEMENT à `init` :
+  
+  - **`autocapture: false`** — active par défaut chez PostHog, elle enregistre les
+    clics AVEC le texte des éléments ; sur un outil de cotation, des libellés de
+    diagnostic ;
+  - **`disable_session_recording: true`** — le replay filmerait le compte-rendu ;
+  - **`capture_pageview: false`** — sinon une vue part au chargement ET à chaque
+    changement d'historique ; les apps sont en `HashRouter`, chaque navigation
+    serait comptée deux fois. Pendant exact de `send_page_view: false` ;
+  - **`cross_subdomain_cookie: false`** — le parc est sous un suffixe public ;
+  - **`person_profiles: 'identified_only'`**.
+  
+  **Rien n'est chargé avant l'accord** : pas un `opt_out_capturing_by_default`,
+  qui téléchargerait et évaluerait le script. Le `loader` n'est pas appelé.
+  
+  ### Ce qui part
+  
+  `parseGaMeasurementId`, `buildAnalyticsHtmlFragments` et toute l'injection au
+  build (déjà dépréciée, utilisée par aucune app), les marqueurs
+  `__ANALYTICS_*__`, `dataLayerPush`, `CONSENT_SIGNALS`, et les variables
+  `VITE_GA_MEASUREMENT_ID` / `VITE_GTM_CONTAINER_ID`. `posthog-js` entre en pair
+  **optionnelle**.
+  
+  ### La garde e2e, refaite
+  
+  `playwright-entree` lisait `window.dataLayer`, que PostHog n'alimente pas —
+  **neuf applications en dépendent**. GA4 offrait cette couture gratuitement ; il
+  a fallu la poser : `window.__DWC_MESURE`, bornée à cinquante entrées, porte ce
+  que l'application a DEMANDÉ d'envoyer. Vérifier par le réseau aurait lié la
+  garde au format de corps de PostHog, qui est compressé.
+  `bloqueGoogle` → **`bloqueMesure`**, `HOTES_GOOGLE` → **`HOTES_MESURE`**.
+  
+  ### Une régression attrapée par un test
+  
+  `ANALYTICS_HOSTS.frame` étant devenu vide, `withAnalytics` retirait `'none'`
+  **sans rien mettre à la place** : `frame-src` devenait absente, donc
+  `default-src` reprenait la main. Activer la mesure **desserrait** la CSP en
+  croyant l'étendre. `'none'` ne se retire désormais que s'il est remplacé.
+
 ## 5.0.0
 
 ### Major Changes
