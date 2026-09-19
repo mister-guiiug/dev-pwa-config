@@ -272,12 +272,39 @@ Trois règles que le module tient à votre place :
   PostHog : sans cette dimension, le total est lisible et le détail ne l'est plus.
   Pas `page_path`, dont la cardinalité finit dans « (other) ».
 - **Une seule vue par navigation.** PostHog est configuré avec
-  `send_page_view: false`, pour que la page d'entrée passe par le même chemin
+  `capture_pageview: false`, pour que la page d'entrée passe par le même chemin
   que les autres au lieu d'être comptée deux fois.
 
-`cspPlugin({ analytics: true })` autorise déjà les hôtes nécessaires : le script
-injecté vient de `googletagmanager.com` et n'ajoute aucun script en ligne à
-hacher.
+`cspPlugin({ analytics: true })` autorise déjà les hôtes nécessaires :
+`eu.i.posthog.com` pour l'ingestion, et `eu-assets.i.posthog.com` d'où
+`posthog-js` charge sa configuration distante à chaque `init`. Aucun script en
+ligne à hacher.
+
+#### Les gestes communs sont DÉJÀ instrumentés
+
+Trois gestes partent du socle, sans une ligne dans l'application : l'invite
+d'installation (`installation`), le bandeau de mise à jour (`maj`) et le bouton
+de partage (`partage`). Chacun porte une étape — `proposee`, `acceptee`,
+`refusee`, `reportee`, `appliquee` — ce qui en fait des entonnoirs plutôt que
+des compteurs : sans l'impression, un taux d'acceptation n'a pas de
+dénominateur.
+
+**Trois noms pour tout le parc, et c'est voulu.** Dix-neuf applications
+partagent un projet : le détail vit dans les propriétés, pas dans le nom, sinon
+la liste d'événements devient la première chose qu'on voit et la dernière qu'on
+comprend. Une application qui instrumente un geste qui lui est propre suit la
+même forme, et importe son vocabulaire :
+
+```ts
+import { GESTES, trackEvent } from '@mister-guiiug/dev-pwa-config/analytics';
+```
+
+⚠️ **Aucune valeur libre, jamais.** Les propriétés ne portent que des constantes
+énumérées. Pas le texte d'un élément, pas une saisie, pas un identifiant que
+l'utilisateur se partage — c'est la raison même pour laquelle `autocapture` est
+coupée (ADR 0012) : elle enregistrerait des libellés de diagnostic sur
+`mister-cim10`. Instrumenter à la main ne sert à rien si c'est pour reconstituer
+le même risque.
 
 ### `vite-pwa` — options `VitePWA()` partagées
 

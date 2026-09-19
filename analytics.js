@@ -343,6 +343,50 @@ export function trackEvent(name, params = {}) {
   return true;
 }
 
+/**
+ * LE VOCABULAIRE DES GESTES — trois noms pour tout le parc, et c'est voulu.
+ *
+ * POURQUOI SI PEU DE NOMS. Dix-neuf applications partagent UN projet PostHog.
+ * Si chacune invente les siens, la liste d'événements devient la première chose
+ * qu'un nouveau venu voit et la dernière qu'il comprend. Le détail vit donc
+ * dans les PROPRIÉTÉS (`etape`, `resultat`), pas dans le nom : PostHog ventile
+ * par propriété aussi bien que par événement, et une étape d'entonnoir accepte
+ * un filtre de propriété. On garde la lisibilité sans rien perdre.
+ *
+ * POURQUOI DANS LE SOCLE, ET NON DANS CHAQUE APP. Ces trois gestes sont
+ * COMMUNS : installer, mettre à jour, partager. Les instrumenter ici les donne
+ * aux dix-neuf d'un coup, du même nom et au même endroit — là où dix-neuf
+ * instrumentations à la main auraient donné dix-neuf vocabulaires.
+ *
+ * LA RÈGLE QUI NE SE NÉGOCIE PAS : **aucune valeur libre**. Les propriétés ne
+ * portent que des constantes énumérées ici. Jamais le texte d'un élément,
+ * jamais une saisie, jamais un identifiant que l'utilisateur se partage — c'est
+ * la raison même pour laquelle `autocapture` est coupée (ADR 0012) : elle
+ * enregistrerait des libellés de diagnostic sur `mister-cim10`. Instrumenter à
+ * la main ne sert à rien si c'est pour reconstituer le même risque.
+ */
+export const GESTES = Object.freeze({
+  /** Invite d'installation : `etape`, `methode`, `plateforme`. */
+  INSTALLATION: 'installation',
+  /** Bandeau de mise à jour : `etape`. */
+  MAJ: 'maj',
+  /** Bouton de partage : `resultat`. */
+  PARTAGE: 'partage',
+});
+
+/** Les étapes admises, par geste. Une valeur hors de ces listes est un bogue. */
+export const ETAPES = Object.freeze({
+  /**
+   * `proposee` est une IMPRESSION, pas un geste — et elle est indispensable :
+   * sans elle, `acceptee` n'a pas de dénominateur et un taux d'acceptation ne
+   * se calcule pas.
+   */
+  INSTALLATION: Object.freeze(['proposee', 'acceptee', 'refusee', 'reportee']),
+  MAJ: Object.freeze(['proposee', 'appliquee', 'reportee']),
+  /** Les quatre issues de `shareOrCopy`, sans invention. */
+  PARTAGE: Object.freeze(['shared', 'copied', 'cancelled', 'failed']),
+});
+
 /** Ce que la trace retient au plus — bornée, c'est une sonde, pas un journal. */
 const TRACE_MAX = 50;
 

@@ -1,6 +1,7 @@
 import { useLabels } from './labels-core.js';
-import { createElement as h, useId } from 'react';
+import { createElement as h, useId, useEffect, useRef } from 'react';
 import { useInstallPrompt } from './use-install-prompt.js';
+import { GESTES, trackEvent } from '../analytics.js';
 
 function getStore(kind) {
   try {
@@ -69,6 +70,30 @@ export function PwaInstallPrompt(props = {}) {
   // `cadence={false}` : l'app place l'invite elle-même (écran de réglages,
   // page « À propos ») et veut la voir dès qu'une installation est possible.
   const visible = cadence === false ? method !== 'none' : shouldPrompt;
+
+  /*
+   * L'IMPRESSION, UNE FOIS PAR MONTAGE — et pourquoi elle compte.
+   *
+   * Sans elle, `acceptee` n'a aucun dénominateur : on saurait combien de gens
+   * installent, jamais combien on l'a proposé, donc jamais si l'invite marche.
+   * C'est l'étape qui fait de ce couple un entonnoir plutôt qu'un compteur.
+   *
+   * LE GARDE N'EST PAS DÉCORATIF. `StrictMode` monte deux fois en
+   * développement, et cet effet partirait deux fois pour une seule invite
+   * affichée — un taux d'acceptation divisé par deux, sans que rien ne le dise.
+   * Le `ref` survit au double montage, là où un état ne survivrait pas.
+   */
+  const impressionEnvoyee = useRef(false);
+  useEffect(() => {
+    if (!visible || impressionEnvoyee.current) return;
+    impressionEnvoyee.current = true;
+    trackEvent(GESTES.INSTALLATION, {
+      etape: 'proposee',
+      methode: method,
+      plateforme: platform,
+    });
+  }, [visible, method, platform]);
+
   if (!visible) return null;
 
   const instructions = method === 'instructions';
@@ -112,12 +137,40 @@ export function PwaInstallPrompt(props = {}) {
         ? null
         : h(
             'button',
-            { type: 'button', onClick: () => void promptInstall() },
+            {
+              type: 'button',
+              // L'ISSUE VIENT DU NAVIGATEUR, pas du clic. Compter une
+              // installation sur le clic serait faux : la boîte native
+              // s'ouvre, et l'utilisateur y dit encore non une fois sur deux.
+              // `promptInstall` rend `'accepted'` ou `'dismissed'` ; tout
+              // autre retour (invite déjà consommée) ne compte rien plutôt
+              // que d'inventer.
+              onClick: () => {
+                void promptInstall().then(issue => {
+                  if (issue !== 'accepted' && issue !== 'dismissed') return;
+                  trackEvent(GESTES.INSTALLATION, {
+                    etape: issue === 'accepted' ? 'acceptee' : 'refusee',
+                    methode: method,
+                    plateforme: platform,
+                  });
+                });
+              },
+            },
             installLabel ?? labels.install
           ),
       h(
         'button',
-        { type: 'button', onClick: snooze },
+        {
+          type: 'button',
+          onClick: () => {
+            snooze();
+            trackEvent(GESTES.INSTALLATION, {
+              etape: 'reportee',
+              methode: method,
+              plateforme: platform,
+            });
+          },
+        },
         dismissLabel ?? labels.dismiss
       )
     )

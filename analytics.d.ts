@@ -28,6 +28,31 @@ export declare const HOTE_PAR_DEFAUT: string;
  */
 export declare const OPTIONS_VIE_PRIVEE: Readonly<Record<string, unknown>>;
 
+/**
+ * Le vocabulaire des gestes communs — trois noms pour tout le parc.
+ *
+ * Le détail vit dans les propriétés (`etape`, `resultat`), pas dans le nom :
+ * dix-neuf applications partagent un projet, et une liste d'événements courte
+ * est ce qui la garde lisible. Une application qui instrumente un geste qui lui
+ * est propre suit la même forme.
+ */
+export declare const GESTES: Readonly<{
+  INSTALLATION: 'installation';
+  MAJ: 'maj';
+  PARTAGE: 'partage';
+}>;
+
+/**
+ * Les valeurs admises pour `etape` / `resultat`. **Aucune valeur libre** : une
+ * propriété qui porterait du texte saisi reconstituerait le risque pour lequel
+ * `autocapture` a été coupée (ADR 0012).
+ */
+export declare const ETAPES: Readonly<{
+  INSTALLATION: readonly ['proposee', 'acceptee', 'refusee', 'reportee'];
+  MAJ: readonly ['proposee', 'appliquee', 'reportee'];
+  PARTAGE: readonly ['shared', 'copied', 'cancelled', 'failed'];
+}>;
+
 export interface InitAnalyticsOptions {
   /** Clé de projet PostHog (`phc_…`). Publique par conception. */
   posthogKey?: string;
