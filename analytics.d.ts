@@ -40,6 +40,16 @@ export declare const GESTES: Readonly<{
   INSTALLATION: 'installation';
   MAJ: 'maj';
   PARTAGE: 'partage';
+  /** Quelque chose a été produit : `objet`. */
+  CREATION: 'creation';
+  /** Des données sont sorties de l'app : `format`. */
+  EXPORT: 'export';
+  /** Une session de jeu ou de match : `etape`. */
+  PARTIE: 'partie';
+  /** Un traitement que l'app exécute : `nom`, `etape`. */
+  OPERATION: 'operation';
+  /** Une lecture, là où consulter EST l'usage : `objet`. */
+  CONSULTATION: 'consultation';
 }>;
 
 /**
@@ -51,6 +61,8 @@ export declare const ETAPES: Readonly<{
   INSTALLATION: readonly ['proposee', 'acceptee', 'refusee', 'reportee'];
   MAJ: readonly ['proposee', 'appliquee', 'reportee'];
   PARTAGE: readonly ['shared', 'copied', 'cancelled', 'failed'];
+  PARTIE: readonly ['demarree', 'terminee'];
+  OPERATION: readonly ['lancee', 'reussie', 'echouee'];
 }>;
 
 export interface InitAnalyticsOptions {
