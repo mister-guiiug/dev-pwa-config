@@ -1,5 +1,120 @@
 # Changelog
 
+## 6.1.0
+
+### Minor Changes
+
+- 7eb71e4: Les trois gestes communs sont instrumentés — installation, mise à jour, partage.
+  
+  Le parc mesurait ses vues de page et rien d'autre. L'entonnoir « visite →
+  interaction » créé d'office par PostHog restait donc à **zéro**, et pour une
+  raison structurelle : son étape 2 vise `$autocapture`, que l'ADR 0012 a coupée
+  parce qu'elle enregistre le texte des éléments cliqués — sur `mister-cim10`, des
+  libellés de diagnostic. Aucune application n'appelait `trackEvent`.
+  
+  **LE LEVIER N'EST PAS DANS LES APPLICATIONS.** Trois gestes sont COMMUNS aux
+  dix-neuf : installer, mettre à jour, partager. Les instrumenter dans le socle
+  les donne à toutes d'un coup, du même nom et au même endroit — là où dix-neuf
+  instrumentations à la main auraient donné dix-neuf vocabulaires.
+  
+  ### Trois noms, et le détail dans les propriétés
+  
+  | événement      | propriétés                                                                       |
+  | -------------- | -------------------------------------------------------------------------------- |
+  | `installation` | `etape` (`proposee`, `acceptee`, `refusee`, `reportee`), `methode`, `plateforme` |
+  | `maj`          | `etape` (`proposee`, `appliquee`, `reportee`)                                    |
+  | `partage`      | `resultat` (`shared`, `copied`, `cancelled`, `failed`)                           |
+  
+  Dix-neuf applications partagent un projet : une liste d'événements courte est ce
+  qui le garde lisible, et PostHog ventile par propriété aussi bien que par
+  événement. `GESTES` et `ETAPES` sont exportés — une application qui instrumente
+  un geste qui lui est propre suit la même forme au lieu d'inventer la sienne.
+  
+  ### Ce que ces événements répondent, et que rien ne disait
+  
+  - **L'invite d'installation marche-t-elle ?** `proposee` est une IMPRESSION, pas
+    un geste, et elle est indispensable : sans dénominateur, un taux
+    d'acceptation ne se calcule pas. Le parc a consacré une campagne entière à
+    cette invite sans jamais savoir si elle convertissait.
+  - **Les gens prennent-ils les mises à jour ?** Le parc a choisi
+    `registerType: 'prompt'` plutôt qu'`autoUpdate` — un déploiement ne recharge
+    plus la page sous les doigts de l'utilisatrice. Le prix de ce choix est
+    qu'une version peut n'être jamais prise, et personne ne le savait.
+  - **Combien de partages retombent sur le presse-papiers ?** Le `share` du socle
+    ne sait partager que du texte ; cette limite se mesure désormais au lieu de se
+    supposer.
+  
+  ### Trois pièges, et le test de chacun
+  
+  - **L'impression ne part qu'une fois.** `StrictMode` monte deux fois : sans
+    garde par `ref`, `proposee` doublerait et tout taux d'acceptation serait
+    divisé par deux, sans qu'aucune alerte ne le signale.
+  - **Le clic ne vaut pas installation.** La boîte native s'ouvre, et c'est elle
+    qui décide : l'issue vient de `promptInstall()`, pas du clic. Compter sur le
+    clic gonflerait le taux de moitié.
+  - **`maj/appliquee` part AVANT `update()`.** La mise à jour recharge le
+    document ; PostHog met en file et vide par lots, et le rechargement emporte la
+    file. Un événement posé après ne partirait jamais.
+  
+  ### Et la règle qui ne se négocie pas
+  
+  **Aucune valeur libre.** Le partage n'envoie ni titre, ni texte, ni URL : ils
+  portent le contenu de l'utilisateur. Un test l'affirme en cherchant ces valeurs
+  dans l'événement sérialisé — instrumenter à la main ne servirait à rien si
+  c'était pour reconstituer le risque au nom duquel `autocapture` a été coupée.
+  
+  Rien ne part sans consentement, et c'est également testé : les trois composants
+  ignorent tout du consentement, c'est `trackEvent` qui refuse.
+  
+  Poids mesuré sur le squelette : **+0,4 kB gzip**, préchargé compris.
+- 19fd792: Le vocabulaire des gestes MÉTIER, et l'alarme qui empêche d'y glisser du texte libre.
+  
+  Les trois gestes communs (`installation`, `maj`, `partage`) couvrent ce que le
+  socle possède. Restent les gestes propres à chaque application — lancer un dé,
+  exporter un bilan, coter un compte-rendu — que dix-huit dépôts vont poser.
+  
+  **CINQ NOMS, PAS QUARANTE.** Le nom de l'application est déjà porté par
+  `app_name` : le détail va dans les propriétés, jamais dans le nom de
+  l'événement. Un nom par app et par geste rendrait la liste d'événements
+  illisible dès la première semaine — et c'est la première chose qu'on voit en
+  ouvrant le projet.
+  
+  | événement      | propriétés                                      | exemple                           |
+  | -------------- | ----------------------------------------------- | --------------------------------- |
+  | `creation`     | `objet`                                         | une dépense, un lieu, un scénario |
+  | `export`       | `format`                                        | `pdf`, `csv`, `png`               |
+  | `partie`       | `etape` (`demarree`, `terminee`)                | un match, une manche              |
+  | `operation`    | `nom`, `etape` (`lancee`, `reussie`, `echouee`) | une analyse, une pause de projet  |
+  | `consultation` | `objet`                                         | là où lire EST l'usage            |
+  
+  `demarree` sans `terminee` ne veut rien dire, et l'inverse non plus : c'est leur
+  **rapport** qui répond — combien de parties vont au bout. Et une opération qui
+  échoue est au moins aussi instructive qu'une réussie.
+  
+  ### L'alarme qui manquait
+  
+  Toute la privauté de ce dispositif tient à une règle qu'aucun type ne peut
+  exprimer : **les propriétés ne portent que des valeurs énumérées**. Le jour où
+  quelqu'un écrit `trackEvent('creation', { titre: saisie })`, rien ne casse, rien
+  ne prévient, la CI reste verte — et du texte d'utilisateur part chez le
+  sous-traitant. Soit exactement ce pour quoi `autocapture` a été coupée.
+  
+  `trackEvent` avertit donc, **hors production**, quand une valeur ressemble à du
+  texte libre.
+  
+  **On ne valide PAS une liste fermée**, et c'est délibéré : le socle ne peut pas
+  connaître les `objet` de dix-huit applications. On détecte ce qui ne peut pas
+  être un jeton — une **espace**, ou plus de **quarante caractères**. Un libellé
+  saisi en a presque toujours ; `pdf`, `depense`, `mister-cim10` n'en ont jamais.
+  Viser plus large ferait crier sur `fr-FR` ou `6.1.0`, et une alarme qui crie à
+  tort finit ignorée.
+  
+  Trois précautions : les événements de PostHog (`$pageview` et ses
+  `$current_url` / `page_title`) sont **exemptés**, ils portent légitimement du
+  texte libre ; l'alarme ne crie **qu'une fois par clé**, pour ne pas noyer la
+  console d'une boucle de rendu ; et **l'événement part quand même** — avertir
+  l'auteur est utile, l'avaler en silence serait un second défaut.
+
 ## 6.0.1
 
 ### Patch Changes
