@@ -50,6 +50,54 @@ test('le préréglage partagé : recommandé, tableau de bord, samedi matin, reg
   );
 });
 
+/*
+ * LE PLAFOND SUR TYPESCRIPT, ET LA RAISON DE SON EXCEPTION.
+ *
+ * Dix-sept PR « update dependency typescript to v7 » étaient ouvertes le
+ * 19/09/2026, toutes rouges, la plus ancienne du 15. Elles revenaient parce que
+ * rien dans ce préréglage ne parlait de TypeScript — un refus qui n'est écrit
+ * nulle part se reprend à chaque passage du robot.
+ *
+ * Elles ne pouvaient pas aboutir : `typescript-eslint` lève à l'import dès que
+ * `require('typescript').versionMajorMinor` atteint 7, donc ESLint meurt pour
+ * TOUS les fichiers. Sa plage de pairs le dit aussi — `>=4.8.4 <6.1.0`, canary
+ * comprise.
+ *
+ * `matchCurrentVersion` est la clé de voûte : le plafond ne s'applique qu'aux
+ * dépôts DÉJÀ en 6.x. Les deux qui ont franchi faute d'ESLint —
+ * `vscode-sops-diff` et le front de `mister-commitia`, tous deux en 7.0.2 —
+ * en sortent d'eux-mêmes et gardent leurs correctifs 7.x. Une règle qui porte
+ * son exception vaut mieux qu'une dérogation à recopier dans deux dépôts.
+ */
+test('typescript est plafonné sous la 7, sauf là où il l’a déjà franchie', () => {
+  const preset = json('../renovate/default.json');
+  const regle = preset.packageRules.find(r =>
+    r.matchPackageNames?.includes('typescript')
+  );
+  assert.ok(regle, 'le refus de TS 7 est ÉCRIT, pas repris à chaque PR');
+  assert.equal(regle.allowedVersions, '<7');
+  assert.equal(
+    regle.matchCurrentVersion,
+    '<7',
+    'le plafond ne doit toucher que les dépôts encore en 6.x'
+  );
+  assert.deepEqual(regle.matchManagers, ['npm']);
+
+  // La raison et sa condition de levée vivent dans la règle : sans elles,
+  // personne ne saura quand la retirer.
+  assert.match(regle.description, /typescript-eslint/);
+  assert.match(regle.description, /10940/);
+
+  // Le socle épingle la même cible en pair : les deux doivent se répondre,
+  // sinon le plafond laisserait passer ce que l'installation refuse.
+  const pkg = json('../package.json');
+  assert.match(
+    pkg.peerDependencies.typescript,
+    /^~6\./,
+    'la pair du socle et le plafond Renovate nomment la même génération'
+  );
+});
+
 test('le socle étend son propre préréglage — le même que les apps', () => {
   const config = json('../renovate.json');
   assert.deepEqual(config.extends, [PRESET]);
