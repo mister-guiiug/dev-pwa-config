@@ -149,6 +149,69 @@ test('sans analytics, rien de Google n’est autorisé', () => {
   assert.deepEqual(sourcesOf(csp, 'font-src'), ["'self'", 'data:']);
 });
 
+/** Le plugin AVEC la configuration résolue : c'est là que Vite met le DSN. */
+const rendreAvecEnv = (env, opts = {}) => {
+  const plugin = cspPlugin(opts);
+  plugin.configResolved({ env });
+  const html = plugin.transformIndexHtml.handler(
+    '<head><meta charset="utf-8"></head>'
+  );
+  return /content="([^"]+)"/.exec(html)[1];
+};
+
+test('le DSN Sentry ouvre connect-src — et lui seul', () => {
+  // LA PANNE QUE CE TEST FIGE. Le 19/09/2026, les vingt sites du parc
+  // embarquaient un DSN et AUCUN n'autorisait Sentry dans `connect-src` :
+  // chaque enveloppe partait dans le vide, et la console du navigateur était
+  // le seul endroit où ça se voyait. Personne ne regarde la console d'un site
+  // qui marche.
+  const csp = rendreAvecEnv({
+    VITE_SENTRY_DSN:
+      'https://66aba99b443779fb61a5e7c1663bb88c@o4511240922005504.ingest.de.sentry.io/4512097655652432',
+  });
+  assert.deepEqual(sourcesOf(csp, 'connect-src'), [
+    "'self'",
+    'https://o4511240922005504.ingest.de.sentry.io',
+  ]);
+
+  // L'ORIGINE, PAS UN JOKER : `https://*.ingest.de.sentry.io` ouvrirait la
+  // politique aux projets de tous les autres comptes hébergés là.
+  assert.ok(!csp.includes('*'), 'aucun joker dans la politique');
+  // Ni la clé publique du DSN, ni le chemin du projet n'ont à s'y trouver.
+  assert.ok(!csp.includes('66aba99b'), 'la clé du DSN ne fuit pas dans la CSP');
+  assert.ok(!csp.includes('4512097655652432'), 'ni le numéro de projet');
+});
+
+test('sans DSN, ou avec un DSN illisible, la politique ne bouge pas', () => {
+  // Un fork, un développement local, une app sans observabilité : rien à
+  // ouvrir. Et un DSN mal recopié ne casse pas le build — Sentry ne
+  // s'initialisera pas non plus, la politique reste simplement fermée.
+  for (const env of [
+    {},
+    { VITE_SENTRY_DSN: '' },
+    { VITE_SENTRY_DSN: 'pas-une-url' },
+  ]) {
+    assert.deepEqual(
+      sourcesOf(rendreAvecEnv(env), 'connect-src'),
+      ["'self'"],
+      `env = ${JSON.stringify(env)}`
+    );
+  }
+});
+
+test('le DSN s’ajoute AUX hôtes de mesure, sans en déloger un', () => {
+  const csp = rendreAvecEnv(
+    { VITE_SENTRY_DSN: 'https://k@o1.ingest.de.sentry.io/2' },
+    { analytics: true, connectSrc: ["'self'", 'https://x.supabase.co'] }
+  );
+  assert.deepEqual(sourcesOf(csp, 'connect-src'), [
+    "'self'",
+    'https://x.supabase.co',
+    ...ANALYTICS_HOSTS.connect,
+    'https://o1.ingest.de.sentry.io',
+  ]);
+});
+
 test("frame-src 'none' ne se mélange jamais à des hôtes", () => {
   // `'none'` mêlé à une liste produit une directive malformée, interprétée
   // différemment selon les navigateurs.
