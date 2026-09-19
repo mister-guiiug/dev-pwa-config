@@ -855,6 +855,56 @@ test('une app SANS ROUTEUR a quand même une coquille : celle que l’entrée mo
   );
 });
 
+test('une SORTIE ANTICIPÉE aiguille elle aussi : les liens ne sont pas « partout »', () => {
+  // L'ANGLE MORT DU 19/09/2026. `sansCondition` ne lisait que les 120
+  // caractères collés devant la balise : `miss-dice` aiguille par
+  // `if (mode !== 'roll') return <Jeu />;` vingt lignes plus haut, et le
+  // contrôle lui reprochait « tous les écrans » alors que ses liens ne
+  // touchent jamais un plateau de jeu. Mille quatre-vingt-dix caractères
+  // séparaient le garde de la balise, commentaires retirés.
+  const entree = fichier('src/main.tsx', "import App from './App';\n<App />");
+  const aiguillage = fichier(
+    'src/App.tsx',
+    'export default function App() {\n' +
+      '  if (mode !== "roll") {\n' +
+      '    const Ecran = LAZY[mode];\n' +
+      '    return (\n<Suspense><Ecran /></Suspense>\n);\n' +
+      '  }\n' +
+      '  return (<div><Plateau />' +
+      ' '.repeat(600) +
+      '<FamilyLinks /></div>);\n}'
+  );
+  const porteur = fichier(
+    'src/components/FamilyLinks.tsx',
+    'export function FamilyLinks() { return <a href="https://buymeacoffee.com/x">{repoUrl("miss-x")}</a>; }'
+  );
+  assert.notEqual(liens([entree, aiguillage, porteur]), 'partout');
+
+  // LE MOTIF EST ÉTROIT, ET C'EST VOULU. Un garde qui ne rend RIEN ne désigne
+  // aucun autre écran : le pied de page qui le suit est bien sur tous.
+  const garde = fichier(
+    'src/App.tsx',
+    'export default function App() {\n' +
+      '  if (!pret) return null;\n' +
+      '  return (<div><Plateau /><FamilyLinks /></div>);\n}'
+  );
+  assert.equal(liens([entree, garde, porteur]), 'partout');
+
+  // LA FENÊTRE EST BORNÉE À DEUX MILLE CARACTÈRES : au-delà, l'aiguillage
+  // appartient sans doute à un AUTRE composant du même fichier, et le
+  // dédouanement serait un cadeau. Le contrôle préfère se tromper du côté qui
+  // se voit.
+  const loin = fichier(
+    'src/App.tsx',
+    'export default function App() {\n' +
+      '  if (mode !== "roll") { return (<Jeu />); }\n' +
+      '  return (<div>' +
+      ' '.repeat(2200) +
+      '<FamilyLinks /></div>);\n}'
+  );
+  assert.equal(liens([entree, loin, porteur]), 'partout');
+});
+
 test('la coquille est un écran de trop : les liens sur deux écrans, pas sur tous', async () => {
   // Depuis le 06/09/2026, la règle plafonne : l'accueil ET À propos / Réglages,
   // nulle part ailleurs. Un pied de page rendu hors des routes est sur TOUS
