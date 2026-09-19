@@ -36,6 +36,13 @@
       "groupName": "dépendances (mineur & patch)"
     },
     {
+      "description": "TypeScript reste en 6.x : typescript-eslint REFUSE la 7 par une assertion à l'import (« typescript-eslint does not support TS 7.0 »), et sa plage de pairs l'exclut — >=4.8.4 <6.1.0, canary comprise. Son garde lit `require('typescript')`, donc une racine en 7 casse ESLint POUR TOUS LES FICHIERS, pas seulement les règles typées. Le plafond ne vise QUE les dépôts déjà en 6.x (matchCurrentVersion) : ceux qui ont franchi faute d'ESLint — vscode-sops-diff, le front de mister-commitia — continuent de recevoir les correctifs 7.x sans dérogation à écrire. Le support amont est suivi pour TS >= 7.1, jamais 7.0 : typescript-eslint#10940. Lever cette règle quand cette issue se ferme, pas avant.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["typescript"],
+      "matchCurrentVersion": "<7",
+      "allowedVersions": "<7"
+    },
+    {
       "description": "Peers = stack cible famille : élargir le range, PR séparées, majors revus à la main.",
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen"
