@@ -218,6 +218,49 @@ const LIENS = {
     /setting|reglage|réglage|parametre|paramètre|about|propos|profil|account|compte|help|aide/i,
 };
 
+/**
+ * UNE SORTIE ANTICIPÉE EST UNE CONDITION, ELLE AUSSI — et c'était l'angle mort
+ * du contrôle.
+ *
+ * `sansCondition` ne regardait que les 120 caractères qui PRÉCÈDENT la balise :
+ * un `&&`, un ternaire, un `)return` collé devant, il les voit. Une coquille
+ * sans routeur qui aiguille par `if (mode !== 'roll') return <Jeu />;` vingt
+ * lignes plus haut, non — et le contrôle lui reprochait « tous les écrans »
+ * alors que ses liens ne touchent jamais un plateau de jeu. Mesuré sur
+ * `miss-dice` le 19/09/2026 : mille quatre-vingt-dix caractères entre le garde
+ * et la balise, commentaires retirés.
+ *
+ * LE MOTIF EST VOLONTAIREMENT ÉTROIT : un `if` dont le corps REND quelque
+ * chose. `if (!pret) return null;` n'en est pas un — il ne désigne aucun autre
+ * écran, et un pied de page rendu après lui est bien sur tous les écrans.
+ *
+ * D'OÙ LE JETON TEMPÉRÉ `(?:(?!return)[^{}])`, et non un simple `[^{}]`. Le
+ * premier écrit l'a payé : entre le `if` et le `<`, un `[^{}]` ENJAMBE le
+ * `return null;` du garde pour atteindre le `return (<div>` de la ligne
+ * suivante — et tout garde, même muet, dédouanait la coquille. Le jeton
+ * tempéré s'arrête au premier `return` : ou bien c'est lui qui rend, ou bien
+ * l'aiguillage n'existe pas. Le test qui l'a pris est juste en dessous.
+ *
+ * LA FENÊTRE EST BORNÉE, et c'est ce qui sépare un aiguillage d'un homonyme :
+ * sans borne, le `if (x) return <A />` d'un composant écrit PLUS HAUT dans le
+ * même fichier dédouanerait la coquille tout entière. Deux mille caractères :
+ * le double de l'écart mesuré, et bien moins qu'un fichier d'écran.
+ *
+ * QUE RISQUE-T-ON À SE TROMPER ? Rien de silencieux. Une coquille clémentée à
+ * tort ne devient pas « en règle » : elle retombe dans le compte des écrans,
+ * où elle est citée par son nom — « sur 2 écrans (App.tsx, …) ». La dette
+ * change de phrase, jamais de camp.
+ *
+ * Quantificateurs bornés et classes niées : chaque position n'est lue qu'une
+ * fois, pas de retour arrière polynomial (cf. `js/polynomial-redos`, signalé
+ * sur une première version du contrôle).
+ */
+const AIGUILLAGE =
+  /\bif\s*\([^)\n]{1,200}\)\s*\{?(?:(?!return)[^{}]){0,400}return\s*\(?\s*</;
+
+/** La fenêtre de lecture d'un aiguillage, en caractères. */
+const PORTEE = 2000;
+
 /** `a/b/../c` → `a/c`. Les chemins du relevé sont relatifs et en avant. */
 const normalise = chemin => {
   const out = [];
@@ -323,7 +366,10 @@ export function liensFamille(source) {
       const avant = text
         .slice(Math.max(0, m.index - 120), m.index)
         .replace(/\s+/g, '');
-      if (!/(&&|\?|:|\)return|:return)\(?$/.test(avant)) return true;
+      if (/(&&|\?|:|\)return|:return)\(?$/.test(avant)) continue;
+      if (AIGUILLAGE.test(text.slice(Math.max(0, m.index - PORTEE), m.index)))
+        continue;
+      return true;
     }
     return false;
   };
