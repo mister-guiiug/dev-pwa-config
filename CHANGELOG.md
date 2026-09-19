@@ -1,5 +1,114 @@
 # Changelog
 
+## 6.1.1
+
+### Patch Changes
+
+- 597263e: `cspPlugin` ouvre `connect-src` à l'hôte du DSN Sentry
+  
+  **Les vingt sites du parc embarquaient un DSN et aucun n'autorisait Sentry.**
+  Relevé le 19/09/2026 sur les CSP RÉELLEMENT servies : `connect-src` ne nomme
+  `sentry.io` nulle part, alors que `VITE_SENTRY_DSN` est posé en variable sur
+  chaque dépôt et que l'hôte d'ingestion se lit dans le bundle livré. Chaque
+  enveloppe d'erreur partait dans le vide :
+  
+  ```
+  Content-Security-Policy : … a empêché le chargement d'une ressource
+  (connect-src) à l'adresse https://oXXX.ingest.de.sentry.io/api/…/envelope/
+  ```
+  
+  Le parc croyait avoir une remontée d'erreurs. Il n'en avait aucune.
+  
+  **Pas d'option à poser, et c'est voulu.** Une case à cocher de plus, c'est
+  vingt applications à modifier et une à oublier. Le DSN EST la déclaration : le
+  greffon lit `VITE_SENTRY_DSN` dans la configuration que Vite a déjà résolue et
+  ajoute **l'origine exacte** qu'il y trouve. Sans DSN — fork, développement, app
+  sans observabilité — rien n'est ajouté ; avec un DSN illisible, rien non plus,
+  et le build ne casse pas.
+  
+  **L'origine, jamais un joker** : `https://*.ingest.de.sentry.io` ouvrirait la
+  politique aux projets de tous les autres comptes hébergés là. Ni la clé
+  publique du DSN ni le numéro de projet ne se retrouvent dans la politique —
+  deux assertions le tiennent.
+  
+  Vérifié par un vrai build Vite, et pas seulement en test :
+  
+  ```
+  connect-src 'self' https://eu.i.posthog.com https://eu-assets.i.posthog.com https://o42.ingest.de.sentry.io
+  ```
+- 7134b25: `cspPlugin` fait taire la sonde `new Function` de zod
+  
+  **Seize apps du parc journalisent une violation de CSP à chaque visite**, et
+  c'est notre propre politique qui la provoque :
+  
+  ```
+  Content-Security-Policy : les paramètres de la page ont empêché
+  l'exécution d'une « eval » JavaScript (script-src)          util.js:229
+  ```
+  
+  Rien ne casse. `allowsEval` (`zod/v4/core/util.js`) tente `new Function("")`
+  dans un `try/catch` pour savoir s'il peut compiler un chemin de parsing rapide ;
+  `script-src` sans `'unsafe-eval'` refuse, zod retombe sur le chemin lent. Le
+  commentaire de zod le dit lui-même : « strict CSPs report the caught
+  `new Function` as a `securitypolicyviolation` even though the throw is
+  swallowed ». Le remède est fourni par zod : `config({ jitless: true })`.
+  
+  **Et ça ne coûte aucune performance.** Mesuré : sous CSP, `allowsEval` rend
+  déjà `false`, donc le compilateur ne tourne jamais. `jitless` ne retire que la
+  question, pas une capacité.
+  
+  **Le placement est tout le problème, et c'est pourquoi ça vit ici.** La sonde
+  part à la CONSTRUCTION du premier `z.object()` — mesuré : importer zod n'en
+  déclenche aucune. Or ces schémas sont des constantes de module : un `z.config()`
+  posé dans le corps de `main.tsx` arriverait APRÈS, les imports étant évalués
+  avant le corps de celui qui les importe. Il faudrait le poser dans chacun des
+  quarante et un fichiers qui construisent un schéma, sur treize dépôts. Un alias
+  de build (`/^zod$/` → un module d'amorce qui appelle `config` puis réexporte
+  zod à l'identique) le fait une fois, et personne ne peut l'oublier.
+  
+  **Au build seulement** : en développement, l'alias sortirait zod du
+  pré-bundling de Vite et le ferait servir en une centaine de modules bruts. Ce
+  qui est corrigé ici, ce sont les sites déployés.
+  
+  Vérifié dans un vrai navigateur, deux builds de la même page, même CSP, seul le
+  bundle change :
+  
+  ```
+  sans : 1 violation script-src, à la ligne de allowsEval
+  avec : 0 violation — et le schéma accepte et refuse les mêmes valeurs
+  ```
+  
+  Sans zod installé, ou avec un manifeste d'une forme imprévue, aucun alias n'est
+  posé et le build ne change pas.
+- 797c888: `liens-famille` : une sortie anticipée aiguille, elle aussi
+  
+  Le contrôle reprochait « code source + soutien sur tous les écrans » à une
+  coquille qui n'en montre qu'un. `sansCondition` ne lisait que les **120
+  caractères collés devant la balise** : un `&&`, un ternaire ou un `)return` à
+  cet endroit-là, il les voit ; un `if (mode !== 'roll') return <Jeu />;` vingt
+  lignes plus haut, non.
+  
+  C'est la forme d'une application sans routeur qui aiguille par sortie
+  anticipée. Mesuré sur `miss-dice` le 19/09/2026 : **1 090 caractères** entre le
+  garde et la balise, commentaires retirés — et ses liens ne touchent jamais un
+  plateau de jeu, contrairement à ce que la dette affirmait.
+  
+  Le contrôle reconnaît désormais un `if` dont le corps REND quelque chose, dans
+  une fenêtre bornée à 2 000 caractères. Trois garde-fous, tenus par des tests :
+  
+  - **le motif est étroit** — `if (!pret) return null;` n'aiguille rien, et un
+    pied de page rendu après lui est bien sur tous les écrans ;
+  - **le jeton est tempéré** (`(?:(?!return)[^{}])`) — un simple `[^{}]`
+    enjambait le `return null;` du garde pour atteindre le `return (<div>` de la
+    ligne suivante, et tout garde, même muet, dédouanait la coquille ;
+  - **la fenêtre est bornée** — au-delà, l'aiguillage appartient sans doute à un
+    autre composant du même fichier.
+  
+  Se tromper ne cache rien : une coquille clémentée à tort ne devient pas « en
+  règle », elle retombe dans le compte des écrans, citée par son nom. Vérifié sur
+  les vingt dépôts du parc, avant et après : **un seul verdict change**, celui
+  qui était faux.
+
 ## 6.1.0
 
 ### Minor Changes
