@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { cspPlugin, ANALYTICS_HOSTS } from '../vite-csp.js';
 
 const run = (opts, html) => cspPlugin(opts).transformIndexHtml.handler(html);
@@ -344,4 +345,88 @@ test('un script inline en majuscules ou espacé est haché comme les autres', as
   }
   // Et rien de plus : le JSON-LD et le script externe restent hors du compte.
   assert.equal((csp.match(/'sha256-/g) ?? []).length, 3);
+});
+
+/*
+ * LA SONDE `new Function` DE ZOD, QUE CETTE CSP FAIT ÉCHOUER.
+ *
+ * Mesuré le 19/09/2026 dans un vrai navigateur, sur deux builds de la même
+ * page, même CSP, seul le bundle change :
+ *
+ *   sans le greffon : 1 violation `script-src` à la ligne de `allowsEval`
+ *   avec le greffon : 0 violation — et le même schéma accepte et refuse
+ *                     exactement les mêmes valeurs.
+ *
+ * Ce qui suit fige le mécanisme, pas la mesure : l'alias n'est posé qu'au
+ * build, il ne vise que le spécificateur nu, et le module qu'il livre appelle
+ * `config` APRÈS le corps de zod et AVANT celui de ses consommateurs.
+ */
+const ID_JITLESS = '\0dwc-zod-jitless';
+
+test('zod : l’alias jitless n’est posé qu’au build', () => {
+  const plugin = cspPlugin({});
+  assert.equal(
+    plugin.config({ root: process.cwd() }, { command: 'serve' }),
+    undefined,
+    'en développement, aliaser zod le sortirait du pré-bundling de Vite'
+  );
+
+  const bati = plugin.config({ root: process.cwd() }, { command: 'build' });
+  assert.deepEqual(
+    bati.resolve.alias.map(a => [String(a.find), a.replacement]),
+    [['/^zod$/', ID_JITLESS]]
+  );
+});
+
+test('zod : l’alias est ancré, il ne mange pas les sous-chemins', () => {
+  // `{ find: 'zod' }` serait un PRÉFIXE pour Vite : `zod/v4/core`,
+  // `zod/locales` et `zod/mini` seraient réécrits vers le module d'amorce,
+  // qui ne les exporte pas. L'ancre `^…$` est ce qui rend l'alias sûr.
+  const { find } = cspPlugin({}).config(
+    { root: process.cwd() },
+    { command: 'build' }
+  ).resolve.alias[0];
+  assert.ok(find.test('zod'));
+  for (const autre of ['zod/v4/core', 'zod/locales', 'zod/mini', 'myzod']) {
+    assert.ok(!find.test(autre), `${autre} ne doit pas être réécrit`);
+  }
+});
+
+test('zod : sans zod installé, aucun alias — et le build ne casse pas', () => {
+  // Fork, app sans validation : le greffon se tait. Une racine hors de tout
+  // node_modules contenant zod suffit à le prouver.
+  const plugin = cspPlugin({});
+  const racineSansZod = path.parse(process.cwd()).root;
+  assert.equal(
+    plugin.config({ root: racineSansZod }, { command: 'build' }),
+    undefined
+  );
+});
+
+test('zod : le module d’amorce coupe la sonde sans rien retirer à zod', () => {
+  const plugin = cspPlugin({});
+  plugin.config({ root: process.cwd() }, { command: 'build' });
+
+  assert.equal(plugin.resolveId('zod'), null, 'zod nu passe par l’alias');
+  assert.equal(plugin.resolveId(ID_JITLESS), ID_JITLESS);
+  assert.equal(plugin.load('autre-module'), null);
+
+  const source = plugin.load(ID_JITLESS);
+  const cible = /import \{ z \} from "([^"]+)"/.exec(source)[1];
+  assert.ok(
+    existsSync(cible) && cible.endsWith('.js'),
+    `le module d’amorce doit viser le zod ES de l’app, pas ${cible}`
+  );
+  // La même forme que `zod/index.js` : l'étoile reprend tout le nommé, `z`
+  // compris ; `default` ne voyage jamais par une étoile, donc il est réexporté
+  // à la main. En oublier un casserait `import z from 'zod'` dans les apps.
+  assert.match(source, /export \* from "/);
+  assert.match(source, /export \{ z as default \};/);
+  // Et l'appel vient APRÈS les imports : le corps de zod s'exécute d'abord,
+  // celui de ses consommateurs — donc le premier `z.object()` — ensuite.
+  assert.ok(
+    source.indexOf('z.config({ jitless: true });') >
+      source.lastIndexOf('export * from'),
+    'l’appel doit suivre les réexports'
+  );
 });
