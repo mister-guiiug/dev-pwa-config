@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { shareOrCopy } from '../share.js';
 import { useLabels } from './labels-core.js';
+import { GESTES, trackEvent } from '../analytics.js';
 
 /**
  * Bouton « Partager », branché sur `shareOrCopy`.
@@ -83,6 +84,15 @@ export function ShareButton(props = {}) {
       result = 'failed';
     }
     onResult?.(result);
+
+    // LES QUATRE ISSUES, TELLES QUELLES : `shared`, `copied`, `cancelled`,
+    // `failed`. Ce qu'elles disent et qu'aucun compteur de clics ne dirait :
+    // combien de partages passent par la feuille du système et combien
+    // retombent sur le presse-papiers — le socle ne sait partager que du
+    // TEXTE, et cette limite se mesure ici plutôt qu'elle ne se suppose.
+    // Ni le titre, ni le texte, ni l'URL ne sont envoyés : ils portent le
+    // contenu de l'utilisateur.
+    trackEvent(GESTES.PARTAGE, { resultat: result });
 
     // `'shared'` n'a rien à annoncer : la feuille de partage du système l'a
     // déjà fait. `'cancelled'` non plus — voir l'en-tête.

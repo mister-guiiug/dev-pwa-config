@@ -1,7 +1,8 @@
-import { createElement as h, useState } from 'react';
+import { createElement as h, useState, useEffect, useRef } from 'react';
 import { DEFAULT_SNOOZE_HOURS, useUpdatePrompt } from './use-update-prompt.js';
 import { useLabels } from './labels-core.js';
 import { useAppUpdates, useUpdateCheck } from './app-updates.js';
+import { GESTES, trackEvent } from '../analytics.js';
 
 /**
  * Bandeau « Mise à jour disponible », branché sur `useUpdatePrompt`.
@@ -86,6 +87,26 @@ function Banner(props) {
   const { offlineReady, needRefresh } = props;
   const [offlineDismissed, setOfflineDismissed] = useState(false);
 
+  /*
+   * L'IMPRESSION DU BANDEAU DE MISE À JOUR.
+   *
+   * Ce que ce couple d'événements répond, et que rien ne disait : les gens
+   * prennent-ils les mises à jour ? Le parc a choisi `registerType: 'prompt'`
+   * plutôt qu'`autoUpdate` — un déploiement ne recharge plus la page sous les
+   * doigts de l'utilisatrice (`miss-contraction`, pendant un chronométrage).
+   * Le prix de ce choix est qu'une version peut n'être jamais prise, et
+   * personne ne le savait.
+   *
+   * `ref` et non état, pour la même raison qu'ailleurs : `StrictMode` monte
+   * deux fois et doublerait le dénominateur.
+   */
+  const impressionEnvoyee = useRef(false);
+  useEffect(() => {
+    if (!visible || impressionEnvoyee.current) return;
+    impressionEnvoyee.current = true;
+    trackEvent(GESTES.MAJ, { etape: 'proposee' });
+  }, [visible]);
+
   if (!visible) {
     // La mise à jour L'EMPORTE : dès qu'une version attend, le message hors
     // ligne se tait — même si le bandeau est écarté ou reporté. C'est la
@@ -136,7 +157,10 @@ function Banner(props) {
           String(snoozeHours)
         )
       : (dismissLabel ?? labels.dismiss);
-  const onSecondary = snoozeHours > 0 ? snooze : dismiss;
+  const onSecondary = () => {
+    trackEvent(GESTES.MAJ, { etape: 'reportee' });
+    return snoozeHours > 0 ? snooze() : dismiss();
+  };
 
   return h(
     'div',
@@ -156,6 +180,10 @@ function Banner(props) {
         // `Button`). Le double clic est bloqué par la garde, pas par le DOM.
         onClick: () => {
           if (updating) return;
+          // AVANT `update()`, et non après : la mise à jour recharge le
+          // document. Un événement posé après ne partirait jamais — PostHog
+          // met en file et vide par lots, et le rechargement emporte la file.
+          trackEvent(GESTES.MAJ, { etape: 'appliquee' });
           void update();
         },
         'aria-disabled': updating || undefined,
