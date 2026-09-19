@@ -48,6 +48,74 @@
  * relayer.
  */
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+
+/**
+ * LA SONDE `new Function` DE ZOD, QUE NOTRE PROPRE CSP FAIT ÉCHOUER.
+ *
+ * `script-src` sans `'unsafe-eval'` — ce que ce plugin pose partout — fait
+ * journaliser au navigateur, sur seize apps du parc :
+ *
+ *     Content-Security-Policy : les paramètres de la page ont empêché
+ *     l'exécution d'une « eval » JavaScript (script-src)   util.js:229
+ *
+ * Ce n'est PAS un défaut de l'application, et rien ne casse. `allowsEval`
+ * (`zod/v4/core/util.js`) tente `new Function("")` dans un `try/catch` pour
+ * savoir s'il peut compiler un chemin de parsing rapide ; la CSP refuse, zod
+ * retombe sur le chemin lent, et le commentaire de zod le dit lui-même :
+ * « strict CSPs report the caught `new Function` as a `securitypolicyviolation`
+ * even though the throw is swallowed ». Le remède est fourni par zod :
+ * `config({ jitless: true })` saute la sonde.
+ *
+ * ET ÇA NE COÛTE AUCUNE PERFORMANCE ICI. Mesuré : sous CSP, `allowsEval` rend
+ * déjà `false`, donc `fastEnabled` est déjà faux et le compilateur ne tourne
+ * jamais. `jitless` ne retire que la question, pas une capacité.
+ *
+ * LE PLACEMENT EST TOUT LE PROBLÈME, et c'est pour ça que ça vit dans le socle
+ * plutôt que dans chaque app. La sonde part à la CONSTRUCTION du premier
+ * `z.object()` — mesuré : importer zod n'en déclenche aucune, le premier
+ * `z.object()` en déclenche une. Or ces schémas sont des constantes de module.
+ * Un `z.config()` posé dans le corps de `main.tsx` arriverait donc APRÈS, les
+ * imports étant évalués avant le corps de celui qui les importe. Il faudrait le
+ * poser dans chaque fichier qui construit un schéma — treize dépôts, quarante
+ * et un fichiers — ou faire transiter les quarante-neuf `from 'zod'` par un
+ * module maison. Un alias de build le fait une fois pour toutes, et personne
+ * ne peut l'oublier.
+ *
+ * AU BUILD SEULEMENT. En développement, l'alias sortirait zod du
+ * pré-bundling de Vite : la bibliothèque serait servie en une centaine de
+ * modules bruts à chaque rechargement. Ce qu'on corrige ici, ce sont les
+ * vingt sites déployés ; sur `localhost`, la ligne de console reste, et c'est
+ * le bon compromis.
+ */
+const ID_ZOD_JITLESS = '\0dwc-zod-jitless';
+
+/**
+ * Le chemin du VRAI zod — celui de l'APPLICATION, et en module ES.
+ *
+ * Résolu depuis la racine du projet, pas depuis ce fichier : le socle est
+ * souvent monté en lien pendant une montée de version, et une résolution
+ * locale prendrait alors SA copie de zod plutôt que celle de l'app. On passe
+ * par `zod/package.json` — que la carte d'exports expose — pour lire l'entrée
+ * de la condition `import` : `require.resolve('zod')` rendrait `index.cjs`,
+ * dont un bundle de navigateur ne veut pas. Zod absent (app sans zod, fork),
+ * ou manifeste d'une forme imprévue : chaîne vide, et l'alias n'est jamais
+ * posé.
+ */
+function cheminDeZod(racine) {
+  try {
+    const exige = createRequire(join(racine, 'package.json'));
+    const manifeste = exige.resolve('zod/package.json');
+    const pkg = JSON.parse(readFileSync(manifeste, 'utf8'));
+    const entree = pkg?.exports?.['.']?.import ?? pkg?.module ?? pkg?.main;
+    if (typeof entree !== 'string') return '';
+    return join(dirname(manifeste), entree).replace(/\\/g, '/');
+  } catch {
+    return '';
+  }
+}
 
 /**
  * Hôtes exigés par la mesure d'audience — **PostHog, nuage EUROPÉEN**.
@@ -158,8 +226,51 @@ export function cspPlugin(options = {}) {
     }
   };
 
+  /** Le vrai zod, résolu une seule fois — chaîne vide si l'app n'en a pas. */
+  let zodReel = '';
+
   return {
     name: 'dwc-csp',
+    /**
+     * L'alias, et RIEN QUE lui : pas d'`enforce: 'pre'`.
+     *
+     * Intercepter `'zod'` dans `resolveId` demanderait de passer tout le
+     * plugin en `'pre'` — c'est le plugin de résolution de Vite qui tranche
+     * avant les plugins ordinaires. Or `transformIndexHtml` DOIT rester en
+     * dernier : il hache les scripts inline du HTML final, y compris celui que
+     * `pwaSeoPlugin` injecte en amont. Avancer le plugin, c'est risquer de
+     * hacher un HTML incomplet — donc une CSP qui bloque son propre script
+     * anti-FOUC, en production, sur vingt sites. `resolve.alias` agit avant
+     * toute résolution sans rien déplacer.
+     */
+    config(userConfig, env) {
+      if (env?.command !== 'build') return undefined;
+      zodReel = cheminDeZod(userConfig?.root ?? process.cwd());
+      if (!zodReel) return undefined;
+      // `/^zod$/` et pas la chaîne `'zod'` : une chaîne est un PRÉFIXE pour
+      // Vite, qui réécrirait aussi `zod/v4/core` et `zod/locales`.
+      return {
+        resolve: { alias: [{ find: /^zod$/, replacement: ID_ZOD_JITLESS }] },
+      };
+    },
+    resolveId(source) {
+      return source === ID_ZOD_JITLESS ? ID_ZOD_JITLESS : null;
+    },
+    load(id) {
+      if (id !== ID_ZOD_JITLESS) return null;
+      const cible = JSON.stringify(zodReel);
+      // La même forme que `zod/index.js` : `export *` reprend tout le nommé,
+      // `z` compris, et `default` est réexporté explicitement parce qu'une
+      // étoile ne le porte jamais. L'appel arrive après le corps de zod et
+      // avant celui de ses consommateurs — donc avant tout `z.object()`.
+      return [
+        `import { z } from ${cible};`,
+        `export * from ${cible};`,
+        `export { z as default };`,
+        `z.config({ jitless: true });`,
+        '',
+      ].join('\n');
+    },
     configResolved(config) {
       hoteSentry = origineDuDsn(config?.env?.VITE_SENTRY_DSN);
     },
