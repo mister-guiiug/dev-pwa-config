@@ -25,7 +25,14 @@ import {
   fauxPosthog,
   laisseCharger,
 } from './helpers/posthog.mjs';
-import { initAnalytics, resetAnalytics, GESTES } from '../analytics.js';
+import {
+  ETAPES,
+  GESTES,
+  initAnalytics,
+  resetAnalytics,
+  trackEvent,
+  trackPageView,
+} from '../analytics.js';
 import { PwaInstallPrompt } from '../react/pwa-install-prompt.js';
 import { UpdatePromptBanner } from '../react/update-prompt-banner.js';
 import { ShareButton } from '../react/share-button.js';
@@ -294,6 +301,89 @@ test('SANS ACCORD, aucun des trois gestes ne part', async () => {
     await maj.unmount();
     await partage.unmount();
   } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('le vocabulaire métier est figé, et ses valeurs énumérées', () => {
+  // CINQ NOMS POUR DIX-HUIT APPLICATIONS. Ce test n'est pas une tautologie :
+  // il empêche qu'on ajoute un nom par app au fil de l'eau, ce qui rendrait la
+  // liste d'événements du projet illisible — la première chose qu'on voit en
+  // l'ouvrant.
+  assert.deepEqual(Object.values(GESTES).sort(), [
+    'consultation',
+    'creation',
+    'export',
+    'installation',
+    'maj',
+    'operation',
+    'partage',
+    'partie',
+  ]);
+  assert.ok(Object.isFrozen(GESTES));
+  assert.deepEqual(ETAPES.PARTIE, ['demarree', 'terminee']);
+  assert.deepEqual(ETAPES.OPERATION, ['lancee', 'reussie', 'echouee']);
+  assert.ok(Object.isFrozen(ETAPES.PARTIE));
+});
+
+test('une valeur qui ressemble à du TEXTE LIBRE est signalée', async () => {
+  const dom = setupDom();
+  const avertissements = [];
+  const origine = console.warn;
+  console.warn = m => avertissements.push(String(m));
+  try {
+    resetAnalytics();
+    const faux = await avecAccord();
+
+    // Un jeton passe sans bruit : `pdf`, `depense`, `mister-cim10`.
+    trackEvent(GESTES.EXPORT, { format: 'pdf' });
+    trackEvent(GESTES.CREATION, { objet: 'depense' });
+    assert.deepEqual(
+      avertissements,
+      [],
+      `bruit sur un jeton : ${avertissements}`
+    );
+
+    // Un libellé saisi crie. C'est LE défaut que rien d'autre n'attraperait :
+    // l'événement partirait, la CI resterait verte, et du texte d'utilisateur
+    // serait chez le sous-traitant.
+    trackEvent(GESTES.CREATION, { objet: 'Bilan 2026 de Jeanne' });
+    assert.equal(avertissements.length, 1);
+    assert.match(avertissements[0], /TEXTE LIBRE/);
+    assert.match(avertissements[0], /objet/);
+
+    // Et une seule fois par clé : une boucle de rendu ne doit pas noyer la
+    // console.
+    trackEvent(GESTES.CREATION, { objet: 'Un autre libellé bien long' });
+    assert.equal(avertissements.length, 1);
+
+    // L'événement PART quand même : l'alarme avertit l'auteur, elle ne se
+    // substitue pas à sa décision — et avaler l'événement en silence serait
+    // un second défaut.
+    assert.equal(gestes(faux).length, 4);
+  } finally {
+    console.warn = origine;
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('les vues de page ne déclenchent PAS l’alarme', async () => {
+  const dom = setupDom();
+  const avertissements = [];
+  const origine = console.warn;
+  console.warn = m => avertissements.push(String(m));
+  try {
+    resetAnalytics();
+    await avecAccord();
+    // `$current_url` et `page_title` portent légitimement du texte libre : ce
+    // sont les événements de PostHog, pas les nôtres. Crier dessus rendrait
+    // l'alarme inutilisable dès la première page.
+    trackPageView('/bilan', 'Miss UWH — Bilan comptable du club');
+    assert.deepEqual(avertissements, []);
+  } finally {
+    console.warn = origine;
     resetAnalytics();
     dom.restore();
   }

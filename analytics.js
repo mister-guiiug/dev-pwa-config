@@ -338,6 +338,7 @@ export function trackEvent(name, params = {}) {
   if (!state.client?.capture) return false;
   // `app_name` est déjà une super-propriété ; on ne le recopie que si
   // l'appelant le nomme lui-même — auquel cas c'est LUI qui a raison.
+  avertitSiValeurLibre(event, params);
   state.client.capture(event, params);
   trace(event, params);
   return true;
@@ -372,6 +373,25 @@ export const GESTES = Object.freeze({
   MAJ: 'maj',
   /** Bouton de partage : `resultat`. */
   PARTAGE: 'partage',
+
+  // ── Les gestes MÉTIER, que les applications posent elles-mêmes ───────────
+  //
+  // CINQ NOMS POUR DIX-HUIT APPLICATIONS, et le nom de l'app est déjà porté
+  // par `app_name`. Le détail va dans `objet`, `format` ou `nom` — jamais dans
+  // le nom de l'événement. Quarante noms rendraient la liste d'événements
+  // illisible dès la première semaine, et c'est la première chose qu'on voit
+  // en ouvrant le projet.
+
+  /** Quelque chose a été produit : `objet` (`depense`, `lieu`, `scenario`…). */
+  CREATION: 'creation',
+  /** Des données sont sorties de l'app : `format` (`pdf`, `csv`, `png`…). */
+  EXPORT: 'export',
+  /** Une session de jeu ou de match : `etape`. */
+  PARTIE: 'partie',
+  /** Un traitement que l'app exécute : `nom`, `etape`. */
+  OPERATION: 'operation',
+  /** Une lecture, là où consulter EST l'usage : `objet`. */
+  CONSULTATION: 'consultation',
 });
 
 /** Les étapes admises, par geste. Une valeur hors de ces listes est un bogue. */
@@ -385,7 +405,59 @@ export const ETAPES = Object.freeze({
   MAJ: Object.freeze(['proposee', 'appliquee', 'reportee']),
   /** Les quatre issues de `shareOrCopy`, sans invention. */
   PARTAGE: Object.freeze(['shared', 'copied', 'cancelled', 'failed']),
+  /**
+   * `terminee` sans `demarree` ne veut rien dire, et l'inverse non plus :
+   * c'est leur RAPPORT qui répond — combien de parties vont au bout.
+   */
+  PARTIE: Object.freeze(['demarree', 'terminee']),
+  /** Une opération qui échoue est au moins aussi instructive qu'une réussie. */
+  OPERATION: Object.freeze(['lancee', 'reussie', 'echouee']),
 });
+
+/**
+ * L'ALARME QUI EMPÊCHE DE RECONSTITUER `autocapture` À LA MAIN.
+ *
+ * Toute la privauté de ce dispositif tient à une règle qu'aucun type ne peut
+ * exprimer : les propriétés ne portent que des valeurs ÉNUMÉRÉES. Le jour où
+ * quelqu'un écrit `trackEvent('creation', { titre: saisie })`, rien ne casse,
+ * rien ne prévient, et du texte d'utilisateur part chez le sous-traitant — soit
+ * exactement ce pour quoi `autocapture` a été coupée (ADR 0012).
+ *
+ * ON NE VALIDE PAS UNE LISTE FERMÉE, et c'est délibéré : le socle ne peut pas
+ * connaître les `objet` de dix-huit applications. On détecte ce qui NE PEUT PAS
+ * être un jeton : une ESPACE, ou plus de quarante caractères. Un libellé saisi
+ * en a presque toujours ; `pdf`, `depense`, `mister-cim10` n'en ont jamais.
+ * Viser plus large ferait crier sur `fr-FR` ou `6.1.0`, et une alarme qui crie
+ * à tort finit ignorée.
+ *
+ * MUETTE EN PRODUCTION : c'est un garde-fou d'auteur, pas un journal de
+ * visiteur. Et muette après le premier cri par clé, pour ne pas noyer la
+ * console d'une boucle de rendu.
+ */
+const criees = new Set();
+function avertitSiValeurLibre(event, params) {
+  // Les événements de PostHog (`$pageview`…) portent LÉGITIMEMENT du texte
+  // libre : `$current_url`, `page_title`. Ils ne sont pas de notre ressort.
+  if (event.startsWith('$')) return;
+  const enProd =
+    typeof import.meta !== 'undefined' && import.meta.env?.PROD === true;
+  if (enProd) return;
+
+  for (const [cle, valeur] of Object.entries(params ?? {})) {
+    if (typeof valeur !== 'string') continue;
+    if (!valeur.includes(' ') && valeur.length <= 40) continue;
+    const marque = `${event}.${cle}`;
+    if (criees.has(marque)) continue;
+    criees.add(marque);
+    console.warn(
+      `[dev-pwa-config] \`${event}\` porte une valeur qui ressemble à du TEXTE ` +
+        `LIBRE en « ${cle} ». Les propriétés de mesure ne prennent que des ` +
+        `valeurs énumérées : un libellé saisi, un titre ou un identifiant ` +
+        `partagé partiraient chez le sous-traitant. C'est précisément ce que ` +
+        `\`autocapture: false\` évite (ADR 0012).`
+    );
+  }
+}
 
 /** Ce que la trace retient au plus — bornée, c'est une sonde, pas un journal. */
 const TRACE_MAX = 50;
@@ -496,4 +568,8 @@ export function resetAnalytics() {
   // Sans cette ligne, la vue mise de côté par un test fuiterait dans le
   // suivant — et y partirait au premier accord.
   attente = null;
+  // L'alarme « valeur libre » ne crie qu'une fois par clé : sans remise à
+  // zéro, le deuxième test qui l'attend ne verrait rien et passerait au vert
+  // pour une raison fausse.
+  criees.clear();
 }
