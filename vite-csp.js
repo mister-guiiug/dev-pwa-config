@@ -125,8 +125,44 @@ export function cspPlugin(options = {}) {
       ? [...new Set([...list.filter(source => source !== "'none'"), ...extra])]
       : list;
 
+  /**
+   * L'hôte d'ingestion de Sentry, LU DANS LE DSN QUE VITE A DÉJÀ RÉSOLU.
+   *
+   * MESURÉ LE 19/09/2026, ET C'EST UNE PANNE MUETTE : les vingt sites du parc
+   * embarquent un DSN (`VITE_SENTRY_DSN` est posé en variable sur chaque
+   * dépôt, et l'hôte se lit dans le bundle servi) et AUCUN n'ouvrait
+   * `connect-src` à Sentry. Chaque enveloppe partait dans le vide —
+   * « Content-Security-Policy … a empêché le chargement d'une ressource
+   * (connect-src) à l'adresse https://oXXX.ingest.de.sentry.io/… ». Le parc
+   * croyait avoir une remontée d'erreurs ; il n'en avait aucune.
+   *
+   * PAS D'OPTION À POSER, ET C'EST VOULU. Une case à cocher de plus, c'est
+   * vingt applications à modifier et une à oublier — la même leçon que
+   * `secrets: inherit`. Le DSN EST la déclaration : s'il est là, l'app parle à
+   * Sentry, donc la politique doit l'autoriser ; s'il n'y est pas (fork,
+   * développement, app sans observabilité), rien n'est ajouté.
+   *
+   * L'ORIGINE EXACTE, PAS UN JOKER. `https://*.ingest.de.sentry.io` ouvrirait
+   * la politique à tous les projets de tous les comptes hébergés là ; le DSN
+   * nomme un hôte, on n'autorise que celui-là.
+   */
+  let hoteSentry = '';
+  const origineDuDsn = dsn => {
+    if (!dsn) return '';
+    try {
+      return new URL(dsn).origin;
+    } catch {
+      // Un DSN illisible n'est pas une raison de casser un build : Sentry
+      // lui-même ne s'initialisera pas, et la politique reste fermée.
+      return '';
+    }
+  };
+
   return {
     name: 'dwc-csp',
+    configResolved(config) {
+      hoteSentry = origineDuDsn(config?.env?.VITE_SENTRY_DSN);
+    },
     transformIndexHtml: {
       order: 'post',
       handler(html) {
@@ -149,10 +185,12 @@ export function cspPlugin(options = {}) {
           'style-src': styleSrc.join(' '),
           'img-src': withAnalytics(imgSrc, ANALYTICS_HOSTS.img).join(' '),
           'font-src': fontSrc.join(' '),
-          'connect-src': withAnalytics(
-            connectSrc,
-            ANALYTICS_HOSTS.connect
-          ).join(' '),
+          'connect-src': [
+            ...new Set([
+              ...withAnalytics(connectSrc, ANALYTICS_HOSTS.connect),
+              ...(hoteSentry ? [hoteSentry] : []),
+            ]),
+          ].join(' '),
           'frame-src': withAnalytics(frameSrc, ANALYTICS_HOSTS.frame).join(' '),
           'manifest-src': "'self'",
           'worker-src': "'self'",
