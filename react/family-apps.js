@@ -1,7 +1,13 @@
 import { useLabels } from './labels-core.js';
 import { createElement as h, useState } from 'react';
 import { Icon } from './icons-context.js';
-import { FAMILY_APPS, otherApps, sortApps } from '../apps-catalog.js';
+import {
+  CATEGORIES,
+  FAMILY_APPS,
+  MATURITIES,
+  otherApps,
+  sortApps,
+} from '../apps-catalog.js';
 import { useSponsorUrl } from './sponsor.js';
 
 // Liens externes sécurisés.
@@ -75,6 +81,30 @@ function AppCard({ item, maturityLabels }) {
  * peut ainsi teinter ses cartes par domaine ou masquer une facette en CSS,
  * sans réimplémenter la grille.
  *
+ * REGROUPEMENT REPLIABLE — `groupBy`. Au-delà d'une quinzaine de cartes, la
+ * grille devient un mur : dix-neuf applications à faire défiler pour en
+ * trouver une. `groupBy: 'category'` rend un `<details>` par catégorie du
+ * catalogue, tous REPLIÉS, chacun annonçant son compte — dix-neuf lignes en
+ * deviennent sept. `'maturity'` groupe de la même façon, pour une app qui
+ * préfère séparer ce qui est stable de ce qui ne l'est pas.
+ *
+ * Trois choix qui méritent d'être dits :
+ *
+ * - `<details>`/`<summary>` NATIFS, pas un bouton et un `aria-expanded`
+ *   maison. Le clavier, l'annonce « replié / déplié » et la recherche dans la
+ *   page viennent avec, sans une ligne de JavaScript ni un état à
+ *   synchroniser.
+ * - LES GROUPES D'UN SEUL ÉLÉMENT RESTENT DÉPLIÉS. Le catalogue en compte —
+ *   `education` n'a qu'une app. Un repli qui cache une ligne coûte un clic
+ *   pour ne rien gagner ; il ajoute du décor là où il prétendait en retirer.
+ * - LA LISTE INTERNE GARDE `data-dwc="family-app-list"`. Le CSS que les apps
+ *   ont déjà écrit pour la grille continue donc de s'appliquer à
+ *   l'identique : adopter le regroupement ne demande QUE d'habiller
+ *   `family-app-group`.
+ *
+ * L'ordre des groupes suit le catalogue, pas leur taille : il ne bouge donc
+ * pas quand une app naît.
+ *
  * @param {{
  *   currentAppId: string,
  *   apps?: import('../apps-catalog').FamilyApp[],
@@ -84,6 +114,7 @@ function AppCard({ item, maturityLabels }) {
  *   showSponsor?: boolean,
  *   showRepoLinks?: boolean,
  *   sort?: 'curated'|'maturity'|'name',
+ *   groupBy?: 'category'|'maturity',
  *   max?: number,
  *   labels?: {
  *     source?: string, sponsor?: string, otherApps?: string, repo?: string,
@@ -102,6 +133,7 @@ export function FamilyApps(props) {
     showSponsor = true,
     showRepoLinks = false,
     sort = 'curated',
+    groupBy,
     max,
     labels = {},
     className,
@@ -112,6 +144,7 @@ export function FamilyApps(props) {
   const sponsorUrl = useSponsorUrl(sponsorUrlProp);
   const maturityDictionary = useLabels('maturity');
   const appsDictionary = useLabels('apps');
+  const categoryDictionary = useLabels('categories');
 
   const maturityLabels = {
     ...maturityDictionary,
@@ -163,44 +196,103 @@ export function FamilyApps(props) {
     );
   }
 
+  const carte = item =>
+    h(
+      'li',
+      {
+        key: item.id,
+        'data-dwc': 'family-app-item',
+        // Facettes exposées au CSS de l'app consommatrice. Les valeurs
+        // absentes ne sont pas rendues : `[data-backend]` reste alors un
+        // sélecteur honnête (« persistance relevée »).
+        'data-maturity': item.maturity,
+        'data-category': item.category,
+        'data-backend': item.backend,
+        'data-platform': item.platform,
+        'data-with-repo': showRepoLinks ? '' : undefined,
+      },
+      h(AppCard, { item, maturityLabels }),
+      showRepoLinks
+        ? h(
+            'a',
+            {
+              href: item.repoUrl,
+              ...EXT,
+              'data-dwc': 'family-app-repo',
+              'aria-label': repoLabel.replace('{app}', item.name),
+            },
+            h(Icon, { role: 'repo' })
+          )
+        : null
+    );
+
+  const grille = (items, key) =>
+    h('ul', { key, 'data-dwc': 'family-app-list' }, items.map(carte));
+
+  const groupes = groupBy ? repartir(list, groupBy) : null;
+
   return h(
     'section',
     { className, 'data-dwc': 'family-apps', 'aria-label': otherAppsLabel },
     links.length ? h('div', { 'data-dwc': 'family-links' }, links) : null,
     h('h3', { 'data-dwc': 'family-apps-title' }, otherAppsLabel),
-    h(
-      'ul',
-      { 'data-dwc': 'family-app-list' },
-      list.map(item =>
-        h(
-          'li',
-          {
-            key: item.id,
-            'data-dwc': 'family-app-item',
-            // Facettes exposées au CSS de l'app consommatrice. Les valeurs
-            // absentes ne sont pas rendues : `[data-backend]` reste alors un
-            // sélecteur honnête (« persistance relevée »).
-            'data-maturity': item.maturity,
-            'data-category': item.category,
-            'data-backend': item.backend,
-            'data-platform': item.platform,
-            'data-with-repo': showRepoLinks ? '' : undefined,
-          },
-          h(AppCard, { item, maturityLabels }),
-          showRepoLinks
-            ? h(
-                'a',
-                {
-                  href: item.repoUrl,
-                  ...EXT,
-                  'data-dwc': 'family-app-repo',
-                  'aria-label': repoLabel.replace('{app}', item.name),
-                },
-                h(Icon, { role: 'repo' })
-              )
-            : null
+    groupes
+      ? h(
+          'div',
+          { 'data-dwc': 'family-app-groups' },
+          groupes.map(([valeur, items]) =>
+            h(
+              'details',
+              {
+                key: valeur,
+                // Un groupe d'UN élément s'ouvre d'office : le replier
+                // coûterait un clic pour cacher une ligne.
+                open: items.length < 2 || undefined,
+                'data-dwc': 'family-app-group',
+                [`data-${groupBy}`]: valeur,
+              },
+              h(
+                'summary',
+                { 'data-dwc': 'family-app-group-summary' },
+                h(
+                  'span',
+                  { 'data-dwc': 'family-app-group-name' },
+                  (groupBy === 'maturity'
+                    ? maturityLabels
+                    : categoryDictionary)[valeur] ?? valeur
+                ),
+                h(
+                  'span',
+                  { 'data-dwc': 'family-app-group-count' },
+                  String(items.length)
+                )
+              ),
+              grille(items, `${valeur}-liste`)
+            )
+          )
         )
-      )
-    )
+      : grille(list)
   );
+}
+
+/**
+ * Répartit les apps par facette, dans l'ORDRE DU CATALOGUE — jamais celui
+ * d'apparition dans la liste, qui dépendrait du tri demandé et ferait sauter
+ * les groupes d'un rendu à l'autre. Une valeur hors catalogue (facette absente
+ * ou inventée) est rendue après les autres, sous son propre nom, plutôt que
+ * d'être avalée en silence.
+ *
+ * @param {import('../apps-catalog').FamilyApp[]} items
+ * @param {'category'|'maturity'} facette
+ * @returns {[string, import('../apps-catalog').FamilyApp[]][]}
+ */
+function repartir(items, facette) {
+  const connues = facette === 'maturity' ? MATURITIES : CATEGORIES;
+  const seaux = new Map(connues.map(v => [v, []]));
+  for (const item of items) {
+    const valeur = item[facette] ?? 'autres';
+    if (!seaux.has(valeur)) seaux.set(valeur, []);
+    seaux.get(valeur).push(item);
+  }
+  return [...seaux].filter(([, liste]) => liste.length > 0);
 }

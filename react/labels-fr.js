@@ -90,6 +90,15 @@ const labels = {
     sponsor: 'M’offrir un café',
     otherApps: 'Nos autres applications',
   },
+  categories: {
+    sante: 'Santé',
+    sport: 'Sport',
+    jeux: 'Jeux',
+    loisirs: 'Loisirs',
+    education: 'Éducation',
+    outils: 'Outils',
+    dev: 'Dev',
+  },
   maturity: { alpha: 'Alpha', beta: 'Bêta', stable: 'Stable' },
   sync: {
     synced: 'Synchronisé',

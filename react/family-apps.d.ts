@@ -41,6 +41,12 @@ export interface FamilyAppsProps {
   showRepoLinks?: boolean;
   /** Ordre d'affichage (défaut : `curated`, l'ordre du catalogue). */
   sort?: SortBy;
+  /**
+   * Regroupe les cartes en `<details>` repliables, un par valeur de la
+   * facette, dans l'ordre du catalogue. Absent, la grille reste plate.
+   * Les groupes d'un seul élément s'ouvrent d'office.
+   */
+  groupBy?: 'category' | 'maturity';
   /** Nombre maximum de cartes, appliqué APRÈS le tri. */
   max?: number;
   /** Libellés (i18n). */

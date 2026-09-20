@@ -72,6 +72,15 @@ const labels = {
     sponsor: 'Invítame a un café',
     otherApps: 'Nuestras otras aplicaciones',
   },
+  categories: {
+    sante: 'Salud',
+    sport: 'Deporte',
+    jeux: 'Juegos',
+    loisirs: 'Ocio',
+    education: 'Educación',
+    outils: 'Herramientas',
+    dev: 'Dev',
+  },
   maturity: { alpha: 'Alfa', beta: 'Beta', stable: 'Estable' },
   sync: {
     synced: 'Sincronizado',

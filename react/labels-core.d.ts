@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import type { Category } from '../apps-catalog';
 
 /** Groupes de libellés portés par le paquet. */
 export interface LabelGroups {
@@ -56,6 +57,8 @@ export interface LabelGroups {
     sponsor: string;
     otherApps: string;
   };
+  /** Noms des catégories du catalogue, pour `FamilyApps groupBy`. */
+  categories: Record<Category, string>;
   maturity: { alpha: string; beta: string; stable: string };
   sync: { synced: string; pending: string; offline: string; error: string };
   theme: {

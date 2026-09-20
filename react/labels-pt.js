@@ -72,6 +72,15 @@ const labels = {
     sponsor: 'Pague-me um café',
     otherApps: 'As nossas outras aplicações',
   },
+  categories: {
+    sante: 'Saúde',
+    sport: 'Desporto',
+    jeux: 'Jogos',
+    loisirs: 'Lazer',
+    education: 'Educação',
+    outils: 'Ferramentas',
+    dev: 'Dev',
+  },
   maturity: { alpha: 'Alfa', beta: 'Beta', stable: 'Estável' },
   sync: {
     synced: 'Sincronizado',

@@ -856,6 +856,66 @@
     grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
   }
 
+  [data-dwc='family-app-groups'] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  [data-dwc='family-app-group'] {
+    border: 1px solid
+      var(--dwc-border, color-mix(in srgb, CanvasText 18%, Canvas));
+    border-radius: calc(var(--dwc-radius, 0.75rem) * 0.8);
+  }
+
+  [data-dwc='family-app-group'] [data-dwc='family-app-list'] {
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  /* Le triangle de l'agent utilisateur est remplacé par le chevron dessiné
+     plus bas : `list-style: none` seul ne le retire pas dans WebKit, qui le
+     rend par `::-webkit-details-marker`. Il faut les deux. */
+  [data-dwc='family-app-group-summary'] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+    list-style: none;
+  }
+
+  [data-dwc='family-app-group-summary']::-webkit-details-marker {
+    display: none;
+  }
+
+  [data-dwc='family-app-group-summary']::after {
+    content: '';
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-inline-start: auto;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translate(-0.1rem, -0.1rem);
+    opacity: 0.55;
+  }
+
+  [data-dwc='family-app-group'][open]
+    > [data-dwc='family-app-group-summary']::after {
+    transform: rotate(-135deg) translate(-0.16rem, -0.16rem);
+  }
+
+  /* Le compte n'est pas décoratif : sans lui, un groupe replié ne dit pas
+     s'il cache une application ou six. */
+  [data-dwc='family-app-group-count'] {
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
+    color: var(--dwc-text-soft, GrayText);
+    font-size: 0.8em;
+    font-weight: 400;
+  }
+
   [data-dwc='family-app'] {
     display: flex;
     align-items: center;
