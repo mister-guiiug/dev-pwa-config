@@ -42,6 +42,20 @@ const MAJEUR = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8')
 ).version.split('.')[0];
 
+/**
+ * La version de Node que CE dépôt épingle — lue, pour la même raison.
+ *
+ * Le docteur conseille un numéro à l'app qui n'a pas de `.nvmrc`, et il est
+ * OBLIGÉ de le figer : il s'exécute depuis le `node_modules` de l'app, où le
+ * dépôt du socle n'est pas, et `.nvmrc` ne fait pas partie du paquet publié.
+ * Une constante recopiée dérive — `v4` l'a fait à trois endroits à la fois —
+ * alors le test l'amarre à la source : les deux montent ensemble, ou il rougit.
+ */
+const NODE_EPINGLE = readFileSync(
+  new URL('../.nvmrc', import.meta.url),
+  'utf8'
+).trim();
+
 /** Un dépôt factice à partir d'une carte chemin → contenu. */
 async function repo(files, fn) {
   const root = mkdtempSync(join(tmpdir(), 'dwc-doctor-'));
@@ -1646,4 +1660,21 @@ test('--regles rend le catalogue sans lire aucun dépôt', async () => {
   } finally {
     console.log = console_log;
   }
+});
+
+test('le conseil « pas de .nvmrc » nomme la version que CE dépôt épingle', async () => {
+  // LE PIÈGE QUE CE TEST FERME. Le numéro est figé dans `pwa-doctor.mjs` —
+  // il le doit, le docteur tourne chez l'app et n'a pas ce dépôt sous la
+  // main. Mais figé sans garde, il dérive : `v4` est resté écrit en dur dans
+  // le docteur pendant toute la 5.0.0, à réclamer un majeur périmé, et
+  // personne ne l'a vu avant qu'un dépôt passe au suivant. Ici la source est
+  // le `.nvmrc` du dépôt : relever l'un sans l'autre fait rougir la CI.
+  await repo({ 'package.json': { name: 'miss-sans-nvmrc' } }, async root => {
+    const conseil = diagnose(root).findings.find(f => f.id === 'nvmrc');
+    assert.ok(conseil, 'la dette nvmrc a disparu');
+    assert.ok(
+      conseil.fix.includes(NODE_EPINGLE),
+      `le docteur conseille « ${conseil.fix} » alors que .nvmrc dit « ${NODE_EPINGLE} »`
+    );
+  });
 });

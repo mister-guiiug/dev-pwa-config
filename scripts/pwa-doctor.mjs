@@ -789,7 +789,16 @@ export function reglesDepot(ctx, api) {
     dette('editorconfig', 'pas de .editorconfig', 'copier celui du gabarit');
   }
   if (!exists(root, '.nvmrc')) {
-    dette('nvmrc', 'pas de .nvmrc', 'écrire « 26.2.0 »');
+    // LE NUMÉRO EST FIGÉ ICI, ET UN TEST L'AMARRE AU `.nvmrc` DU SOCLE.
+    // Le docteur s'exécute depuis le `node_modules` de l'app : il n'a pas le
+    // dépôt du socle sous la main, et `.nvmrc` ne fait pas partie du paquet
+    // publié — il ne peut donc pas le lire. Mais une constante recopiée
+    // dérive : c'est exactement ce qui est arrivé à `v4`, figé ici, dans
+    // `workflows.test.mjs` et dans `workflow-refs`, et resté à réclamer un
+    // majeur périmé jusqu'à ce qu'un dépôt passe au suivant. Le test
+    // `pwa-doctor` compare donc ce conseil au `.nvmrc` du dépôt : les deux
+    // montent ensemble ou la CI rougit.
+    dette('nvmrc', 'pas de .nvmrc', 'écrire « 26.9.0 »');
   }
   const attributes = readText(root, '.gitattributes') ?? '';
   if (!/eol=lf/.test(attributes)) {

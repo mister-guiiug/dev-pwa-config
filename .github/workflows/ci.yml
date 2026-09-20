@@ -13,7 +13,7 @@ jobs:
     name: In-repo config parse (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
-      # LE PAQUET PROMET `engines: >=22` ET LE PARC ÉPINGLE 26.2.0 : les deux
+      # LE PAQUET PROMET `engines: >=22` ET LE PARC ÉPINGLE 26.9.0 : les deux
       # entrées ci-dessous sont exactement ces deux nombres. La promesse
       # publiée reste plus large que l'épingle, et c'est délibéré — la relever
       # serait une rupture, donc un `v5` et une migration des `uses:` sur
@@ -22,7 +22,7 @@ jobs:
       # c'est ici que ça rougit, pas dans la vingtième app.
       fail-fast: false
       matrix:
-        node: ['22', '26.2.0']
+        node: ['22', '26.9.0']
     steps:
       - uses: actions/checkout@v5
         with:
@@ -94,7 +94,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: '26.2.0'
+          node-version: '26.9.0'
           cache: npm
 
       - name: Empaqueter la version candidate
@@ -127,7 +127,7 @@ jobs:
           # CE JOB APPELAIT `npx --yes npm@11` — ce n'est plus utile. Node 22
           # embarquait npm 10.9.8, dont Arborist échouait sur « Cannot read
           # properties of null (reading 'edgesOut') » face à une dépendance
-          # `file:` ; Node 26.2.0 embarque npm 11.13.0, qui sait lire l'arbre.
+          # `file:` ; Node 26.9.0 embarque npm 11.19.1, qui sait lire l'arbre.
           # Le détour coûtait un téléchargement par exécution et masquait quel
           # gestionnaire éprouve réellement le paquet.
           npm install --no-audit --no-fund
