@@ -141,6 +141,70 @@ dans le même cas, en plus grand** : `useKeyboardRoll`, `useSpeak`,
 deux promus depuis cette app même. Une app qui donne un module ne le réadopte
 pas toute seule ; c'est la règle, pas l'exception.
 
+## Le relevé du 20/09/2026 — et ce qu'une migration a trouvé que le relevé n'avait pas vu
+
+Trois relevés de lecture sur les vingt et une apps, plus les instruments. Ce
+qui en est sorti est parti dans la **6.3.0** (#326) : `BottomNav navigate` et
+`items[].load`, `react/use-retry-when-online` (promu de mister-miss-koh),
+`isTransientMessage` (miss-uwh et mister-doc portaient le motif au caractère
+près), et deux dettes du docteur — `prefetch-routes`, `nav-attente`.
+
+**LA LEÇON DU JOUR EST DANS L'AUTRE SENS.** Le plus gros gisement était déjà
+dans le paquet : `react/use-prefetch` (intention, inactivité, visibilité, garde
+`saveData` et 2g) existait depuis longtemps, avec **zéro adoptant**, zéro
+mention au README et une ligne au showroom — pendant que **treize apps**
+écrivaient leur `requestIdleCallback` à la main, dont dix le 20/09 au matin,
+quelques heures avant ce relevé. Un module que personne ne trouve n'existe pas.
+Avant d'écrire un candidat à la promotion, **lire le CHANGELOG à côté du code
+de l'app** : le toast à action (4.5.0) était périmé dans les en-têtes de
+`useUndoToast` (bac-sable) et `useUndo` (koh), qui annonçaient tous deux « le
+socle n'a pas d'action ».
+
+**CE QUE LES MIGRATIONS ONT FAIT REMONTER**, et qu'aucun balayage ne voyait —
+ce sont des manques constatés en butant dessus, la source la plus précise :
+
+- **L'accès SYNCHRONE au client Supabase.** `createSupabaseClientFactory`
+  n'expose que `getClient(): Promise`. miss-carbook a dû renoncer (38
+  importateurs, 179 appels, des abonnements dans des effets), mister-doc a
+  migré ses 87 sites en `await` mais a gardé deux gardes locales pour tenir des
+  contrats synchrones, et mister-settle contourne par un `Proxy` **dont le
+  désabonnement est inopérant**. Un accesseur synchrone quand le SDK est fourni
+  statiquement, ou un `client: () => Promise<Client>` accepté par l'adaptateur.
+- **« Le silence du réseau n'est pas une déconnexion ».** `auth/supabase` et
+  `auth/index` traduisent tout évènement sans session en `signed-out` sans
+  regarder le stockage ; hors ligne, Supabase en émet un au bout d'une
+  demi-minute. miss-lookhouse garde la contre-mesure chez elle, mesurée en
+  production. Candidat n° 1.
+- **Un hook de forme ACTION.** `useAsync(fn, key)` charge au montage ;
+  mister-qowa a besoin de `{ busy, error, setError, run }` avec conversion
+  d'erreur. Émuler l'un avec l'autre demande une `fn` inerte, une clé
+  incrémentée et un spinner au montage : contorsion. À poser à côté, pas à la
+  place.
+- **`react/login-form` ne couvre aucun des écrans de connexion du parc** —
+  trois modes à bascule (lien, mot de passe, inscription), carte « lien
+  envoyé », garde hors ligne. miss-carbook et miss-lookhouse ont migré la
+  plomberie et **gardé leur formulaire**. Le composant est présentationnel et
+  mono-mode : ou il grandit, ou il se documente comme tel.
+- **`react/rive` ne voit pas un `.riv` manquant.** `@rive-app/react-canvas`
+  ne lève pas, il émet `LoadError` que l'enveloppe ne remonte pas : la frontière
+  d'erreur ne verrait rien, canvas vide au lieu du repli. badminton et molkky
+  gardent tous deux leur sonde des quatre octets `RIVE`.
+- **`react/i18n` ne franchit pas mister-qowa** : catalogues PLATS (`resolvePath`
+  parcourt des objets imbriqués), 74 valeurs sur 291 qui sont des FONCTIONS
+  (ordinaux, gabarits), langues chargées à la demande (`createI18n` veut un
+  `Record` synchrone : +21,6 kB dans le morceau d'entrée, au-dessus du budget)
+  et un `tStatic` hors React. Quatre manques nommés, pas une réticence.
+- **`react/page-container`** n'a que des paliers fixes (28/36/48/64 rem) là où
+  badminton et molkky ont des paliers progressifs par point de rupture, et son
+  `reserve` ne connaît que `bottom-nav`. Deux refus motivés, pas des oublis.
+- Plus petits, même nature : `use-keyboard-shortcuts` ne filtre pas les
+  modificateurs (Ctrl+R serait intercepté), `ToastProvider` n'a pas d'`onDismiss`
+  pour une app qui tient sa file dans son magasin, `use-action-guard` ignore les
+  rôles et le drapeau « donnée en lecture seule » de miss-supaboss.
+
+**ET UN CADAVRE DE PLUS** : le `RiveScene` de mister-molkky n'est importé par
+aucune vue et aucun `.riv` n'existe dans le dépôt — à retirer, pas à migrer.
+
 ## La leçon
 
 L'instrument a trouvé les gisements par volume (`Card`, `id`, les en-têtes) ;
