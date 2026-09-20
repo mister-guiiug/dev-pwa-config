@@ -71,6 +71,15 @@ const labels = {
     sponsor: 'Buy me a coffee',
     otherApps: 'Our other apps',
   },
+  categories: {
+    sante: 'Health',
+    sport: 'Sport',
+    jeux: 'Games',
+    loisirs: 'Leisure',
+    education: 'Education',
+    outils: 'Tools',
+    dev: 'Dev',
+  },
   maturity: { alpha: 'Alpha', beta: 'Beta', stable: 'Stable' },
   sync: {
     synced: 'Synced',

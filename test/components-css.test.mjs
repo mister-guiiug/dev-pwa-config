@@ -508,6 +508,10 @@ const SANS_REGLE = new Map([
     'un <span> dans consent-settings : il hérite, exprès — seule l’action est soulignée',
   ],
   ['family-apps', 'conteneur <section> ; ses enfants portent les règles'],
+  [
+    'family-app-group-name',
+    'un <span> dans le <summary> d’un groupe : il hérite, exprès — c’est le <summary> qui porte la mise en page, et le compte à côté a sa règle',
+  ],
   ['sparkline-last', 'un <circle> SVG, peint par son attribut fill'],
 ]);
 

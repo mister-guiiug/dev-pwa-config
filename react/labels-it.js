@@ -72,6 +72,15 @@ const labels = {
     sponsor: 'Offrimi un caffè',
     otherApps: 'Le nostre altre app',
   },
+  categories: {
+    sante: 'Salute',
+    sport: 'Sport',
+    jeux: 'Giochi',
+    loisirs: 'Tempo libero',
+    education: 'Istruzione',
+    outils: 'Strumenti',
+    dev: 'Dev',
+  },
   maturity: { alpha: 'Alfa', beta: 'Beta', stable: 'Stabile' },
   sync: {
     synced: 'Sincronizzato',

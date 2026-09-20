@@ -72,6 +72,15 @@ const labels = {
     sponsor: 'Trakteer me op een koffie',
     otherApps: 'Onze andere apps',
   },
+  categories: {
+    sante: 'Gezondheid',
+    sport: 'Sport',
+    jeux: 'Spellen',
+    loisirs: 'Vrije tijd',
+    education: 'Onderwijs',
+    outils: 'Gereedschap',
+    dev: 'Dev',
+  },
   maturity: { alpha: 'Alfa', beta: 'Bèta', stable: 'Stabiel' },
   sync: {
     synced: 'Gesynchroniseerd',

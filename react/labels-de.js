@@ -72,6 +72,15 @@ const labels = {
     sponsor: 'Spendier mir einen Kaffee',
     otherApps: 'Unsere anderen Apps',
   },
+  categories: {
+    sante: 'Gesundheit',
+    sport: 'Sport',
+    jeux: 'Spiele',
+    loisirs: 'Freizeit',
+    education: 'Bildung',
+    outils: 'Werkzeuge',
+    dev: 'Dev',
+  },
   maturity: { alpha: 'Alpha', beta: 'Beta', stable: 'Stabil' },
   sync: {
     synced: 'Synchronisiert',
