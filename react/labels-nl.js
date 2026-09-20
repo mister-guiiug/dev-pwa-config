@@ -128,22 +128,26 @@ const labels = {
     manage: 'Mijn keuze wijzigen',
   },
   privacy: {
-    title: 'Bezoekmeting',
+    title: 'Uw gegevens',
     what: 'Wat wordt gemeten',
     whatText:
-      'De pagina’s die u bekijkt en hoe u ertussen navigeert, via Google Analytics. Nooit wat u in de applicatie typt.',
+      'De pagina’s die u bekijkt en hoe u ertussen navigeert, via PostHog. Nooit wat u in de applicatie typt.',
     basis: 'Op welke grond',
     basisText:
       'Uw toestemming, en niets anders. U kunt die op elk moment intrekken, net zo eenvoudig als u haar gaf.',
     recipient: 'Wie ze ontvangt',
     recipientText:
-      'Google, dat ze verwerkt namens de uitgever van deze applicatie.',
+      'PostHog, op zijn servers in de Europese Unie, dat ze verwerkt namens de uitgever van deze applicatie.',
     retention: 'Hoe lang',
     retentionText:
       'Gedetailleerde gegevens worden {months} maanden bewaard en daarna verwijderd.',
     stored: 'Wat op uw apparaat wordt opgeslagen',
     storedText:
-      'Een cookie van Google, en uw keuze, bewaard in deze browser zodat de vraag niet bij elk bezoek terugkomt.',
+      'Een bezoekidentificatie van PostHog (cookie en lokale opslag), en uw keuze, bewaard in deze browser zodat de vraag niet bij elk bezoek terugkomt.',
+    errors: 'Bij een fout',
+    errorsText:
+      'Wanneer de applicatie op een fout stuit, gaat een technisch rapport naar Sentry, op zijn servers in Duitsland: de melding, de plek in de code, het adres van de pagina, uw browser en uw IP-adres. Nooit wat u typt. Dit rapport hangt niet af van de keuze hierboven — het dient om te herstellen, niet om te meten.',
+    errorsBasis: 'Op welke grond, voor die rapporten',
     controller: 'Verwerkingsverantwoordelijke',
     rights: 'Uw rechten',
     rightsText:

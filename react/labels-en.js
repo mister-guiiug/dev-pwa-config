@@ -125,21 +125,25 @@ const labels = {
     manage: 'Change my choice',
   },
   privacy: {
-    title: 'Audience measurement',
+    title: 'Your data',
     what: 'What is measured',
     whatText:
-      'The pages you visit and how you move between them, through Google Analytics. Never what you type into the application.',
+      'The pages you visit and how you move between them, through PostHog. Never what you type into the application.',
     basis: 'On what grounds',
     basisText:
       'Your consent, and nothing else. You can withdraw it at any time, as easily as you gave it.',
     recipient: 'Who receives it',
     recipientText:
-      'Google, which processes it on behalf of this application’s publisher.',
+      'PostHog, on its servers in the European Union, which processes it on behalf of this application’s publisher.',
     retention: 'For how long',
     retentionText: 'Detailed data is kept for {months} months, then deleted.',
     stored: 'What is stored on your device',
     storedText:
-      'A cookie from Google, and your choice, kept in this browser so the question is not asked again on every visit.',
+      'A visit identifier set by PostHog (cookie and local storage), and your choice, kept in this browser so the question is not asked again on every visit.',
+    errors: 'If something goes wrong',
+    errorsText:
+      'When the application hits an error, a technical report goes to Sentry, on its servers in Germany: the message, the place in the code, the page address, your browser and your IP address. Never what you type. This report does not depend on the choice above — it exists to fix, not to measure.',
+    errorsBasis: 'On what grounds, for those reports',
     controller: 'Data controller',
     rights: 'Your rights',
     rightsText:

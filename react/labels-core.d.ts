@@ -97,10 +97,15 @@ export interface LabelGroups {
     recipient: string;
     recipientText: string;
     retention: string;
-    /** `{months}` remplacé par la conservation réglée dans GA4. */
+    /** `{months}` remplacé par la conservation réglée dans le projet PostHog. */
     retentionText: string;
     stored: string;
     storedText: string;
+    /** Le rapport d'erreur : ce qu'il contient, et qu'il ne suit pas le choix. */
+    errors: string;
+    errorsText: string;
+    /** Terme seul : le fondement vient de l'exploitant, par prop `errorBasis`. */
+    errorsBasis: string;
     /** Terme seul : la valeur vient de l'exploitant, par prop. */
     controller: string;
     rights: string;
