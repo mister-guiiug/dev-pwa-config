@@ -94,7 +94,9 @@ import { prefetch } from '../prefetch.js';
  *   liens — pour ne pas changer leur nom accessible en cours de route. Les
  *   clics à modificateur (Ctrl/Cmd/Maj/Alt, bouton non gauche) restent au
  *   navigateur, comme un `<a>` ordinaire. `onNavigate` reçoit désormais
- *   l'évènement en second argument. SANS `navigate`, rien ne change : pas un
+ *   l'évènement en second argument. SANS `navigate`, rien ne change — ni dans
+ *   le DOM, ni dans les props remises à un `linkComponent` maison, et la
+ *   nuance a coûté une version : voir le commentaire de `link()`. Pas un
  *   attribut de plus, le lien navigue seul.
  *
  *   `load` — le thunk du morceau, LE MÊME que celui passé à `lazy()`, nommé une
@@ -231,24 +233,57 @@ export function BottomNav(props = {}) {
     // `prefetch` dédoublonne par identité de chargeur : `load` doit être LE
     // thunk de module, pas une flèche écrite dans le rendu.
     const tire = item.load ? () => prefetch(item.load) : undefined;
+    // UNE CLÉ N'EST POSÉE QUE QUAND CE COMPOSANT A UN AVIS, et c'est une
+    // correction, pas une élégance.
+    //
+    // Passer `'aria-busy': undefined` ne coûte rien sur le `<a>` par défaut :
+    // React n'écrit pas un attribut dont la valeur est `undefined`. Mais un
+    // `linkComponent` MAISON reçoit ces props en objet, et les étale :
+    //
+    //   const LienDeMenu = ({ to, ...reste }) =>
+    //     <Link to={to} aria-busy={enAttente === to} {...reste} />
+    //
+    // L'étalement vient APRÈS, la clé EXISTE, et sa valeur `undefined` écrase
+    // celle de l'app. Quatre dépôts du parc écrivent exactement cette ligne —
+    // ce sont ceux qui avaient dû contourner cette barre avant qu'elle sache
+    // attendre —, et la 6.3.1 leur a éteint leur propre `aria-busy` : test
+    // rouge sur mister-settle, mesuré dans les deux sens (vert en 6.2.0,
+    // rouge en 6.3.1, même fichier).
+    //
+    // L'en-tête promettait « SANS `navigate`, rien ne change : pas un attribut
+    // de plus ». C'était vrai du DOM et faux des props, et le test ne montait
+    // que le lien par défaut. Sans `navigate`, ce composant n'a aucun avis sur
+    // l'attente ; sans `load`, aucun sur l'intention. Il se tait donc.
+    //
+    // `aria-current` et `data-current` restent posés dans les deux états, et
+    // c'est délibéré : l'état courant, LUI, est calculé ici — c'est même le
+    // défaut n° 2 que cette barre existe pour fermer. Sur ceux-là, le
+    // composant a un avis y compris quand il vaut « non ».
+    const props = {
+      key: item.key ?? item.href,
+      [hrefProp]: item.href,
+      // `key` NE DESCEND PAS DANS LE DOM : une app qui veut habiller un
+      // onglet en particulier n'avait aucune prise. Un sélecteur sur le
+      // `href` ne remplace pas ce crochet — miss-contraction traduit ses
+      // chemins dans sept langues.
+      className: item.className,
+      'aria-current': current ? 'page' : undefined,
+      'data-dwc': `bottom-nav-${place}`,
+      'data-current': current ? '' : undefined,
+    };
+    if (attend) {
+      props['aria-busy'] = 'true';
+      props['data-pending'] = '';
+    }
+    if (tire) {
+      props.onPointerEnter = tire;
+      props.onFocus = tire;
+      props.onTouchStart = tire;
+    }
     return h(
       linkComponent,
       {
-        key: item.key ?? item.href,
-        [hrefProp]: item.href,
-        // `key` NE DESCEND PAS DANS LE DOM : une app qui veut habiller un
-        // onglet en particulier n'avait aucune prise. Un sélecteur sur le
-        // `href` ne remplace pas ce crochet — miss-contraction traduit ses
-        // chemins dans sept langues.
-        className: item.className,
-        'aria-current': current ? 'page' : undefined,
-        'aria-busy': attend ? 'true' : undefined,
-        'data-dwc': `bottom-nav-${place}`,
-        'data-current': current ? '' : undefined,
-        'data-pending': attend ? '' : undefined,
-        onPointerEnter: tire,
-        onFocus: tire,
-        onTouchStart: tire,
+        ...props,
         onClick: event => {
           setMoreOpen(false);
           onNavigate?.(item, event);
