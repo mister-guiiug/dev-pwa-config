@@ -1,5 +1,83 @@
 # Changelog
 
+## 6.4.0
+
+### Minor Changes
+
+- 56ca351: `FamilyApps` sait regrouper les cartes en replis : `groupBy`
+  
+  **Dix-neuf applications à faire défiler, ça n'est plus une grille, c'est un
+  mur.** `groupBy: 'category'` rend un `<details>` par catégorie du catalogue,
+  chacun annonçant son compte : dix-neuf lignes en deviennent sept.
+  `'maturity'` groupe de la même façon, pour une app qui préfère séparer ce qui
+  est stable de ce qui ne l'est pas.
+  
+  ```jsx
+  <FamilyApps currentAppId="miss-dice" groupBy="category" />
+  ```
+  
+  **Rien ne change sans la prop.** Absente, la grille reste exactement celle
+  d'avant — même balisage, même CSS.
+  
+  **`<details>`/`<summary>` natifs**, pas un bouton et un `aria-expanded`
+  maison : le clavier, l'annonce « replié / déplié » et la recherche dans la
+  page viennent avec, sans une ligne de JavaScript ni un état à synchroniser.
+  
+  **Les groupes d'un seul élément restent dépliés.** Le catalogue en porte —
+  `education` n'a qu'une app. Un repli qui cache une ligne coûte un clic pour ne
+  rien gagner.
+  
+  **Adopter ne coûte rien aux vingt apps.** La liste interne garde
+  `data-dwc="family-app-list"` : le CSS déjà écrit pour la grille continue de
+  s'appliquer à l'identique, et il n'y a que `family-app-group` à habiller —
+  `components.css` le fait déjà pour qui l'importe.
+  
+  L'ordre des groupes suit le catalogue, pas leur taille : il ne bouge donc pas
+  quand une app naît. Une valeur hors catalogue, ou une facette absente, est
+  rendue après les autres sous son propre nom plutôt qu'avalée en silence — un
+  test à fixtures le tient, éprouvé par mutation.
+  
+  Nouveau groupe de libellés `categories`, dans les sept langues.
+
+### Patch Changes
+
+- 58dad3a: `BottomNav` cesse d'écraser les props d'un `linkComponent` maison — régression
+  de la 6.3.1.
+  
+  **Ce qui cassait.** La 6.3.1 passait `'aria-busy': attend ? 'true' : undefined`
+  et `'data-pending'` au composant de lien **dans tous les cas**, y compris quand
+  l'app ne délègue pas la navigation. Sur le `<a>` par défaut, cela ne coûte
+  rien : React n'écrit pas un attribut dont la valeur est `undefined`. Mais un
+  `linkComponent` MAISON reçoit ces props en objet et les étale :
+  
+  ```jsx
+  const LienDeMenu = ({ to, ...reste }) => (
+    <Link to={to} aria-busy={enAttente === to} {...reste} />
+  );
+  ```
+  
+  L'étalement vient **après**, la clé **existe**, et sa valeur `undefined` écrase
+  celle de l'app. **Quatre dépôts du parc écrivent exactement cette ligne** —
+  mister-settle, miss-genius, mister-doc, mister-footcoach, c'est-à-dire ceux qui
+  avaient dû contourner cette barre avant qu'elle sache attendre. La 6.3.1 leur a
+  éteint leur propre `aria-busy`. Mesuré dans les deux sens sur mister-settle :
+  `App.nav.test.tsx` vert en 6.2.0, rouge en 6.3.1, même fichier, seule la plage
+  change.
+  
+  **Ce qui change.** Une clé n'est posée que quand ce composant a un avis. Sans
+  `navigate`, il n'en a aucun sur l'attente ; sans `load`, aucun sur l'intention.
+  Il se tait donc, et le lien de l'app garde ce qu'il écrit.
+  
+  `aria-current` et `data-current` restent posés dans les deux états, et c'est
+  délibéré : l'état courant, lui, est calculé ici — c'est même le défaut que
+  cette barre existe pour fermer.
+  
+  **Pourquoi le test ne l'a pas vu.** L'en-tête promettait « sans `navigate`,
+  rien ne change : pas un attribut de plus », et un test le vérifiait — sur le
+  lien PAR DÉFAUT. C'était vrai du DOM et faux des props. Deux tests montent
+  désormais un composant de lien maison, dans les deux états : sans `navigate`
+  l'app garde son `aria-busy`, avec `navigate` la barre le reprend.
+
 ## 6.3.1
 
 ### Patch Changes
