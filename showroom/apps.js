@@ -813,7 +813,8 @@ globalThis.SHOWROOM_APPS = {
       ],
       repoUrl: 'https://github.com/mister-guiiug/mister-molkky',
       appUrl: 'https://mister-guiiug.github.io/mister-molkky/',
-      iconUrl: 'https://mister-guiiug.github.io/mister-molkky/logo.png',
+      iconUrl:
+        'https://mister-guiiug.github.io/mister-molkky/icons/icon-192.png',
       devPort: 5215,
     },
     {

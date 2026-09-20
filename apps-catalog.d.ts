@@ -69,6 +69,12 @@ export interface FamilyApp {
 /** Propriétaire GitHub de la famille. */
 export declare const GITHUB_OWNER: string;
 
+/**
+ * L'origine qui héberge toute la famille — ce dont une CSP peut parler, là où
+ * `pagesUrl` porte en plus le chemin qui distingue les apps.
+ */
+export declare const FAMILY_ORIGIN: string;
+
 /** Pseudo Buy Me a Coffee de la famille — le même que `.github/FUNDING.yml`. */
 export declare const SPONSOR_HANDLE: string;
 

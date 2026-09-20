@@ -20,6 +20,22 @@
 export const GITHUB_OWNER = 'mister-guiiug';
 
 /**
+ * L'ORIGINE qui héberge toute la famille — et la seule chose dont une CSP
+ * puisse parler.
+ *
+ * Une URL de Pages (`pagesUrl`) porte un chemin, qui distingue les apps ;
+ * `img-src` ne connaît que l'origine, qui les réunit. Les vingt sites du parc
+ * la partagent : c'est pourquoi, en production, `img-src 'self'` laisse déjà
+ * passer les icônes que `FamilyApps` va chercher chez les sœurs. En local,
+ * non — d'où `vite-csp.js`, seul consommateur de cette constante.
+ *
+ * `github.io` est un SUFFIXE PUBLIC : `mister-guiiug.github.io` ne désigne pas
+ * un sous-domaine de quelqu'un d'autre, mais une origine distincte et entière,
+ * celle du compte. La nommer n'ouvre donc rien au-delà du parc.
+ */
+export const FAMILY_ORIGIN = `https://${GITHUB_OWNER}.github.io`;
+
+/**
  * Pseudo Buy Me a Coffee de la famille — le même que `.github/FUNDING.yml`.
  *
  * Séparé de l'URL parce que ce sont deux choses : le PSEUDO est ce qu'une app
@@ -702,7 +718,7 @@ export function repoUrl(id) {
 
 /** URL GitHub Pages d'une app à partir de son id (base path inclus). */
 export function pagesUrl(id) {
-  return `https://${GITHUB_OWNER}.github.io/${id}/`;
+  return `${FAMILY_ORIGIN}/${id}/`;
 }
 
 // Fabrique une entrée de catalogue. `appUrl` par défaut = GitHub Pages.
@@ -923,7 +939,15 @@ export const FAMILY_APPS = [
     'Mister Mölkky',
     'Compteur de scores pour parties de Mölkky (multi-appareils).',
     'stable',
-    { icon: 'logo.png', category: 'jeux', backend: 'supabase' }
+    // `logo.png` PESAIT 1 276 707 OCTETS — 1,28 Mo pour une vignette de 40 px,
+    // et le seul fichier du catalogue à dépasser 8 ko. Mesuré le 20/09/2026 :
+    // il était réellement téléchargé en production par les seize apps sœurs
+    // qui affichent la grille, à chaque ouverture de leur écran Paramètres. Le
+    // catalogue pointe désormais l'icône que l'app déclare elle-même dans son
+    // `index.html` (23 663 octets, 192 px), comme `miss-genius` et `miss-uwh`.
+    // Rien ne mesurait ce poids : un budget de bundle ne voit pas ce qui part
+    // chez le voisin.
+    { icon: 'icons/icon-192.png', category: 'jeux', backend: 'supabase' }
   ),
   app(
     'mister-qowa',

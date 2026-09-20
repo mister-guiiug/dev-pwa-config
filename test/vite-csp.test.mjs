@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { cspPlugin, ANALYTICS_HOSTS } from '../vite-csp.js';
+import { FAMILY_ORIGIN } from '../apps-catalog.js';
 
 const run = (opts, html) => cspPlugin(opts).transformIndexHtml.handler(html);
 
@@ -146,8 +147,59 @@ test('sans analytics, rien de Google n’est autorisé', () => {
   assert.deepEqual(sourcesOf(csp, 'script-src'), ["'self'"]);
   assert.deepEqual(sourcesOf(csp, 'frame-src'), ["'none'"]);
   assert.deepEqual(sourcesOf(csp, 'connect-src'), ["'self'"]);
-  assert.deepEqual(sourcesOf(csp, 'img-src'), ["'self'", 'data:', 'blob:']);
+  assert.deepEqual(sourcesOf(csp, 'img-src'), [
+    "'self'",
+    'data:',
+    'blob:',
+    FAMILY_ORIGIN,
+  ]);
   assert.deepEqual(sourcesOf(csp, 'font-src'), ["'self'", 'data:']);
+});
+
+test('img-src nomme l’origine de la famille, en dev comme en prod', () => {
+  // LE DÉFAUT QUE CE TEST FIGE, relevé le 20/09/2026 sur `miss-badminton`.
+  // `FamilyApps` charge l'icône de chaque app sœur depuis
+  // `https://mister-guiiug.github.io/<app>/…`, et la politique posée ici les
+  // bloquait toutes — dix-huit refus en console pour un seul écran.
+  //
+  // CE N'EST PAS UNE PERMISSION NOUVELLE. Les sites du parc SONT servis depuis
+  // cette origine : en production, `'self'` la couvrait déjà, et les icônes se
+  // chargeaient. Ce qui échouait, c'est le local — `localhost:5173` en
+  // développement, `vite preview` sur le build — où `'self'` désigne autre
+  // chose. La nommer rend la politique identique partout, au lieu d'être
+  // strictement plus étroite à l'endroit où on la lit.
+  //
+  // `mister-doc` avait déjà tiré cette conclusion, dans sa COPIE LOCALE du
+  // plugin, d'où le socle ne pouvait rien en apprendre.
+  for (const dev of [false, true]) {
+    const csp = render('<head><meta charset="utf-8"></head>', { dev });
+    assert.deepEqual(
+      sourcesOf(csp, 'img-src'),
+      ["'self'", 'data:', 'blob:', FAMILY_ORIGIN],
+      `img-src porte l’origine famille (dev: ${dev})`
+    );
+  }
+
+  // Une app qui RESTREINT img-src la garde quand même : c'est `miss-dice`, qui
+  // retire `blob:` — et qui affiche la grille comme les autres.
+  assert.deepEqual(
+    sourcesOf(render(HTML, { imgSrc: ["'self'", 'data:'] }), 'img-src'),
+    ["'self'", 'data:', FAMILY_ORIGIN]
+  );
+
+  // Et pas de doublon quand l'app la nomme déjà — ce que `mister-doc` fera en
+  // migrant sur ce plugin.
+  assert.deepEqual(
+    sourcesOf(render(HTML, { imgSrc: ["'self'", FAMILY_ORIGIN] }), 'img-src'),
+    ["'self'", FAMILY_ORIGIN]
+  );
+
+  // `'none'` reste SEUL. Mêlé à un hôte, il produit une directive malformée —
+  // la même règle que `frame-src`. Une app qui ferme `img-src` volontairement
+  // n'est pas une app qui affiche la grille.
+  assert.deepEqual(sourcesOf(render(HTML, { imgSrc: ["'none'"] }), 'img-src'), [
+    "'none'",
+  ]);
 });
 
 /** Le plugin AVEC la configuration résolue : c'est là que Vite met le DSN. */

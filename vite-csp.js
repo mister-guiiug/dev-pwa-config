@@ -51,6 +51,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
+import { FAMILY_ORIGIN } from './apps-catalog.js';
 
 /**
  * LA SONDE `new Function` DE ZOD, QUE NOTRE PROPRE CSP FAIT ÉCHOUER.
@@ -145,6 +146,44 @@ export const ANALYTICS_HOSTS = {
   connect: ['https://eu.i.posthog.com', 'https://eu-assets.i.posthog.com'],
   frame: [],
 };
+
+/**
+ * L'ORIGINE DE LA FAMILLE DANS `img-src`, ET POURQUOI CE N'EST PAS UNE
+ * PERMISSION DE PLUS.
+ *
+ * `FamilyApps` — la grille « Nos autres applications », affichée par dix-sept
+ * sites publiés — va chercher l'icône de chaque app sœur sur
+ * `https://mister-guiiug.github.io/<app>/…`. Relevé le 20/09/2026 sur
+ * `miss-badminton` : dix-huit refus en console pour un seul écran, « Loading
+ * the image … violates the following Content Security Policy directive ».
+ *
+ * OR LA PRODUCTION N'A JAMAIS ÉTÉ TOUCHÉE, et c'est tout l'intérêt. Les sites
+ * du parc SONT servis depuis cette origine : `'self'` la désigne déjà, et les
+ * dix-huit icônes se chargent (vérifié dans un navigateur sur le site publié).
+ * Ce qui échouait, c'est tout ce qui tourne en LOCAL — `localhost` en
+ * développement, et `vite preview` sur le build, où la même politique désigne
+ * une autre origine. Nommer l'hôte rend la politique identique partout au lieu
+ * de la laisser plus étroite là où on la lit, et supprime la seule différence
+ * de comportement entre le local et le déployé.
+ *
+ * PAS D'OPTION À POSER — même raison que le DSN Sentry plus bas : une case à
+ * cocher de plus, c'est vingt applications à modifier et une à oublier. Trois
+ * apps du catalogue n'affichent pas la grille ; leur politique gagne un hôte
+ * qu'elles n'utilisent pas, et qui est déjà le leur en production.
+ *
+ * `mister-doc` était arrivé là avant tout le monde — dans sa COPIE LOCALE du
+ * plugin, avec le bon commentaire (« en prod 'self' suffit (même origine),
+ * l'entrée explicite sert au dev local »). C'est le défaut de la copie locale,
+ * pas de l'analyse : le socle ne pouvait rien en apprendre, et seize autres
+ * dépôts ont continué de cracher la même erreur.
+ */
+function avecOrigineFamille(sources) {
+  // `'none'` doit rester SEUL (même règle que `frame-src`) : mêlé à un hôte, il
+  // produit une directive malformée. Une app qui ferme `img-src` volontairement
+  // n'est pas une app qui affiche la grille.
+  if (sources.includes("'none'")) return sources;
+  return [...new Set([...sources, FAMILY_ORIGIN])];
+}
 
 /** Directives qu'un navigateur ignore dans une CSP posée par `<meta>`. */
 const META_IGNORED = ['frame-ancestors', 'report-uri', 'sandbox'];
@@ -294,7 +333,9 @@ export function cspPlugin(options = {}) {
           'default-src': "'self'",
           'script-src': scriptSrcValue,
           'style-src': styleSrc.join(' '),
-          'img-src': withAnalytics(imgSrc, ANALYTICS_HOSTS.img).join(' '),
+          'img-src': avecOrigineFamille(
+            withAnalytics(imgSrc, ANALYTICS_HOSTS.img)
+          ).join(' '),
           'font-src': fontSrc.join(' '),
           'connect-src': [
             ...new Set([
