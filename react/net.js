@@ -26,6 +26,40 @@ export function defaultShouldRetry(error) {
 }
 
 /**
+ * Ce que disent les navigateurs et les passerelles quand le RÉSEAU est en
+ * cause : « Failed to fetch » (Chrome), « Load failed » (Safari),
+ * « NetworkError… » (Firefox), les délais, les 502/503/504 en toutes lettres,
+ * le jeton expiré — bref, ce qu'une nouvelle tentative peut résoudre.
+ *
+ * PROMU, PAS INVENTÉ : miss-uwh et mister-doc portaient LA MÊME expression,
+ * au caractère près, comme politique `shouldRetry` de leur file de synchro
+ * (relevé du 20/09/2026). `defaultShouldRetry` ne lit qu'un statut HTTP ;
+ * une `TypeError` de `fetch` n'en a pas, et c'est précisément le cas que ce
+ * motif classe.
+ */
+const TRANSIENT =
+  /fetch|network|load failed|timeout|timed?\s?out|offline|connexion|connection|econn|enotfound|socket|abort|too many requests|jwt expired|token.{0,10}expired|service unavailable|bad gateway|gateway time/i;
+
+/**
+ * L'erreur (ou son message) décrit-elle un échec transitoire ?
+ *
+ *   createSyncQueue({ shouldRetry: error => isTransientMessage(error) })
+ *
+ * @param {unknown} errorOrMessage Une `Error`, un objet à `message`, ou le texte.
+ */
+export function isTransientMessage(errorOrMessage) {
+  const message =
+    typeof errorOrMessage === 'string'
+      ? errorOrMessage
+      : errorOrMessage !== null &&
+          typeof errorOrMessage === 'object' &&
+          'message' in errorOrMessage
+        ? String(errorOrMessage.message ?? '')
+        : '';
+  return TRANSIENT.test(message);
+}
+
+/**
  * Réessaie une opération asynchrone avec backoff exponentiel et gigue.
  * Pur (sans dépendance) — utilisable hors React.
  *

@@ -422,12 +422,16 @@ globalThis.SHOWROOM_CATALOGUE = {
           'Ne pas distinguer l’onglet courant par la seule couleur : quatre copies sur sept ne changent que l’encre. En contraste forcé, les deux teintes deviennent la même.',
           'Ne pas nommer une pastille par `aria-label` sur un `<span>` : miss-lookhouse le fait, et rien n’est restitué. Passer `badgeLabel`.',
           'Ne pas recopier `position: fixed` dans l’app pour coller la barre : huit dépôts portaient la même règle le 05/09/2026. `placement="fixed"`, et `<PageContainer reserve="bottom-nav">` pour la place qu’elle occupe.',
+          'Ne pas écrire un `linkComponent` maison pour ouvrir une transition au clic : passer `navigate` (le `useNavigate` de react-router). La barre pilote l’attente, dit « occupé » sur l’entrée cliquée et annonce le chargement hors des liens — le `<Suspense fallback>` d’une route ne paraît jamais sur un clic. Quatre apps l’avaient contournée le 20/09/2026.',
+          'Ne pas laisser le morceau d’une destination partir au clic : `load` sur l’entrée, LE MÊME thunk que celui passé à `lazy()`, et la barre le tire à l’approche du pointeur, au focus ou au doigt.',
         ],
         en: [
           'Don’t leave the `<nav>` unnamed: three of the seven copies set none, and two anonymous landmarks are indistinguishable in a screen reader’s list.',
           'Don’t signal the current tab by colour alone: four copies out of seven change only the ink. Under forced colours the two hues become one.',
           'Don’t name a badge with `aria-label` on a `<span>`: miss-lookhouse does, and nothing is conveyed. Pass `badgeLabel`.',
           'Don’t copy `position: fixed` into the app to pin the bar: eight repositories carried the same rule on 05/09/2026. `placement="fixed"`, and `<PageContainer reserve="bottom-nav">` for the room it takes.',
+          'Don’t write a custom `linkComponent` to open a transition on click: pass `navigate` (react-router’s `useNavigate`). The bar drives the wait, marks the clicked entry busy and announces loading outside the links — a route’s `<Suspense fallback>` never shows on a click. Four apps worked around it on 20/09/2026.',
+          'Don’t let a destination’s chunk leave on click: `load` on the item, THE SAME thunk passed to `lazy()`, and the bar pulls it as the pointer, the focus or the finger approaches.',
         ],
       },
       a11y: {
@@ -665,7 +669,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     },
     {
       id: 'retryableQuery',
-      covers: ['retryableQuery'],
+      covers: ['retryableQuery', 'isTransientMessage'],
       signature: 'retryableQuery<T>(fn, options?) → Promise<T>',
       summary: {
         fr: 'Backoff exponentiel plafonné ; relance la dernière erreur si les tentatives sont épuisées.',
@@ -727,6 +731,19 @@ globalThis.SHOWROOM_CATALOGUE = {
       dont: {
         fr: 'Ne pas en faire une garantie : `navigator.onLine` dit qu’une interface réseau est active, pas que le serveur répond.',
         en: 'Don’t treat it as a guarantee: `navigator.onLine` says a network interface is up, not that the server answers.',
+      },
+    },
+    {
+      id: 'useRetryWhenOnline',
+      covers: ['useRetryWhenOnline'],
+      signature: 'useRetryWhenOnline(onFallback, retry, { graceMs }) → boolean',
+      summary: {
+        fr: 'Rejoue un chargement au retour du réseau tant que l’app vit sur un repli : un répit, une tentative par retour, et le repli choisi sur délai couvert. Promu de mister-miss-koh.',
+        en: 'Replays a load when the network comes back while the app lives on a fallback: a grace delay, one attempt per reconnect, and the timeout fallback covered. Promoted from mister-miss-koh.',
+      },
+      dont: {
+        fr: 'Ne pas décider un repli une fois pour toutes au démarrage : le service worker sert la PWA avant que la radio soit prête, et `navigator.onLine` est faux au pire moment.',
+        en: 'Don’t settle a fallback once and for all at boot: the service worker serves the PWA before the radio is ready, and `navigator.onLine` is false at the worst moment.',
       },
     },
     {

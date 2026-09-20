@@ -18,6 +18,13 @@ export interface BottomNavItem {
    * accroche pour distinguer un bouton d'action d'un onglet ordinaire.
    */
   className?: string;
+  /**
+   * Le chargeur du morceau de cette destination — `() => import('./Page')`,
+   * LE MÊME thunk que celui passé à `lazy()`, nommé une fois au niveau du
+   * module. La barre le tire à l'approche du pointeur, au focus ou au doigt
+   * (`prefetch` du socle : une fois, sans jamais dépenser un forfait `saveData`).
+   */
+  load?: () => Promise<unknown>;
 }
 
 export interface BottomNavProps {
@@ -48,7 +55,20 @@ export interface BottomNavProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- voir ci-dessus
   linkComponent?: string | ComponentType<any>;
   hrefProp?: string;
-  onNavigate?: (item: BottomNavItem) => void;
+  /**
+   * La navigation, pilotée par la barre dans SA transition. Passer le
+   * `navigate` de react-router : le clic est intercepté (sauf touche de
+   * modification ou bouton non gauche), l'entrée cliquée se dit occupée
+   * (`aria-busy`, pastille qui tourne) tant que le morceau `lazy` n'est pas
+   * arrivé, et une zone vive hors des liens annonce le chargement. Sans cette
+   * prop, rien ne change : le lien navigue seul.
+   */
+  navigate?: (href: string) => void;
+  /** Au clic, avant la navigation ; l'évènement permet de le laisser au navigateur. */
+  onNavigate?: (
+    item: BottomNavItem,
+    event?: import('react').MouseEvent<HTMLElement>
+  ) => void;
   className?: string;
   /**
    * Emplacement libre en fin de barre, DANS le repère `<nav>` : une cellule qui

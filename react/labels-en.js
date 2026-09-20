@@ -112,6 +112,7 @@ const labels = {
     label: 'Main navigation',
     current: 'Current page',
     more: 'More',
+    loading: 'Loading the page…',
   },
   consent: {
     title: 'Audience measurement',

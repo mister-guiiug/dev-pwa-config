@@ -796,12 +796,28 @@ const supprimer = note => {
 />;
 
 // Agnostique de routeur : `linkComponent` + `hrefProp` branchent react-router.
+// `navigate` : la barre pilote la navigation dans SA transition — l'entrée
+// cliquée se dit occupée tant que le morceau `lazy` n'est pas là, et une zone
+// vive annonce le chargement hors des liens (le `<Suspense fallback>` d'une
+// route ne paraît JAMAIS sur un clic : react-router navigue dans
+// `startTransition`). `load` : LE MÊME thunk que celui passé à `lazy()`, tiré à
+// l'approche du pointeur, au focus ou au doigt.
+const chargeAlertes = () => import('./pages/AlertesPage');
+const AlertesPage = lazy(chargeAlertes);
+
 <BottomNav
   items={[
     { href: '/', label: 'Accueil', icon: <Home aria-hidden /> },
-    { href: '/alertes', label: 'Alertes', badge: 3, badgeLabel: '3 non lues' },
+    {
+      href: '/alertes',
+      label: 'Alertes',
+      badge: 3,
+      badgeLabel: '3 non lues',
+      load: chargeAlertes,
+    },
   ]}
   currentPath={pathname}
+  navigate={useNavigate()}
   linkComponent={Link}
   hrefProp="to"
 />;

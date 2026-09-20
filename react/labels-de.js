@@ -115,6 +115,7 @@ const labels = {
     label: 'Hauptnavigation',
     current: 'Aktuelle Seite',
     more: 'Mehr',
+    loading: 'Seite wird geladen…',
   },
   consent: {
     title: 'Reichweitenmessung',

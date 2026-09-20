@@ -102,6 +102,18 @@
     line-height: 0;
   }
 
+  /* LE CLIC QUI RÉPOND. Pendant que le morceau de la destination arrive,
+     `BottomNav navigate` pose `data-pending` sur l'entrée cliquée et met le
+     rôle d'icône `busy` à la place de la sienne : c'est lui qui tourne. Sous
+     `prefers-reduced-motion`, la liste de `base` l'arrête — la pastille reste,
+     immobile et déjà distincte de l'icône qu'elle remplace, et `aria-busy` le
+     dit de toute façon. */
+  [data-dwc='bottom-nav-item'][data-pending] [data-dwc='bottom-nav-icon'],
+  [data-dwc='bottom-nav-drawer-item'][data-pending]
+    [data-dwc='bottom-nav-icon'] {
+    animation: dwc-spin 1s linear infinite;
+  }
+
   /* Le libellé d'un onglet ne pousse pas la barre : à cinq entrées sur un
      écran de 320 px, un mot long débordait sur son voisin. */
   [data-dwc='bottom-nav-label'] {
