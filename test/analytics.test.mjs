@@ -128,8 +128,20 @@ test('LES RÉGLAGES DE VIE PRIVÉE sont réellement passés à init', async () =
       'compterait les vues DEUX fois'
     );
     assert.equal(options.capture_pageleave, false);
-    // Le parc est sous un suffixe public : un cookie posé plus haut que l'hôte
-    // exact est refusé par le navigateur, qui l'annonce dans la console.
+    // AUCUN COOKIE, ET CE N'EST PAS UNE PRÉFÉRENCE. Le défaut de PostHog est
+    // `'localStorage+cookie'` ; avec lui, `PostHogPersistence.remove()` lance la
+    // sonde de domaine `dmn_chk_`, qui pose un cookie jetable sur `.io` puis
+    // `.github.io` — tous deux REFUSÉS, suffixe public — avant de trouver
+    // l'hôte exact. Deux lignes rouges dans la console de chaque visiteur
+    // Firefox des dix-huit sites qui mesurent, relevées le 20/09/2026.
+    //
+    // `cross_subdomain_cookie: false` NE SUFFIT PAS : la suppression des deux
+    // formes du cookie porte un `true` codé en dur. C'est `persistence` qui
+    // coupe la branche — mesuré sur le morceau déployé, douze écritures de
+    // cookie avec le défaut, zéro avec celui-ci.
+    assert.equal(options.persistence, 'localStorage');
+    // Gardé quand même : il décrit l'intention, et il est honoré pour
+    // l'écriture de valeur le jour où le parc quittera `github.io`.
     assert.equal(options.cross_subdomain_cookie, false);
     assert.equal(options.person_profiles, 'identified_only');
     // Le nuage EUROPÉEN — seule raison d'avoir quitté GA4.
