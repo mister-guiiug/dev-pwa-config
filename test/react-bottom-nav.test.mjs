@@ -633,3 +633,82 @@ test('sans `navigate` ni `load`, la barre ne change pas d’un attribut', async 
     dom.restore();
   }
 });
+
+test('un `linkComponent` maison garde SES props : la barre muette ne les écrase pas', async () => {
+  // LA RÉGRESSION DE LA 6.3.1, EN UN TEST. Passer `'aria-busy': undefined` ne
+  // coûte rien sur le `<a>` par défaut — React n'écrit pas un attribut
+  // `undefined` — mais un composant de lien MAISON reçoit les props en objet
+  // et les étale :
+  //
+  //   <Link to={to} aria-busy={…} {...reste} />
+  //
+  // L'étalement vient après, la clé existe, et `undefined` écrase la valeur de
+  // l'app. Quatre dépôts du parc écrivent cette ligne, et la 6.3.1 leur a
+  // éteint leur propre `aria-busy`. Le test d'alors ne montait que le lien par
+  // défaut : il ne pouvait pas le voir.
+  const dom = setupDom();
+  try {
+    // Le lien de l'app décide lui-même qui est occupé, et le socle n'a pas
+    // d'avis : aucun `navigate` n'est passé.
+    const LienMaison = ({ href, ...reste }) =>
+      h('a', {
+        href,
+        'aria-busy': href === '/historique' ? 'true' : undefined,
+        ...reste,
+      });
+
+    const view = await mount(
+      h(BottomNav, {
+        items: ITEMS,
+        currentPath: '/',
+        linkComponent: LienMaison,
+      })
+    );
+    const lien = view.container.querySelector('a[href="/historique"]');
+    assert.equal(
+      lien.getAttribute('aria-busy'),
+      'true',
+      'la barre a écrasé l’aria-busy que l’app posait elle-même'
+    );
+    // Et elle ne pose aucun gestionnaire d'intention sans `load`.
+    assert.equal(view.container.querySelector('[data-pending]'), null);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('avec `navigate`, la barre reprend la main sur l’attente — même sur un lien maison', async () => {
+  // L'autre bord : le silence ne doit pas devenir de l'impuissance. Dès que
+  // l'app délègue la navigation, c'est la barre qui sait qui attend.
+  const dom = setupDom();
+  try {
+    const { Ecran, livrer } = ecranDiffere();
+    const LienMaison = ({ href, ...reste }) => h('a', { href, ...reste });
+    function Coque() {
+      const [path, setPath] = useState('/');
+      return h(
+        'div',
+        null,
+        h(BottomNav, {
+          items: ICONES,
+          currentPath: path,
+          navigate: setPath,
+          linkComponent: LienMaison,
+        }),
+        h(Suspense, { fallback: null }, h(Ecran, { path }))
+      );
+    }
+    const view = await mount(h(Coque));
+    const lien = view.container.querySelector('a[href="/historique"]');
+    await view.act(() => lien.click());
+    assert.equal(lien.getAttribute('aria-busy'), 'true');
+    await view.act(async () => {
+      livrer();
+    });
+    assert.equal(lien.getAttribute('aria-busy'), null);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
