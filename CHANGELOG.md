@@ -1,5 +1,80 @@
 # Changelog
 
+## 6.2.0
+
+### Minor Changes
+
+- 5d84cdd: `PrivacyNotice` dit enfin les deux destinataires réels, et la mesure n'est plus attribuée à Google.
+  
+  **Une erreur de fait, dans les sept langues.** Le panneau décrivait Google
+  Analytics — « par Google Analytics », « un cookie de Google », « Google, qui les
+  traite pour le compte de l'éditeur ». Il a été écrit le 16/09/2026 ; le parc est
+  passé à PostHog (nuage européen) le 19, et rien n'a suivi ces textes. Aucun
+  visiteur ne l'a lu — relevé du 19/09 : zéro des dix-sept applications ne monte ce
+  panneau — mais le corriger avant l'adoption évitait de publier un destinataire
+  faux sur dix-sept sites.
+  
+  **Une section nouvelle : les erreurs.** Dix-sept applications embarquent un DSN
+  Sentry depuis le 19/09/2026, et `initSentry` s'exécute au chargement du module,
+  donc AVANT toute question. Un visiteur qui refuse la mesure envoie quand même un
+  rapport technique — message, pile, adresse de page, navigateur, adresse IP — dès
+  qu'une erreur survient. Le panneau le dit désormais, et dit aussi que ce rapport
+  ne suit pas le choix du bandeau.
+  
+  - `sentryDsn` — la section ne s'affiche QUE s'il est renseigné : annoncer un
+    envoi qui n'a pas lieu est aussi faux que taire celui qui a lieu. Rien du DSN
+    n'est rendu à l'écran, il ne sert que de signal.
+  - `errorBasis` — mention d'exploitant, comme `controller` : le fondement de ces
+    rapports ne peut pas être « votre consentement », et le socle ne peut pas le
+    choisir à la place du responsable du traitement.
+  
+  **`retentionMonths` n'a plus de défaut.** Il valait 14 — la conservation posée
+  sur les propriétés GA4, qui ne décrivent plus rien. Une durée non fournie
+  s'affiche maintenant comme une mention manquante. `RETENTION_DEFAUT` reste
+  exporté, `@deprecated`.
+  
+  Une application qui passait déjà `retentionMonths` n'est pas touchée. Une
+  application qui comptait sur le défaut affichera `[À compléter]` à la place des
+  14 mois — ce qui est le comportement voulu, la valeur n'étant plus vraie.
+
+### Patch Changes
+
+- 78aa15e: PostHog ne pose plus aucun cookie : `persistence: 'localStorage'`
+  
+  Signalé le 20/09/2026 sur deux sites du parc, dans la console de Firefox :
+  « Le cookie "dmn_chk_01a0be81-…" a été rejeté car le domaine est invalide. »
+  
+  `dmn_chk_` est la **sonde de domaine de posthog-js**. Avant d'écrire son cookie
+  de persistance, elle remonte l'hôte de la droite vers la gauche et pose un
+  cookie jetable à chaque candidat. Sur `mister-guiiug.github.io` :
+  
+  ```
+  dmn_chk_…=1;domain=.io;path=/;max-age=3         REJETÉ  (suffixe public)
+  dmn_chk_…=1;domain=.github.io;path=/;max-age=3  REJETÉ  (suffixe public)
+  dmn_chk_…=1;domain=.mister-guiiug.github.io;…   accepté, puis effacé
+  ```
+  
+  Deux refus, donc deux lignes rouges chez **chaque visiteur Firefox des dix-huit
+  sites qui mesurent**, à partir de leur deuxième visite.
+  
+  `cross_subdomain_cookie: false` était déjà posé et ne l'empêche pas :
+  `PostHogPersistence.remove()` efface le cookie dans ses deux formes et porte un
+  `true` **codé en dur** pour la seconde. Aucune option ne le désactive ;
+  `remove()` tourne pendant `init`.
+  
+  `persistence: 'localStorage'` coupe la branche entière — mesuré sur le morceau
+  déployé : douze écritures de cookie avec le défaut `'localStorage+cookie'`,
+  **zéro** avec celui-ci.
+  
+  Ce n'est pas un pis-aller : sous un suffixe public, un cookie ne peut être que
+  _host-only_, c'est-à-dire exactement la portée que `localStorage` donne déjà.
+  La moitié « cookie » n'achète que le partage entre sous-domaines, précisément
+  ce qui est impossible ici. Seule perte : l'identifiant ne voyage plus dans un
+  en-tête de requête, ce dont aucune application du parc n'a l'usage.
+  
+  `cross_subdomain_cookie: false` reste posé — il décrit l'intention et sera
+  honoré le jour où le parc quittera `github.io`.
+
 ## 6.1.1
 
 ### Patch Changes
