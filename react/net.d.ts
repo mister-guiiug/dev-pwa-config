@@ -20,6 +20,13 @@ export interface RetryOptions {
  */
 export declare function defaultShouldRetry(error: unknown): boolean;
 
+/**
+ * L'erreur (ou son message) décrit-elle un échec transitoire — coupure réseau,
+ * délai, passerelle, jeton expiré ? Le motif que miss-uwh et mister-doc
+ * portaient à l'identique comme `shouldRetry` de leur file de synchro.
+ */
+export declare function isTransientMessage(errorOrMessage: unknown): boolean;
+
 /** Réessaie une opération asynchrone avec backoff exponentiel et gigue. */
 export declare function retryableQuery<T>(
   fn: (attempt: number) => Promise<T>,

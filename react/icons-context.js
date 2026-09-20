@@ -6,6 +6,7 @@ import {
   CoffeeIcon,
   ExternalLinkIcon,
   GithubIcon,
+  LoaderIcon,
   MoonIcon,
   SunIcon,
   SystemIcon,
@@ -59,6 +60,10 @@ export const DEFAULT_ICONS = {
   issue: BugIcon,
   // Le retour d'`AppHeader` — le huitième rôle, ajouté le 02/09/2026.
   back: BackIcon,
+  // « Occupé » — le dixième rôle, ajouté le 20/09/2026 : la pastille de
+  // `BottomNav` pendant qu'un morceau de route arrive. Dix apps dessinaient la
+  // leur (`LoaderCircle`, `RefreshCw`, une règle CSS…) faute d'un rôle ici.
+  busy: LoaderIcon,
 };
 
 const IconsContext = createContext(DEFAULT_ICONS);

@@ -115,6 +115,7 @@ const labels = {
     label: 'Hoofdnavigatie',
     current: 'Huidige pagina',
     more: 'Meer',
+    loading: 'Pagina wordt geladen…',
   },
   consent: {
     title: 'Publieksmeting',

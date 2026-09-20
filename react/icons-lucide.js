@@ -45,6 +45,7 @@ export const LUCIDE_NAMES = {
   external: 'ExternalLink',
   issue: 'Bug',
   back: 'ChevronLeft',
+  busy: 'LoaderCircle',
 };
 
 /**

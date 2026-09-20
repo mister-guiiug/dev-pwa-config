@@ -6,7 +6,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createElement as h } from 'react';
+import { createElement as h, Suspense, use, useState } from 'react';
 
 import { setupDom, mount } from './helpers/dom.mjs';
 import { BottomNav } from '../react/bottom-nav.js';
@@ -398,6 +398,236 @@ test('sans `trailing` ni `className`, la barre ne change pas', async () => {
         'aucune classe ne doit apparaître quand l’app n’en demande pas'
       );
     }
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+/* ── Le clic qui répond, le morceau qui arrive avant ───────────────────── */
+
+/**
+ * Le 20/09/2026, dix apps ont appris la même chose : react-router navigue dans
+ * `startTransition`, React 19 garde l'écran courant, et le `<Suspense
+ * fallback>` d'une route ne paraît JAMAIS sur un clic. Quatre d'entre elles,
+ * sur cette barre, ont dû écrire un `linkComponent` maison parce que
+ * `onNavigate(item)` ne recevait pas l'évènement.
+ *
+ * Le harnais ci-dessous est celui de leurs tests : une coquille, une barre, et
+ * un écran dont le TEST décide de l'arrivée.
+ */
+function ecranDiffere() {
+  let livrer;
+  const promesse = new Promise(resolve => {
+    livrer = resolve;
+  });
+  function Ecran({ path }) {
+    // `use` sur une promesse stable : l'écran suspend tant qu'elle n'est pas
+    // tenue — exactement ce que fait un `lazy()` dont le morceau n'est pas là.
+    if (path === '/historique') use(promesse);
+    return h('h1', null, path === '/historique' ? 'Historique' : 'Accueil');
+  }
+  return { Ecran, livrer: () => livrer() };
+}
+
+function Coquille({ Ecran, items, espion }) {
+  const [path, setPath] = useState('/');
+  const navigate = to => {
+    espion?.(to);
+    setPath(to);
+  };
+  return h(
+    'div',
+    null,
+    h(BottomNav, { items, currentPath: path, navigate }),
+    h(
+      Suspense,
+      { fallback: h('p', { 'data-repli': '' }, 'repli') },
+      h(Ecran, { path })
+    )
+  );
+}
+
+const ICONES = [
+  { href: '/', label: 'Accueil', icon: h('i', { 'data-icone': 'accueil' }) },
+  {
+    href: '/historique',
+    label: 'Historique',
+    icon: h('i', { 'data-icone': 'historique' }),
+  },
+];
+
+test('`navigate` : l’entrée cliquée se dit occupée tant que le morceau n’est pas là — et elle seule', async () => {
+  const dom = setupDom();
+  try {
+    const { Ecran, livrer } = ecranDiffere();
+    const allers = [];
+    const view = await mount(
+      h(Coquille, { Ecran, items: ICONES, espion: to => allers.push(to) })
+    );
+    const lien = view.container.querySelector('a[href="/historique"]');
+    const accueil = view.container.querySelector('a[href="/"]');
+    const vive = view.container.querySelector('nav [role="status"]');
+    assert.ok(vive, 'la zone vive existe dès le montage, hors des liens');
+    assert.equal(vive.textContent, '');
+    assert.equal(vive.closest('a'), null);
+
+    await view.act(() => lien.click());
+
+    assert.deepEqual(allers, ['/historique'], 'la barre a navigué elle-même');
+    assert.equal(
+      view.container.querySelector('h1').textContent,
+      'Accueil',
+      'l’écran précédent reste à l’écran pendant l’attente'
+    );
+    assert.equal(
+      view.container.querySelector('[data-repli]'),
+      null,
+      'le repli de route ne paraît pas : c’est la ligne qui dit pourquoi la barre doit parler'
+    );
+    assert.equal(lien.getAttribute('aria-busy'), 'true');
+    assert.ok(lien.hasAttribute('data-pending'));
+    assert.equal(accueil.getAttribute('aria-busy'), null, 'elle seule');
+    assert.equal(
+      accueil.getAttribute('aria-current'),
+      'page',
+      'l’onglet courant ne change pas avant la route'
+    );
+    assert.ok(
+      lien.querySelector('[data-dwc="bottom-nav-icon"] svg'),
+      'la pastille qui tourne remplace l’icône de l’entrée'
+    );
+    assert.equal(lien.querySelector('[data-icone="historique"]'), null);
+    assert.equal(vive.textContent, 'Chargement de la page…');
+    assert.equal(
+      lien.textContent,
+      'Historique',
+      'le nom accessible du lien ne bouge pas'
+    );
+
+    await view.act(async () => {
+      livrer();
+    });
+
+    assert.equal(view.container.querySelector('h1').textContent, 'Historique');
+    assert.equal(lien.getAttribute('aria-busy'), null);
+    assert.equal(lien.hasAttribute('data-pending'), false);
+    assert.ok(
+      lien.querySelector('[data-icone="historique"]'),
+      'l’icône revient'
+    );
+    assert.equal(lien.getAttribute('aria-current'), 'page');
+    assert.equal(vive.textContent, '');
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('un clic à modificateur reste au navigateur : rien ne se met en attente', async () => {
+  const dom = setupDom();
+  try {
+    const { Ecran } = ecranDiffere();
+    const allers = [];
+    const view = await mount(
+      h(Coquille, { Ecran, items: ICONES, espion: to => allers.push(to) })
+    );
+    const lien = view.container.querySelector('a[href="/historique"]');
+    const clic = new dom.window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      ctrlKey: true,
+      button: 0,
+    });
+    await view.act(() => lien.dispatchEvent(clic));
+    assert.equal(clic.defaultPrevented, false, 'le navigateur garde le clic');
+    assert.deepEqual(allers, []);
+    assert.equal(lien.getAttribute('aria-busy'), null);
+    assert.equal(view.container.querySelector('h1').textContent, 'Accueil');
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('`onNavigate` reçoit l’évènement, et peut laisser le clic au navigateur', async () => {
+  const dom = setupDom();
+  try {
+    const recus = [];
+    function Garde() {
+      const [path, setPath] = useState('/');
+      return h(BottomNav, {
+        items: ICONES,
+        currentPath: path,
+        navigate: setPath,
+        onNavigate: (item, event) => {
+          recus.push([item.href, typeof event?.preventDefault]);
+          // L'app a tranché : ce clic-là n'est pas une navigation.
+          if (item.href === '/historique') event.preventDefault();
+        },
+      });
+    }
+    const view = await mount(h(Garde));
+    const lien = view.container.querySelector('a[href="/historique"]');
+    await view.act(() => lien.click());
+    assert.deepEqual(recus, [['/historique', 'function']]);
+    assert.equal(
+      lien.getAttribute('aria-busy'),
+      null,
+      'un clic déjà tranché par l’app n’ouvre pas de transition'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('`load` : le morceau part à l’approche, une seule fois, et pas au clic', async () => {
+  const dom = setupDom();
+  try {
+    let appels = 0;
+    const chargeHistorique = () => {
+      appels += 1;
+      return Promise.resolve();
+    };
+    const view = await mount(
+      h(BottomNav, {
+        items: [
+          { href: '/', label: 'Accueil' },
+          { href: '/historique', label: 'Historique', load: chargeHistorique },
+        ],
+        currentPath: '/',
+      })
+    );
+    const lien = view.container.querySelector('a[href="/historique"]');
+    assert.equal(appels, 0, 'rien ne part au montage');
+
+    // Le focus, pour la navigation au clavier ; React l'écoute en `focusin`.
+    await view.act(() =>
+      lien.dispatchEvent(
+        new dom.window.FocusEvent('focusin', { bubbles: true })
+      )
+    );
+    assert.equal(appels, 1);
+    // Le doigt ensuite : `prefetch` dédoublonne, le morceau est déjà demandé.
+    await view.act(() =>
+      lien.dispatchEvent(new dom.window.Event('touchstart', { bubbles: true }))
+    );
+    assert.equal(appels, 1);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('sans `navigate` ni `load`, la barre ne change pas d’un attribut', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(h(BottomNav, { items: ITEMS, currentPath: '/' }));
+    const nav = view.container.querySelector('nav');
+    assert.equal(nav.querySelector('[role="status"]'), null);
+    assert.equal(nav.querySelector('[aria-busy]'), null);
+    assert.equal(nav.querySelector('[data-pending]'), null);
     await view.unmount();
   } finally {
     dom.restore();

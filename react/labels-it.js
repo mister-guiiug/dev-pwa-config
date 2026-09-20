@@ -113,6 +113,7 @@ const labels = {
     label: 'Navigazione principale',
     current: 'Pagina corrente',
     more: 'Altro',
+    loading: 'Caricamento della pagina…',
   },
   consent: {
     title: 'Misurazione del pubblico',

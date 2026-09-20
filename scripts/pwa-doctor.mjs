@@ -1050,6 +1050,55 @@ export function reglesSource(ctx, api) {
       "'prompt' + UpdatePromptBanner (react/update-prompt-banner)"
     );
   }
+  // LE MORCEAU QUI PART AU CLIC, ET LE CLIC QUI NE RÉPOND PAS.
+  //
+  // Deux dettes nées du même signalement (miss-badminton, 20/09/2026 : « je
+  // clique sur historique, rien ne se passe ») et corrigées le même jour dans
+  // DIX dépôts, chacun à la main — sans qu'aucun contrôle ne l'ait jamais dit.
+  //
+  //  - `prefetch-routes` : des routes découpées en `lazy()` dont AUCUN morceau
+  //    n'est préchargé. Le premier clic paie alors un aller-retour réseau
+  //    complet, au pire moment — pendant que le reste du bundle arrive et que
+  //    le service worker remplit son precache. Le socle exporte
+  //    `react/use-prefetch` depuis longtemps ; zéro adoptant, treize copies.
+  //  - `nav-attente` : ces mêmes routes sans AUCUN retour au clic. react-router
+  //    7 et 8 naviguent dans une transition, et React 19 garde l'écran courant :
+  //    le `<Suspense fallback>` de route ne paraît jamais. Trois remèdes
+  //    reconnus : `navigate` sur la barre du socle, une transition propre au
+  //    menu (`useTransition`), ou une frontière remontée à chaque route
+  //    (`key={pathname}`) — et `useNavigation` d'un routeur de données.
+  //
+  // Le couple ne se juge qu'en présence d'un routeur : un `lazy()` sans
+  // react-router (miss-dice, mister-puzzle) vit DANS une page, où le repli
+  // paraît normalement. Un dépôt dont les routes paresseuses ne sont atteintes
+  // par aucun lien interne (mister-miss-koh : des écrans de partage, en URL
+  // absolue) répond par `pwaDoctor.refus` — c'est le droit de réponse, pas un
+  // silence.
+  const routeur = /from\s+['"]react-router(?:-dom)?['"]/.test(srcText);
+  if (routeur && /\blazy\(/.test(srcText)) {
+    if (
+      !/use-prefetch['"]|dev-pwa-config\/prefetch['"]|useIdlePrefetch|usePrefetch\(|useVisiblePrefetch|prefetchWhenIdle|prefetchOnIntent|requestIdleCallback/.test(
+        srcText
+      )
+    ) {
+      dette(
+        'prefetch-routes',
+        'des routes paresseuses sans aucun préchargement : le morceau part au clic, un aller-retour réseau à la première visite',
+        'useIdlePrefetch / usePrefetch (react/use-prefetch), ou items[].load sur BottomNav — avec des thunks nommés, partagés avec lazy()'
+      );
+    }
+    if (
+      !/useTransition\(|useNavigation\(|\bnavigate=\{|key=\{(?:location\.)?pathname\}/.test(
+        srcText
+      )
+    ) {
+      dette(
+        'nav-attente',
+        'des routes paresseuses sans retour au clic : le routeur navigue dans une transition et le repli de Suspense ne paraît jamais',
+        '<BottomNav navigate={navigate}> (react/bottom-nav), ou une transition propre au menu'
+      );
+    }
+  }
   // LA BARRE COLLÉE QUI NE LE DIT PAS.
   //
   // `BottomNav` n'émet `data-placement="fixed"` que si l'app passe la prop
@@ -1470,6 +1519,8 @@ export const CATALOGUE = [
   { id: 'secrets-inherit', famille: 'workflows', niveau: 'défaut' },
   { id: 'vite-en-secret', famille: 'workflows', niveau: 'dette' },
   { id: 'auto-update', famille: 'source', niveau: 'dette' },
+  { id: 'prefetch-routes', famille: 'source', niveau: 'dette' },
+  { id: 'nav-attente', famille: 'source', niveau: 'dette' },
   { id: 'bottom-nav-muette', famille: 'source', niveau: 'défaut' },
   { id: 'seo-plugin', famille: 'source', niveau: 'dette' },
   { id: 'theme-color', famille: 'source', niveau: 'dette' },

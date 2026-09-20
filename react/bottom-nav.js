@@ -1,5 +1,14 @@
-import { createElement as h, useEffect, useId, useRef, useState } from 'react';
+import {
+  createElement as h,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { useLabels } from './labels-core.js';
+import { Icon } from './icons-context.js';
+import { prefetch } from '../prefetch.js';
 
 /**
  * Barre de navigation basse — la coque de toutes les apps mobiles de la famille.
@@ -61,6 +70,41 @@ import { useLabels } from './labels-core.js';
  * Les deux sont ADDITIFS : les six apps qui importent déjà cette barre ne
  * changent pas d'un pixel.
  *
+ * LE CLIC QUI RÉPOND — `navigate`, ET LE MORCEAU QUI ARRIVE AVANT — `load`.
+ * Deux manques de plus, nommés cette fois par DIX apps le même jour.
+ *
+ *   Le 20/09/2026, un signalement sur miss-badminton (« je clique sur
+ *   historique, rien ne se passe ») a mené à ceci : react-router 7 et 8
+ *   enveloppent tout changement d'URL dans `startTransition`, et React 19
+ *   garde délibérément l'écran déjà affiché plutôt que de le remplacer par un
+ *   repli. Le `<Suspense fallback>` d'une route est donc DU CODE MORT AU CLIC ;
+ *   mesuré à froid sur deux sites publiés : 133 ms d'écran figé sur
+ *   mister-settle, 161 sur mister-molkky, `aria-busy` faux d'un bout à l'autre.
+ *   Dix apps ont corrigé cela en une journée, en quatre formes — et QUATRE
+ *   d'entre elles, qui passent par cette barre, ont dû la contourner : le
+ *   `onClick` était construit ici et appelait `onNavigate(item)` SANS
+ *   l'évènement, donc ni `preventDefault`, ni touche de modification, ni
+ *   transition ne pouvaient y passer. Chacune a écrit un `linkComponent`
+ *   maison et un contexte pour lui porter le geste. Le même geste, quatre fois.
+ *
+ *   `navigate` — la barre pilote la navigation dans SA transition. L'entrée
+ *   cliquée se dit occupée (`aria-busy`, `data-pending`) tant que le morceau
+ *   n'est pas arrivé, son icône cède la place au rôle `busy` du contrat
+ *   d'icônes, et une zone vive `role="status"` annonce le chargement HORS des
+ *   liens — pour ne pas changer leur nom accessible en cours de route. Les
+ *   clics à modificateur (Ctrl/Cmd/Maj/Alt, bouton non gauche) restent au
+ *   navigateur, comme un `<a>` ordinaire. `onNavigate` reçoit désormais
+ *   l'évènement en second argument. SANS `navigate`, rien ne change : pas un
+ *   attribut de plus, le lien navigue seul.
+ *
+ *   `load` — le thunk du morceau, LE MÊME que celui passé à `lazy()`, nommé une
+ *   fois au niveau du module (deux `import()` d'un spécificateur écrit
+ *   différemment donnent deux morceaux). La barre le tire à l'approche du
+ *   pointeur, au focus ou au doigt, par `prefetch` du socle : une seule fois,
+ *   jamais sur `saveData` ni en 2g. Le socle exportait déjà `react/use-prefetch`
+ *   pour cela — zéro adoptant, treize copies à la main : le branchement manquait
+ *   là où les liens sont construits, c'est-à-dire ici.
+ *
  * AGNOSTIQUE DE ROUTEUR. Le paquet ne dépend pas de react-router. Par défaut un
  * `<a href>` ; `linkComponent` + `hrefProp` branchent un `Link` (`hrefProp="to"`).
  * L'état actif est calculé ici, jamais délégué : c'est lui qui portait le
@@ -94,15 +138,17 @@ import { useLabels } from './labels-core.js';
  * @param {{
  *   items?: Array<{ key?: string, href: string, label: string,
  *     icon?: import('react').ReactNode, badge?: number, badgeLabel?: string,
- *     end?: boolean }>,
+ *     end?: boolean, className?: string, load?: () => Promise<unknown> }>,
  *   currentPath?: string,
  *   label?: string,
  *   maxVisible?: number,
  *   moreLabel?: string,
  *   linkComponent?: unknown,
  *   hrefProp?: string,
- *   onNavigate?: (item: object) => void,
+ *   navigate?: (href: string) => void,
+ *   onNavigate?: (item: object, event?: object) => void,
  *   className?: string,
+ *   trailing?: import('react').ReactNode,
  *   placement?: 'static' | 'fixed',
  * }} props
  */
@@ -115,6 +161,7 @@ export function BottomNav(props = {}) {
     moreLabel,
     linkComponent = 'a',
     hrefProp = 'href',
+    navigate,
     onNavigate,
     className,
     trailing,
@@ -125,6 +172,15 @@ export function BottomNav(props = {}) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreId = useId();
   const moreRef = useRef(null);
+
+  // LA TRANSITION EST À LA BARRE. `enCours` reste vrai tant que le morceau
+  // `lazy` de la destination n'est pas arrivé — c'est le seul signal que
+  // react-router n'expose pas hors d'un routeur de données. La cible n'est lue
+  // que pendant la transition : pas d'effet pour la remettre à zéro, une valeur
+  // périmée n'est jamais affichée.
+  const [enCours, demarre] = useTransition();
+  const [cible, setCible] = useState(null);
+  const enAttente = navigate && enCours ? cible : null;
 
   const path =
     currentPath ?? (typeof location !== 'undefined' ? location.pathname : '');
@@ -157,8 +213,24 @@ export function BottomNav(props = {}) {
 
   const srOnly = text => h('span', { 'data-dwc': 'bottom-nav-sr' }, text);
 
+  // Un clic que le navigateur doit garder : touche de modification (nouvel
+  // onglet, nouvelle fenêtre, téléchargement), bouton du milieu, ou un
+  // gestionnaire de l'app qui a déjà tranché.
+  const laisseAuNavigateur = event =>
+    !event ||
+    event.defaultPrevented ||
+    (typeof event.button === 'number' && event.button !== 0) ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey;
+
   const link = (item, place) => {
     const current = isCurrent(item);
+    const attend = enAttente === item.href;
+    // `prefetch` dédoublonne par identité de chargeur : `load` doit être LE
+    // thunk de module, pas une flèche écrite dans le rendu.
+    const tire = item.load ? () => prefetch(item.load) : undefined;
     return h(
       linkComponent,
       {
@@ -170,18 +242,27 @@ export function BottomNav(props = {}) {
         // chemins dans sept langues.
         className: item.className,
         'aria-current': current ? 'page' : undefined,
+        'aria-busy': attend ? 'true' : undefined,
         'data-dwc': `bottom-nav-${place}`,
         'data-current': current ? '' : undefined,
-        onClick: () => {
+        'data-pending': attend ? '' : undefined,
+        onPointerEnter: tire,
+        onFocus: tire,
+        onTouchStart: tire,
+        onClick: event => {
           setMoreOpen(false);
-          onNavigate?.(item);
+          onNavigate?.(item, event);
+          if (!navigate || laisseAuNavigateur(event)) return;
+          event.preventDefault();
+          setCible(item.href);
+          demarre(() => navigate(item.href));
         },
       },
-      item.icon
+      item.icon || attend
         ? h(
             'span',
             { 'data-dwc': 'bottom-nav-icon', 'aria-hidden': 'true' },
-            item.icon
+            attend ? h(Icon, { role: 'busy' }) : item.icon
           )
         : null,
       h('span', { 'data-dwc': 'bottom-nav-label' }, item.label),
@@ -234,6 +315,20 @@ export function BottomNav(props = {}) {
           'div',
           { id: moreId, hidden: !moreOpen, 'data-dwc': 'bottom-nav-drawer' },
           hidden.map(item => link(item, 'drawer-item'))
+        )
+      : null,
+    // LA ZONE VIVE, HORS DES LIENS, et présente dès le montage : une région
+    // créée au moment de parler n'est pas annoncée. Elle n'existe que si la
+    // barre pilote la navigation — sinon elle n'aurait jamais rien à dire.
+    navigate
+      ? h(
+          'span',
+          {
+            'data-dwc': 'bottom-nav-sr',
+            role: 'status',
+            'aria-live': 'polite',
+          },
+          enAttente ? labels.loading : ''
         )
       : null,
     // En dernier, DANS le repère : une cellule qui n'est pas une destination.

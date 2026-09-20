@@ -133,6 +133,7 @@
      figure — le bandeau de mise à jour y est entré avec son entrée. */
   @media (prefers-reduced-motion: reduce) {
     [data-dwc='button-spinner'],
+    [data-dwc='bottom-nav-icon'],
     [data-dwc='skeleton'],
     [data-dwc='sheet-panel'],
     [data-dwc='confirm-panel'],
