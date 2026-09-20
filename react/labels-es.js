@@ -126,22 +126,26 @@ const labels = {
     manage: 'Cambiar mi elección',
   },
   privacy: {
-    title: 'Medición de audiencia',
+    title: 'Sus datos',
     what: 'Qué se mide',
     whatText:
-      'Las páginas que consulta y cómo se desplaza entre ellas, mediante Google Analytics. Nunca lo que escribe en la aplicación.',
+      'Las páginas que consulta y cómo se desplaza entre ellas, mediante PostHog. Nunca lo que escribe en la aplicación.',
     basis: 'Con qué fundamento',
     basisText:
       'Su consentimiento, y solo él. Puede retirarlo en cualquier momento, con la misma facilidad con que lo dio.',
     recipient: 'Quién los recibe',
     recipientText:
-      'Google, que los trata por cuenta del editor de esta aplicación.',
+      'PostHog, en sus servidores de la Unión Europea, que los trata por cuenta del editor de esta aplicación.',
     retention: 'Durante cuánto tiempo',
     retentionText:
       'Los datos detallados se conservan {months} meses y luego se eliminan.',
     stored: 'Qué se guarda en su dispositivo',
     storedText:
-      'Una cookie de Google y su elección, guardada en este navegador para no repetir la pregunta en cada visita.',
+      'Un identificador de visita depositado por PostHog (cookie y almacenamiento local) y su elección, guardada en este navegador para no repetir la pregunta en cada visita.',
+    errors: 'En caso de error',
+    errorsText:
+      'Cuando la aplicación encuentra un error, se envía un informe técnico a Sentry, en sus servidores de Alemania: el mensaje, el lugar del código, la dirección de la página, su navegador y su dirección IP. Nunca lo que usted escribe. Este informe no depende de la elección anterior: sirve para reparar, no para medir.',
+    errorsBasis: 'Con qué fundamento, para estos informes',
     controller: 'Responsable del tratamiento',
     rights: 'Sus derechos',
     rightsText:

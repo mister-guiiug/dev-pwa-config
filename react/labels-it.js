@@ -126,22 +126,26 @@ const labels = {
     manage: 'Modifica la mia scelta',
   },
   privacy: {
-    title: 'Misurazione del pubblico',
+    title: 'I suoi dati',
     what: 'Che cosa viene misurato',
     whatText:
-      'Le pagine che consulta e come si sposta tra di esse, tramite Google Analytics. Mai ciò che digita nell’applicazione.',
+      'Le pagine che consulta e come si sposta tra di esse, tramite PostHog. Mai ciò che digita nell’applicazione.',
     basis: 'A quale titolo',
     basisText:
       'Il suo consenso, e null’altro. Può revocarlo in qualsiasi momento, con la stessa facilità con cui l’ha dato.',
     recipient: 'Chi li riceve',
     recipientText:
-      'Google, che li tratta per conto dell’editore di questa applicazione.',
+      'PostHog, sui suoi server dell’Unione europea, che li tratta per conto dell’editore di questa applicazione.',
     retention: 'Per quanto tempo',
     retentionText:
       'I dati dettagliati sono conservati {months} mesi, poi cancellati.',
     stored: 'Che cosa viene salvato sul suo dispositivo',
     storedText:
-      'Un cookie di Google e la sua scelta, conservata in questo browser per non riproporre la domanda a ogni visita.',
+      'Un identificativo di visita depositato da PostHog (cookie e memoria locale) e la sua scelta, conservata in questo browser per non riproporre la domanda a ogni visita.',
+    errors: 'In caso di errore',
+    errorsText:
+      'Quando l’applicazione incontra un errore, un rapporto tecnico viene inviato a Sentry, sui suoi server in Germania: il messaggio, il punto del codice, l’indirizzo della pagina, il suo browser e il suo indirizzo IP. Mai ciò che digita. Questo rapporto non dipende dalla scelta qui sopra: serve a riparare, non a misurare.',
+    errorsBasis: 'A quale titolo, per questi rapporti',
     controller: 'Titolare del trattamento',
     rights: 'I suoi diritti',
     rightsText:

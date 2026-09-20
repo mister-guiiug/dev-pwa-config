@@ -1,6 +1,10 @@
 import type { FC, ReactNode } from 'react';
 
-/** Ce que Google conserve des données détaillées, en mois. */
+/**
+ * @deprecated Vestige de GA4 (14 mois). Le parc mesure avec PostHog depuis le
+ * 19/09/2026 : ce chiffre ne décrit plus rien, et n'est plus le défaut du
+ * panneau.
+ */
 export declare const RETENTION_DEFAUT: number;
 
 /**
@@ -23,12 +27,28 @@ export interface PrivacyNoticeProps {
    */
   contact?: string;
   /**
-   * Conservation des données détaillées, en mois — ce qui est réglé dans la
-   * propriété GA4, pas une valeur décorative. Défaut : 14, la valeur posée sur
-   * les vingt propriétés du compte le 16/09/2026. Le défaut de GA4, lui, est de
-   * 2 mois : une app qui n'aurait pas été relevée doit passer `2`.
+   * Conservation des données détaillées, en mois — ce qui est réglé dans le
+   * projet PostHog, pas une valeur décorative. **Aucun défaut** : sans elle, le
+   * panneau affiche `[À compléter]` à la place. Annoncer une durée non vérifiée
+   * serait une information fausse, au même titre qu'un responsable inventé.
    */
   retentionMonths?: number;
+  /**
+   * Le DSN Sentry de l'application — celui-là même que `initSentry` reçoit.
+   * **Sa seule fonction ici est de savoir s'il y a quelque chose à dire** : la
+   * section « erreurs » ne s'affiche que s'il est renseigné. Le DSN est
+   * publiable par conception (il est déjà dans le bundle), mais rien n'en est
+   * rendu à l'écran.
+   */
+  sentryDsn?: string;
+  /**
+   * À quel titre les rapports d'erreur sont émis. **Mention de l'exploitant**,
+   * même règle que `controller` : ces rapports partent hors du consentement —
+   * `initSentry` s'exécute au chargement du module, avant toute question — donc
+   * le fondement ne peut pas être « votre consentement », et le socle ne peut
+   * pas le choisir à la place du responsable du traitement.
+   */
+  errorBasis?: ReactNode;
   /** Comme pour le bandeau : l'identifiant, pour que la sortie sache quoi couper. */
   posthogKey?: string;
   posthogHost?: string;

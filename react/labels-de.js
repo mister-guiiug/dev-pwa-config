@@ -128,22 +128,26 @@ const labels = {
     manage: 'Meine Auswahl ändern',
   },
   privacy: {
-    title: 'Reichweitenmessung',
+    title: 'Ihre Daten',
     what: 'Was gemessen wird',
     whatText:
-      'Die Seiten, die Sie aufrufen, und wie Sie sich zwischen ihnen bewegen — über Google Analytics. Niemals das, was Sie in der Anwendung eingeben.',
+      'Die Seiten, die Sie aufrufen, und wie Sie sich zwischen ihnen bewegen — über PostHog. Niemals das, was Sie in der Anwendung eingeben.',
     basis: 'Auf welcher Grundlage',
     basisText:
       'Ihre Einwilligung, und nur diese. Sie können sie jederzeit widerrufen, so einfach wie Sie sie erteilt haben.',
     recipient: 'Wer sie erhält',
     recipientText:
-      'Google, das sie im Auftrag des Herausgebers dieser Anwendung verarbeitet.',
+      'PostHog, auf dessen Servern in der Europäischen Union, das sie im Auftrag des Herausgebers dieser Anwendung verarbeitet.',
     retention: 'Wie lange',
     retentionText:
       'Detaillierte Daten werden {months} Monate gespeichert und danach gelöscht.',
     stored: 'Was auf Ihrem Gerät gespeichert wird',
     storedText:
-      'Ein Cookie von Google und Ihre Wahl, in diesem Browser gespeichert, damit die Frage nicht bei jedem Besuch erneut gestellt wird.',
+      'Eine Besuchskennung von PostHog (Cookie und lokaler Speicher) und Ihre Wahl, in diesem Browser gespeichert, damit die Frage nicht bei jedem Besuch erneut gestellt wird.',
+    errors: 'Im Fehlerfall',
+    errorsText:
+      'Wenn die Anwendung auf einen Fehler stößt, geht ein technischer Bericht an Sentry, auf dessen Server in Deutschland: die Meldung, die Stelle im Code, die Adresse der Seite, Ihr Browser und Ihre IP-Adresse. Niemals das, was Sie eingeben. Dieser Bericht hängt nicht von der obigen Wahl ab — er dient der Behebung, nicht der Messung.',
+    errorsBasis: 'Auf welcher Grundlage, für diese Berichte',
     controller: 'Verantwortlicher',
     rights: 'Ihre Rechte',
     rightsText:

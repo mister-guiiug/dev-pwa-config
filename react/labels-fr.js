@@ -158,22 +158,26 @@ const labels = {
    * — deux valeurs que le code ne peut pas connaître, d'où l'interpolation.
    */
   privacy: {
-    title: 'Mesure d’audience',
+    title: 'Vos données',
     what: 'Ce qui est mesuré',
     whatText:
-      'Les pages que vous consultez et la façon dont vous y circulez, par Google Analytics. Jamais ce que vous saisissez dans l’application.',
+      'Les pages que vous consultez et la façon dont vous y circulez, par PostHog. Jamais ce que vous saisissez dans l’application.',
     basis: 'À quel titre',
     basisText:
       'Votre consentement, et lui seul. Vous pouvez le retirer à tout moment, aussi facilement que vous l’avez donné.',
     recipient: 'Qui les reçoit',
     recipientText:
-      'Google, qui les traite pour le compte de l’éditeur de cette application.',
+      'PostHog, sur ses serveurs de l’Union européenne, qui les traite pour le compte de l’éditeur de cette application.',
     retention: 'Combien de temps',
     retentionText:
       'Les données détaillées sont conservées {months} mois, puis supprimées.',
     stored: 'Ce qui est déposé sur votre appareil',
     storedText:
-      'Un cookie de Google, et votre choix, gardé dans ce navigateur pour ne pas vous reposer la question à chaque visite.',
+      'Un identifiant de visite déposé par PostHog (cookie et stockage local), et votre choix, gardé dans ce navigateur pour ne pas vous reposer la question à chaque visite.',
+    errors: 'En cas d’erreur',
+    errorsText:
+      'Quand l’application rencontre une erreur, un rapport technique part chez Sentry, sur ses serveurs d’Allemagne : le message, l’endroit du code, l’adresse de la page, votre navigateur et votre adresse IP. Jamais ce que vous saisissez. Ce rapport ne dépend pas du choix ci-dessus — il sert à réparer, pas à mesurer.',
+    errorsBasis: 'À quel titre, pour ces rapports',
     controller: 'Responsable du traitement',
     rights: 'Vos droits',
     rightsText:

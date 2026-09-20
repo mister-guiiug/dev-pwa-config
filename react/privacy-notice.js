@@ -29,6 +29,35 @@ import { ConsentSettings } from './consent-banner.js';
  * conservation de 14 mois a été posée le même jour sur les vingt propriétés
  * GA4 du compte, et relue une par une.
  *
+ * DEUX CORRECTIONS DU 19/09/2026, ET LA PREMIÈRE EST UNE ERREUR DE FAIT.
+ *
+ * Ce panneau décrivait Google Analytics — « par Google Analytics », « un cookie
+ * de Google », « Google, qui les traite pour le compte de l'éditeur » — dans
+ * les SEPT locales. Il a été écrit le 16/09/2026 ; le parc est passé à PostHog
+ * (nuage européen) le 19, et rien n'a suivi ces textes. Aucun visiteur ne l'a
+ * lu : relevé du 19/09, ZÉRO des dix-sept applications ne monte ce panneau —
+ * le bandeau demande donc un accord sans qu'aucun texte ne dise à quoi, ce
+ * pour quoi ce composant avait justement été écrit. Le corriger AVANT de
+ * l'adopter évite de publier sur dix-sept sites un destinataire faux.
+ *
+ * LA CONSERVATION N'A PLUS DE DÉFAUT. `RETENTION_DEFAUT` valait 14 mois, la
+ * durée posée sur les propriétés GA4 ; elle ne décrit plus rien. Une durée non
+ * fournie s'affiche maintenant comme une mention manquante — annoncer une
+ * durée qu'on n'a pas vérifiée est exactement ce que le reste de ce fichier
+ * refuse de faire pour le responsable du traitement.
+ *
+ * LES ERREURS, ET POURQUOI ELLES SONT UNE SECTION À PART. Depuis le 19/09/2026
+ * dix-sept applications embarquent un DSN Sentry, et `initSentry` s'exécute au
+ * chargement du module — AVANT toute question, donc hors du choix que le
+ * bandeau recueille. Ce n'est pas un oubli de câblage : un rapport d'erreur
+ * n'est pas une mesure d'audience, et les deux ne se traitent pas ensemble.
+ * Mais cela signifie qu'un visiteur qui REFUSE la mesure envoie quand même un
+ * rapport technique — message, pile, adresse de page, navigateur, adresse IP —
+ * dès qu'une erreur survient. Le taire serait le seul vrai défaut.
+ *
+ * `errorBasis` est une mention d'EXPLOITANT, comme `controller` : à quel titre
+ * ces rapports sont émis relève du responsable du traitement, pas du code.
+ *
  * DEUX MENTIONS N'APPARTIENNENT PAS AU SOCLE : le responsable du traitement et
  * l'adresse où exercer ses droits. Elles dépendent de qui exploite l'app, pas
  * de ce que le code fait. Sans elles, le panneau affiche `[À compléter]` À
@@ -46,7 +75,13 @@ import { ConsentSettings } from './consent-banner.js';
  * Non stylé : cibler `[data-dwc="privacy-notice"]`.
  */
 
-/** Ce que Google conserve des données détaillées, en mois. */
+/**
+ * @deprecated Vestige de GA4 : quatorze mois était la conservation posée sur
+ * les vingt propriétés Google du compte. Le parc mesure avec PostHog depuis le
+ * 19/09/2026, et ce chiffre ne décrit plus rien. Il n'est plus le DÉFAUT du
+ * panneau — une durée non fournie s'affiche désormais comme une mention
+ * manquante, au lieu d'annoncer au visiteur une durée qui n'est pas la sienne.
+ */
 export const RETENTION_DEFAUT = 14;
 
 /**
@@ -66,6 +101,7 @@ let prevenu = false;
 /**
  * @param {{ controller?: import('react').ReactNode,
  *   contact?: string, retentionMonths?: number,
+ *   sentryDsn?: string, errorBasis?: import('react').ReactNode,
  *   posthogKey?: string, posthogHost?: string, loader?: () => Promise<unknown>,
  *   scope?: string,
  *   className?: string, settingsClassName?: string,
@@ -75,7 +111,9 @@ export function PrivacyNotice(props = {}) {
   const {
     controller,
     contact,
-    retentionMonths = RETENTION_DEFAUT,
+    retentionMonths,
+    sentryDsn,
+    errorBasis,
     posthogKey,
     posthogHost,
     loader,
@@ -109,9 +147,21 @@ export function PrivacyNotice(props = {}) {
     [labels.recipient, labels.recipientText],
     [
       labels.retention,
-      labels.retentionText.replaceAll('{months}', String(retentionMonths)),
+      Number.isFinite(retentionMonths)
+        ? labels.retentionText.replaceAll('{months}', String(retentionMonths))
+        : absent,
     ],
     [labels.stored, labels.storedText],
+    // LA SECTION « ERREURS » NE S'AFFICHE QUE S'IL Y A UN DSN — même règle que
+    // le bandeau, qui ne pose pas la question sans identifiant de mesure :
+    // annoncer un envoi qui n'a pas lieu est une information fausse, au même
+    // titre que taire celui qui a lieu.
+    ...(sentryDsn
+      ? [
+          [labels.errors, labels.errorsText],
+          [labels.errorsBasis, errorBasis || absent],
+        ]
+      : []),
     [labels.controller, controller || absent],
     [
       labels.rights,
