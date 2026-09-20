@@ -54,19 +54,71 @@ export const HOTE_PAR_DEFAUT = 'https://eu.i.posthog.com';
  *    comptée deux fois — celle de PostHog et celle de `usePageViews`. Exactement
  *    le défaut que GA4 écartait par `send_page_view: false`.
  *  - `capture_pageleave: false` — même famille, sur la sortie.
+ *  - `persistence: 'localStorage'` — PAS DE COOKIE DU TOUT, et c'est ce qui
+ *    fait taire la sonde de domaine (voir ci-dessous). Le défaut de PostHog est
+ *    `'localStorage+cookie'`.
  *  - `cross_subdomain_cookie: false` — LE PARC EST SOUS UN SUFFIXE PUBLIC.
  *    `github.io` est à la Public Suffix List : un cookie posé plus haut que
  *    l'hôte exact est REFUSÉ par le navigateur, et Firefox l'annonce dans la
  *    console de chaque visiteur. C'est ce que `domaineDeCookie` a mesuré pour
- *    gtag ; ici on empêche simplement PostHog de tenter.
+ *    gtag. Le réglage reste posé — il décrit l'intention et il est honoré pour
+ *    l'écriture de valeur — mais IL NE SUFFIT PAS ; c'est tout l'objet du
+ *    paragraphe suivant.
  *  - `person_profiles: 'identified_only'` — aucun profil de personne n'est créé
  *    pour un visiteur anonyme, et ce parc n'identifie personne.
+ *
+ * POURQUOI `persistence` ET PAS SEULEMENT `cross_subdomain_cookie`.
+ *
+ * Signalé le 20/09/2026 sur miss-badminton et miss-carbook, dans la console de
+ * Firefox : « Le cookie "dmn_chk_01a0be81-…" a été rejeté car le domaine est
+ * invalide. » `dmn_chk_` est la SONDE DE DOMAINE de posthog-js : avant d'écrire,
+ * elle remonte l'hôte de la droite vers la gauche et pose un cookie jetable à
+ * chaque candidat, gardant le premier qui tient. Reproduit sur le site publié,
+ * avec le morceau déployé et ces options-ci — les quatre écritures, dans l'ordre :
+ *
+ *     dmn_chk_…=1;domain=.io;path=/;max-age=3                      REJETÉ
+ *     dmn_chk_…=1;domain=.github.io;path=/;max-age=3               REJETÉ
+ *     dmn_chk_…=1;domain=.mister-guiiug.github.io;path=/;max-age=3 accepté
+ *     dmn_chk_…=1;domain=.mister-guiiug.github.io;max-age=0        effacé
+ *
+ * Deux refus, donc deux lignes rouges, chez CHAQUE visiteur Firefox des dix-huit
+ * sites qui mesurent. Et `cross_subdomain_cookie: false` n'y change rien :
+ * `instance.config.cross_subdomain_cookie` valait bien `false` pendant la
+ * reproduction. La raison est dans `PostHogPersistence.remove()`, qui efface le
+ * cookie dans ses DEUX formes :
+ *
+ *     this.Oo.Lt(this.oa, !1), this.Oo.Lt(this.oa, !0)
+ *
+ * Le second argument est codé EN DUR : aucune option ne le désactive. `remove()`
+ * tourne pendant `init` (via `set_cross_subdomain`, qui passe de `undefined` à
+ * `false`), et la suppression étant inerte tant que le pot à cookies est vide,
+ * la sonde n'apparaît qu'à partir de la DEUXIÈME visite — ce qui explique
+ * qu'elle ait échappé au relevé de mise en service.
+ *
+ * `persistence: 'localStorage'` coupe la branche entière : mesuré sur le morceau
+ * déployé, `'localStorage+cookie'` écrit douze cookies, `'localStorage'` n'en
+ * écrit AUCUN. Pas de cookie, pas de sonde.
+ *
+ * ET CE N'EST PAS UN PIS-ALLER. Sous un suffixe public, un cookie ne peut de
+ * toute façon être que *host-only* — exactement la portée que `localStorage`
+ * donne déjà. La moitié « cookie » de la persistance n'achète que le partage
+ * entre sous-domaines, précisément ce qui est impossible ici. Ce qu'on perd :
+ * l'identifiant ne voyage plus dans un en-tête de requête, ce dont aucune
+ * application du parc n'a l'usage — aucune n'a de serveur qui le lise.
+ *
+ * À SAVOIR SI LE PARC CHANGE DE DOMAINE (cf. l'ADR sur l'organisation GitHub) :
+ * la liste d'exclusion de posthog-js ne contient que `herokuapp.com`,
+ * `vercel.app` et `netlify.app`. `github.io` n'y est pas — leur défaut pour
+ * cette origine serait même `true`. Sur un domaine à nous, le cookie
+ * redeviendrait légitime, mais `localStorage` resterait suffisant : c'est une
+ * décision à reprendre sciemment, pas un réglage à défaire par réflexe.
  */
 export const OPTIONS_VIE_PRIVEE = Object.freeze({
   autocapture: false,
   disable_session_recording: true,
   capture_pageview: false,
   capture_pageleave: false,
+  persistence: 'localStorage',
   cross_subdomain_cookie: false,
   person_profiles: 'identified_only',
 });
