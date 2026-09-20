@@ -10,7 +10,14 @@ export interface CspOptions {
   dev?: boolean;
   /** Directive `connect-src` (hôtes backend). Défaut : `["'self'"]`. */
   connectSrc?: string[];
-  /** Directive `img-src`. Défaut : `["'self'", 'data:', 'blob:']`. */
+  /**
+   * Directive `img-src`. Défaut : `["'self'", 'data:', 'blob:']`.
+   *
+   * L'origine de la famille (`FAMILY_ORIGIN`, `https://mister-guiiug.github.io`)
+   * est TOUJOURS ajoutée à cette liste — les icônes de `FamilyApps` en viennent,
+   * et `'self'` la désigne déjà sur les sites publiés. Sauf si la liste vaut
+   * `["'none'"]`, qui reste seul.
+   */
   imgSrc?: string[];
   /** Directive `font-src`. Défaut : `["'self'", 'data:']`. */
   fontSrc?: string[];

@@ -140,8 +140,20 @@ test('surcharge `icon` = chemin relatif joint à appUrl', () => {
     'https://mister-guiiug.github.io/miss-genius/icons/icon-192.png'
   );
   assert.equal(
+    byId('mister-footcoach').iconUrl,
+    'https://mister-guiiug.github.io/mister-footcoach/logo.svg'
+  );
+});
+
+test('mister-molkky : plus jamais le logo de 1,28 Mo', () => {
+  // RÉGRESSION MESURÉE le 20/09/2026. `logo.png` pèse 1 276 707 octets et
+  // s'affiche en 40 px : les seize apps sœurs qui montrent la grille le
+  // téléchargeaient vraiment, en production, à chaque ouverture de leur écran
+  // Paramètres. Aucun budget de bundle ne voit ce qui part chez le voisin —
+  // ce test est le seul endroit qui le retient.
+  assert.equal(
     byId('mister-molkky').iconUrl,
-    'https://mister-guiiug.github.io/mister-molkky/logo.png'
+    'https://mister-guiiug.github.io/mister-molkky/icons/icon-192.png'
   );
 });
 
