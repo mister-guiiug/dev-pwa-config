@@ -23,9 +23,16 @@ function moduleNeuf() {
   return import(`../speech.js?essai=${compteur}`);
 }
 
-/** Fausse synthèse : `speaking`/`pending` pilotent la branche testée. */
+/**
+ * Fausse synthèse : `speaking`/`pending` pilotent la branche testée.
+ *
+ * LES ÉCOUTEURS SONT UNE LISTE, pas un seul. Le module en branche un pour son
+ * cache, et `onVoicesChanged` en branche un par abonné : les garder dans une
+ * variable unique ferait que le dernier efface les autres, et le test
+ * vérifierait un montage qui n'existe pas.
+ */
 function fausseSynthese({ speaking = false, pending = false, voix = [] } = {}) {
-  const journal = { cancels: 0, enonces: [], ecoutes: [] };
+  const journal = { cancels: 0, enonces: [], ecoutes: [], gestionnaires: {} };
   const synth = {
     speaking,
     pending,
@@ -38,7 +45,16 @@ function fausseSynthese({ speaking = false, pending = false, voix = [] } = {}) {
     getVoices: () => voix,
     addEventListener(nom, gestionnaire) {
       journal.ecoutes.push(nom);
-      synth.__reveille = gestionnaire;
+      (journal.gestionnaires[nom] ??= []).push(gestionnaire);
+    },
+    removeEventListener(nom, gestionnaire) {
+      journal.gestionnaires[nom] = (journal.gestionnaires[nom] ?? []).filter(
+        g => g !== gestionnaire
+      );
+    },
+    /** Rejoue `voiceschanged` pour tous les abonnés. */
+    __reveille() {
+      for (const g of journal.gestionnaires.voiceschanged ?? []) g();
     },
   };
   return { synth, journal };
@@ -273,4 +289,134 @@ test('pickVoice rattrape les voix qui arrivent en retard', async () => {
   voix = [{ name: 'Française', lang: 'fr-FR' }];
   synth.__reveille();
   assert.equal(pickVoice('fr-FR', synth).name, 'Française');
+});
+
+/**
+ * LA LISTE RÉELLE D'UN FIREFOX, relevée le 21/09/2026 (Firefox 156 / Windows) :
+ * cinq voix, AUCUNE marquée `default`, la même voix exposée deux fois (entrée
+ * OneCore et entrée SAPI5 « Desktop »). Le critère `voice.default` y est donc
+ * inerte — ce test fige ce que devient `pickVoice` dans ce cas, parce que c'est
+ * précisément la situation où l'utilisateur subit une voix sans recours.
+ */
+const VOIX_FIREFOX = [
+  { name: 'Microsoft Hortense - French (France)', lang: 'fr-FR' },
+  { name: 'Microsoft Julie - French (France)', lang: 'fr-FR' },
+  { name: 'Microsoft Paul - French (France)', lang: 'fr-FR' },
+  { name: 'Microsoft Hortense Desktop - French', lang: 'fr-FR' },
+  { name: 'Microsoft Zira Desktop - English (United States)', lang: 'en-US' },
+];
+
+test('sans aucune voix « default », pickVoice prend la première de la langue', async () => {
+  const { pickVoice } = await moduleNeuf();
+  const { synth } = fausseSynthese({ voix: VOIX_FIREFOX });
+  assert.ok(
+    VOIX_FIREFOX.every(v => !v.default),
+    'la prémisse du test : Firefox ne marque rien'
+  );
+  assert.equal(
+    pickVoice('fr-FR', synth).name,
+    'Microsoft Hortense - French (France)'
+  );
+});
+
+test('listVoices ne rend que la langue demandée, locale courte comprise', async () => {
+  const { listVoices } = await moduleNeuf();
+  const { synth } = fausseSynthese({ voix: VOIX_FIREFOX });
+  assert.deepEqual(
+    listVoices('fr', synth).map(v => v.name),
+    VOIX_FIREFOX.slice(0, 4).map(v => v.name),
+    'les quatre françaises, dans l’ordre du navigateur'
+  );
+  assert.deepEqual(
+    listVoices('fr-CA', synth).map(v => v.name),
+    VOIX_FIREFOX.slice(0, 4).map(v => v.name),
+    'la région ne restreint pas : on propose toute la langue'
+  );
+  assert.deepEqual(listVoices('de', synth), [], 'aucune voix allemande');
+  assert.deepEqual(listVoices('fr', null), [], 'sans API, pas de liste');
+});
+
+/**
+ * LE CŒUR DE LA FONCTIONNALITÉ. `Microsoft Hortense` est la première voix
+ * française de Windows, donc celle que `pickVoice` retient, et elle écorche
+ * « cinq ». Sans ce chemin-là, l'utilisateur n'a aucune issue.
+ */
+test('speak emploie la voix choisie par l’utilisateur plutôt que l’heuristique', async () => {
+  const { speak, pickVoice } = await moduleNeuf();
+  const { synth, journal } = fausseSynthese({ voix: VOIX_FIREFOX });
+  const rends = poseGlobales(synth);
+  try {
+    assert.equal(
+      pickVoice('fr-FR', synth).name,
+      'Microsoft Hortense - French (France)',
+      'sans choix, c’est bien Hortense qui sortirait'
+    );
+    speak('Résultat : 5.', 'fr', {
+      voiceName: 'Microsoft Paul - French (France)',
+    });
+    assert.equal(
+      journal.enonces[0].voice.name,
+      'Microsoft Paul - French (France)'
+    );
+  } finally {
+    rends();
+  }
+});
+
+test('une voix choisie absente ou d’une autre langue ne fait pas taire l’annonce', async () => {
+  const { speak } = await moduleNeuf();
+  const { synth, journal } = fausseSynthese({ voix: VOIX_FIREFOX });
+  const rends = poseGlobales(synth);
+  try {
+    // Voix désinstallée depuis le choix.
+    speak('Résultat : 5.', 'fr', { voiceName: 'Voix disparue' });
+    assert.equal(
+      journal.enonces[0].voice.name,
+      'Microsoft Hortense - French (France)',
+      'repli sur l’heuristique, pas sur le silence'
+    );
+
+    // Préférence gardée après un changement de langue de l'interface.
+    speak('Result: 5.', 'en', {
+      voiceName: 'Microsoft Paul - French (France)',
+    });
+    assert.equal(
+      journal.enonces[1].voice.name,
+      'Microsoft Zira Desktop - English (United States)',
+      'une voix française ne doit pas lire de l’anglais'
+    );
+  } finally {
+    rends();
+  }
+});
+
+/**
+ * L'ORDRE D'ABONNEMENT EST LE PIÈGE. On s'abonne ICI AVANT toute lecture :
+ * l'écouteur interne du module n'existe pas encore, donc celui de
+ * `onVoicesChanged` passera EN PREMIER sur `voiceschanged` — et servirait le
+ * cache périmé s'il ne l'invalidait pas lui-même. Un premier jet de ce test
+ * partait d'une liste VIDE : le cache vide étant toujours relu, il passait
+ * aussi bien avec qu'sans l'invalidation, et ne gardait donc rien.
+ */
+test('onVoicesChanged rappelle avec la liste NEUVE, et se désabonne', async () => {
+  const { listVoices, onVoicesChanged } = await moduleNeuf();
+  let voix = [{ name: 'Seule au démarrage', lang: 'fr-FR' }];
+  const { synth } = fausseSynthese();
+  synth.getVoices = () => voix;
+
+  const vues = [];
+  const stop = onVoicesChanged(
+    () => vues.push(listVoices('fr', synth).length),
+    synth
+  );
+
+  assert.equal(listVoices('fr', synth).length, 1, 'cache rempli à une voix');
+
+  voix = VOIX_FIREFOX;
+  synth.__reveille();
+  assert.deepEqual(vues, [4], 'le rappel voit les voix arrivées, pas le cache');
+
+  stop();
+  synth.__reveille();
+  assert.deepEqual(vues, [4], 'plus rien après désabonnement');
 });
