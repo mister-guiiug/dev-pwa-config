@@ -1,5 +1,181 @@
 # Changelog
 
+## 6.6.0
+
+### Minor Changes
+
+- 29988e4: `FamilyApps` : les groupes naissent DÉPLIÉS, et le repli se souvient
+  
+  **Le défaut était à l'envers.** Les groupes de `groupBy` naissaient repliés,
+  sur un écran qui annonce déjà « Nos autres applications » : on payait un clic
+  pour voir ce qu'on venait de demander. Ils s'ouvrent maintenant, tous, et le
+  geste de l'utilisateur est retenu.
+  
+  **Le second défaut ne se voyait pas, et il coûtait plus cher : `axe` ne lit pas
+  un `<details>` fermé.** Toute app qui auditait sa page d'à-propos validait donc
+  une grille dont aucun contenu n'avait été analysé — une règle qui passe sans
+  avoir rien lu. Dépliés, les dix-neuf cartes entrent dans l'audit.
+  
+  Le repli choisi est retenu sous **`dwc_family_groups`**, clé FAMILLE comme
+  `dwc_theme` et `dwc_locale`. Les applications partagent une origine : replier
+  « Santé » dans l'une le replie dans toutes — voulu, puisque le catalogue est le
+  même partout. Une clé par app obligerait à refermer dix-neuf fois le même
+  groupe.
+  
+  Rien à changer chez les adoptants : `<FamilyApps groupBy="category" />` se
+  comporte désormais ainsi. Pour renoncer à la mémoire sans renoncer au
+  regroupement, passer `groupStorageKey={null}` — les groupes s'ouvrent alors à
+  chaque visite.
+  
+  **L'élément reste celui du navigateur.** La mémoire n'ajoute qu'un `onToggle` :
+  le clavier, l'annonce « replié / déplié » et la recherche dans la page
+  continuent de venir avec `<details>`. Rien n'est réimplémenté, et un stockage
+  refusé (mode privé) ne fait que perdre le souvenir.
+  
+  **La mémoire ne s'écrit que sur un geste**, jamais au montage. Sans cette
+  garde, le composant graverait son propre défaut au premier rendu et aucun
+  changement de défaut n'atteindrait plus un appareil déjà visité.
+  
+  Le cas « un groupe d'un seul élément s'ouvre d'office » disparaît : tout s'ouvre,
+  la règle n'avait plus d'objet.
+  
+  ## ⚠ À vérifier chez les adoptants : les e2e qui attendaient un repli
+  
+  Une spec qui affirme `[data-dwc="family-app"]` **caché** échoue désormais. Trois
+  existaient au 21/09/2026 — `mister-doc`, `bac-sable` et sa copie dans le miroir
+  `mister-family-map`. Les chercher avant de relever :
+  
+  ```bash
+  grep -rln "family-app" --include=*.spec.ts */e2e/
+  ```
+  
+  Le remède est plus court que l'ancien : la grille étant dépliée, il n'y a plus
+  de `summary` à cliquer avant d'appeler `axe`.
+- 31e487d: `speech` : l'annonce ne se fait plus couper la fin, et choisit sa voix
+  
+  **Le défaut se signale toujours sur une VALEUR, et la valeur n'y est jamais
+  pour rien.** Un utilisateur d'Android a rapporté « sur le chiffre 5 l'annonce
+  est incorrecte ». Le 5 n'avait rien de particulier : il était seulement le
+  dernier mot. Ce qui sautait, c'était la FIN de la phrase — or la fin d'une
+  annonce est presque toujours la donnée utile, un score, un résultat.
+  
+  Deux défauts de Chrome, tous deux dans ce module depuis sa promotion :
+  
+  **1. Aucune référence n'était gardée sur l'utterance.** Un
+  `SpeechSynthesisUtterance` que plus rien ne référence peut être ramassé par le
+  ramasse-miettes **pendant qu'il parle** : le son s'arrête net. Le module en
+  tient désormais une jusqu'à `onend`/`onerror`, puis la relâche.
+  
+  **2. `cancel()` puis `speak()` dans le même tour de boucle.** `cancel()` est
+  asynchrone : l'enchaînement fait avaler le début — parfois la totalité — de la
+  nouvelle phrase, et c'est nettement pire sur Android. On n'annule désormais
+  **que** s'il y a quelque chose à interrompre (`speaking || pending`), puis on
+  laisse 120 ms au moteur. Une annonce plus récente remplace celle qui attendait
+  encore son tour.
+  
+  ## `pickVoice` — nouveau, et ce qu'il refuse de faire
+  
+  L'idée vient de `mister-molkky`, seule app du parc à choisir une voix plutôt
+  que de poser `utterance.lang` et d'espérer. Sa mécanique est reprise ; **son
+  repli ne l'est pas.** Elle retombait sur `voix[0]`, la première de la liste,
+  quelle que soit sa langue — c'est exactement ce qui fait lire du français par
+  une voix anglaise.
+  
+  Trois niveaux ici, et le dernier est « aucune » :
+  
+  1. l'étiquette exacte (`fr-FR`) ;
+  2. la même **langue** (`fr-CA` pour un `fr-FR` demandé) ;
+  3. `null` — le moteur décidera depuis `utterance.lang`, ce qu'il fait mieux
+     qu'un choix arbitraire.
+  
+  `getVoices()` rend un tableau **vide** au premier appel sur la plupart des
+  navigateurs : mesuré sur miss-dice, 0 voix juste après le chargement et 3 après
+  `voiceschanged`. Le module écoute donc cet évènement et relit sa liste — sans
+  quoi la toute première annonce d'une session partirait sans voix.
+  
+  ## Rien à changer chez les adoptants
+  
+  `speak(text, lang)` garde sa signature et son contrat. Son `true` signifie
+  toujours « énoncé **planifié** » — simplement, avec le délai de reprise, il peut
+  partir au tour de boucle suivant.
+  
+  Le sous-chemin `./speech` n'avait **aucun test** ; il en a neuf, dont les
+  contre-épreuves des deux défauts et du repli refusé.
+  
+  ## À faire côté applications
+  
+  `miss-dice` porte une **copie locale** (`src/a11y/speech.ts`), corrigée le
+  21/09/2026 par mister-guiiug/miss-dice#90 ; elle peut disparaître au profit de
+  ce module. `mister-molkky` porte `src/tts.ts`, encore atteint par les deux
+  défauts. Ce sont les deux seules copies du parc au relevé du 21/09/2026.
+- f5916ab: Cohabitation TypeScript 6 + 7 : le bin `pwa-typecheck-7` et l'entrée de CI
+  
+  **TypeScript 7 ne peut pas REMPLACER la 6 dans ce parc**, et ce n'est pas de la
+  prudence : `typescript-eslint` refuse la 7.0 par une assertion à l'import, donc
+  ESLint meurt pour TOUS les fichiers du dépôt, pas seulement pour les règles
+  typées. Sa plage de pairs le dit aussi — `>=4.8.4 <6.1.0`, canary comprise — et
+  le support amont ne vise que TS ≥ 7.1 (typescript-eslint#10940, ouverte).
+  
+  La seule disposition qui laisse vivre les deux est celle que Microsoft documente
+  sous « running side-by-side with TypeScript 6.0 » :
+  
+  ```
+  typescript      ~6.0.3                 ce que typescript-eslint résout
+  typescript-7    npm:typescript@~7.0.2  le compilateur natif, en second avis
+  ```
+  
+  **Mesuré avant d'être outillé** : les deux compilateurs ont été passés sur les
+  **22 dépôts** du parc, sur le même état, et comparés diagnostic par diagnostic —
+  **2 174 fichiers lus, ZÉRO divergence**. La 7 accepte aujourd'hui tout ce que la
+  6 accepte. Le second avis ne sert donc pas à réparer quelque chose : il sert à
+  voir venir.
+  
+  ## `pwa-typecheck-7`
+  
+  Promu de `miss-ticket`, seule app à avoir demandé cette disposition. Avec deux
+  gardes que la copie locale n'avait pas, et qui viennent chacune d'une erreur
+  commise en mesurant :
+  
+  **GARDE 1 — un tsconfig « solution » ne compile rien.** Vingt apps du parc
+  type-vérifient par `tsc -b`, et leur `tsconfig.json` racine porte `files: []` +
+  des `references`. Un `tsc --noEmit -p tsconfig.json` y lit **zéro fichier**, sort
+  0, et met 130 ms : l'avis dirait « OK » sans avoir rien lu. Le bin suit donc les
+  références jusqu'aux projets qui portent du code. Et `--noEmit` par projet, pas
+  `tsc -b`, qui écrirait `.d.ts` et `.tsbuildinfo` — un second avis n'a pas à
+  salir la copie de travail.
+  
+  **GARDE 2 — zéro fichier lu ÉCHOUE.** Le bin compte les fichiers du dépôt
+  réellement lus et refuse de conclure sur un compte nul. Un contrôle qui ne lit
+  rien et se déclare vert est pire que pas de contrôle.
+  
+  L'alias absent, le message dit comment l'installer **et pourquoi en alias** :
+  sans ce « pourquoi », la correction naturelle est de remplacer `typescript`, ce
+  qui éteint le lint du dépôt.
+  
+  ## `pwa-ci.yml` : `run-type-check-7`
+  
+  **Opt-in (défaut `false`) et NON bloquant.** Par défaut à `true`, l'étape
+  rendrait rouges d'un coup les vingt dépôts qui n'ont ni l'alias ni le script.
+  
+  `continue-on-error` seul ne suffit pas — un pas en échec sous ce drapeau
+  s'affiche en gris et se rate. L'étape écrit donc son verdict dans le résumé du
+  job, et lève une annotation quand les deux compilateurs divergent : c'est la
+  divergence qui est l'information, pas le succès.
+  
+  ## Adopter, côté app
+  
+  ```
+  npm i -D "typescript-7@npm:typescript@~7.0.2"
+  ```
+  
+  puis `"type-check:7": "pwa-typecheck-7"` et `run-type-check-7: true` dans le
+  caller. `type-check` (TypeScript 6) reste le contrôle de référence.
+  
+  Le prix est réel et se dit : un second compilateur par dépôt (~31 Mo installés),
+  et un build qui accepte ce que l'information de types du lint ne juge pas avec la
+  même version. Le jour où typescript-eslint#10940 se ferme, l'alias, le bin et
+  l'entrée de CI disparaissent ensemble.
+
 ## 6.5.0
 
 ### Minor Changes
