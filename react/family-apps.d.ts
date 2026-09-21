@@ -47,6 +47,18 @@ export interface FamilyAppsProps {
    * Les groupes d'un seul élément s'ouvrent d'office.
    */
   groupBy?: 'category' | 'maturity';
+  /**
+   * Disposition des cartes. `'grid'` (défaut) remplit la largeur par colonnes
+   * de 16 rem ; `'list'` force une colonne unique — ce que treize apps du parc
+   * écrivaient à la main, leur grille vivant dans un tiroir étroit.
+   */
+  layout?: 'grid' | 'list';
+  /**
+   * Rendre le `<h3>` de section (défaut : `true`). `false` pour un écran qui
+   * annonce déjà « Nos autres applications » : le `aria-label` de la
+   * `<section>` porte le titre, il n'est donc pas perdu.
+   */
+  showTitle?: boolean;
   /** Nombre maximum de cartes, appliqué APRÈS le tri. */
   max?: number;
   /** Libellés (i18n). */
