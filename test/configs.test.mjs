@@ -74,6 +74,47 @@ test('parité .d.ts ↔ .js pour chaque export typé', () => {
   }
 });
 
+/**
+ * LES DEUX FICHIERS EXISTENT NE SUFFIT PAS. Les `.d.ts` de ce paquet sont
+ * écrits À LA MAIN — rien ne les régénère. Le 21/09/2026, la 6.7.0 a été
+ * publiée avec trois ajouts dans `speech.js` et un `speech.d.ts` inchangé :
+ * l'API était donc invisible depuis TypeScript, et la panne n'est apparue que
+ * dans le `tsc -b` d'une application consommatrice — c'est-à-dire APRÈS la
+ * publication. Le test d'existence ci-dessus passait parfaitement.
+ *
+ * On compare donc les NOMS exportés. La lecture se fait au texte, sans charger
+ * les modules : beaucoup touchent au navigateur ou à `process` et ne
+ * s'importent pas à froid.
+ */
+test('chaque export nommé d’un .js figure dans son .d.ts', () => {
+  const nomsExportes = source =>
+    new Set(
+      [
+        ...source.matchAll(
+          /^export\s+(?:declare\s+)?(?:async\s+)?(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm
+        ),
+      ].map(m => m[1])
+    );
+
+  const manquants = [];
+  for (const [sub, target] of Object.entries(pkg.exports)) {
+    if (typeof target !== 'object' || !target.types) continue;
+    if (!target.default?.endsWith('.js')) continue;
+
+    const js = nomsExportes(readFileSync(join(root, target.default), 'utf8'));
+    const dts = nomsExportes(readFileSync(join(root, target.types), 'utf8'));
+    for (const nom of js) {
+      if (!dts.has(nom)) manquants.push(`${sub} → ${nom}`);
+    }
+  }
+
+  assert.deepEqual(
+    manquants,
+    [],
+    `exports absents de leur .d.ts :\n  ${manquants.join('\n  ')}`
+  );
+});
+
 test('toutes les configs JS se chargent et ont la bonne forme', async () => {
   const eslintBase = (await import('../eslint-base.js')).default;
   assert.ok(Array.isArray(eslintBase) && eslintBase.length > 0, 'eslint-base');
