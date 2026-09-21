@@ -7,10 +7,14 @@ export declare function localeToBcp47(locale: string): string;
 /**
  * Voix correspondant à une étiquette BCP-47, ou `null`.
  *
- * Étiquette exacte d'abord (`fr-FR`), puis la même LANGUE (`fr-CA` pour un
- * `fr-FR` demandé), puis `null` — JAMAIS une voix d'une autre langue, qui
- * ferait lire du français avec un accent anglais. `null` laisse le moteur
- * décider depuis `utterance.lang`.
+ * La LANGUE est la seule contrainte dure : aucune voix qui la parle veut dire
+ * `null` — jamais une voix d'une autre langue, qui ferait lire du français
+ * avec un accent anglais. `null` laisse le moteur décider depuis
+ * `utterance.lang`.
+ *
+ * Dans la langue, la voix par DÉFAUT du système gagne : c'est le choix
+ * explicite de l'utilisateur, là où l'ordre de `getVoices()` n'est spécifié
+ * nulle part. La région (`fr-FR` contre `fr-CA`) ne départage qu'ensuite.
  */
 export declare function pickVoice(
   tag: string,

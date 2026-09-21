@@ -186,6 +186,49 @@ test('pickVoice prend l’étiquette exacte, sinon la même langue', async () =>
 });
 
 /**
+ * LA VOIX DU SYSTÈME GAGNE DANS SA LANGUE. `voice.default` est le choix
+ * EXPLICITE de l'utilisateur ; l'ordre de `getVoices()` n'est spécifié nulle
+ * part. Prendre la première correspondance imposait une voix là où l'app
+ * laissait auparavant le moteur prendre celle du système — invisible sur une
+ * machine où la voix par défaut est AUSSI la première, ce qui était le cas de
+ * celle où cette fonction a été écrite.
+ */
+test('pickVoice préfère la voix par défaut du système, même en second', async () => {
+  const { pickVoice } = await moduleNeuf();
+  const voix = [
+    { name: 'Première', lang: 'fr-FR' },
+    { name: 'Choisie par l’utilisateur', lang: 'fr-FR', default: true },
+  ];
+  const { synth } = fausseSynthese({ voix });
+  assert.equal(pickVoice('fr-FR', synth).name, 'Choisie par l’utilisateur');
+});
+
+/**
+ * Et la région ne départage qu'APRÈS : mieux vaut la voix qu'on a choisie
+ * avec un accent d'ailleurs qu'une voix qu'on n'a pas choisie.
+ */
+test('pickVoice préfère le défaut d’une autre région à une exacte non choisie', async () => {
+  const { pickVoice } = await moduleNeuf();
+  const voix = [
+    { name: 'Exacte', lang: 'fr-FR' },
+    { name: 'Québécoise par défaut', lang: 'fr-CA', default: true },
+  ];
+  const { synth } = fausseSynthese({ voix });
+  assert.equal(pickVoice('fr-FR', synth).name, 'Québécoise par défaut');
+});
+
+/** Un défaut d'une AUTRE langue ne compte pas : la langue reste la contrainte. */
+test('pickVoice ignore une voix par défaut qui ne parle pas la langue', async () => {
+  const { pickVoice } = await moduleNeuf();
+  const voix = [
+    { name: 'Anglaise par défaut', lang: 'en-US', default: true },
+    { name: 'Française', lang: 'fr-FR' },
+  ];
+  const { synth } = fausseSynthese({ voix });
+  assert.equal(pickVoice('fr-FR', synth).name, 'Française');
+});
+
+/**
  * LE CHOIX QUI SÉPARE CE MODULE DE SA SOURCE. `mister-molkky`, d'où vient
  * l'idée de choisir une voix, retombait sur `voix[0]` — la première de la
  * liste, quelle que soit sa langue. C'est précisément ce qui fait lire du
