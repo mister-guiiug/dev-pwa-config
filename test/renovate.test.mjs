@@ -72,7 +72,7 @@ test('le préréglage partagé : recommandé, tableau de bord, samedi matin, reg
 test('typescript est plafonné sous la 7, sauf là où il l’a déjà franchie', () => {
   const preset = json('../renovate/default.json');
   const regle = preset.packageRules.find(r =>
-    r.matchPackageNames?.includes('typescript')
+    r.matchDepNames?.includes('typescript')
   );
   assert.ok(regle, 'le refus de TS 7 est ÉCRIT, pas repris à chaque PR');
   assert.equal(regle.allowedVersions, '<7');
@@ -96,6 +96,68 @@ test('typescript est plafonné sous la 7, sauf là où il l’a déjà franchie'
     /^~6\./,
     'la pair du socle et le plafond Renovate nomment la même génération'
   );
+});
+
+/*
+ * L'ALIAS `typescript-7`, ET POURQUOI IL NE PEUT PAS SE SÉLECTIONNER PAR
+ * `matchPackageNames`.
+ *
+ * Mesuré le 22/09/2026 par `renovate --dry-run=extract` sur un dépôt du parc,
+ * pas déduit de la documentation : Renovate rend, pour
+ * `"typescript-7": "npm:typescript@~7.0.2"`,
+ *
+ *   { depName: 'typescript-7', packageName: 'typescript',
+ *     currentValue: '~7.0.2', npmPackageAlias: true, lockedVersion: '7.0.2' }
+ *
+ * Les DEUX dépendances portent donc le même `packageName`. Un plafond écrit sur
+ * `matchPackageNames` attrape l'alias en même temps que l'original ; ici, seul
+ * `matchCurrentVersion: "<7"` l'en sortait — par un effet de bord, pas par une
+ * intention lisible. Les deux règles nomment maintenant leur `depName`.
+ */
+test('l’alias typescript-7 tient la 7, et ne peut pas glisser en 8', () => {
+  const preset = json('../renovate/default.json');
+  const alias = preset.packageRules.find(r =>
+    r.matchDepNames?.includes('typescript-7')
+  );
+  assert.ok(alias, 'le second avis a sa propre règle');
+  assert.equal(
+    alias.allowedVersions,
+    '<8',
+    'l’alias n’existe que pour tenir la 7 : une 8 lui ferait perdre son objet'
+  );
+  assert.deepEqual(alias.matchManagers, ['npm']);
+
+  // PAS de matchCurrentVersion ici, et c'est volontaire : le plafond doit tenir
+  // quelle que soit la 7.x en place, sinon il cesserait d'agir dès le premier
+  // correctif adopté.
+  assert.equal(alias.matchCurrentVersion, undefined);
+
+  // La condition de levée est nommée : cette règle meurt AVEC l'alias.
+  assert.match(alias.description, /10940/);
+  assert.match(alias.description, /npmPackageAlias/);
+});
+
+test('les deux règles TypeScript ne se recouvrent JAMAIS', () => {
+  const preset = json('../renovate/default.json');
+  const regles = preset.packageRules.filter(r =>
+    r.matchDepNames?.some(n => n.startsWith('typescript'))
+  );
+  assert.equal(regles.length, 2, 'une règle par compilateur, pas une de plus');
+
+  // Aucune des deux ne doit sélectionner par `packageName` : les deux
+  // dépendances le partagent, la règle attraperait l'autre compilateur.
+  for (const r of regles) {
+    assert.equal(
+      r.matchPackageNames,
+      undefined,
+      'sélectionner par packageName attraperait les DEUX compilateurs'
+    );
+  }
+
+  // Et les jeux de noms sont disjoints : rien ne peut recevoir deux plafonds
+  // contradictoires (<7 et <8) sur la même dépendance.
+  const [a, b] = regles.map(r => new Set(r.matchDepNames));
+  for (const nom of a) assert.ok(!b.has(nom), `${nom} est visé deux fois`);
 });
 
 test('le socle étend son propre préréglage — le même que les apps', () => {

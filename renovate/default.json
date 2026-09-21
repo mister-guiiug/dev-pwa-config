@@ -36,11 +36,17 @@
       "groupName": "dépendances (mineur & patch)"
     },
     {
-      "description": "TypeScript reste en 6.x : typescript-eslint REFUSE la 7 par une assertion à l'import (« typescript-eslint does not support TS 7.0 »), et sa plage de pairs l'exclut — >=4.8.4 <6.1.0, canary comprise. Son garde lit `require('typescript')`, donc une racine en 7 casse ESLint POUR TOUS LES FICHIERS, pas seulement les règles typées. Le plafond ne vise QUE les dépôts déjà en 6.x (matchCurrentVersion) : ceux qui ont franchi faute d'ESLint — vscode-sops-diff, le front de mister-commitia — continuent de recevoir les correctifs 7.x sans dérogation à écrire. Le support amont est suivi pour TS >= 7.1, jamais 7.0 : typescript-eslint#10940. Lever cette règle quand cette issue se ferme, pas avant.",
+      "description": "TypeScript reste en 6.x : typescript-eslint REFUSE la 7 par une assertion à l'import (« typescript-eslint does not support TS 7.0 »), et sa plage de pairs l'exclut — >=4.8.4 <6.1.0, canary comprise. Son garde lit `require('typescript')`, donc une racine en 7 casse ESLint POUR TOUS LES FICHIERS, pas seulement les règles typées. Le plafond ne vise QUE les dépôts déjà en 6.x (matchCurrentVersion) : ceux qui ont franchi faute d'ESLint — vscode-sops-diff, le front de mister-commitia — continuent de recevoir les correctifs 7.x sans dérogation à écrire. Le support amont est suivi pour TS >= 7.1, jamais 7.0 : typescript-eslint#10940. Lever cette règle quand cette issue se ferme, pas avant. La sélection se fait sur matchDepNames et non matchPackageNames : l'alias typescript-7 porte packageName « typescript », il serait donc attrapé ici — et rien ne doit dépendre du fait que matchCurrentVersion l'en sorte par accident.",
       "matchManagers": ["npm"],
-      "matchPackageNames": ["typescript"],
+      "matchDepNames": ["typescript"],
       "matchCurrentVersion": "<7",
       "allowedVersions": "<7"
+    },
+    {
+      "description": "L'alias typescript-7 (npm:typescript@~7.0.2) tient la 7 pendant que typescript tient la 6 : depuis le 21/09/2026 les dépôts du parc portent les DEUX compilateurs — la 6 parce que c'est elle que typescript-eslint résout, la 7 en second avis NON BLOQUANT (script type-check:7, entrée run-type-check-7 de pwa-ci.yml). Mesuré et non supposé : `renovate --dry-run=extract` rend depName « typescript-7 », packageName « typescript », npmPackageAlias true. Le plafond <8 dit ce que l'alias SIGNIFIE — il n'existe que pour tenir la 7, et une TypeScript 8 qui s'y installerait lui ferait perdre son objet sans rien annoncer. Les correctifs 7.x, eux, doivent arriver : c'est tout l'intérêt d'un second avis à jour. Cette règle disparaît AVEC l'alias, le jour où typescript-eslint#10940 se ferme.",
+      "matchManagers": ["npm"],
+      "matchDepNames": ["typescript-7"],
+      "allowedVersions": "<8"
     },
     {
       "description": "Peers = stack cible famille : élargir le range, PR séparées, majors revus à la main.",
