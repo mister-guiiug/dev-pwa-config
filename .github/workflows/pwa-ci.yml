@@ -78,6 +78,16 @@ on:
         type: boolean
         required: false
         default: true
+      run-type-check-7:
+        description: >-
+          Second avis TypeScript 7, NON BLOQUANT. Exige `typescript-7` en
+          devDependency (alias `npm:typescript@~7.0.2`) et un script
+          `type-check:7`. Défaut `false` : la 6 reste la référence, parce que
+          c'est elle que `typescript-eslint` résout — il refuse la 7.0 par une
+          assertion à l'import.
+        type: boolean
+        required: false
+        default: false
       run-tests:
         type: boolean
         required: false
@@ -270,6 +280,56 @@ jobs:
       - name: Type check
         if: ${{ inputs.run-type-check }}
         run: npm run type-check
+
+      # SECOND AVIS, ET IL NE DÉCIDE RIEN. `typescript-eslint` refuse la 7.0 par
+      # une assertion à l'import — remplacer `typescript` par la 7 éteindrait
+      # ESLint pour TOUS les fichiers du dépôt. La seule disposition tenable est
+      # la cohabitation : la 6 reste la référence (c'est elle que voit
+      # l'information de types du lint), la 7 donne un avis par un alias.
+      #
+      # `continue-on-error` SEUL NE SUFFIT PAS : un pas en échec sous ce drapeau
+      # s'affiche en gris et se rate. On écrit donc le verdict dans le résumé du
+      # job, et on lève une annotation quand les deux compilateurs DIVERGENT —
+      # c'est la divergence qui est l'information, pas le succès.
+      #
+      # OPT-IN (défaut `false`) : l'étape exige `typescript-7` en devDependency
+      # et un script `type-check:7`. Par défaut à `true`, elle rendrait rouges
+      # d'un coup les vingt dépôts qui ne les ont pas.
+      #
+      # Le jour où typescript-eslint#10940 se ferme, cette entrée et l'alias
+      # disparaissent ensemble.
+      - name: Type check — TypeScript 7 (second avis)
+        if: ${{ inputs.run-type-check-7 }}
+        continue-on-error: true
+        run: |
+          # Le journal va dans RUNNER_TEMP, jamais dans la copie de travail :
+          # un fichier laissé là salirait le dépôt pour les étapes suivantes.
+          journal="$RUNNER_TEMP/ts7.log"
+          set +e
+          npm run type-check:7 > "$journal" 2>&1
+          code=$?
+          set -e
+          {
+            echo "### TypeScript 7 — second avis"
+            echo ""
+            if [ "$code" -eq 0 ]; then
+              echo "Aucune divergence : la 7 accepte ce que la 6 accepte."
+              echo ""
+              echo '```'
+              tail -n 12 "$journal"
+              echo '```'
+            else
+              echo "**Divergence** — la 7 refuse ce que la 6 accepte :"
+              echo ""
+              echo '```'
+              tail -n 30 "$journal"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" -ne 0 ]; then
+            echo "::warning title=TypeScript 7 diverge::Le second avis refuse du code que TypeScript 6 accepte. Le job reste vert — la 6 est la version de référence tant que typescript-eslint n'accepte pas la 7 — mais le détail est dans le résumé du job."
+          fi
+          exit $code
 
       # Le contrat de `run-coverage` se vérifie AVANT de lancer la suite : un
       # dépôt qui la demande sans script `test:coverage` — ou qui a coupé ses

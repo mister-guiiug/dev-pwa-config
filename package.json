@@ -661,7 +661,8 @@
     "pwa-doctor": "./scripts/pwa-doctor.mjs",
     "pwa-pgtap": "./scripts/pwa-pgtap.mjs",
     "pwa-screenshots": "./scripts/pwa-screenshots.mjs",
-    "pwa-bindings": "./scripts/bindings-natifs.mjs"
+    "pwa-bindings": "./scripts/bindings-natifs.mjs",
+    "pwa-typecheck-7": "./scripts/pwa-typecheck-7.mjs"
   },
   "files": [
     "eslint-base.js",

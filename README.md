@@ -21,7 +21,7 @@ binaires, dix workflows. Il vit dans `docs/`, découpé par sujet — et rien n'
 | [`docs/CONFIGS.md`](docs/CONFIGS.md)       | ESLint, Prettier, TypeScript, Vitest, Playwright, Vite (PWA, CSP, SEO), commitlint, lint-staged, icônes                 |
 | [`docs/INTERFACE.md`](docs/INTERFACE.md)   | Composants React, habillage `components.css`, primitives, catalogue famille, Rive, accessibilité                        |
 | [`docs/DONNEES.md`](docs/DONNEES.md)       | Persistance, magasin versionné, coffre chiffré, Supabase, file hors-ligne, temps réel, carte, auth, PDF/Excel/iCal      |
-| [`docs/BINS.md`](docs/BINS.md)             | `pwa-doctor`, `pwa-bundle-budget`, `pwa-icons`, `pwa-pgtap`, `pwa-screenshots`, `pwa-bindings`                          |
+| [`docs/BINS.md`](docs/BINS.md)             | `pwa-doctor`, `pwa-bundle-budget`, `pwa-icons`, `pwa-pgtap`, `pwa-screenshots`, `pwa-bindings`, `pwa-typecheck-7`       |
 | [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md) | Ce qu'a demandé chaque majeure                                                                                          |
 
 Et les dossiers d'analyse, qui ne sont pas des manuels : [`CAMPAGNE.md`](CAMPAGNE.md)
