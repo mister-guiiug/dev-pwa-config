@@ -1020,10 +1020,15 @@
     flex: 1 1 auto;
   }
 
+  /* ONZE apps sur treize avaient ajouté ce `flex-wrap`. Sans lui, un nom long
+     suivi de son badge de maturité déborde de la carte au lieu de passer à la
+     ligne — d'autant plus en `layout: 'list'`, où la carte n'a que la largeur
+     du tiroir. */
   [data-dwc='family-app-head'] {
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    flex-wrap: wrap;
   }
 
   [data-dwc='family-app-name'] {
