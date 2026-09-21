@@ -79,13 +79,22 @@ const normalise = étiquette =>
 /**
  * Voix correspondant à une étiquette BCP-47, ou `null`.
  *
- * TROIS NIVEAUX, ET LE DERNIER EST « AUCUNE ». D'abord l'étiquette exacte
- * (`fr-FR`), puis la même LANGUE (`fr-CA` pour un `fr-FR` demandé), puis rien.
- * Ce dernier niveau est un choix : `mister-molkky`, d'où vient l'idée de
- * choisir une voix, retombait sur `voix[0]` — la première de la liste, quelle
- * que soit sa langue. C'est précisément ce qui fait lire du français par une
- * voix anglaise. Rendre `null` laisse le moteur décider à partir de
+ * LA LANGUE EST LA SEULE CONTRAINTE DURE. Aucune voix dans la langue demandée
+ * veut dire AUCUNE voix : `mister-molkky`, d'où vient l'idée de choisir une
+ * voix, retombait sur `voix[0]` — la première de la liste, quelle que soit sa
+ * langue. C'est précisément ce qui fait lire du français par une voix
+ * anglaise. Rendre `null` laisse le moteur décider à partir de
  * `utterance.lang`, ce qu'il fait mieux qu'un choix arbitraire.
+ *
+ * DANS LA LANGUE, LA VOIX DU SYSTÈME GAGNE. `voice.default` est le choix
+ * EXPLICITE de l'utilisateur dans ses réglages ; l'ordre de `getVoices()`,
+ * lui, n'est spécifié nulle part. Cette fonction prenait la première
+ * correspondance, donc imposait une voix là où l'app laissait auparavant le
+ * moteur prendre celle du système — une régression invisible sur une machine
+ * où la voix par défaut est AUSSI la première de la liste, ce qui était le cas
+ * de celle où cette fonction a été écrite. La région (`fr-FR` contre `fr-CA`)
+ * ne départage qu'ensuite : mieux vaut la voix qu'on a choisie avec un accent
+ * d'ailleurs qu'une voix qu'on n'a pas choisie.
  *
  * @param {string} tag Étiquette BCP-47 (`fr-FR`).
  * @param {SpeechSynthesis} [synth]
@@ -97,10 +106,16 @@ export function pickVoice(tag, synth = globalThis.speechSynthesis) {
   if (!voix.length) return null;
   const visée = normalise(tag);
   const langue = visée.split('-')[0];
+
+  const mêmeLangue = voix.filter(
+    v => normalise(v.lang).split('-')[0] === langue
+  );
+  if (!mêmeLangue.length) return null;
+
   return (
-    voix.find(v => normalise(v.lang) === visée) ??
-    voix.find(v => normalise(v.lang).split('-')[0] === langue) ??
-    null
+    mêmeLangue.find(v => v.default) ??
+    mêmeLangue.find(v => normalise(v.lang) === visée) ??
+    mêmeLangue[0]
   );
 }
 
