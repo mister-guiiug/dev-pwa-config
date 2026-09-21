@@ -219,19 +219,199 @@ test('FamilyApps groupBy : un repli par catégorie, compté, dans l’ordre du c
     );
   }
 
-  // Un groupe d'UN élément reste ouvert : le replier cacherait une ligne pour
-  // le prix d'un clic. Le catalogue en porte au moins un.
-  const solitaires = [...attendus].filter(([, n]) => n === 1);
-  assert.ok(solitaires.length > 0, 'le catalogue porte une catégorie unique');
-  for (const [categorie] of solitaires) {
+  // TOUS LES GROUPES NAISSENT DÉPLIÉS, celui de six apps comme celui d'une.
+  // Le défaut inverse faisait payer un clic pour voir ce que l'écran venait
+  // d'annoncer — et masquait la grille à `axe`, qui ne lit pas un `<details>`
+  // fermé : l'audit passait sans avoir rien analysé.
+  for (const [categorie] of attendus) {
     assert.match(
       html,
       new RegExp(
         `<details open="" data-dwc="family-app-group" data-category="${categorie}"`
       ),
-      `le groupe ${categorie} n’a qu’une app : il doit rester déplié`
+      `le groupe ${categorie} doit naître déplié`
     );
   }
+  assert.equal(
+    [...html.matchAll(/<details(?! open)/g)].length,
+    0,
+    'aucun groupe replié au premier rendu'
+  );
+});
+
+test('FamilyApps groupBy : replier écrit le choix, et le rendu suivant l’honore', async t => {
+  let setupDom, mount;
+  try {
+    ({ setupDom, mount } = await import('./helpers/dom.mjs'));
+  } catch {
+    t.skip('react / react-dom / jsdom non installés (peers optionnels)');
+    return;
+  }
+  const { createElement: h } = await import('react');
+  const dom = setupDom();
+  try {
+    const { FamilyApps } = await import('../react/family-apps.js');
+    const { FAMILY_APPS } = await import('../apps-catalog.js');
+    const current = FAMILY_APPS[0].id;
+
+    // LE SEUL CHEMIN QUE `renderToStaticMarkup` NE PEUT PAS ÉPROUVER : le clic.
+    // Sans DOM, `onToggle` ne part jamais — la mémoire tiendrait donc entièrement
+    // dans du code que rien n'exécute.
+    const vue = await mount(
+      h(FamilyApps, { currentAppId: current, groupBy: 'category' })
+    );
+    const groupes = () => [
+      ...vue.container.querySelectorAll('[data-dwc="family-app-group"]'),
+    ];
+    assert.ok(groupes().length > 1, 'plusieurs groupes rendus');
+    assert.ok(
+      groupes().every(d => d.open),
+      'tous dépliés au montage'
+    );
+    assert.equal(
+      localStorage.getItem('dwc_family_groups'),
+      null,
+      'le montage seul n’écrit rien'
+    );
+
+    // Replier le premier groupe — comme le fait un clic sur son `<summary>`.
+    const premier = groupes()[0];
+    const categorie = premier.getAttribute('data-category');
+    await vue.act(() => {
+      premier.open = false;
+      premier.dispatchEvent(new window.Event('toggle'));
+    });
+
+    const memoire = JSON.parse(localStorage.getItem('dwc_family_groups'));
+    assert.equal(
+      memoire[categorie],
+      false,
+      `le repli de ${categorie} doit être mémorisé`
+    );
+    assert.equal(
+      Object.keys(memoire).length,
+      1,
+      'seul le groupe touché est mémorisé — pas les six autres'
+    );
+    await vue.unmount();
+
+    // Un montage neuf, sur le même appareil : le repli revient.
+    const rouverte = await mount(
+      h(FamilyApps, { currentAppId: current, groupBy: 'category' })
+    );
+    const reprise = rouverte.container.querySelector(
+      `[data-dwc="family-app-group"][data-category="${categorie}"]`
+    );
+    assert.equal(reprise.open, false, 'le repli survit au remontage');
+    // Et les autres n'ont pas été emportés.
+    assert.ok(
+      [...rouverte.container.querySelectorAll('[data-dwc="family-app-group"]')]
+        .filter(d => d !== reprise)
+        .every(d => d.open),
+      'les groupes non touchés restent dépliés'
+    );
+    await rouverte.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('FamilyApps groupBy : le repli choisi est retenu, et rien d’autre n’est écrit', async t => {
+  const deps = await loadDeps();
+  if (!deps) {
+    t.skip('react / react-dom non installés (peers optionnels)');
+    return;
+  }
+  const { createElement: h, renderToStaticMarkup } = deps;
+
+  // Un `localStorage` de fortune : `storage.js` du socle lit
+  // `globalThis.localStorage`, il suffit donc de le poser.
+  const donnees = new Map();
+  const faux = {
+    getItem: k => (donnees.has(k) ? donnees.get(k) : null),
+    setItem: (k, v) => donnees.set(k, String(v)),
+    removeItem: k => donnees.delete(k),
+  };
+  const avant = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: faux,
+    configurable: true,
+    writable: true,
+  });
+  t.after(() => {
+    if (avant) Object.defineProperty(globalThis, 'localStorage', avant);
+    else delete globalThis.localStorage;
+  });
+
+  const { FamilyApps } = await import('../react/family-apps.js');
+  const { FAMILY_APPS, otherApps } = await import('../apps-catalog.js');
+  const current = FAMILY_APPS[0].id;
+  // Une catégorie réellement présente, sinon l'épreuve ne prouve rien.
+  const categorie = otherApps(current)[0].category;
+
+  // 1. Un repli mémorisé l'emporte sur le défaut.
+  donnees.set('dwc_family_groups', JSON.stringify({ [categorie]: false }));
+  const replie = renderToStaticMarkup(
+    h(FamilyApps, { currentAppId: current, groupBy: 'category' })
+  );
+  assert.match(
+    replie,
+    new RegExp(
+      `<details data-dwc="family-app-group" data-category="${categorie}"`
+    ),
+    `le groupe ${categorie} était replié : il doit le rester`
+  );
+
+  // 2. LE RENDU N'ÉCRIT RIEN. Si le montage gravait son propre défaut, aucun
+  // changement de défaut n'atteindrait plus jamais un appareil déjà visité.
+  donnees.clear();
+  renderToStaticMarkup(
+    h(FamilyApps, { currentAppId: current, groupBy: 'category' })
+  );
+  assert.equal(
+    donnees.get('dwc_family_groups'),
+    undefined,
+    'un simple rendu ne doit rien mémoriser'
+  );
+
+  // 3. Une valeur illisible ou d'une autre forme retombe sur le défaut, sans
+  //    lever : `null` n'est pas un choix, seul un booléen compte.
+  donnees.set('dwc_family_groups', '{ tronqué');
+  assert.match(
+    renderToStaticMarkup(
+      h(FamilyApps, { currentAppId: current, groupBy: 'category' })
+    ),
+    /<details open=""/,
+    'JSON illisible → défaut déplié'
+  );
+  donnees.set('dwc_family_groups', JSON.stringify({ [categorie]: null }));
+  assert.match(
+    renderToStaticMarkup(
+      h(FamilyApps, { currentAppId: current, groupBy: 'category' })
+    ),
+    new RegExp(
+      `<details open="" data-dwc="family-app-group" data-category="${categorie}"`
+    ),
+    'null n’est pas un choix → défaut déplié'
+  );
+
+  // 4. `groupStorageKey: null` renonce à la mémoire sans renoncer au groupement.
+  donnees.set('dwc_family_groups', JSON.stringify({ [categorie]: false }));
+  const sansMemoire = renderToStaticMarkup(
+    h(FamilyApps, {
+      currentAppId: current,
+      groupBy: 'category',
+      groupStorageKey: null,
+    })
+  );
+  assert.match(sansMemoire, /data-dwc="family-app-group"/, 'toujours groupé');
+  assert.match(
+    sansMemoire,
+    new RegExp(
+      `<details open="" data-dwc="family-app-group" data-category="${categorie}"`
+    ),
+    'sans clé, le repli mémorisé est ignoré'
+  );
 });
 
 test('FamilyApps groupBy : la liste interne garde le marqueur que les apps habillent', async t => {

@@ -1,6 +1,7 @@
 import { useLabels } from './labels-core.js';
 import { createElement as h, useState } from 'react';
 import { Icon } from './icons-context.js';
+import { readJson, writeJson } from '../storage.js';
 import {
   CATEGORIES,
   FAMILY_APPS,
@@ -12,6 +13,34 @@ import { useSponsorUrl } from './sponsor.js';
 
 // Liens externes sécurisés.
 const EXT = { target: '_blank', rel: 'noopener noreferrer' };
+
+/**
+ * Clé du repli des groupes — une clé FAMILLE, comme `dwc_theme` et
+ * `dwc_locale`, et ce n'est pas un raccourci.
+ *
+ * Les dix-neuf applications partagent UNE origine (`mister-guiiug.github.io`,
+ * cf. le socle sur les cookies de ce domaine) : le `localStorage` est donc
+ * commun. Replier « Santé » dans une app le replie dans toutes — et c'est le
+ * comportement voulu, parce que le catalogue est le MÊME partout. Une clé par
+ * app obligerait à refermer dix-neuf fois le même groupe.
+ */
+const GROUPES_KEY = 'dwc_family_groups';
+
+/**
+ * Un groupe est-il déplié ? Un choix MÉMORISÉ l'emporte, sinon OUVERT.
+ *
+ * Le défaut a changé le 21/09/2026 : les groupes naissaient repliés, ce qui
+ * faisait payer un clic pour voir ce que l'écran annonçait déjà (« Nos autres
+ * applications »). Replié par défaut, le composant cachait aussi son contenu à
+ * `axe` — un audit d'accessibilité ne lit pas un `<details>` fermé.
+ *
+ * `null` et `undefined` ne sont PAS des choix : seul un booléen compte. C'est ce
+ * qui permet à une valeur écrite par une version antérieure, ou à une catégorie
+ * disparue du catalogue, de retomber sur le défaut sans cas particulier.
+ */
+function groupeDeplie(memorise, valeur) {
+  return typeof memorise?.[valeur] === 'boolean' ? memorise[valeur] : true;
+}
 
 // Carte d'une application : icône (ou initiale en repli si l'icône échoue),
 // nom + badge de maturité, description, flèche « lien externe ». Le lien entier
@@ -84,19 +113,34 @@ function AppCard({ item, maturityLabels }) {
  * REGROUPEMENT REPLIABLE — `groupBy`. Au-delà d'une quinzaine de cartes, la
  * grille devient un mur : dix-neuf applications à faire défiler pour en
  * trouver une. `groupBy: 'category'` rend un `<details>` par catégorie du
- * catalogue, tous REPLIÉS, chacun annonçant son compte — dix-neuf lignes en
- * deviennent sept. `'maturity'` groupe de la même façon, pour une app qui
- * préfère séparer ce qui est stable de ce qui ne l'est pas.
+ * catalogue, chacun annonçant son compte — dix-neuf lignes en deviennent sept.
+ * `'maturity'` groupe de la même façon, pour une app qui préfère séparer ce qui
+ * est stable de ce qui ne l'est pas.
+ *
+ * LES GROUPES NAISSENT DÉPLIÉS, ET LE REPLI SE SOUVIENT (21/09/2026). Ils
+ * naissaient REPLIÉS, et c'était deux défauts pour un :
+ *
+ * - l'écran qui accueille la grille annonce déjà « Nos autres applications » ;
+ *   arriver sur sept lignes fermées faisait payer un clic pour voir ce qu'on
+ *   venait de demander ;
+ * - `axe` NE LIT PAS un `<details>` fermé. Un audit d'accessibilité passait
+ *   donc sans avoir rien analysé de la grille — le même piège qu'une assertion
+ *   qu'on relâche au lieu de la corriger.
+ *
+ * Le geste de l'utilisateur est retenu sous `dwc_family_groups`, clé FAMILLE
+ * comme `dwc_theme` : les apps partageant une origine, replier un groupe le
+ * replie partout, et le catalogue étant le même c'est bien ce qu'on veut.
+ * `groupStorageKey: null` renonce à la mémoire sans renoncer au regroupement.
  *
  * Trois choix qui méritent d'être dits :
  *
  * - `<details>`/`<summary>` NATIFS, pas un bouton et un `aria-expanded`
  *   maison. Le clavier, l'annonce « replié / déplié » et la recherche dans la
- *   page viennent avec, sans une ligne de JavaScript ni un état à
- *   synchroniser.
- * - LES GROUPES D'UN SEUL ÉLÉMENT RESTENT DÉPLIÉS. Le catalogue en compte —
- *   `education` n'a qu'une app. Un repli qui cache une ligne coûte un clic
- *   pour ne rien gagner ; il ajoute du décor là où il prétendait en retirer.
+ *   page viennent avec. La mémoire n'ajoute qu'un `onToggle` : l'élément reste
+ *   celui du navigateur, rien n'est réimplémenté.
+ * - LA MÉMOIRE NE S'ÉCRIT QUE SUR UN GESTE. Poser `open` au montage peut
+ *   déclencher `toggle` ; sans garde, le composant graverait son propre défaut
+ *   et aucun changement de défaut n'atteindrait plus personne.
  * - LA LISTE INTERNE GARDE `data-dwc="family-app-list"`. Le CSS que les apps
  *   ont déjà écrit pour la grille continue donc de s'appliquer à
  *   l'identique : adopter le regroupement ne demande QUE d'habiller
@@ -129,6 +173,7 @@ function AppCard({ item, maturityLabels }) {
  *   showRepoLinks?: boolean,
  *   sort?: 'curated'|'maturity'|'name',
  *   groupBy?: 'category'|'maturity',
+ *   groupStorageKey?: string|null,
  *   layout?: 'grid'|'list',
  *   showTitle?: boolean,
  *   max?: number,
@@ -150,12 +195,45 @@ export function FamilyApps(props) {
     showRepoLinks = false,
     sort = 'curated',
     groupBy,
+    groupStorageKey = GROUPES_KEY,
     layout = 'grid',
     showTitle = true,
     max,
     labels = {},
     className,
   } = props;
+
+  /**
+   * Le repli mémorisé, lu UNE FOIS au montage.
+   *
+   * Lu dans l'initialiseur de `useState` et non à chaque rendu : `readJson`
+   * touche le stockage, et le relire à chaque rendu ferait dépendre l'affichage
+   * d'un accès synchrone répété pour une valeur qui ne change qu'ici.
+   *
+   * Sans DOM (rendu serveur, tests du paquet), `readJson` rend le défaut sans
+   * lever — la grille sort dépliée, ce qui est bien l'état voulu.
+   */
+  const [replis, setReplis] = useState(() =>
+    groupStorageKey ? readJson(groupStorageKey, {}) : {}
+  );
+
+  /**
+   * Retient le geste de l'utilisateur.
+   *
+   * LE GARDE EN TÊTE N'EST PAS DÉCORATIF : poser l'attribut `open` au montage
+   * peut déclencher `toggle`. Sans lui, le composant écrirait l'état PAR DÉFAUT
+   * dans le stockage au premier rendu — et une clé pleine de valeurs que
+   * personne n'a choisies empêcherait tout futur changement de défaut
+   * d'atteindre qui que ce soit.
+   */
+  const memoriser = (valeur, ouvert) => {
+    if (groupeDeplie(replis, valeur) === ouvert) return;
+    const suivant = { ...replis, [valeur]: ouvert };
+    setReplis(suivant);
+    // Le retour de `writeJson` est ignoré À DESSEIN : en mode privé le repli ne
+    // survit pas au rechargement, et il n'y a rien à annoncer pour ça.
+    if (groupStorageKey) writeJson(groupStorageKey, suivant);
+  };
 
   // Prop, puis contexte, puis famille — le même hook qu'`AppFooter`, pour que
   // les deux liens de la même app ne puissent pas pointer ailleurs.
@@ -272,9 +350,13 @@ export function FamilyApps(props) {
               'details',
               {
                 key: valeur,
-                // Un groupe d'UN élément s'ouvre d'office : le replier
-                // coûterait un clic pour cacher une ligne.
-                open: items.length < 2 || undefined,
+                // DÉPLIÉ par défaut, replié si l'utilisateur l'a demandé. Le
+                // cas « un seul élément s'ouvre d'office » a disparu avec le
+                // défaut : tout s'ouvre, la règle n'avait plus d'objet.
+                open: groupeDeplie(replis, valeur),
+                onToggle: evenement => {
+                  memoriser(valeur, evenement.currentTarget.open);
+                },
                 'data-dwc': 'family-app-group',
                 [`data-${groupBy}`]: valeur,
               },

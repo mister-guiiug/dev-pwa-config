@@ -44,9 +44,21 @@ export interface FamilyAppsProps {
   /**
    * Regroupe les cartes en `<details>` repliables, un par valeur de la
    * facette, dans l'ordre du catalogue. Absent, la grille reste plate.
-   * Les groupes d'un seul élément s'ouvrent d'office.
+   *
+   * Les groupes naissent DÉPLIÉS, et le repli choisi est retenu (cf.
+   * `groupStorageKey`).
    */
   groupBy?: 'category' | 'maturity';
+  /**
+   * Clé `localStorage` où le repli des groupes est retenu. Défaut
+   * `'dwc_family_groups'` — clé FAMILLE, comme `dwc_theme` : les apps
+   * partageant une origine, replier un groupe le replie dans toutes, et c'est
+   * voulu puisque le catalogue est le même.
+   *
+   * `null` renonce à la mémoire sans renoncer au regroupement : les groupes
+   * s'ouvrent alors à chaque visite.
+   */
+  groupStorageKey?: string | null;
   /**
    * Disposition des cartes. `'grid'` (défaut) remplit la largeur par colonnes
    * de 16 rem ; `'list'` force une colonne unique — ce que treize apps du parc
