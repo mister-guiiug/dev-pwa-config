@@ -77,3 +77,28 @@ export declare function pwaBaseOptions(options?: PwaOptions): {
   manifest: Record<string, unknown>;
   workbox: Record<string, unknown>;
 };
+
+/** Couleurs `--primary` et `--bg` lues dans une feuille de style, ou `null`. */
+export declare function paletteFromCss(
+  css: string | null | undefined
+): { primary?: string; bg?: string } | null;
+
+/** Dimensions d'un PNG lues dans son en-tête IHDR, ou `null`. */
+export declare function pngDimensions(
+  buffer: Buffer
+): { width: number; height: number } | null;
+
+/**
+ * Entrées `screenshots` du manifeste, construites depuis les captures
+ * présentes sur le disque. Une capture absente est ignorée en silence.
+ */
+export declare function manifestScreenshots(
+  dir?: string,
+  options?: { publicDir?: string }
+): Array<{
+  src: string;
+  sizes: string;
+  type: 'image/png';
+  form_factor: 'narrow' | 'wide';
+  label: string;
+}>;
