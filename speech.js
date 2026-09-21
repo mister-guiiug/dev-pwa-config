@@ -17,6 +17,14 @@
  *    phrase, et c'est nettement pire sur Android. On n'annule que s'il y a
  *    quelque chose à interrompre, puis on laisse un délai au moteur.
  *
+ * 3. AUCUNE HEURISTIQUE NE REMPLACE L'OREILLE. Une voix peut articuler
+ *    franchement mal un mot courant sans que rien, dans l'API, ne permette de
+ *    le prévoir — `Microsoft Hortense`, première voix française de Windows,
+ *    écorche « cinq » dès qu'une ponctuation le précède (relevé le
+ *    21/09/2026 ; `Julie` et `Paul`, même machine, sont justes). D'où
+ *    `listVoices()` et `speak(…, { voiceName })` : l'application propose la
+ *    liste, l'utilisateur tranche.
+ *
  * Tolérant : aucune erreur si l'API manque (Web Speech non supporté, SSR,
  * tests). Non stylé, sans dépendance.
  */
@@ -96,6 +104,15 @@ const normalise = étiquette =>
  * ne départage qu'ensuite : mieux vaut la voix qu'on a choisie avec un accent
  * d'ailleurs qu'une voix qu'on n'a pas choisie.
  *
+ * ⚠ MAIS FIREFOX NE MARQUE JAMAIS DE VOIX PAR DÉFAUT. Relevé le 21/09/2026 sur
+ * Firefox 156 / Windows : les CINQ voix rendues portent `default: false`, y
+ * compris celle que le système emploie. Le critère ci-dessus y est donc inerte
+ * et l'on retombe sur « la première dans la langue ». Autrement dit, sur
+ * Firefox, aucune heuristique ne peut suivre le choix de l'utilisateur, et
+ * changer la voix par défaut de Windows ne change rien à ce que lit l'app. Si
+ * cette première voix articule mal, l'utilisateur est sans recours — d'où
+ * `listVoices()` et l'option `voiceName` de `speak()`, qui sont la seule issue.
+ *
  * @param {string} tag Étiquette BCP-47 (`fr-FR`).
  * @param {SpeechSynthesis} [synth]
  * @returns {SpeechSynthesisVoice | null}
@@ -116,6 +133,73 @@ export function pickVoice(tag, synth = globalThis.speechSynthesis) {
     mêmeLangue.find(v => v.default) ??
     mêmeLangue.find(v => normalise(v.lang) === visée) ??
     mêmeLangue[0]
+  );
+}
+
+/**
+ * Voix disponibles dans une langue, dans l'ordre où le navigateur les rend.
+ *
+ * SERT À PROPOSER UN CHOIX, et c'est la seule réponse possible à une voix qui
+ * articule mal : aucune API n'expose la QUALITÉ d'une voix. Relevé le
+ * 21/09/2026 — `Microsoft Hortense`, première voix française de Windows et donc
+ * celle que `pickVoice` retient, prononce « cinq » de travers dès qu'une
+ * ponctuation le précède ; `Julie` et `Paul`, sur la même machine et les mêmes
+ * phrases, sont justes. Rien dans `SpeechSynthesisVoice` ne permet de le
+ * deviner. Seule l'oreille de l'utilisateur tranche, encore faut-il lui donner
+ * la liste.
+ *
+ * @param {string} lang Locale courte (`fr`) ou étiquette BCP-47 (`fr-FR`).
+ * @param {SpeechSynthesis} [synth]
+ * @returns {SpeechSynthesisVoice[]}
+ */
+export function listVoices(lang, synth = globalThis.speechSynthesis) {
+  if (!synth) return [];
+  const langue = normalise(localeToBcp47(lang)).split('-')[0];
+  return listeDesVoix(synth).filter(
+    v => normalise(v.lang).split('-')[0] === langue
+  );
+}
+
+/**
+ * S'abonne à l'arrivée des voix. `getVoices()` rend un tableau VIDE au premier
+ * appel : une interface qui liste les voix au montage afficherait une liste
+ * vide et n'en sortirait jamais. Le rappel est déclenché après invalidation du
+ * cache interne, donc il voit bien la liste neuve.
+ *
+ * @param {() => void} rappel
+ * @param {SpeechSynthesis} [synth]
+ * @returns {() => void} Désabonnement.
+ */
+export function onVoicesChanged(rappel, synth = globalThis.speechSynthesis) {
+  if (!synth || typeof synth.addEventListener !== 'function') return () => {};
+  const gestionnaire = () => {
+    voixConnues = null;
+    rappel();
+  };
+  synth.addEventListener('voiceschanged', gestionnaire);
+  return () => synth.removeEventListener?.('voiceschanged', gestionnaire);
+}
+
+/**
+ * Voix explicitement demandée par l'utilisateur, si elle est encore là ET si
+ * elle parle bien la langue de l'énoncé.
+ *
+ * ON RETIENT LE `name`, PAS LE `voiceURI`. Mesuré sur une même machine : Chrome
+ * rend `"Microsoft Hortense - French (France)"` là où Firefox rend
+ * `"urn:moz-tts:sapi:Microsoft Hortense - French (France)?fr-FR"`. Une
+ * préférence enregistrée sous forme d'URI ne survivrait donc pas au changement
+ * de navigateur, alors que le `name` est identique dans les deux.
+ *
+ * La langue reste vérifiée : une préférence gardée après un changement de
+ * langue de l'interface ferait lire du portugais par une voix française.
+ */
+function voixDemandée(nom, tag, synth) {
+  if (!nom) return null;
+  const langue = normalise(tag).split('-')[0];
+  return (
+    listeDesVoix(synth).find(
+      v => v.name === nom && normalise(v.lang).split('-')[0] === langue
+    ) ?? null
   );
 }
 
@@ -144,9 +228,13 @@ let minuteur;
  *
  * @param {string} text
  * @param {string} lang Étiquette BCP-47 (ou locale courte, convertie).
+ * @param {{ voiceName?: string }} [options] `voiceName` : voix choisie par
+ *   l'utilisateur (son `name`). Ignorée si elle a disparu de l'appareil ou si
+ *   elle ne parle pas la langue demandée — on retombe alors sur `pickVoice`,
+ *   jamais sur le silence.
  * @returns {boolean} `true` si l'énoncé a été planifié.
  */
-export function speak(text, lang = 'fr') {
+export function speak(text, lang = 'fr', options = {}) {
   const synth = globalThis.speechSynthesis;
   if (
     !synth ||
@@ -160,8 +248,11 @@ export function speak(text, lang = 'fr') {
     const utterance = new globalThis.SpeechSynthesisUtterance(text);
     utterance.lang = étiquette;
 
-    // Sans voix correspondante on ne force rien : `lang` suffit au moteur.
-    const voix = pickVoice(étiquette, synth);
+    // Le choix de l'utilisateur d'abord ; sinon l'heuristique ; sinon rien du
+    // tout, `lang` suffisant au moteur.
+    const voix =
+      voixDemandée(options?.voiceName, étiquette, synth) ??
+      pickVoice(étiquette, synth);
     if (voix) utterance.voice = voix;
 
     // Tenue jusqu'à la fin, puis relâchée : garder la référence au-delà
