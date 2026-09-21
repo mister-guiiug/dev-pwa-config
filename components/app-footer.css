@@ -146,6 +146,18 @@
     grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
   }
 
+  /*
+   * `layout="list"` : une colonne, quelle que soit la largeur. TREIZE apps du
+   * parc reposaient cette règle à la main — la grille responsive suppose une
+   * page, alors qu'elle est presque toujours rendue dans un tiroir de réglages
+   * ou une carte de profil, où la seconde colonne n'a jamais la place de
+   * naître. Le défaut ne change pas pour autant : quatre apps la rendent bien
+   * en pleine page, et la grille y gagne.
+   */
+  [data-dwc='family-apps'][data-layout='list'] [data-dwc='family-app-list'] {
+    grid-template-columns: 1fr;
+  }
+
   [data-dwc='family-app-groups'] {
     display: flex;
     flex-direction: column;
@@ -217,10 +229,16 @@
     background: var(--dwc-surface-2, color-mix(in srgb, CanvasText 4%, Canvas));
     text-decoration: none;
     color: inherit;
+    transition:
+      border-color 0.15s ease,
+      transform 0.15s ease;
   }
 
+  /* Le liseré seul ne disait pas que la carte est cliquable : HUIT apps sur
+     treize avaient ajouté ce même relèvement d'un pixel. Il entre ici. */
   [data-dwc='family-app']:hover {
     border-color: var(--dwc-primary, CanvasText);
+    transform: translateY(-1px);
   }
 
   /*

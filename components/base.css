@@ -144,6 +144,13 @@
       animation-duration: 0.001ms;
       animation-iteration-count: 1;
     }
+
+    /* La carte d'application ne s'anime pas, elle TRANSITIONNE : son
+       relèvement au survol échappe donc à la règle ci-dessus, qui n'éteint
+       que les `animation`. */
+    [data-dwc='family-app'] {
+      transition-duration: 0.001ms;
+    }
   }
 
   /* ── Contraste forcé ───────────────────────────────────────────────────── *

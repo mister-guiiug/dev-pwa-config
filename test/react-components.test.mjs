@@ -263,6 +263,63 @@ test('FamilyApps groupBy : la liste interne garde le marqueur que les apps habil
   );
 });
 
+test('FamilyApps layout : « list » pose la facette, le défaut ne pose rien', async t => {
+  const deps = await loadDeps();
+  if (!deps) {
+    t.skip('react / react-dom non installés (peers optionnels)');
+    return;
+  }
+  const { createElement: h, renderToStaticMarkup } = deps;
+  const { FamilyApps } = await import('../react/family-apps.js');
+  const { FAMILY_APPS } = await import('../apps-catalog.js');
+
+  const defaut = renderToStaticMarkup(
+    h(FamilyApps, { currentAppId: FAMILY_APPS[0].id })
+  );
+  const liste = renderToStaticMarkup(
+    h(FamilyApps, { currentAppId: FAMILY_APPS[0].id, layout: 'list' })
+  );
+
+  // Le défaut doit rester MUET : les quatre apps qui rendent déjà la grille
+  // responsive ne doivent pas voir leur DOM changer sous elles.
+  assert.ok(
+    !defaut.includes('data-layout'),
+    'layout par défaut : aucune facette ne doit être posée'
+  );
+  assert.match(liste, /data-layout="list"/);
+  // La facette vit sur la section, pas sur la liste : c'est elle que le CSS
+  // du paquet fait descendre jusqu'aux colonnes.
+  assert.match(liste, /data-dwc="family-apps" data-layout="list"/);
+});
+
+test('FamilyApps showTitle : false retire le <h3>, jamais le nom de la section', async t => {
+  const deps = await loadDeps();
+  if (!deps) {
+    t.skip('react / react-dom non installés (peers optionnels)');
+    return;
+  }
+  const { createElement: h, renderToStaticMarkup } = deps;
+  const { FamilyApps } = await import('../react/family-apps.js');
+  const { FAMILY_APPS } = await import('../apps-catalog.js');
+
+  const avec = renderToStaticMarkup(
+    h(FamilyApps, { currentAppId: FAMILY_APPS[0].id })
+  );
+  const sans = renderToStaticMarkup(
+    h(FamilyApps, { currentAppId: FAMILY_APPS[0].id, showTitle: false })
+  );
+
+  assert.match(avec, /<h3 data-dwc="family-apps-title">/);
+  assert.ok(
+    !sans.includes('family-apps-title'),
+    'showTitle: false ne doit rendre aucun titre'
+  );
+  // CE QUI NE DOIT PAS PARTIR AVEC LUI. Neuf apps masquaient ce titre en
+  // `display: none`, ce qui le retirait aussi de l'arbre d'accessibilité. La
+  // région restait nommée par son `aria-label` : elle doit le rester ici.
+  assert.match(sans, /aria-label="Nos autres applications"/);
+});
+
 test('FamilyApps groupBy maturity : les trois niveaux, traduits par le dictionnaire', async t => {
   const deps = await loadDeps();
   if (!deps) {

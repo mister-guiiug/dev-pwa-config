@@ -105,6 +105,20 @@ function AppCard({ item, maturityLabels }) {
  * L'ordre des groupes suit le catalogue, pas leur taille : il ne bouge donc
  * pas quand une app naît.
  *
+ * DEUX RÉGLAGES QUE LES APPS ÉCRIVAIENT EN CSS. Un relevé des treize apps qui
+ * habillaient cette grille à la main a montré deux corrections unanimes ou
+ * presque, que le paquet ne savait pas exprimer :
+ *
+ * - `layout`. TREIZE sur treize remplaçaient la grille responsive par une
+ *   colonne unique (`display: flex; flex-direction: column`). Ces grilles
+ *   vivent dans un tiroir de réglages ou une carte étroite, où deux colonnes
+ *   ne tiennent pas. `layout: 'list'` pose ce choix sans une règle.
+ * - `showTitle`. NEUF sur treize masquaient le `<h3>` en `display: none`,
+ *   parce que l'écran qui accueille la grille annonce déjà sa section. Le
+ *   titre partait donc quand même — mais après avoir été rendu, et chaque app
+ *   payait la règle. Le `aria-label` de la `<section>` porte le même texte :
+ *   le retirer ne coûte rien au lecteur d'écran.
+ *
  * @param {{
  *   currentAppId: string,
  *   apps?: import('../apps-catalog').FamilyApp[],
@@ -115,6 +129,8 @@ function AppCard({ item, maturityLabels }) {
  *   showRepoLinks?: boolean,
  *   sort?: 'curated'|'maturity'|'name',
  *   groupBy?: 'category'|'maturity',
+ *   layout?: 'grid'|'list',
+ *   showTitle?: boolean,
  *   max?: number,
  *   labels?: {
  *     source?: string, sponsor?: string, otherApps?: string, repo?: string,
@@ -134,6 +150,8 @@ export function FamilyApps(props) {
     showRepoLinks = false,
     sort = 'curated',
     groupBy,
+    layout = 'grid',
+    showTitle = true,
     max,
     labels = {},
     className,
@@ -233,9 +251,18 @@ export function FamilyApps(props) {
 
   return h(
     'section',
-    { className, 'data-dwc': 'family-apps', 'aria-label': otherAppsLabel },
+    {
+      className,
+      'data-dwc': 'family-apps',
+      // Posé seulement en mode liste : le DOM par défaut ne bouge pas, et
+      // `[data-layout]` reste un sélecteur honnête.
+      'data-layout': layout === 'list' ? 'list' : undefined,
+      'aria-label': otherAppsLabel,
+    },
     links.length ? h('div', { 'data-dwc': 'family-links' }, links) : null,
-    h('h3', { 'data-dwc': 'family-apps-title' }, otherAppsLabel),
+    showTitle
+      ? h('h3', { 'data-dwc': 'family-apps-title' }, otherAppsLabel)
+      : null,
     groupes
       ? h(
           'div',
