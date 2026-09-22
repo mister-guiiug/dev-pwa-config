@@ -701,7 +701,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` 
 ```yaml
 - uses: actions/setup-node@v4
   with:
-    node-version: '26.9.0'
+    node-version: '26.10.0'
     cache: npm
     registry-url: 'https://npm.pkg.github.com'
     scope: '@mister-guiiug'
@@ -988,7 +988,7 @@ jobs:
 
 | Action                                                             | Rôle                                                                                                                                                        |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v4`        | Setup Node 26.9.0 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages)                                                                                |
+| `mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v4`        | Setup Node 26.10.0 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages)                                                                               |
 | `mister-guiiug/dev-pwa-config/.github/actions/supabase-migrate@v4` | Setup CLI Supabase + `link` + `db push` (déploiements custom)                                                                                               |
 | `mister-guiiug/dev-pwa-config/.github/actions/firebase-deploy@v4`  | `firebase deploy` ciblé (rules database/firestore, indexes) — auth `service-account-key` (recommandé) ou `token` (déprécié), firebase-tools épinglé via npx |
 
