@@ -61,6 +61,56 @@ const SELF = 'dev-pwa-config';
 const MIRRORS = new Set(['mister-family-map']);
 
 /**
+ * PUBLICATION AUTOMATIQUE : un workflow du dépôt POUSSE lui-même sur `main`.
+ *
+ * `parc-dashboard` se relève chaque nuit — `releve.yml` reconstruit
+ * `index.html` et `historique.json`, puis fait `git commit` + `git push` sous
+ * l'identité `github-actions[bot]`. Or ce robot n'a AUCUN contournement : la
+ * règle `pull_request` refuserait ce push, et le relevé s'éteindrait.
+ *
+ * ET IL S'ÉTEINDRAIT EN SILENCE. C'est déjà arrivé, sur un autre dépôt :
+ * `dev-pwa-config / Showroom metrics` a échoué chaque nuit du 02/09 au 13/09
+ * 2026 avec `GH013 … Changes must be made through a pull request`, pendant que
+ * la vitrine continuait d'afficher des mesures figées. **Un job nocturne rouge
+ * dans un dépôt à CI verte ne se voit pas** — douze jours pour s'en apercevoir.
+ * Ce Set existe pour que la même panne ne soit pas reposée à la main.
+ *
+ * ON NE RETIRE QUE `pull_request`, PAS LE RESTE. Le push nocturne est une
+ * avance rapide ordinaire (`git push` nu, vérifié : aucun `--force`), donc
+ * `non_fast_forward` ne le gêne pas et continue de refuser une réécriture
+ * d'historique. Ces dépôts gardent donc DEUX protections, là où le laisser
+ * hors du passage en masse — l'état constaté le 23/09/2026 — n'en laissait
+ * aucune.
+ *
+ * Pas de `required_status_checks` non plus : il n'a de sens qu'avec une règle
+ * `pull_request`, puisqu'il garde l'entrée d'une PR.
+ */
+const AUTO_PUBLIE = new Set(['parc-dashboard']);
+
+/**
+ * Contextes exigés d'un dépôt — UN SEUL ENDROIT.
+ *
+ * Le défaut de `CHECKS` vise les applications, qui rapportent toutes
+ * `ci / Format · Lint · Type · Test · Build`. Un dépôt qui n'accueille pas de
+ * PR n'exige aucun check : ni un miroir, ni un dépôt qui se publie lui-même —
+ * `required_status_checks` n'a de sens qu'avec une règle `pull_request`, dont
+ * il garde l'entrée.
+ *
+ * SANS CETTE EXCEPTION, `parc-dashboard` SE FAISAIT REFUSER pour la mauvaise
+ * raison : le défaut lui prêtait le contexte des apps, que sa CI ne rapporte
+ * pas (elle rend `build`, `deploy`, `report-build-status`, `Règles du
+ * relevé`). Le garde le sauvait donc par accident — et `--force` aurait levé
+ * ce sauvetage-là en même temps que le reste.
+ *
+ * Le calcul vivait en DEUX exemplaires, dont un seul connaissait les miroirs.
+ * Une troisième copie aurait fini par diverger.
+ */
+function contextesPour(repo) {
+  if (MIRRORS.has(repo) || AUTO_PUBLIE.has(repo)) return [];
+  return CHECKS[repo] ?? CHECKS.default;
+}
+
+/**
  * CONTOURNEMENT : le rôle admin, et SEULEMENT à travers une pull request.
  *
  * `bypass_mode: 'pull_request'` et non `'always'`, parce que les deux ne
@@ -230,6 +280,17 @@ const CHECKS = {
   // contexte y gèlerait chaque PR pour toujours.
   '.github': [],
 
+  /**
+   * AUCUNE CI — donc aucun contexte, et c'est un choix, pas un oubli.
+   *
+   * `mister-guiiug.github.io` sert la racine de l'origine : `robots.txt`,
+   * `sitemap.xml` et la page qui lie les applications. Des fichiers statiques
+   * engendrés par `scripts/build-site.mjs`, sans build ni test — rien à
+   * vérifier, donc aucun job. Lui laisser le défaut le faisait REFUSER par le
+   * garde (contexte jamais rapporté), et `--force` l'aurait gelé pour de bon.
+   */
+  'mister-guiiug.github.io': [],
+
   default: ['ci / Format · Lint · Type · Test · Build'],
 };
 
@@ -312,7 +373,7 @@ function checksObserves(repo) {
 }
 
 function rulesetFor(repo) {
-  const contexts = CHECKS[repo] ?? CHECKS.default;
+  const contexts = contextesPour(repo);
   const base = {
     name: 'Protect main',
     target: 'branch',
@@ -325,6 +386,17 @@ function rulesetFor(repo) {
   // Un miroir n'accueille pas de PR : il reçoit un `push --force` depuis sa
   // source. On garde la seule règle qui ne gêne pas la publication.
   if (MIRRORS.has(repo)) return { ...base, rules: [{ type: 'deletion' }] };
+
+  // Un dépôt qui se publie lui-même pousse sur `main` depuis un workflow, sous
+  // une identité sans contournement : la règle `pull_request` l'éteindrait.
+  // Les deux autres ne le gênent pas — son push est une avance rapide.
+  if (AUTO_PUBLIE.has(repo)) {
+    return {
+      ...base,
+      bypass_actors: BYPASS,
+      rules: [{ type: 'deletion' }, { type: 'non_fast_forward' }],
+    };
+  }
 
   return {
     ...base,
@@ -506,12 +578,14 @@ for (const repo of targets) {
   // Le journal dit ce que le ruleset FAIT : annoncer des checks à un miroir
   // qui n'en reçoit aucun, c'est se mentir à soi-même dans une sortie verte.
   const miroir = MIRRORS.has(repo);
-  const contexts = miroir ? [] : (CHECKS[repo] ?? CHECKS.default);
+  const contexts = contextesPour(repo);
   console.log(`\n→ ${OWNER}/${repo}`);
   console.log(
     miroir
       ? '  · MIROIR : suppression bloquée seulement (le push --force doit passer)'
-      : `  · checks exigés : ${contexts.join(', ') || 'aucun'}`
+      : AUTO_PUBLIE.has(repo)
+        ? '  · PUBLICATION AUTOMATIQUE : pas de règle `pull_request`, son workflow pousse sur `main`'
+        : `  · checks exigés : ${contexts.join(', ') || 'aucun'}`
   );
 
   if (contexts.length && !FORCE) {
