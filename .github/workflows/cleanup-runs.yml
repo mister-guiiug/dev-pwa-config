@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Prune old workflow runs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           # Passés via env: (jamais interpolés dans le script) — un `keep`
           # venu d'un appelant ne doit pas pouvoir écrire du JavaScript.
