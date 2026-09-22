@@ -1,7 +1,7 @@
 # Politique de sécurité
 
-`@mister-guiiug/dev-pwa-config` est le socle commun de seize applications PWA de
-la famille `miss-*` / `mister-*`. Une faille ici se propage à toutes : le
+`@mister-guiiug/dev-pwa-config` est le socle commun des applications PWA de la
+famille `miss-*` / `mister-*`. Une faille ici se propage à toutes : le
 signalement mérite un canal, et ce dépôt n'en avait aucun.
 
 ## Signaler une vulnérabilité
@@ -25,9 +25,14 @@ engagement de bonne foi, pas un contrat de support.
 ## Versions suivies
 
 Seule la dernière version majeure publiée reçoit des correctifs. Les workflows
-réutilisables sont consommés via un **tag majeur mobile** (`@v4`) : un correctif
-publié atteint donc les dix-neuf dépôts consommateurs au tag suivant, sans
-intervention de leur part.
+réutilisables sont consommés via un **tag majeur mobile** — `@v<majeur>`, qui
+suit la version majeure du paquet : un correctif publié atteint donc, au tag
+suivant et sans intervention de leur part, tous les dépôts qui référencent le
+tag du majeur **courant**.
+
+Un dépôt resté sur le tag d'un majeur précédent ne reçoit plus rien : ce tag se
+fige à la sortie du majeur suivant. Au 23/09/2026, les vingt et un dépôts
+consommateurs référençaient tous le majeur courant.
 
 ## Périmètre
 
