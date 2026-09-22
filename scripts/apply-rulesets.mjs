@@ -297,6 +297,14 @@ const CHECKS = {
    */
   'mister-guiiug.github.io': [],
 
+  /**
+   * AUCUNE CI, ET RIEN À VÉRIFIER. `mister-guiiug` est le dépôt du README de
+   * PROFIL — GitHub affiche son `README.md` sur la page du compte. Un seul
+   * fichier de texte, sans build : lui laisser le défaut le ferait REFUSER par
+   * le garde (contexte jamais rapporté), comme la racine avant elle.
+   */
+  'mister-guiiug': [],
+
   default: ['ci / Format · Lint · Type · Test · Build'],
 };
 
