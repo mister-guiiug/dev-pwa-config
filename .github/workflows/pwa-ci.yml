@@ -217,7 +217,7 @@ jobs:
     if: ${{ inputs.verify-lockfile }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -245,7 +245,7 @@ jobs:
     name: Format · Lint · Type · Test · Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -445,7 +445,7 @@ jobs:
       E2E_PROJECT: ${{ inputs.e2e-project }}
       E2E_INSTALL: ${{ inputs.e2e-install }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
