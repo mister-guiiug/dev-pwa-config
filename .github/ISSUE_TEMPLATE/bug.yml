@@ -12,7 +12,7 @@ body:
     attributes:
       label: Version du paquet
       description: '`npm ls @mister-guiiug/dev-pwa-config`'
-      placeholder: 3.11.0
+      placeholder: x.y.z
     validations:
       required: true
   - type: input
@@ -36,9 +36,32 @@ body:
       description: Les étapes minimales. Un dépôt minimal vaut mieux qu'une description.
     validations:
       required: true
+  # `environnement` N'EST PAS UN NOM LIBRE. `issue-report` du socle préremplit
+  # ce formulaire par l'URL, et GitHub ne remplit un champ que si son `id`
+  # correspond au paramètre : il envoie `version` et `environnement`. Sans ce
+  # champ, l'environnement d'un signalement parti d'un pied de page était perdu
+  # en silence. Même identifiant que le gabarit par défaut du compte.
+  - type: input
+    id: environnement
+    attributes:
+      label: Environnement
+      description: Node, Vite, navigateur, système — ce qui compte pour le sous-chemin concerné.
+      placeholder: Node 26, Vite 8, Firefox 156
+    validations:
+      required: false
+  - type: textarea
+    id: journal
+    attributes:
+      label: Journal ou capture
+      description: >-
+        Console, trace d'erreur, capture d'écran. **Retirer ce qui identifie
+        quelqu'un** avant de coller.
+      render: text
+    validations:
+      required: false
   - type: input
     id: app
     attributes:
       label: App concernée
-      description: Utile pour savoir combien des seize dépôts sont touchés.
+      description: Utile pour savoir combien de dépôts sont touchés.
       placeholder: miss-uwh

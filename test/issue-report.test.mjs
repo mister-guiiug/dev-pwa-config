@@ -2,6 +2,7 @@
 // sait et que l'utilisateur ne sait jamais dire.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   ISSUE_TEMPLATE,
@@ -165,4 +166,50 @@ test('currentIssueReportUrl lit le build injecté par vite-version, et rien sous
   } finally {
     globalThis[BUILD_INFO_GLOBAL] = avant;
   }
+});
+
+/**
+ * LE CONTRAT ENTRE `issue-report` ET LE FORMULAIRE DU SOCLE. GitHub ne
+ * préremplit un champ que si son `id` correspond à un paramètre de l'URL : un
+ * paramètre sans champ est perdu EN SILENCE, sans erreur nulle part. C'est
+ * arrivé — le `bug.yml` du socle n'avait pas de champ `environnement` avant le
+ * 23/09/2026, et l'environnement d'un signalement parti d'un pied de page
+ * disparaissait sans trace.
+ *
+ * Les paramètres sont tirés d'un VRAI appel, pas recopiés : si `issue-report`
+ * en émet un nouveau demain, ce test dira que le formulaire ne sait pas le
+ * recevoir. Les `id:` sont lus au texte — le socle n'a pas de parseur YAML, et
+ * ce format plat n'en demande pas.
+ */
+test('chaque paramètre émis par issue-report a son champ dans le bug.yml du socle', () => {
+  const url = new URL(
+    issueReportUrl({
+      repoUrl: 'https://github.com/mister-guiiug/dev-pwa-config',
+      version: '6.7.1',
+      commit: 'abc1234def',
+      buildTime: '2026-09-23T10:00:00.000Z',
+      route: '/',
+      environment: 'Node 26, Firefox 156',
+    })
+  );
+  const emis = [...url.searchParams.keys()].filter(
+    k => k !== 'template' && k !== 'title'
+  );
+  const gabarit = readFileSync(
+    new URL('../.github/ISSUE_TEMPLATE/bug.yml', import.meta.url),
+    'utf8'
+  );
+  const champs = new Set(
+    [...gabarit.matchAll(/^\s+id:\s*(\S+)\s*$/gm)].map(m => m[1])
+  );
+
+  assert.ok(
+    emis.includes('version') && emis.includes('environnement'),
+    `issue-report doit émettre version et environnement, a émis : ${emis.join(', ')}`
+  );
+  assert.deepEqual(
+    emis.filter(p => !champs.has(p)),
+    [],
+    'paramètres émis sans champ dans le formulaire — perdus en silence'
+  );
 });

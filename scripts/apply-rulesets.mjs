@@ -281,13 +281,19 @@ const CHECKS = {
   '.github': [],
 
   /**
-   * AUCUNE CI — donc aucun contexte, et c'est un choix, pas un oubli.
+   * UN JOB EXISTE, MAIS IL N'EST PAS EXIGÉ — c'est un choix, pas un oubli.
    *
    * `mister-guiiug.github.io` sert la racine de l'origine : `robots.txt`,
-   * `sitemap.xml` et la page qui lie les applications. Des fichiers statiques
-   * engendrés par `scripts/build-site.mjs`, sans build ni test — rien à
-   * vérifier, donc aucun job. Lui laisser le défaut le faisait REFUSER par le
-   * garde (contexte jamais rapporté), et `--force` l'aurait gelé pour de bon.
+   * `sitemap.xml` et la page qui lie les applications, engendrés AU MOMENT DE
+   * PUBLIER par son workflow `pages.yml` (rien n'est commité). Sur une PR, le
+   * job « Construire le site » tourne comme simple vérification.
+   *
+   * L'EXIGER RENDRAIT UNE PR DE LA PAGE D'ACCUEIL OTAGE DE VINGT AUTRES SITES :
+   * ce job lit le catalogue sur le réseau et SONDE chaque application — une
+   * seule en panne, et il échoue. C'est voulu au moment de publier (rien n'est
+   * déployé, Pages garde la version précédente), pas pour bloquer une
+   * relecture. Lui laisser le défaut le faisait en outre REFUSER par le garde,
+   * puisqu'il ne rapporte pas le contexte des applications.
    */
   'mister-guiiug.github.io': [],
 
