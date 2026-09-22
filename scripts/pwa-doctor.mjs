@@ -120,6 +120,24 @@ const readJson = (dir, rel) => {
 };
 const exists = (dir, rel) => existsSync(join(dir, rel));
 
+/**
+ * Une empreinte de contenu à la Vite : `-` puis huit caractères base64url en
+ * fin de nom (`index-DhszbAbc.js`). C'est ce suffixe qui rend une URL mortelle
+ * au déploiement suivant — cf. la règle `chunk-hors-precache`.
+ */
+const EMPREINTE_VITE = /-[A-Za-z0-9_-]{8}\.js$/;
+
+/** Les fichiers JS émis dans `dist/assets/`, cartes de source exclues. */
+function jsDuBuild(root) {
+  try {
+    return readdirSync(join(root, 'dist', 'assets')).filter(f =>
+      f.endsWith('.js')
+    );
+  } catch {
+    return [];
+  }
+}
+
 /** Les fichiers source sous `roots`, lus. */
 function walk(dir, roots, keep = SOURCE) {
   const out = [];
@@ -1461,6 +1479,58 @@ export function reglesBuild(ctx, api) {
         'versionPlugin({ manifest: true }) (vite-version)'
       );
     }
+    /*
+     * UN MORCEAU HORS PRÉCACHE NE DOIT PAS PORTER D'EMPREINTE DE CONTENU.
+     *
+     * Signalé en production sur mister-qowa le 22/09/2026 : « Échec du
+     * chargement pour le module dont la source est .../sentry-EYLFX1f0.js »,
+     * HTTP 404. Le service worker sert la coquille PRÉCACHÉE jusqu'à ce que
+     * l'utilisateur accepte la mise à jour ; cette coquille demande l'ANCIENNE
+     * empreinte, que le déploiement suivant a supprimée de `assets/`. Tout ce
+     * qui est précaché survit — c'est précisément ce qui ne l'est pas qui casse.
+     *
+     * ET ÇA NE SE VOIT PAS. Les apps du parc excluent le SDK Sentry du précache
+     * (158 kB gzip que personne ne doit télécharger sans DSN) et `initSentry`
+     * enveloppe son import dans un try/catch : l'application ne casse pas, elle
+     * cesse de rapporter ses erreurs sans le dire. Un rapporteur éteint par le
+     * déploiement qui vient de l'installer. Dix-neuf dépôts portaient le montage
+     * au 22/09/2026 ; aucun ne l'avait remarqué.
+     *
+     * Le contrôle lit les ARTEFACTS, pas la configuration : c'est la seule façon
+     * d'attraper aussi ce qu'une exclusion future écartera (miss-genius exclut
+     * déjà `rive-*` et `RivePlayer-*` par le même motif).
+     *
+     * SANS PRÉCACHE, LE CONTRÔLE SE TAIT — et ce n'est pas une facilité : sans
+     * précache il n'y a pas de coquille périmée, donc aucun ancien nom à
+     * demander. L'invariant est vide, pas contourné.
+     */
+    const sw =
+      readText(root, 'dist/sw.js') ?? readText(root, 'dist/service-worker.js');
+    if (sw) {
+      // Le manifeste s'écrit minifié (`url:"…"`) ou développé (`"url": "…"`).
+      // On n'accepte que des valeurs qui RESSEMBLENT à un fichier servi : le
+      // code de Workbox porte lui aussi des littéraux `url:`.
+      const precache = new Set(
+        [
+          ...sw.matchAll(
+            /["']?url["']?\s*:\s*["']([^"']+\.(?:js|css|html|svg|png|webp|woff2|webmanifest|ico|json))["']/g
+          ),
+        ].map(m => m[1].split('/').pop())
+      );
+      const fugaces = precache.size
+        ? jsDuBuild(root).filter(
+            f => !precache.has(f) && EMPREINTE_VITE.test(f)
+          )
+        : [];
+      if (fugaces.length) {
+        const liste = fugaces.slice(0, 3).join(', ');
+        defaut(
+          'chunk-hors-precache',
+          `${fugaces.length} morceau(x) hors précache portent une empreinte de contenu (${liste}${fugaces.length > 3 ? ', …' : ''}) : leur URL meurt au déploiement suivant, et la coquille précachée la demandera encore`,
+          'un nom STABLE via `chunkFileNames` (ex. `assets/sentry.js`), et le motif de `globIgnores` mis d’accord — sinon le morceau rentre dans le précache'
+        );
+      }
+    }
     // `pwa-deploy.yml@<majeur>` copie `index.html` en `404.html` AU DÉPLOIEMENT :
     // un build local sans lui n'est pas un défaut pour une app qui déploie
     // par le réutilisable — c'est le cas de badminton, contraction, footcoach.
@@ -1563,6 +1633,7 @@ export const CATALOGUE = [
   { id: 'manifest-lang', famille: 'build', niveau: 'défaut' },
   { id: 'manifest-screenshots', famille: 'build', niveau: 'dette' },
   { id: 'version-manifest', famille: 'build', niveau: 'dette' },
+  { id: 'chunk-hors-precache', famille: 'build', niveau: 'défaut' },
   { id: 'spa-404', famille: 'build', niveau: 'défaut' },
 ];
 

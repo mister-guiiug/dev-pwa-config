@@ -403,6 +403,140 @@ test('les assets qui SORTENT du site sont un défaut, même quand le préfixe d�
   );
 });
 
+/*
+ * UN MORCEAU HORS PRÉCACHE QUI PORTE UNE EMPREINTE — le défaut qui a rendu
+ * Sentry muet sur dix-neuf dépôts sans que personne le voie.
+ *
+ * Production de mister-qowa, 22/09/2026 : « Échec du chargement pour le module
+ * dont la source est .../sentry-EYLFX1f0.js », HTTP 404. Le service worker sert
+ * la coquille précachée jusqu'à la mise à jour acceptée ; elle demande l'ancienne
+ * empreinte, que le déploiement suivant a supprimée. Ce qui est précaché survit :
+ * seul ce qui en est EXCLU casse — et `initSentry` avale l'échec, donc l'app ne
+ * casse pas, elle cesse juste de rapporter.
+ */
+
+/** Un build minimal : une page, un manifeste de précache, des morceaux. */
+const buildAvecSw = (precachés, morceaux, { sw = true } = {}) => {
+  const files = {
+    'package.json': { name: 'miss-x' },
+    'dist/index.html':
+      '<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width"></head><body></body></html>',
+  };
+  for (const m of morceaux) files['dist/assets/' + m] = '/* morceau */';
+  if (sw) {
+    const manifeste = precachés
+      .map(u => `{url:"assets/${u}",revision:null}`)
+      .join(',');
+    files['dist/sw.js'] = `s.precacheAndRoute([${manifeste}]);`;
+  }
+  return files;
+};
+
+const trouve = (root, id) => diagnose(root).findings.find(f => f.id === id);
+
+test('un morceau hors précache qui porte une empreinte est un défaut', async () => {
+  await repo(
+    buildAvecSw(
+      ['index-DhszbAbc.js'],
+      ['index-DhszbAbc.js', 'sentry-EYLFX1f0.js']
+    ),
+    root => {
+      const f = trouve(root, 'chunk-hors-precache');
+      assert.ok(f, 'le morceau exclu du précache et empreinté est signalé');
+      assert.equal(f.level, 'défaut');
+      assert.match(
+        f.message,
+        /sentry-EYLFX1f0\.js/,
+        'le message NOMME le fautif'
+      );
+      assert.match(f.message, /1 morceau/);
+    }
+  );
+});
+
+test('le même morceau à nom STABLE ne dit rien : c’est le remède, pas le précache', async () => {
+  // Le remède n'est pas de précacher les 158 kB du SDK — c'est de lui donner
+  // une URL qui survive au déploiement.
+  await repo(
+    buildAvecSw(['index-DhszbAbc.js'], ['index-DhszbAbc.js', 'sentry.js']),
+    root => {
+      assert.equal(trouve(root, 'chunk-hors-precache'), undefined);
+    }
+  );
+});
+
+test('un morceau PRÉCACHÉ garde son empreinte sans rien déclencher', async () => {
+  // Le cas normal, et il est majoritaire : 41 morceaux sur 42 chez mister-qowa.
+  await repo(
+    buildAvecSw(
+      ['index-DhszbAbc.js', 'store-WU2KOs_d.js'],
+      ['index-DhszbAbc.js', 'store-WU2KOs_d.js']
+    ),
+    root => {
+      assert.equal(trouve(root, 'chunk-hors-precache'), undefined);
+    }
+  );
+});
+
+test('sans service worker le contrôle se TAIT — et ce n’est pas un faux vert', async () => {
+  // Sans précache, aucune coquille périmée ne peut demander un ancien nom :
+  // l'invariant est VIDE, pas contourné. La contre-épreuve est dans le même
+  // test — mêmes fichiers, un sw en plus, et le défaut apparaît.
+  const morceaux = ['index-DhszbAbc.js', 'sentry-EYLFX1f0.js'];
+  await repo(buildAvecSw([], morceaux, { sw: false }), root => {
+    assert.equal(
+      trouve(root, 'chunk-hors-precache'),
+      undefined,
+      'pas de sw : rien à conclure'
+    );
+  });
+  await repo(buildAvecSw(['index-DhszbAbc.js'], morceaux), root => {
+    assert.ok(
+      trouve(root, 'chunk-hors-precache'),
+      'le MÊME build avec un sw signale : le silence ci-dessus vient bien du sw absent'
+    );
+  });
+});
+
+test('un manifeste développé se lit comme un manifeste minifié', async () => {
+  // `injectManifest` et `generateSW` n'écrivent pas la même forme, et un
+  // contrôle qui n'en connaît qu'une se taira sur la moitié du parc.
+  const files = {
+    'package.json': { name: 'miss-x' },
+    'dist/index.html':
+      '<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width"></head><body></body></html>',
+    'dist/assets/index-DhszbAbc.js': '/* entrée */',
+    'dist/assets/sentry-EYLFX1f0.js': '/* sdk */',
+    'dist/sw.js': `precacheAndRoute([\n  { "url": "assets/index-DhszbAbc.js", "revision": null }\n]);`,
+  };
+  await repo(files, root => {
+    const f = trouve(root, 'chunk-hors-precache');
+    assert.ok(f, 'la forme développée est lue elle aussi');
+    assert.match(f.message, /sentry-EYLFX1f0\.js/);
+  });
+});
+
+test('le code de Workbox ne compte pas comme un manifeste', async () => {
+  // Le bundle du worker porte ses propres littéraux `url:`. S'ils passaient pour
+  // des entrées de précache, la règle croirait tout précaché et se tairait —
+  // exactement le faux vert qu'on cherche à éviter.
+  const files = {
+    'package.json': { name: 'miss-x' },
+    'dist/index.html':
+      '<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width"></head><body></body></html>',
+    'dist/assets/index-DhszbAbc.js': '/* entrée */',
+    'dist/assets/sentry-EYLFX1f0.js': '/* sdk */',
+    // Un `url:` qui ne DÉSIGNE PAS un fichier servi, plus un vrai manifeste.
+    'dist/sw.js': `const r={url:t.href,mode:"navigate"};s.precacheAndRoute([{url:"assets/index-DhszbAbc.js",revision:null}]);`,
+  };
+  await repo(files, root => {
+    assert.ok(
+      trouve(root, 'chunk-hors-precache'),
+      'le littéral interne de Workbox n’a pas fait passer le morceau pour précaché'
+    );
+  });
+});
+
 test('les mêmes assets SOUS le site ne disent rien', async () => {
   const html = `<!doctype html><html lang="fr"><head>
     <link rel="canonical" href="https://o.github.io/miss-x/">
