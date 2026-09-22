@@ -798,7 +798,7 @@ export function reglesDepot(ctx, api) {
     // majeur périmé jusqu'à ce qu'un dépôt passe au suivant. Le test
     // `pwa-doctor` compare donc ce conseil au `.nvmrc` du dépôt : les deux
     // montent ensemble ou la CI rougit.
-    dette('nvmrc', 'pas de .nvmrc', 'écrire « 26.9.0 »');
+    dette('nvmrc', 'pas de .nvmrc', 'écrire « 26.10.0 »');
   }
   const attributes = readText(root, '.gitattributes') ?? '';
   if (!/eol=lf/.test(attributes)) {
