@@ -90,3 +90,13 @@ jobs:
           languages: javascript-typescript
           queries: security-extended
       - uses: github/codeql-action/analyze@v3
+
+  vice:
+    # Le socle s'audite avec le réutilisable qu'il propose aux apps. C'est aussi
+    # ce qui ÉPROUVE `pwa-vice.yml` avant qu'une app ne l'appelle : un
+    # réutilisable qu'aucun workflow n'appelle n'est jamais lu par GitHub, et
+    # une erreur n'y paraîtrait que chez le premier appelant.
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/pwa-vice.yml
