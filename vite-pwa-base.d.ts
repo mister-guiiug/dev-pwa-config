@@ -33,7 +33,35 @@ export interface PwaSeoPluginOptions {
    */
   themeColor?: { light?: string; dark?: string };
   extraReplacements?: Record<string, string>;
+  /**
+   * Données structurées `WebApplication` injectées dans `<head>`, tirées du
+   * catalogue et de la page (défaut `true`). `false` les coupe ; un objet
+   * surcharge des champs. Jamais injectées si la page porte déjà un
+   * `application/ld+json`.
+   */
+  jsonLd?: boolean | Record<string, unknown>;
+  /**
+   * Chemins PUBLICS à ajouter au plan de site, relatifs à l'accueil
+   * (`'a-propos'`, `'en/'`).
+   */
+  routes?: string[];
 }
+
+/** `category` du catalogue → `applicationCategory` documentée par Google. */
+export const SCHEMA_APPLICATION_CATEGORIES: Readonly<Record<string, string>>;
+
+/**
+ * Le `WebApplication` schema.org d'une app du parc, ou `null` sans nom ni
+ * description.
+ */
+export function webApplicationJsonLd(opts: {
+  html: string;
+  homeUrl: string;
+  overrides?: Record<string, unknown>;
+}): Record<string, unknown> | null;
+
+/** Le bloc `<script type="application/ld+json">`, `<` échappé. */
+export function jsonLdScript(donnees: Record<string, unknown>): string;
 
 /** Renvoie un objet Plugin Vite (structurel). */
 export function pwaSeoPlugin(opts?: PwaSeoPluginOptions): {
