@@ -214,7 +214,101 @@ function echapperXml(texte) {
   return texte
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+const TEXTES_SERVIS = {
+  fr: {
+    famille: `Les autres applications de ${GITHUB_OWNER}`,
+    noscript: 'Cette application a besoin de JavaScript pour fonctionner.',
+  },
+  en: {
+    famille: `More apps by ${GITHUB_OWNER}`,
+    noscript: 'This app needs JavaScript to run.',
+  },
+};
+
+/**
+ * La mise en page du contenu servi : un bloc centré, lisible sans la feuille
+ * de l'app. Les couleurs sont HÉRITÉES — fond et texte viennent du thème que
+ * le script anti-FOUC a déjà posé. Les sélecteurs d'attribut l'emportent sur
+ * les remises à zéro de Tailwind (`h1 { font-size: inherit }`).
+ *
+ * En ligne, parce qu'il doit peindre AVANT toute feuille : c'est tout son
+ * objet. `cspPlugin` laisse `'unsafe-inline'` à `style-src` — relevé sur les
+ * vingt apps le 23/09/2026, aucune ne le retire.
+ *
+ * Le lien est SOULIGNÉ explicitement : sa couleur est celle du texte, et la
+ * remise à zéro de Tailwind (`a { text-decoration: inherit }`) le rendait
+ * indiscernable — vu sur `mister-cim10` et `miss-uwh`. WCAG 1.4.1 : un lien ne
+ * se signale pas par la seule couleur.
+ */
+export const SERVED_CONTENT_STYLE =
+  '<style data-dwc="served-content-style">' +
+  '[data-dwc=served-content]{box-sizing:border-box;max-width:36rem;margin:0 auto;' +
+  "padding:18vh 1.25rem 2rem;text-align:center;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.5}" +
+  '[data-dwc=served-content] h1{font-size:1.5rem;line-height:1.25;margin:0 0 .75rem;font-weight:700}' +
+  '[data-dwc=served-content] p{margin:0 0 .75rem;opacity:.8}' +
+  '[data-dwc=served-content] a{color:inherit;text-decoration:underline}' +
+  '</style>';
+
+/**
+ * LE CONTENU SERVI : ce qu'un robot lit sans exécuter le JavaScript.
+ *
+ * Relevé du 23/09/2026 : les vingt apps du parc servaient un corps VIDE — un
+ * `<div id="app"></div>`, rendu ensuite par React. Un robot qui n'exécute pas
+ * le JavaScript (premier passage de Bing, robots des moteurs d'IA, aperçus de
+ * liens, premier passage de Google) ne lisait donc rien. Pré-rendre l'écran
+ * d'accueil n'aurait pas suffi : pour `miss-uwh` et `mister-doc`, il ne montre
+ * qu'un formulaire de CONNEXION.
+ *
+ * On sert donc, DANS le point de montage, ce qui décrit l'app : son titre en
+ * `<h1>`, sa description, un lien vers l'accueil du parc. Rien d'inventé — ce
+ * sont le `<title>` et la `meta description` de la page.
+ *
+ * React le REMPLACE au premier rendu : `createRoot().render()` vide le
+ * conteneur, et les vingt apps montent ainsi (aucune n'hydrate). Le visiteur
+ * voit ce bloc le temps que le JavaScript arrive — le nom de l'app plutôt
+ * qu'une page blanche —, puis l'app elle-même.
+ *
+ * Point de montage : le PREMIER `<div id="…"></div>` VIDE du `<body>` (`app`,
+ * `root`, `react-root` dans le parc). S'il porte déjà du contenu, on n'y touche
+ * pas : l'app sert déjà quelque chose.
+ *
+ * @returns {{ html: string, injecte: boolean, raison?: string, montage?: string }}
+ */
+export function injectServedContent(html) {
+  if (html.includes('data-dwc="served-content"'))
+    return { html, injecte: false, raison: 'déjà présent' };
+  const corps = html.search(/<body\b/i);
+  if (corps < 0) return { html, injecte: false, raison: 'pas de <body>' };
+  const m = /<div id="([\w-]+)"\s*>\s*<\/div>/.exec(html.slice(corps));
+  if (!m)
+    return { html, injecte: false, raison: 'aucun point de montage vide' };
+  const titre = decoderEntites(contenuDuTitre(html).trim());
+  const description = metaDe(html, 'description');
+  if (!titre || !description)
+    return { html, injecte: false, raison: 'ni titre ni description' };
+
+  const lang = attribut(/<html\b[^>]*>/i.exec(html)?.[0] ?? '', 'lang');
+  const t = /^en\b/i.test(lang) ? TEXTES_SERVIS.en : TEXTES_SERVIS.fr;
+  const bloc =
+    `<div id="${echapperXml(m[1])}"><div data-dwc="served-content">` +
+    `<h1>${echapperXml(titre)}</h1>` +
+    `<p>${echapperXml(description)}</p>` +
+    `<p><a href="${FAMILY_ORIGIN}/">${echapperXml(t.famille)}</a></p>` +
+    `<noscript><p>${echapperXml(t.noscript)}</p></noscript>` +
+    `</div></div>`;
+  const debut = corps + m.index;
+  let out = html.slice(0, debut) + bloc + html.slice(debut + m[0].length);
+  if (
+    !out.includes('data-dwc="served-content-style"') &&
+    out.includes('</head>')
+  )
+    out = out.replace('</head>', `  ${SERVED_CONTENT_STYLE}\n  </head>`);
+  return { html: out, injecte: true, montage: m[1] };
 }
 
 /**
@@ -246,6 +340,9 @@ function echapperXml(texte) {
  * @param {string[]} [opts.routes=[]] Chemins à ajouter au plan de site, relatifs
  *   à l'accueil (`'a-propos'`, `'en/'`). Seulement des écrans PUBLICS, servis
  *   à froid : un chemin derrière une connexion n'a rien à y faire.
+ * @param {boolean} [opts.servedContent=true] Sert, au BUILD, le titre et la
+ *   description de l'app dans son point de montage vide (voir
+ *   `injectServedContent`). `false` le coupe.
  */
 export function pwaSeoPlugin(opts = {}) {
   const {
@@ -262,6 +359,7 @@ export function pwaSeoPlugin(opts = {}) {
     extraReplacements = {},
     jsonLd = true,
     routes = [],
+    servedContent = true,
   } = opts;
   const urlOpts = { basePath, logoPath, iconQuery };
   // Résolus depuis la config Vite : on respecte un `build.outDir` personnalisé
@@ -368,6 +466,11 @@ export function pwaSeoPlugin(opts = {}) {
         if (donnees && out.includes('</head>')) {
           out = out.replace('</head>', `  ${jsonLdScript(donnees)}\n  </head>`);
         }
+      }
+      // Au BUILD seulement : le serveur de développement reste tel quel, et
+      // c'est ce qui est DÉPLOYÉ que les robots lisent.
+      if (servedContent !== false && isBuild) {
+        out = injectServedContent(out).html;
       }
       return out;
     },
