@@ -279,7 +279,31 @@ export function pwaManifest(options = {}) {
 }
 
 /**
+ * Une navigation vers un FICHIER — un chemin dont le dernier segment porte une
+ * extension, avant toute requête : `sitemap.xml`, `llms.txt`, `version.json`.
+ *
+ * À placer dans `navigateFallbackDenylist`. Sans elle, le `navigateFallback`
+ * répond `index.html` à TOUTE navigation dans la portée du worker : relevé le
+ * 24/09/2026, un visiteur qui avait déjà ouvert l'app et tapait
+ * `…/pwa-starter-kit/sitemap.xml` retombait sur l'accueil, sur toutes les apps
+ * du parc. Googlebot n'installe pas de worker et lisait bien le XML, mais le
+ * propriétaire, lui, ne voyait plus ses propres fichiers.
+ *
+ * La requête est exclue du test (`[^?]*`) : Workbox éprouve la liste sur
+ * `pathname + search`, et `/app/?next=/a.b` doit rester une page de l'app.
+ * `index.html` et `404.html` restent servis hors ligne : ils sont précachés,
+ * et la route du précache passe avant celle de navigation.
+ */
+export const NAVIGATE_FALLBACK_DENY_FILES = /^[^?]*\/[^/?]+\.[^/?]+(?:\?.*)?$/;
+
+/**
  * Options Workbox par défaut.
+ *
+ * LES FICHIERS ÉCHAPPENT AU REPLI DE NAVIGATION (`NAVIGATE_FALLBACK_DENY_FILES`),
+ * y compris quand l'app passe sa propre `navigateFallbackDenylist` : la sienne
+ * S'AJOUTE à la règle, elle ne la remplace pas. Cinq apps du parc en déclaraient
+ * une (`/^\/api\//`, `/^\/auth/`…) : une surcharge qui remplace aurait rendu le
+ * défaut aux seules apps qui n'y avaient pas touché.
  *
  * AUCUNE MISE EN CACHE D'API PAR DÉFAUT. C'est délibéré : mettre en cache des
  * réponses authentifiées, c'est risquer qu'un utilisateur voie les données du
@@ -337,6 +361,10 @@ export function pwaWorkbox(options = {}) {
     maximumFileSizeToCacheInBytes: 4_000_000,
     runtimeCaching: [imageRule, ...apiRules, ...runtimeCaching],
     ...overrides,
+    navigateFallbackDenylist: [
+      NAVIGATE_FALLBACK_DENY_FILES,
+      ...(overrides.navigateFallbackDenylist ?? []),
+    ],
   };
 }
 

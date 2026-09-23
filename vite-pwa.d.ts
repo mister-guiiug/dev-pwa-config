@@ -65,7 +65,18 @@ export declare function pwaManifest(
   options?: PwaOptions
 ): Record<string, unknown>;
 
-/** Options Workbox par défaut (sans mise en cache d'API). */
+/**
+ * Une navigation vers un fichier (`sitemap.xml`, `llms.txt`…) : à placer dans
+ * `navigateFallbackDenylist`, sans quoi le worker répond `index.html` à la
+ * place du fichier. `pwaWorkbox` la pose d'office.
+ */
+export declare const NAVIGATE_FALLBACK_DENY_FILES: RegExp;
+
+/**
+ * Options Workbox par défaut (sans mise en cache d'API). Les fichiers
+ * échappent au repli de navigation ; une `navigateFallbackDenylist` passée
+ * dans `workbox` s'ajoute à cette règle.
+ */
 export declare function pwaWorkbox(
   options?: PwaOptions
 ): Record<string, unknown>;

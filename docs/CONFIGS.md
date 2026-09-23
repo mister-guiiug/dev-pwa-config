@@ -367,6 +367,25 @@ Trois défauts méritent d'être expliqués, parce qu'on pourrait les « amélio
   relevé, sans qu'on puisse distinguer le choix délibéré de l'oubli. Une couleur
   passée explicitement l'emporte toujours — le choix reste possible, il devient
   écrit.
+- **Les fichiers échappent au repli de navigation**
+  (`NAVIGATE_FALLBACK_DENY_FILES`). Sans cette règle, le worker répond
+  `index.html` à toute navigation dans sa portée. Relevé du 24/09/2026 : avec
+  le worker installé, `…/sitemap.xml` rendait l'accueil de l'app, sur tout le
+  parc. Une `navigateFallbackDenylist` passée dans `workbox` **s'ajoute** à la
+  règle au lieu de la remplacer.
+
+Une app qui écrit son `VitePWA()` sans `pwaBaseOptions` pose la règle
+elle-même, en tête de sa propre liste :
+
+```ts
+import { NAVIGATE_FALLBACK_DENY_FILES } from '@mister-guiiug/dev-pwa-config/vite-pwa';
+
+VitePWA({
+  workbox: {
+    navigateFallbackDenylist: [NAVIGATE_FALLBACK_DENY_FILES, /^\/api\//],
+  },
+});
+```
 
 Le module n'importe **pas** `vite-plugin-pwa` : il renvoie un objet d'options
 ordinaire, que l'app passe à son propre `VitePWA()`.

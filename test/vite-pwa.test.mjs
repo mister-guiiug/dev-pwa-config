@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  NAVIGATE_FALLBACK_DENY_FILES,
   manifestScreenshots,
   paletteFromCss,
   pngDimensions,
@@ -241,6 +242,58 @@ test('navigateFallback pointe dans le chemin de base', () => {
     pwaWorkbox({ id: 'mister-puzzle' }).navigateFallback,
     '/mister-puzzle/index.html'
   );
+});
+
+/**
+ * Ce que fait `NavigationRoute` de Workbox : la liste d'exclusion est éprouvée
+ * sur `pathname + search`, et une navigation exclue part au réseau au lieu de
+ * recevoir `index.html`.
+ */
+function repli(workbox, url) {
+  const { pathname, search } = new URL(url, 'https://mister-guiiug.github.io');
+  const exclue = (workbox.navigateFallbackDenylist ?? []).some(re =>
+    re.test(pathname + search)
+  );
+  return exclue ? 'réseau' : 'index.html';
+}
+
+test('un fichier échappe au repli de navigation, une page de l’app non', () => {
+  // Relevé du 24/09/2026 : avec le worker installé, `sitemap.xml` rendait
+  // l'accueil de l'app, sur toutes les apps du parc.
+  const workbox = pwaWorkbox({ id: 'pwa-starter-kit' });
+  for (const fichier of [
+    '/pwa-starter-kit/sitemap.xml',
+    '/pwa-starter-kit/llms.txt',
+    '/pwa-starter-kit/version.json?t=1',
+  ]) {
+    assert.equal(repli(workbox, fichier), 'réseau', fichier);
+  }
+  for (const page of [
+    '/pwa-starter-kit/',
+    '/pwa-starter-kit/reglages',
+    '/pwa-starter-kit/?source=pwa',
+    '/miss-dice/?play=yahtzee',
+    // Un point dans la REQUÊTE ne fait pas un fichier.
+    '/pwa-starter-kit/?next=/notes/a.b',
+  ]) {
+    assert.equal(repli(workbox, page), 'index.html', page);
+  }
+});
+
+test('une liste d’exclusion de l’app S’AJOUTE à celle des fichiers', () => {
+  // Cinq apps déclaraient la leur : une surcharge qui remplace leur aurait
+  // retiré la règle des fichiers, à elles seules.
+  const workbox = pwaWorkbox({
+    id: 'miss-carbook',
+    workbox: { navigateFallbackDenylist: [/^\/api\//] },
+  });
+  assert.deepEqual(workbox.navigateFallbackDenylist, [
+    NAVIGATE_FALLBACK_DENY_FILES,
+    /^\/api\//,
+  ]);
+  assert.equal(repli(workbox, '/miss-carbook/sitemap.xml'), 'réseau');
+  assert.equal(repli(workbox, '/api/x'), 'réseau');
+  assert.equal(repli(workbox, '/miss-carbook/'), 'index.html');
 });
 
 test('registerType vaut prompt : le seul mode compatible avec le hook livré', () => {
