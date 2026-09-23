@@ -1,0 +1,123 @@
+# Reusable workflow — audit de sécurité VICE, en SECOND AVIS non bloquant.
+#
+# VICE (Webba Creative Technologies, licence MIT) relit le CODE du dépôt :
+# secrets écrits en dur et fichiers `.env`, `npm audit`, politiques RLS des
+# migrations Supabase, motifs dangereux (XSS, `eval`, injection SQL), droits
+# et références des workflows. Le parc connaît le prix de la RLS : pgTAP
+# (`pwa-supabase-test.yml`) éprouve ce qu'une politique FAIT ; VICE relit ce
+# que les migrations OUBLIENT — une table sans `enable row level security`, une
+# fonction `security definer`, un `grant` trop large.
+#
+# CE QUE L'ACTION FAIT PAR DÉFAUT, ET QUE CE RÉUTILISABLE ÉTEINT :
+#  - elle commite un badge sur la branche par défaut : le ruleset « Protect
+#    main » le refuse, et chaque push rougirait ;
+#  - elle commente chaque PR : du bruit sur des PR dont le corps est écrit ;
+#  - elle fait ÉCHOUER la CI sous un score de 70 : un barème que rien n'a
+#    encore calibré sur le parc ne décide pas d'une fusion.
+# Restent le résumé du job, et les constats dans l'onglet Security (SARIF,
+# catégorie `vice`), où chacun se trie — ou se rejette avec sa raison.
+#
+# ÉPINGLÉ PAR SHA, et une version en arrière. La 3.5.0 est sortie le
+# 23/09/2026 à 22:49 UTC, un quart d'heure avant cette ligne ; la 3.4.1 (05/09)
+# avait dix-huit jours. Même règle que pnpm 12 pour les paquets : rien de
+# moins de 24 h. Relu avant de l'épingler : l'action installe quatre
+# dépendances (`chalk`, `inquirer`, `ora`, `tldts`) en `--ignore-scripts`, et
+# l'audit LOCAL n'appelle aucun service de l'éditeur — `npm audit`, `git log`,
+# la lecture des fichiers. Le scan DISTANT de VICE (sondes, ports, sous-
+# domaines) n'est PAS appelé ici : sur `github.io`, il viserait l'infrastructure
+# de GitHub, que le parc ne possède pas.
+#
+# L'action accepte l'avertissement de VICE — « n'auditer que ce qu'on possède
+# ou qu'on est autorisé à auditer ». Ici, c'est le dépôt appelant.
+#
+# Usage côté consumer (.github/workflows/vice.yml) :
+#
+#   name: VICE
+#   on:
+#     pull_request:
+#     push:
+#       branches: [main]
+#     workflow_dispatch:
+#   permissions:
+#     contents: read
+#     security-events: write
+#   jobs:
+#     vice:
+#       uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-vice.yml@v6
+#
+# `security-events: write` est EXIGÉ de l'appelant, même avec
+# `upload-sarif: false` : un réutilisable ne peut pas demander plus que ce que
+# l'appelant accorde, et le lui refuser fait échouer l'appel au démarrage
+# (`startup_failure`, payé sur `pwa-lighthouse.yml`).
+name: Reusable VICE audit
+
+on:
+  workflow_call:
+    inputs:
+      path:
+        description: 'Dossier audité, relatif à la racine du dépôt'
+        type: string
+        required: false
+        default: '.'
+      upload-sarif:
+        description: >-
+          Envoyer les constats à l'onglet Security (SARIF, catégorie `vice`).
+          Sans lui, le résumé du job reste la seule trace.
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  vice:
+    name: VICE (second avis, non bloquant)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - id: vice
+        uses: Webba-Creative-Technologies/vice@6c43b9386bdac20e012f9e0f31da8ec75eab8b1b # v3.4.1
+        with:
+          path: ${{ inputs.path }}
+          fail-on-score: 'false'
+          comment-pr: 'false'
+          update-badge: 'false'
+          upload-sarif: ${{ inputs.upload-sarif }}
+
+      # Le résumé du job : le score, puis les constats du plus grave au moins
+      # grave. Les entrées et les sorties passent par `env:` — jamais
+      # interpolées dans le script, qui exécuterait ce qu'elles contiennent.
+      - name: Résumé
+        if: always()
+        env:
+          RAPPORT: ${{ steps.vice.outputs.report-path }}
+        run: |
+          node --input-type=module <<'JS'
+          import { existsSync, readFileSync, appendFileSync } from 'node:fs'
+          const sortie = process.env.GITHUB_STEP_SUMMARY
+          const f = process.env.RAPPORT
+          if (!f || !existsSync(f)) {
+            appendFileSync(sortie, '## VICE\n\nAucun rapport produit : voir le journal de l’étape VICE.\n')
+            process.exit(0)
+          }
+          const r = JSON.parse(readFileSync(f, 'utf8'))
+          const s = r.summary || {}
+          const net = (t) => String(t ?? '').replace(/[|<>\n]/g, ' ').slice(0, 160)
+          const rang = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 }
+          const gravite = (x) => rang[String(x.severity).toUpperCase()] ?? 9
+          const constats = (r.findings || []).filter((x) => x && gravite(x) < 4).sort((a, b) => gravite(a) - gravite(b))
+          const l = ['## VICE — second avis de sécurité (non bloquant)', '']
+          l.push(`Score **${r.score ?? '?'}/100**, ${s.total ?? 0} constats : ${s.critical ?? 0} critiques, ${s.high ?? 0} élevés, ${s.medium ?? 0} moyens, ${s.low ?? 0} faibles.`, '')
+          if (constats.length) {
+            l.push('| Gravité | Constat | Module |', '|---|---|---|')
+            for (const x of constats.slice(0, 30)) l.push(`| ${net(x.severity)} | ${net(x.title)} | ${net(x.module)} |`)
+            if (constats.length > 30) l.push('', `… et ${constats.length - 30} autres.`)
+          }
+          l.push('', 'Le détail est dans l’onglet Security, catégorie `vice`.')
+          appendFileSync(sortie, l.join('\n') + '\n')
+          JS
