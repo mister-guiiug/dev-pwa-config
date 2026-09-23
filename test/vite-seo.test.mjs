@@ -109,6 +109,19 @@ test('une app hors catalogue garde ses données, sans catégorie inventée', () 
   assert.equal(d.sameAs, undefined);
 });
 
+test('un <title> répété sans fin reste linéaire (CodeQL js/polynomial-redos)', () => {
+  // Avec `/<title>([\s\S]*?)<\/title>/`, 100 000 répétitions prenaient un
+  // temps quadratique. Deux `indexOf` restent linéaires.
+  const html = `<meta name="description" content="d">${'<title>a'.repeat(100_000)}`;
+  const debut = performance.now();
+  const d = webApplicationJsonLd({
+    html,
+    homeUrl: 'https://mister-guiiug.github.io/inconnue/',
+  });
+  assert.ok(performance.now() - debut < 500, 'trop lent : motif quadratique');
+  assert.equal(d, null, 'titre jamais fermé : pas de nom');
+});
+
 test('sans description, rien n’est injecté', () => {
   const d = webApplicationJsonLd({
     html: '<html><head><title>X</title></head></html>',

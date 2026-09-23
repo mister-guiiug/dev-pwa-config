@@ -101,6 +101,20 @@ function attribut(balise, nom) {
   return m ? decoderEntites(m[2] ?? m[3] ?? '') : '';
 }
 
+/**
+ * Le texte du premier `<title>`, par deux `indexOf` et non par une regex :
+ * `/<title>([\s\S]*?)<\/title>/` est quadratique sur une entrée qui répète
+ * `<title>` sans jamais le fermer (CodeQL `js/polynomial-redos`). L'entrée est
+ * l'`index.html` de l'app, mais la fonction est exportée.
+ */
+function contenuDuTitre(html) {
+  const bas = html.toLowerCase();
+  const debut = bas.indexOf('<title>');
+  if (debut < 0) return '';
+  const fin = bas.indexOf('</title>', debut + 7);
+  return fin < 0 ? '' : html.slice(debut + 7, fin);
+}
+
 function metaDe(html, cle) {
   for (const [balise] of html.matchAll(/<meta\b[^>]*>/gi)) {
     if (
@@ -136,9 +150,7 @@ function metaDe(html, cle) {
 export function webApplicationJsonLd({ html, homeUrl, overrides = {} }) {
   const id = new URL(homeUrl).pathname.split('/').find(Boolean);
   const fiche = FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
-  const titre = decoderEntites(
-    (/<title>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '').trim()
-  );
+  const titre = decoderEntites(contenuDuTitre(html).trim());
   const name =
     fiche?.name ||
     metaDe(html, 'og:site_name') ||
