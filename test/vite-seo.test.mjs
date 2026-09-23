@@ -190,8 +190,11 @@ test('le contenu servi décrit l’app dans son point de montage vide', () => {
   );
   const bloc = /<div id="app">([\s\S]*?)<\/div><\/div>/.exec(out)?.[1] ?? '';
   // Le titre de la PAGE en h1, sa description, un lien vers l'accueil du parc.
+  // L'apostrophe sort en `&#39;` : `echapperXml` échappe aussi les quotes
+  // depuis la revue de #360 (CodeQL js/incomplete-html-attribute-sanitization).
+  // Navigateurs et robots décodent l'entité : le texte lu est le même.
   assert.match(bloc, /<h1>Miss Dice - lance un dé<\/h1>/);
-  assert.match(bloc, /<p>Lancer un dé d'un geste, hors ligne\.<\/p>/);
+  assert.match(bloc, /<p>Lancer un dé d&#39;un geste, hors ligne\.<\/p>/);
   assert.match(
     bloc,
     /<a href="https:\/\/mister-guiiug\.github\.io\/">Les autres applications de mister-guiiug<\/a>/
