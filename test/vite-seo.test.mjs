@@ -246,6 +246,16 @@ test('le titre et la description sont échappés ; deux passes n’en font qu’
   assert.equal(deux, une, 'idempotent');
 });
 
+test('les guillemets du point de montage sont échappés dans l’attribut id injecté', () => {
+  const page = PAGE.replace(
+    '<div id="root"></div>',
+    '<div id="root&quot; onclick=&quot;alert(1)"></div>'
+  );
+  const r = injectServedContent(page);
+  assert.equal(r.injecte, false);
+  assert.match(r.raison, /aucun point de montage vide/);
+});
+
 test('une page en anglais reçoit ses libellés en anglais', () => {
   const r = injectServedContent(
     PAGE.replace('<html lang="fr">', '<html lang="en">')

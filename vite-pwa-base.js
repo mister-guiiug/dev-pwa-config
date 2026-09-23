@@ -214,7 +214,9 @@ function echapperXml(texte) {
   return texte
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 const TEXTES_SERVIS = {
@@ -293,7 +295,7 @@ export function injectServedContent(html) {
   const lang = attribut(/<html\b[^>]*>/i.exec(html)?.[0] ?? '', 'lang');
   const t = /^en\b/i.test(lang) ? TEXTES_SERVIS.en : TEXTES_SERVIS.fr;
   const bloc =
-    `<div id="${m[1]}"><div data-dwc="served-content">` +
+    `<div id="${echapperXml(m[1])}"><div data-dwc="served-content">` +
     `<h1>${echapperXml(titre)}</h1>` +
     `<p>${echapperXml(description)}</p>` +
     `<p><a href="${FAMILY_ORIGIN}/">${echapperXml(t.famille)}</a></p>` +
