@@ -209,6 +209,15 @@ coupe ; `jsonLd: { … }` surcharge des champs. Le plan de site porte `lastmod`
 Le `robots.txt` écrit dans `dist/` est ignoré des robots — un `robots.txt` n'est
 lu qu'à la racine d'une origine ; c'est `mister-guiiug.github.io` qui déclare
 les plans de site de tout le parc.
+
+**Contenu servi, sans réglage.** Au build, le premier `<div id="…"></div>` VIDE
+du `<body>` (`app`, `root`, `react-root`…) reçoit le titre de la page en `<h1>`,
+sa description et un lien vers l'accueil du parc. C'est ce que lit un robot qui
+n'exécute pas le JavaScript. React le remplace au premier rendu
+(`createRoot().render()` vide le conteneur) ; d'ici là, le visiteur voit le nom
+de l'app plutôt qu'une page blanche. Un point de montage qui porte déjà du
+contenu n'est pas touché ; `servedContent: false` coupe l'injection. Rien n'est
+injecté en développement.
 Variables d'env de build : `VITE_POSTHOG_KEY`,
 `VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  injectServedContent,
   jsonLdScript,
   pwaSeoPlugin,
   SCHEMA_APPLICATION_CATEGORIES,
@@ -174,4 +175,81 @@ test('le plan de site porte lastmod, les routes publiques, et échappe &', async
   } finally {
     rmSync(dossier, { recursive: true, force: true });
   }
+});
+
+/** Le plugin tel qu'au BUILD : le contenu servi n'est injecté qu'à ce moment-là. */
+function pluginDeBuild(opts = {}) {
+  const plugin = pwaSeoPlugin({ basePath: '/miss-dice/', ...opts });
+  plugin.configResolved({ command: 'build', build: { outDir: 'dist' } });
+  return plugin;
+}
+
+test('le contenu servi décrit l’app dans son point de montage vide', () => {
+  const out = pluginDeBuild().transformIndexHtml(
+    PAGE.replace('<div id="root"></div>', '<div id="app"></div>')
+  );
+  const bloc = /<div id="app">([\s\S]*?)<\/div><\/div>/.exec(out)?.[1] ?? '';
+  // Le titre de la PAGE en h1, sa description, un lien vers l'accueil du parc.
+  assert.match(bloc, /<h1>Miss Dice - lance un dé<\/h1>/);
+  assert.match(bloc, /<p>Lancer un dé d'un geste, hors ligne\.<\/p>/);
+  assert.match(
+    bloc,
+    /<a href="https:\/\/mister-guiiug\.github\.io\/">Les autres applications de mister-guiiug<\/a>/
+  );
+  assert.match(bloc, /<noscript>/);
+  // La mise en page, une seule fois, dans <head>. Le lien est SOULIGNÉ : sa
+  // couleur est celle du texte, et Tailwind retire le soulignement.
+  assert.equal(out.match(/data-dwc="served-content-style"/g).length, 1);
+  assert.match(out, /served-content\] a\{[^}]*text-decoration:underline/);
+  assert.ok(out.indexOf('served-content-style') < out.indexOf('</head>'));
+});
+
+test('les trois points de montage du parc sont reconnus', () => {
+  for (const id of ['app', 'root', 'react-root']) {
+    const r = injectServedContent(
+      PAGE.replace('<div id="root"></div>', `<div id="${id}"></div>`)
+    );
+    assert.equal(r.injecte, true, id);
+    assert.equal(r.montage, id);
+  }
+});
+
+test('un point de montage qui porte déjà du contenu est laissé tel quel', () => {
+  const page = PAGE.replace(
+    '<div id="root"></div>',
+    '<div id="root"><p>Chargement</p></div>'
+  );
+  const r = injectServedContent(page);
+  assert.equal(r.injecte, false);
+  assert.equal(r.html, page);
+});
+
+test('en développement, rien n’est injecté ; servedContent: false coupe au build', () => {
+  const dev = pwaSeoPlugin({ basePath: '/miss-dice/' });
+  dev.configResolved({ command: 'serve' });
+  assert.doesNotMatch(dev.transformIndexHtml(PAGE), /served-content/);
+  assert.doesNotMatch(
+    pluginDeBuild({ servedContent: false }).transformIndexHtml(PAGE),
+    /served-content/
+  );
+});
+
+test('le titre et la description sont échappés ; deux passes n’en font qu’un', () => {
+  const page = PAGE.replace(
+    '<title>Miss Dice - lance un dé</title>',
+    '<title>A &amp; B <script></title>'
+  );
+  const une = injectServedContent(page).html;
+  assert.match(une, /<h1>A &amp; B &lt;script&gt;<\/h1>/);
+  assert.doesNotMatch(une, /<h1>[^<]*<script>/);
+  const deux = injectServedContent(une).html;
+  assert.equal(deux, une, 'idempotent');
+});
+
+test('une page en anglais reçoit ses libellés en anglais', () => {
+  const r = injectServedContent(
+    PAGE.replace('<html lang="fr">', '<html lang="en">')
+  );
+  assert.match(r.html, /More apps by mister-guiiug/);
+  assert.match(r.html, /This app needs JavaScript/);
 });

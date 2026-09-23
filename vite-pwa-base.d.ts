@@ -45,7 +45,27 @@ export interface PwaSeoPluginOptions {
    * (`'a-propos'`, `'en/'`).
    */
   routes?: string[];
+  /**
+   * Sert, au BUILD, le titre et la description de l'app dans son point de
+   * montage vide — ce qu'un robot lit sans exécuter le JavaScript. React le
+   * remplace au premier rendu. Défaut `true`.
+   */
+  servedContent?: boolean;
 }
+
+/** La mise en page, en ligne, du contenu servi. */
+export const SERVED_CONTENT_STYLE: string;
+
+/**
+ * Injecte `<h1>` (le `<title>`), la description et un lien vers l'accueil du
+ * parc dans le premier `<div id="…"></div>` vide du `<body>`.
+ */
+export function injectServedContent(html: string): {
+  html: string;
+  injecte: boolean;
+  raison?: string;
+  montage?: string;
+};
 
 /** `category` du catalogue → `applicationCategory` documentée par Google. */
 export const SCHEMA_APPLICATION_CATEGORIES: Readonly<Record<string, string>>;
