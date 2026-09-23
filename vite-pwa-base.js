@@ -29,6 +29,7 @@ import {
   themeBootScript,
   themeColorMetaTags,
 } from './theme-boot.js';
+import { FAMILY_APPS, FAMILY_ORIGIN, GITHUB_OWNER } from './apps-catalog.js';
 
 import process from 'node:process';
 
@@ -61,6 +62,150 @@ export function resolveSeoPublicUrls(arg) {
 }
 
 /**
+ * La catégorie éditoriale du catalogue, dans le vocabulaire que Google
+ * documente pour `applicationCategory`. Une valeur hors de cette liste est
+ * acceptée par schema.org mais ignorée par Google.
+ */
+export const SCHEMA_APPLICATION_CATEGORIES = {
+  sante: 'HealthApplication',
+  sport: 'SportsApplication',
+  jeux: 'GameApplication',
+  loisirs: 'LifestyleApplication',
+  education: 'EducationalApplication',
+  outils: 'UtilitiesApplication',
+  dev: 'DeveloperApplication',
+};
+
+const ENTITES = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  '#39': "'",
+};
+
+function decoderEntites(texte) {
+  return texte.replace(/&(amp|lt|gt|quot|apos|#39);/g, (_, e) => ENTITES[e]);
+}
+
+/**
+ * La valeur d'un attribut, quelle que soit sa quote. Une apostrophe DANS une
+ * valeur entre guillemets n'arrête rien : « Lancer un dé d'un geste » doit
+ * sortir entier, et un motif `[^"']*` le coupait à « d ».
+ */
+function attribut(balise, nom) {
+  const m = new RegExp(`\\b${nom}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i').exec(
+    balise
+  );
+  return m ? decoderEntites(m[2] ?? m[3] ?? '') : '';
+}
+
+function metaDe(html, cle) {
+  for (const [balise] of html.matchAll(/<meta\b[^>]*>/gi)) {
+    if (
+      attribut(balise, 'name') === cle ||
+      attribut(balise, 'property') === cle
+    )
+      return attribut(balise, 'content').trim();
+  }
+  return '';
+}
+
+/**
+ * Les données structurées schema.org d'une app du parc : un `WebApplication`.
+ *
+ * POURQUOI ICI, ET SANS RÉGLAGE. Relevé du 23/09/2026 sur les vingt et un
+ * sites servis : UN SEUL portait du JSON-LD (`mister-puzzle`, écrit à la
+ * main). Les vingt autres n'en avaient pas, alors que tout ce qu'il faut est
+ * déjà là : le NOM et la CATÉGORIE dans le catalogue, la DESCRIPTION, l'IMAGE
+ * et la LANGUE dans l'`index.html` que l'app a écrit. Rien n'est donc demandé
+ * aux apps.
+ *
+ * La description de la PAGE l'emporte sur celle du catalogue : c'est celle que
+ * l'app a écrite pour les moteurs, souvent plus riche. Une image qui n'est que
+ * l'URL d'accueil — le repli de `__SEO_LOGO_URL__` sans `logoPath` — n'en est
+ * pas une : on prend alors l'icône du catalogue.
+ *
+ * Pas de note ni d'avis : Google n'affiche la fiche enrichie d'une application
+ * qu'avec une note, et en inventer une serait une donnée fausse.
+ *
+ * @param {{ html: string, homeUrl: string, overrides?: object }} opts
+ * @returns {object | null} `null` sans nom ou sans description.
+ */
+export function webApplicationJsonLd({ html, homeUrl, overrides = {} }) {
+  const id = new URL(homeUrl).pathname.split('/').find(Boolean);
+  const fiche = FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
+  const titre = decoderEntites(
+    (/<title>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '').trim()
+  );
+  const name =
+    fiche?.name ||
+    metaDe(html, 'og:site_name') ||
+    metaDe(html, 'og:title') ||
+    titre;
+  const description = metaDe(html, 'description') || fiche?.description || '';
+  if (!name || !description) return null;
+
+  const imagePage = metaDe(html, 'og:image');
+  const image =
+    /^https?:\/\//.test(imagePage) && !imagePage.endsWith('/')
+      ? imagePage
+      : (fiche?.iconUrl ?? undefined);
+  const lang = attribut(/<html\b[^>]*>/i.exec(html)?.[0] ?? '', 'lang');
+  const categorie = SCHEMA_APPLICATION_CATEGORIES[fiche?.category];
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name,
+    description,
+    url: homeUrl,
+    ...(image ? { image } : {}),
+    ...(categorie ? { applicationCategory: categorie } : {}),
+    operatingSystem: 'Web',
+    browserRequirements: 'Requires JavaScript',
+    ...(lang ? { inLanguage: lang } : {}),
+    isAccessibleForFree: true,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    author: {
+      '@type': 'Person',
+      name: GITHUB_OWNER,
+      url: `https://github.com/${GITHUB_OWNER}`,
+    },
+    isPartOf: {
+      '@type': 'WebSite',
+      name: `Les applications de ${GITHUB_OWNER}`,
+      url: `${FAMILY_ORIGIN}/`,
+    },
+    ...(fiche?.repoUrl ? { sameAs: [fiche.repoUrl] } : {}),
+    ...overrides,
+  };
+}
+
+/**
+ * Le bloc `<script>` d'un objet JSON-LD. `<` est échappé : une description
+ * contenant `</script>` fermerait sinon le bloc et laisserait le reste
+ * s'interpréter comme du HTML.
+ *
+ * Un `<script type="application/ld+json">` n'est pas exécuté : `cspPlugin` le
+ * laisse hors de `script-src`, et c'est exact.
+ */
+export function jsonLdScript(donnees) {
+  return `<script type="application/ld+json">${JSON.stringify(donnees).replace(
+    /</g,
+    '\\u003c'
+  )}</script>`;
+}
+
+function echapperXml(texte) {
+  return texte
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
  * Plugin Vite : injecte les placeholders d'index.html et génère sitemap.xml /
  * robots.txt en fin de build.
  *
@@ -82,6 +227,13 @@ export function resolveSeoPublicUrls(arg) {
  * @param {string}  [opts.iconQuery='']    Query de cache-busting (ex. '?v=1.0.1') → __PWA_ICON_QS__.
  * @param {string}  [opts.llms]            Contenu d'un `llms.txt` à écrire (omis = pas de fichier).
  * @param {Record<string,string>} [opts.extraReplacements={}] Placeholders custom → valeurs.
+ * @param {boolean | object} [opts.jsonLd=true] Données structurées
+ *   `WebApplication` injectées dans `<head>` (voir `webApplicationJsonLd`).
+ *   `false` les coupe ; un objet surcharge des champs. Jamais injectées si la
+ *   page porte déjà un `application/ld+json`.
+ * @param {string[]} [opts.routes=[]] Chemins à ajouter au plan de site, relatifs
+ *   à l'accueil (`'a-propos'`, `'en/'`). Seulement des écrans PUBLICS, servis
+ *   à froid : un chemin derrière une connexion n'a rien à y faire.
  */
 export function pwaSeoPlugin(opts = {}) {
   const {
@@ -96,6 +248,8 @@ export function pwaSeoPlugin(opts = {}) {
     themeBoot,
     themeColor,
     extraReplacements = {},
+    jsonLd = true,
+    routes = [],
   } = opts;
   const urlOpts = { basePath, logoPath, iconQuery };
   // Résolus depuis la config Vite : on respecte un `build.outDir` personnalisé
@@ -191,6 +345,18 @@ export function pwaSeoPlugin(opts = {}) {
       for (const [marker, value] of Object.entries(extraReplacements)) {
         out = out.replaceAll(marker, value);
       }
+      // APRÈS les remplacements : l'image et l'URL lues dans la page doivent
+      // être les valeurs finales, pas les marqueurs.
+      if (jsonLd !== false && !/application\/ld\+json/i.test(out)) {
+        const donnees = webApplicationJsonLd({
+          html: out,
+          homeUrl,
+          overrides: typeof jsonLd === 'object' ? jsonLd : {},
+        });
+        if (donnees && out.includes('</head>')) {
+          out = out.replace('</head>', `  ${jsonLdScript(donnees)}\n  </head>`);
+        }
+      }
       return out;
     },
     async closeBundle() {
@@ -204,13 +370,29 @@ export function pwaSeoPlugin(opts = {}) {
       // n'a encore rien émis, ou avec un `build.outDir` personnalisé).
       fs.mkdirSync(dist, { recursive: true });
       if (sitemap) {
+        // `lastmod` = le jour du build. Google ignore `changefreq` et
+        // `priority`, mais lit `lastmod` quand il est fiable : c'est le seul
+        // champ qui lui dise qu'il y a du neuf à revoir. Le build part d'une
+        // fusion, donc d'un changement réel. Relevé du 23/09/2026 : aucun des
+        // vingt et un plans de site n'en portait.
+        const lastmod = new Date().toISOString().slice(0, 10);
+        const urls = [
+          homeUrl,
+          ...routes.map(r => `${homeUrl}${String(r).replace(/^\//, '')}`),
+        ];
+        const entrees = urls
+          .map(
+            loc => `  <url>
+    <loc>${echapperXml(loc)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${loc === homeUrl ? '1.0' : '0.8'}</priority>
+  </url>`
+          )
+          .join('\n');
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${homeUrl}</loc>
-    <changefreq>${changefreq}</changefreq>
-    <priority>1.0</priority>
-  </url>
+${entrees}
 </urlset>
 `;
         fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml, 'utf8');

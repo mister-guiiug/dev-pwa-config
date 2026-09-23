@@ -199,6 +199,16 @@ ailleurs (une CMP).
 Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
 `__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
 `__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt` (+ `llms.txt` si `llms`).
+
+**Données structurées, sans réglage.** Le plugin injecte dans `<head>` un
+`WebApplication` schema.org : nom et catégorie tirés du catalogue
+(`FAMILY_APPS`), description, image et langue tirées de l'`index.html`. Rien
+n'est injecté si la page porte déjà un `application/ld+json`. `jsonLd: false` le
+coupe ; `jsonLd: { … }` surcharge des champs. Le plan de site porte `lastmod`
+(jour du build) ; `routes: ['a-propos', 'en/']` y ajoute des écrans PUBLICS.
+Le `robots.txt` écrit dans `dist/` est ignoré des robots — un `robots.txt` n'est
+lu qu'à la racine d'une origine ; c'est `mister-guiiug.github.io` qui déclare
+les plans de site de tout le parc.
 Variables d'env de build : `VITE_POSTHOG_KEY`,
 `VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
