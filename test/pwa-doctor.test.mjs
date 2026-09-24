@@ -887,6 +887,32 @@ test('l’accueil d’un routeur OBJET est son enfant `index`, même chargé par
   assert.equal(liens([routeur, explore, reglages]), 'deux');
 });
 
+test('un composant rangé dans un dossier de réglages compte pour l’écran qui le rend', () => {
+  // mister-doc, le 24/09/2026 : la liste des autres apps vit dans
+  // `features/profile/OtherAppsCard.tsx`, et `ProfilePage` la rend. Le chemin
+  // contient « profil » : le composant comptait comme un TROISIÈME écran.
+  const routes = fichier(
+    'src/App.tsx',
+    '<Routes><Route path="/" element={<PlanningView />} /><Route path="/profil" element={<ProfilePage />} /></Routes>'
+  );
+  const planning = fichier(
+    'src/features/planning/PlanningView.tsx',
+    'export function PlanningView() { return <AppFooter repoUrl={REPO_URL} />; }'
+  );
+  const autres = fichier(
+    'src/features/profile/OtherAppsCard.tsx',
+    'export function OtherAppsCard() { return <FamilyApps showSponsor={false} />; }'
+  );
+  const profil = fichier(
+    'src/features/profile/ProfilePage.tsx',
+    'export function ProfilePage() { return <><OtherAppsCard /><AppFooter repoUrl={REPO_URL} /></>; }'
+  );
+  assert.equal(liens([routes, planning, autres, profil]), 'deux');
+  // Personne ne le rend : il compte pour lui-même, comme avant — son dossier
+  // le range dans les réglages.
+  assert.equal(liens([routes, planning, autres]), 'deux');
+});
+
 test('une route `/` qui a des enfants est une mise en page, pas l’accueil', () => {
   // La balise se lit en comptant les accolades : `element={<X />}` contient
   // un `>`, et un `[^>]*` s'y arrêtait au milieu de l'attribut.
