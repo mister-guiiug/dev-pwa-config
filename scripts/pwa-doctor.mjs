@@ -212,9 +212,10 @@ const sansCommentaires = {
  * CE QUE LE CONTRÔLE VOIT, ET CE QU'IL NE VOIT PAS. Il lit du texte, pas un
  * graphe de rendu : il résout UNE indirection — `<Footer/>` défini ailleurs,
  * rendu par la coquille (la forme de `miss-carbook` et `miss-lookhouse`) ou par
- * deux écrans — et reconnaît l'accueil et les réglages AU NOM DE FICHIER. Deux
- * indirections, ou un écran nommé autrement, lui échappent : d'où une DETTE et
- * non un défaut, qui nomme ce qu'il a vu.
+ * deux écrans — et reconnaît les réglages AU NOM DE FICHIER, l'accueil à son
+ * nom de fichier OU À SA ROUTE (`/`, ou `index` — voir `composantsAccueil`).
+ * Deux indirections, ou des réglages nommés autrement, lui échappent : d'où
+ * une DETTE et non un défaut, qui nomme ce qu'il a vu.
  *
  * LE DÉPOUILLEMENT DES ROUTES EST LE CŒUR. Sans lui, `<SettingsScreen/>` monté
  * par `element={…}` dans le fichier des routes se lit comme un rendu « partout »
@@ -288,6 +289,62 @@ const normalise = chemin => {
     else out.push(part);
   }
   return out.join('/');
+};
+
+/**
+ * LES ÉCRANS MONTÉS SUR L'ACCUEIL, lus dans les routes : les noms des
+ * composants qu'un routeur rend sur `/`.
+ *
+ * Le nom de fichier ne suffisait pas. Le 24/09/2026, trois apps rendaient
+ * leurs liens sur l'accueil et les Réglages, exactement comme la règle le
+ * demande, et le contrôle leur reprochait « un écran étranger » : leur accueil
+ * s'appelle `ConnectionsScreen` (miss-supatool), `PlanningView` (mister-doc),
+ * `ExplorePage` (mister-family-map). Les renommer pour plaire à un contrôle
+ * aurait été le monde à l'envers ; c'est le contrôle qui apprend à lire.
+ *
+ * TROIS FORMES, celles du parc :
+ *  - `<Route path="/" element={<X />} />` — FERMÉE sur elle-même. Une route
+ *    `/` qui a des enfants est une mise en page, pas l'accueil : c'est son
+ *    enfant `index` qui l'est ;
+ *  - `<Route index element={<X />} />` ;
+ *  - `{ index: true, element: <X /> }` (ou `page(<X />)`), la forme objet de
+ *    `createBrowserRouter`.
+ *
+ * LA BALISE EST LUE EN COMPTANT LES ACCOLADES : `element={<X />}` contient un
+ * `>`, et un `[^>]*` s'y arrêtait au milieu de l'attribut.
+ */
+export const composantsAccueil = text => {
+  const noms = [];
+  for (const m of text.matchAll(/<Route\b/g)) {
+    let prof = 0;
+    let fin = -1;
+    for (let i = m.index + 6; i < text.length; i++) {
+      const c = text[i];
+      if (c === '{') prof++;
+      else if (c === '}') prof--;
+      else if (c === '>' && prof === 0) {
+        fin = i;
+        break;
+      }
+    }
+    if (fin < 0) continue;
+    const balise = text.slice(m.index, fin + 1);
+    const ferme = /\/>$/.test(balise);
+    const racine = /\bpath=(?:"\/"|'\/'|\{\s*["']\/["']\s*\})/.test(balise);
+    const index = /\bindex(?:\s*=\s*\{\s*true\s*\})?(?=[\s/>])/.test(balise);
+    if (!((racine && ferme) || index)) continue;
+    const el = /\belement=\{[^<]*<([A-Z]\w*)/.exec(balise);
+    if (el) noms.push(el[1]);
+  }
+  for (const m of text.matchAll(/\bindex:\s*true\b/g)) {
+    const debut = text.lastIndexOf('{', m.index);
+    const fin = text.indexOf('}', m.index);
+    if (debut < 0 || fin < 0) continue;
+    const objet = text.slice(debut, fin);
+    const el = /\belement:[^<,]*<([A-Z]\w*)/.exec(objet);
+    if (el) noms.push(el[1]);
+  }
+  return [...new Set(noms)];
 };
 
 /** Le texte d'une coquille, ses écrans montés retirés. */
@@ -420,7 +477,19 @@ export function liensFamille(source) {
   // coquille qui porte les liens DANS ses routes, ou un porteur que personne
   // ne rend, compte pour lui-même : le contrôle ne sait pas quel écran, et le
   // dit plutôt que de deviner.
-  const estEcran = rel => LIENS.accueil.test(rel) || LIENS.reglages.test(rel);
+  // L'accueil se reconnaît à son NOM DE FICHIER, ou à SA ROUTE : l'écran
+  // qu'un routeur monte sur `/` (voir `composantsAccueil`).
+  const nomsAccueil = new Set(
+    fichiers.filter(routeur).flatMap(f => composantsAccueil(f.text))
+  );
+  const accueilsParRoute = new Set(
+    fichiers
+      .filter(f => nomsDe(f).some(nom => nomsAccueil.has(nom)))
+      .map(f => f.rel)
+  );
+  const estAccueil = rel =>
+    LIENS.accueil.test(rel) || accueilsParRoute.has(rel);
+  const estEcran = rel => estAccueil(rel) || LIENS.reglages.test(rel);
   const ecrans = [];
   const retient = rel => {
     if (!ecrans.includes(rel)) ecrans.push(rel);
@@ -440,9 +509,9 @@ export function liensFamille(source) {
 
   // DEUX ÉCRANS, ET CES DEUX-LÀ. Un troisième — ou un écran étranger à la
   // règle — est un écran de trop, et le verdict le nomme.
-  const accueils = ecrans.filter(rel => LIENS.accueil.test(rel));
+  const accueils = ecrans.filter(estAccueil);
   const reglages = ecrans.filter(
-    rel => !LIENS.accueil.test(rel) && LIENS.reglages.test(rel)
+    rel => !estAccueil(rel) && LIENS.reglages.test(rel)
   );
   const autres = ecrans.filter(
     rel => !accueils.includes(rel) && !reglages.includes(rel)
