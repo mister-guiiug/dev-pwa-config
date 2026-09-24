@@ -24,6 +24,7 @@ import {
   format,
   issuesActivees,
   liensFamille,
+  composantsAccueil,
   porteSignalement,
   run,
   specJouee,
@@ -845,6 +846,60 @@ test('une indirection côté écrans : ce sont les écrans qui rendent le pied d
     verdict: 'trop',
     ecrans: ['src/components/Footer.tsx'],
   });
+});
+
+test('l’accueil se reconnaît aussi à SA ROUTE, pas seulement à son nom de fichier', () => {
+  // miss-supatool, le 24/09/2026 : les liens étaient sur l'accueil et les
+  // Réglages, comme la règle le veut — mais l'accueil s'appelle
+  // `ConnectionsScreen`, et le contrôle le prenait pour un écran étranger.
+  const routes = fichier(
+    'src/App.tsx',
+    '<Routes><Route path="/" element={<ConnectionsScreen />} /><Route path="/reglages" element={<SettingsScreen />} /></Routes>'
+  );
+  const connexions = fichier(
+    'src/features/connections/ConnectionsScreen.tsx',
+    'export function ConnectionsScreen() { return <AppFooter repoUrl={REPO_URL} />; }'
+  );
+  const reglages = fichier(
+    'src/features/settings/SettingsScreen.tsx',
+    'export function SettingsScreen() { return <AppFooter repoUrl={REPO_URL} />; }'
+  );
+  assert.equal(liens([routes, connexions, reglages]), 'deux');
+  // Sans la route qui le monte sur `/`, le même écran reste étranger.
+  assert.equal(liens([connexions, reglages]), 'trop');
+});
+
+test('l’accueil d’un routeur OBJET est son enfant `index`, même chargé paresseusement', () => {
+  // mister-family-map : `createBrowserRouter`, une mise en page sur `/`, et
+  // l'accueil en `index`, derrière `lazy()` et un habillage `page(…)`.
+  const routeur = fichier(
+    'src/app/router/index.tsx',
+    "const ExplorePage = lazy(chargeurs.ExplorePage); export const router = createBrowserRouter([{ path: '/', element: <RootLayout />, children: [{ index: true, element: page(<ExplorePage />) }, { path: 'reglages', element: page(<SettingsPage />) }] }]);"
+  );
+  const explore = fichier(
+    'src/pages/ExplorePage.tsx',
+    'export default function ExplorePage() { return <AppFooter repoUrl={REPO_URL} />; }'
+  );
+  const reglages = fichier(
+    'src/pages/SettingsPage.tsx',
+    'export default function SettingsPage() { return <AppFooter repoUrl={REPO_URL} />; }'
+  );
+  assert.equal(liens([routeur, explore, reglages]), 'deux');
+});
+
+test('une route `/` qui a des enfants est une mise en page, pas l’accueil', () => {
+  // La balise se lit en comptant les accolades : `element={<X />}` contient
+  // un `>`, et un `[^>]*` s'y arrêtait au milieu de l'attribut.
+  assert.deepEqual(
+    composantsAccueil(
+      '<Route path="/" element={<Layout />}><Route index element={<Home />} /></Route>'
+    ),
+    ['Home']
+  );
+  assert.deepEqual(
+    composantsAccueil('<Route path="/jeu" element={<Game />} />'),
+    []
+  );
 });
 
 test('aucun porteur : la dette le dit sans deviner', () => {
