@@ -489,13 +489,21 @@ export function liensFamille(source) {
   );
   const estAccueil = rel =>
     LIENS.accueil.test(rel) || accueilsParRoute.has(rel);
-  const estEcran = rel => estAccueil(rel) || LIENS.reglages.test(rel);
   const ecrans = [];
   const retient = rel => {
     if (!ecrans.includes(rel)) ecrans.push(rel);
   };
+  // UN COMPOSANT RENDU PAR UN ÉCRAN N'EST PAS UN ÉCRAN, même rangé dans un
+  // dossier qui en a le nom. `LIENS.reglages` lit tout le chemin : mesuré le
+  // 24/09/2026 sur mister-doc, `features/profile/OtherAppsCard.tsx` — la liste
+  // des autres apps, rendue par `ProfilePage` — comptait comme un TROISIÈME
+  // écran à côté de l'accueil et du Profil. Un fichier NOMMÉ comme un écran
+  // compte pour lui-même ; un fichier qui ne l'est que par son dossier compte
+  // pour les écrans qui le rendent, s'il y en a.
+  const estEcranParNom = rel =>
+    estAccueil(rel) || LIENS.reglages.test(basename(rel));
   for (const p of porteurs) {
-    if (estEcran(p.rel) || estCoquille(p)) {
+    if (estCoquille(p) || estEcranParNom(p.rel)) {
       retient(p.rel);
       continue;
     }
