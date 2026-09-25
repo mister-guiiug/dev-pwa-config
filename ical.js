@@ -63,9 +63,12 @@
  *    cadran, pas sur un instant.
  *
  * CE QUE ÇA N'EST PAS. Pas de `RRULE` : aucune des quatre apps n'en émet — la
- * récurrence est dépliée en occurrences en amont, par le domaine. Pas de
- * `VALARM` : aucune non plus, et un rappel imposé par l'export est un rappel
- * que l'utilisateur n'a pas demandé. Pas de `VTIMEZONE` : décrire Europe/Paris
+ * récurrence est dépliée en occurrences en amont, par le domaine. `VALARM`
+ * seulement SUR DEMANDE : un rappel imposé par l'export est un rappel que
+ * l'utilisateur n'a pas demandé, donc un événement sans `alarms` n'en porte
+ * aucun. Mais un export dont le rappel EST l'objet — les échéances de licence
+ * de `miss-uwh`, le 25/09/2026 — n'a pas d'autre moyen de sonner chez celui qui
+ * ferme l'app. Pas de `VTIMEZONE` : décrire Europe/Paris
  * demande des blocs de règles à tenir à jour avec la base tz, alors que les
  * deux écritures qui marchent partout — UTC, ou flottant plus
  * `X-WR-TIMEZONE` — couvrent les quatre usages. Et pas de lecture complète :
@@ -407,8 +410,49 @@ function eventLines(event, context) {
     // d'abonnement affiche un agenda entièrement occupé.
     lines.push('TRANSP:TRANSPARENT');
   }
+  for (const alarm of source.alarms ?? []) {
+    const minutes = Number(alarm?.minutesBefore);
+    // Un rappel sans date ne sonne jamais : on l'écarte, plutôt que d'écrire
+    // un `TRIGGER:-PTNaNM` que le lecteur rejetterait avec tout l'événement.
+    if (!Number.isFinite(minutes)) continue;
+    // `ACTION:DISPLAY` EXIGE une `DESCRIPTION` (§3.6.6) : à défaut, le titre
+    // de l'événement, qui est ce que l'utilisateur s'attend à lire.
+    lines.push(
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${escapeText(alarm.description || summary)}`,
+      `TRIGGER:${durationValue(-Math.round(minutes))}`,
+      'END:VALARM'
+    );
+  }
   lines.push('END:VEVENT');
   return lines;
+}
+
+/**
+ * Une durée RFC 5545 (§3.3.6) depuis des minutes signées : `-P7D`, `-PT15M`,
+ * `-P1DT9H30M`, `PT0M`. Le signe est celui du décalage par rapport au DÉBUT de
+ * l'événement : négatif = avant.
+ *
+ * En jours, en heures et en minutes, et jamais en semaines : `P1W` ne se
+ * combine avec rien d'autre dans la grammaire de la RFC.
+ *
+ * @param {number} minutes
+ */
+function durationValue(minutes) {
+  const sign = minutes < 0 ? '-' : '';
+  let rest = Math.abs(minutes);
+  const days = Math.floor(rest / 1440);
+  rest -= days * 1440;
+  const hours = Math.floor(rest / 60);
+  const mins = rest - hours * 60;
+  const time =
+    hours || mins
+      ? `T${hours ? `${hours}H` : ''}${mins ? `${mins}M` : ''}`
+      : '';
+  // Zéro s'écrit `PT0M` : `P` seul n'est pas une durée.
+  if (!days && !time) return 'PT0M';
+  return `${sign}P${days ? `${days}D` : ''}${time}`;
 }
 
 /**
