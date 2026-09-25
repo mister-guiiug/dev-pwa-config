@@ -65,6 +65,7 @@ const BINS = [
   },
   { fichier: 'pwa-pgtap.mjs', args: ['--dir', ABSENT], dit: /pwa-pgtap/ },
   { fichier: 'pwa-screenshots.mjs', args: ['--help'], dit: /pwa-screenshots/ },
+  { fichier: 'pwa-og-image.mjs', args: ['--help'], dit: /pwa-og-image/ },
 ];
 
 /**

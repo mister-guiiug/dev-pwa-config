@@ -661,6 +661,7 @@
     "pwa-doctor": "./scripts/pwa-doctor.mjs",
     "pwa-pgtap": "./scripts/pwa-pgtap.mjs",
     "pwa-screenshots": "./scripts/pwa-screenshots.mjs",
+    "pwa-og-image": "./scripts/pwa-og-image.mjs",
     "pwa-bindings": "./scripts/bindings-natifs.mjs",
     "pwa-typecheck-7": "./scripts/pwa-typecheck-7.mjs"
   },
@@ -800,6 +801,7 @@
     "scripts/pwa-doctor.mjs",
     "scripts/pwa-pgtap.mjs",
     "scripts/pwa-screenshots.mjs",
+    "scripts/pwa-og-image.mjs",
     "scripts/bindings-natifs.mjs",
     "scripts/site-readers.mjs",
     "scripts/entree.mjs"

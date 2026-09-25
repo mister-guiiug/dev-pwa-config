@@ -218,6 +218,52 @@ n'exécute pas le JavaScript. React le remplace au premier rendu
 de l'app plutôt qu'une page blanche. Un point de montage qui porte déjà du
 contenu n'est pas touché ; `servedContent: false` coupe l'injection. Rien n'est
 injecté en développement.
+
+**Pages de contenu, sans réglage.** Chaque `content/pages/<slug>.md` de l'app
+devient au build un fichier HTML **statique** `<base>/<slug>.html`, lu tel quel
+par tout robot. Il entre au plan de site, il est listé en liens dans le contenu
+servi de l'accueil, et le gabarit ajoute l'en-tête de l'app (icône, nom), le fil
+d'Ariane, un encadré « Ouvrir <App> », une CSP stricte et les données
+structurées : `Article`, `BreadcrumbList`, et `FAQPage` tiré de la section
+`## Questions fréquentes` (chaque `###` est une question). Langue, couleur,
+icônes et image de partage sont lues dans l'`index.html` construit.
+
+```md
+---
+title: Règles du Mölkky : le jeu, le score et les pénalités
+description: Les règles du Mölkky expliquées simplement… (130 à 160 caractères)
+---
+
+# Règles du Mölkky
+
+Paragraphe, **gras**, _italique_, `code`, [lien](https://…) ou [page sœur](autre.html).
+
+## Section
+
+- une liste à un niveau
+
+## Questions fréquentes
+
+### Combien de joueurs ?
+
+Réponse.
+```
+
+Le Markdown reconnu est volontairement court (titres `#` à `###`, paragraphes,
+listes, gras, italique, code, liens `https:` ou vers une page de l'app) ; tout
+est échappé, aucun HTML ne passe. Un en-tête incomplet, deux `#`, un slug
+invalide (`index`, accents) ou déjà pris font échouer le build en nommant le
+fichier. **Pourquoi `.html` dans l'URL** : le service worker répond `index.html`
+à toute navigation SAUF aux chemins à extension (`NAVIGATE_FALLBACK_DENY_FILES`)
+— une page en `/regles/` serait remplacée par l'app chez qui l'a déjà ouverte.
+`contentPages: 'autre/dossier'` change de dossier, `false` coupe.
+
+**Image de partage.** Si le dossier public porte `og-image.jpg` (ou `.png`) —
+celle que dessine `npx pwa-og-image` —, le plugin remplace les balises écrites à
+la main par le jeu complet : `og:image` (avec une empreinte de contenu, que les
+réseaux gardent en cache par URL), `og:image:type`, `:width`, `:height`, `:alt`,
+`twitter:card` en `summary_large_image` et `twitter:image`. Le `WebApplication`
+la reprend en `image`. `ogImage: 'autre.jpg'` change de fichier, `false` coupe.
 Variables d'env de build : `VITE_POSTHOG_KEY`,
 `VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
 anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
