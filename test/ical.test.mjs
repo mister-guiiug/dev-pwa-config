@@ -517,6 +517,147 @@ test('le type MIME est celui d’un .ics', () => {
   assert.equal(ICAL_MIME, 'text/calendar;charset=utf-8');
 });
 
+/* ── Rappels (§3.6.6) : seulement sur demande ──────────────────────────── */
+
+/** Les blocs VALARM d'un `.ics`, chacun en dictionnaire nom → valeur. */
+function alarms(ics) {
+  const blocks = [];
+  let current = null;
+  for (const p of properties(ics)) {
+    if (p.name === 'BEGIN' && p.value === 'VALARM') current = {};
+    else if (p.name === 'END' && p.value === 'VALARM') {
+      blocks.push(current);
+      current = null;
+    } else if (current) current[p.name] = unescapeText(p.value);
+  }
+  return blocks;
+}
+
+test('sans alarms, aucun VALARM : un rappel imposé est un rappel que personne n’a demandé', () => {
+  const ics = toIcalendar(
+    [
+      { uid: 'a', summary: 'A', start: '2026-01-31' },
+      { uid: 'b', summary: 'B', start: '2026-05-10T10:00', alarms: [] },
+    ],
+    { dtstamp: DTSTAMP }
+  );
+  assert.ok(!ics.includes('VALARM'));
+});
+
+test('une échéance en journée entière : un mois avant, puis la veille à 9 h', () => {
+  // Le cas qui a fait naître l'option : l'échéance d'une licence (miss-uwh).
+  // Sur une journée entière, le début est minuit — la veille à 9 h est donc
+  // 15 h AVANT.
+  const ics = toIcalendar(
+    [
+      {
+        uid: 'licence-42',
+        summary: 'Licence de Léa : échéance',
+        start: '2026-10-31',
+        alarms: [
+          {
+            minutesBefore: 30 * 24 * 60,
+            description: 'Licence de Léa, dans un mois',
+          },
+          { minutesBefore: 24 * 60 - 9 * 60 },
+        ],
+      },
+    ],
+    { dtstamp: DTSTAMP }
+  );
+  const [mois, veille] = alarms(ics);
+  assert.deepEqual(mois, {
+    ACTION: 'DISPLAY',
+    DESCRIPTION: 'Licence de Léa, dans un mois',
+    TRIGGER: '-P30D',
+  });
+  // DISPLAY EXIGE une DESCRIPTION : à défaut, le titre.
+  assert.deepEqual(veille, {
+    ACTION: 'DISPLAY',
+    DESCRIPTION: 'Licence de Léa : échéance',
+    TRIGGER: '-PT15H',
+  });
+});
+
+test('les durées s’écrivent dans la grammaire de la RFC, jamais en semaines', () => {
+  const trigger = minutesBefore =>
+    alarms(
+      toIcalendar(
+        [
+          {
+            uid: 'x',
+            summary: 'X',
+            start: '2026-05-10T18:00',
+            alarms: [{ minutesBefore }],
+          },
+        ],
+        { dtstamp: DTSTAMP }
+      )
+    )[0].TRIGGER;
+  assert.equal(trigger(15), '-PT15M');
+  assert.equal(trigger(90), '-PT1H30M');
+  assert.equal(trigger(24 * 60 + 9 * 60 + 30), '-P1DT9H30M');
+  assert.equal(trigger(7 * 24 * 60), '-P7D');
+  // Zéro : `P` seul n'est pas une durée.
+  assert.equal(trigger(0), 'PT0M');
+  // Négatif : APRÈS le début.
+  assert.equal(trigger(-30), 'PT30M');
+  // Les secondes n'existent pas ici : on arrondit à la minute.
+  assert.equal(trigger(14.6), '-PT15M');
+});
+
+test('un rappel sans nombre est écarté, les autres restent', () => {
+  const ics = toIcalendar(
+    [
+      {
+        uid: 'x',
+        summary: 'X',
+        start: '2026-05-10',
+        alarms: [{ minutesBefore: Number.NaN }, null, { minutesBefore: 60 }],
+      },
+    ],
+    { dtstamp: DTSTAMP }
+  );
+  assert.deepEqual(
+    alarms(ics).map(a => a.TRIGGER),
+    ['-PT1H']
+  );
+});
+
+test('le texte d’un rappel est échappé : il n’injecte pas de propriété', () => {
+  const ics = toIcalendar(
+    [
+      {
+        uid: 'x',
+        summary: 'X',
+        start: '2026-05-10',
+        alarms: [
+          { minutesBefore: 60, description: 'Rappel\r\nTRIGGER:-P999D' },
+        ],
+      },
+    ],
+    { dtstamp: DTSTAMP }
+  );
+  const [alarm] = alarms(ics);
+  assert.equal(alarm.TRIGGER, '-PT1H');
+  assert.equal(alarm.DESCRIPTION, 'Rappel\nTRIGGER:-P999D');
+});
+
+test('les VALARM restent DANS leur VEVENT', () => {
+  const block = toIcalEvent(
+    {
+      uid: 'solo',
+      summary: 'Seul',
+      start: '2026-01-31',
+      alarms: [{ minutesBefore: 60 }],
+    },
+    { dtstamp: DTSTAMP }
+  );
+  const lines = block.split('\r\n');
+  assert.ok(lines.indexOf('BEGIN:VALARM') > lines.indexOf('BEGIN:VEVENT'));
+  assert.ok(lines.indexOf('END:VALARM') < lines.indexOf('END:VEVENT'));
+});
+
 /* ── Aller-retour ──────────────────────────────────────────────────────── */
 
 test('aller-retour : tout ce qui entre ressort, accents et séparateurs compris', () => {

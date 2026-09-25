@@ -248,9 +248,31 @@ Pour un **flux d'abonnement** servi par une fonction serveur, les options
 d'abonnement affiche un agenda entièrement occupé. `toIcalEvent` rend un
 `VEVENT` seul quand la composition est faite ailleurs.
 
-Pas de `RRULE`, pas de `VALARM`, pas de `VTIMEZONE` : aucune des quatre apps
-n'en émet — la récurrence est dépliée en occurrences par le domaine, en
-amont. `unfoldLines` et `unescapeText` suffisent à relire ce qu'on a écrit.
+**Des rappels, seulement sur demande.** Un événement sans `alarms` n'en porte
+aucun : un rappel imposé par l'export est un rappel que personne n'a demandé.
+Pour un export dont le rappel est l'objet, l'échéance d'une licence par
+exemple, chaque entrée de `alarms` écrit un `VALARM` d'affichage compté depuis
+le début de l'événement :
+
+```ts
+{
+  uid: 'licence-42',
+  summary: 'Licence de Léa : échéance',
+  start: '2026-10-31', // journée entière : le début est minuit
+  alarms: [
+    { minutesBefore: 30 * 24 * 60 }, // un mois avant → TRIGGER:-P30D
+    { minutesBefore: 24 * 60 - 9 * 60 }, // la veille à 9 h → TRIGGER:-PT15H
+  ],
+}
+```
+
+La `DESCRIPTION`, obligatoire pour un rappel d'affichage, reprend le titre à
+défaut de texte propre. Google Agenda ignore les rappels d'un fichier importé
+et applique les siens ; Apple Calendar, Outlook et Thunderbird les honorent.
+
+Pas de `RRULE`, pas de `VTIMEZONE` : aucune des quatre apps n'en émet — la
+récurrence est dépliée en occurrences par le domaine, en amont. `unfoldLines`
+et `unescapeText` suffisent à relire ce qu'on a écrit.
 
 ### Coffre local chiffré (`/secure-storage`)
 

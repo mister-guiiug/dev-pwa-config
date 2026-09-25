@@ -39,6 +39,26 @@ export interface IcalEvent {
   categories?: string | readonly string[];
   /** `TRANSP:TRANSPARENT` — un créneau observé ne remplit pas sa disponibilité. */
   transparent?: boolean;
+  /**
+   * Rappels `VALARM`, SEULEMENT si l'app les demande : sans cette propriété,
+   * l'événement n'en porte aucun. À réserver aux exports dont le rappel est
+   * l'objet, une échéance par exemple. Google Agenda ignore les rappels d'un
+   * fichier importé et applique les siens ; Apple Calendar, Outlook et
+   * Thunderbird les honorent.
+   */
+  alarms?: readonly IcalAlarm[];
+}
+
+/** Un rappel `ACTION:DISPLAY`, compté depuis le DÉBUT de l'événement. */
+export interface IcalAlarm {
+  /**
+   * Minutes AVANT le début (`0` : au début ; négatif : après). Sur une journée
+   * entière, le début est minuit : la veille à 9 h, c'est `24 * 60 - 9 * 60`.
+   * Une valeur non finie écarte le rappel.
+   */
+  minutesBefore: number;
+  /** Le texte affiché. À défaut, le titre de l'événement. */
+  description?: string;
 }
 
 export interface IcalEventOptions {
