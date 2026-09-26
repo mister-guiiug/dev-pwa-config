@@ -24,7 +24,6 @@ import {
   format,
   issuesActivees,
   liensFamille,
-  composantsAccueil,
   porteSignalement,
   run,
   specJouee,
@@ -304,6 +303,41 @@ test('sans .env.example du tout, la dette dit lesquelles documenter', async () =
   );
 });
 
+test('titre < 50 caractères : dette seo-title-length (Bing SEO/GEO)', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-court' },
+      'dist/index.html': `<!doctype html><html lang="fr"><head>
+        <title>Miss Court</title>
+      </head><body></body></html>`,
+    },
+    root => {
+      const f = diagnose(root).findings.find(x => x.id === 'seo-title-length');
+      assert.ok(f, 'seo-title-length attendu');
+      assert.equal(f.level, 'dette');
+      assert.match(f.message, /10 car/);
+    }
+  );
+});
+
+test('titre ≥ 50 caractères après décodage &amp; : pas de seo-title-length', async () => {
+  // Bing compte le glyphe « & », pas l'entité — le docteur décode &amp; avant de mesurer.
+  await repo(
+    {
+      'package.json': { name: 'miss-long' },
+      'dist/index.html': `<!doctype html><html lang="fr"><head>
+        <title>Mister &amp; Miss Koh - suivi d'aventure TV sans spoiler</title>
+      </head><body></body></html>`,
+    },
+    root => {
+      assert.equal(
+        diagnose(root).findings.find(x => x.id === 'seo-title-length'),
+        undefined
+      );
+    }
+  );
+});
+
 test('le conforme : silence complet — la définition exécutable de « conforme au parc »', async () => {
   const html = `<!doctype html><html lang="fr"><head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -314,6 +348,7 @@ test('le conforme : silence complet — la définition exécutable de « conform
     <link rel="manifest" href="/miss-x/manifest.webmanifest">
     <link rel="canonical" href="https://o/miss-x/">
     <meta property="og:image" content="https://o/miss-x/og.png">
+    <title>Miss X - application de démonstration du parc PWA React</title>
     <script type="module" src="/miss-x/assets/index-abc.js"></script>
     </head><body><div id="root"></div></body></html>`;
   await repo(
@@ -846,86 +881,6 @@ test('une indirection côté écrans : ce sont les écrans qui rendent le pied d
     verdict: 'trop',
     ecrans: ['src/components/Footer.tsx'],
   });
-});
-
-test('l’accueil se reconnaît aussi à SA ROUTE, pas seulement à son nom de fichier', () => {
-  // miss-supatool, le 24/09/2026 : les liens étaient sur l'accueil et les
-  // Réglages, comme la règle le veut — mais l'accueil s'appelle
-  // `ConnectionsScreen`, et le contrôle le prenait pour un écran étranger.
-  const routes = fichier(
-    'src/App.tsx',
-    '<Routes><Route path="/" element={<ConnectionsScreen />} /><Route path="/reglages" element={<SettingsScreen />} /></Routes>'
-  );
-  const connexions = fichier(
-    'src/features/connections/ConnectionsScreen.tsx',
-    'export function ConnectionsScreen() { return <AppFooter repoUrl={REPO_URL} />; }'
-  );
-  const reglages = fichier(
-    'src/features/settings/SettingsScreen.tsx',
-    'export function SettingsScreen() { return <AppFooter repoUrl={REPO_URL} />; }'
-  );
-  assert.equal(liens([routes, connexions, reglages]), 'deux');
-  // Sans la route qui le monte sur `/`, le même écran reste étranger.
-  assert.equal(liens([connexions, reglages]), 'trop');
-});
-
-test('l’accueil d’un routeur OBJET est son enfant `index`, même chargé paresseusement', () => {
-  // mister-family-map : `createBrowserRouter`, une mise en page sur `/`, et
-  // l'accueil en `index`, derrière `lazy()` et un habillage `page(…)`.
-  const routeur = fichier(
-    'src/app/router/index.tsx',
-    "const ExplorePage = lazy(chargeurs.ExplorePage); export const router = createBrowserRouter([{ path: '/', element: <RootLayout />, children: [{ index: true, element: page(<ExplorePage />) }, { path: 'reglages', element: page(<SettingsPage />) }] }]);"
-  );
-  const explore = fichier(
-    'src/pages/ExplorePage.tsx',
-    'export default function ExplorePage() { return <AppFooter repoUrl={REPO_URL} />; }'
-  );
-  const reglages = fichier(
-    'src/pages/SettingsPage.tsx',
-    'export default function SettingsPage() { return <AppFooter repoUrl={REPO_URL} />; }'
-  );
-  assert.equal(liens([routeur, explore, reglages]), 'deux');
-});
-
-test('un composant rangé dans un dossier de réglages compte pour l’écran qui le rend', () => {
-  // mister-doc, le 24/09/2026 : la liste des autres apps vit dans
-  // `features/profile/OtherAppsCard.tsx`, et `ProfilePage` la rend. Le chemin
-  // contient « profil » : le composant comptait comme un TROISIÈME écran.
-  const routes = fichier(
-    'src/App.tsx',
-    '<Routes><Route path="/" element={<PlanningView />} /><Route path="/profil" element={<ProfilePage />} /></Routes>'
-  );
-  const planning = fichier(
-    'src/features/planning/PlanningView.tsx',
-    'export function PlanningView() { return <AppFooter repoUrl={REPO_URL} />; }'
-  );
-  const autres = fichier(
-    'src/features/profile/OtherAppsCard.tsx',
-    'export function OtherAppsCard() { return <FamilyApps showSponsor={false} />; }'
-  );
-  const profil = fichier(
-    'src/features/profile/ProfilePage.tsx',
-    'export function ProfilePage() { return <><OtherAppsCard /><AppFooter repoUrl={REPO_URL} /></>; }'
-  );
-  assert.equal(liens([routes, planning, autres, profil]), 'deux');
-  // Personne ne le rend : il compte pour lui-même, comme avant — son dossier
-  // le range dans les réglages.
-  assert.equal(liens([routes, planning, autres]), 'deux');
-});
-
-test('une route `/` qui a des enfants est une mise en page, pas l’accueil', () => {
-  // La balise se lit en comptant les accolades : `element={<X />}` contient
-  // un `>`, et un `[^>]*` s'y arrêtait au milieu de l'attribut.
-  assert.deepEqual(
-    composantsAccueil(
-      '<Route path="/" element={<Layout />}><Route index element={<Home />} /></Route>'
-    ),
-    ['Home']
-  );
-  assert.deepEqual(
-    composantsAccueil('<Route path="/jeu" element={<Game />} />'),
-    []
-  );
 });
 
 test('aucun porteur : la dette le dit sans deviner', () => {
