@@ -212,10 +212,9 @@ const sansCommentaires = {
  * CE QUE LE CONTRÔLE VOIT, ET CE QU'IL NE VOIT PAS. Il lit du texte, pas un
  * graphe de rendu : il résout UNE indirection — `<Footer/>` défini ailleurs,
  * rendu par la coquille (la forme de `miss-carbook` et `miss-lookhouse`) ou par
- * deux écrans — et reconnaît les réglages AU NOM DE FICHIER, l'accueil à son
- * nom de fichier OU À SA ROUTE (`/`, ou `index` — voir `composantsAccueil`).
- * Deux indirections, ou des réglages nommés autrement, lui échappent : d'où
- * une DETTE et non un défaut, qui nomme ce qu'il a vu.
+ * deux écrans — et reconnaît l'accueil et les réglages AU NOM DE FICHIER. Deux
+ * indirections, ou un écran nommé autrement, lui échappent : d'où une DETTE et
+ * non un défaut, qui nomme ce qu'il a vu.
  *
  * LE DÉPOUILLEMENT DES ROUTES EST LE CŒUR. Sans lui, `<SettingsScreen/>` monté
  * par `element={…}` dans le fichier des routes se lit comme un rendu « partout »
@@ -289,62 +288,6 @@ const normalise = chemin => {
     else out.push(part);
   }
   return out.join('/');
-};
-
-/**
- * LES ÉCRANS MONTÉS SUR L'ACCUEIL, lus dans les routes : les noms des
- * composants qu'un routeur rend sur `/`.
- *
- * Le nom de fichier ne suffisait pas. Le 24/09/2026, trois apps rendaient
- * leurs liens sur l'accueil et les Réglages, exactement comme la règle le
- * demande, et le contrôle leur reprochait « un écran étranger » : leur accueil
- * s'appelle `ConnectionsScreen` (miss-supatool), `PlanningView` (mister-doc),
- * `ExplorePage` (mister-family-map). Les renommer pour plaire à un contrôle
- * aurait été le monde à l'envers ; c'est le contrôle qui apprend à lire.
- *
- * TROIS FORMES, celles du parc :
- *  - `<Route path="/" element={<X />} />` — FERMÉE sur elle-même. Une route
- *    `/` qui a des enfants est une mise en page, pas l'accueil : c'est son
- *    enfant `index` qui l'est ;
- *  - `<Route index element={<X />} />` ;
- *  - `{ index: true, element: <X /> }` (ou `page(<X />)`), la forme objet de
- *    `createBrowserRouter`.
- *
- * LA BALISE EST LUE EN COMPTANT LES ACCOLADES : `element={<X />}` contient un
- * `>`, et un `[^>]*` s'y arrêtait au milieu de l'attribut.
- */
-export const composantsAccueil = text => {
-  const noms = [];
-  for (const m of text.matchAll(/<Route\b/g)) {
-    let prof = 0;
-    let fin = -1;
-    for (let i = m.index + 6; i < text.length; i++) {
-      const c = text[i];
-      if (c === '{') prof++;
-      else if (c === '}') prof--;
-      else if (c === '>' && prof === 0) {
-        fin = i;
-        break;
-      }
-    }
-    if (fin < 0) continue;
-    const balise = text.slice(m.index, fin + 1);
-    const ferme = /\/>$/.test(balise);
-    const racine = /\bpath=(?:"\/"|'\/'|\{\s*["']\/["']\s*\})/.test(balise);
-    const index = /\bindex(?:\s*=\s*\{\s*true\s*\})?(?=[\s/>])/.test(balise);
-    if (!((racine && ferme) || index)) continue;
-    const el = /\belement=\{[^<]*<([A-Z]\w*)/.exec(balise);
-    if (el) noms.push(el[1]);
-  }
-  for (const m of text.matchAll(/\bindex:\s*true\b/g)) {
-    const debut = text.lastIndexOf('{', m.index);
-    const fin = text.indexOf('}', m.index);
-    if (debut < 0 || fin < 0) continue;
-    const objet = text.slice(debut, fin);
-    const el = /\belement:[^<,]*<([A-Z]\w*)/.exec(objet);
-    if (el) noms.push(el[1]);
-  }
-  return [...new Set(noms)];
 };
 
 /** Le texte d'une coquille, ses écrans montés retirés. */
@@ -477,33 +420,13 @@ export function liensFamille(source) {
   // coquille qui porte les liens DANS ses routes, ou un porteur que personne
   // ne rend, compte pour lui-même : le contrôle ne sait pas quel écran, et le
   // dit plutôt que de deviner.
-  // L'accueil se reconnaît à son NOM DE FICHIER, ou à SA ROUTE : l'écran
-  // qu'un routeur monte sur `/` (voir `composantsAccueil`).
-  const nomsAccueil = new Set(
-    fichiers.filter(routeur).flatMap(f => composantsAccueil(f.text))
-  );
-  const accueilsParRoute = new Set(
-    fichiers
-      .filter(f => nomsDe(f).some(nom => nomsAccueil.has(nom)))
-      .map(f => f.rel)
-  );
-  const estAccueil = rel =>
-    LIENS.accueil.test(rel) || accueilsParRoute.has(rel);
+  const estEcran = rel => LIENS.accueil.test(rel) || LIENS.reglages.test(rel);
   const ecrans = [];
   const retient = rel => {
     if (!ecrans.includes(rel)) ecrans.push(rel);
   };
-  // UN COMPOSANT RENDU PAR UN ÉCRAN N'EST PAS UN ÉCRAN, même rangé dans un
-  // dossier qui en a le nom. `LIENS.reglages` lit tout le chemin : mesuré le
-  // 24/09/2026 sur mister-doc, `features/profile/OtherAppsCard.tsx` — la liste
-  // des autres apps, rendue par `ProfilePage` — comptait comme un TROISIÈME
-  // écran à côté de l'accueil et du Profil. Un fichier NOMMÉ comme un écran
-  // compte pour lui-même ; un fichier qui ne l'est que par son dossier compte
-  // pour les écrans qui le rendent, s'il y en a.
-  const estEcranParNom = rel =>
-    estAccueil(rel) || LIENS.reglages.test(basename(rel));
   for (const p of porteurs) {
-    if (estCoquille(p) || estEcranParNom(p.rel)) {
+    if (estEcran(p.rel) || estCoquille(p)) {
       retient(p.rel);
       continue;
     }
@@ -517,9 +440,9 @@ export function liensFamille(source) {
 
   // DEUX ÉCRANS, ET CES DEUX-LÀ. Un troisième — ou un écran étranger à la
   // règle — est un écran de trop, et le verdict le nomme.
-  const accueils = ecrans.filter(estAccueil);
+  const accueils = ecrans.filter(rel => LIENS.accueil.test(rel));
   const reglages = ecrans.filter(
-    rel => !estAccueil(rel) && LIENS.reglages.test(rel)
+    rel => !LIENS.accueil.test(rel) && LIENS.reglages.test(rel)
   );
   const autres = ecrans.filter(
     rel => !accueils.includes(rel) && !reglages.includes(rel)
@@ -1438,6 +1361,16 @@ export function reglesBuild(ctx, api) {
         'pas de <meta name="description">',
         'pwaSeoPlugin la pose'
       );
+    // Bing Webmaster (SEO/GEO) signale « Title too short » sous ~50 caractères —
+    // relevé du 26/09/2026 sur miss-dice et confirmé sur la quasi-totalité du
+    // parc. Le <title> sert aussi le H1 du contenu servi (servedContent).
+    if (m.title && [...m.title.replace(/&amp;/g, '&')].length < 50) {
+      dette(
+        'seo-title-length',
+        `titre trop court (${[...m.title.replace(/&amp;/g, '&')].length} car.) pour Bing SEO/GEO : « ${m.title.slice(0, 60)} »`,
+        'allonger <title> (et og:title / twitter:title) à ≥ 50 caractères, descriptif'
+      );
+    }
     if (!m.appleTouchIcon) {
       defaut(
         'ios-icon',
@@ -1694,6 +1627,7 @@ export const CATALOGUE = [
   { id: 'html-lang', famille: 'build', niveau: 'défaut' },
   { id: 'viewport', famille: 'build', niveau: 'défaut' },
   { id: 'description', famille: 'build', niveau: 'dette' },
+  { id: 'seo-title-length', famille: 'build', niveau: 'dette' },
   { id: 'ios-icon', famille: 'build', niveau: 'défaut' },
   { id: 'theme-color', famille: 'build', niveau: 'dette' },
   { id: 'csp', famille: 'build', niveau: 'dette' },
