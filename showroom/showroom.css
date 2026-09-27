@@ -289,14 +289,56 @@ pre code {
 }
 
 .sr-segmented label {
-  padding: 0.45rem 0.7rem;
+  padding: 0.45rem 0.55rem;
+  min-width: 2.75rem;
   min-height: 2.75rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   font-size: var(--text-fluid-xs);
   color: var(--ds-text-soft);
   cursor: pointer;
   user-select: none;
+}
+
+/* Même boîte que les icônes du paquet (18 px, trait de 2). */
+.sr-ico {
+  width: 1.125rem;
+  height: 1.125rem;
+  display: block;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Le code langue occupe la place d'une icône : un drapeau dirait autre chose
+   que la langue, et un menu ne peut pas porter de dessin. */
+.sr-ico-code {
+  width: auto;
+  min-width: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  stroke: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.sr-topbar-switches {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sr-topbar-switches fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .sr-segmented input:checked + label {
@@ -347,7 +389,7 @@ pre code {
   border-radius: var(--ds-radius);
   box-shadow: var(--ds-shadow);
   padding: var(--spacing-fluid-lg);
-  scroll-margin-top: 5rem;
+  scroll-margin-top: calc(var(--sr-header, 8.75rem) + 0.75rem);
 }
 
 .sr-section > h2 {
@@ -409,8 +451,32 @@ pre code {
   text-decoration: none;
 }
 
-.sr-toc a:hover {
+.sr-toc a:hover,
+.sr-toc a[aria-current='location'] {
   border-color: var(--ds-primary);
+}
+
+.sr-toc a[aria-current='location'] {
+  background: var(--ds-primary-soft);
+  color: var(--ds-primary);
+  font-weight: 600;
+}
+
+/* Le sommaire reste sous la main : la barre est déjà collée, le rail défile
+   en travers quand les douze sections ne tiennent pas. */
+.sr-rail {
+  max-width: 68rem;
+  margin: 0 auto;
+  overflow-x: auto;
+  border-top: 1px solid var(--ds-border);
+  scrollbar-width: none;
+}
+
+.sr-rail .sr-toc {
+  flex-wrap: nowrap;
+  width: max-content;
+  margin: 0;
+  padding: 0.35rem var(--spacing-fluid-md) 0.45rem;
 }
 
 .sr-subtitle {
@@ -1168,7 +1234,7 @@ pre code {
   font-size: var(--text-fluid-sm);
   letter-spacing: 0.02em;
   background: var(--sr-app-accent, var(--ds-primary));
-  color: var(--ds-primary-contrast);
+  color: var(--sr-app-ink, var(--ds-primary-contrast));
 }
 
 /* Vignette d'une vraie capture : même gabarit que le monogramme, cadrée en
@@ -1713,8 +1779,8 @@ pre code {
 
 /* ── Galerie de démo par application ─────────────────────────────────────── */
 
-/* La section n'a plus de menu : la vitrine est le seul sélecteur
-   d'application. Il ne reste qu'à dire lequel est affiché. */
+/* La galerie est l'index visuel ; cette ligne dit seulement lequel des
+   aperçus en grand est affiché. Pas de second menu. */
 .sr-demo-current {
   margin: 0 0 var(--spacing-fluid-md);
   font-size: var(--text-fluid-sm);
@@ -1725,6 +1791,113 @@ pre code {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/*
+ * Toutes les palettes en même temps. Chaque tuile porte les variables du
+ * contrat en propre (`paintPalette`) : le fond, le bouton et les pastilles
+ * sont ceux de l’application, pas ceux de la page.
+ */
+.sr-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: 0.6rem;
+  margin-bottom: var(--spacing-fluid-md);
+}
+
+.sr-gallery-tile {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius, 0.75rem);
+  background-color: var(--ds-bg);
+  background-image: var(--ds-bg-image, none);
+  color: var(--ds-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.sr-gallery-tile:hover,
+.sr-gallery-tile:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
+}
+
+.sr-gallery-tile[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 2px var(--ds-primary);
+}
+
+.sr-gallery-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.sr-gallery-name {
+  font-family: var(--ds-font-display, inherit);
+  font-size: var(--text-fluid-xs);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.sr-gallery-flag {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ds-text-soft);
+}
+
+.sr-gallery-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.sr-gallery-dots span {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ds-text) 22%, transparent);
+}
+
+.sr-gallery-surface {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius, 0.75rem) * 0.6);
+  background: var(--ds-surface);
+}
+
+.sr-gallery-ink {
+  font-weight: 700;
+}
+
+.sr-gallery-ink-soft {
+  color: var(--ds-text-soft);
+  font-size: var(--text-fluid-xs);
+}
+
+.sr-gallery-sample {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sr-gallery-sample [data-dwc='button'] {
+  pointer-events: none;
 }
 
 /* Cadre de téléphone : donne l'échelle réelle des composants, qui sont conçus
@@ -1860,7 +2033,8 @@ span[data-dwc='family-app-icon'] {
 
   /* Ce qui ne sert qu'à piloter la page. */
   .sr-skip,
-  .sr-topbar,
+  .sr-topbar-inner,
+  .sr-settings-toggle,
   .sr-copy,
   .sr-pg-controls,
   .sr-cat-controls,
@@ -1868,6 +2042,28 @@ span[data-dwc='family-app-icon'] {
   .sr-app-actions button,
   .sr-view-toggle {
     display: none !important;
+  }
+
+  /* Le sommaire, lui, s'imprime : c'est la table des matières. Il se replie
+     sur plusieurs lignes, le rail ne défile plus. */
+  .sr-topbar {
+    position: static;
+    background: none;
+    border: 0;
+    padding: 0;
+    backdrop-filter: none;
+  }
+
+  .sr-rail {
+    overflow: visible;
+    border: 0;
+    max-width: none;
+  }
+
+  .sr-rail .sr-toc {
+    flex-wrap: wrap;
+    width: auto;
+    padding-inline: 0;
   }
 
   /* Même défaut que la pastille du composant `FamilyApps` : le monogramme est
@@ -1911,6 +2107,7 @@ span[data-dwc='family-app-icon'] {
   .sr-fc-panel,
   .sr-compare-panel,
   .sr-phone,
+  .sr-gallery-tile,
   .sr-pg-preview {
     break-inside: avoid;
   }
