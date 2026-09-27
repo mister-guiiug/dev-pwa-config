@@ -6,7 +6,8 @@ recopient encore. Ce document regarde dans l'autre : **ce que plusieurs apps
 mesure une dette ; le second cherche des chantiers.
 
 Analyse du 02/09/2026, sur les dix-sept apps clonées à côté du socle
-(`bac-sable` compris, `mister-family-map` exclu : c'est son miroir).
+(`bac-sable` compris, `mister-family-map` exclu : c'était alors son miroir).
+Depuis le 27/09/2026, `mister-family-map` est le dépôt de l'application.
 
 > **Élagué le 06/09/2026.** Les dix chantiers de ce relevé ont été livrés le
 > jour même, en dix PR fusionnées dans la 3.33.0 — leurs fiches détaillées

@@ -187,8 +187,8 @@ le but de la campagne.
   `peerDependencies` se demande par `--peers` : sur `mister-quota`, seule app
   Electron du parc et restée en arrière, un simple « aligne le plancher »
   proposait cinq montées majeures — React, Vite, TypeScript, Vitest, ESLint.
-  Les miroirs (`mister-family-map`) sont exclus de la découverte : une écriture
-  y serait interdite, et un `npm run mirror` suivant l'écraserait en silence.
+  `mister-family-map` est le dépôt de l'application : il se migre comme les
+  autres, par une PR sur ce dépôt.
 
 ### Le piège de `npm install` après une montée de version
 
@@ -241,14 +241,9 @@ for d in ../*/; do git -C "$d" fetch -q origin 2>/dev/null &&
   echo "$d $(git -C "$d" rev-list --left-right --count origin/main...main 2>/dev/null)"; done
 ```
 
-**`mister-family-map` ne reçoit pas de PR.** C'est le MIROIR PUBLIC de
-`elowner-ax/bac-sable`, publié depuis le poste par `npm run mirror` : les
-minutes Actions sont gratuites sur le public, la CI y tourne, mais le
-développement se fait sur le dépôt privé. Migrer cette app veut dire ouvrir la
-PR dans `bac-sable`, puis publier. Le relevé, lui, mesure le miroir : il voit
-donc la migration **après** publication, pas après fusion. Une app peut donc
-apparaître en retard sans l'être — c'est le seul cas de la famille, et
-`docs/MIRRORING.md` du dépôt privé en donne le mode d'emploi.
+**`mister-family-map` reçoit ses PR comme les autres apps.** Jusqu'au
+27/09/2026 c'était le miroir public de `elowner-ax/bac-sable`. Ce lien est
+coupé : le développement et la CI sont sur le dépôt public.
 
 Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
 
@@ -256,7 +251,7 @@ Migré et vérifié (lint, tests, build verts, orphelins supprimés) :
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `miss-genius`       | `components.css`, puis 8 doublons : `Button`, `Sheet`, `ConfirmDialog`, `Field`, `BottomNav`, `AppFooter`, `EmptyState`, `links` — **12 → 4** |
 | `miss-uwh`          | 7 doublons : `Button`, `Sheet`, `Field`, `EmptyState`, `ConfirmDialog`, `AppFooter`, `links` — 124 imports, 8 fichiers supprimés — **13 → 6** |
-| `mister-family-map` | `geo` — 14 fichiers, via `bac-sable` puis `npm run mirror`                                                                                    |
+| `mister-family-map` | `geo` — 14 fichiers (alors via `bac-sable`, puis publication)                                                                                 |
 | `miss-supaboss`     | `useOnline` — 5 appelants                                                                                                                     |
 | `miss-badminton`    | `useOnline` — 1 appelant                                                                                                                      |
 | `mister-molkky`     | `useOnline` — 1 appelant                                                                                                                      |
@@ -717,10 +712,11 @@ que le paquet exporte déjà. Voici ce qu'ils sont devenus, pour que personne ne
 refasse l'analyse. **Un tiers seulement était une vraie duplication** — et
 c'est le tri, pas la liste des migrations, qui vaut d'être gardé.
 
-Un cas mérite d'être retenu : **`bac-sable` est la source d'au moins trois
-modules du socle** — `dates`, `rate-limit`, `similarity` le nomment dans leur
-en-tête — et n'avait jamais réadopté ce qu'il avait donné. Le code est parti,
-la copie est restée, et les deux ont vécu côte à côte pendant des mois.
+Un cas mérite d'être retenu : **`mister-family-map` est la source d'au moins
+trois modules du socle** — `dates`, `rate-limit`, `similarity` le nomment dans
+leur en-tête ; le dépôt s'appelait alors `bac-sable` — et n'avait jamais
+réadopté ce qu'il avait donné. Le code est parti, la copie est restée, et les
+deux ont vécu côte à côte pendant des mois.
 
 ### Ce qui est un HOMONYME, et pas une dette
 
@@ -743,10 +739,10 @@ la copie est restée, et les deux ont vécu côte à côte pendant des mois.
   un. Mais il dépend du `useAuth` de l'app, donc l'adopter entraîne **tout le
   port `/auth`** et son adaptateur. Ce n'est pas un échange mécanique, c'est
   une refonte de la couche d'authentification, app par app.
-- **`useAsync` de bac-sable** — le socle rend `error: Error | null`, la copie
-  `string | null`. Une dizaine de sites d'appel passent `state.error`
-  directement à `<ErrorBanner message={…}/>`.
-- **`resolveBackendKind` de bac-sable** — le socle prend un second argument
+- **`useAsync` de mister-family-map** — au 01/09/2026 le socle rendait
+  `error: Error | null` et la copie `string | null`. L'app importe depuis
+  le socle.
+- **`resolveBackendKind` de mister-family-map** — le socle prend un second argument
   `kinds` et rend `string`, pas `'local' | 'supabase'`.
 - **`toISODate` et `addDays` de mister-doc** — identiques au socle, mais douze
   lignes dans un module de 253 dont tout le reste est du métier (fériés
@@ -774,7 +770,7 @@ que personne ne refasse l'analyse.
 
 ### `mister-molkky` n'avait rien réadopté non plus
 
-Le cas `bac-sable` n'était pas isolé. **Cinq modules du socle nomment
+Le cas `mister-family-map` n'était pas isolé. **Cinq modules du socle nomment
 `mister-molkky` dans leur en-tête** — `react/use-keyboard-shortcuts`,
 `react/use-pull-to-refresh`, `react/use-feedback`, `react/use-long-press` et
 `audio`. L'app importait déjà vingt-trois sous-chemins du socle, **aucun de ces

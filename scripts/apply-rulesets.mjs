@@ -49,18 +49,6 @@ const OWNER = GITHUB_OWNER;
 const SELF = 'dev-pwa-config';
 
 /**
- * MIROIRS : `main` y arrive par `git push --force`, jamais par une PR.
- *
- * `mister-family-map` est publié depuis le dépôt privé `bac-sable` par
- * `npm run mirror`, qui fait littéralement
- * `git push --force <remote> refs/heads/main:refs/heads/main`. Le ruleset
- * standard le casserait DEUX FOIS : `non_fast_forward` refuse le forçage, et
- * la règle `pull_request` refuse tout push direct. On n'y protège donc que
- * contre la SUPPRESSION — la relecture, elle, a lieu sur la source.
- */
-const MIRRORS = new Set(['mister-family-map']);
-
-/**
  * PUBLICATION AUTOMATIQUE : un workflow du dépôt POUSSE lui-même sur `main`.
  *
  * `parc-dashboard` se relève chaque nuit — `releve.yml` reconstruit
@@ -91,10 +79,9 @@ const AUTO_PUBLIE = new Set(['parc-dashboard']);
  * Contextes exigés d'un dépôt — UN SEUL ENDROIT.
  *
  * Le défaut de `CHECKS` vise les applications, qui rapportent toutes
- * `ci / Format · Lint · Type · Test · Build`. Un dépôt qui n'accueille pas de
- * PR n'exige aucun check : ni un miroir, ni un dépôt qui se publie lui-même —
- * `required_status_checks` n'a de sens qu'avec une règle `pull_request`, dont
- * il garde l'entrée.
+ * `ci / Format · Lint · Type · Test · Build`. Un dépôt qui se publie
+ * lui-même n'exige aucun check : `required_status_checks` n'a de sens
+ * qu'avec une règle `pull_request`, dont il garde l'entrée.
  *
  * SANS CETTE EXCEPTION, `parc-dashboard` SE FAISAIT REFUSER pour la mauvaise
  * raison : le défaut lui prêtait le contexte des apps, que sa CI ne rapporte
@@ -102,11 +89,11 @@ const AUTO_PUBLIE = new Set(['parc-dashboard']);
  * relevé`). Le garde le sauvait donc par accident — et `--force` aurait levé
  * ce sauvetage-là en même temps que le reste.
  *
- * Le calcul vivait en DEUX exemplaires, dont un seul connaissait les miroirs.
- * Une troisième copie aurait fini par diverger.
+ * Le calcul vivait en DEUX exemplaires. Une troisième copie aurait fini
+ * par diverger.
  */
 function contextesPour(repo) {
-  if (MIRRORS.has(repo) || AUTO_PUBLIE.has(repo)) return [];
+  if (AUTO_PUBLIE.has(repo)) return [];
   return CHECKS[repo] ?? CHECKS.default;
 }
 
@@ -397,10 +384,6 @@ function rulesetFor(repo) {
     },
   };
 
-  // Un miroir n'accueille pas de PR : il reçoit un `push --force` depuis sa
-  // source. On garde la seule règle qui ne gêne pas la publication.
-  if (MIRRORS.has(repo)) return { ...base, rules: [{ type: 'deletion' }] };
-
   // Un dépôt qui se publie lui-même pousse sur `main` depuis un workflow, sous
   // une identité sans contournement : la règle `pull_request` l'éteindrait.
   // Les deux autres ne le gênent pas — son push est une avance rapide.
@@ -555,8 +538,8 @@ if (AUDIT) {
         const exiges = (regle?.parameters?.required_status_checks ?? []).map(
           c => c.context
         );
-        // Un ruleset sans check exigé ne peut pas geler : `.github` et le
-        // miroir sont dans ce cas, délibérément.
+        // Un ruleset sans check exigé ne peut pas geler : `.github` est dans
+        // ce cas, délibérément.
         if (!exiges.length) continue;
 
         vus ??= checksObserves(repo);
@@ -589,17 +572,12 @@ if (AUDIT) {
 for (const repo of targets) {
   const path = `repos/${OWNER}/${repo}/rulesets`;
   const ruleset = rulesetFor(repo);
-  // Le journal dit ce que le ruleset FAIT : annoncer des checks à un miroir
-  // qui n'en reçoit aucun, c'est se mentir à soi-même dans une sortie verte.
-  const miroir = MIRRORS.has(repo);
   const contexts = contextesPour(repo);
   console.log(`\n→ ${OWNER}/${repo}`);
   console.log(
-    miroir
-      ? '  · MIROIR : suppression bloquée seulement (le push --force doit passer)'
-      : AUTO_PUBLIE.has(repo)
-        ? '  · PUBLICATION AUTOMATIQUE : pas de règle `pull_request`, son workflow pousse sur `main`'
-        : `  · checks exigés : ${contexts.join(', ') || 'aucun'}`
+    AUTO_PUBLIE.has(repo)
+      ? '  · PUBLICATION AUTOMATIQUE : pas de règle `pull_request`, son workflow pousse sur `main`'
+      : `  · checks exigés : ${contexts.join(', ') || 'aucun'}`
   );
 
   if (contexts.length && !FORCE) {

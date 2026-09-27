@@ -9,20 +9,6 @@
  * Non publié (absent de `files`) : outillage de développement du dépôt.
  */
 
-/**
- * MIROIRS PUBLICS — jamais modifiés par une migration.
- *
- * `mister-family-map` est un miroir de `elowner-ax/bac-sable`, publié à la
- * main par `npm run mirror`. Une PR y est interdite, et le développement se
- * fait dans le dépôt privé. L'auto-découverte le trouvait pourtant, puisqu'il
- * déclare bien le paquet : lancé avec `--write`, le script y écrivait une
- * modification qui n'aurait jamais dû exister — et qu'un `mirror` suivant
- * aurait écrasée en silence, donc sans que personne ne s'en aperçoive.
- *
- * La SOURCE reste découverte normalement : ce sont deux dossiers distincts.
- */
-export const MIRRORS = new Set(['mister-family-map']);
-
 /** Le paquet dont ce dépôt est la source. */
 export const PKG_NAME = '@mister-guiiug/dev-pwa-config';
 
@@ -42,7 +28,7 @@ export function majorOf(range) {
 
 /** Un dossier frère est-il un consommateur à migrer ? */
 export function isConsumerDir(name, pkg) {
-  if (name === 'dev-pwa-config' || MIRRORS.has(name)) return false;
+  if (name === 'dev-pwa-config') return false;
   return findDep(pkg, PKG_NAME) != null;
 }
 

@@ -68,7 +68,7 @@ _Dossier instruit le 03/09/2026. Tout ce qui suit a été mesuré ou éprouvé d
 > avait aucun, et les deux autres règles entrantes ne mordent nulle part.
 >
 > **Restent les apps** : celles qui déclarent `eslint` elles-mêmes (comme
-> `bac-sable`) ne voient rien tant qu'elles ne montent pas ; celles qui s'en
+> `mister-family-map`) ne voient rien tant qu'elles ne montent pas ; celles qui s'en
 > remettent à la peer du socle ont besoin des trois gestes. `scripts/plafonds.mjs`
 > dira le jour où `jsx-a11y` republie et rend l'override inutile.
 >
@@ -237,8 +237,8 @@ pas `eslint`.
 3. **Les apps qui déclarent déjà `eslint@^9.39.4`** : rien ne presse, elles
    montent quand elles veulent, avec les mêmes gestes 2 et 3 — pour elles le
    geste 2 est une simple montée de plage, la déclaration existant déjà.
-   `bac-sable` en est — vérifié le 12/09 : `eslint@^9.39.4`,
-   `@eslint/js@^9.39.4`, aucun override.
+   `mister-family-map` l'était le 12/09 (`eslint@^9.39.4`,
+   `@eslint/js@^9.39.4`, aucun override) ; elle déclare depuis `eslint@^10.11.0`.
 4. ~~**Le gabarit** et la checklist du README~~ — **FAIT par le point 1.** Le
    squelette étant le gabarit vivant, une app qui en naît naît maintenant en
    ESLint 10. Ce point était faux entre le 10 et le 12/09, et le bloc

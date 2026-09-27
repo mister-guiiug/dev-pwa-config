@@ -34,7 +34,7 @@ Trois conséquences pratiques, toutes payées au moins une fois dans le parc :
 | Rangement               | Où ça vit                                                                                                                                  | Qui le lit                                                                                                           | Relisible ?          | Exemples                                                                                                                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`vars`**              | Variables Actions du dépôt (Settings → Secrets and variables → Actions → Variables)                                                        | `${{ vars.X }}` dans tout workflow, dans `with:`, dans `secrets:` d'un appelant                                      | oui                  | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_FIREBASE_*`, `VITE_VAPID_PUBLIC_KEY`, `VITE_SENTRY_DSN`, `VITE_BACKEND`, `SUPABASE_PROJECT_ID` (la référence est dans l'URL) |
-| **`secrets`**           | Secrets Actions du dépôt, chiffrés                                                                                                         | `${{ secrets.X }}` dans `env:` d'un job ordinaire et dans le bloc `secrets:` d'un appelant — **jamais dans `with:`** | non (noms seulement) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `CLOUDFLARE_API_TOKEN`, `RENOVATE_TOKEN`, `PRIVATE_READ_TOKEN`                                   |
+| **`secrets`**           | Secrets Actions du dépôt, chiffrés                                                                                                         | `${{ secrets.X }}` dans `env:` d'un job ordinaire et dans le bloc `secrets:` d'un appelant — **jamais dans `with:`** | non (noms seulement) | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `CLOUDFLARE_API_TOKEN`, `RENOVATE_TOKEN`                                                          |
 | **`local`**             | Le poste : `.env.local`, `.env.development.local` (lus par Vite) ; `.env.supabase.local`, `../supabase-token.txt` (hors Vite, `chmod 600`) | `npm run dev`, le CLI Supabase, les scripts du poste                                                                 | —                    | mot de passe de la base, jeton personnel, secret de planification d'une fonction Edge                                                                                             |
 | **versionné**           | `.env.production` commité — une **exception assumée**, pour des valeurs publiques par construction                                         | le build, sans rien à poser sur GitHub                                                                               | oui                  | les `VITE_FIREBASE_*` de miss-ticket-pwa                                                                                                                                          |
 | **chez le fournisseur** | Supabase (Auth → URL, Hooks ; `supabase secrets set`), Cloudflare (`wrangler secret`), Firebase                                            | le service lui-même, jamais le navigateur ni GitHub                                                                  | selon le service     | `site_url`, `uri_allow_list`, hook de jeton, `IMPORT_CRON_SECRET`                                                                                                                 |
@@ -98,7 +98,7 @@ Ce que chaque réutilisable du socle consomme, et rien d'autre :
 | `pwa-worker-deploy.yml`          | `working-directory`                              | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (facultatifs)                                                    | absent = déploiement ignoré, sans échec                                                   |
 | action `firebase-deploy`         | `project-id`, `only`                             | `service-account-key` **ou** `token` (déprécié)                                                                  | pour un déploiement écrit à la main                                                       |
 | `renovate.yml` (le socle seul)   | —                                                | `RENOVATE_TOKEN` — un jeton classique, cf. l'en-tête du fichier                                                  | absent = « Renovate ne tourne pas », en notice, à chaque samedi                           |
-| `sync-from-private.yml` (miroir) | —                                                | `PRIVATE_READ_TOKEN` — PAT classique, scope `repo`, lecture sur le dépôt privé                                   | le miroir `mister-family-map` ne reçoit jamais de PR                                      |
+| `sync-from-private.yml`          | —                                                | —                                                                                                                | retiré le 24/09/2026 ; `mister-family-map` n'est plus un miroir                           |
 
 ## 3. La procédure — le cas standard
 
@@ -351,9 +351,9 @@ exécution planifiée s'arrête en notice et **aucun dépôt ne reçoit ses mont
 un jeton `read:packages` (`npm login --scope=@mister-guiiug`, ou
 `NODE_AUTH_TOKEN` avant `npm ci`) ; en CI, `GITHUB_TOKEN` suffit.
 
-**G. Un dépôt privé et son miroir public.** Le miroir porte `PRIVATE_READ_TOKEN`
-(PAT classique, scope `repo`, lecture sur le privé). Les valeurs de l'application
-se posent sur le **miroir**, seul dépôt où la CI et le déploiement tournent.
+**G. `mister-family-map`.** L'application vit sur le dépôt public. Les valeurs
+de build et de déploiement s'y posent, comme pour les autres apps. Le dépôt
+privé `bac-sable` ne publie plus vers lui.
 
 **H. Déplacer une valeur de `secrets` vers `vars`** — le cas de puzzle, et de
 toute `VITE_*` rangée à tort :
@@ -368,8 +368,8 @@ toute `VITE_*` rangée à tort :
 
 **I. Retirer, faire tourner.** `gh secret delete NOM -R …`,
 `gh variable delete NOM -R …`. Un jeton fine-grained qui expire ne casse pas
-bruyamment : Renovate cesse d'ouvrir des PR, le miroir cesse de se
-synchroniser, et on s'en aperçoit des mois plus tard — d'où `rotation` et
+bruyamment : Renovate cesse d'ouvrir des PR, et on s'en aperçoit des mois
+plus tard — d'où `rotation` et
 `lastRotated` au manifeste, et une vérification à date fixe.
 
 **J. Plusieurs dépôts en une passe.** Une boucle sur `gh` suffit, valeurs

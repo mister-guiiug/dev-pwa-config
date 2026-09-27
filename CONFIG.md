@@ -161,7 +161,7 @@ main, aux mauvais endroits.**
   variables manquantes**. Mais il ne le fait qu'à l'exécution, et **que pour
   Supabase**. C'est exactement pourquoi mister-qowa est passé au travers : il
   est sur Firebase, où rien de tel n'existe.
-- `src/app/config/env.ts` de bac-sable valide ses trois `VITE_*` par un schéma
+- `src/app/config/env.ts` de mister-family-map valide ses trois `VITE_*` par un schéma
   Zod, journalise ce qui est invalide et retombe explicitement sur le backend
   local. C'est `configReport()` déjà écrit — pour une app sur dix-sept.
 
@@ -176,12 +176,11 @@ Une gestion d'entreprise se juge moins à la pose d'un secret qu'à son retrait.
 
 - **Moindre privilège.** Les deux workflows Cloudflare demandent déjà un token
   restreint (`Workers Scripts: Edit`), pas la Global API Key — qui, elle, ne
-  s'annule pas et ouvre tout le compte. À généraliser aux PAT :
-  `RENOVATE_TOKEN`, `MIRROR_PUSH_TOKEN`, `PRIVATE_READ_TOKEN` en jetons
-  **fine-grained**, portée d'un dépôt, expiration ≤ 90 jours.
+  s'annule pas et ouvre tout le compte.   À généraliser aux PAT : `RENOVATE_TOKEN` en jeton **fine-grained**, portée
+  d'un dépôt, expiration ≤ 90 jours.
 - **L'expiration est le piège.** Un fine-grained PAT qui expire ne casse pas
-  bruyamment : Renovate cesse d'ouvrir des PR, le miroir cesse de se
-  synchroniser, et on s'en aperçoit des mois plus tard. D'où `rotation` et
+  bruyamment : Renovate cesse d'ouvrir des PR, et on s'en aperçoit des mois
+  plus tard. D'où `rotation` et
   `lastRotated` dans le manifeste, et une échéance qui ouvre une _issue_.
 - **La suppression fait partie du cycle.** Les sept orphelins d'aujourd'hui
   sont là parce que rien ne propose jamais de les enlever — deux d'entre eux

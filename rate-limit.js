@@ -3,7 +3,8 @@
  * (double envoi, spam involontaire). La limitation d'autorité vit côté
  * serveur (contraintes + fonctions).
  *
- * PROMU depuis `bac-sable/src/shared/lib/rate-limit.ts` (mister-family-map).
+ * PROMU depuis `mister-family-map/src/shared/lib/rate-limit.ts`
+ * (le dépôt s'appelait alors bac-sable).
  * L'horloge est injectable : les tests n'attendent pas.
  */
 
