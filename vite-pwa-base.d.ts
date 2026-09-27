@@ -21,10 +21,10 @@ export interface PwaSeoPluginOptions {
   logoPath?: string;
   iconQuery?: string;
   /**
-   * Contenu d'un `llms.txt`. Omis : fichier minimal généré depuis le catalogue.
-   * `false` : aucun fichier. Une chaîne : ce texte, tel quel.
+   * Contenu d'un `llms.txt`. Omis ou `false` : aucun fichier (défaut).
+   * `true` : fichier minimal depuis le catalogue. Une chaîne : ce texte.
    */
-  llms?: string | false;
+  llms?: string | boolean;
   /**
    * Injecte le script anti-FOUC en tête de `<head>`. `true` pour les valeurs
    * par défaut, ou les options de `themeBootSource` (dont `legacyKeys`, sans

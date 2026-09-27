@@ -174,7 +174,7 @@ export default defineConfig({
       logoPath: '/logo.svg', // → __SEO_LOGO_URL__ (OG/Twitter/JSON-LD)
       iconQuery: '?v=1.0.1', // → __PWA_ICON_QS__ (cache-busting)
       posthogKey: 'phc_…', // ID explicite (sinon VITE_POSTHOG_KEY)
-      llms: '# Mon app\n…', // optionnel : sinon fichier auto depuis le catalogue ; false pour couper
+      llms: '# Mon app\n…', // opt-in : true = auto catalogue ; chaîne = texte ; omis = rien
 
       // Le script anti-FOUC, injecté en tête de <head>. `legacyKeys` migre la
       // préférence déjà enregistrée : SIX clés distinctes existent dans la
@@ -198,8 +198,9 @@ ailleurs (une CMP).
 
 Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
 `__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
-`__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt` + `llms.txt` (auto depuis
-le catalogue ; `llms: false` coupe, une chaîne remplace).
+`__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt`. `llms.txt` seulement
+si `llms: true` (auto catalogue) ou `llms: '…'` (texte) — omis par défaut :
+Google ne s'en sert pas pour le ranking génératif.
 
 **Données structurées, sans réglage.** Le plugin injecte dans `<head>` un
 `WebApplication` schema.org : nom et catégorie tirés du catalogue

@@ -193,19 +193,30 @@ test('le plan de site porte lastmod, les routes publiques, et échappe &', async
   }
 });
 
-test('llms.txt : auto depuis le catalogue, false coupe, chaîne conserve', async () => {
+test('llms.txt : omis = rien ; true = auto ; chaîne conserve', async () => {
   const dossier = mkdtempSync(join(tmpdir(), 'seo-llms-'));
   try {
-    const auto = pwaSeoPlugin({
-      basePath: '/miss-dice/',
-      sitemap: false,
-      robots: false,
-    });
-    auto.configResolved({ command: 'build', build: { outDir: dossier } });
     writeFileSync(
       join(dossier, 'index.html'),
       PAGE.replaceAll('__SEO_LOGO_URL__', 'https://x/logo.svg')
     );
+
+    const defaut = pwaSeoPlugin({
+      basePath: '/miss-dice/',
+      sitemap: false,
+      robots: false,
+    });
+    defaut.configResolved({ command: 'build', build: { outDir: dossier } });
+    await defaut.closeBundle();
+    assert.equal(existsSync(join(dossier, 'llms.txt')), false);
+
+    const auto = pwaSeoPlugin({
+      basePath: '/miss-dice/',
+      sitemap: false,
+      robots: false,
+      llms: true,
+    });
+    auto.configResolved({ command: 'build', build: { outDir: dossier } });
     await auto.closeBundle();
     const texte = readFileSync(join(dossier, 'llms.txt'), 'utf8');
     assert.match(texte, /^# Miss Dice/m);
@@ -215,16 +226,6 @@ test('llms.txt : auto depuis le catalogue, false coupe, chaîne conserve', async
     );
 
     rmSync(join(dossier, 'llms.txt'));
-    const coupe = pwaSeoPlugin({
-      basePath: '/miss-dice/',
-      sitemap: false,
-      robots: false,
-      llms: false,
-    });
-    coupe.configResolved({ command: 'build', build: { outDir: dossier } });
-    await coupe.closeBundle();
-    assert.equal(existsSync(join(dossier, 'llms.txt')), false);
-
     const custom = pwaSeoPlugin({
       basePath: '/miss-dice/',
       sitemap: false,
