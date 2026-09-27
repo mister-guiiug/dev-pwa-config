@@ -757,10 +757,10 @@ ranger dans un _secret_ GitHub ne la protège donc de rien — ça masque seulem
 les journaux de CI (`***`) et donne l'illusion d'une confidentialité qui
 n'existe pas.
 
-| Ranger en…                      | Quoi                                                                                                                | Exemples                                                                                                                                                                            |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`secrets`** (chiffrés)        | Ce qui donne un **pouvoir** : écrire, déployer, administrer. Jamais lu par le navigateur.                           | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_DB_URL`, `FIREBASE_TOKEN`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `CLOUDFLARE_API_TOKEN`, `RENOVATE_TOKEN`                      |
-| **`vars`** (en clair, lisibles) | Ce qui finit **dans le bundle** ou dans une URL publique — donc tout `VITE_*`, et la configuration d'environnement. | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_FIREBASE_*`, `VITE_VAPID_PUBLIC_KEY`, `VITE_SENTRY_DSN`, `VITE_BASE_PATH`, `SUPABASE_PROJECT_ID`                               |
+| Ranger en…                      | Quoi                                                                                                                | Exemples                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`secrets`** (chiffrés)        | Ce qui donne un **pouvoir** : écrire, déployer, administrer. Jamais lu par le navigateur.                           | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_DB_URL`, `FIREBASE_TOKEN`, `FIREBASE_SERVICE_ACCOUNT_KEY`, `CLOUDFLARE_API_TOKEN`, `RENOVATE_TOKEN` |
+| **`vars`** (en clair, lisibles) | Ce qui finit **dans le bundle** ou dans une URL publique — donc tout `VITE_*`, et la configuration d'environnement. | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_FIREBASE_*`, `VITE_VAPID_PUBLIC_KEY`, `VITE_SENTRY_DSN`, `VITE_BASE_PATH`, `SUPABASE_PROJECT_ID`          |
 
 Deux clés méritent un mot, parce qu'elles ressemblent à des secrets :
 
@@ -1028,7 +1028,7 @@ tout vit ici :
 | Fichier                          | Rôle                                                                                                                                                                          |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `renovate/default.json`          | Le PRÉRÉGLAGE : `config:recommended`, tableau de bord, samedi avant 7 h (Paris), mineures et patchs npm groupés, actions groupées, le socle dans une PR à part, sans attendre |
-| `renovate/self-hosted.json`      | QUELS dépôts : tous ceux du compte qui portent un `renovate.json` — `mister-family-map` compris                                                                              |
+| `renovate/self-hosted.json`      | QUELS dépôts : tous ceux du compte qui portent un `renovate.json` — `mister-family-map` compris                                                                               |
 | `.github/workflows/renovate.yml` | QUAND : le samedi 04:00 UTC (dans la fenêtre du préréglage), ou à la main avec `dry-run`. Muet sans le secret                                                                 |
 
 Une app étend le préréglage en une ligne :
