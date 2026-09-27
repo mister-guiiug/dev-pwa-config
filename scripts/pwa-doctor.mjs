@@ -1193,12 +1193,9 @@ export function reglesSource(ctx, api) {
   // sans `content/pages/*.md` reste à la case départ.
   if (viteConfig && /pwaSeoPlugin/.test(viteConfig)) {
     const pagesDir = join(root, 'content', 'pages');
-    let pagesMd = 0;
-    try {
-      pagesMd = readdirSync(pagesDir).filter(f => f.endsWith('.md')).length;
-    } catch {
-      pagesMd = 0;
-    }
+    const pagesMd = existsSync(pagesDir)
+      ? readdirSync(pagesDir).filter(f => f.endsWith('.md')).length
+      : 0;
     if (pagesMd === 0) {
       dette(
         'seo-content-pages',
