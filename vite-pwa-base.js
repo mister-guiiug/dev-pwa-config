@@ -1195,7 +1195,8 @@ export function pwaSeoPlugin(opts = {}) {
             err.code === 'EEXIST'
           )
             throw new Error(
-              `[pwa-seo] ${page.slug}.html existe déjà dans ${dist} : choisir un autre slug.`
+              `[pwa-seo] ${page.slug}.html existe déjà dans ${dist} : choisir un autre slug.`,
+              { cause: err }
             );
           throw err;
         }
