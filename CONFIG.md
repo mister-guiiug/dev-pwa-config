@@ -176,7 +176,7 @@ Une gestion d'entreprise se juge moins à la pose d'un secret qu'à son retrait.
 
 - **Moindre privilège.** Les deux workflows Cloudflare demandent déjà un token
   restreint (`Workers Scripts: Edit`), pas la Global API Key — qui, elle, ne
-  s'annule pas et ouvre tout le compte.   À généraliser aux PAT : `RENOVATE_TOKEN` en jeton **fine-grained**, portée
+  s'annule pas et ouvre tout le compte. À généraliser aux PAT : `RENOVATE_TOKEN` en jeton **fine-grained**, portée
   d'un dépôt, expiration ≤ 90 jours.
 - **L'expiration est le piège.** Un fine-grained PAT qui expire ne casse pas
   bruyamment : Renovate cesse d'ouvrir des PR, et on s'en aperçoit des mois
