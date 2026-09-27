@@ -69,12 +69,6 @@ export const TROP_COMMUNS = new Set([
 ]);
 
 /**
- * `bac-sable` est la source de `mister-family-map` : les compter tous les deux
- * ferait passer chaque copie pour un doublon inter-apps.
- */
-const MIROIRS = new Map([['mister-family-map', 'bac-sable']]);
-
-/**
  * Normalise une source pour la comparer : lignes non vides, sans espaces, sans
  * commentaires. Le test a attrapé la première version : `/** … *\/` sur une
  * ligne commence par `/`, pas par `*`, et comptait comme du code — deux copies
@@ -163,21 +157,7 @@ export async function run(args = []) {
     for (const nom of regle.exports ?? []) surface.add(nom);
   }
 
-  /**
-   * Les apps à lire : le catalogue, moins les miroirs dont la source est là.
-   * `bac-sable` n'est pas au catalogue (dépôt privé) mais c'est lui la
-   * source : on l'ajoute s'il est cloné à côté.
-   */
-  const apps = [];
-  for (const app of FAMILY_APPS) {
-    const source = MIROIRS.get(app.id);
-    if (source && existe(join(racine, source))) continue;
-    apps.push(app.id);
-  }
-  for (const source of MIROIRS.values()) {
-    if (existe(join(racine, source)) && !apps.includes(source))
-      apps.push(source);
-  }
+  const apps = FAMILY_APPS.map(app => app.id);
 
   /**
    * Par app : chaque fichier lu, ses déclarations, et le texte pour compter

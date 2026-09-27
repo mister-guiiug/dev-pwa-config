@@ -5,7 +5,6 @@
   "autodiscover": true,
   "autodiscoverFilter": [
     "mister-guiiug/*",
-    "!mister-guiiug/mister-family-map",
     "!mister-guiiug/miss-ticket"
   ],
   "onboarding": false,

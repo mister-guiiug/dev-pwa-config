@@ -3,7 +3,8 @@
  * implicite — les fonctions reçoivent leurs `Date` et sont donc testables.
  *
  * PROMU, PAS INVENTÉ. Trois apps portaient chacune leur module dates :
- * `bac-sable` (arithmétique d'intervalles), `mister-footcoach` (affichage),
+ * `mister-family-map` (arithmétique d'intervalles ; le dépôt s'appelait alors
+ * bac-sable), `mister-footcoach` (affichage),
  * `mister-doc` (aller-retour ISO). L'arithmétique est ici ; l'affichage
  * reste dans `format.js`.
  */

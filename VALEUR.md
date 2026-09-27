@@ -149,7 +149,7 @@ départage qu'à valeur égale.
 | V14 | Miss Lookhouse : une source réelle                                   | lookhouse (beta)                                                           | application + collecteur     | la veille veille, sans coller des URL à la main                                | 2–3 j (sous condition) |
 | V15 | Miss UWH : le bilan de l'AG en fichier, et transmis                  | uwh (stable)                                                               | application (socle `pdf`)    | envoyer le bilan au bureau depuis le téléphone                                 | 1 j                    |
 | V16 | Miss Badminton : des joueurs, pas des noms                           | badminton (stable)                                                         | application                  | retrouver tous ses matchs contre X ; renommer sans perdre l'historique         | 1,5 j                  |
-| V17 | Mister Family Map : l'export promis, la bascule de thème             | family-map (beta, miroir)                                                  | application                  | tenir la page « mentions » ; lire la carte la nuit                             | 0,5 j + 0,5 h          |
+| V17 | Mister Family Map : l'export promis, la bascule de thème             | family-map (beta)                                                          | application                  | tenir la page « mentions » ; lire la carte la nuit                             | 0,5 j + 0,5 h          |
 | V18 | Miss Genius : montrer un scénario à quelqu'un                        | genius (stable)                                                            | application                  | partager le résultat du simulateur, ou l'imprimer                              | 0,5 j                  |
 | V19 | Les quatre alphas : ce qui les sépare d'un premier utilisateur       | carbook, footcoach, ticket-pwa, quota (alpha)                              | applications                 | (voir la fiche)                                                                | ≈ 6 j cumulés          |
 
@@ -636,8 +636,8 @@ share` absent de `src/`). XLSX, CSV, iCal, attestation : présents. Les
   `MyContributionsPage`. Les jetons `[data-theme='dark']` existent en CSS,
   aucun `ThemeProvider` n'est monté (`main.tsx`, `RootLayout.tsx`). Un seul
   port a un adaptateur Supabase (`PlaceRepository`), les dix autres restent
-  locaux (README « Restes à faire »). Miroir : toute PR va sur `bac-sable`,
-  jamais sur le miroir.
+  locaux (README « Restes à faire »). Les PR vont sur
+  `mister-guiiug/mister-family-map`.
 - **Couche.** Application.
 - **Apps concernées.** mister-family-map (beta).
 - **Ce que ça donne.** Tenir la page « mentions » ; lire la carte la nuit.
@@ -896,7 +896,7 @@ décrit.
 
 ### Le dernier chantier, rentré après coup
 
-**mister-family-map** (via `bac-sable`, PR #43) est revenu après l'écriture de
+**mister-family-map** (PR #43, alors ouverte sur `bac-sable`) est revenu après l'écriture de
 ce bilan. Il ne dément aucun constat — les trois de V17, V10 et V12 tenaient —
 mais il ajoute une correction et un défaut, tous deux dans l'esprit de ce qui
 précède.

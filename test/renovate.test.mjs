@@ -4,7 +4,7 @@
 // POURQUOI CES TESTS. Le 02/09/2026, treize apps étendaient un préréglage dans
 // un dépôt `.github` inexistant, et personne ne l'a su pendant des mois : un
 // préréglage cassé ne fait pas de bruit, il ne fait rien. Ces tests figent ce
-// qui doit rester vrai pour que Renovate tourne — et ne touche jamais le miroir.
+// qui doit rester vrai pour que Renovate tourne.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -165,14 +165,14 @@ test('le socle étend son propre préréglage — le même que les apps', () => 
   assert.deepEqual(config.extends, [PRESET]);
 });
 
-test('auto-hébergé : tous les dépôts du compte, jamais le miroir, jamais sans configuration', () => {
+test('auto-hébergé : tous les dépôts du compte, jamais sans configuration', () => {
   const self = json('../renovate/self-hosted.json');
   assert.equal(self.platform, 'github');
   assert.equal(self.autodiscover, true);
   assert.ok(self.autodiscoverFilter.includes('mister-guiiug/*'));
   assert.ok(
-    self.autodiscoverFilter.includes('!mister-guiiug/mister-family-map'),
-    'le miroir public de bac-sable ne reçoit JAMAIS de PR'
+    !self.autodiscoverFilter.includes('!mister-guiiug/mister-family-map'),
+    'mister-family-map est le dépôt de l’application, plus un miroir'
   );
   assert.equal(self.onboarding, false, 'pas de PR d’accueil surprise');
   assert.equal(

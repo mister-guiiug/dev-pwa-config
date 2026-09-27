@@ -6,10 +6,9 @@
  * DEUX DÉFAUTS, constatés le 31/08/2026 en l'utilisant pour aligner les
  * planchers sur la 3.29.0 :
  *
- *   1. Il proposait de modifier `mister-family-map`, qui est un MIROIR publié
- *      à la main depuis `elowner-ax/bac-sable`. Lancé avec `--write`, il y
- *      écrivait une modification interdite — qu'un `npm run mirror` suivant
- *      aurait écrasée en silence, donc sans que personne ne la voie jamais.
+ *   1. Il proposait de modifier `mister-family-map` alors que c'était un
+ *      miroir de `elowner-ax/bac-sable`. Ce lien est coupé depuis le
+ *      27/09/2026 : l'app se migre comme les autres.
  *   2. Il alignait les peerDependencies SANS qu'on le demande. Sur
  *      `mister-quota`, seule app Electron du parc et restée en arrière, cela
  *      transformait « monte le plancher du socle » en cinq montées majeures —
@@ -22,7 +21,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  MIRRORS,
   PKG_NAME,
   isConsumerDir,
   majorOf,
@@ -37,20 +35,9 @@ const CONSOMMATEUR = {
 
 const PEERS = { react: '^19.0.0', vite: '^8.0.0' };
 
-test('un miroir n’est jamais un consommateur à migrer', () => {
-  assert.equal(
-    isConsumerDir('mister-family-map', CONSOMMATEUR),
-    false,
-    'une PR y est interdite : le développement se fait dans le dépôt privé'
-  );
-  // La source, elle, reste découverte — ce sont deux dossiers distincts.
-  assert.equal(isConsumerDir('bac-sable', CONSOMMATEUR), true);
+test('mister-family-map est un consommateur comme les autres apps', () => {
+  assert.equal(isConsumerDir('mister-family-map', CONSOMMATEUR), true);
   assert.equal(isConsumerDir('dev-pwa-config', CONSOMMATEUR), false);
-});
-
-test('la liste des miroirs n’est pas vide — sinon la garde ne garde rien', () => {
-  assert.ok(MIRRORS.size > 0);
-  assert.ok(MIRRORS.has('mister-family-map'));
 });
 
 test('un dossier qui ne déclare pas le paquet est ignoré', () => {

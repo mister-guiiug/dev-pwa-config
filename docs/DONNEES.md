@@ -194,7 +194,7 @@ de dates typées, pas de largeurs de colonnes, pas de lecture.
 ### Agenda iCalendar (`@mister-guiiug/dev-pwa-config/ical`)
 
 Un `.ics` (RFC 5545) qui s'importe dans Google Agenda, Outlook et Apple
-Calendar — promu de **quatre** générateurs écrits séparément (`bac-sable`,
+Calendar — promu de **quatre** générateurs écrits séparément (`mister-family-map`,
 `mister-footcoach`, `miss-uwh`, `mister-doc`), dont aucun ne pliait ses lignes
 correctement et dont deux n'écrivaient pas de `DTSTAMP`.
 
@@ -322,7 +322,7 @@ ni une CSP, ni un jeton à courte durée de vie, ni un secret côté serveur.
 
 ### Client Supabase (`/supabase-client`)
 
-Cinq apps (miss-uwh, miss-lookhouse, mister-molkky, mister-doc, le bac-sable)
+Cinq apps (miss-uwh, miss-lookhouse, mister-molkky, mister-doc, mister-family-map)
 réécrivent la même fabrique : lire `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`,
 créer le client une fois, le garder. Et deux apps portent **mot pour mot** le
 même commentaire — « l'init au chargement du module tuait l'app avant
@@ -669,7 +669,7 @@ comme dans mister-doc.
 
 - **Pas de rôles.** La promotion d'`useActionGuard` l'a montré : les rôles ne
   se généralisent pas (fiche médecin chez doc, dix rôles de club chez uwh,
-  rôles de démo chez bac-sable). Le port s'arrête à « qui est connecté » ;
+  rôles de démo chez mister-family-map). Le port s'arrête à « qui est connecté » ;
   « qui a le droit » reste à l'app, outillé par `react/use-action-guard`.
 - **Pas de codes de récupération.** Ceux de mister-doc sont des RPC
   **applicatives** (table + fonctions SQL de l'app), pas une API Supabase

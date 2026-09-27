@@ -100,8 +100,9 @@ cette analyse.**
 
 ### Ce qui est recopié, et ce qui dérive
 
-Empreinte MD5 des fichiers de coquille sur les 17 dépôts (`bac-sable` compte
-pour `mister-family-map`) :
+Empreinte MD5 des fichiers de coquille sur les 17 dépôts (ce relevé comptait
+`bac-sable` pour `mister-family-map` ; depuis le 27/09/2026 le dépôt public
+est la source) :
 
 | Fichier                                         | Présent | Variantes | Plus grand groupe identique |
 | ----------------------------------------------- | ------: | --------: | --------------------------: |
@@ -574,7 +575,7 @@ Le traitement n'a pas été le même pour tous, parce que le cas ne l'était pas
 | ----------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------- |
 | `miss-lookhouse`, `mister-qowa`, `mister-quota` | `"license": "MIT"` dans le paquet, fichier absent | mise en cohérence, sans rien choisir                  |
 | `mister-gphotos`                                | aucune déclaration, nulle part                    | licence **demandée** avant d'être posée               |
-| `mister-family-map`                             | idem, et c'est un miroir                          | fichier + champ dans `bac-sable`, puis republié       |
+| `mister-family-map`                             | idem, et c'était alors un miroir                  | fichier + champ dans `bac-sable`, puis republié       |
 | `.github`                                       | créé le jour même, ne porte que des gabarits      | MIT : des gabarits hérités doivent être réutilisables |
 
 La distinction compte : rendre explicite ce qu'un paquet déclare déjà est une
