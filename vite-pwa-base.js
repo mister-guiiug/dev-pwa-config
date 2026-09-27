@@ -1188,7 +1188,12 @@ export function pwaSeoPlugin(opts = {}) {
             { encoding: 'utf8', flag: 'wx' }
           );
         } catch (err) {
-          if (err && typeof err === 'object' && 'code' in err && err.code === 'EEXIST')
+          if (
+            err &&
+            typeof err === 'object' &&
+            'code' in err &&
+            err.code === 'EEXIST'
+          )
             throw new Error(
               `[pwa-seo] ${page.slug}.html existe déjà dans ${dist} : choisir un autre slug.`
             );
