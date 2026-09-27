@@ -125,6 +125,7 @@ const labels = {
     current: 'Aktuelle Seite',
     more: 'Mehr',
     loading: 'Seite wird geladen…',
+    skip: 'Zum Inhalt',
   },
   consent: {
     title: 'Reichweitenmessung',

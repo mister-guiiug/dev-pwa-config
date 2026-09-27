@@ -358,6 +358,25 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'AppShell',
+      category: 'shell',
+      covers: ['AppShell'],
+      donts: {
+        fr: [
+          'Ne pas y rendre `<AppFooter>` : la règle famille le veut sur l’accueil et À propos seulement — `pwa-doctor` (`liens-famille`) refuse la coquille.',
+          'Ne pas oublier `linkComponent` / `hrefProp` : sans eux, la barre et le retour restent des `<a href>`, et le routeur ne voit rien.',
+        ],
+        en: [
+          'Don’t render `<AppFooter>` inside it: the family rule wants it on home and About only — `pwa-doctor` (`liens-famille`) rejects the shell.',
+          'Don’t forget `linkComponent` / `hrefProp`: without them the bar and back stay plain `<a href>`, and the router sees nothing.',
+        ],
+      },
+      a11y: {
+        fr: 'Le lien d’évitement est le premier élément focalisable ; `main` porte `id="contenu"`. La barre basse n’apparaît que si `navItems` est non vide.',
+        en: 'The skip link is the first focusable element; `main` carries `id="contenu"`. The bottom bar only appears when `navItems` is non-empty.',
+      },
+    },
+    {
       id: 'PageContainer',
       category: 'shell',
       covers: ['PageContainer'],
@@ -458,6 +477,25 @@ globalThis.SHOWROOM_CATALOGUE = {
       a11y: {
         fr: 'Le nom accessible porte l’état courant et le suivant. À deux états seulement, `aria-pressed` s’y ajoute — à trois, « appuyé » ne décrirait rien.',
         en: 'The accessible name carries the current state and the next. With two states only, `aria-pressed` is added — with three, “pressed” would describe nothing.',
+      },
+    },
+    {
+      id: 'ChromePrefs',
+      category: 'shell',
+      covers: ['ChromePrefs'],
+      donts: {
+        fr: [
+          'Ne pas juxtaposer thème et langue sans groupe nommé : le hub et plusieurs apps le font déjà — `role="group"` + `aria-label` est ce que ce composant pose.',
+          'Ne pas y mettre des réglages métier (export, sync) : c’est le chrome, pas l’écran Réglages.',
+        ],
+        en: [
+          'Don’t place theme and language side by side without a named group: the hub and several apps already do — `role="group"` + `aria-label` is what this component sets.',
+          'Don’t put business settings here (export, sync): this is chrome, not the Settings screen.',
+        ],
+      },
+      a11y: {
+        fr: 'Un seul nom de groupe pour thème + enfants (langue, densités). `themeToggle={false}` retire la bascule quand le groupe ne porte que la langue.',
+        en: 'A single group name for theme + children (language, density). `themeToggle={false}` drops the toggle when the group only carries language.',
       },
     },
     {
@@ -568,6 +606,25 @@ globalThis.SHOWROOM_CATALOGUE = {
       },
     },
     {
+      id: 'FamilyAbout',
+      category: 'shell',
+      covers: ['FamilyAbout'],
+      donts: {
+        fr: [
+          'Ne pas laisser `showSource` au défaut de `FamilyApps` : dès que `AppFooter` suit, il faut `showSource={false}` — sinon « Code source » et le café apparaissent deux fois. `FamilyAbout` le pose.',
+          'Ne pas y coller l’écran Réglages métier (export, sync) : c’est l’À propos famille, pas les données.',
+        ],
+        en: [
+          'Don’t leave `FamilyApps`’s default `showSource`: as soon as `AppFooter` follows, you need `showSource={false}` — otherwise “Source code” and the coffee show twice. `FamilyAbout` sets it.',
+          'Don’t stick the business Settings screen here (export, sync): this is the family About, not the data.',
+        ],
+      },
+      a11y: {
+        fr: 'L’intro métier va en `children` AVANT la grille ; l’installation PWA ne rend rien tant que le navigateur ne l’a pas proposée.',
+        en: 'Business intro goes in `children` BEFORE the grid; the PWA install prompt renders nothing until the browser has offered it.',
+      },
+    },
+    {
       id: 'SegmentedControl',
       category: 'primitive',
       covers: ['SegmentedControl'],
@@ -617,7 +674,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'VersionProvider',
       covers: ['VersionProvider', 'useAppVersion'],
       signature:
-        'VersionProvider({ checkEvery?, checkUrl? }) → useAppVersion() → { version, justUpdated, latest, updateAvailable, checkNow }',
+        'VersionProvider({ checkEvery?, checkUrl? }) - useAppVersion() - { version, justUpdated, latest, updateAvailable, checkNow }',
       summary: {
         fr: 'La version qui tourne, celle du démarrage précédent, celle qui est en ligne. Le pendant de `AppUpdates` : celui-ci sait qu’une bascule est possible, celui-là sait vers quoi.',
         en: 'The running version, the one from the previous start, the one that is online. The counterpart of `AppUpdates`: that one knows a switch is possible, this one knows what to.',
@@ -630,7 +687,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useTheme',
       covers: ['useTheme'],
-      signature: 'useTheme(options?) → { theme, resolved, setTheme, toggle }',
+      signature: 'useTheme(options?) - { theme, resolved, setTheme, toggle }',
       summary: {
         fr: 'Thème clair / sombre / système, persisté, qui suit l’OS. Pose `data-theme` sur `<html>`, ou la classe `.dark` avec `attribute: "class"`.',
         en: 'Light / dark / system theme, persisted, following the OS. Sets `data-theme` on `<html>`, or the `.dark` class with `attribute: "class"`.',
@@ -643,7 +700,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useLocalStorage',
       covers: ['useLocalStorage'],
-      signature: 'useLocalStorage<T>(key, initial) → [value, setValue, remove]',
+      signature: 'useLocalStorage<T>(key, initial) - [value, setValue, remove]',
       summary: {
         fr: 'État persistant typé, synchronisé entre les onglets ouverts.',
         en: 'Typed persistent state, synchronised across open tabs.',
@@ -657,7 +714,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useOfflineMutationQueue',
       covers: ['useOfflineMutationQueue'],
       signature:
-        'useOfflineMutationQueue<P>(options?) → { queue, pending, online, enqueue, flush }',
+        'useOfflineMutationQueue<P>(options?) - { queue, pending, online, enqueue, flush }',
       summary: {
         fr: 'File de mutations persistante, rejouée au retour en ligne avec le backoff de `retryableQuery`.',
         en: 'Persistent mutation queue, replayed on reconnect with `retryableQuery`’s backoff.',
@@ -670,7 +727,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'retryableQuery',
       covers: ['retryableQuery', 'isTransientMessage'],
-      signature: 'retryableQuery<T>(fn, options?) → Promise<T>',
+      signature: 'retryableQuery<T>(fn, options?) - Promise<T>',
       summary: {
         fr: 'Backoff exponentiel plafonné ; relance la dernière erreur si les tentatives sont épuisées.',
         en: 'Capped exponential backoff; re-throws the last error once attempts run out.',
@@ -683,10 +740,10 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'Sparkline',
       covers: ['Sparkline', 'BarChart', 'Gauge'],
-      signature: 'Sparkline({ values, label, unit }) · BarChart · Gauge',
+      signature: 'Sparkline({ values, label, unit }) - BarChart - Gauge',
       summary: {
-        fr: 'Courbe, barres et jauge en SVG calculé — sans librairie, avec l’alternative textuelle produite d’office.',
-        en: 'Sparkline, bars and gauge as computed SVG — no library, with the text alternative produced by default.',
+        fr: 'Courbe, barres et jauge en SVG calculé - sans librairie, avec l’alternative textuelle produite d’office.',
+        en: 'Sparkline, bars and gauge as computed SVG - no library, with the text alternative produced by default.',
       },
       dont: {
         fr: 'Ne pas confondre un trou (`null`) avec un zéro : le second fait plonger la courbe et raconte une panne qui n’a pas eu lieu.',
@@ -697,7 +754,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useActionGuard',
       covers: ['useActionGuard', 'resolveGuard'],
       signature:
-        'useActionGuard({ online, checks }) → { allowed, reason, reasonCode, disabledProps, wrap }',
+        'useActionGuard({ online, checks }) - { allowed, reason, reasonCode, disabledProps, wrap }',
       summary: {
         fr: 'Un bouton bloqué qui dit POURQUOI : codes stables (offline, readonly, …), texte traduit, props prêtes à étaler.',
         en: 'A blocked button that says WHY: stable codes (offline, readonly, …), translated text, spreadable props.',
@@ -710,10 +767,10 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'usePrefetch',
       covers: ['usePrefetch', 'useVisiblePrefetch', 'useIdlePrefetch'],
-      signature: 'usePrefetch(loader) → { prefetch, linkProps }',
+      signature: 'usePrefetch(loader) - { prefetch, linkProps }',
       summary: {
-        fr: 'Précharge le morceau d’une route découpée à l’approche du pointeur ou du focus — avant le clic, pas pendant.',
-        en: 'Warms a code-split route’s chunk on pointer or focus intent — before the click, not during.',
+        fr: 'Précharge le morceau d’une route découpée à l’approche du pointeur ou du focus - avant le clic, pas pendant.',
+        en: 'Warms a code-split route’s chunk on pointer or focus intent - before the click, not during.',
       },
       dont: {
         fr: 'Ne pas tout précharger au démarrage : cela annule le découpage. Le préchargement se coupe seul sur `saveData` et en 2G.',
@@ -723,7 +780,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useOnline',
       covers: ['useOnline'],
-      signature: 'useOnline() → boolean',
+      signature: 'useOnline() - boolean',
       summary: {
         fr: 'Réactif aux événements `online` / `offline` du navigateur.',
         en: 'Reactive to the browser’s `online` / `offline` events.',
@@ -736,7 +793,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useRetryWhenOnline',
       covers: ['useRetryWhenOnline'],
-      signature: 'useRetryWhenOnline(onFallback, retry, { graceMs }) → boolean',
+      signature: 'useRetryWhenOnline(onFallback, retry, { graceMs }) - boolean',
       summary: {
         fr: 'Rejoue un chargement au retour du réseau tant que l’app vit sur un repli : un répit, une tentative par retour, et le repli choisi sur délai couvert. Promu de mister-miss-koh.',
         en: 'Replays a load when the network comes back while the app lives on a fallback: a grace delay, one attempt per reconnect, and the timeout fallback covered. Promoted from mister-miss-koh.',
@@ -750,7 +807,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useInstallPrompt',
       covers: ['useInstallPrompt'],
       signature:
-        'useInstallPrompt() → { canInstall, installed, promptInstall }',
+        'useInstallPrompt() - { canInstall, installed, promptInstall }',
       summary: {
         fr: 'Capture `beforeinstallprompt` et expose un déclencheur d’ajout à l’écran d’accueil.',
         en: 'Captures `beforeinstallprompt` and exposes an add-to-home-screen trigger.',
@@ -763,7 +820,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useMediaQuery',
       covers: ['useMediaQuery'],
-      signature: 'useMediaQuery(query) → boolean',
+      signature: 'useMediaQuery(query) - boolean',
       summary: {
         fr: 'Brique commune, sûre au rendu serveur, dont dérivent les deux suivants.',
         en: 'Shared, SSR-safe primitive the next two are built on.',
@@ -776,7 +833,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'usePrefersDark',
       covers: ['usePrefersDark'],
-      signature: 'usePrefersDark() → boolean',
+      signature: 'usePrefersDark() - boolean',
       summary: {
         fr: 'Préférence système brute, sans le choix explicite de l’utilisateur.',
         en: 'Raw system preference, without the user’s explicit choice.',
@@ -789,7 +846,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useReducedMotion',
       covers: ['useReducedMotion'],
-      signature: 'useReducedMotion() → boolean',
+      signature: 'useReducedMotion() - boolean',
       summary: {
         fr: 'Respect de `prefers-reduced-motion`, pour les animations que le CSS ne peut pas couper seul.',
         en: 'Honours `prefers-reduced-motion`, for animation the CSS cannot switch off on its own.',
@@ -803,7 +860,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useUpdatePrompt',
       covers: ['useUpdatePrompt', 'applyUpdate'],
       signature:
-        'useUpdatePrompt({ registerSW?, snoozeHours? }) → { visible, updating, update, forceUpdate, dismiss, snooze }',
+        'useUpdatePrompt({ registerSW?, snoozeHours? }) - { visible, updating, update, forceUpdate, dismiss, snooze }',
       summary: {
         fr: 'État du bandeau de mise à jour et application effective. `registerSW` est INJECTÉ : le module ne dépend plus de Vite et vit dans le barrel.',
         en: 'Update-banner state plus the actual application. `registerSW` is INJECTED: the module no longer depends on Vite and lives in the barrel.',
@@ -817,7 +874,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useThemeContext',
       covers: ['ThemeProvider', 'useThemeContext'],
       signature:
-        '<ThemeProvider appId storageKey> · useThemeContext() → { theme, resolved, setTheme, palette }',
+        '<ThemeProvider appId storageKey> - useThemeContext() - { theme, resolved, setTheme, palette }',
       summary: {
         fr: 'Palette du catalogue, état du thème et variables `--dwc-*`, en un seul endroit. Sans `appId`, rien n’est peint : seul l’état est partagé.',
         en: 'Catalogue palette, theme state and `--dwc-*` variables in one place. Without `appId` nothing is painted: only the state is shared.',
@@ -831,7 +888,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useAppUpdates',
       covers: ['AppUpdates', 'useAppUpdates'],
       signature:
-        '<AppUpdates registerSW checkEvery="1h"> · useAppUpdates() → { visible, updating, update, forceUpdate }',
+        '<AppUpdates registerSW checkEvery="1h"> - useAppUpdates() - { visible, updating, update, forceUpdate }',
       summary: {
         fr: '`registerSW` donné une seule fois : le bandeau se pose seul, et `UpdateButton` posé n’importe où partage le même état.',
         en: '`registerSW` given once: the banner places itself, and `UpdateButton` anywhere shares the same state.',
@@ -845,7 +902,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useIcon',
       covers: ['IconsProvider', 'Icon', 'useIcon', 'DEFAULT_ICONS'],
       signature:
-        '<IconsProvider icons={{ close: X }}> · <Icon role="close" /> · useIcon(role)',
+        '<IconsProvider icons={{ close: X }}> - <Icon role="close" /> - useIcon(role)',
       summary: {
         fr: 'Le paquet demande un RÔLE (`close`, `light`, `repo`…), l’app fournit le dessin. Dix apps sur seize utilisent `lucide-react` ; les SVG maison restent le repli.',
         en: 'The package asks for a ROLE (`close`, `light`, `repo`…), the app supplies the drawing. Ten apps out of sixteen use `lucide-react`; the in-house SVGs remain the fallback.',
@@ -859,10 +916,10 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useAuthContext',
       covers: ['AuthProvider', 'useAuthContext'],
       signature:
-        '<AuthProvider adapter onEvent> · useAuthContext() → { status, user, session, ready, signIn, signUp, signOut, … }',
+        '<AuthProvider adapter onEvent> - useAuthContext() - { status, user, session, ready, signIn, signUp, signOut, … }',
       summary: {
-        fr: "Le contexte qui tient le client du port `auth` et expose les actions — ce qui manquait entre le port et les écrans, et que quatre apps recopiaient. Sans adaptateur : mode local, `signed-out`, chaque action rend `{ ok: false, error: { code: 'local-mode' } }`.",
-        en: "The context that holds the `auth` port client and exposes the actions — what was missing between the port and the screens, and what four apps copied. Without an adapter: local mode, `signed-out`, every action returns `{ ok: false, error: { code: 'local-mode' } }`.",
+        fr: "Le contexte qui tient le client du port `auth` et expose les actions - ce qui manquait entre le port et les écrans, et que quatre apps recopiaient. Sans adaptateur : mode local, `signed-out`, chaque action rend `{ ok: false, error: { code: 'local-mode' } }`.",
+        en: "The context that holds the `auth` port client and exposes the actions - what was missing between the port and the screens, and what four apps copied. Without an adapter: local mode, `signed-out`, every action returns `{ ok: false, error: { code: 'local-mode' } }`.",
       },
       dont: {
         fr: 'Ne pas recréer l’adaptateur à chaque rendu : le client est construit une fois par adaptateur. Le mémoriser au niveau module, ou dans un `useMemo`.',
@@ -873,14 +930,14 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useFullscreen',
       covers: ['useFullscreen'],
       signature:
-        'useFullscreen() → { supported, active, enter(), exit(), toggle() }',
+        'useFullscreen() - { supported, active, enter(), exit(), toggle() }',
       summary: {
-        fr: 'Le plein écran natif : l’état (suit `fullscreenchange`) et les gestes, qui ne lèvent jamais. Promu des boutons de badminton et molkky — le bouton, lui, reste à l’app.',
-        en: 'Native fullscreen: the state (follows `fullscreenchange`) and the gestures, which never throw. Promoted from the badminton and molkky buttons — the button itself stays in the app.',
+        fr: 'Le plein écran natif : l’état (suit `fullscreenchange`) et les gestes, qui ne lèvent jamais. Promu des boutons de badminton et molkky - le bouton, lui, reste à l’app.',
+        en: 'Native fullscreen: the state (follows `fullscreenchange`) and the gestures, which never throw. Promoted from the badminton and molkky buttons - the button itself stays in the app.',
       },
       dont: {
-        fr: 'Ne pas rendre un bouton quand `supported` est faux : un bouton qui ne peut rien faire n’a rien à faire à l’écran — badminton le masquait, molkky le rendait `null`.',
-        en: 'Don’t render a button when `supported` is false: a button that cannot do anything has no business on screen — badminton hid it, molkky rendered `null`.',
+        fr: 'Ne pas rendre un bouton quand `supported` est faux : un bouton qui ne peut rien faire n’a rien à faire à l’écran - badminton le masquait, molkky le rendait `null`.',
+        en: 'Don’t render a button when `supported` is false: a button that cannot do anything has no business on screen - badminton hid it, molkky rendered `null`.',
       },
     },
     {
@@ -893,10 +950,10 @@ globalThis.SHOWROOM_CATALOGUE = {
         'LABELS',
       ],
       signature:
-        'useLabels(groupe) → Record<string, string> · <LabelsProvider locale overrides> · labelsFor(locale)',
+        'useLabels(groupe) - Record<string, string> - <LabelsProvider locale overrides> - labelsFor(locale)',
       summary: {
-        fr: 'Les libellés des composants du paquet, en sept langues (fr, en, es, de, it, pt, nl — `pt-BR` retombe sur `pt`). Trois niveaux : la prop l’emporte, puis le contexte, puis le français.',
-        en: 'The package components’ labels, in seven languages (fr, en, es, de, it, pt, nl — `pt-BR` falls back to `pt`). Three levels: the prop wins, then the context, then French.',
+        fr: 'Les libellés des composants du paquet, en sept langues (fr, en, es, de, it, pt, nl - `pt-BR` retombe sur `pt`). Trois niveaux : la prop l’emporte, puis le contexte, puis le français.',
+        en: 'The package components’ labels, in seven languages (fr, en, es, de, it, pt, nl - `pt-BR` falls back to `pt`). Three levels: the prop wins, then the context, then French.',
       },
       dont: {
         fr: 'Ne pas y verser le dictionnaire métier de l’app : `createI18n` fabrique un contexte ISOLÉ, et celui-ci ne porte que la quinzaine de chaînes des composants.',
@@ -907,21 +964,21 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useSponsorUrl',
       covers: ['useSponsorUrl', 'SponsorProvider'],
       signature:
-        'useSponsorUrl(prop?) → string | null · <SponsorProvider handle | url | url={null}>',
+        'useSponsorUrl(prop?) - string | null - <SponsorProvider handle | url | url={null}>',
       summary: {
         fr: 'Le lien de soutien déclaré une fois pour toute l’app : `handle` pour un autre pseudo Buy Me a Coffee, `url` pour une autre plateforme, `url={null}` pour n’en afficher aucun. Trois niveaux : la prop l’emporte, puis le contexte, puis la famille.',
         en: 'The support link declared once for the whole app: `handle` for another Buy Me a Coffee handle, `url` for another platform, `url={null}` for none at all. Three levels: the prop wins, then the context, then the family.',
       },
       dont: {
-        fr: 'Ne pas confondre `null` et `undefined` : `undefined` laisse le niveau suivant répondre, `null` retire le lien. Et `.github/FUNDING.yml` reste à changer à part — GitHub le lit, l’app non.',
-        en: 'Don’t confuse `null` with `undefined`: `undefined` lets the next level answer, `null` removes the link. And `.github/FUNDING.yml` still has to be changed separately — GitHub reads it, the app doesn’t.',
+        fr: 'Ne pas confondre `null` et `undefined` : `undefined` laisse le niveau suivant répondre, `null` retire le lien. Et `.github/FUNDING.yml` reste à changer à part - GitHub le lit, l’app non.',
+        en: 'Don’t confuse `null` with `undefined`: `undefined` lets the next level answer, `null` removes the link. And `.github/FUNDING.yml` still has to be changed separately - GitHub reads it, the app doesn’t.',
       },
     },
     {
       id: 'useLongPress',
       covers: ['useLongPress'],
       signature:
-        'useLongPress(onLongPress, { onTap?, delayMs?, moveTolerancePx? }) → { isPressing, handlers }',
+        'useLongPress(onLongPress, { onTap?, delayMs?, moveTolerancePx? }) - { isPressing, handlers }',
       summary: {
         fr: 'Appui long ET tap distingués, au doigt comme au clavier. Fusion de trois copies (miss-badminton, miss-lookhouse, mister-molkky).',
         en: 'Long press AND tap told apart, by touch and by keyboard. Merges three copies (miss-badminton, miss-lookhouse, mister-molkky).',
@@ -934,7 +991,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useFeedback',
       covers: ['useFeedback'],
-      signature: 'useFeedback(events, { sound?, haptic? }) → trigger(event)',
+      signature: 'useFeedback(events, { sound?, haptic? }) - trigger(event)',
       summary: {
         fr: 'Son et vibration groupés par ÉVÉNEMENT métier : la table est une prop, le socle ne connaît pas les noms de l’app.',
         en: 'Sound and vibration grouped by app-level EVENT: the table is a prop, the base doesn’t know the app’s names.',
@@ -947,7 +1004,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useWakeLock',
       covers: ['useWakeLock'],
-      signature: 'useWakeLock(active?) → void',
+      signature: 'useWakeLock(active?) - void',
       summary: {
         fr: 'Écran maintenu allumé pendant une activité (match, partie), re-acquis au retour d’onglet, silencieux si l’API manque.',
         en: 'Keeps the screen awake during an activity (match, game), re-acquired on tab return, silent when the API is missing.',
@@ -961,7 +1018,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'usePullToRefresh',
       covers: ['usePullToRefresh'],
       signature:
-        'usePullToRefresh({ onRefresh, enabled?, threshold? }) → { pulling, progress, refreshing }',
+        'usePullToRefresh({ onRefresh, enabled?, threshold? }) - { pulling, progress, refreshing }',
       summary: {
         fr: 'Tirer-pour-rafraîchir amorti, avec progression à afficher. Promu de mister-molkky, la version la plus complète du parc.',
         en: 'Damped pull-to-refresh with a progress value to display. Promoted from mister-molkky, the most complete version in the fleet.',
@@ -974,7 +1031,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useKeyboardShortcuts',
       covers: ['useKeyboardShortcuts'],
-      signature: 'useKeyboardShortcuts(shortcuts, enabled?) → void',
+      signature: 'useKeyboardShortcuts(shortcuts, enabled?) - void',
       summary: {
         fr: 'Raccourcis globaux, inertes quand l’utilisateur écrit (champs, `contenteditable`, composition IME).',
         en: 'Global shortcuts, inert while the user is typing (fields, `contenteditable`, IME composition).',
@@ -988,7 +1045,7 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useShake',
       covers: ['useShake', 'requestMotionPermission'],
       signature:
-        'useShake(onShake, { enabled?, threshold?, cooldownMs? }) · requestMotionPermission()',
+        'useShake(onShake, { enabled?, threshold?, cooldownMs? }) - requestMotionPermission()',
       summary: {
         fr: 'Détection de secousse (accéléromètre), promue de miss-dice. Sur iOS 13+, l’accès exige `requestMotionPermission` DANS un geste utilisateur.',
         en: 'Shake detection (accelerometer), promoted from miss-dice. On iOS 13+, access requires `requestMotionPermission` INSIDE a user gesture.',
@@ -1001,7 +1058,7 @@ globalThis.SHOWROOM_CATALOGUE = {
     {
       id: 'useAsync',
       covers: ['useAsync'],
-      signature: 'useAsync(fn, key) → { data, loading, error, reload }',
+      signature: 'useAsync(fn, key) - { data, loading, error, reload }',
       summary: {
         fr: 'Chargement asynchrone minimal : erreur normalisée en `Error`, protection contre les mises à jour après démontage, `reload` manuel.',
         en: 'Minimal async loading: error normalised to `Error`, protected against post-unmount updates, manual `reload`.',
@@ -1015,20 +1072,20 @@ globalThis.SHOWROOM_CATALOGUE = {
       id: 'useUndoableState',
       covers: ['useUndoableState'],
       signature:
-        'useUndoableState({ load?, save?, clear?, isFinal?, maxHistory? }) → { state, canUndo, start, apply, undo, reset }',
+        'useUndoableState({ load?, save?, clear?, isFinal?, maxHistory? }) - { state, canUndo, start, apply, undo, reset }',
       summary: {
         fr: 'État avec annulation et persistance par ports injectés, promu du `useUndoableGame` de miss-dice. Un état final efface sa sauvegarde.',
         en: 'State with undo and persistence through injected ports, promoted from miss-dice’s `useUndoableGame`. A final state erases its save.',
       },
       dont: {
-        fr: 'Ne pas attendre un historique persisté : seul l’état courant survit au rechargement, l’historique repart propre — c’est voulu.',
-        en: 'Don’t expect a persisted history: only the current state survives a reload, the history starts clean — by design.',
+        fr: 'Ne pas attendre un historique persisté : seul l’état courant survit au rechargement, l’historique repart propre - c’est voulu.',
+        en: 'Don’t expect a persisted history: only the current state survives a reload, the history starts clean - by design.',
       },
     },
     {
       id: 'usePrefersHighContrast',
       covers: ['usePrefersHighContrast'],
-      signature: 'usePrefersHighContrast() → boolean',
+      signature: 'usePrefersHighContrast() - boolean',
       summary: {
         fr: 'Respect de `prefers-contrast: more`, pour ce que le CSS ne peut pas ajuster seul.',
         en: 'Honours `prefers-contrast: more`, for what CSS cannot adjust on its own.',

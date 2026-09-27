@@ -122,6 +122,7 @@ const labels = {
     current: 'Current page',
     more: 'More',
     loading: 'Loading the page…',
+    skip: 'Skip to content',
   },
   consent: {
     title: 'Audience measurement',

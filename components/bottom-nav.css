@@ -35,12 +35,15 @@
   }
 
   /*
-   * L'EMPREINTE DE LA BARRE, ÉCRITE UNE FOIS. Trois règles ont besoin de la
-   * même hauteur : la réserve de `PageContainer`, le plancher des toasts et
-   * celui du bandeau de mise à jour. Figée à trois endroits, elle finirait par
-   * diverger — c'est ce qui est arrivé aux replis de couleur (audit du
-   * 06/09/2026). Deux variables PRIVÉES (`--_dwc-*`, hors du contrat) :
+   * L'EMPREINTE DU CHROME, ÉCRITE UNE FOIS. Quatre règles ont besoin des
+   * mêmes hauteurs : la rangée d'`AppHeader`, la réserve de `PageContainer`,
+   * le plancher des toasts et celui du bandeau de mise à jour. Figées à
+   * plusieurs endroits, elles finiraient par diverger — c'est ce qui est
+   * arrivé aux replis de couleur (audit du 06/09/2026). Une variable PUBLIQUE
+   * et deux PRIVÉES (`--_dwc-*`, hors du contrat) :
    *
+   *   --dwc-header-row-height     hauteur de la rangée titre (apps peuvent
+   *                               la surcharger) ;
    *   --_dwc-bottom-nav-reserve   ce que la barre couvre : 4,5 rem + zone sûre ;
    *   --_dwc-bottom-clearance     ce que les surfaces flottantes dégagent en
    *                               bas — la zone sûre seule, ou la barre entière
@@ -56,6 +59,7 @@
    * ou rien, et `test/components-css.test.mjs` y veille.
    */
   :root {
+    --dwc-header-row-height: 3.25rem;
     --_dwc-bottom-nav-reserve: calc(
       4.5rem + max(env(safe-area-inset-bottom), 0px)
     );

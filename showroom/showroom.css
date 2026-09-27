@@ -65,6 +65,7 @@
   --dwc-info: var(--ds-info);
   --dwc-radius: var(--ds-radius);
   --dwc-shadow: var(--ds-shadow);
+  --dwc-header-row-height: var(--ds-header-row-height, 3.25rem);
 }
 
 /* ── Thème générique : sombre ────────────────────────────────────────────── */

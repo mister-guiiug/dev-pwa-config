@@ -125,6 +125,7 @@ const labels = {
     current: 'Huidige pagina',
     more: 'Meer',
     loading: 'Pagina wordt geladen…',
+    skip: 'Naar de inhoud',
   },
   consent: {
     title: 'Publieksmeting',

@@ -68,7 +68,14 @@ export interface LabelGroups {
     system: string;
     next: string;
   };
-  nav: { label: string; current: string; more: string; back: string };
+  nav: {
+    label: string;
+    current: string;
+    more: string;
+    back: string;
+    loading: string;
+    skip: string;
+  };
   /** Le bandeau de consentement à la mesure d'audience. */
   consent: {
     title: string;
