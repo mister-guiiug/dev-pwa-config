@@ -320,6 +320,41 @@ test('titre < 50 caractères : dette seo-title-length (Bing SEO/GEO)', async () 
   );
 });
 
+test('description < 70 caractères : dette seo-description-length', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-desc' },
+      'dist/index.html': `<!doctype html><html lang="fr"><head>
+        <title>Miss Desc - une application avec un titre assez long pour passer</title>
+        <meta name="description" content="Trop court." />
+      </head><body><div id="root"><div data-dwc="served-content"></div></div>
+      <script type="application/ld+json">{}</script></body></html>`,
+    },
+    root => {
+      const f = diagnose(root).findings.find(
+        x => x.id === 'seo-description-length'
+      );
+      assert.ok(f);
+      assert.equal(f.level, 'dette');
+      assert.match(f.message, /trop courte/);
+    }
+  );
+});
+
+test('sans page de contenu : dette seo-content-pages', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-vide-pages' },
+      'vite.config.ts': 'pwaSeoPlugin({})',
+    },
+    root => {
+      const f = diagnose(root).findings.find(x => x.id === 'seo-content-pages');
+      assert.ok(f);
+      assert.equal(f.level, 'dette');
+    }
+  );
+});
+
 test('titre ≥ 50 caractères après décodage &amp; : pas de seo-title-length', async () => {
   // Bing compte le glyphe « & », pas l'entité — le docteur décode &amp; avant de mesurer.
   await repo(
@@ -341,7 +376,7 @@ test('titre ≥ 50 caractères après décodage &amp; : pas de seo-title-length'
 test('le conforme : silence complet — la définition exécutable de « conforme au parc »', async () => {
   const html = `<!doctype html><html lang="fr"><head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Une app">
+    <meta name="description" content="Application de démonstration du parc PWA : conforme au socle, avec titre et description assez longs pour Bing SEO GEO.">
     <meta name="theme-color" content="#fff" media="(prefers-color-scheme: light)">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
     <link rel="apple-touch-icon" href="/miss-x/apple-touch-icon.png">
@@ -349,8 +384,9 @@ test('le conforme : silence complet — la définition exécutable de « conform
     <link rel="canonical" href="https://o/miss-x/">
     <meta property="og:image" content="https://o/miss-x/og.png">
     <title>Miss X - application de démonstration du parc PWA React</title>
+    <script type="application/ld+json">{"@type":"WebApplication","name":"Miss X"}</script>
     <script type="module" src="/miss-x/assets/index-abc.js"></script>
-    </head><body><div id="root"></div></body></html>`;
+    </head><body><div id="root"><div data-dwc="served-content"><h1>Miss X</h1></div></div></body></html>`;
   await repo(
     {
       'package.json': {
@@ -383,6 +419,8 @@ export function Shell() {
       'src/features/home/HomeScreen.tsx': `import { AppFooter } from '@mister-guiiug/dev-pwa-config/react/app-footer';
 export function HomeScreen() { return <AppFooter repoUrl={REPO_URL} issues />; }`,
       'src/features/about/AboutScreen.tsx': `export function AboutScreen() { return <AppFooter repoUrl={REPO_URL} issues />; }`,
+      'content/pages/demo.md':
+        '---\ntitle: Démo\ndescription: Une page de contenu pour le docteur.\n---\n\n# Démo\n\nTexte.',
       'dist/index.html': html,
       'dist/version.json': { version: '1.0.0' },
       'dist/manifest.webmanifest': {

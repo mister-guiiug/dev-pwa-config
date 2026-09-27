@@ -54,11 +54,13 @@ export function htmlMarkers(source) {
   const metas = all.filter(t => is(t, 'meta'));
   const links = all.filter(t => is(t, 'link'));
   const named = name => metas.filter(t => has(t, `name="${name}"`));
+  const prop = name => metas.filter(t => has(t, `property="${name}"`));
   const html = all.find(t => is(t, 'html')) ?? '';
   const theme = named('theme-color');
   const text = String(source).replace(/\s+/g, ' ');
   const titleAt = text.toLowerCase().indexOf('<title>');
   const titleEnd = titleAt === -1 ? -1 : text.indexOf('<', titleAt + 7);
+  const descriptionTag = named('description')[0] ?? '';
   return {
     lang: attr(html, 'lang'),
     title:
@@ -67,12 +69,15 @@ export function htmlMarkers(source) {
         : text.slice(titleAt + 7, titleEnd).trim(),
     viewport: named('viewport').length > 0,
     description: named('description').length > 0,
+    /** Texte de la meta description, ou `null`. */
+    descriptionContent: attr(descriptionTag, 'content'),
     themeColor: theme.length,
     themeColorMedia: theme.filter(t => has(t, ' media=')).length,
     colorScheme: named('color-scheme').length > 0,
     csp: metas.some(t => has(t, 'http-equiv="Content-Security-Policy"')),
     appleTouchIcon: links.some(t => has(t, 'rel="apple-touch-icon"')),
     ogImage: metas.some(t => has(t, 'property="og:image"')),
+    ogTitle: attr(prop('og:title')[0] ?? '', 'content'),
     canonical: links.some(t => has(t, 'rel="canonical"')),
     // L'URL PUBLIQUE DÉCLARÉE, pas seulement sa présence. C'est la seule
     // source du chemin du site qui ne dépende pas des assets — donc la seule
@@ -83,6 +88,8 @@ export function htmlMarkers(source) {
     ),
     styles: initialStyles(source),
     jsonLd: all.some(t => is(t, 'script') && has(t, 'application/ld+json')),
+    // Contenu servi aux robots sans JS (pwaSeoPlugin / injectServedContent).
+    servedContent: text.includes('data-dwc="served-content"'),
     noscript: all.some(t => t.toLowerCase().startsWith('<noscript')),
     manifest: attr(links.find(t => has(t, 'rel="manifest"')) ?? '', 'href'),
     scripts: initialScripts(source),

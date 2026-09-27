@@ -174,7 +174,7 @@ export default defineConfig({
       logoPath: '/logo.svg', // → __SEO_LOGO_URL__ (OG/Twitter/JSON-LD)
       iconQuery: '?v=1.0.1', // → __PWA_ICON_QS__ (cache-busting)
       posthogKey: 'phc_…', // ID explicite (sinon VITE_POSTHOG_KEY)
-      llms: '# Mon app\n…', // génère dist/llms.txt
+      llms: '# Mon app\n…', // optionnel : sinon fichier auto depuis le catalogue ; false pour couper
 
       // Le script anti-FOUC, injecté en tête de <head>. `legacyKeys` migre la
       // préférence déjà enregistrée : SIX clés distinctes existent dans la
@@ -198,11 +198,13 @@ ailleurs (une CMP).
 
 Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
 `__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
-`__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt` (+ `llms.txt` si `llms`).
+`__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt` + `llms.txt` (auto depuis
+le catalogue ; `llms: false` coupe, une chaîne remplace).
 
 **Données structurées, sans réglage.** Le plugin injecte dans `<head>` un
 `WebApplication` schema.org : nom et catégorie tirés du catalogue
-(`FAMILY_APPS`), description, image et langue tirées de l'`index.html`. Rien
+(`FAMILY_APPS`), description, image et langue tirées de l'`index.html`, plus
+une `ViewAction` vers l'accueil. Rien
 n'est injecté si la page porte déjà un `application/ld+json`. `jsonLd: false` le
 coupe ; `jsonLd: { … }` surcharge des champs. Le plan de site porte `lastmod`
 (jour du build) ; `routes: ['a-propos', 'en/']` y ajoute des écrans PUBLICS.

@@ -20,7 +20,11 @@ export interface PwaSeoPluginOptions {
   basePath?: string;
   logoPath?: string;
   iconQuery?: string;
-  llms?: string;
+  /**
+   * Contenu d'un `llms.txt`. Omis : fichier minimal généré depuis le catalogue.
+   * `false` : aucun fichier. Une chaîne : ce texte, tel quel.
+   */
+  llms?: string | false;
   /**
    * Injecte le script anti-FOUC en tête de `<head>`. `true` pour les valeurs
    * par défaut, ou les options de `themeBootSource` (dont `legacyKeys`, sans
@@ -165,6 +169,12 @@ export function webApplicationJsonLd(opts: {
   homeUrl: string;
   overrides?: Record<string, unknown>;
 }): Record<string, unknown> | null;
+
+/** Un `llms.txt` minimal depuis le catalogue, ou `null` sans matière. */
+export function defaultLlmsTxt(opts: {
+  homeUrl: string;
+  html?: string;
+}): string | null;
 
 /** Le bloc `<script type="application/ld+json">`, `<` échappé. */
 export function jsonLdScript(donnees: Record<string, unknown>): string;
