@@ -1188,6 +1188,25 @@ export function reglesSource(ctx, api) {
       'sitemap, robots, canonique, Open Graph en un import (vite-pwa-base)'
     );
   }
+  // Pages de contenu : le levier AEO du parc (relève du 25/09/2026). Sans
+  // elles, les moteurs n'ont que l'accueil SPA. Une app avec pwaSeoPlugin et
+  // sans `content/pages/*.md` reste à la case départ.
+  if (viteConfig && /pwaSeoPlugin/.test(viteConfig)) {
+    const pagesDir = join(root, 'content', 'pages');
+    let pagesMd = 0;
+    try {
+      pagesMd = readdirSync(pagesDir).filter(f => f.endsWith('.md')).length;
+    } catch {
+      pagesMd = 0;
+    }
+    if (pagesMd === 0) {
+      dette(
+        'seo-content-pages',
+        'pas de page de contenu (content/pages/*.md) : rien à classer hors de l’accueil SPA',
+        'écrire une page qui répond à une vraie recherche (voir docs/CONFIGS.md § pages de contenu)'
+      );
+    }
+  }
   if (viteConfig && !/themeColor/.test(viteConfig)) {
     dette(
       'theme-color',
@@ -1369,6 +1388,39 @@ export function reglesBuild(ctx, api) {
         'seo-title-length',
         `titre trop court (${[...m.title.replace(/&amp;/g, '&')].length} car.) pour Bing SEO/GEO : « ${m.title.slice(0, 60)} »`,
         'allonger <title> (et og:title / twitter:title) à ≥ 50 caractères, descriptif'
+      );
+    }
+    // Description : trop courte = snippet pauvre et signal AEO/GEO faible ;
+    // trop longue = tronquée dans les SERP (~155–160). Seuil bas relevé sur
+    // miss-carbook / miss-badminton / miss-ticket-pwa (26/09/2026).
+    if (m.descriptionContent) {
+      const descLen = [...m.descriptionContent.replace(/&amp;/g, '&')].length;
+      if (descLen < 70) {
+        dette(
+          'seo-description-length',
+          `description trop courte (${descLen} car.) pour SEO/GEO/AEO`,
+          'allonger <meta name="description"> (et og:description) à 70–160 caractères, une vraie phrase-réponse'
+        );
+      } else if (descLen > 160) {
+        info(
+          'seo-description-length',
+          `description longue (${descLen} car.) : risque de troncature SERP`,
+          'viser ~120–155 caractères pour l’aperçu ; le surplus reste utile au contenu servi'
+        );
+      }
+    }
+    if (!m.jsonLd) {
+      dette(
+        'seo-json-ld',
+        'pas de JSON-LD WebApplication',
+        'pwaSeoPlugin l’injecte (jsonLd: true par défaut)'
+      );
+    }
+    if (!m.servedContent) {
+      dette(
+        'seo-served-content',
+        'pas de contenu servi dans le point de montage : un robot sans JS lit une page vide',
+        'pwaSeoPlugin ({ servedContent: true }) — titre + description dans #app/#root'
       );
     }
     if (!m.appleTouchIcon) {
@@ -1612,6 +1664,7 @@ export const CATALOGUE = [
   { id: 'nav-attente', famille: 'source', niveau: 'dette' },
   { id: 'bottom-nav-muette', famille: 'source', niveau: 'défaut' },
   { id: 'seo-plugin', famille: 'source', niveau: 'dette' },
+  { id: 'seo-content-pages', famille: 'source', niveau: 'dette' },
   { id: 'theme-color', famille: 'source', niveau: 'dette' },
   { id: 'csp', famille: 'source', niveau: 'dette' },
   { id: 'version-manifest', famille: 'source', niveau: 'dette' },
@@ -1628,6 +1681,9 @@ export const CATALOGUE = [
   { id: 'viewport', famille: 'build', niveau: 'défaut' },
   { id: 'description', famille: 'build', niveau: 'dette' },
   { id: 'seo-title-length', famille: 'build', niveau: 'dette' },
+  { id: 'seo-description-length', famille: 'build', niveau: 'dette' },
+  { id: 'seo-json-ld', famille: 'build', niveau: 'dette' },
+  { id: 'seo-served-content', famille: 'build', niveau: 'dette' },
   { id: 'ios-icon', famille: 'build', niveau: 'défaut' },
   { id: 'theme-color', famille: 'build', niveau: 'dette' },
   { id: 'csp', famille: 'build', niveau: 'dette' },

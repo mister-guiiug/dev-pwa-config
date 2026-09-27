@@ -183,6 +183,14 @@ export function webApplicationJsonLd({ html, homeUrl, overrides = {} }) {
     ...(lang ? { inLanguage: lang } : {}),
     isAccessibleForFree: true,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    // ViewAction : ce qu'un moteur de réponse peut proposer (« ouvrir l'app »).
+    // Pas de note inventée — Google n'affiche la fiche enrichie qu'avec une
+    // vraie note, et en inventer une serait une donnée fausse.
+    potentialAction: {
+      '@type': 'ViewAction',
+      target: homeUrl,
+      name: name,
+    },
     author: {
       '@type': 'Person',
       name: GITHUB_OWNER,
@@ -193,9 +201,49 @@ export function webApplicationJsonLd({ html, homeUrl, overrides = {} }) {
       name: `Les applications de ${GITHUB_OWNER}`,
       url: `${FAMILY_ORIGIN}/`,
     },
-    ...(fiche?.repoUrl ? { sameAs: [fiche.repoUrl] } : {}),
+    ...(fiche?.repoUrl
+      ? { sameAs: [fiche.repoUrl, `${FAMILY_ORIGIN}/`] }
+      : { sameAs: [`${FAMILY_ORIGIN}/`] }),
     ...overrides,
   };
+}
+
+/**
+ * Un `llms.txt` minimal, tiré du catalogue et de la page.
+ *
+ * Relevé du 26/09/2026 : une seule app (`mister-puzzle`) en écrivait un à la
+ * main. Les autres n'avaient rien. Google Search dit ne pas s'en servir pour
+ * ses fonctions génératives (guide du 15/05/2026) — on ne le pose donc PAS
+ * comme levier de ranking. Il reste utile aux autres agents qui le lisent
+ * volontairement, et un fichier généré du catalogue vaut mieux qu'une page
+ * d'accueil vide de contexte.
+ *
+ * `null` sans nom ni description : on n'écrit pas un fichier creux.
+ *
+ * @param {{ homeUrl: string, html?: string }} opts
+ * @returns {string | null}
+ */
+export function defaultLlmsTxt({ homeUrl, html = '' }) {
+  const id = new URL(homeUrl).pathname.split('/').find(Boolean);
+  const fiche = FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
+  const name =
+    fiche?.name ||
+    metaDe(html, 'og:site_name') ||
+    decoderEntites(contenuDuTitre(html).trim()) ||
+    '';
+  const description = metaDe(html, 'description') || fiche?.description || '';
+  if (!name || !description) return null;
+  const lignes = [
+    `# ${name}`,
+    '',
+    `> ${description}`,
+    '',
+    '## URL',
+    `- Application : ${homeUrl}`,
+  ];
+  if (fiche?.repoUrl) lignes.push(`- Code source : ${fiche.repoUrl}`);
+  lignes.push('');
+  return lignes.join('\n');
 }
 
 /**
@@ -967,7 +1015,9 @@ ${page.html}
  * @param {string}  [opts.basePath]        Force le base path (sinon VITE_BASE_PATH).
  * @param {string}  [opts.logoPath]        Chemin du logo (ex. '/logo.svg') → __SEO_LOGO_URL__.
  * @param {string}  [opts.iconQuery='']    Query de cache-busting (ex. '?v=1.0.1') → __PWA_ICON_QS__.
- * @param {string}  [opts.llms]            Contenu d'un `llms.txt` à écrire (omis = pas de fichier).
+ * @param {string | false} [opts.llms] Contenu d'un `llms.txt` à écrire.
+ *   Omis : un fichier minimal est généré depuis le catalogue (`defaultLlmsTxt`).
+ *   `false` : aucun fichier. Une chaîne : ce texte, tel quel.
  * @param {Record<string,string>} [opts.extraReplacements={}] Placeholders custom → valeurs.
  * @param {boolean | object} [opts.jsonLd=true] Données structurées
  *   `WebApplication` injectées dans `<head>` (voir `webApplicationJsonLd`).
@@ -1237,8 +1287,17 @@ Sitemap: ${homeUrl}sitemap.xml
 `;
         fs.writeFileSync(path.join(dist, 'robots.txt'), txt, 'utf8');
       }
-      if (llms) {
-        fs.writeFileSync(path.join(dist, 'llms.txt'), llms, 'utf8');
+      // `llms` omis → auto ; `false` → rien ; chaîne → telle quelle.
+      if (llms !== false) {
+        const indexPath = path.join(dist, 'index.html');
+        const html = fs.existsSync(indexPath)
+          ? fs.readFileSync(indexPath, 'utf8')
+          : '';
+        const texte =
+          typeof llms === 'string' ? llms : defaultLlmsTxt({ homeUrl, html });
+        if (texte) {
+          fs.writeFileSync(path.join(dist, 'llms.txt'), texte, 'utf8');
+        }
       }
     },
   };

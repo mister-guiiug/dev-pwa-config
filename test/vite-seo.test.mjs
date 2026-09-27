@@ -1,10 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  defaultLlmsTxt,
   injectServedContent,
   jsonLdScript,
   pwaSeoPlugin,
@@ -55,7 +62,15 @@ test('pwaSeoPlugin injecte un WebApplication tiré du catalogue et de la page', 
     price: '0',
     priceCurrency: 'EUR',
   });
-  assert.deepEqual(d.sameAs, ['https://github.com/mister-guiiug/miss-dice']);
+  assert.deepEqual(d.sameAs, [
+    'https://github.com/mister-guiiug/miss-dice',
+    'https://mister-guiiug.github.io/',
+  ]);
+  assert.deepEqual(d.potentialAction, {
+    '@type': 'ViewAction',
+    target: 'https://mister-guiiug.github.io/miss-dice/',
+    name: 'Miss Dice',
+  });
   // Dans <head>, pas ailleurs.
   assert.ok(out.indexOf('application/ld+json') < out.indexOf('</head>'));
 });
@@ -107,7 +122,7 @@ test('une app hors catalogue garde ses données, sans catégorie inventée', () 
   });
   assert.equal(d.name, 'Squelette');
   assert.equal(d.applicationCategory, undefined);
-  assert.equal(d.sameAs, undefined);
+  assert.deepEqual(d.sameAs, ['https://mister-guiiug.github.io/']);
 });
 
 test('un <title> répété sans fin reste linéaire (CodeQL js/polynomial-redos)', () => {
@@ -156,6 +171,7 @@ test('le plan de site porte lastmod, les routes publiques, et échappe &', async
       basePath: '/miss-dice/',
       routes: ['/a-propos', '?play=yahtzee&x=1'],
       robots: false,
+      llms: false,
     });
     plugin.configResolved({ command: 'build', build: { outDir: dossier } });
     await plugin.closeBundle();
@@ -175,6 +191,68 @@ test('le plan de site porte lastmod, les routes publiques, et échappe &', async
   } finally {
     rmSync(dossier, { recursive: true, force: true });
   }
+});
+
+test('llms.txt : auto depuis le catalogue, false coupe, chaîne conserve', async () => {
+  const dossier = mkdtempSync(join(tmpdir(), 'seo-llms-'));
+  try {
+    const auto = pwaSeoPlugin({
+      basePath: '/miss-dice/',
+      sitemap: false,
+      robots: false,
+    });
+    auto.configResolved({ command: 'build', build: { outDir: dossier } });
+    writeFileSync(
+      join(dossier, 'index.html'),
+      PAGE.replaceAll('__SEO_LOGO_URL__', 'https://x/logo.svg')
+    );
+    await auto.closeBundle();
+    const texte = readFileSync(join(dossier, 'llms.txt'), 'utf8');
+    assert.match(texte, /^# Miss Dice/m);
+    assert.match(
+      texte,
+      /Application : https:\/\/mister-guiiug\.github\.io\/miss-dice\//
+    );
+
+    rmSync(join(dossier, 'llms.txt'));
+    const coupe = pwaSeoPlugin({
+      basePath: '/miss-dice/',
+      sitemap: false,
+      robots: false,
+      llms: false,
+    });
+    coupe.configResolved({ command: 'build', build: { outDir: dossier } });
+    await coupe.closeBundle();
+    assert.equal(existsSync(join(dossier, 'llms.txt')), false);
+
+    const custom = pwaSeoPlugin({
+      basePath: '/miss-dice/',
+      sitemap: false,
+      robots: false,
+      llms: '# Custom\n',
+    });
+    custom.configResolved({ command: 'build', build: { outDir: dossier } });
+    await custom.closeBundle();
+    assert.equal(readFileSync(join(dossier, 'llms.txt'), 'utf8'), '# Custom\n');
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test('defaultLlmsTxt : null hors catalogue sans matière', () => {
+  assert.equal(
+    defaultLlmsTxt({
+      homeUrl: 'https://mister-guiiug.github.io/inconnu/',
+      html: '<html></html>',
+    }),
+    null
+  );
+  assert.match(
+    defaultLlmsTxt({
+      homeUrl: 'https://mister-guiiug.github.io/miss-dice/',
+    }),
+    /Miss Dice/
+  );
 });
 
 /** Le plugin tel qu'au BUILD : le contenu servi n'est injecté qu'à ce moment-là. */
