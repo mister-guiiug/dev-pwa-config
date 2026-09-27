@@ -3902,20 +3902,6 @@
 
   watchRail();
 
-  // Divulgation des réglages sous `sm`. Le panneau reste dans le DOM au-delà
-  // (la media query le ré-affiche) : rien à déplacer, rien à recâbler.
-  var settingsToggle = document.getElementById('settings-toggle');
-  var settingsPanel = document.getElementById('settings');
-  if (settingsToggle && settingsPanel) {
-    settingsToggle.addEventListener('click', function () {
-      var open = settingsToggle.getAttribute('aria-expanded') === 'true';
-      settingsToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
-      if (open) settingsPanel.removeAttribute('data-open');
-      else settingsPanel.setAttribute('data-open', '');
-      syncHeaderOffset();
-    });
-  }
-
   applyScheme(currentScheme, currentTheme);
   syncSchemeInputs(currentScheme, currentTheme);
   applyLang(initialLang);
