@@ -1,0 +1,12 @@
+# Le socle se soumet au même contrôle que les applications.
+name: Signatures IA
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  signatures:
+    uses: ./.github/workflows/no-ai-attribution.yml
