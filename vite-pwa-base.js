@@ -211,12 +211,10 @@ export function webApplicationJsonLd({ html, homeUrl, overrides = {} }) {
 /**
  * Un `llms.txt` minimal, tiré du catalogue et de la page.
  *
- * Relevé du 26/09/2026 : une seule app (`mister-puzzle`) en écrivait un à la
- * main. Les autres n'avaient rien. Google Search dit ne pas s'en servir pour
- * ses fonctions génératives (guide du 15/05/2026) — on ne le pose donc PAS
- * comme levier de ranking. Il reste utile aux autres agents qui le lisent
- * volontairement, et un fichier généré du catalogue vaut mieux qu'une page
- * d'accueil vide de contexte.
+ * Activé seulement avec `llms: true` (ou une chaîne fournie). Google Search
+ * ne s'en sert pas pour ses fonctions génératives (guide du 15/05/2026) : ce
+ * n'est pas un levier SEO/GEO, juste une doc volontaire pour les agents qui
+ * le lisent. Défaut du plugin : pas de fichier.
  *
  * `null` sans nom ni description : on n'écrit pas un fichier creux.
  *
@@ -1015,9 +1013,10 @@ ${page.html}
  * @param {string}  [opts.basePath]        Force le base path (sinon VITE_BASE_PATH).
  * @param {string}  [opts.logoPath]        Chemin du logo (ex. '/logo.svg') → __SEO_LOGO_URL__.
  * @param {string}  [opts.iconQuery='']    Query de cache-busting (ex. '?v=1.0.1') → __PWA_ICON_QS__.
- * @param {string | false} [opts.llms] Contenu d'un `llms.txt` à écrire.
- *   Omis : un fichier minimal est généré depuis le catalogue (`defaultLlmsTxt`).
- *   `false` : aucun fichier. Une chaîne : ce texte, tel quel.
+ * @param {string | true | false} [opts.llms=false] Contenu d'un `llms.txt`.
+ *   Omis ou `false` : aucun fichier (défaut — Google ne s'en sert pas).
+ *   `true` : fichier minimal depuis le catalogue (`defaultLlmsTxt`).
+ *   Une chaîne : ce texte, tel quel.
  * @param {Record<string,string>} [opts.extraReplacements={}] Placeholders custom → valeurs.
  * @param {boolean | object} [opts.jsonLd=true] Données structurées
  *   `WebApplication` injectées dans `<head>` (voir `webApplicationJsonLd`).
@@ -1299,8 +1298,8 @@ Sitemap: ${homeUrl}sitemap.xml
 `;
         fs.writeFileSync(path.join(dist, 'robots.txt'), txt, 'utf8');
       }
-      // `llms` omis → auto ; `false` → rien ; chaîne → telle quelle.
-      if (llms !== false) {
+      // Défaut : pas de llms.txt. `true` → auto catalogue ; chaîne → telle quelle.
+      if (llms === true || typeof llms === 'string') {
         const indexPath = path.join(dist, 'index.html');
         const html = fs.existsSync(indexPath)
           ? fs.readFileSync(indexPath, 'utf8')
