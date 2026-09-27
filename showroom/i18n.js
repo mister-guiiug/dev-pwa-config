@@ -116,10 +116,10 @@ globalThis.SHOWROOM_I18N = {
     /* ── Hooks ────────────────────────────────────────────────────────── */
     'hooks.h21': 'Hooks and utilities',
     'hooks.p1':
-      'Nine barrel exports — close to half the package’s React surface — and not one of them appeared here until now. They have no demo: a hook is not something you look at. They have a signature, a sentence, and the pitfall that comes with it.',
+      'Nine barrel exports - close to half the package’s React surface - and not one of them appeared here until now. They have no demo: a hook is not something you look at. They have a signature, a sentence, and the pitfall that comes with it.',
     'hooks.caption': 'Hooks and utilities exported by the package',
     'hooks.p2':
-      '<code>useTheme</code> deserves a separate mention: it is the contract the switcher at the top of this page reproduces — <code>light | dark | system</code> persisted under <code>dwc_theme</code>, <code>data-theme</code> set on <code>&lt;html&gt;</code>.',
+      '<code>useTheme</code> deserves a separate mention: it is the contract the switcher at the top of this page reproduces - <code>light | dark | system</code> persisted under <code>dwc_theme</code>, <code>data-theme</code> set on <code>&lt;html&gt;</code>.',
 
     /* ── Foundations ──────────────────────────────────────────────────── */
     'fondations.h21': 'Foundations',
@@ -520,7 +520,6 @@ globalThis.SHOWROOM_I18N = {
     'ui.pitfalls': 'Pitfalls',
     'ui.a11yNote': 'Accessibility',
     'ui.hooks.th.name': 'Signature',
-    'ui.hooks.th.what': 'What it does',
     'ui.hooks.th.dont': 'Pitfall',
     'ui.cat.all': 'All',
     'ui.cat.primitive': 'Primitive',
