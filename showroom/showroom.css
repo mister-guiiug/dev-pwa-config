@@ -569,6 +569,61 @@ pre code {
   white-space: nowrap;
 }
 
+/* Une signature tient toute la largeur et revient à la ligne. Dans le tableau
+   elle restait sur une seule ligne, et le séparateur allongeait la colonne
+   au-delà de l'écran. */
+.sr-hook-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.sr-hook {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius, 0.75rem) * 0.7);
+  background: var(--ds-surface-2);
+}
+
+.sr-hook-name {
+  margin: 0;
+  font-size: var(--text-fluid-base);
+}
+
+.sr-hook-sig-label,
+.sr-hook-dont-label {
+  display: block;
+  font-size: var(--text-fluid-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ds-text-soft);
+}
+
+.sr-hook-sig-label {
+  margin-top: 0.55rem;
+}
+
+.sr-hook-sig {
+  display: block;
+  margin: 0.2rem 0 0.55rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--text-fluid-xs);
+  line-height: 1.5;
+}
+
+.sr-hook p {
+  margin: 0.3rem 0 0;
+}
+
+.sr-hook-dont-label {
+  margin-top: 0.55rem;
+}
+
 .sr-computed {
   font-family: var(--font-mono);
   font-size: var(--text-fluid-xs);

@@ -1374,39 +1374,46 @@
   /* ── Hooks ─────────────────────────────────────────────────────────── */
 
   function renderHooks() {
-    var table = document.getElementById('hooks-table');
-    if (!table) return;
-    table.textContent = '';
-    table.appendChild(
-      headRow([
-        t('ui.hooks.th.name', 'Signature'),
-        t('ui.hooks.th.what', 'Ce qu’il fait'),
-        t('ui.hooks.th.dont', 'Piège'),
-      ])
-    );
+    var list = document.getElementById('hooks-list');
+    if (!list) return;
+    list.textContent = '';
 
-    var tbody = document.createElement('tbody');
     HOOKS.forEach(function (hook) {
-      var tr = document.createElement('tr');
+      var item = document.createElement('li');
+      item.className = 'sr-hook';
 
-      var th = document.createElement('th');
-      th.scope = 'row';
+      var name = document.createElement('h3');
+      name.className = 'sr-hook-name';
+      name.textContent = hook.id;
+      item.appendChild(name);
+
+      var sigLabel = document.createElement('span');
+      sigLabel.className = 'sr-hook-sig-label';
+      sigLabel.textContent = t('ui.hooks.th.name', 'Signature');
+      item.appendChild(sigLabel);
+
       var sig = document.createElement('code');
+      sig.className = 'sr-hook-sig';
       sig.textContent = hook.signature;
-      th.appendChild(sig);
-      tr.appendChild(th);
+      item.appendChild(sig);
 
-      var what = document.createElement('td');
+      var what = document.createElement('p');
       richText(what, loc(hook.summary));
-      tr.appendChild(what);
+      item.appendChild(what);
 
-      var dont = document.createElement('td');
-      richText(dont, loc(hook.dont));
-      tr.appendChild(dont);
+      var dont = document.createElement('p');
+      dont.className = 'sr-hook-dont';
+      var label = document.createElement('span');
+      label.className = 'sr-hook-dont-label';
+      label.textContent = t('ui.hooks.th.dont', 'Piège');
+      dont.appendChild(label);
+      var pit = document.createElement('span');
+      richText(pit, loc(hook.dont));
+      dont.appendChild(pit);
+      item.appendChild(dont);
 
-      tbody.appendChild(tr);
+      list.appendChild(item);
     });
-    table.appendChild(tbody);
   }
 
   /* ── Index cherchable ──────────────────────────────────────────────── *

@@ -532,7 +532,6 @@ globalThis.SHOWROOM_I18N = {
     'ui.pitfalls': 'Pitfalls',
     'ui.a11yNote': 'Accessibility',
     'ui.hooks.th.name': 'Signature',
-    'ui.hooks.th.what': 'What it does',
     'ui.hooks.th.dont': 'Pitfall',
     'ui.cat.all': 'All',
     'ui.cat.primitive': 'Primitive',
