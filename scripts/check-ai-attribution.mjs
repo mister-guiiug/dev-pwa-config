@@ -28,6 +28,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { estPointDEntree } from './entree.mjs';
 
 /**
  * Chaque motif porte son explication : le message d'erreur doit apprendre
@@ -173,6 +174,8 @@ function main(argv) {
 }
 
 // N'exécute rien à l'import : le fichier de test importe `findAttribution`.
-if (process.argv[1] && process.argv[1].endsWith('check-ai-attribution.mjs')) {
+// `estPointDEntree` compare les realpath : un lien (le `.bin` que pose npm)
+// laisse `argv[1]` différent de `import.meta.url`, et le script se tairait.
+if (estPointDEntree(import.meta.url)) {
   process.exit(main(process.argv));
 }

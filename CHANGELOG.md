@@ -1,5 +1,16 @@
 # Changelog
 
+## 6.18.0
+
+### Minor Changes
+
+- eff9f90: Coquille et chrome famille : `AppShell`, `FamilyAbout`, `ChromePrefs`, jeton `--dwc-header-row-height`, et `pwa-doctor` qui reconnaît `FamilyAbout` / signale un lien d'évitement manquant.
+
+### Patch Changes
+
+- d8e478d: Le contrôle des signatures d'assistant passe par `estPointDEntree`, comme les autres scripts : derrière un lien, il se taisait. Le dictionnaire portugais est de l'UTF-8 de bout en bout — un octet latin-1 dans « conteúdo » empêchait Rolldown de construire une application.
+- 39ea624: Workflow réutilisable qui refuse les signatures d'assistant dans les commits et les fichiers d'une pull request. L'étiquette mobile n'avance qu'avec une version, et c'est elle que les applications consomment.
+
 ## 6.17.0
 
 ### Minor Changes
