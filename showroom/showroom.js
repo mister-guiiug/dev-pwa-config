@@ -54,6 +54,12 @@
       if (value !== undefined) el.innerHTML = value;
     });
     root.lang = lang;
+    // L'icône est le visage du bouton ; le titre reprend le mot traduit,
+    // celui que le nom accessible porte déjà.
+    document.querySelectorAll('.sr-segmented label').forEach(function (label) {
+      var name = label.querySelector('.sr-visually-hidden');
+      if (name) label.title = name.textContent.trim();
+    });
   }
 
   // Rôle sémantique → variable CSS + libellé. `on` désigne la couleur sur
@@ -105,6 +111,78 @@
   }
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
+
+  /**
+   * Les trois dessins de `react/icons.js` (`SunIcon`, `MoonIcon`,
+   * `SystemIcon`) : même boîte, même trait. Le showroom ne peut pas importer
+   * le module, il rejoue les tracés.
+   */
+  var SCHEME_ICON = {
+    light:
+      '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>',
+    dark: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>',
+    system:
+      '<rect x="2" y="4" width="20" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path>',
+  };
+
+  function schemeIcon(kind) {
+    var svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'sr-ico');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = SCHEME_ICON[kind] || SCHEME_ICON.system;
+    return svg;
+  }
+
+  /** La barre change de hauteur (réglages ouverts, rail). Les ancres doivent
+   *  dégager ce qu'elle couvre vraiment, pas une constante. */
+  function syncHeaderOffset() {
+    var bar = document.querySelector('.sr-topbar');
+    if (bar) root.style.setProperty('--sr-header', bar.offsetHeight + 'px');
+  }
+
+  /**
+   * Le sommaire suit la section visible. Une seule ancre porte
+   * `aria-current`, et elle est ramenée dans le rail s'il défile.
+   */
+  function watchRail() {
+    syncHeaderOffset();
+    window.addEventListener('resize', syncHeaderOffset);
+    var links = document.querySelectorAll('.sr-rail a');
+    if (!links.length || !('IntersectionObserver' in window)) return;
+    var byId = {};
+    links.forEach(function (link) {
+      byId[(link.getAttribute('href') || '').slice(1)] = link;
+    });
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var current = byId[entry.target.id];
+          if (!current) return;
+          links.forEach(function (link) {
+            link.removeAttribute('aria-current');
+          });
+          current.setAttribute('aria-current', 'location');
+          var rail = current.closest('.sr-rail');
+          if (!rail) return;
+          var pad = 12;
+          var left = current.offsetLeft;
+          var right = left + current.offsetWidth;
+          if (left < rail.scrollLeft + pad) {
+            rail.scrollLeft = Math.max(0, left - pad);
+          } else if (right > rail.scrollLeft + rail.clientWidth - pad) {
+            rail.scrollLeft = right - rail.clientWidth + pad;
+          }
+        });
+      },
+      { rootMargin: '-35% 0px -55% 0px', threshold: 0 }
+    );
+    Object.keys(byId).forEach(function (id) {
+      var section = document.getElementById(id);
+      if (section) observer.observe(section);
+    });
+  }
 
   // Sonde hors écran : sert à faire évaluer les `clamp()` / `env()` par le
   // navigateur plutôt qu'à les recalculer en JS.
@@ -459,8 +537,8 @@
     measureContrast();
     labelTableCells();
     // La galerie, la vitrine et la comparaison suivent le thème, quelle que
-    // soit la commande qui l'a changé (menu de démo, carte de la vitrine ou
-    // sélecteur de la barre).
+    // soit la commande qui l'a changé (tuile de la galerie, carte de la
+    // vitrine ou sélecteur de la barre).
     renderDemoCurrent();
     syncAppGrid();
     renderDemoStage();
@@ -1695,6 +1773,30 @@
     return '';
   }
 
+  /**
+   * Encre lisible SUR la primaire de l'app. La couleur de contraste de la
+   * page n'a aucun rapport avec cet aplat : en schéma sombre, le texte de la
+   * page est clair et la primaire d'une autre app souvent claire aussi.
+   */
+  function inkOn(color) {
+    var onLight = contrastRatio(color, '#ffffff');
+    var onDark = contrastRatio(color, '#14181f');
+    if (onLight == null || onDark == null) return '';
+    return onLight >= onDark ? '#ffffff' : '#14181f';
+  }
+
+  function paintMonogram(el) {
+    var accent = appAccent(el.dataset.app);
+    if (!accent) {
+      el.style.removeProperty('--sr-app-accent');
+      el.style.removeProperty('--sr-app-ink');
+      return;
+    }
+    el.style.setProperty('--sr-app-accent', accent);
+    var ink = inkOn(accent);
+    if (ink) el.style.setProperty('--sr-app-ink', ink);
+  }
+
   /** Une app a-t-elle une palette relevée, donc une démo à montrer ? */
   function hasTheme(id) {
     for (var i = 0; i < themes.length; i++) {
@@ -2038,8 +2140,7 @@
       mono.className = 'sr-app-mono';
       mono.setAttribute('aria-hidden', 'true');
       mono.dataset.app = item.id;
-      var accent = appAccent(item.id);
-      if (accent) mono.style.setProperty('--sr-app-accent', accent);
+      paintMonogram(mono);
       mono.textContent = monogram(item.name);
       li.appendChild(mono);
     }
@@ -2314,11 +2415,7 @@
    * activé garde le focus.
    */
   function syncAppGrid() {
-    document.querySelectorAll('#apps-grid .sr-app-mono').forEach(function (el) {
-      var accent = appAccent(el.dataset.app);
-      if (accent) el.style.setProperty('--sr-app-accent', accent);
-      else el.style.removeProperty('--sr-app-accent');
-    });
+    document.querySelectorAll('#apps-grid .sr-app-mono').forEach(paintMonogram);
     document
       .querySelectorAll('#apps-grid [data-demo]')
       .forEach(function (button) {
@@ -3009,7 +3106,7 @@
       'aria-label': t('ui.fc.theme', 'Thème : sombre'),
     });
     var themeIcon = dwc('span', 'theme-toggle-icon', { 'aria-hidden': 'true' });
-    themeIcon.textContent = '☾';
+    themeIcon.appendChild(schemeIcon('dark'));
     themeBtn.appendChild(themeIcon);
 
     [primary, off, badge, sync, skeleton, panel, toast, nav, themeBtn].forEach(
@@ -3174,10 +3271,10 @@
 
   /**
    * Bascule vers un thème d'app, quelle que soit la commande qui le demande :
-   * le sélecteur de la barre supérieure ou le bouton « Habiller la page »
-   * d'une carte de la vitrine. La section Démo avait son propre menu des mêmes
-   * applications — deux sélecteurs pour une seule bascule, et treize apps d'un
-   * côté contre seize de l'autre. Il a été retiré.
+   * le sélecteur de la barre supérieure, le bouton « Habiller la page » d'une
+   * carte, ou une tuile de la galerie. Une seule bascule : la tuile ne fait
+   * pas revenir un second menu, elle montre ce que ce menu cachait — toutes
+   * les palettes en même temps.
    */
   function selectTheme(theme) {
     currentTheme = theme;
@@ -3211,9 +3308,174 @@
           );
   }
 
+  /**
+   * Palette du thème générique, lue dans la feuille : elle n'existe pas dans
+   * `themes.js`. On retire d'abord les surcharges inline, sinon la lecture
+   * renverrait le thème d'app en cours.
+   */
+  var genericSnapshot = null;
+  function snapshotGenericPalettes() {
+    if (genericSnapshot) return genericSnapshot;
+    var previous = root.getAttribute('data-theme');
+    var saved = ROLES.map(function (role) {
+      return [role[1], root.style.getPropertyValue(role[1])];
+    });
+    var bgImage = root.style.getPropertyValue('--ds-bg-image');
+    ROLES.forEach(function (role) {
+      root.style.removeProperty(role[1]);
+    });
+    root.style.removeProperty('--ds-bg-image');
+
+    var out = {};
+    ['light', 'dark'].forEach(function (scheme) {
+      root.setAttribute('data-theme', scheme);
+      var styles = getComputedStyle(root);
+      var palette = {};
+      ROLES.forEach(function (role) {
+        palette[role[0]] = styles.getPropertyValue(role[1]).trim();
+      });
+      out[scheme] = palette;
+    });
+
+    if (previous) root.setAttribute('data-theme', previous);
+    saved.forEach(function (pair) {
+      if (pair[1]) root.style.setProperty(pair[0], pair[1]);
+      else root.style.removeProperty(pair[0]);
+    });
+    if (bgImage) root.style.setProperty('--ds-bg-image', bgImage);
+    genericSnapshot = out;
+    return out;
+  }
+
+  /** Schéma dans lequel montrer une app : le schéma de la page, sauf si
+   *  l'app n'en a qu'un (qowa et quota sont sombres seules). */
+  function schemeForTheme(theme) {
+    var pageDark = root.getAttribute('data-theme') === 'dark';
+    if (theme.schemes.indexOf('light') === -1) return 'dark';
+    if (theme.schemes.indexOf('dark') === -1) return 'light';
+    return pageDark ? 'dark' : 'light';
+  }
+
+  function paletteOf(theme, scheme) {
+    if (theme.usesCssDefaults) return snapshotGenericPalettes()[scheme];
+    return theme[scheme];
+  }
+
+  /**
+   * Pose la palette sur la tuile elle-même. `paintPalette` écrit `--ds-*` et
+   * `--dwc-*` : sans les deux, les composants de la tuile garderaient les
+   * couleurs de la page.
+   */
+  function paintTheme(el, theme, scheme, palette) {
+    paintPalette(el, palette, scheme);
+    if (theme.radius) {
+      el.style.setProperty('--ds-radius', theme.radius);
+      el.style.setProperty('--dwc-radius', theme.radius);
+    }
+    el.style.setProperty(
+      '--ds-bg-image',
+      (palette && palette.bgImage) || 'none'
+    );
+    if (theme.fontDisplay)
+      el.style.setProperty('--ds-font-display', theme.fontDisplay);
+  }
+
+  function renderDemoGallery() {
+    var host = document.getElementById('demo-gallery');
+    if (!host) return;
+    var restore = host.contains(document.activeElement);
+    host.textContent = '';
+
+    themes.forEach(function (theme) {
+      var scheme = schemeForTheme(theme);
+      var palette = paletteOf(theme, scheme);
+      if (!palette) return;
+
+      var name = t('theme.' + theme.id + '.name', theme.name);
+      var darkOnly = theme.schemes.indexOf('light') === -1;
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sr-gallery-tile';
+      button.dataset.themeId = theme.id;
+      button.setAttribute('aria-pressed', String(theme.id === currentTheme.id));
+      var label = t('ui.demo.dress', 'Habiller la page avec {app}').replace(
+        '{app}',
+        name
+      );
+      if (darkOnly) label += ' (' + t('ui.demo.darkOnly', 'Sombre seul') + ')';
+      button.setAttribute('aria-label', label);
+      paintTheme(button, theme, scheme, palette);
+
+      var head = el('span', { class: 'sr-gallery-head' });
+      head.appendChild(el('span', { class: 'sr-gallery-name', text: name }));
+      if (darkOnly) {
+        head.appendChild(
+          el('span', {
+            class: 'sr-gallery-flag',
+            text: t('ui.demo.darkOnly', 'Sombre seul'),
+          })
+        );
+      }
+      button.appendChild(head);
+
+      var dots = el('span', {
+        class: 'sr-gallery-dots',
+        'aria-hidden': 'true',
+      });
+      ['primary', 'accent', 'success', 'warning', 'danger'].forEach(
+        function (key) {
+          if (!palette[key]) return;
+          var dot = document.createElement('span');
+          dot.style.background = 'var(--ds-' + key + ')';
+          dots.appendChild(dot);
+        }
+      );
+      button.appendChild(dots);
+
+      button.appendChild(
+        el('span', { class: 'sr-gallery-surface' }, [
+          el('span', { class: 'sr-gallery-ink', text: 'Aa' }),
+          el('span', {
+            class: 'sr-gallery-ink-soft',
+            text: t('ui.demo.sample', 'Texte'),
+          }),
+        ])
+      );
+
+      button.appendChild(
+        el('span', { class: 'sr-gallery-sample' }, [
+          el('span', {
+            'data-dwc': 'button',
+            'data-variant': 'primary',
+            'data-size': 'sm',
+            text: t('ui.demo.validate', 'Valider'),
+          }),
+          el('span', {
+            'data-dwc': 'badge',
+            'data-tone': 'success',
+            'data-variant': 'soft',
+            'data-size': 'sm',
+            text: t('ui.demo.paid', 'À jour'),
+          }),
+        ])
+      );
+
+      button.addEventListener('click', function () {
+        selectTheme(theme);
+      });
+      host.appendChild(button);
+    });
+
+    if (restore) {
+      var current = host.querySelector('[aria-pressed="true"]');
+      if (current) current.focus();
+    }
+  }
+
   // Petit écran de démonstration : rien d'inventé, uniquement des composants
   // du paquet, donc peints par `components.css` et le thème courant.
   function renderDemoStage() {
+    renderDemoGallery();
     var stage = document.getElementById('demo-stage');
     if (!stage) return;
     stage.textContent = '';
@@ -3619,7 +3881,7 @@
   setupSheet();
 
   // Langue : préférence stockée, sinon celle du navigateur, sinon français.
-  var langSelect = document.getElementById('lang');
+  // Même forme que le schéma : deux radios, le code langue en icône.
   var storedLang = paramOr('lang', read(LANG_KEY, ''));
   var initialLang =
     storedLang ||
@@ -3627,15 +3889,18 @@
       ? navigator.language.slice(0, 2)
       : 'fr');
 
-  if (langSelect) {
-    langSelect.value = initialLang;
-    langSelect.addEventListener('change', function () {
-      write(LANG_KEY, langSelect.value);
-      applyLang(langSelect.value);
+  document.querySelectorAll('input[name="lang"]').forEach(function (input) {
+    input.checked = input.value === initialLang;
+    input.addEventListener('change', function () {
+      if (!input.checked) return;
+      write(LANG_KEY, input.value);
+      applyLang(input.value);
       renderGenerated();
       syncUrl();
     });
-  }
+  });
+
+  watchRail();
 
   // Divulgation des réglages sous `sm`. Le panneau reste dans le DOM au-delà
   // (la media query le ré-affiche) : rien à déplacer, rien à recâbler.
@@ -3647,6 +3912,7 @@
       settingsToggle.setAttribute('aria-expanded', open ? 'false' : 'true');
       if (open) settingsPanel.removeAttribute('data-open');
       else settingsPanel.setAttribute('data-open', '');
+      syncHeaderOffset();
     });
   }
 

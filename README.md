@@ -404,7 +404,9 @@ réellement :
   signaler un problème, occuper une attente, demander une saisie, dire un état ;
 - un **sélecteur de thème** qui rhabille toute la page avec l'univers visuel de
   chaque application consommatrice, plus le contrat clair / sombre / système du
-  hook `useTheme` ;
+  hook `useTheme`. La section Démo aligne d’abord **toutes les palettes** :
+  chaque tuile est peinte avec celle de l’application, et un clic est le même
+  geste que « Habiller la page » ;
 - des **contrôles d'accessibilité calculés sur la page** — cible tactile mesurée
   et contraste WCAG par paire —, rejoués à chaque bascule de thème ;
 - une section **Stack** relevée dans le code des apps : Supabase / Firebase /

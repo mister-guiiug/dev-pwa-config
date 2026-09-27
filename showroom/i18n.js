@@ -27,6 +27,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.scheme.system': 'System',
     'ui.lang.label': 'Language',
     'ui.settings': 'Settings',
+    'ui.rail': 'On this page',
 
     /* ── Intro ────────────────────────────────────────────────────────── */
     'intro.title': 'The miss-* / mister-* family design system',
@@ -335,8 +336,12 @@ globalThis.SHOWROOM_I18N = {
     /* ── Demo gallery ─────────────────────────────────────────────────── */
     'demo.title': 'Demo by application',
     'demo.intro':
-      'The <em>Dress the page</em> button on a <a href="#apps">showcase</a> card switches the whole showroom into that application’s universe; the preview below then shows the shared components wearing its colours. Same page, same CSS — only the thirteen contract variables change. This section used to carry its own application menu: two selectors for one switch was one too many.',
+      'Each tile is painted with an application’s real palette, in the current colour scheme. A click dresses the whole page — the same gesture as <em>Dress the page</em> on a <a href="#apps">showcase</a> card. The large preview then shows the shared components in that universe. Same page, same CSS: only the thirteen contract variables change.',
+    'demo.galleryTitle': 'Every palette',
     'ui.demo.current': 'Preview dressed by {app}.',
+    'ui.demo.dress': 'Dress the page with {app}',
+    'ui.demo.darkOnly': 'Dark only',
+    'ui.demo.sample': 'Text',
     'ui.demo.generic': 'Generic preview: no application selected.',
     'demo.note':
       '<strong>These are generated previews, not screenshots.</strong> They are painted live with each app’s real palette and the package’s real components — so they show the design system faithfully in each universe, but not the applications’ own screens. A real capture dropped into <code>showroom/screenshots/</code> and declared in <code>screenshots.js</code> automatically takes the preview’s place.',

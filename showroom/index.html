@@ -393,10 +393,80 @@
           <span>@mister-guiiug/dev-pwa-config</span>
         </div>
 
-        <!-- Sous `sm`, les réglages prenaient 30 % du premier écran. Ils
-             passent derrière ce bouton, qui disparaît au-delà : une simple
-             divulgation, pas une modale — trois interrupteurs ne justifient
-             pas de piéger le focus. -->
+        <!-- Même dessin que `SunIcon`, `MoonIcon` et `SystemIcon` du paquet :
+             le trait porte l'état, le nom accessible reste le mot. -->
+        <div class="sr-topbar-switches">
+          <fieldset class="sr-control">
+            <legend class="sr-visually-hidden" data-i18n="ui.scheme.legend">
+              Schéma de couleurs
+            </legend>
+            <div class="sr-segmented">
+              <input
+                type="radio"
+                name="scheme"
+                id="scheme-light"
+                value="light"
+              />
+              <label for="scheme-light">
+                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="4" />
+                  <path
+                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+                  />
+                </svg>
+                <span class="sr-visually-hidden" data-i18n="ui.scheme.light"
+                  >Clair</span
+                >
+              </label>
+              <input type="radio" name="scheme" id="scheme-dark" value="dark" />
+              <label for="scheme-dark">
+                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+                <span class="sr-visually-hidden" data-i18n="ui.scheme.dark"
+                  >Sombre</span
+                >
+              </label>
+              <input
+                type="radio"
+                name="scheme"
+                id="scheme-system"
+                value="system"
+                checked
+              />
+              <label for="scheme-system">
+                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="2" y="4" width="20" height="13" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+                <span class="sr-visually-hidden" data-i18n="ui.scheme.system"
+                  >Système</span
+                >
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="sr-control">
+            <legend class="sr-visually-hidden" data-i18n="ui.lang.label">
+              Langue
+            </legend>
+            <div class="sr-segmented">
+              <input type="radio" name="lang" id="lang-fr" value="fr" checked />
+              <label for="lang-fr" title="Français">
+                <span class="sr-ico sr-ico-code" aria-hidden="true">FR</span>
+                <span class="sr-visually-hidden">Français</span>
+              </label>
+              <input type="radio" name="lang" id="lang-en" value="en" />
+              <label for="lang-en" title="English">
+                <span class="sr-ico sr-ico-code" aria-hidden="true">EN</span>
+                <span class="sr-visually-hidden">English</span>
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- Le sélecteur d'application est le seul réglage encore long : sous
+             `sm` il passe derrière ce bouton. -->
         <button
           type="button"
           id="settings-toggle"
@@ -416,62 +486,11 @@
             <option value="generic">Générique — preset seul</option>
           </select>
         </p>
-
-        <fieldset class="sr-control" style="border: 0; margin: 0; padding: 0">
-          <legend class="sr-visually-hidden" data-i18n="ui.scheme.legend">
-            Schéma de couleurs
-          </legend>
-          <div class="sr-segmented">
-            <input type="radio" name="scheme" id="scheme-light" value="light" />
-            <label for="scheme-light" data-i18n="ui.scheme.light">Clair</label>
-            <input type="radio" name="scheme" id="scheme-dark" value="dark" />
-            <label for="scheme-dark" data-i18n="ui.scheme.dark">Sombre</label>
-            <input
-              type="radio"
-              name="scheme"
-              id="scheme-system"
-              value="system"
-              checked
-            />
-            <label for="scheme-system" data-i18n="ui.scheme.system"
-              >Système</label
-            >
-          </div>
-        </fieldset>
-
-        <p class="sr-control">
-          <label for="lang" data-i18n="ui.lang.label">Langue</label>
-          <select id="lang">
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-          </select>
-        </p>
       </div>
-    </header>
 
-    <main class="sr-main" id="contenu">
-      <!-- ── Intro ─────────────────────────────────────────────────────── -->
-      <section
-        class="sr-section sr-hero"
-        id="intro"
-        aria-labelledby="intro-title"
-      >
-        <h1 data-i18n="intro.title" id="intro-title">
-          Le design system de la famille miss-* / mister-*
-        </h1>
-        <p class="sr-lede" data-i18n="intro.lede">
-          Ce paquet partage une <strong>structure</strong>, pas une identité :
-          échelles fluides, points de rupture, safe-areas iOS, cible tactile, et
-          des composants React livrés <strong>non stylés</strong>. La couleur,
-          la typographie de titrage et les arrondis appartiennent à chaque
-          application.
-        </p>
-        <p class="sr-theme-note">
-          <strong id="theme-name">Générique — preset seul</strong><br />
-          <span id="theme-tagline"
-            >Ce que le preset fournit réellement : de la structure, pas de
-            couleur. Palette monochrome de référence.</span
-          >
+      <nav class="sr-rail" aria-labelledby="rail-label">
+        <p id="rail-label" class="sr-visually-hidden" data-i18n="ui.rail">
+          Sur cette page
         </p>
         <ul class="sr-toc">
           <li><a href="#apps" data-i18n="ui.toc.apps">Applications</a></li>
@@ -507,6 +526,33 @@
             >
           </li>
         </ul>
+      </nav>
+    </header>
+
+    <main class="sr-main" id="contenu">
+      <!-- ── Intro ─────────────────────────────────────────────────────── -->
+      <section
+        class="sr-section sr-hero"
+        id="intro"
+        aria-labelledby="intro-title"
+      >
+        <h1 data-i18n="intro.title" id="intro-title">
+          Le design system de la famille miss-* / mister-*
+        </h1>
+        <p class="sr-lede" data-i18n="intro.lede">
+          Ce paquet partage une <strong>structure</strong>, pas une identité :
+          échelles fluides, points de rupture, safe-areas iOS, cible tactile, et
+          des composants React livrés <strong>non stylés</strong>. La couleur,
+          la typographie de titrage et les arrondis appartiennent à chaque
+          application.
+        </p>
+        <p class="sr-theme-note">
+          <strong id="theme-name">Générique — preset seul</strong><br />
+          <span id="theme-tagline"
+            >Ce que le preset fournit réellement : de la structure, pas de
+            couleur. Palette monochrome de référence.</span
+          >
+        </p>
       </section>
 
       <!-- ── Vitrine des dépôts ────────────────────────────────────────── -->
@@ -1850,7 +1896,9 @@
                     data-size="sm"
                     aria-label="Thème"
                   >
-                    ☾
+                    <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                    </svg>
                   </button>
                 </div>
               </div>
@@ -2118,7 +2166,12 @@
               data-theme-state="system"
               aria-label="Thème : système. Activer le thème clair."
             >
-              <span data-dwc="theme-toggle-icon" aria-hidden="true">◐</span>
+              <span data-dwc="theme-toggle-icon" aria-hidden="true">
+                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="2" y="4" width="20" height="13" rx="2" />
+                  <path d="M8 21h8M12 17v4" />
+                </svg>
+              </span>
             </button>
             <button
               type="button"
@@ -2126,7 +2179,11 @@
               data-theme-state="dark"
               aria-label="Thème : sombre. Activer le thème système."
             >
-              <span data-dwc="theme-toggle-icon" aria-hidden="true">☾</span>
+              <span data-dwc="theme-toggle-icon" aria-hidden="true">
+                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                </svg>
+              </span>
             </button>
           </div>
           <details>
@@ -2563,14 +2620,27 @@
       <section class="sr-section" id="demo" aria-labelledby="demo-title">
         <h2 data-i18n="demo.title" id="demo-title">Démo par application</h2>
         <p data-i18n="demo.intro">
-          Le bouton <em>Habiller la page</em> d’une carte de la
-          <a href="#apps">vitrine</a> bascule le showroom entier dans l’univers
-          de cette application ; l’aperçu ci-dessous montre alors les composants
-          partagés habillés de ses couleurs. C’est la même page, le même CSS —
-          seules les treize variables du contrat changent. Cette section avait
-          son propre menu d’applications : deux sélecteurs pour une seule
-          bascule, c’était un de trop.
+          Chaque tuile est peinte avec la palette réelle d’une application, dans
+          le schéma en cours. Un clic habille la page entière — le même geste
+          que <em>Habiller la page</em> sur une carte de la
+          <a href="#apps">vitrine</a>. L’aperçu en grand reprend alors les
+          composants partagés dans cet univers. C’est la même page, le même CSS
+          : seules les treize variables du contrat changent.
         </p>
+
+        <h3
+          class="sr-subtitle"
+          data-i18n="demo.galleryTitle"
+          id="demo-gallery-title"
+        >
+          Toutes les palettes
+        </h3>
+        <div
+          class="sr-gallery"
+          id="demo-gallery"
+          role="group"
+          aria-labelledby="demo-gallery-title"
+        ></div>
 
         <p class="sr-demo-current" id="demo-current" role="status"></p>
 

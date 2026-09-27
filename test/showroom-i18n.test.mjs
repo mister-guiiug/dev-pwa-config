@@ -94,11 +94,10 @@ test('les libellés générés ont tous une traduction', () => {
 });
 
 test('le sélecteur de langue propose exactement les langues connues', () => {
-  const options = [
-    ...HTML.matchAll(/<select id="lang">([\s\S]*?)<\/select>/g),
-  ][0];
-  assert.ok(options, 'sélecteur de langue absent de index.html');
-  const values = [...options[1].matchAll(/value="([^"]+)"/g)].map(m => m[1]);
+  const values = [
+    ...HTML.matchAll(/<input[^>]*name="lang"[^>]*value="([^"]+)"/g),
+  ].map(m => m[1]);
+  assert.ok(values.length > 0, 'sélecteur de langue absent de index.html');
   assert.deepEqual(
     values.sort(),
     ['fr', ...Object.keys(DICTS)].sort(),
