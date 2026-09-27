@@ -35,6 +35,7 @@
  *   --dwc-info               information neutre           (repli : bleu)
  *   --dwc-radius             rayon des blocs              (repli : 0.75rem)
  *   --dwc-shadow             ombre des blocs              (repli : aucune)
+ *   --dwc-header-row-height  hauteur de la rangée titre   (repli : 3.25rem)
  *
  * Les replis neutres utilisent les couleurs système CSS (`Canvas`, `CanvasText`,
  * `GrayText`), qui suivent d'elles-mêmes `color-scheme` : rien n'est codé en
@@ -1962,7 +1963,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    min-height: 3.25rem;
+    min-height: var(--dwc-header-row-height, 3.25rem);
     padding: 0.5rem max(env(safe-area-inset-right, 0px), 1rem) 0.5rem
       max(env(safe-area-inset-left, 0px), 1rem);
   }
@@ -2008,6 +2009,44 @@
   [data-dwc='app-header-back']:focus-visible {
     outline: 2px solid var(--dwc-primary, CanvasText);
     outline-offset: 2px;
+  }
+
+  /* Lien d'évitement d'`AppShell` : invisible tant qu'il n'a pas le focus —
+     même boîte que `bottom-nav-sr`, sans dépendre des utilitaires Tailwind. */
+  [data-dwc='app-shell-skip'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  [data-dwc='app-shell-skip']:focus,
+  [data-dwc='app-shell-skip']:focus-visible {
+    position: fixed;
+    top: max(env(safe-area-inset-top, 0px), 0.5rem);
+    left: max(env(safe-area-inset-left, 0px), 0.5rem);
+    z-index: 100;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    border-radius: var(--dwc-radius, 0.75rem);
+    background: var(--dwc-surface, Canvas);
+    color: var(--dwc-text, CanvasText);
+    border: 1px solid
+      var(
+        --dwc-border-strong,
+        var(--dwc-border, color-mix(in srgb, CanvasText 40%, Canvas))
+      );
+    text-decoration: none;
   }
 
   [data-dwc='app-header-extra'] {
@@ -2131,12 +2170,15 @@
   }
 
   /*
-   * L'EMPREINTE DE LA BARRE, ÉCRITE UNE FOIS. Trois règles ont besoin de la
-   * même hauteur : la réserve de `PageContainer`, le plancher des toasts et
-   * celui du bandeau de mise à jour. Figée à trois endroits, elle finirait par
-   * diverger — c'est ce qui est arrivé aux replis de couleur (audit du
-   * 06/09/2026). Deux variables PRIVÉES (`--_dwc-*`, hors du contrat) :
+   * L'EMPREINTE DU CHROME, ÉCRITE UNE FOIS. Quatre règles ont besoin des
+   * mêmes hauteurs : la rangée d'`AppHeader`, la réserve de `PageContainer`,
+   * le plancher des toasts et celui du bandeau de mise à jour. Figées à
+   * plusieurs endroits, elles finiraient par diverger — c'est ce qui est
+   * arrivé aux replis de couleur (audit du 06/09/2026). Une variable PUBLIQUE
+   * et deux PRIVÉES (`--_dwc-*`, hors du contrat) :
    *
+   *   --dwc-header-row-height     hauteur de la rangée titre (apps peuvent
+   *                               la surcharger) ;
    *   --_dwc-bottom-nav-reserve   ce que la barre couvre : 4,5 rem + zone sûre ;
    *   --_dwc-bottom-clearance     ce que les surfaces flottantes dégagent en
    *                               bas — la zone sûre seule, ou la barre entière
@@ -2152,6 +2194,7 @@
    * ou rien, et `test/components-css.test.mjs` y veille.
    */
   :root {
+    --dwc-header-row-height: 3.25rem;
     --_dwc-bottom-nav-reserve: calc(
       4.5rem + max(env(safe-area-inset-bottom), 0px)
     );
@@ -2310,6 +2353,14 @@
 
   [data-dwc='theme-toggle-label'] {
     font-size: var(--text-fluid-sm, 0.9rem);
+  }
+
+  /* Groupe thème + langue (+ densités) : une seule étiquette accessible. */
+  [data-dwc='chrome-prefs'] {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 
   /* ── SegmentedControl ─────────────────────────────────────────────────── *

@@ -116,10 +116,10 @@ globalThis.SHOWROOM_I18N = {
     /* ── Hooks ────────────────────────────────────────────────────────── */
     'hooks.h21': 'Hooks and utilities',
     'hooks.p1':
-      'Nine barrel exports — close to half the package’s React surface — and not one of them appeared here until now. They have no demo: a hook is not something you look at. They have a signature, a sentence, and the pitfall that comes with it.',
+      'Nine barrel exports - close to half the package’s React surface - and not one of them appeared here until now. They have no demo: a hook is not something you look at. They have a signature, a sentence, and the pitfall that comes with it.',
     'hooks.caption': 'Hooks and utilities exported by the package',
     'hooks.p2':
-      '<code>useTheme</code> deserves a separate mention: it is the contract the switcher at the top of this page reproduces — <code>light | dark | system</code> persisted under <code>dwc_theme</code>, <code>data-theme</code> set on <code>&lt;html&gt;</code>.',
+      '<code>useTheme</code> deserves a separate mention: it is the contract the switcher at the top of this page reproduces - <code>light | dark | system</code> persisted under <code>dwc_theme</code>, <code>data-theme</code> set on <code>&lt;html&gt;</code>.',
 
     /* ── Foundations ──────────────────────────────────────────────────── */
     'fondations.h21': 'Foundations',
@@ -252,6 +252,10 @@ globalThis.SHOWROOM_I18N = {
     'composants.p22':
       'Nine apps have a header. The title IS the page’s <code>h1</code>; the back control is a link when it has a destination, a button when it only has an action — named “Back” in seven languages.',
     'composants.summary15': 'CSS selectors',
+    'composants.h57': 'AppShell',
+    'composants.p26':
+      'The assembled shell: skip link, header, bounded content, bottom bar. The footer is NOT here — Home and About only.',
+    'composants.summary20': 'CSS selectors',
     'composants.h54': 'PageContainer',
     'composants.p23':
       'Centred, capped at a width tier, iOS safe areas included — the bottom one above all, without which the last button of a view sticks to the tab bar. Promoted from badminton and molkky.',
@@ -268,6 +272,10 @@ globalThis.SHOWROOM_I18N = {
     'composants.p19':
       'Five apps have one. This one cycles through the <em>three</em> states of <code>useTheme</code>: a two-state toggle makes “system” unreachable.',
     'composants.summary12': 'CSS selectors',
+    'composants.h58': 'ChromePrefs',
+    'composants.p27':
+      'Accessible group for theme + language (or density): one label for what the hub and several apps already place side by side.',
+    'composants.summary21': 'CSS selectors',
     'composants.h47': 'AppFooter',
     'composants.p13': 'Source-code link plus sponsor link, opened safely.',
     'composants.summary7': 'CSS selectors',
@@ -278,6 +286,10 @@ globalThis.SHOWROOM_I18N = {
     'composants.version2': 'Built on 26 August 2026 · 104c944',
     'composants.version3': 'Version 3.14.0 available',
     'composants.summary13': 'CSS selectors',
+    'composants.h59': 'FamilyAbout',
+    'composants.p28':
+      'The family About screen: install prompt, business intro, sibling grid (<code>showSource={false}</code>), footer. Promoted from the starter kit.',
+    'composants.summary22': 'CSS selectors',
     'composants.h48': 'FamilyApps',
     'composants.p14':
       'The “our other apps” grid, fed by <code>apps-catalog.js</code>, with a maturity badge.',

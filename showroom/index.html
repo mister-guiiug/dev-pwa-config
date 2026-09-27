@@ -1936,6 +1936,77 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
+            <h4 data-i18n="composants.h57">AppShell</h4>
+            <p data-i18n="composants.p26">
+              La coquille assemblée : lien d’évitement, en-tête, contenu borné,
+              barre basse. Le pied de page n’y est PAS — Accueil et À propos
+              seulement.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <a
+              href="#contenu-demo"
+              data-dwc="app-shell-skip"
+              style="
+                position: static;
+                width: auto;
+                height: auto;
+                margin: 0 0 0.5rem;
+                clip: auto;
+              "
+              >Aller au contenu</a
+            >
+            <div data-dwc="app-shell">
+              <header data-dwc="app-header" style="position: relative">
+                <div data-dwc="app-header-row">
+                  <p data-dwc="app-header-title" style="font-size: 1.125rem">
+                    Notes
+                  </p>
+                  <div data-dwc="app-header-actions">
+                    <div
+                      data-dwc="chrome-prefs"
+                      role="group"
+                      aria-label="Thème"
+                    >
+                      <button
+                        type="button"
+                        data-dwc="theme-toggle"
+                        data-theme-state="system"
+                        aria-label="Thème système, passer en clair"
+                      >
+                        <span data-dwc="theme-toggle-icon" aria-hidden="true"
+                          >◐</span
+                        >
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </header>
+              <div
+                data-dwc="page-container"
+                data-width="sm"
+                id="contenu-demo"
+                style="outline: 1px dashed var(--dwc-border)"
+              >
+                <p style="margin: 0">Contenu de la vue.</p>
+              </div>
+            </div>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary20">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="AppShell"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="app-shell-skip"]</code></li>
+                <li><code>[data-dwc="app-shell"]</code></li>
+                <li><code>[data-dwc="chrome-prefs"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
             <h4 data-i18n="composants.h54">PageContainer</h4>
             <p data-i18n="composants.p23">
               Centré, borné à un palier de largeur, zones sûres iOS comprises —
@@ -2206,6 +2277,53 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
+            <h4 data-i18n="composants.h58">ChromePrefs</h4>
+            <p data-i18n="composants.p27">
+              Groupe accessible thème + langue (ou densités) : une seule
+              étiquette pour ce que le hub et plusieurs apps juxtaposent déjà.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="chrome-prefs" role="group" aria-label="Apparence">
+              <button
+                type="button"
+                data-dwc="theme-toggle"
+                data-theme-state="dark"
+                aria-label="Thème sombre, passer en clair"
+              >
+                <span data-dwc="theme-toggle-icon" aria-hidden="true">☾</span>
+              </button>
+              <button
+                type="button"
+                data-dwc="button"
+                data-variant="ghost"
+                data-size="sm"
+              >
+                FR
+              </button>
+              <button
+                type="button"
+                data-dwc="button"
+                data-variant="outline"
+                data-size="sm"
+              >
+                EN
+              </button>
+            </div>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary21">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="ChromePrefs"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="chrome-prefs"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
             <h4 data-i18n="composants.h47">AppFooter</h4>
             <p data-i18n="composants.p13">
               Lien code source + lien sponsor, ouverture sécurisée.
@@ -2267,6 +2385,39 @@
                 <li><code>[data-dwc="app-footer"]</code></li>
                 <li><code>[data-dwc="footer-source"]</code></li>
                 <li><code>[data-dwc="footer-sponsor"]</code></li>
+              </ul>
+            </div>
+          </details>
+        </article>
+
+        <article class="sr-demo">
+          <div class="sr-demo-head">
+            <h4 data-i18n="composants.h59">FamilyAbout</h4>
+            <p data-i18n="composants.p28">
+              L’écran À propos famille : installation, intro métier, grille des
+              sœurs (<code>showSource={false}</code>), pied de page. Promu du
+              squelette.
+            </p>
+          </div>
+          <div class="sr-demo-stage">
+            <div data-dwc="family-about">
+              <p style="margin: 0 0 0.75rem; color: var(--dwc-text-soft)">
+                Intro métier (carte titre) — puis la grille, puis le pied.
+              </p>
+              <div data-dwc="family-apps">
+                <h3 data-dwc="family-apps-title">Nos autres apps</h3>
+              </div>
+              <footer data-dwc="app-footer">
+                <a href="#composants" data-dwc="footer-source">Code source</a>
+              </footer>
+            </div>
+          </div>
+          <details>
+            <summary data-i18n="composants.summary22">Sélecteurs CSS</summary>
+            <div>
+              <div data-snippet="FamilyAbout"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="family-about"]</code></li>
               </ul>
             </div>
           </details>
@@ -2422,7 +2573,7 @@
         <h2 data-i18n="hooks.h21" id="hooks-title">Hooks et utilitaires</h2>
         <p data-i18n="hooks.p1">
           Neuf exports du barrel, soit près de la moitié de la surface React du
-          paquet — et aucun n’apparaissait ici jusqu’à présent. Ils n’ont pas de
+          paquet - et aucun n’apparaissait ici jusqu’à présent. Ils n’ont pas de
           démo : un hook ne se regarde pas. Ils ont une signature, une phrase,
           et le piège qui va avec.
         </p>
@@ -2435,7 +2586,7 @@
         </div>
         <p class="sr-note" data-i18n="hooks.p2">
           <code>useTheme</code> mérite une mention à part : c’est le contrat que
-          reproduit le sélecteur en haut de cette page —
+          reproduit le sélecteur en haut de cette page -
           <code>light | dark | system</code> persisté sous
           <code>dwc_theme</code>, attribut <code>data-theme</code> posé sur
           <code>&lt;html&gt;</code>.

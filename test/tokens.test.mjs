@@ -89,7 +89,10 @@ test('les deux écritures du thème sombre déclarent exactement la même chose'
 
 test('le thème sombre redéfinit toutes les couleurs du thème clair', () => {
   const colorish = Object.keys(LIGHT).filter(
-    name => name !== '--dwc-radius' && name !== '--dwc-shadow'
+    name =>
+      name !== '--dwc-radius' &&
+      name !== '--dwc-shadow' &&
+      name !== '--dwc-header-row-height'
   );
   const missing = colorish.filter(name => !(name in DARK));
   assert.deepEqual(

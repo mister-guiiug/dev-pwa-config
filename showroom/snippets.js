@@ -201,6 +201,36 @@ import { Link } from 'react-router-dom';
   <p>Vos données restent sur cet appareil.</p>
 </AppHeader>`,
 
+  AppShell: `import { AppShell } from '@mister-guiiug/dev-pwa-config/react';
+import { Link } from 'react-router-dom';
+
+{/* Le pied de page N'EST PAS ici — Accueil et À propos seulement. */}
+<AppShell
+  title={titles[pathname]}
+  navItems={nav}
+  linkComponent={Link}
+  hrefProp="to"
+  beforeMain={<ConnectionBanner />}
+  afterMain={<ConsentBanner … />}
+>
+  <Routes>…</Routes>
+</AppShell>`,
+
+  ChromePrefs: `import { ChromePrefs } from '@mister-guiiug/dev-pwa-config/react';
+
+{/* Thème + langue dans un seul groupe accessible. */}
+<ChromePrefs label={t('settings.appearance')}>
+  <SegmentedControl value={locale} onChange={setLocale} … />
+</ChromePrefs>`,
+
+  FamilyAbout: `import { FamilyAbout } from '@mister-guiiug/dev-pwa-config/react';
+
+<FamilyAbout currentAppId={APP_ID} repoUrl={REPO_URL} issues>
+  <Card>
+    <CardHeader title={t('about.title')} subtitle={t('app.tagline')} />
+  </Card>
+</FamilyAbout>`,
+
   PageContainer: `import { PageContainer } from '@mister-guiiug/dev-pwa-config/react';
 
 {/* Centré, borné à un palier, zones sûres iOS comprises — celle du bas

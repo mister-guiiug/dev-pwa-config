@@ -224,7 +224,7 @@ const sansCommentaires = {
  */
 const LIENS = {
   /* Un élément JSX, pas un import : le socle, ou la paire écrite à la main. */
-  socle: /<(?:AppFooter|FamilyApps)\b/,
+  socle: /<(?:AppFooter|FamilyApps|FamilyAbout)\b/,
   soutien: /buymeacoffee\.com|SPONSOR_URL|useSponsorUrl|sponsorUrl/,
   depot: /github\.com\/[\w-]+\/[\w-]+|REPO_URL|repoUrl\(/,
   coquille: /<Outlet\b|<Routes\b|createBrowserRouter|createHashRouter/,
@@ -394,7 +394,10 @@ export function liensFamille(source) {
   const porte = f => {
     const text = horsRoutes(f.text);
     if (LIENS.socle.test(text))
-      return routeur(f) || sansCondition(text, /<(?:AppFooter|FamilyApps)\b/g);
+      return (
+        routeur(f) ||
+        sansCondition(text, /<(?:AppFooter|FamilyApps|FamilyAbout)\b/g)
+      );
     return LIENS.soutien.test(text) && LIENS.depot.test(text);
   };
   if (porteurs.some(f => estCoquille(f) && porte(f)))
@@ -1262,7 +1265,7 @@ export function reglesSource(ctx, api) {
   // nulle part ailleurs. Le geste est le même pour les quatre écarts.
   const liens = liensFamille(source);
   const gesteLiens =
-    '<AppFooter repoUrl={REPO_URL} issues /> sur l’accueil ET À propos / Réglages — deux écrans, nulle part ailleurs, jamais dans la coquille';
+    '<AppFooter repoUrl={REPO_URL} issues /> — ou <FamilyAbout currentAppId={…} /> — sur l’accueil ET À propos / Réglages — deux écrans, nulle part ailleurs, jamais dans la coquille';
   if (liens.verdict === 'absent') {
     dette(
       'liens-famille',
@@ -1286,6 +1289,23 @@ export function reglesSource(ctx, api) {
       'liens-famille',
       `code source + soutien sur ${liens.ecrans.length} écrans (${liens.ecrans.map(rel => basename(rel)).join(', ')}) : l’accueil et À propos / Réglages, nulle part ailleurs`,
       gesteLiens
+    );
+  }
+
+  // Lien d'évitement : premier élément focalisable avant la navigation.
+  // `AppShell` le pose ; une coquille maison qui l'oublie force un parcours
+  // clavier de toute la barre avant le contenu.
+  if (
+    /<(?:AppHeader|BottomNav)\b/.test(srcText) &&
+    !/<(?:AppShell)\b/.test(srcText) &&
+    !/data-dwc=["']app-shell-skip["']|#contenu|sr-only[^"'`\n]*focus:not-sr-only|Aller au contenu|Skip to content/.test(
+      srcText
+    )
+  ) {
+    info(
+      'skip-link',
+      'en-tête ou barre basse sans lien d’évitement',
+      '<AppShell> (le pose) ou <a href="#contenu" className="sr-only focus:not-sr-only">'
     );
   }
 
@@ -1668,6 +1688,7 @@ export const CATALOGUE = [
   { id: 'env-example', famille: 'source', niveau: 'dette' },
   { id: 'env-example-incomplet', famille: 'source', niveau: 'dette' },
   { id: 'liens-famille', famille: 'source', niveau: 'dette' },
+  { id: 'skip-link', famille: 'source', niveau: 'info' },
   { id: 'issues-desactivees', famille: 'source', niveau: 'défaut' },
   { id: 'locale-figee', famille: 'source', niveau: 'info' },
   { id: 'console', famille: 'source', niveau: 'info' },

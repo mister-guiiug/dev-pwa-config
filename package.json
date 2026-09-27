@@ -301,6 +301,18 @@
       "types": "./react/app-header.d.ts",
       "default": "./react/app-header.js"
     },
+    "./react/app-shell": {
+      "types": "./react/app-shell.d.ts",
+      "default": "./react/app-shell.js"
+    },
+    "./react/family-about": {
+      "types": "./react/family-about.d.ts",
+      "default": "./react/family-about.js"
+    },
+    "./react/chrome-prefs": {
+      "types": "./react/chrome-prefs.d.ts",
+      "default": "./react/chrome-prefs.js"
+    },
     "./react/page-container": {
       "types": "./react/page-container.d.ts",
       "default": "./react/page-container.js"

@@ -27,6 +27,7 @@ const CONTRACT = [
   '--dwc-border',
   '--dwc-border-strong',
   '--dwc-danger',
+  '--dwc-header-row-height',
   '--dwc-info',
   '--dwc-primary',
   '--dwc-primary-contrast',
@@ -512,6 +513,14 @@ const SANS_REGLE = new Map([
     'un <span> dans le <summary> d’un groupe : il hérite, exprès — c’est le <summary> qui porte la mise en page, et le compte à côté a sa règle',
   ],
   ['sparkline-last', 'un <circle> SVG, peint par son attribut fill'],
+  [
+    'app-shell',
+    'coquille : ses enfants (header, page-container, bottom-nav, skip) portent les règles',
+  ],
+  [
+    'family-about',
+    'composition : install, family-apps et app-footer portent les règles',
+  ],
 ]);
 
 function marqueursEmis() {

@@ -123,6 +123,7 @@ const labels = {
     current: 'Página actual',
     more: 'Más',
     loading: 'Cargando la página…',
+    skip: 'Ir al contenido',
   },
   consent: {
     title: 'Medición de audiencia',

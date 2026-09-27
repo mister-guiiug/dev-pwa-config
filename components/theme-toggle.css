@@ -43,4 +43,12 @@
   [data-dwc='theme-toggle-label'] {
     font-size: var(--text-fluid-sm, 0.9rem);
   }
+
+  /* Groupe thème + langue (+ densités) : une seule étiquette accessible. */
+  [data-dwc='chrome-prefs'] {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
 }

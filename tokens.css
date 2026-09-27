@@ -60,6 +60,7 @@
   /* Forme */
   --dwc-radius: 0.75rem;
   --dwc-shadow: 0 1px 2px rgb(16 22 32 / 6%), 0 4px 12px rgb(16 22 32 / 6%);
+  --dwc-header-row-height: 3.25rem;
 
   color-scheme: light dark;
 }

@@ -146,6 +146,8 @@ const labels = {
     // Ce que la zone vive de `BottomNav` annonce pendant qu'un morceau de
     // route arrive — hors des liens, pour ne pas changer leur nom accessible.
     loading: 'Chargement de la page…',
+    // Lien d'évitement d'`AppShell` : premier élément focalisable.
+    skip: 'Aller au contenu',
   },
   // Le bandeau de consentement. « Rien n’est envoyé tant que » n’est pas une
   // formule de style : `analytics.js` n’injecte pas le tag avant l’accord, et
