@@ -136,8 +136,8 @@ test('aucun HTML ne passe, aucun lien dangereux non plus', () => {
       'Du `<b>code</b>` et une [page sœur](autre-page.html).',
     ].join('\n')
   );
-  assert.doesNotMatch(html, /<script>/);
-  assert.match(html, /&lt;script&gt;/);
+  assert.doesNotMatch(html, /<script>/i);
+  assert.match(html, /&lt;script&gt;/i);
   assert.doesNotMatch(html, /javascript:/, 'le lien piégé perd son adresse');
   assert.match(html, /Un piège et un/);
   assert.match(
