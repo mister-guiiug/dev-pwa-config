@@ -795,7 +795,7 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
     .filter(b =>
       /^(?:icon|shortcut icon|apple-touch-icon)$/i.test(attribut(b, 'rel'))
     )
-    .map(b => b.replace(/\s*\/?>$/, ' />'));
+    .map(b => `${b.replace(/\/?>$/, '').trimEnd()} />`);
   const iconeEntete =
     fiche?.iconUrl || icones.map(b => attribut(b, 'href')).find(Boolean) || '';
   const autres = pages.filter(p => p.slug !== page.slug);
@@ -1179,15 +1179,21 @@ export function pwaSeoPlugin(opts = {}) {
       const { homeUrl } = resolveSeoPublicUrls(urlOpts);
       for (const page of pages) {
         const cible = join(dist, `${page.slug}.html`);
-        if (existsSync(cible))
-          throw new Error(
-            `[pwa-seo] ${page.slug}.html existe déjà dans ${dist} : choisir un autre slug.`
+        // Écriture exclusive (`wx`) : refuse si le fichier existe déjà, sans
+        // course entre existsSync et writeFileSync (CodeQL js/file-system-race).
+        try {
+          writeFileSync(
+            cible,
+            contentPageHtml({ page, pages, indexHtml, homeUrl }),
+            { encoding: 'utf8', flag: 'wx' }
           );
-        writeFileSync(
-          cible,
-          contentPageHtml({ page, pages, indexHtml, homeUrl }),
-          'utf8'
-        );
+        } catch (err) {
+          if (err && typeof err === 'object' && 'code' in err && err.code === 'EEXIST')
+            throw new Error(
+              `[pwa-seo] ${page.slug}.html existe déjà dans ${dist} : choisir un autre slug.`
+            );
+          throw err;
+        }
       }
     },
     async closeBundle() {
