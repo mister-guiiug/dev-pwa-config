@@ -26,7 +26,6 @@ globalThis.SHOWROOM_I18N = {
     'ui.scheme.dark': 'Dark',
     'ui.scheme.system': 'System',
     'ui.lang.label': 'Language',
-    'ui.settings': 'Settings',
     'ui.rail': 'On this page',
 
     /* ── Intro ────────────────────────────────────────────────────────── */

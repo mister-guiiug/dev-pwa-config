@@ -178,8 +178,7 @@ pre code {
   background: color-mix(in srgb, var(--ds-surface) 88%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--ds-border);
-  padding: 0.6rem var(--spacing-fluid-md);
-  padding-top: calc(0.6rem + max(env(safe-area-inset-top), 0px));
+  padding-top: max(env(safe-area-inset-top), 0px);
 }
 
 .sr-topbar-inner {
@@ -188,7 +187,8 @@ pre code {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.75rem 1rem;
+  padding: 0.45rem var(--spacing-fluid-md) 0.35rem;
 }
 
 .sr-brand {
@@ -199,46 +199,87 @@ pre code {
   min-width: 0;
 }
 
-/* ── Réglages : repliés sous `sm`, toujours visibles au-delà ─────────────── *
- * Mesuré avant : la barre occupait 243 px sur un écran de 812, soit 30 % du
- * premier écran avant le moindre contenu.
- * ────────────────────────────────────────────────────────────────────────── */
-.sr-settings-toggle {
-  font: inherit;
-  font-size: var(--text-fluid-xs);
-  min-height: 2.75rem;
-  padding: 0.45rem 0.9rem;
-  border: 1px solid var(--ds-border);
-  border-radius: calc(var(--ds-radius) * 0.7);
-  background: var(--ds-surface);
-  color: var(--ds-text);
-  cursor: pointer;
-}
-
-.sr-settings-toggle[aria-expanded='true'] {
-  border-color: var(--ds-primary);
-  background: var(--ds-primary-soft);
-}
-
-.sr-settings {
-  display: none;
-  padding-top: 0.6rem;
-}
-
-.sr-settings[data-open] {
+/* Marque à gauche, commandes groupées à droite. Sous `sm`, le groupe passe
+   à la ligne : une seconde rangée pleine, pas un sélecteur seul au milieu
+   d'une ligne vide. */
+.sr-topbar-tools {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 
-@media (min-width: 40rem) {
-  /* Au-delà de `sm`, la place ne manque pas : les réglages reprennent leur
-     ligne et le bouton n'a plus de raison d'exister. */
-  .sr-settings-toggle {
+.sr-theme-pick {
+  margin: 0;
+}
+
+.sr-control.sr-theme-pick select {
+  max-width: 20rem;
+}
+
+@media (max-width: 40rem) {
+  .sr-brand span {
     display: none;
   }
 
-  .sr-settings {
-    display: flex;
-    padding-top: 0;
+  .sr-topbar-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.5rem;
+  }
+
+  /* Les deux commandes rejoignent la grille du bandeau : le titre et les
+     icônes sur la première ligne, le sélecteur en pleine largeur dessous. */
+  .sr-topbar-tools {
+    display: contents;
+  }
+
+  .sr-brand {
+    grid-column: 1;
+    grid-row: 1;
+    margin-right: 0;
+  }
+
+  .sr-topbar-switches {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .sr-theme-pick {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .sr-control.sr-theme-pick select {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Sous ~376 px le titre et les cinq icônes ne tiennent plus côte à côte :
+   trois lignes pleines, sans texte écrasé. */
+@media (max-width: 23.5rem) {
+  .sr-brand,
+  .sr-theme-pick,
+  .sr-topbar-switches {
+    grid-column: 1 / -1;
+  }
+
+  .sr-brand {
+    grid-row: 1;
+  }
+
+  .sr-theme-pick {
+    grid-row: 2;
+  }
+
+  .sr-topbar-switches {
+    grid-row: 3;
+    justify-self: start;
   }
 }
 
@@ -466,7 +507,7 @@ pre code {
    en travers quand les douze sections ne tiennent pas. */
 .sr-rail {
   max-width: 68rem;
-  margin: 0 auto;
+  margin: 0.15rem auto 0;
   overflow-x: auto;
   border-top: 1px solid var(--ds-border);
   scrollbar-width: none;
@@ -476,7 +517,7 @@ pre code {
   flex-wrap: nowrap;
   width: max-content;
   margin: 0;
-  padding: 0.35rem var(--spacing-fluid-md) 0.45rem;
+  padding: 0.3rem var(--spacing-fluid-md);
 }
 
 .sr-subtitle {
@@ -2034,7 +2075,6 @@ span[data-dwc='family-app-icon'] {
   /* Ce qui ne sert qu'à piloter la page. */
   .sr-skip,
   .sr-topbar-inner,
-  .sr-settings-toggle,
   .sr-copy,
   .sr-pg-controls,
   .sr-cat-controls,

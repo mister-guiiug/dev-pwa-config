@@ -395,97 +395,99 @@
 
         <!-- Même dessin que `SunIcon`, `MoonIcon` et `SystemIcon` du paquet :
              le trait porte l'état, le nom accessible reste le mot. -->
-        <div class="sr-topbar-switches">
-          <fieldset class="sr-control">
-            <legend class="sr-visually-hidden" data-i18n="ui.scheme.legend">
-              Schéma de couleurs
-            </legend>
-            <div class="sr-segmented">
-              <input
-                type="radio"
-                name="scheme"
-                id="scheme-light"
-                value="light"
-              />
-              <label for="scheme-light">
-                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="4" />
-                  <path
-                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-                  />
-                </svg>
-                <span class="sr-visually-hidden" data-i18n="ui.scheme.light"
-                  >Clair</span
-                >
-              </label>
-              <input type="radio" name="scheme" id="scheme-dark" value="dark" />
-              <label for="scheme-dark">
-                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-                <span class="sr-visually-hidden" data-i18n="ui.scheme.dark"
-                  >Sombre</span
-                >
-              </label>
-              <input
-                type="radio"
-                name="scheme"
-                id="scheme-system"
-                value="system"
-                checked
-              />
-              <label for="scheme-system">
-                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="2" y="4" width="20" height="13" rx="2" />
-                  <path d="M8 21h8M12 17v4" />
-                </svg>
-                <span class="sr-visually-hidden" data-i18n="ui.scheme.system"
-                  >Système</span
-                >
-              </label>
-            </div>
-          </fieldset>
+        <div class="sr-topbar-tools">
+          <p class="sr-control sr-theme-pick">
+            <label
+              class="sr-visually-hidden"
+              for="theme-app"
+              data-i18n="topbar.themeLabel"
+              >Thème</label
+            >
+            <select id="theme-app">
+              <option value="generic">Générique — preset seul</option>
+            </select>
+          </p>
+          <div class="sr-topbar-switches">
+            <fieldset class="sr-control">
+              <legend class="sr-visually-hidden" data-i18n="ui.scheme.legend">
+                Schéma de couleurs
+              </legend>
+              <div class="sr-segmented">
+                <input
+                  type="radio"
+                  name="scheme"
+                  id="scheme-light"
+                  value="light"
+                />
+                <label for="scheme-light">
+                  <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4" />
+                    <path
+                      d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+                    />
+                  </svg>
+                  <span class="sr-visually-hidden" data-i18n="ui.scheme.light"
+                    >Clair</span
+                  >
+                </label>
+                <input
+                  type="radio"
+                  name="scheme"
+                  id="scheme-dark"
+                  value="dark"
+                />
+                <label for="scheme-dark">
+                  <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                  </svg>
+                  <span class="sr-visually-hidden" data-i18n="ui.scheme.dark"
+                    >Sombre</span
+                  >
+                </label>
+                <input
+                  type="radio"
+                  name="scheme"
+                  id="scheme-system"
+                  value="system"
+                  checked
+                />
+                <label for="scheme-system">
+                  <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="13" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
+                  </svg>
+                  <span class="sr-visually-hidden" data-i18n="ui.scheme.system"
+                    >Système</span
+                  >
+                </label>
+              </div>
+            </fieldset>
 
-          <fieldset class="sr-control">
-            <legend class="sr-visually-hidden" data-i18n="ui.lang.label">
-              Langue
-            </legend>
-            <div class="sr-segmented">
-              <input type="radio" name="lang" id="lang-fr" value="fr" checked />
-              <label for="lang-fr" title="Français">
-                <span class="sr-ico sr-ico-code" aria-hidden="true">FR</span>
-                <span class="sr-visually-hidden">Français</span>
-              </label>
-              <input type="radio" name="lang" id="lang-en" value="en" />
-              <label for="lang-en" title="English">
-                <span class="sr-ico sr-ico-code" aria-hidden="true">EN</span>
-                <span class="sr-visually-hidden">English</span>
-              </label>
-            </div>
-          </fieldset>
+            <fieldset class="sr-control">
+              <legend class="sr-visually-hidden" data-i18n="ui.lang.label">
+                Langue
+              </legend>
+              <div class="sr-segmented">
+                <input
+                  type="radio"
+                  name="lang"
+                  id="lang-fr"
+                  value="fr"
+                  checked
+                />
+                <label for="lang-fr" title="Français">
+                  <span class="sr-ico sr-ico-code" aria-hidden="true">FR</span>
+                  <span class="sr-visually-hidden">Français</span>
+                </label>
+                <input type="radio" name="lang" id="lang-en" value="en" />
+                <label for="lang-en" title="English">
+                  <span class="sr-ico sr-ico-code" aria-hidden="true">EN</span>
+                  <span class="sr-visually-hidden">English</span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
         </div>
-
-        <!-- Le sélecteur d'application est le seul réglage encore long : sous
-             `sm` il passe derrière ce bouton. -->
-        <button
-          type="button"
-          id="settings-toggle"
-          class="sr-settings-toggle"
-          aria-expanded="false"
-          aria-controls="settings"
-          data-i18n="ui.settings"
-        >
-          Réglages
-        </button>
-      </div>
-
-      <div class="sr-topbar-inner sr-settings" id="settings">
-        <p class="sr-control">
-          <label for="theme-app" data-i18n="topbar.themeLabel">Thème</label>
-          <select id="theme-app">
-            <option value="generic">Générique — preset seul</option>
-          </select>
-        </p>
       </div>
 
       <nav class="sr-rail" aria-labelledby="rail-label">
