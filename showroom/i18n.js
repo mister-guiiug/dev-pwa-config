@@ -20,6 +20,16 @@ globalThis.SHOWROOM_I18N = {
   en: {
     /* ── Chrome ───────────────────────────────────────────────────────── */
     'topbar.themeLabel': 'Theme',
+    'ui.sites': 'Family pages',
+    'ui.site.catalogue': 'Catalogue',
+    'ui.site.showroom': 'Showroom',
+    'ui.site.parc': 'Estate',
+    'ui.cmd.label': 'Search this page',
+    'ui.cmd.placeholder': 'Search…',
+    'ui.cmd.empty': 'No match',
+    'ui.cmd.section': 'Section',
+    'ui.cmd.component': 'Component',
+    'ui.cmd.app': 'App',
     'ui.skip': 'Skip to content',
     'ui.scheme.legend': 'Colour scheme',
     'ui.scheme.light': 'Light',

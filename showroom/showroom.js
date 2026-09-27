@@ -60,6 +60,8 @@
       var name = label.querySelector('.sr-visually-hidden');
       if (name) label.title = name.textContent.trim();
     });
+    var cmdInput = document.getElementById('sr-cmd');
+    if (cmdInput) cmdInput.placeholder = t('ui.cmd.placeholder', 'Rechercher…');
   }
 
   // Rôle sémantique → variable CSS + libellé. `on` désigne la couleur sur
@@ -3914,4 +3916,169 @@
   applyLang(initialLang);
   renderGenerated();
   syncUrl();
+  setupCommand();
+
+  /* Recherche d'en-tête. Ctrl+K (⌘K) et « / » y amènent le curseur, comme
+     sur le catalogue. Les résultats sont les sections, les composants et
+     les applications déjà rendus sur la page. */
+  function setupCommand() {
+    var input = document.getElementById('sr-cmd');
+    var list = document.getElementById('sr-cmd-list');
+    if (!input || !list) return;
+    var hits = [];
+    var active = -1;
+
+    function kinds() {
+      return {
+        section: t('ui.cmd.section', 'Section'),
+        component: t('ui.cmd.component', 'Composant'),
+        app: t('ui.cmd.app', 'Application'),
+      };
+    }
+
+    function index() {
+      var out = [];
+      document.querySelectorAll('.sr-toc a').forEach(function (a) {
+        var label = (a.textContent || '').replace(/\s+/g, ' ').trim();
+        var href = a.getAttribute('href');
+        if (label && href)
+          out.push({ kind: 'section', label: label, href: href });
+      });
+      catalogueItems().forEach(function (item) {
+        out.push({ kind: 'component', label: item.id, href: item.href });
+      });
+      APPS.forEach(function (item) {
+        out.push({
+          kind: 'app',
+          label: item.name || item.id,
+          href: '#app-' + item.id,
+        });
+      });
+      return out;
+    }
+
+    function close() {
+      hits = [];
+      active = -1;
+      list.hidden = true;
+      list.textContent = '';
+      input.setAttribute('aria-expanded', 'false');
+      input.removeAttribute('aria-activedescendant');
+    }
+
+    function render() {
+      var labels = kinds();
+      list.textContent = '';
+      if (!hits.length) {
+        var empty = document.createElement('li');
+        empty.className = 'sr-cmd-empty';
+        empty.setAttribute('role', 'presentation');
+        empty.textContent = t('ui.cmd.empty', 'Aucun résultat');
+        list.appendChild(empty);
+        list.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        input.removeAttribute('aria-activedescendant');
+        return;
+      }
+      hits.forEach(function (hit, i) {
+        var li = document.createElement('li');
+        li.id = 'sr-cmd-hit-' + i;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', String(i === active));
+        var kind = document.createElement('span');
+        kind.className = 'sr-cmd-kind';
+        kind.textContent = labels[hit.kind] || hit.kind;
+        var name = document.createElement('span');
+        name.textContent = hit.label;
+        li.appendChild(kind);
+        li.appendChild(name);
+        li.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          go(hit);
+        });
+        list.appendChild(li);
+      });
+      list.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      if (active >= 0)
+        input.setAttribute('aria-activedescendant', 'sr-cmd-hit-' + active);
+      else input.removeAttribute('aria-activedescendant');
+    }
+
+    function search(q) {
+      var term = q.trim().toLowerCase();
+      if (!term) {
+        close();
+        return;
+      }
+      hits = index()
+        .filter(function (item) {
+          return item.label.toLowerCase().indexOf(term) !== -1;
+        })
+        .slice(0, 8);
+      active = hits.length ? 0 : -1;
+      render();
+    }
+
+    function go(hit) {
+      var href = hit.href;
+      close();
+      input.value = '';
+      if (href.charAt(0) === '#') {
+        var target = document.getElementById(href.slice(1));
+        if (target) {
+          target.scrollIntoView({ block: 'start' });
+          if (history.replaceState) history.replaceState(null, '', href);
+        } else {
+          location.hash = href;
+        }
+      } else {
+        location.href = href;
+      }
+    }
+
+    input.addEventListener('input', function () {
+      search(input.value);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' && hits.length) {
+        e.preventDefault();
+        active = Math.min(hits.length - 1, active + 1);
+        render();
+      } else if (e.key === 'ArrowUp' && hits.length) {
+        e.preventDefault();
+        active = Math.max(0, active - 1);
+        render();
+      } else if (e.key === 'Enter' && hits[active]) {
+        e.preventDefault();
+        go(hits[active]);
+      } else if (e.key === 'Escape') {
+        close();
+        input.blur();
+      }
+    });
+    input.addEventListener('blur', function () {
+      setTimeout(close, 120);
+    });
+    document.addEventListener('keydown', function (e) {
+      var mod = e.ctrlKey || e.metaKey;
+      if (mod && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        input.focus();
+        input.select();
+        return;
+      }
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+      var tag = (e.target && e.target.tagName) || '';
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        (e.target && e.target.isContentEditable)
+      )
+        return;
+      e.preventDefault();
+      input.focus();
+      input.select();
+    });
+  }
 })();

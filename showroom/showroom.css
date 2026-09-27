@@ -222,6 +222,145 @@ pre code {
   max-width: 20rem;
 }
 
+.sr-sites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sr-sites a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.1rem 0.65rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  font-size: var(--text-fluid-xs);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sr-sites a[aria-current='page'] {
+  border-color: var(--ds-primary);
+  background: color-mix(in srgb, var(--ds-primary) 12%, var(--ds-surface));
+  color: var(--ds-primary);
+}
+
+.sr-cmd {
+  position: relative;
+  display: block;
+  flex: 1 1 12rem;
+  max-width: 22rem;
+  min-width: 10rem;
+}
+
+.sr-cmd input {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.35rem 4.6rem 0.35rem 0.75rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--text-fluid-sm, 0.9rem);
+}
+
+.sr-cmd input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.sr-cmd:focus-within input {
+  padding-right: 0.75rem;
+  border-color: var(--ds-primary);
+  outline: none;
+}
+
+.sr-cmd-kbd {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  gap: 0.18rem;
+  margin: 0;
+  pointer-events: none;
+}
+
+.sr-cmd-kbd span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid var(--ds-border);
+  border-bottom-width: 2px;
+  border-radius: 0.3rem;
+  background: var(--ds-bg);
+  color: var(--ds-text-soft);
+  font-family: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.sr-cmd-kbd [data-mod='meta'] {
+  display: none;
+}
+
+html[data-mod='meta'] .sr-cmd-kbd [data-mod='ctrl'] {
+  display: none;
+}
+
+html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
+  display: inline-flex;
+}
+
+.sr-cmd:focus-within .sr-cmd-kbd {
+  opacity: 0;
+}
+
+.sr-cmd-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 0.7rem;
+}
+
+.sr-cmd-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  color: var(--ds-text);
+  cursor: pointer;
+}
+
+.sr-cmd-list li[aria-selected='true'] {
+  background: color-mix(in srgb, var(--ds-primary) 12%, var(--ds-surface));
+}
+
+.sr-cmd-kind {
+  flex: 0 0 auto;
+  color: var(--ds-text-soft);
+  font-size: var(--text-fluid-xs);
+}
+
+.sr-cmd-empty {
+  color: var(--ds-text-soft);
+  cursor: default;
+}
+
 @media (max-width: 40rem) {
   .sr-topbar-inner {
     display: grid;
@@ -230,8 +369,8 @@ pre code {
     column-gap: 0.5rem;
   }
 
-  /* Les deux commandes rejoignent la grille du bandeau : le titre et les
-     icônes sur la première ligne, le sélecteur en pleine largeur dessous. */
+  /* Le titre et les icônes restent sur la première ligne. Les liens, la
+     recherche, puis le sélecteur de thème prennent chacun une ligne pleine. */
   .sr-topbar-tools {
     display: contents;
   }
@@ -247,9 +386,24 @@ pre code {
     grid-row: 1;
   }
 
+  .sr-sites,
+  .sr-cmd {
+    grid-column: 1 / -1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .sr-sites {
+    grid-row: 2;
+  }
+
+  .sr-cmd {
+    grid-row: 3;
+  }
+
   .sr-theme-pick {
     grid-column: 1 / -1;
-    grid-row: 2;
+    grid-row: 4;
     min-width: 0;
   }
 
@@ -260,7 +414,7 @@ pre code {
 }
 
 /* Sous ~376 px le titre et les cinq icônes ne tiennent plus côte à côte :
-   trois lignes pleines, sans texte écrasé. */
+   chaque commande prend une ligne pleine, sans texte écrasé. */
 @media (max-width: 23.5rem) {
   .sr-brand,
   .sr-theme-pick,
@@ -272,12 +426,20 @@ pre code {
     grid-row: 1;
   }
 
-  .sr-theme-pick {
+  .sr-sites {
     grid-row: 2;
   }
 
-  .sr-topbar-switches {
+  .sr-cmd {
     grid-row: 3;
+  }
+
+  .sr-theme-pick {
+    grid-row: 4;
+  }
+
+  .sr-topbar-switches {
+    grid-row: 5;
     justify-self: start;
   }
 }

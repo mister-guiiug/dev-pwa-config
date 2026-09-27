@@ -25,6 +25,10 @@
       // L'URL prime sur le stockage : un lien partagé doit montrer ce qu'il
       // promet, même si le destinataire avait déjà visité la page.
       (function () {
+        var mac =
+          /Mac|iPhone|iPad/.test(navigator.platform || '') ||
+          /Mac/.test(navigator.userAgent || '');
+        document.documentElement.dataset.mod = mac ? 'meta' : 'ctrl';
         try {
           var root = document.documentElement;
           var params = new URLSearchParams(location.search);
@@ -394,6 +398,55 @@
           </h1>
           <span>@mister-guiiug/dev-pwa-config</span>
         </div>
+
+        <nav class="sr-sites" aria-labelledby="sr-sites-label">
+          <span
+            id="sr-sites-label"
+            class="sr-visually-hidden"
+            data-i18n="ui.sites"
+            >Pages du parc</span
+          >
+          <a
+            href="https://mister-guiiug.github.io/"
+            data-i18n="ui.site.catalogue"
+            >Catalogue</a
+          >
+          <a
+            href="https://mister-guiiug.github.io/dev-pwa-config/"
+            aria-current="page"
+            data-i18n="ui.site.showroom"
+            >Showroom</a
+          >
+          <a
+            href="https://mister-guiiug.github.io/parc-dashboard/"
+            data-i18n="ui.site.parc"
+            >Parc</a
+          >
+        </nav>
+        <label class="sr-cmd">
+          <span class="sr-visually-hidden" data-i18n="ui.cmd.label"
+            >Rechercher sur cette page</span
+          >
+          <input
+            type="search"
+            id="sr-cmd"
+            role="combobox"
+            aria-expanded="false"
+            aria-controls="sr-cmd-list"
+            aria-autocomplete="list"
+            aria-keyshortcuts="Control+K Meta+K"
+            placeholder="Rechercher…"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="search"
+          />
+          <kbd class="sr-cmd-kbd" aria-hidden="true">
+            <span data-mod="ctrl">Ctrl</span>
+            <span data-mod="meta">⌘</span>
+            <span>K</span>
+          </kbd>
+          <ul class="sr-cmd-list" id="sr-cmd-list" role="listbox" hidden></ul>
+        </label>
 
         <!-- Même dessin que `SunIcon`, `MoonIcon` et `SystemIcon` du paquet :
              le trait porte l'état, le nom accessible reste le mot. -->
