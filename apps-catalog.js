@@ -971,12 +971,12 @@ export const FAMILY_APPS = [
   app(
     'mister-miss-koh',
     'Mister & Miss Koh',
-    "Suivi d'une saison d'aventure : candidats, épisodes, épreuves, conseils et votes. Non officiel.",
+    'Suivi de Koh-Lanta : candidats, épisodes, épreuves, conseils et votes. Indépendant, non officiel.',
     'beta',
     // `loisirs`, comme `mister-family-map` : accompagner une émission n'est ni
-    // un jeu ni un outil. « Non officiel » fait partie de la description, pas
-    // d'une mention légale reléguée ailleurs : l'app n'a aucun lien avec les
-    // ayants droit, et sa donnée vient de Wikipédia, source collaborative.
+    // un jeu ni un outil. La description NOMME Koh-Lanta — c'est ce qu'on
+    // cherche — et garde « non officiel » : l'app n'a aucun lien avec TF1 ni
+    // la production, et sa donnée vient de Wikipédia, source collaborative.
     { category: 'loisirs', backend: 'supabase' }
   ),
   app(
