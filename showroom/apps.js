@@ -901,7 +901,7 @@ globalThis.SHOWROOM_APPS = {
       id: 'mister-miss-koh',
       name: 'Mister & Miss Koh',
       description:
-        "Suivi d'une saison d'aventure : candidats, épisodes, épreuves, conseils et votes. Non officiel.",
+        'Suivi de Koh-Lanta : candidats, épisodes, épreuves, conseils et votes. Indépendant, non officiel.',
       maturity: 'beta',
       category: 'loisirs',
       backend: 'supabase',
