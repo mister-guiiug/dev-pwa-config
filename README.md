@@ -11,9 +11,9 @@ projets PWA de la famille `miss-*` et `mister-*`.
 
 ## Où lire quoi
 
-Le manuel de ce socle ne tenait plus dans une page : 151 sous-chemins, six
-binaires, dix workflows. Il vit dans `docs/`, découpé par sujet — et rien n'y a
-été résumé, seulement déplacé.
+Le manuel de ce socle ne tenait plus dans une page : 167 sous-chemins, huit
+binaires, onze workflows réutilisables. Il vit dans `docs/`, découpé par sujet,
+et rien n'y a été résumé, seulement déplacé.
 
 | Page                                       | Ce qu'on y trouve                                                                                                       |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
@@ -21,7 +21,7 @@ binaires, dix workflows. Il vit dans `docs/`, découpé par sujet — et rien n'
 | [`docs/CONFIGS.md`](docs/CONFIGS.md)       | ESLint, Prettier, TypeScript, Vitest, Playwright, Vite (PWA, CSP, SEO), commitlint, lint-staged, icônes                 |
 | [`docs/INTERFACE.md`](docs/INTERFACE.md)   | Composants React, habillage `components.css`, primitives, catalogue famille, Rive, accessibilité                        |
 | [`docs/DONNEES.md`](docs/DONNEES.md)       | Persistance, magasin versionné, coffre chiffré, Supabase, file hors-ligne, temps réel, carte, auth, PDF/Excel/iCal      |
-| [`docs/BINS.md`](docs/BINS.md)             | `pwa-doctor`, `pwa-bundle-budget`, `pwa-icons`, `pwa-pgtap`, `pwa-screenshots`, `pwa-bindings`, `pwa-typecheck-7`       |
+| [`docs/BINS.md`](docs/BINS.md)             | Binaires `pwa-*` : `doctor`, `bundle-budget`, `icons`, `pgtap`, `screenshots`, `og-image`, `bindings`, `typecheck-7`    |
 | [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md) | Ce qu'a demandé chaque majeure                                                                                          |
 
 Et les dossiers d'analyse, qui ne sont pas des manuels : [`CAMPAGNE.md`](CAMPAGNE.md)
@@ -37,14 +37,14 @@ générateur), [`AMELIORATIONS.md`](AMELIORATIONS.md), [`VALEUR.md`](VALEUR.md)
 Tableau **engendré** depuis `apps-catalog.js` (`npm run sync`) : la colonne
 « Sous-chemins consommés » est un RELEVÉ — les `import` et les `extends` trouvés
 dans le code de chaque dépôt —, pas une intention. Deux choses s'y lisent tout
-de suite : `components.css` est repris par **dix-sept dépôts sur dix-neuf**, et
-vingt et un sous-chemins n'ont qu'un seul adoptant — dont dix pour le seul
-`mister-family-map`.
+de suite : `components.css` est repris par **dix-huit dépôts sur vingt**, et
+vingt et un sous-chemins n'ont qu'un seul adoptant, dont dix pour le seul
+`mister-settle`.
 
 ⚠️ **Ce tableau compte des sous-chemins, pas des composants.** Une app qui
 importe `FamilyApps` depuis le baril `react` n'y fait pas apparaître
-`react/family-apps` : ce sous-chemin semble donc n'avoir qu'un adoptant, alors
-que quinze applications affichent le composant. Pour l'adoption d'un export,
+`react/family-apps` : ce sous-chemin semble donc n'avoir que deux adoptants,
+alors que seize applications importent le composant. Pour l'adoption d'un export,
 c'est le relevé par symbole du
 [showroom](#showroom-du-design-system) qui répond.
 
@@ -86,7 +86,7 @@ Ce qu'il montre, au relevé du 30 août : les deux couches sont adoptées. La
 couche **outillage** l'était déjà (`vitest-base`, l'observabilité, Playwright,
 les greffons Vite) ; la couche **interface** a suivi quand `components.css` —
 son prérequis, longtemps pris par trois apps sur dix-sept — est passé à
-quinze. `ConfirmDialog` et `ErrorBoundary` sont maintenant importés par dix
+quinze. `ConfirmDialog` et `ErrorBoundary` étaient alors importés par dix
 apps, `EmptyState` par sept, `Sheet` par six.
 
 **Sept postes sont passés à zéro** en deux jours : `UpdatePromptBanner` (8
@@ -95,15 +95,17 @@ copies), `links` (7), `applyUpdate` (6), `format` (5), `Toast`, `ThemeToggle`,
 supposait pas un import mais de reprendre un enregistrement de service worker,
 la désinscription de développement que cinq apps avaient écrite, et — pour trois
 d'entre elles — de trancher ce que `registerType: 'autoUpdate'` permet
-réellement. Ce qui reste demande la même chose : `useI18n` (4) un fournisseur et
-des dictionnaires, `useTheme` (3) un état à déplacer.
+réellement. Ce qui restait demandait la même chose : `useI18n` (4) un
+fournisseur et des dictionnaires, `useTheme` (3) un état à déplacer.
 
 **Le chiffre est passé de 71 à 17, et il faut séparer les causes.** En rejouant
 l'ancienne règle sur un état intermédiaire, on obtenait 58 là où la nouvelle
 disait 46 : douze doublons étaient donc **invisibles à l'instrument** — neuf
 besoins qu'il ne savait pas acquitter, trois façades qu'il comptait comme des
 réécritures. Le reste de la baisse est du travail réel. Confondre les deux
-attribuerait à la campagne ce que personne n'a fait (voir `CAMPAGNE.md`).
+attribuerait à la campagne ce que personne n'a fait (voir `CAMPAGNE.md`). Au
+relevé du 07/09 (tableau ci-dessous), il ne reste que trois fichiers recopiés :
+`links` (2) et `Stat` (1).
 
 **Et il SOUS-ESTIME encore la dette.** Il compte les copies d'un catalogue de
 besoins **déjà nommés** : une app qui réécrit quelque chose que le catalogue
@@ -121,7 +123,7 @@ d'importateurs (zéro : un cadavre) et pour chaque groupe sa similarité (1,00 :
 une copie). Le tri qui en est sorti — dix chantiers classés, et ce qu'on ne
 fait pas — est dans `GISEMENTS.md`.
 
-`node scripts/probe-sites.mjs` lit les seize sites PUBLIÉS (manifeste, CSP,
+`node scripts/probe-sites.mjs` lit les sites PUBLIÉS du catalogue (manifeste, CSP,
 Open Graph, repli 404, poids du JS initial) ; `node scripts/dead-exports.mjs`
 relève les exports que personne n'appelle. Ce que ces sondes ont trouvé le
 02/09/2026 — Renovate jamais actif, une app non installable, un relevé
@@ -393,7 +395,7 @@ réellement :
     La grille est **engendrée depuis `apps-catalog.js`** — le fichier qu'importent
     les apps pour s'afficher les unes les autres. Le filtre **Consomme** répond à
     la question qu'un design system doit se poser en premier : qui utilise
-    vraiment quoi ? (`components.css` : quinze dépôts sur dix-sept) ;
+    vraiment quoi ? (`components.css` : dix-huit dépôts sur vingt) ;
 - un **catalogue cherchable** de tout ce que le paquet exporte — composants et
   hooks —, dont `test/showroom-catalogue.test.mjs` vérifie qu'il ne laisse
   échapper aucun export de `react/index.js` ;
@@ -425,7 +427,8 @@ directement dans un navigateur (double-clic), sans serveur.
 
 Le preset n'expose **aucune couleur** : c'est la part variable, propriété de
 chaque app. Le thème « Générique » du showroom est donc volontairement
-monochrome ; les palettes des applications sont relevées dans `showroom/themes.js`.
+monochrome ; les palettes des applications sont relevées dans `themes.js`
+(sous-chemin `./themes`), dont `showroom/themes.js` est un miroir engendré.
 
 > Sans compilateur Tailwind, une page statique ne peut pas interpréter `@theme`
 > ni `@utility` : `showroom/preset.css` rejoue donc le preset en CSS natif.
@@ -440,13 +443,16 @@ Même raison pour le catalogue : chargeable en `file://`, la page ne peut pas
 npm run sync   # scripts/sync-generated.mjs
 ```
 
-`npm run sync` régénère **quatre** dérivés du catalogue : `showroom/apps.js`,
-`showroom/components.css`, le bloc JSON-LD du `<head>` de la page (seize
-`SoftwareApplication`, lisibles sans exécuter le script) et le tableau
-« Projets consommateurs » ci-dessus. `test/apps-catalog.test.mjs` les compare
-tous au catalogue et refuse une copie périmée ; il vérifie aussi que les comptes
-annoncés par la section « Stack » (« 6 apps Supabase », « 3 Firebase »,
-« 5 local-first ») collent toujours au champ `backend`.
+`npm run sync` régénère **tout** ce que le dépôt tient en double :
+`showroom/apps.js` et `showroom/themes.js` (miroirs du catalogue et des
+palettes), la copie `showroom/components.css` et les morceaux publiés
+`components/*.css` (tous deux tirés de `components.css`), le bloc JSON-LD du
+`<head>` de la page (vingt `SoftwareApplication`, lisibles sans exécuter le
+script) et les tableaux « Projets consommateurs » et « Adoption réelle »
+ci-dessus. La CI relance `npm run sync` et refuse le moindre écart ;
+`test/apps-catalog.test.mjs` compare en outre le catalogue à ses dérivés, et
+vérifie que les comptes annoncés par la section « Stack » (« 9 apps » Supabase,
+« 3 apps » Firebase, « 5 apps » local-first) collent toujours au champ `backend`.
 
 Deux relevés complètent la vitrine, et ne sont **pas** dans `sync` parce qu'ils
 demandent un accès réseau :
@@ -480,16 +486,16 @@ ne la prenne pour celle du jour.
 > compare à **ce que la page en ligne affiche** — pas au dépôt — et ne demande
 > la publication que si l'état des dépôts a bougé.
 
-## Stack cible (juin 2026)
+## Stack cible (septembre 2026)
 
 Les configs imposent / supposent les versions suivantes côté projet consommateur :
 
 ```
-Node ≥22 (engines + .nvmrc ; CI du socle éprouvée sur 22 ET 24)
+Node ≥22 promis par engines ; le parc épingle 26.10.0 (.nvmrc, setup-pwa, réutilisables) ; CI du socle éprouvée sur 22 ET 26.10.0
 TypeScript ~6.0.3 strict + verbatimModuleSyntax + noUncheckedIndexedAccess, cible ES2025 + lib ES2025
 ESLint 9 OU 10 (flat config) + typescript-eslint 8.58 — la 10 demande trois gestes côté app (ESLINT-10.md)
 eslint-plugin-react-hooks 7.0 (configs.flat.recommended) + eslint-plugin-react-refresh 0.5
-Vite 8 (Rolldown) + Vitest 4 (jsdom + globals + setupFiles)
+Vite 8 (Rolldown) + Vitest 4 ou 5 (jsdom + globals + setupFiles)
 Zod 4 (peer)
 Prettier 3.6 (singleQuote, tabWidth 2, printWidth 80, trailingComma es5, arrowParens 'avoid')
 Tailwind 4 (@tailwindcss/vite) + lucide-react (icônes — standard famille)
@@ -501,7 +507,7 @@ Tailwind 4 (@tailwindcss/vite) + lucide-react (icônes — standard famille)
 > et `engines.node` passe à **`>=22`**.
 
 > **2.0.0 (breaking)** — les peer-dependencies passent en **Vite 8 / Vitest 4 / TypeScript ~6.0.3 / Zod 4**
-> (plus de support Vitest 3 ni Zod 3). Voir la [migration](docs/MIGRATIONS.md#zod-3--4-breaking-perfs-50) ci-dessous.
+> (plus de support Vitest 3 ni Zod 3). Voir la [migration](docs/MIGRATIONS.md#zod-3--4-breaking-perfs-50).
 
 ### Icônes — `lucide-react` (règle famille)
 
@@ -673,7 +679,7 @@ Conventions :
 ```jsonc
 {
   "devDependencies": {
-    "@mister-guiiug/dev-pwa-config": "^3.0.0",
+    "@mister-guiiug/dev-pwa-config": "^6.18.0",
   },
 }
 ```
@@ -698,10 +704,10 @@ echo "//npm.pkg.github.com/:_authToken=ghp_xxxxxxxxxxxx" >> ~/.npmrc
 
 #### En CI (GitHub Actions)
 
-Le `secrets.GITHUB_TOKEN` automatique d'Actions a la permission `read:packages` par défaut sur les paquets de l'organisation. Configuration type :
+Le `secrets.GITHUB_TOKEN` automatique d'Actions suffit à lire le paquet, à condition que le workflow accorde `permissions: packages: read` (c'est ce que font les réutilisables, par la composite `setup-pwa`). Configuration type :
 
 ```yaml
-- uses: actions/setup-node@v4
+- uses: actions/setup-node@v7
   with:
     node-version: '26.10.0'
     cache: npm
@@ -780,7 +786,7 @@ le trousseau du dépôt** alors qu'il n'a besoin de rien :
 ```yaml
 jobs:
   deploy:
-    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4
+    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v6
     with:
       use-base-path: true
       build-env: |
@@ -819,10 +825,12 @@ l'observabilité, elle ne casse rien, et un garde bruyant finit désactivé.
 - `pwa-doctor` relève les écarts : `VITE_*` rangée en secret, `secrets:
 inherit`, `.env.example` absent ou incomplet.
 
-**Ces règles ne sont pas appliquées, et la raison est instructive** : relevé du
-04/09/2026, douze des seize workflows de déploiement héritent du trousseau
-entier et quinze valeurs publiques dorment en `secrets` — parce que le gabarit
-qu'on copie dit encore, en commentaire, d'y ranger les `VITE_*`. Le modèle qui
+**Ces règles n'étaient pas appliquées, et la raison est instructive** : relevé
+du 04/09/2026, douze des seize workflows de déploiement héritaient du trousseau
+entier et quinze valeurs publiques dormaient en `secrets`, parce que le gabarit
+qu'on copiait disait, en commentaire, d'y ranger les `VITE_*`. Il enseigne
+désormais `vars`, et `pwa-doctor` relève les deux écarts là où il tourne
+(`secrets-inherit`, `vite-en-secret`). Le modèle qui
 rend la règle mécanique plutôt que documentaire — un manifeste déclaré, un
 `.env.example` engendré, un audit qui confronte la déclaration à l'API GitHub,
 et trois gardes pour qu'une valeur absente n'atteigne jamais la production en
@@ -854,8 +862,9 @@ Restent deux gestes, volontairement hors du générateur :
 
 ## Checklist — à la main, ou pour comprendre ce que fait le générateur
 
-1. **`.npmrc`** (copier [`templates/.npmrc`](./templates/.npmrc)) + **`.nvmrc`** (`22`).
-2. **Dépendance** : `npm i -D @mister-guiiug/dev-pwa-config@^4` + les peers utilisés
+1. **`.npmrc`** (copier [`templates/.npmrc`](./templates/.npmrc)) + **`.nvmrc`**
+   (`26.10.0`, l'épingle du parc ; `engines` promet `>=22`).
+2. **Dépendance** : `npm i -D @mister-guiiug/dev-pwa-config@^6` + les peers utilisés
    (cf. `peerDependencies` du [`package.json`](./package.json) : `eslint`, `@eslint/js`,
    `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`,
    `globals`, `prettier`, `typescript`, `vite`, `vitest`, `react`, `tailwindcss`…).
@@ -865,8 +874,8 @@ Restent deux gestes, volontairement hors du générateur :
 5. **Tests** : `vitest.config.ts` (`baseTestOptions`) + `src/test/setup.ts`
    (`import '@mister-guiiug/dev-pwa-config/vitest-setup'`).
 6. **CI/CD** (secrets passés NOMMÉMENT — jamais `inherit` — + `permissions` au niveau caller) : `ci.yml` →
-   `pwa-ci.yml@v4`, `deploy.yml` → `pwa-deploy.yml@v4`, `lighthouse.yml` →
-   `pwa-lighthouse.yml@v4`.
+   `pwa-ci.yml@v6`, `deploy.yml` → `pwa-deploy.yml@v6`, `lighthouse.yml` →
+   `pwa-lighthouse.yml@v6`.
 7. **PWA/SEO** : `index.html` depuis [`templates/index.html`](./templates/index.html) +
    `pwaSeoPlugin` + `cspPlugin` dans `vite.config.ts`.
 8. **Famille** : `<FamilyApps>` (écran Réglages/À propos) + `.github/FUNDING.yml`.
@@ -877,18 +886,19 @@ Hébergés dans [`.github/workflows/`](.github/workflows/) — utilisables par t
 
 | Workflow                     | Rôle                                                                                                                                                                                                                                              | Exemple d'appel                                                                                                                                                                                          |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pwa-ci.yml`                 | Format · Lint · Type · Test · Build (+ E2E optionnel)                                                                                                                                                                                             | voir [Utilisation](#reusable-workflow-ci)                                                                                                                                                                |
+| `pwa-ci.yml`                 | Lockfile · Format · Lint · Type · Test · Build · audit npm de production (actif par défaut, seuil `high`) (+ docteur et E2E optionnels)                                                                                                           | voir [Utilisation](#reusable-workflow-ci)                                                                                                                                                                |
 | `pwa-deploy.yml`             | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto et repli SPA `404.html`)                                                                                                                                                             | voir [Utilisation](#reusable-workflow-deploy)                                                                                                                                                            |
 | `npm-publish.yml`            | Publication npm sur GitHub Packages avec `--provenance`                                                                                                                                                                                           | voir [Utilisation](#reusable-workflow-publish)                                                                                                                                                           |
-| `pwa-lighthouse.yml`         | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR                                                                                                                                                                                                   | `uses: …/pwa-lighthouse.yml@v4` (requiert `.lighthouserc.json`, cf. template)                                                                                                                            |
-| `pwa-supabase-migrate.yml`   | `supabase link` + `db push` (+ Edge Functions en option), sans annulation d'un run en cours — quatre copies en une                                                                                                                                | `uses: …/pwa-supabase-migrate.yml@v4` avec deux secrets (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`) et la référence du projet en `vars` (cf. en-tête du fichier, [PARAMETRAGE.md](PARAMETRAGE.md)) |
-| `pwa-supabase-test.yml`      | Tests pgTAP sur une pile Supabase JETABLE du runner — migrations depuis zéro, aucun secret ; promu de miss-lookhouse, seule app à le faire. Complément du bin `pwa-pgtap`, qui joue les mêmes fichiers contre la base liée                        | `uses: …/pwa-supabase-test.yml@v4` depuis un caller sur `supabase/**` (cf. en-tête du fichier ; exige `supabase/config.toml`)                                                                            |
-| `pwa-supabase-keepalive.yml` | Ping REST tous les trois jours pour qu'un projet Free ne s'endorme pas — **à poser avec la migration** : le 02/09/2026 aucune app ne l'appelait, et `miss-carbook` dormait                                                                        | `uses: …/pwa-supabase-keepalive.yml@v4` depuis un caller `schedule` (cf. en-tête du fichier)                                                                                                             |
+| `pwa-lighthouse.yml`         | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR                                                                                                                                                                                                   | `uses: …/pwa-lighthouse.yml@v6` depuis un caller à `pull-requests: write` (requiert `.lighthouserc.json`, cf. template)                                                                                  |
+| `pwa-supabase-migrate.yml`   | `supabase link` + `db push` (+ Edge Functions en option), sans annulation d'un run en cours ; quatre copies en une                                                                                                                                | `uses: …/pwa-supabase-migrate.yml@v6` avec trois secrets : `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID` (ce dernier en `vars`) (cf. en-tête, [PARAMETRAGE.md](PARAMETRAGE.md)) |
+| `pwa-supabase-test.yml`      | Tests pgTAP sur une pile Supabase JETABLE du runner : migrations depuis zéro, aucun secret ; promu de miss-lookhouse, seule app à le faire. Complément du bin `pwa-pgtap`, qui joue les mêmes fichiers contre la base liée                        | `uses: …/pwa-supabase-test.yml@v6` depuis un caller sur `supabase/**` (cf. en-tête du fichier ; exige `supabase/config.toml`)                                                                            |
+| `pwa-supabase-keepalive.yml` | Ping REST tous les trois jours pour qu'un projet Free ne s'endorme pas ; **à poser avec la migration** : le 02/09/2026 aucune app ne l'appelait, et `miss-carbook` dormait                                                                        | `uses: …/pwa-supabase-keepalive.yml@v6` depuis un caller `schedule` (cf. en-tête du fichier)                                                                                                             |
 | `pwa-vice.yml`               | Audit de sécurité [VICE](https://github.com/Webba-Creative-Technologies/vice) en second avis NON bloquant — secrets, `.env`, RLS des migrations, XSS/`eval`, workflows ; constats dans l'onglet Security, sans badge commité ni commentaire de PR | `uses: …/pwa-vice.yml@v6` depuis un caller à `security-events: write` (cf. en-tête du fichier)                                                                                                           |
-| `pwa-worker-deploy.yml`      | `wrangler deploy` d'un Cloudflare Worker, sans échec quand le secret manque — deux copies en une                                                                                                                                                  | `uses: …/pwa-worker-deploy.yml@v4` avec `working-directory`                                                                                                                                              |
-| `cleanup-runs.yml`           | Élague l'historique Actions du dépôt APPELANT (N runs par workflow) — douze copies identiques en une                                                                                                                                              | `uses: …/cleanup-runs.yml@v4` depuis un caller `workflow_dispatch` à `permissions: actions: write` (cf. en-tête du fichier)                                                                              |
+| `pwa-worker-deploy.yml`      | `wrangler deploy` d'un Cloudflare Worker, sans échec quand le secret manque ; deux copies en une                                                                                                                                                  | `uses: …/pwa-worker-deploy.yml@v6` avec `working-directory`                                                                                                                                              |
+| `cleanup-runs.yml`           | Élague l'historique Actions du dépôt APPELANT (N runs par workflow) ; douze copies identiques en une                                                                                                                                              | `uses: …/cleanup-runs.yml@v6` depuis un caller `workflow_dispatch` à `permissions: actions: write` (cf. en-tête du fichier)                                                                              |
+| `no-ai-attribution.yml`      | Refuse, sur une PR, les signatures d'assistant dans les messages de commit et les fichiers modifiés (`scripts/check-ai-attribution.mjs`)                                                                                                          | `uses: …/no-ai-attribution.yml@v6` depuis un caller `pull_request` (cf. en-tête du fichier)                                                                                                              |
 
-### Reusable workflow CI {#reusable-workflow-ci}
+### Reusable workflow CI
 
 `<projet>/.github/workflows/ci.yml` :
 
@@ -905,7 +915,7 @@ permissions:
 
 jobs:
   ci:
-    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v4
+    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v6
     # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
     # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
     # secrets du dépôt à un workflow qui n'en demande aucun.
@@ -923,7 +933,7 @@ jobs:
       # navigateur supplémentaire à installer.
 ```
 
-### Reusable workflow deploy {#reusable-workflow-deploy}
+### Reusable workflow deploy
 
 `<projet>/.github/workflows/deploy.yml` :
 
@@ -942,7 +952,7 @@ permissions:
 
 jobs:
   deploy:
-    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v4
+    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-deploy.yml@v6
     # Le workflow DÉCLARE les secrets dont il a besoin : on ne passe que
     # ceux-là. `secrets: inherit` enverrait tout le trousseau du dépôt.
     secrets:
@@ -954,17 +964,17 @@ jobs:
 
 > **Repli SPA.** Après le build, le workflow copie `index.html` en `404.html` s'il manque : GitHub Pages n'a pas de repli SPA, et sans ce fichier rafraîchir un lien profond sert sa page « File not found » — quatre apps de la famille étaient dans ce cas le 02/09/2026. Un déploiement écrit à la main obtient la même chose avec `spaFallbackPlugin()` de `vite-pwa-base`.
 
-> ⚠️ **Ne PAS déclarer `concurrency: pages` au niveau du caller.** Le reusable `pwa-deploy.yml` déclare déjà `concurrency: { group: pages, cancel-in-progress: true }`. Le répéter côté caller provoque le message `Canceling since a deadlock was detected for concurrency group: 'pages' between a top level workflow and 'deploy'` et le job ne démarre jamais. Cette règle vaut pour toutes les paires caller / reusable qui partagent un groupe de concurrence (`pages`, `publish`, etc.).
+> ⚠️ **Ne PAS déclarer `concurrency: pages` au niveau du caller.** Le reusable `pwa-deploy.yml` déclare déjà `concurrency: { group: pages, cancel-in-progress: true }`. Le répéter côté caller provoque le message `Canceling since a deadlock was detected for concurrency group: 'pages' between a top level workflow and 'deploy'` et le job ne démarre jamais. Cette règle vaut pour toutes les paires caller / reusable qui partagent un groupe de concurrence (`pages`, `supabase-migrate`, `cleanup-runs-…`).
 
-> **Cas avancé** (besoin de migrations Supabase / Firebase rules / variables d'env complexes) : ne pas utiliser le reusable. Reprendre le template `templates/github-workflows/deploy.yml` et personnaliser, en gardant la composite action `setup-pwa` :
+> **Cas avancé** (migrations Supabase, règles Firebase, variables nombreuses) : les réutilisables les couvrent. Les migrations passent par `pwa-supabase-migrate.yml`, les règles Firebase par `firebase-project` et `firebase-only`, les variables par `build-env` et `required-env`, et le gabarit `templates/github-workflows/deploy.yml` est un appelant prêt à copier. Écrit à la main, un déploiement Pages se prive de `required-env` et du chemin de base automatique (le repli `404.html` s'obtient alors par `spaFallbackPlugin()`), et `pwa-doctor` le relève (`wf-deploy-maison`). Un workflow maison qui garde l'installation du socle appelle la composite action `setup-pwa` :
 >
 > ```yaml
-> - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v4
+> - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6
 >   with:
 >     github-token: ${{ secrets.GITHUB_TOKEN }}
 > ```
 
-### Reusable workflow publish {#reusable-workflow-publish}
+### Reusable workflow publish
 
 `<projet>/.github/workflows/publish.yml` (pour un nouveau paquet npm) :
 
@@ -981,7 +991,7 @@ permissions:
 
 jobs:
   publish:
-    uses: mister-guiiug/dev-pwa-config/.github/workflows/npm-publish.yml@v4
+    uses: mister-guiiug/dev-pwa-config/.github/workflows/npm-publish.yml@v6
     # PAS de `secrets: inherit` : ce workflow ne déclare aucun secret, et
     # `GITHUB_TOKEN` lui est fourni automatiquement. Hériter enverrait TOUS les
     # secrets du dépôt à un workflow qui n'en demande aucun.
@@ -991,9 +1001,9 @@ jobs:
 
 | Action                                                             | Rôle                                                                                                                                                        |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v4`        | Setup Node 26.10.0 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages)                                                                               |
-| `mister-guiiug/dev-pwa-config/.github/actions/supabase-migrate@v4` | Setup CLI Supabase + `link` + `db push` (déploiements custom)                                                                                               |
-| `mister-guiiug/dev-pwa-config/.github/actions/firebase-deploy@v4`  | `firebase deploy` ciblé (rules database/firestore, indexes) — auth `service-account-key` (recommandé) ou `token` (déprécié), firebase-tools épinglé via npx |
+| `mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6`        | Setup Node 26.10.0 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages)                                                                               |
+| `mister-guiiug/dev-pwa-config/.github/actions/supabase-migrate@v6` | Setup CLI Supabase + `link` + `db push` (déploiements custom)                                                                                               |
+| `mister-guiiug/dev-pwa-config/.github/actions/firebase-deploy@v6`  | `firebase deploy` ciblé (rules database/firestore, indexes) ; auth `service-account-key` (recommandé) ou `token` (déprécié), firebase-tools épinglé via npx |
 
 ## Templates non-importables (à copier-coller)
 
@@ -1006,12 +1016,12 @@ Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VS
 | [`templates/vscode/tasks.json`](./templates/vscode/tasks.json)                     | `<projet>/.vscode/tasks.json`           | Ajouter les tasks `test:e2e:critical`, `test:e2e:a11y` etc. selon les scripts du projet     |
 | [`templates/vscode/launch.json`](./templates/vscode/launch.json)                   | `<projet>/.vscode/launch.json`          | Adapter `url` au base path (`/mister-puzzle/`, etc.) et `sourceMapPathOverrides`            |
 | [`templates/github-workflows/ci.yml`](./templates/github-workflows/ci.yml)         | `<projet>/.github/workflows/ci.yml`     | **Préférer le reusable `pwa-ci.yml`** (template déprécié, conservé pour cas hors-stack)     |
-| [`templates/github-workflows/deploy.yml`](./templates/github-workflows/deploy.yml) | `<projet>/.github/workflows/deploy.yml` | **Préférer le reusable `pwa-deploy.yml`** (template déprécié, conservé pour cas hors-stack) |
+| [`templates/github-workflows/deploy.yml`](./templates/github-workflows/deploy.yml) | `<projet>/.github/workflows/deploy.yml` | Lister les `VITE_*` de l'app dans `build-env` (lues en `vars`) et `required-env`            |
 | [`templates/husky/pre-commit`](./templates/husky/pre-commit)                       | `<projet>/.husky/pre-commit`            | Aucune                                                                                      |
 | [`templates/husky/commit-msg`](./templates/husky/commit-msg)                       | `<projet>/.husky/commit-msg`            | Aucune                                                                                      |
 | [`templates/.editorconfig`](./templates/.editorconfig)                             | `<projet>/.editorconfig`                | Aucune                                                                                      |
-| [`templates/index.html`](./templates/index.html)                                   | `<projet>/index.html`                   | CSP (offline-first vs Supabase/Firebase/PostHog), titre/desc/theme-color, placeholders SEO  |
-| [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | Aucune                                                                                      |
+| [`templates/index.html`](./templates/index.html)                                   | `<projet>/index.html`                   | CSP (Supabase/Firebase ; PostHog par `cspPlugin`), titre/desc/theme-color, placeholders SEO |
+| [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | Remplacer `22` (plancher d'`engines`) par `26.10.0`, l'épingle du parc                      |
 | [`templates/.npmrc`](./templates/.npmrc)                                           | `<projet>/.npmrc`                       | Aucune (registre scope + `include=optional` — bindings natifs Vite 8)                       |
 | [`templates/FUNDING.yml`](./templates/FUNDING.yml)                                 | `<projet>/.github/FUNDING.yml`          | Aucune (handle sponsor famille `mister.guiiug`)                                             |
 | [`templates/.lighthouserc.json`](./templates/.lighthouserc.json)                   | `<projet>/.lighthouserc.json`           | Ajuster les seuils (`minScore`) par catégorie                                               |
@@ -1028,7 +1038,7 @@ tout vit ici :
 | Fichier                          | Rôle                                                                                                                                                                          |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `renovate/default.json`          | Le PRÉRÉGLAGE : `config:recommended`, tableau de bord, samedi avant 7 h (Paris), mineures et patchs npm groupés, actions groupées, le socle dans une PR à part, sans attendre |
-| `renovate/self-hosted.json`      | QUELS dépôts : tous ceux du compte qui portent un `renovate.json` — `mister-family-map` compris                                                                               |
+| `renovate/self-hosted.json`      | QUELS dépôts : tous ceux du compte qui portent un `renovate.json`, sauf `miss-ticket` ; `mister-family-map` compris                                                           |
 | `.github/workflows/renovate.yml` | QUAND : le samedi 04:00 UTC (dans la fenêtre du préréglage), ou à la main avec `dry-run`. Muet sans le secret                                                                 |
 
 Une app étend le préréglage en une ligne :
@@ -1044,15 +1054,22 @@ le workflow : les deux ne doivent pas tourner ensemble.
 
 ## Nettoyage de l'historique Actions
 
-[`templates/github-workflows/cleanup-runs.yml`](./templates/github-workflows/cleanup-runs.yml) —
-workflow **manuel** (`workflow_dispatch`) qui ne conserve que les **N runs les
-plus récents par workflow** (défaut `3`, option `dry-run`). Copier dans
-`<projet>/.github/workflows/cleanup-runs.yml` ; requiert `permissions: actions: write`.
+Le réutilisable [`cleanup-runs.yml`](.github/workflows/cleanup-runs.yml) ne
+conserve que les **N runs les plus récents par workflow** (défaut `3`, option
+`dry-run`). L'appeler en `@v6` depuis un caller `workflow_dispatch` d'une
+dizaine de lignes (exemple en tête du fichier), à `permissions: actions: write` :
+c'est ce que recommande `pwa-doctor` (`wf-cleanup`). Le gabarit autonome
+[`templates/github-workflows/cleanup-runs.yml`](./templates/github-workflows/cleanup-runs.yml)
+reste pour un dépôt hors famille ; il interpole encore ses entrées dans le
+script, ce que le réutilisable ne fait plus.
 
 ## Inputs notables des reusables
 
 - **`pwa-ci.yml`** — `run-doctor` (`pwa-doctor` après le build ; opt-in en
-  4.x) et `doctor-strict` ; `run-coverage` (joue `npm run test:coverage` au
+  4.x et toujours en 6.x, défaut `false`) et `doctor-strict` ; `run-npm-audit`
+  (actif par défaut : `npm audit --omit=dev` à la racine et dans `server-dir`,
+  seuil `npm-audit-level`, défaut `high`) ; `verify-lockfile` (actif par
+  défaut) ; `run-coverage` (joue `npm run test:coverage` au
   lieu de `npm run test`, pour que les `thresholds` de `vitest.config.ts`
   soient **vérifiés** — sans quoi Vitest ne mesure rien, donc ne compare rien,
   et le job sort vert ; exige le script, dont l'absence fait échouer le job) ;
@@ -1091,8 +1108,13 @@ Mise en place (**un caller par projet Supabase**) :
 2. Copier
    [`templates/github-workflows/supabase-keepalive.yml`](./templates/github-workflows/supabase-keepalive.yml)
    dans `<projet>/.github/workflows/` (décaler le `cron` entre dépôts).
-3. Secrets requis : `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (anon =
-   publique, jamais la `service_role`).
+3. Deux valeurs publiques, `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY`
+   (anon = publique, jamais la `service_role`) : les ranger en `vars`, comme
+   toute `VITE_*`, et les passer dans les emplacements `secrets:` du
+   réutilisable, qui acceptent n'importe quelle expression
+   (`VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}`). Le gabarit les lit
+   encore dans `secrets` : y écrire `vars`, sans quoi `pwa-doctor` relève
+   `vite-en-secret`.
 
 **L'étape 1 conditionne les deux autres, et c'est le piège.** Un caller posé
 sans la table répond `HTTP 404` : le ping échoue, le projet continue de
@@ -1113,7 +1135,7 @@ commits Renovate suffisent ; sinon relancer via `workflow_dispatch`).
 
 Chaque projet peut surcharger des options après extension :
 
-- **mister-puzzle** ajoute `verbatimModuleSyntax` + `erasableSyntaxOnly` (TS plus strict sur le code legacy converti) sur **`tsconfig.app` ET `tsconfig.node`**. Depuis le durcissement de `tsconfig-node` (v2.1), les options de linting (`allowImportingTsExtensions`, `moduleDetection: force`, `isolatedModules`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`) sont **portées par la base** — l'override projet peut être réduit aux seules `verbatimModuleSyntax`/`erasableSyntaxOnly`.
+- **mister-puzzle** ajoute `verbatimModuleSyntax` + `erasableSyntaxOnly` (TS plus strict sur le code legacy converti) sur **`tsconfig.app` ET `tsconfig.node`**. Depuis le durcissement de `tsconfig-node` (v2.1), les options de linting (`allowImportingTsExtensions`, `moduleDetection: force`, `isolatedModules`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`) sont **portées par la base** : l'override projet peut être réduit au seul `erasableSyntaxOnly` (`verbatimModuleSyntax` est dans la base depuis 3.0.0).
 - **mister-cim10** override `allowJs: true` + `checkJs: false` (le code legacy ICD-10 utilise du JS dans des manipulations DOM ; à durcir progressivement).
 - **mister-puzzle** étend `vitest-base.include` pour ajouter `server/**/*.test.ts`.
 - **miss-contraction** étend `vitest-base` avec un `exclude: ['**/node_modules/**', '**/e2e/**']` pour éviter que Vitest pioche dans les specs Playwright.
@@ -1129,16 +1151,21 @@ npm run changeset
 # 2. Appliquer : bump package.json + met à jour CHANGELOG.md + consomme les changesets
 npm run version-packages
 
-# 3. Committer, taguer, pousser → publish.yml publie
-git commit -am "chore: version packages"
-git tag "v$(node -p "require('./package.json').version")"
-git push --follow-tags
+# 3. main est protégé : le commit de version passe par une PR, fusionnée en --merge (pas --squash)
+git switch -c chore/release-x.y.z && git commit -am "chore(release): x.y.z"
+git push -u origin chore/release-x.y.z && gh pr create
+
+# 4. Publier depuis main : publish.yml lit la version et pose le tag lui-même
+gh workflow run publish.yml --ref main
 ```
 
-À chaque tag `v*` poussé, [`publish.yml`](.github/workflows/publish.yml) publie sur
-`npm.pkg.github.com` avec `--provenance`, avance le tag majeur mobile (`v4`) et crée
-la **GitHub Release** (notes = section correspondante du `CHANGELOG.md`). Versions
-publiées : https://github.com/mister-guiiug/dev-pwa-config/packages
+[`publish.yml`](.github/workflows/publish.yml) publie alors sur `npm.pkg.github.com`
+avec `--provenance`, avance le tag majeur mobile de la version publiée (`v6`
+aujourd'hui ; le tag d'un majeur précédent est figé et ne reçoit plus de
+correctif) et crée la **GitHub Release** (notes = section correspondante du
+`CHANGELOG.md`). Il se déclenche aussi sur un tag `v*` poussé, à condition que
+le commit de version soit déjà sur `main`. Versions publiées :
+https://github.com/mister-guiiug/dev-pwa-config/packages
 
 ## Maintenance
 
@@ -1146,7 +1173,7 @@ Toute modification de stack famille (bump majeur React, ESLint, etc.) :
 
 1. Mettre à jour les fichiers de config concernés + la « Stack cible » de ce README.
 2. `npm run changeset` (choisir patch/minor/major selon l'impact consommateur).
-3. `npm run version-packages`, committer, taguer, pousser (cf. ci-dessus) → publication auto.
+3. `npm run version-packages`, PR fusionnée en `--merge`, puis `gh workflow run publish.yml --ref main` (cf. ci-dessus).
 4. Aligner les consommateurs : `node scripts/migrate-consumers.mjs <version> --write`
    (dry-run par défaut sans `--write`), puis tester chaque app.
 
@@ -1158,7 +1185,7 @@ Toute modification de stack famille (bump majeur React, ESLint, etc.) :
 | [`SECURITY.md`](SECURITY.md)                | Signalement privé d'une vulnérabilité, périmètre, et les deux limites connues qui ne sont pas des failles    |
 | [`.github/CODEOWNERS`](.github/CODEOWNERS)  | `workflows/`, `actions/` et `scripts/` demandent une relecture : ils s'exécutent dans dix-neuf dépôts        |
 | `npm run validate`                          | Ce que la CI exécute : format, lint, types, tests                                                            |
-| `node scripts/apply-rulesets.mjs --dry-run` | Protection de `main` sur les dix-huit dépôts — liste lue dans le catalogue, checks exigés par dépôt          |
+| `node scripts/apply-rulesets.mjs --dry-run` | Protection de `main` sur tous les dépôts publics non archivés, lus sur le compte ; checks exigés par dépôt   |
 
 **Secrets.** Chaque workflow réutilisable **déclare** les secrets dont il a
 besoin ; un caller ne passe que ceux-là. `secrets: inherit` enverrait tout le
