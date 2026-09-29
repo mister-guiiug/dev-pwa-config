@@ -11,6 +11,14 @@
 #   - les secrets se passent NOMMÉMENT, jamais par `secrets: inherit` — qui
 #     donnerait à ce workflow le trousseau entier du dépôt alors qu'il déclare
 #     exactement ce qu'il consomme.
+#
+# DEPUIS LE SOCLE 6.19.0, LE DÉPLOIEMENT SIGNALE CE QU'IL CHANGE. Avant le
+# build, il récupère l'état SEO que le site publié porte (`seo-state.json`) :
+# `pwaSeoPlugin` y reprend le `lastmod` des URL inchangées. Après le
+# déploiement, le job `indexnow` signale à IndexNow les seules URL nouvelles
+# ou modifiées. Relevé du 29/09/2026 : chaque publication du hub renvoyait les
+# 41 URL du parc — quinze fois le 27/09 —, et aucun déploiement d'app ne
+# signalait rien.
 name: Reusable PWA Deploy
 
 on:
@@ -63,6 +71,15 @@ on:
         type: string
         required: false
         default: 'firestore:rules,firestore:indexes'
+      indexnow:
+        description: >-
+          Signaler à IndexNow (Bing, Yandex, Seznam, Naver…) les URL que ce
+          déploiement a créées ou modifiées. Rien n'est envoyé hors de
+          mister-guiiug.github.io ; un échec ne fait jamais échouer le
+          déploiement.
+        type: boolean
+        required: false
+        default: true
     secrets:
       FIREBASE_SERVICE_ACCOUNT_KEY:
         description: 'JSON du service account Firebase (requis si firebase-project est défini)'
@@ -81,6 +98,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      # Les URL nouvelles ou modifiées, pour le job `indexnow` (JSON).
+      seo-changed: ${{ steps.seo-changed.outputs.urls }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -152,10 +172,30 @@ jobs:
           PRE_BUILD_SCRIPT: ${{ inputs.pre-build-script }}
         run: npm run "$PRE_BUILD_SCRIPT"
 
+      # LE `lastmod` RÉEL. `pwaSeoPlugin` (socle 6.19.0) reprend le `lastmod`
+      # d'une URL dont l'empreinte n'a pas bougé — encore faut-il lui donner
+      # l'état du déploiement précédent, que le site publie lui-même. Sans lui
+      # (premier déploiement, site muet, socle plus ancien), tout est
+      # « modifié » et daté du jour : le comportement d'avant, jamais une panne.
+      - name: État SEO précédent
+        env:
+          ORIGINE: https://${{ github.repository_owner }}.github.io
+          BASE: ${{ inputs.use-base-path && format('/{0}/', github.event.repository.name) || '/' }}
+        run: |
+          fichier="$RUNNER_TEMP/seo-state-precedent.json"
+          if curl -fsSL --max-time 20 --retry 2 "${ORIGINE}${BASE}seo-state.json" -o "$fichier"; then
+            echo "PWA_SEO_PREVIOUS_STATE=$fichier" >> "$GITHUB_ENV"
+            echo "::notice::état SEO précédent lu : ${ORIGINE}${BASE}seo-state.json"
+          else
+            echo "::notice::pas d'état SEO précédent : toutes les URL seront datées du jour."
+          fi
+
       - name: Build
         env:
           VITE_BASE_PATH: ${{ inputs.use-base-path && format('/{0}/', github.event.repository.name) || '/' }}
           VITE_PUBLIC_SITE_ORIGIN: https://${{ github.repository_owner }}.github.io
+          # HORS du site publié : la liste ne regarde que le job `indexnow`.
+          PWA_SEO_CHANGED_FILE: ${{ runner.temp }}/seo-changed.json
         run: npm run build
 
       # GitHub Pages n'a pas de repli SPA : rafraîchir un lien profond (ou
@@ -165,14 +205,60 @@ jobs:
       # identique à `index.html` suffit : GitHub le sert, la coquille démarre,
       # le routeur lit l'URL. Inoffensif pour une app qui route par `#`, et
       # sans effet si le build l'a déjà émis (plugin `spaFallbackPlugin`).
+      #
+      # LE 404.html EST HORS INDEX (29/09/2026). Demandé tel quel,
+      # `/<app>/404.html` répond 200 avec la canonique de l'accueil : un
+      # doublon, et deux apps y servaient même `index, follow`. La copie — ou le
+      # fichier du build qui n'en porte pas — reçoit `noindex` ; ses balises
+      # `robots` et sa canonique sont retirées (une page `noindex` qui désigne
+      # une canonique envoie deux signaux contraires). Le script ne dépend pas
+      # du socle de l'app : il vaut pour toutes les versions.
       - name: SPA fallback (404.html)
         env:
           BUILD_DIR: ${{ inputs.build-dir }}
+          NOINDEX_JS: |
+            import { readFileSync, writeFileSync } from 'node:fs';
+            const fichier = process.argv[1];
+            const html = readFileSync(fichier, 'utf8');
+            const deja = [...html.matchAll(/<meta\b[^>]*>/gi)].some(
+              ([b]) => /\bname=["']robots["']/i.test(b) && /noindex/i.test(b)
+            );
+            if (!deja) {
+              const sans = html
+                .replace(/[ \t]*<meta\b[^>]*\bname=["'](?:robots|googlebot)["'][^>]*>[ \t]*\r?\n?/gi, '')
+                .replace(/[ \t]*<link\b[^>]*\brel=["']canonical["'][^>]*>[ \t]*\r?\n?/gi, '');
+              const tete = /<head\b[^>]*>/i.exec(sans);
+              const balise = '<meta name="robots" content="noindex" />';
+              writeFileSync(
+                fichier,
+                tete
+                  ? `${sans.slice(0, tete.index + tete[0].length)}\n    ${balise}${sans.slice(tete.index + tete[0].length)}`
+                  : `${balise}\n${sans}`
+              );
+              console.log('::notice::404.html marqué noindex.');
+            }
         run: |
           if [ -f "$BUILD_DIR/index.html" ] && [ ! -f "$BUILD_DIR/404.html" ]; then
             cp "$BUILD_DIR/index.html" "$BUILD_DIR/404.html"
             echo "::notice::404.html copié depuis index.html — repli SPA GitHub Pages."
           fi
+          if [ -f "$BUILD_DIR/404.html" ]; then
+            node --input-type=module -e "$NOINDEX_JS" "$BUILD_DIR/404.html"
+          fi
+
+      # Les URL que ce déploiement crée ou modifie, écrites par `pwaSeoPlugin`
+      # HORS du site publié, passées au job `indexnow`. Un fichier absent
+      # (socle plus ancien) ou illisible donne une liste vide : jamais un échec.
+      - name: URL modifiées
+        id: seo-changed
+        run: |
+          fichier="$RUNNER_TEMP/seo-changed.json"
+          urls='[]'
+          if [ -s "$fichier" ]; then
+            urls="$(jq -c 'if type == "array" then . else [] end' "$fichier" 2>/dev/null || echo '[]')"
+          fi
+          echo "urls=$urls" >> "$GITHUB_OUTPUT"
+          echo "::notice::URL nouvelles ou modifiées : $urls"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
@@ -188,6 +274,111 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # INDEXNOW AU DÉPLOIEMENT DE CHAQUE APP. Jusqu'au socle 6.19.0, seul le hub
+  # signalait, jusqu'à un jour plus tard, et chaque fois tout le parc : le
+  # `lastmod` valait le jour du build partout. Désormais chaque déploiement
+  # signale SES URL nouvelles ou modifiées, et elles seules.
+  #
+  # Même logique que `scripts/indexnow.mjs` du dépôt `mister-guiiug.github.io` :
+  # la clé doit être servie, et CHAQUE URL doit répondre 200 avant l'envoi —
+  # Bing enregistre sinon un « Page Fetch Failed » sur une page que le CDN sert
+  # encore en 404 juste après le déploiement. Puis UN seul envoi groupé.
+  #
+  # La clé est PUBLIQUE par construction (le hub la sert à la racine de
+  # l'origine) : c'est `INDEXNOW_KEY` du catalogue, qu'un test compare à la
+  # copie ci-dessous. Rien n'est envoyé hors de `mister-guiiug.github.io`, ni
+  # pour une liste vide. Un échec ne fait jamais échouer le déploiement :
+  # le job est `continue-on-error`, et le script finit en avertissement.
+  indexnow:
+    needs: [build, deploy]
+    if: ${{ inputs.indexnow && github.repository_owner == 'mister-guiiug' && needs.build.outputs.seo-changed != '' && needs.build.outputs.seo-changed != '[]' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Signaler à IndexNow
+        env:
+          # Passées par env:, jamais interpolées dans le script.
+          URLS: ${{ needs.build.outputs.seo-changed }}
+          HOTE: mister-guiiug.github.io
+          CLE: 130a4eff7f375c02c7340dcc38504187
+          INDEXNOW_JS: |
+            const { HOTE: hote, CLE: cle } = process.env;
+            const cleUrl = `https://${hote}/${cle}.txt`;
+            const pause = ms => new Promise(ok => setTimeout(ok, ms));
+            const fin = Date.now() + 10 * 60 * 1000;
+            let urls = [];
+            try {
+              urls = JSON.parse(process.env.URLS || '[]');
+            } catch {
+              urls = [];
+            }
+            urls = [...new Set(Array.isArray(urls) ? urls : [])].filter(u => {
+              try {
+                return new URL(u).host === hote;
+              } catch {
+                return false;
+              }
+            });
+            if (!urls.length) {
+              console.log(`Rien à signaler sur ${hote}.`);
+              process.exit(0);
+            }
+            async function statut(url, essais) {
+              for (let i = 1; i <= essais; i += 1) {
+                try {
+                  const r = await fetch(url, { redirect: 'follow' });
+                  if (r.status === 200 || i === essais) return r.status;
+                } catch {
+                  if (i === essais) return 0;
+                }
+                await pause(2000 * i);
+              }
+              return 0;
+            }
+            async function attendre200(url, essais = 24) {
+              for (let i = 1; i <= essais && Date.now() < fin; i += 1) {
+                const code = await statut(url, 2);
+                console.log(`  attente ${url} — essai ${i}/${essais} → ${code}`);
+                if (code === 200) return true;
+                await pause(10_000);
+              }
+              return false;
+            }
+            if (!(await attendre200(cleUrl, 6))) {
+              console.log(`::warning::clé IndexNow non servie à ${cleUrl} : rien n'est signalé.`);
+              process.exit(0);
+            }
+            const servie = (await (await fetch(cleUrl)).text()).trim();
+            if (servie !== cle) {
+              console.log(`::warning::la clé servie à ${cleUrl} ne correspond pas : rien n'est signalé.`);
+              process.exit(0);
+            }
+            const liste = [];
+            for (const url of urls) {
+              if (await attendre200(url)) liste.push(url);
+              else console.log(`  ✗ omise, pas de 200 : ${url}`);
+            }
+            if (!liste.length) {
+              console.log('::warning::aucune URL joignable en 200 : rien n’est signalé.');
+              process.exit(0);
+            }
+            const r = await fetch('https://api.indexnow.org/indexnow', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json; charset=utf-8' },
+              body: JSON.stringify({ host: hote, key: cle, keyLocation: cleUrl, urlList: liste }),
+            });
+            // 200 : reçu ; 202 : reçu, clé en cours de vérification.
+            console.log(`IndexNow : HTTP ${r.status} ${await r.text()} — ${liste.length} URL.`);
+            if (r.status !== 200 && r.status !== 202)
+              console.log(`::warning::IndexNow a répondu ${r.status}.`);
+        run: node --input-type=module -e "$INDEXNOW_JS"
 
   # Déploiement optionnel des règles Firebase (Firestore/Realtime DB), avec auth
   # par service account. Activé seulement si `firebase-project` est fourni.

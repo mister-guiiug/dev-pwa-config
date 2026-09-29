@@ -141,6 +141,32 @@ test('le NOM du manifest est lu au catalogue, pas déduit de l’identifiant', (
   assert.equal(manifest.short_name, appById('miss-uwh').name);
 });
 
+test('la DESCRIPTION du manifest se lit au catalogue, l’explicite d’abord', () => {
+  // Audit du 29/09/2026, point C12 : mister-settle publiait un manifeste sans
+  // description — elle ne passait pas la sienne, le catalogue la connaissait.
+  const settle = pwaManifest({
+    id: 'mister-settle',
+    name: 'Mister Settle',
+    screenshots: false,
+  });
+  assert.equal(settle.description, appById('mister-settle').description);
+  const explicite = pwaManifest({
+    id: 'mister-settle',
+    description: 'Une autre phrase.',
+    screenshots: false,
+  });
+  assert.equal(explicite.description, 'Une autre phrase.');
+  // Hors catalogue, sans description : aucune n'est inventée.
+  const inconnue = pwaManifest({
+    id: 'app-inconnue',
+    name: 'Inconnue',
+    themeColor: '#111111',
+    backgroundColor: '#ffffff',
+    screenshots: false,
+  });
+  assert.equal(inconnue.description, undefined);
+});
+
 test('un nom explicite l’emporte sur le catalogue, dans les deux sens', () => {
   const nomme = pwaManifest({
     id: 'miss-uwh',

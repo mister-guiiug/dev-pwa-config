@@ -64,6 +64,29 @@ export interface FamilyApp {
   devPort?: number;
   /** Couleur de thème optionnelle (pour accentuer les cartes). */
   themeColor?: string;
+  /**
+   * Langues de l'INTERFACE, en codes à deux lettres, le français d'abord —
+   * relevées dans l'i18n de l'app (un dictionnaire réel et un moyen de le
+   * choisir). Reprises en `inLanguage` du `WebApplication` de l'accueil.
+   */
+  languages?: string[];
+  /**
+   * Trois à six fonctions réelles, en français court, lues dans le README et
+   * vérifiées dans le code. Reprises en `featureList` du `WebApplication`.
+   */
+  features?: string[];
+}
+
+/** Le nœud schema.org `Organization` de l'éditeur de toute la famille. */
+export interface Publisher {
+  readonly '@type': 'Organization';
+  /** `https://mister-guiiug.github.io/#org`, déclaré par le hub. */
+  readonly '@id': string;
+  readonly name: string;
+  readonly alternateName: string;
+  readonly url: string;
+  readonly logo: string;
+  readonly sameAs: readonly string[];
 }
 
 /** Propriétaire GitHub de la famille. */
@@ -74,6 +97,24 @@ export declare const GITHUB_OWNER: string;
  * `pagesUrl` porte en plus le chemin qui distingue les apps.
  */
 export declare const FAMILY_ORIGIN: string;
+
+/**
+ * L'éditeur de toute la famille : UN nœud `Organization`, d'`@id`
+ * `https://mister-guiiug.github.io/#org`, que les apps et les pages de contenu
+ * reprennent dans leur `@graph` et désignent par `author` et `publisher`.
+ * Gelé.
+ */
+export declare const PUBLISHER: Publisher;
+
+/** L'`@id` du site du parc (`WebSite`) : `https://mister-guiiug.github.io/#site`. */
+export declare const SITE_ID: string;
+
+/**
+ * La clé IndexNow de l'origine, PUBLIQUE par construction : le hub la sert à
+ * `https://mister-guiiug.github.io/<clé>.txt`, et elle couvre toutes les URL
+ * de l'origine.
+ */
+export declare const INDEXNOW_KEY: string;
 
 /** Pseudo Buy Me a Coffee de la famille — le même que `.github/FUNDING.yml`. */
 export declare const SPONSOR_HANDLE: string;

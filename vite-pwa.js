@@ -248,12 +248,16 @@ export function pwaManifest(options = {}) {
       `[vite-pwa] nom introuvable pour « ${id} » : le manifeste prendra l'identifiant du dépôt, et le raccourci installé affichera « ${id} » sous l'icône. Passer \`name\` (et \`shortName\` s'il doit être plus court), ou inscrire l'app au catalogue.`
     );
   }
+  // LA DESCRIPTION AUSSI (29/09/2026, audit SEO, point C12) : mister-settle
+  // publiait un manifeste SANS description — elle ne passe pas la sienne, et
+  // le catalogue la connaissait. L'explicite d'abord, le catalogue ensuite.
+  const resolvedDescription = description ?? fiche?.description;
 
   return {
     id: base,
     name: resolvedName,
     short_name: resolvedShortName,
-    description,
+    description: resolvedDescription,
     theme_color,
     background_color: backgroundColor ?? palette?.bg ?? cssPalette?.bg,
     ...(shots.length ? { screenshots: shots } : {}),

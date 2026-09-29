@@ -36,7 +36,32 @@ export interface InitSentryOptions {
    * à l'exécution (cas hors bundler).
    */
   loader?: () => Promise<SentryLike>;
+  /**
+   * Le `beforeBreadcrumb` de l'app, composé avec celui du socle : il passe
+   * AVANT (il voit l'URL complète et peut écarter le fil en rendant `null`),
+   * et ce qu'il rend est ensuite nettoyé par `scrubBreadcrumb`. Écrit en
+   * méthode : un hook typé avec le `Breadcrumb` de Sentry s'y range tel quel.
+   */
+  beforeBreadcrumb?(
+    breadcrumb: SentryBreadcrumb,
+    hint?: Record<string, unknown>
+  ): SentryBreadcrumb | null;
 }
+
+/** Un fil d'Ariane Sentry, réduit à ce que le socle en lit. */
+export interface SentryBreadcrumb {
+  category?: string;
+  message?: string;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Un fil d'Ariane Sentry sans requête ni fragment dans ses URL (catégories
+ * `fetch`, `xhr`, `navigation`, `ui`) : l'origine et le chemin seulement.
+ * Copié, jamais modifié en place ; les autres catégories passent telles
+ * quelles. `initSentry` le branche en `beforeBreadcrumb`.
+ */
+export declare function scrubBreadcrumb<T>(breadcrumb: T): T;
 
 /**
  * Surface minimale attendue d'un module Sentry : ce que le paquet appelle

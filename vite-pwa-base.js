@@ -23,17 +23,36 @@
  * Variables d'env lues au build :
  *   VITE_BASE_PATH            ex. /mister-puzzle/   (défaut '/')
  *   VITE_PUBLIC_SITE_ORIGIN   ex. https://mister-guiiug.github.io
+ *   PWA_SEO_PREVIOUS_STATE    chemin du `seo-state.json` du déploiement
+ *                             précédent : une URL dont l'empreinte n'a pas
+ *                             bougé y reprend son `lastmod` (voir `seoState`)
+ *   PWA_SEO_CHANGED_FILE      où écrire `seo-changed.json`, la liste des URL
+ *                             nouvelles ou modifiées, HORS du site publié
+ *                             (défaut `node_modules/.cache/pwa-seo/…`)
  */
 import {
   stripThemeColorMeta,
   themeBootScript,
   themeColorMetaTags,
 } from './theme-boot.js';
-import { FAMILY_APPS, FAMILY_ORIGIN, GITHUB_OWNER } from './apps-catalog.js';
+import {
+  FAMILY_APPS,
+  FAMILY_ORIGIN,
+  GITHUB_OWNER,
+  PUBLISHER,
+  SITE_ID,
+} from './apps-catalog.js';
 
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import process from 'node:process';
 
 const DEFAULT_ORIGIN = 'https://mister-guiiug.github.io';
@@ -129,6 +148,212 @@ function metaDe(html, cle) {
   return '';
 }
 
+/** La page porte-t-elle une balise `<meta>` de ce nom, quel que soit son contenu ? */
+function aMeta(html, cle) {
+  for (const [balise] of html.matchAll(/<meta\b[^>]*>/gi)) {
+    if (
+      attribut(balise, 'name') === cle ||
+      attribut(balise, 'property') === cle
+    )
+      return true;
+  }
+  return false;
+}
+
+/** Le `lang` de `<html>`, ou `''`. */
+function langueDe(html) {
+  return attribut(/<html\b[^>]*>/i.exec(html)?.[0] ?? '', 'lang');
+}
+
+/** Le `href` de la `<link rel="canonical">`, ou `''`. */
+function canoniqueDe(html) {
+  for (const [balise] of html.matchAll(/<link\b[^>]*>/gi)) {
+    if (/^canonical$/i.test(attribut(balise, 'rel')))
+      return attribut(balise, 'href').trim();
+  }
+  return '';
+}
+
+/** Les deux premières lettres d'une étiquette de langue, en minuscules. */
+function langue2(tag) {
+  return String(tag ?? '')
+    .slice(0, 2)
+    .toLowerCase();
+}
+
+/**
+ * La fiche du catalogue d'une app WEB, d'après son URL d'accueil — une app de
+ * bureau n'a pas de page sur l'origine.
+ *
+ * @param {string} homeUrl
+ */
+function ficheDe(homeUrl) {
+  const id = new URL(homeUrl).pathname.split('/').find(Boolean);
+  return FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
+}
+
+/** Au plus quatre sœurs ; en dessous de deux, la liste est complétée. */
+const VOISINES_MAX = 4;
+const VOISINES_MIN = 2;
+
+/**
+ * LES APPS SŒURS — ce que « Dans la même catégorie » lie, sur les pages de
+ * contenu comme dans le contenu servi de l'accueil.
+ *
+ * Relevé du 29/09/2026 : parmi les quarante pages statiques du parc, AUCUNE ne
+ * liait une autre app. Le composant `FamilyApps` n'existe qu'au rendu
+ * JavaScript, sur des écrans qu'un robot ne voit pas ; tout le maillage
+ * passait donc par le hub, et les grappes naturelles — Supabase, santé, sport,
+ * jeux — restaient invisibles.
+ *
+ * La catégorie du catalogue, les apps WEB seulement, l'app elle-même exceptée,
+ * quatre au plus. Si la catégorie en compte moins de deux, la liste est
+ * COMPLÉTÉE par les apps qui suivent dans le catalogue, en boucle : une
+ * rotation, pour que les deux premières du catalogue ne reçoivent pas tous les
+ * liens. `memeCategorie` vaut alors `false`, et le titre du bloc change : « Dans
+ * la même catégorie » au-dessus d'apps qui n'en sont pas serait faux.
+ *
+ * @param {string} id Identifiant de l'app courante.
+ * @returns {{ memeCategorie: boolean, apps: import('./apps-catalog').FamilyApp[] }}
+ *   Une liste vide pour une app hors catalogue.
+ */
+export function relatedApps(id) {
+  const web = FAMILY_APPS.filter(a => a.platform === 'web');
+  const fiche = web.find(a => a.id === id);
+  if (!fiche) return { memeCategorie: false, apps: [] };
+  const soeurs = web
+    .filter(a => a.id !== id && a.category && a.category === fiche.category)
+    .slice(0, VOISINES_MAX);
+  if (soeurs.length >= VOISINES_MIN)
+    return { memeCategorie: true, apps: soeurs };
+  const rang = web.indexOf(fiche);
+  const suite = [...web.slice(rang + 1), ...web.slice(0, rang)].filter(
+    a => !soeurs.includes(a)
+  );
+  return {
+    memeCategorie: false,
+    apps: [...soeurs, ...suite.slice(0, VOISINES_MIN - soeurs.length)],
+  };
+}
+
+/**
+ * La région par défaut d'une langue, pour `og:locale`. Courte, et c'est
+ * voulu : au-delà, on n'invente pas de territoire.
+ *
+ * @type {Record<string, string>}
+ */
+const REGION_OG = {
+  fr: 'FR',
+  en: 'US',
+  es: 'ES',
+  de: 'DE',
+  it: 'IT',
+  pt: 'PT',
+  nl: 'NL',
+  ca: 'ES',
+  pl: 'PL',
+  sv: 'SE',
+  da: 'DK',
+  fi: 'FI',
+  cs: 'CZ',
+  el: 'GR',
+  ro: 'RO',
+  hu: 'HU',
+  ru: 'RU',
+  uk: 'UA',
+  tr: 'TR',
+  ja: 'JP',
+  ko: 'KR',
+  zh: 'CN',
+};
+
+/**
+ * La valeur `og:locale` d'une étiquette de langue : `fr` → `fr_FR`, `en` →
+ * `en_US`, `pt-BR` → `pt_BR`. Open Graph attend `langue_TERRITOIRE` ; « fr »,
+ * que servaient les vingt pages de contenu du parc au 29/09/2026, n'en est pas
+ * un. `''` pour une langue sans région connue — on n'en invente pas.
+ *
+ * @param {string} lang
+ */
+export function ogLocale(lang) {
+  const m = /^([a-z]{2,3})(?:[-_]([a-z]{2}))?$/i.exec(
+    String(lang ?? '').trim()
+  );
+  if (!m) return '';
+  const code = m[1].toLowerCase();
+  if (m[2]) return `${code}_${m[2].toUpperCase()}`;
+  return REGION_OG[code] ? `${code}_${REGION_OG[code]}` : '';
+}
+
+/**
+ * LES BALISES TEXTE DE L'ACCUEIL, posées quand elles manquent : `og:type`,
+ * `og:site_name`, `og:locale`, `og:url`, `og:title`, `og:description`,
+ * `twitter:card`, `twitter:title` et `twitter:description`.
+ *
+ * Relevé du 29/09/2026 : six accueils n'avaient ni `og:site_name` ni
+ * `og:locale`, deux n'avaient pas leur `twitter:title` ou leur
+ * `twitter:description`, et le gabarit du socle n'en portait aucune — chaque
+ * app les écrivait à la main, ou ne les écrivait pas. Tout ce qu'il faut est
+ * déjà dans la page : le `<title>`, la description, la canonique, la langue ;
+ * le nom vient du catalogue.
+ *
+ * Une balise écrite à la main n'est JAMAIS remplacée : c'est l'app qui sait ce
+ * qu'elle veut dire. Une seule exception, `og:locale`, NORMALISÉ (`fr` →
+ * `fr_FR`) : ce n'est pas un choix éditorial, c'est un format.
+ *
+ * `twitter:card` vaut `summary` quand il manque ; l'image de partage
+ * (`setShareImage`) le remplace ensuite par `summary_large_image`.
+ *
+ * @param {string} html
+ * @param {{ siteName?: string, url?: string }} [opts] `siteName` : le nom du
+ *   site ; `url` : l'URL de la page, pour `og:url` quand la page n'a pas de
+ *   canonique.
+ */
+export function setTextMeta(html, opts = {}) {
+  if (!html.includes('</head>')) return html;
+  const locale = ogLocale(langueDe(html));
+  let out = html.replace(/<meta\b[^>]*>/gi, balise => {
+    if (
+      attribut(balise, 'property') !== 'og:locale' &&
+      attribut(balise, 'name') !== 'og:locale'
+    )
+      return balise;
+    const valeur = attribut(balise, 'content').trim();
+    const norme = ogLocale(valeur);
+    return norme && norme !== valeur
+      ? balise.replace(
+          /\bcontent\s*=\s*("[^"]*"|'[^']*')/i,
+          () => `content="${norme}"`
+        )
+      : balise;
+  });
+  const titre = decoderEntites(contenuDuTitre(out).trim());
+  const description = metaDe(out, 'description');
+  const url = canoniqueDe(out) || opts.url || '';
+  /** @type {string[]} */
+  const balises = [];
+  const poser = (
+    /** @type {string} */ attr,
+    /** @type {string} */ cle,
+    /** @type {string | undefined} */ valeur
+  ) => {
+    if (valeur && !aMeta(out, cle))
+      balises.push(
+        `<meta ${attr}="${cle}" content="${echapperXml(valeur)}" />`
+      );
+  };
+  poser('property', 'og:type', 'website');
+  poser('property', 'og:site_name', opts.siteName);
+  poser('property', 'og:locale', locale);
+  poser('property', 'og:url', url);
+  poser('property', 'og:title', titre);
+  poser('property', 'og:description', description);
+  poser('name', 'twitter:card', 'summary');
+  poser('name', 'twitter:title', titre);
+  poser('name', 'twitter:description', description);
+  return balises.length ? avantFinHead(out, balises.join('\n    ')) : out;
+}
+
 /**
  * Les données structurées schema.org d'une app du parc : un `WebApplication`.
  *
@@ -147,12 +372,33 @@ function metaDe(html, cle) {
  * Pas de note ni d'avis : Google n'affiche la fiche enrichie d'une application
  * qu'avec une note, et en inventer une serait une donnée fausse.
  *
- * @param {{ html: string, homeUrl: string, overrides?: object }} opts
- * @returns {object | null} `null` sans nom ou sans description.
+ * UN SEUL GRAPHE D'ENTITÉS (29/09/2026). Le `WebApplication` porte un `@id`,
+ * `<accueil>#app`, que les pages de contenu désignent par `about`. Il renvoie
+ * à l'éditeur de la famille par `author` et `publisher` — le nœud `PUBLISHER`
+ * du catalogue, repris dans le `@graph` — et au site du parc par `isPartOf`
+ * (`SITE_ID`). `sameAs` ne cite plus que le DÉPÔT : l'accueil du parc est une
+ * autre entité, déjà reliée par `isPartOf`. Jusque-là, l'auteur était une
+ * `Person` redéclarée sur chaque page, sans `@id` : pour un graphe de
+ * connaissances, un éditeur par page.
+ *
+ * `inLanguage` : les langues de l'INTERFACE relevées au catalogue
+ * (`languages`), sinon celle de la page — quinze apps sont multilingues, le
+ * `<html lang>` n'en disait qu'une. `featureList` : les fonctions du catalogue
+ * (`features`). `screenshot` : les captures du MANIFESTE en URL absolues — le
+ * plugin les reporte au build, une fois le manifeste écrit (`writeBundle`).
+ *
+ * @param {{ html: string, homeUrl: string, overrides?: Record<string, unknown>, screenshots?: string[] }} opts
+ * @returns {{ '@context': string, '@graph': Array<Record<string, unknown>> } | null}
+ *   `null` sans nom ou sans description. `overrides` s'applique au
+ *   `WebApplication`, premier nœud du graphe.
  */
-export function webApplicationJsonLd({ html, homeUrl, overrides = {} }) {
-  const id = new URL(homeUrl).pathname.split('/').find(Boolean);
-  const fiche = FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
+export function webApplicationJsonLd({
+  html,
+  homeUrl,
+  overrides = {},
+  screenshots = [],
+}) {
+  const fiche = ficheDe(homeUrl);
   const titre = decoderEntites(contenuDuTitre(html).trim());
   const name =
     fiche?.name ||
@@ -167,45 +413,175 @@ export function webApplicationJsonLd({ html, homeUrl, overrides = {} }) {
     /^https?:\/\//.test(imagePage) && !imagePage.endsWith('/')
       ? imagePage
       : (fiche?.iconUrl ?? undefined);
-  const lang = attribut(/<html\b[^>]*>/i.exec(html)?.[0] ?? '', 'lang');
-  const categorie = SCHEMA_APPLICATION_CATEGORIES[fiche?.category];
+  const lang = langueDe(html);
+  const langues = fiche?.languages?.length ? [...fiche.languages] : lang;
+  const categorie = fiche?.category
+    ? SCHEMA_APPLICATION_CATEGORIES[fiche.category]
+    : undefined;
 
   return {
     '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name,
-    description,
-    url: homeUrl,
-    ...(image ? { image } : {}),
-    ...(categorie ? { applicationCategory: categorie } : {}),
-    operatingSystem: 'Web',
-    browserRequirements: 'Requires JavaScript',
-    ...(lang ? { inLanguage: lang } : {}),
-    isAccessibleForFree: true,
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
-    // ViewAction : ce qu'un moteur de réponse peut proposer (« ouvrir l'app »).
-    // Pas de note inventée — Google n'affiche la fiche enrichie qu'avec une
-    // vraie note, et en inventer une serait une donnée fausse.
-    potentialAction: {
-      '@type': 'ViewAction',
-      target: homeUrl,
-      name: name,
-    },
-    author: {
-      '@type': 'Person',
-      name: GITHUB_OWNER,
-      url: `https://github.com/${GITHUB_OWNER}`,
-    },
-    isPartOf: {
-      '@type': 'WebSite',
-      name: `Les applications de ${GITHUB_OWNER}`,
-      url: `${FAMILY_ORIGIN}/`,
-    },
-    ...(fiche?.repoUrl
-      ? { sameAs: [fiche.repoUrl, `${FAMILY_ORIGIN}/`] }
-      : { sameAs: [`${FAMILY_ORIGIN}/`] }),
-    ...overrides,
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        '@id': `${homeUrl}#app`,
+        name,
+        description,
+        url: homeUrl,
+        ...(image ? { image } : {}),
+        ...(screenshots.length ? { screenshot: [...screenshots] } : {}),
+        ...(categorie ? { applicationCategory: categorie } : {}),
+        operatingSystem: 'Web',
+        browserRequirements: 'Requires JavaScript',
+        ...(langues?.length ? { inLanguage: langues } : {}),
+        ...(fiche?.features?.length
+          ? { featureList: [...fiche.features] }
+          : {}),
+        isAccessibleForFree: true,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+        // ViewAction : ce qu'un moteur de réponse peut proposer (« ouvrir
+        // l'app »). Pas de note inventée — Google n'affiche la fiche enrichie
+        // qu'avec une vraie note, et en inventer une serait une donnée fausse.
+        potentialAction: {
+          '@type': 'ViewAction',
+          target: homeUrl,
+          name: name,
+        },
+        author: { '@id': PUBLISHER['@id'] },
+        publisher: { '@id': PUBLISHER['@id'] },
+        isPartOf: { '@id': SITE_ID },
+        ...(fiche?.repoUrl ? { sameAs: [fiche.repoUrl] } : {}),
+        ...overrides,
+      },
+      noeudEditeur(),
+    ],
   };
+}
+
+/** Le nœud `Organization` de l'éditeur, copié : le catalogue le garde gelé. */
+function noeudEditeur() {
+  return { ...PUBLISHER, sameAs: [...PUBLISHER.sameAs] };
+}
+
+/**
+ * Les blocs `<script type="application/ld+json">` d'un HTML, par un balayage
+ * linéaire (`indexOf`) et non par une regex paresseuse, quadratique sur une
+ * entrée qui ouvre sans refermer (CodeQL `js/polynomial-redos`). `debut` et
+ * `fin` bornent la balise entière ; `json` est son contenu.
+ *
+ * @param {string} html
+ * @returns {Array<{ debut: number, fin: number, json: string }>}
+ */
+function blocsJsonLd(html) {
+  const blocs = [];
+  const bas = html.toLowerCase();
+  let i = 0;
+  for (;;) {
+    const debut = bas.indexOf('<script', i);
+    if (debut < 0) break;
+    const ouverture = bas.indexOf('>', debut);
+    if (ouverture < 0) break;
+    const fermeture = bas.indexOf('</script>', ouverture);
+    if (fermeture < 0) break;
+    if (bas.slice(debut, ouverture).includes('application/ld+json'))
+      blocs.push({
+        debut,
+        fin: fermeture + 9,
+        json: html.slice(ouverture + 1, fermeture),
+      });
+    i = fermeture + 9;
+  }
+  return blocs;
+}
+
+/**
+ * Les captures du manifeste, reportées dans le `WebApplication` que le plugin
+ * a posé — reconnu à son `@id`. Rien n'est touché si la page n'a pas ce nœud
+ * (JSON-LD écrit à la main) ou s'il porte déjà ses captures.
+ *
+ * @param {string} html
+ * @param {string} idApp `<accueil>#app`
+ * @param {string[]} captures URL absolues.
+ */
+function avecCaptures(html, idApp, captures) {
+  if (!captures.length) return html;
+  for (const bloc of blocsJsonLd(html)) {
+    let donnees;
+    try {
+      donnees = JSON.parse(bloc.json);
+    } catch {
+      continue;
+    }
+    const noeuds = Array.isArray(donnees?.['@graph'])
+      ? donnees['@graph']
+      : [donnees];
+    const app = noeuds.find((/** @type {any} */ n) => n && n['@id'] === idApp);
+    if (!app || app.screenshot) continue;
+    app.screenshot = captures;
+    return (
+      html.slice(0, bloc.debut) + jsonLdScript(donnees) + html.slice(bloc.fin)
+    );
+  }
+  return html;
+}
+
+/**
+ * Les captures du manifeste CONSTRUIT, en URL absolues : celui que lie
+ * `<link rel="manifest">`, lu sur le disque s'il vit sous le site. `[]` sans
+ * manifeste, sans captures, ou pour un manifeste servi ailleurs.
+ *
+ * @param {string} dist
+ * @param {string} indexHtml
+ * @param {string} homeUrl
+ * @returns {string[]}
+ */
+function capturesDuManifeste(dist, indexHtml, homeUrl) {
+  let href = '';
+  for (const [balise] of indexHtml.matchAll(/<link\b[^>]*>/gi)) {
+    if (/^manifest$/i.test(attribut(balise, 'rel'))) {
+      href = attribut(balise, 'href').trim();
+      break;
+    }
+  }
+  if (!href) return [];
+  let manifesteUrl;
+  try {
+    manifesteUrl = new URL(href, homeUrl);
+  } catch {
+    return [];
+  }
+  const base = new URL(homeUrl);
+  if (
+    manifesteUrl.origin !== base.origin ||
+    !manifesteUrl.pathname.startsWith(base.pathname)
+  )
+    return [];
+  const racine = resolve(dist);
+  const chemin = resolve(
+    racine,
+    decodeURIComponent(manifesteUrl.pathname.slice(base.pathname.length))
+  );
+  if (!chemin.startsWith(racine + sep) || !existsSync(chemin)) return [];
+  let manifeste;
+  try {
+    manifeste = JSON.parse(readFileSync(chemin, 'utf8'));
+  } catch {
+    return [];
+  }
+  const captures = Array.isArray(manifeste?.screenshots)
+    ? manifeste.screenshots
+    : [];
+  return captures
+    .map((/** @type {any} */ c) => {
+      try {
+        return typeof c?.src === 'string'
+          ? new URL(c.src, manifesteUrl).href
+          : '';
+      } catch {
+        return '';
+      }
+    })
+    .filter(url => /^https?:\/\//.test(url));
 }
 
 /**
@@ -272,10 +648,16 @@ const TEXTES_SERVIS = {
   fr: {
     famille: `Les autres applications de ${GITHUB_OWNER}`,
     noscript: 'Cette application a besoin de JavaScript pour fonctionner.',
+    memeCategorie: 'Dans la même catégorie',
+    voisines: 'À découvrir aussi',
+    depot: 'Code source sur GitHub',
   },
   en: {
     famille: `More apps by ${GITHUB_OWNER}`,
     noscript: 'This app needs JavaScript to run.',
+    memeCategorie: 'In the same category',
+    voisines: 'You may also like',
+    depot: 'Source code on GitHub',
   },
 };
 
@@ -293,15 +675,24 @@ const TEXTES_SERVIS = {
  * remise à zéro de Tailwind (`a { text-decoration: inherit }`) le rendait
  * indiscernable — vu sur `mister-cim10` et `miss-uwh`. WCAG 1.4.1 : un lien ne
  * se signale pas par la seule couleur.
+ *
+ * Le texte de l'accueil (`content/accueil.md`) se lit aligné à GAUCHE, à
+ * pleine opacité et avec ses puces : des paragraphes centrés et estompés se
+ * lisent mal dès qu'ils dépassent une ligne.
  */
 export const SERVED_CONTENT_STYLE =
   '<style data-dwc="served-content-style">' +
   '[data-dwc=served-content]{box-sizing:border-box;max-width:36rem;margin:0 auto;' +
   "padding:18vh 1.25rem 2rem;text-align:center;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.5}" +
   '[data-dwc=served-content] h1{font-size:1.5rem;line-height:1.25;margin:0 0 .75rem;font-weight:700}' +
+  '[data-dwc=served-content] h2{font-size:1.125rem;line-height:1.3;margin:1.5rem 0 .5rem;font-weight:700}' +
+  '[data-dwc=served-content] h3{font-size:1rem;line-height:1.35;margin:1rem 0 .25rem;font-weight:700}' +
   '[data-dwc=served-content] p{margin:0 0 .75rem;opacity:.8}' +
   '[data-dwc=served-content] a{color:inherit;text-decoration:underline}' +
   '[data-dwc=served-content] ul{list-style:none;padding:0;margin:0 0 .75rem}' +
+  '[data-dwc=served-text]{text-align:left}' +
+  '[data-dwc=served-text] p{opacity:1}' +
+  '[data-dwc=served-text] ul,[data-dwc=served-text] ol{list-style:revert;padding-left:1.25rem}' +
   '</style>';
 
 /**
@@ -329,14 +720,31 @@ export const SERVED_CONTENT_STYLE =
  *
  * `pages` : les pages de contenu de l'app (voir `contentPageHtml`), listées en
  * liens sous la description. C'est le seul endroit de l'accueil où un robot
- * qui ne rend pas le JavaScript les voit.
+ * qui ne rend pas le JavaScript les voit. Une page dans une autre langue que
+ * l'accueil (`lang`) porte `lang` et `hreflang` : les pages anglaises sont
+ * ainsi liées, et annoncées comme telles.
+ *
+ * TROIS AJOUTS DEPUIS LE 29/09/2026, tous sans script. Au relevé, un accueil
+ * ne répondait en HTML statique qu'à « qu'est-ce que c'est ? », en 32 à 52
+ * mots, et ne liait ni le dépôt ni une autre app :
+ *   - `accueil` : le HTML de `content/accueil.md` (`renderServedHome`), après
+ *     le titre et la description, avant les pages — ce qu'un robot de réponse
+ *     ne lisait nulle part : pour qui, comment ça marche, où vont les données ;
+ *   - `voisines` : « Dans la même catégorie », les apps sœurs du catalogue
+ *     (`relatedApps`) ;
+ *   - `depot` : « Code source sur GitHub ».
  *
  * @param {string} html
- * @param {{ pages?: Array<{ href: string, titre: string }> }} [opts]
+ * @param {{
+ *   pages?: Array<{ href: string, titre: string, lang?: string }>,
+ *   accueil?: string,
+ *   voisines?: { memeCategorie?: boolean, apps: Array<{ name: string, description?: string, appUrl: string }> },
+ *   depot?: string,
+ * }} [opts] `accueil` est du HTML DÉJÀ SÛR : celui de `renderServedHome`.
  * @returns {{ html: string, injecte: boolean, raison?: string, montage?: string }}
  */
 export function injectServedContent(html, opts = {}) {
-  const { pages = [] } = opts;
+  const { pages = [], accueil = '', voisines, depot = '' } = opts;
   if (html.includes('data-dwc="served-content"'))
     return { html, injecte: false, raison: 'déjà présent' };
   const corps = html.search(/<body\b/i);
@@ -349,22 +757,45 @@ export function injectServedContent(html, opts = {}) {
   if (!titre || !description)
     return { html, injecte: false, raison: 'ni titre ni description' };
 
-  const lang = attribut(/<html\b[^>]*>/i.exec(html)?.[0] ?? '', 'lang');
+  const lang = langueDe(html);
   const t = /^en\b/i.test(lang) ? TEXTES_SERVIS.en : TEXTES_SERVIS.fr;
+  const e = echapperXml;
+  // Les pages de la langue de l'accueil d'abord, les autres ensuite, chacune
+  // annoncée dans sa langue.
+  const memeLangue = (/** @type {{ lang?: string }} */ p) =>
+    !p.lang || !lang || langue2(p.lang) === langue2(lang);
+  const lienPage = (
+    /** @type {{ href: string, titre: string, lang?: string }} */ p
+  ) =>
+    memeLangue(p)
+      ? `<li><a href="${e(p.href)}">${e(p.titre)}</a></li>`
+      : `<li lang="${e(p.lang ?? '')}"><a href="${e(p.href)}" hreflang="${e(p.lang ?? '')}">${e(p.titre)}</a></li>`;
+  const ordonnees = [
+    ...pages.filter(memeLangue),
+    ...pages.filter(p => !memeLangue(p)),
+  ];
+  // Les descriptions du catalogue sont en français : sous un accueil dans une
+  // autre langue, le nom seul.
+  const enFrancais = !lang || langue2(lang) === 'fr';
+  const soeurs = voisines?.apps ?? [];
   const bloc =
-    `<div id="${echapperXml(m[1])}"><div data-dwc="served-content">` +
-    `<h1>${echapperXml(titre)}</h1>` +
-    `<p>${echapperXml(description)}</p>` +
-    (pages.length
-      ? `<ul>${pages
+    `<div id="${e(m[1])}"><div data-dwc="served-content">` +
+    `<h1>${e(titre)}</h1>` +
+    `<p>${e(description)}</p>` +
+    (accueil ? `<section data-dwc="served-text">${accueil}</section>` : '') +
+    (ordonnees.length ? `<ul>${ordonnees.map(lienPage).join('')}</ul>` : '') +
+    (soeurs.length
+      ? `<h2>${e(voisines?.memeCategorie === false ? t.voisines : t.memeCategorie)}</h2>` +
+        `<ul>${soeurs
           .map(
-            p =>
-              `<li><a href="${echapperXml(p.href)}">${echapperXml(p.titre)}</a></li>`
+            a =>
+              `<li><a href="${e(a.appUrl)}">${e(a.name)}</a>${enFrancais && a.description ? ` — ${e(a.description)}` : ''}</li>`
           )
           .join('')}</ul>`
       : '') +
-    `<p><a href="${FAMILY_ORIGIN}/">${echapperXml(t.famille)}</a></p>` +
-    `<noscript><p>${echapperXml(t.noscript)}</p></noscript>` +
+    (depot ? `<p><a href="${e(depot)}">${e(t.depot)}</a></p>` : '') +
+    `<p><a href="${FAMILY_ORIGIN}/">${e(t.famille)}</a></p>` +
+    `<noscript><p>${e(t.noscript)}</p></noscript>` +
     `</div></div>`;
   const debut = corps + m.index;
   let out = html.slice(0, debut) + bloc + html.slice(debut + m[0].length);
@@ -525,16 +956,44 @@ export function findShareImage({ publicDir, homeUrl, fichier }) {
  * LE MARKDOWN RECONNU est volontairement court : titres `#` à `###`,
  * paragraphes, listes à un niveau, gras, italique, code, liens `https:` ou vers
  * une autre page de l'app. Tout le texte est échappé ; aucun HTML ne passe.
+ *
+ * L'EN-TÊTE, contrat avec les rédacteurs (29/09/2026) — une clé par ligne :
+ *   - `title`, `description` : obligatoires ;
+ *   - `slug` : facultatif (défaut : le nom du fichier) ;
+ *   - `date: AAAA-MM-JJ` : la publication ; `updated: AAAA-MM-JJ` : la
+ *     dernière mise à jour DE FOND. Ils nourrissent la ligne « Publié le … ·
+ *     Mis à jour le … », `datePublished` / `dateModified`, et le `lastmod` du
+ *     plan de site, qu'ils fixent ;
+ *   - `answer: …` : la réponse directe, 40 à 70 mots sur UNE ligne, rendue
+ *     sous le titre (« En bref. ») et reprise en `abstract` ;
+ *   - `translation: <slug>` : sur une page ANGLAISE (`en/<slug>.md`), la page
+ *     française qu'elle traduit — d'où des `hreflang` réciproques.
+ *
+ * Les pages anglaises vivent dans `content/pages/en/` et sortent en
+ * `<base>/en/<slug>.html`. Leur FAQ se lit sous `## Frequently asked
+ * questions` ; leurs sources sous `## References`.
  */
 export const CONTENT_PAGES_DIR = 'content/pages';
+
+/** Le sous-dossier des pages anglaises, et leur préfixe d'URL. */
+const DOSSIER_EN = 'en';
 
 const SLUG_VALIDE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Les slugs qui écraseraient un fichier de l'app. */
 const SLUGS_RESERVES = new Set(['index', '404', 'sw', 'offline']);
 const TITRES_FAQ =
   /^(?:questions fréquentes|foire aux questions|faq|frequently asked questions)$/i;
+/** La section des sources : `## Sources`, ou `## References` en anglais. */
+const TITRES_SOURCES = /^(?:sources|r[ée]f[ée]rences)$/i;
+/**
+ * Les liens sûrs : `https:`, `mailto:`, une ancre, ou une autre page de l'app
+ * — au même niveau (`page.html`), sous une langue (`en/page.html`) ou au-dessus
+ * (`../page.html`, depuis une page anglaise vers une page française).
+ */
 const LIEN_SUR =
-  /^(?:https?:\/\/[^\s"'<>]+|mailto:[^\s"'<>]+|[a-z0-9-]+\.html(?:#[a-z0-9-]+)?|#[a-z0-9-]+)$/i;
+  /^(?:https?:\/\/[^\s"'<>]+|mailto:[^\s"'<>]+|(?:\.\.\/|[a-z]{2}\/)?[a-z0-9-]+\.html(?:#[a-z0-9-]+)?|#[a-z0-9-]+)$/i;
+/** Une date d'en-tête : `AAAA-MM-JJ`. */
+const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Un identifiant d'ancre : minuscules ASCII, tirets. */
 function ancre(texte) {
@@ -576,26 +1035,91 @@ function enLigne(md) {
 }
 
 /**
+ * Dans la section des sources, une URL NUE devient un lien : une liste de
+ * sources s'écrit souvent `- OMS : https://…`. Pas ailleurs — le reste du
+ * texte garde la syntaxe explicite. Une ligne qui porte déjà un lien Markdown
+ * est laissée telle quelle : on n'imbrique pas deux liens. La ponctuation qui
+ * suit l'URL reste hors du lien.
+ *
+ * @param {string} texte
+ */
+function autolien(texte) {
+  if (texte.includes('](')) return texte;
+  return texte.replace(/https?:\/\/[^\s<>"'()[\]]+/g, url => {
+    // Par une boucle, pas par `/[.,;:!?]+$/` : ancrée en fin, cette forme
+    // recule sur une longue suite de ponctuation (CodeQL js/polynomial-redos).
+    let fin = url.length;
+    while (fin > 0 && '.,;:!?'.includes(url[fin - 1])) fin -= 1;
+    const propre = url.slice(0, fin);
+    return `[${propre}](${propre})${url.slice(fin)}`;
+  });
+}
+
+/**
+ * Les URL de la section des sources (`## Sources`, `## References`),
+ * reprises en `citation` dans l'`Article` : une page qui cite l'OMS ou la
+ * documentation de Supabase le dit aussi aux moteurs.
+ *
+ * @param {string} md
+ * @returns {string[]}
+ */
+function sourcesFromMarkdown(md) {
+  /** @type {string[]} */
+  const urls = [];
+  let dans = false;
+  for (const brute of String(md).replace(/\r\n?/g, '\n').split('\n')) {
+    const ligne = brute.trim();
+    const titre = /^(#{1,3})\s+(.+)$/.exec(ligne);
+    if (titre) {
+      if (titre[1].length <= 2)
+        dans =
+          titre[1].length === 2 && TITRES_SOURCES.test(texteBrut(titre[2]));
+      continue;
+    }
+    if (!dans) continue;
+    for (const [, url] of autolien(ligne).matchAll(
+      /\]\((https?:\/\/[^)\s]+)\)/g
+    ))
+      if (!urls.includes(url)) urls.push(url);
+  }
+  return urls;
+}
+
+/**
  * Le Markdown court des pages de contenu, en HTML. Les `h2`/`h3` reçoivent une
  * ancre, pour qu'on puisse partager une section.
+ *
+ * La section des SOURCES (`## Sources`, ou `## References` en anglais) est
+ * rendue dans un `<section class="sources">`, que le gabarit compose à part —
+ * plus petite, les longues URL coupées —, et ses URL nues deviennent des
+ * liens. Relevé du 29/09/2026 : une page sur vingt citait une source externe,
+ * alors que les pages de santé ou d'argent citaient l'OMS, l'ATIH ou « les
+ * règles officielles » sans lien.
  *
  * @param {string} md
  * @returns {string}
  */
 export function renderMarkdown(md) {
+  /** @type {string[]} */
   const html = [];
   const ancres = new Set();
+  /** @type {string[]} */
   let paragraphe = [];
+  /** @type {{ type: string, items: string[] } | null} */
   let liste = null;
+  let dansSources = false;
+  const source = (/** @type {string} */ texte) =>
+    dansSources ? autolien(texte) : texte;
   const fermerParagraphe = () => {
-    if (paragraphe.length) html.push(`<p>${enLigne(paragraphe.join(' '))}</p>`);
+    if (paragraphe.length)
+      html.push(`<p>${enLigne(source(paragraphe.join(' ')))}</p>`);
     paragraphe = [];
   };
   const fermerListe = () => {
     if (liste)
       html.push(
         `<${liste.type}>${liste.items
-          .map(item => `<li>${enLigne(item)}</li>`)
+          .map(item => `<li>${enLigne(source(item))}</li>`)
           .join('')}</${liste.type}>`
       );
     liste = null;
@@ -612,6 +1136,16 @@ export function renderMarkdown(md) {
       fermerParagraphe();
       fermerListe();
       const niveau = titre[1].length;
+      // Un titre de même rang ou plus haut ferme la section des sources ; un
+      // `##` qui la nomme l'ouvre.
+      if (niveau <= 2 && dansSources) {
+        html.push('</section>');
+        dansSources = false;
+      }
+      if (niveau === 2 && TITRES_SOURCES.test(texteBrut(titre[2]))) {
+        html.push('<section class="sources">');
+        dansSources = true;
+      }
       let id = '';
       if (niveau > 1) {
         const base = ancre(texteBrut(titre[2])) || 'section';
@@ -642,6 +1176,7 @@ export function renderMarkdown(md) {
   }
   fermerParagraphe();
   fermerListe();
+  if (dansSources) html.push('</section>');
   return html.join('\n');
 }
 
@@ -681,15 +1216,71 @@ export function faqFromMarkdown(md) {
     .map(q => ({ question: q.question, reponse: q.reponse.join(' ') }));
 }
 
+/** Une vraie date du calendrier, au format `AAAA-MM-JJ`. */
+function dateValide(texte) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(texte));
+  if (!m) return false;
+  const [a, mo, j] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const d = new Date(Date.UTC(a, mo - 1, j));
+  return (
+    d.getUTCFullYear() === a &&
+    d.getUTCMonth() === mo - 1 &&
+    d.getUTCDate() === j
+  );
+}
+
+/** Les guillemets qu'un rédacteur met autour d'une réponse, retirés. */
+const GUILLEMETS = [
+  ['"', '"'],
+  ["'", "'"],
+  ['«', '»'],
+  ['“', '”'],
+  ['„', '“'],
+  ['‘', '’'],
+];
+
+/** @param {string} texte */
+function sansGuillemets(texte) {
+  const s = texte.trim();
+  for (const [ouvre, ferme] of GUILLEMETS) {
+    if (
+      s.length > ouvre.length + ferme.length &&
+      s.startsWith(ouvre) &&
+      s.endsWith(ferme)
+    )
+      return s.slice(ouvre.length, s.length - ferme.length).trim();
+  }
+  return s;
+}
+
+/** Le nombre de mots d'un texte, comme `mots` le compte : ses jetons. */
+function compterMots(texte) {
+  return texte.split(/\s+/).filter(Boolean).length;
+}
+
 /**
- * Lit une page de contenu : en-tête `title` / `description` (et `slug`,
- * `date` facultatifs), un seul `# titre`. Refuse, avec un message qui nomme le
- * fichier, tout ce qui produirait une page fausse.
+ * Les VRAIS mots d'un texte : sans la ponctuation que la typographie
+ * française isole entre deux espaces (« ; », « : », « ? »). C'est ce que
+ * `pwa-doctor` compare aux bornes de la réponse courte.
+ */
+function compterVraisMots(texte) {
+  return texte.split(/\s+/).filter(m => /[\p{L}\p{N}]/u.test(m)).length;
+}
+
+/**
+ * Lit une page de contenu : l'en-tête (voir `CONTENT_PAGES_DIR` pour ses
+ * clés), un seul `# titre`. Refuse, avec un message qui nomme le fichier, tout
+ * ce qui produirait une page fausse — dont une date qui n'en est pas une.
+ *
+ * `options.lang` : la langue de la page (`fr` à la racine, `en` sous `en/`) ;
+ * `options.dossier` : son préfixe d'URL (`''` ou `'en/'`).
  *
  * @param {string} texte
  * @param {string} [fichier]
+ * @param {{ lang?: string, dossier?: string }} [options]
  */
-export function parseContentPage(texte, fichier = 'page.md') {
+export function parseContentPage(texte, fichier = 'page.md', options = {}) {
+  const { lang = 'fr', dossier = '' } = options;
   const source = String(texte)
     .replace(/^\uFEFF/, '')
     .replace(/\r\n?/g, '\n');
@@ -698,6 +1289,7 @@ export function parseContentPage(texte, fichier = 'page.md') {
     throw new Error(
       `[pwa-seo] ${fichier} : en-tête manquant (--- title: … / description: … ---)`
     );
+  /** @type {Record<string, string>} */
   const meta = {};
   for (const ligne of entete[1].split('\n')) {
     const kv = /^([a-zA-Z]+)\s*:\s*(.*)$/.exec(ligne.trim());
@@ -711,6 +1303,15 @@ export function parseContentPage(texte, fichier = 'page.md') {
     );
   if (!meta.title || !meta.description)
     throw new Error(`[pwa-seo] ${fichier} : title et description sont requis`);
+  for (const cle of ['date', 'updated'])
+    if (meta[cle] && !dateValide(meta[cle]))
+      throw new Error(
+        `[pwa-seo] ${fichier} : ${cle} « ${meta[cle]} » n’est pas une date AAAA-MM-JJ`
+      );
+  if (meta.translation && !SLUG_VALIDE.test(meta.translation))
+    throw new Error(
+      `[pwa-seo] ${fichier} : translation « ${meta.translation} » n’est pas un slug`
+    );
   const h1 = markdown.split('\n').filter(l => /^#\s+/.test(l.trim()));
   if (h1.length !== 1)
     throw new Error(
@@ -720,58 +1321,212 @@ export function parseContentPage(texte, fichier = 'page.md') {
     .split('\n')
     .map(l => texteBrut(l.replace(/^(?:#{1,3}|[-*]|\d+[.)])\s+/, '')))
     .join(' ');
+  const answer = meta.answer ? sansGuillemets(meta.answer) : '';
   return {
     slug,
+    lang,
+    fichier,
+    chemin: `${dossier}${slug}.html`,
     title: meta.title,
     description: meta.description,
     ...(meta.date ? { date: meta.date } : {}),
+    ...(meta.updated ? { updated: meta.updated } : {}),
+    ...(answer
+      ? { answer, motsReponse: compterVraisMots(texteBrut(answer)) }
+      : {}),
+    ...(meta.translation ? { translation: meta.translation } : {}),
     titre: texteBrut(h1[0].trim().replace(/^#\s+/, '')),
     markdown,
     html: renderMarkdown(markdown),
     faq: faqFromMarkdown(markdown),
-    mots: texteSeul.split(/\s+/).filter(Boolean).length,
+    sources: sourcesFromMarkdown(markdown),
+    mots: compterMots(texteSeul),
+    // L'empreinte de la SOURCE, en-tête compris : c'est elle qui dit si la
+    // page a changé, pas le gabarit du socle (voir `seoState`).
+    empreinte: empreinte([source]),
   };
 }
 
+/** Un fichier de page : `.md`, ni brouillon (`_…`) ni README. */
+function estUnePage(nom) {
+  return (
+    /\.md$/i.test(nom) && !nom.startsWith('_') && !/^readme\.md$/i.test(nom)
+  );
+}
+
+/** @param {string} chemin */
+function estUnDossier(chemin) {
+  try {
+    return statSync(chemin).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Les pages de contenu d'un dossier, triées par slug. `[]` sans dossier. Les
- * fichiers qui commencent par `_` et les `README.md` sont ignorés.
+ * Les FICHIERS de pages d'un dossier, relatifs à lui et triés : les pages
+ * françaises à la racine, puis les anglaises sous `en/`. Les fichiers qui
+ * commencent par `_` et les `README.md` sont ignorés.
+ *
+ * `pwa-doctor` compte CETTE liste : un contrôle qui compterait autre chose que
+ * ce que le build publie se tairait sur un dossier qui ne contient qu'un
+ * README — c'était le cas jusqu'au 29/09/2026.
+ *
+ * @param {string} dossier
+ * @returns {string[]}
+ */
+export function contentPageFiles(dossier) {
+  if (!dossier || !estUnDossier(dossier)) return [];
+  const lister = (/** @type {string} */ sous) => {
+    const d = sous ? join(dossier, sous) : dossier;
+    if (!estUnDossier(d)) return [];
+    return readdirSync(d)
+      .filter(f => estUnePage(f) && !estUnDossier(join(d, f)))
+      .sort()
+      .map(f => (sous ? `${sous}/${f}` : f));
+  };
+  return [...lister(''), ...lister(DOSSIER_EN)];
+}
+
+/**
+ * Les pages de contenu d'un dossier : les françaises triées par slug, puis
+ * les anglaises (`en/`). `[]` sans dossier.
+ *
+ * Refuse deux pages de même slug dans une langue, et une TRADUCTION qui ne
+ * tient pas : une page anglaise dont `translation` ne désigne aucune page
+ * française, ou deux pages anglaises qui traduisent la même. Un `hreflang`
+ * vers une page absente dirait aux moteurs qu'une traduction existe là où ils
+ * trouveraient un 404.
  *
  * @param {string} dossier
  */
 export function readContentPages(dossier) {
-  if (!dossier || !existsSync(dossier)) return [];
-  const pages = readdirSync(dossier)
-    .filter(
-      f => /\.md$/i.test(f) && !f.startsWith('_') && !/^readme\.md$/i.test(f)
+  const pages = contentPageFiles(dossier).map(rel =>
+    parseContentPage(
+      readFileSync(join(dossier, rel), 'utf8'),
+      rel,
+      rel.startsWith(`${DOSSIER_EN}/`)
+        ? { lang: 'en', dossier: `${DOSSIER_EN}/` }
+        : { lang: 'fr' }
     )
-    .sort()
-    .map(f => parseContentPage(readFileSync(join(dossier, f), 'utf8'), f));
+  );
   const vus = new Set();
   for (const p of pages) {
-    if (vus.has(p.slug))
-      throw new Error(`[pwa-seo] deux pages portent le slug « ${p.slug} »`);
-    vus.add(p.slug);
+    if (vus.has(p.chemin))
+      throw new Error(
+        `[pwa-seo] deux pages portent le slug « ${p.chemin.replace(/\.html$/, '')} »`
+      );
+    vus.add(p.chemin);
+  }
+  const francaises = new Set(
+    pages.filter(p => p.lang !== 'en').map(p => p.slug)
+  );
+  /** @type {Map<string, string>} */
+  const traduites = new Map();
+  for (const p of pages) {
+    if (p.lang !== 'en' || !p.translation) continue;
+    if (!francaises.has(p.translation))
+      throw new Error(
+        `[pwa-seo] ${p.fichier} : translation « ${p.translation} » ne désigne aucune page française`
+      );
+    const deja = traduites.get(p.translation);
+    if (deja)
+      throw new Error(
+        `[pwa-seo] ${deja} et ${p.fichier} traduisent la même page « ${p.translation} »`
+      );
+    traduites.set(p.translation, p.fichier);
   }
   return pages;
 }
 
+/** La page de l'auteur : « par mister-guiiug » y mène. */
+const PAGE_AUTEUR = `${FAMILY_ORIGIN}/a-propos.html`;
+
 const TEXTES_PAGE = {
   fr: {
-    ouvrir: nom => `Ouvrir ${nom}`,
+    ouvrir: (/** @type {string} */ nom) => `Ouvrir ${nom}`,
     fil: 'Fil d’Ariane',
     parc: 'Les applications',
     aLire: 'À lire aussi',
     famille: `Les autres applications de ${GITHUB_OWNER}`,
+    enBref: 'En bref.',
+    publie: 'Publié le',
+    maj: 'Mis à jour le',
+    par: 'par',
+    parSeul: 'Par',
+    memeCategorie: 'Dans la même catégorie',
+    voisines: 'À découvrir aussi',
   },
   en: {
-    ouvrir: nom => `Open ${nom}`,
+    ouvrir: (/** @type {string} */ nom) => `Open ${nom}`,
     fil: 'Breadcrumb',
     parc: 'Apps',
     aLire: 'Read also',
     famille: `More apps by ${GITHUB_OWNER}`,
+    enBref: 'In short.',
+    publie: 'Published',
+    maj: 'Updated',
+    par: 'by',
+    parSeul: 'By',
+    memeCategorie: 'In the same category',
+    voisines: 'You may also like',
   },
 };
+
+/** Le lien vers l'autre langue, écrit DANS la langue qu'il annonce. */
+const LIEN_AUTRE_LANGUE = {
+  fr: 'Lire en français',
+  en: 'Read in English',
+};
+
+const MOIS = {
+  fr: [
+    'janvier',
+    'février',
+    'mars',
+    'avril',
+    'mai',
+    'juin',
+    'juillet',
+    'août',
+    'septembre',
+    'octobre',
+    'novembre',
+    'décembre',
+  ],
+  en: [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ],
+};
+
+/**
+ * Une date `AAAA-MM-JJ` au format LONG de la langue : « 25 septembre 2026 »,
+ * « 1er octobre 2026 », « September 25, 2026 ». Écrit à la main plutôt que par
+ * `Intl` : le résultat ne dépend ni du fuseau de la machine de build (une date
+ * seule, lue en UTC, recule d'un jour à l'ouest) ni des données ICU de Node.
+ * Une valeur qui n'est pas une date sort telle quelle.
+ *
+ * @param {string} iso
+ * @param {string} [lang]
+ */
+export function formatLongDate(iso, lang = 'fr') {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso));
+  if (!m || !dateValide(iso)) return String(iso);
+  const [annee, mois, jour] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (langue2(lang) === 'en') return `${MOIS.en[mois - 1]} ${jour}, ${annee}`;
+  return `${jour === 1 ? '1er' : jour} ${MOIS.fr[mois - 1]} ${annee}`;
+}
 
 /** `#rgb` ou `#rrggbb` → luminance relative (WCAG), ou `null`. */
 function luminance(hex) {
@@ -806,19 +1561,60 @@ function couleurDuTheme(html) {
 }
 
 /**
+ * Un `<link>` d'icône dont le `href` est RELATIF devient absolu : une page
+ * anglaise vit sous `en/`, où `favicon.svg` ne mènerait nulle part. Les
+ * chemins absolus (`/app/favicon.svg`, ce que Vite écrit) restent tels quels.
+ *
+ * @param {string} balise
+ * @param {string} homeUrl
+ */
+function iconeAbsolue(balise, homeUrl) {
+  const propre = `${balise.replace(/\/?>$/, '').trimEnd()} />`;
+  return propre.replace(
+    /\bhref\s*=\s*("([^"]*)"|'([^']*)')/i,
+    (tout, _v, dq, sq) => {
+      const href = decoderEntites(dq ?? sq ?? '');
+      if (!href || /^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(href)) return tout;
+      return `href="${echapperXml(new URL(href, homeUrl).href)}"`;
+    }
+  );
+}
+
+/**
  * Le document HTML d'une page de contenu, autonome : il ne charge ni script ni
  * feuille, et porte sa propre CSP. Ce qu'il sait de l'app, il le lit dans
- * l'`index.html` CONSTRUIT : langue, couleur du thème, icônes, image de
- * partage, description de l'app.
+ * l'`index.html` CONSTRUIT : couleur du thème, icônes, image de partage,
+ * description de l'app. Sa LANGUE est la sienne (`page.lang`), plus celle de
+ * l'accueil : une page anglaise se déclare en anglais.
+ *
+ * DEPUIS LE 29/09/2026 (audit SEO/GEO/AEO — aucune des vingt pages n'avait ni
+ * date, ni auteur visible, ni réponse en tête) :
+ *   - sous le titre, la SIGNATURE — « Publié le … · Mis à jour le … · par
+ *     mister-guiiug », le nom menant à la page « À propos » du hub — puis le
+ *     bloc « En bref. » tiré de `answer`, repris en `abstract` ;
+ *   - l'`Article` porte `datePublished`, `dateModified`, et désigne l'éditeur
+ *     de la famille (`PUBLISHER`, dans le `@graph`), l'app (`about`, son
+ *     `@id`) et le site du parc (`isPartOf`) par leurs `@id` ; les liens de la
+ *     section des sources deviennent `citation` ;
+ *   - Open Graph : `og:locale` au format `fr_FR` (« fr » n'en est pas un),
+ *     `article:published_time` et `article:modified_time`, et un
+ *     `og:image:alt` qui décrit LA PAGE, plus l'accueil ;
+ *   - une page et sa TRADUCTION se désignent l'une l'autre : `hreflang` `fr`,
+ *     `en` et `x-default` (la française), RÉCIPROQUES par construction — la
+ *     paire est calculée une fois, pour les deux pages — et un lien visible
+ *     vers l'autre langue. Rien sans traduction ;
+ *   - avant le pied de page, « Dans la même catégorie » : les apps sœurs du
+ *     catalogue (`relatedApps`). Sous une page anglaise, leur nom seul — les
+ *     descriptions du catalogue sont en français.
  *
  * @param {{ page: ReturnType<typeof parseContentPage>, pages?: Array<ReturnType<typeof parseContentPage>>, indexHtml: string, homeUrl: string }} opts
  */
 export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
-  const lang =
-    attribut(/<html\b[^>]*>/i.exec(indexHtml)?.[0] ?? '', 'lang') || 'fr';
-  const t = /^en\b/i.test(lang) ? TEXTES_PAGE.en : TEXTES_PAGE.fr;
+  const lang = page.lang || langueDe(indexHtml) || 'fr';
+  const anglais = langue2(lang) === 'en';
+  const t = anglais ? TEXTES_PAGE.en : TEXTES_PAGE.fr;
   const id = new URL(homeUrl).pathname.split('/').find(Boolean);
-  const fiche = FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
+  const fiche = ficheDe(homeUrl);
   const titreIndex = decoderEntites(contenuDuTitre(indexHtml).trim());
   const nomApp =
     fiche?.name ||
@@ -827,7 +1623,9 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
     id ||
     '';
   const descriptionApp = metaDe(indexHtml, 'description');
-  const url = `${homeUrl}${page.slug}.html`;
+  const urlDe = (/** @type {{ slug: string, chemin?: string }} */ p) =>
+    `${homeUrl}${p.chemin ?? `${p.slug}.html`}`;
+  const url = urlDe(page);
   const image = metaDe(indexHtml, 'og:image');
   const imageEstUneImage = /^https?:\/\//.test(image) && !image.endsWith('/');
   const carteLarge =
@@ -841,11 +1639,34 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
     .filter(b =>
       /^(?:icon|shortcut icon|apple-touch-icon)$/i.test(attribut(b, 'rel'))
     )
-    .map(b => `${b.replace(/\/?>$/, '').trimEnd()} />`);
+    .map(b => iconeAbsolue(b, homeUrl));
   const iconeEntete =
     fiche?.iconUrl || icones.map(b => attribut(b, 'href')).find(Boolean) || '';
-  const autres = pages.filter(p => p.slug !== page.slug);
+  const memeLangue = (/** @type {{ lang?: string }} */ p) =>
+    langue2(p.lang || 'fr') === langue2(lang);
+  const autres = pages.filter(p => memeLangue(p) && p.slug !== page.slug);
 
+  // LA PAIRE DE TRADUCTION, calculée une fois : la page française et sa
+  // traduction anglaise se désignent l'une l'autre, ou aucune ne désigne rien.
+  const francaise = anglais
+    ? page.translation
+      ? pages.find(
+          p => langue2(p.lang || 'fr') === 'fr' && p.slug === page.translation
+        )
+      : undefined
+    : page;
+  const anglaise = francaise
+    ? pages.find(
+        p =>
+          langue2(p.lang || 'fr') === 'en' && p.translation === francaise.slug
+      )
+    : undefined;
+  const paire =
+    francaise && anglaise
+      ? { fr: urlDe(francaise), en: urlDe(anglaise) }
+      : null;
+
+  const dateModifiee = page.updated || page.date;
   const donnees = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -855,22 +1676,23 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
         headline: page.titre,
         name: page.title,
         description: page.description,
+        ...(page.answer ? { abstract: texteBrut(page.answer) } : {}),
         url,
         mainEntityOfPage: url,
         inLanguage: lang,
-        ...(page.date ? { dateModified: page.date } : {}),
+        ...(page.date ? { datePublished: page.date } : {}),
+        ...(dateModifiee ? { dateModified: dateModifiee } : {}),
         ...(imageEstUneImage ? { image } : {}),
-        author: {
-          '@type': 'Person',
-          name: GITHUB_OWNER,
-          url: `https://github.com/${GITHUB_OWNER}`,
-        },
-        about: { '@type': 'WebApplication', name: nomApp, url: homeUrl },
-        isPartOf: {
-          '@type': 'WebSite',
-          name: `Les applications de ${GITHUB_OWNER}`,
-          url: `${FAMILY_ORIGIN}/`,
-        },
+        author: { '@id': PUBLISHER['@id'] },
+        publisher: { '@id': PUBLISHER['@id'] },
+        about: { '@id': `${homeUrl}#app` },
+        isPartOf: { '@id': SITE_ID },
+        ...(page.sources?.length ? { citation: [...page.sources] } : {}),
+        ...(paire
+          ? anglais
+            ? { translationOfWork: { '@id': paire.fr } }
+            : { workTranslation: { '@id': paire.en } }
+          : {}),
       },
       {
         '@type': 'BreadcrumbList',
@@ -892,10 +1714,54 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
             },
           ]
         : []),
+      noeudEditeur(),
     ],
   };
 
   const e = echapperXml;
+
+  // Sous le titre : la signature, le lien vers l'autre langue, « En bref ».
+  /** @type {string[]} */
+  const parties = [];
+  if (page.date)
+    parties.push(
+      `${t.publie} <time datetime="${e(page.date)}">${e(formatLongDate(page.date, lang))}</time>`
+    );
+  if (page.updated && page.updated !== page.date)
+    parties.push(
+      `${t.maj} <time datetime="${e(page.updated)}">${e(formatLongDate(page.updated, lang))}</time>`
+    );
+  const auteur = `<a href="${PAGE_AUTEUR}" rel="author">${e(GITHUB_OWNER)}</a>`;
+  parties.push(`${parties.length ? t.par : t.parSeul} ${auteur}`);
+  const sousTitre = [
+    `<p class="signature">${parties.join(' · ')}</p>`,
+    ...(paire
+      ? [
+          anglais
+            ? `<p class="langue" lang="fr"><a href="${e(paire.fr)}" hreflang="fr">${LIEN_AUTRE_LANGUE.fr}</a></p>`
+            : `<p class="langue" lang="en"><a href="${e(paire.en)}" hreflang="en">${LIEN_AUTRE_LANGUE.en}</a></p>`,
+        ]
+      : []),
+    ...(page.answer
+      ? [
+          `<p class="en-bref"><strong>${e(t.enBref)}</strong> ${enLigne(page.answer)}</p>`,
+        ]
+      : []),
+  ].join('\n');
+  // Par une fonction : un `$&` dans la réponse n'est pas un motif.
+  const article = page.html.includes('</h1>')
+    ? page.html.replace('</h1>', () => `</h1>\n${sousTitre}`)
+    : `${sousTitre}\n${page.html}`;
+
+  const voisines = fiche
+    ? relatedApps(fiche.id)
+    : { memeCategorie: false, apps: [] };
+  const locale = ogLocale(lang);
+  const dateHtml = (
+    /** @type {string} */ p,
+    /** @type {string | undefined} */ v
+  ) => (v ? `<meta property="${p}" content="${e(v)}" />\n    ` : '');
+
   const style =
     `:root{color-scheme:light dark;--fond:#fff;--texte:#1f2328;--doux:#59636e;--bord:#d1d9e0;--lien:#0969da;--accent:${accentSur};--sur-accent:${textOn(accentSur)}}` +
     '@media (prefers-color-scheme:dark){:root{--fond:#0d1117;--texte:#e6edf3;--doux:#9198a1;--bord:#3d444d;--lien:#4493f8}}' +
@@ -915,6 +1781,10 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
     'h3{font-size:1.125rem;line-height:1.35;margin:1.5rem 0 .5rem}' +
     'li{margin:.25rem 0}' +
     'code{font-size:.9em;padding:.1em .35em;border-radius:6px;background:rgba(127,127,127,.15)}' +
+    '.signature,.langue{margin:-.25rem 0 1rem;color:var(--doux);font-size:.9375rem}' +
+    '.en-bref{margin:0 0 1.75rem;padding:1rem 1.25rem;border:1px solid var(--bord);border-left:4px solid var(--accent);border-radius:10px}' +
+    '.sources{font-size:.9375rem;color:var(--doux)}' +
+    '.sources a{overflow-wrap:anywhere}' +
     '.cta{margin:2.5rem 0;padding:1.25rem;border:1px solid var(--bord);border-radius:14px}' +
     '.cta p{margin:0 0 1rem;color:var(--doux)}' +
     '.cta a{display:inline-block;background:var(--accent);color:var(--sur-accent);padding:.7rem 1.2rem;border-radius:10px;font-weight:700;text-decoration:none}' +
@@ -930,24 +1800,36 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
     <title>${e(page.title)}</title>
     <meta name="description" content="${e(page.description)}" />
     <link rel="canonical" href="${e(url)}" />
-    ${accent ? `<meta name="theme-color" content="${e(accent)}" />\n    ` : ''}${icones.join('\n    ')}
+    ${
+      paire
+        ? [
+            `<link rel="alternate" hreflang="fr" href="${e(paire.fr)}" />`,
+            `<link rel="alternate" hreflang="en" href="${e(paire.en)}" />`,
+            `<link rel="alternate" hreflang="x-default" href="${e(paire.fr)}" />`,
+          ].join('\n    ') + '\n    '
+        : ''
+    }${accent ? `<meta name="theme-color" content="${e(accent)}" />\n    ` : ''}${icones.join('\n    ')}
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="${e(nomApp)}" />
-    <meta property="og:locale" content="${e(lang.replace('-', '_'))}" />
-    <meta property="og:title" content="${e(page.title)}" />
+    ${locale ? `<meta property="og:locale" content="${e(locale)}" />\n    ` : ''}${
+      paire
+        ? `<meta property="og:locale:alternate" content="${ogLocale(anglais ? 'fr' : 'en')}" />\n    `
+        : ''
+    }<meta property="og:title" content="${e(page.title)}" />
     <meta property="og:description" content="${e(page.description)}" />
     <meta property="og:url" content="${e(url)}" />
-    ${
+    ${dateHtml('article:published_time', page.date)}${dateHtml('article:modified_time', dateModifiee)}${
       imageEstUneImage
         ? [
             `<meta property="og:image" content="${e(image)}" />`,
-            ...['type', 'width', 'height', 'alt']
+            ...['type', 'width', 'height']
               .map(k => [k, metaDe(indexHtml, `og:image:${k}`)])
               .filter(([, v]) => v)
               .map(
                 ([k, v]) =>
                   `<meta property="og:image:${k}" content="${e(v)}" />`
               ),
+            `<meta property="og:image:alt" content="${e(page.title)}" />`,
             `<meta name="twitter:image" content="${e(image)}" />`,
           ].join('\n    ') + '\n    '
         : ''
@@ -968,7 +1850,7 @@ export function contentPageHtml({ page, pages = [], indexHtml, homeUrl }) {
         </ol>
       </nav>
       <article>
-${page.html}
+${article}
       </article>
       <aside class="cta">
         ${descriptionApp ? `<p>${e(descriptionApp)}</p>` : ''}
@@ -983,6 +1865,16 @@ ${page.html}
         </ul>
       </aside>`
           : ''
+      }${
+        voisines.apps.length
+          ? `
+      <aside aria-labelledby="dwc-voisines">
+        <h2 id="dwc-voisines">${e(voisines.memeCategorie ? t.memeCategorie : t.voisines)}</h2>
+        <ul>
+          ${voisines.apps.map(a => `<li><a href="${e(a.appUrl)}">${e(a.name)}</a>${anglais ? '' : ` — ${e(a.description)}`}</li>`).join('\n          ')}
+        </ul>
+      </aside>`
+          : ''
       }
     </main>
     <footer>
@@ -993,9 +1885,539 @@ ${page.html}
 `;
 }
 
+// ---------------------------------------------------------------------------
+// L'accueil servi, les routes publiques, le 404, l'état SEO
+// ---------------------------------------------------------------------------
+
+/** Un caractère d'usage privé : une marque qu'aucun HTML ne contient. */
+const PRIVE = String.fromCharCode(0xe000);
+
+/** Le texte sans son BOM de tête, s'il en a un. */
+function sansBom(texte) {
+  const s = String(texte);
+  return s.charCodeAt(0) === 0xfeff ? s.slice(1) : s;
+}
+
 /**
- * Plugin Vite : injecte les placeholders d'index.html et génère sitemap.xml /
- * robots.txt en fin de build.
+ * Insère un fragment juste avant `</head>`. Le remplacement passe par une
+ * FONCTION : dans une chaîne de remplacement, `$&` ou `$'` sont des motifs, et
+ * un titre ou une description qui en contiendrait réécrirait la page.
+ *
+ * @param {string} html
+ * @param {string} fragment
+ */
+function avantFinHead(html, fragment) {
+  return html.replace('</head>', () => `  ${fragment}\n  </head>`);
+}
+
+/**
+ * Retire les balises que `garder` refuse ; une ligne qui ne portait qu'elles
+ * disparaît avec elles, comme dans `setShareImage`.
+ *
+ * @param {string} html
+ * @param {RegExp} motif Un motif global de balise (`/<meta\b[^>]*>/gi`).
+ * @param {(balise: string) => boolean} garder
+ */
+function retirerBalises(html, motif, garder) {
+  const marque = `${PRIVE}dwc-retire${PRIVE}`;
+  return html
+    .replace(motif, balise => (garder(balise) ? balise : marque))
+    .split('\n')
+    .filter(l => !l.includes(marque) || l.replaceAll(marque, '').trim() !== '')
+    .map(l => l.replaceAll(marque, ''))
+    .join('\n');
+}
+
+/** Le texte de l'accueil servi, relatif à la racine du projet. */
+export const SERVED_HOME_FILE = 'content/accueil.md';
+
+/**
+ * LE TEXTE DE L'ACCUEIL SERVI : `content/accueil.md`, rendu pour le contenu
+ * servi (`injectServedContent`, option `accueil`).
+ *
+ * Au relevé du 29/09/2026, un accueil ne disait en HTML statique que son titre
+ * et sa description, en 32 à 52 mots. Ce fichier, écrit app par app, dit ce
+ * qu'un robot de réponse cherche et ne trouvait nulle part : pour qui, comment
+ * ça marche, où vont les données, ce que ça coûte.
+ *
+ * Même Markdown court que les pages de contenu (`##`, `###`, paragraphes,
+ * listes, gras, italique, liens). PAS DE `#` : l'accueil a déjà son titre, le
+ * `<title>` de la page, en `<h1>` — un second fait échouer le build, en
+ * nommant le fichier. Un en-tête `---` en tête, même vide, est toléré et
+ * ignoré.
+ *
+ * @param {string} texte
+ * @param {string} [fichier]
+ * @returns {string} `''` pour un fichier vide.
+ */
+export function renderServedHome(texte, fichier = SERVED_HOME_FILE) {
+  const source = sansBom(texte).replace(/\r\n?/g, '\n');
+  const entete = /^---\n(?:[\s\S]*?\n)?---(?:\n|$)/.exec(source);
+  const markdown = (entete ? source.slice(entete[0].length) : source).trim();
+  if (!markdown) return '';
+  if (markdown.split('\n').some(l => /^#\s/.test(l.trim())))
+    throw new Error(
+      `[pwa-seo] ${fichier} : pas de titre « # » — l’accueil a déjà le sien, le <title> de la page`
+    );
+  return renderMarkdown(markdown);
+}
+
+/** Un chemin de route : des segments en minuscules ASCII et tirets. */
+const CHEMIN_ROUTE =
+  /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
+
+/**
+ * Un chemin sans ses barres de tête et de queue — par deux boucles, comme
+ * `normalizeBasePath` de `vite-pwa.js` : l'alternative ancrée aux deux bouts
+ * `/^\/+|\/+$/g` recule sur une chaîne pleine de barres (CodeQL).
+ *
+ * @param {string} chemin
+ */
+function sansBarres(chemin) {
+  let debut = 0;
+  let fin = chemin.length;
+  while (debut < fin && chemin[debut] === '/') debut += 1;
+  while (fin > debut && chemin[fin - 1] === '/') fin -= 1;
+  return chemin.slice(debut, fin);
+}
+
+/**
+ * LES ROUTES PUBLIQUES, normalisées : `'a-propos'` ou `{ path, title,
+ * description }` → `{ path, title?, description? }`, le chemin sans barre au
+ * début ni à la fin.
+ *
+ * Refuse, en nommant la route, ce qui ne peut pas devenir un fichier : un
+ * chemin hors du motif (une requête `?…`, un accent, une majuscule), réservé
+ * (`index`, `404`, `sw`, `offline`), ou en double.
+ *
+ * @param {Array<string | { path: string, title?: string, description?: string }>} [routes]
+ * @returns {Array<{ path: string, title?: string, description?: string }>}
+ */
+export function normalizeRoutes(routes = []) {
+  const vus = new Set();
+  return routes.map(route => {
+    const objet = typeof route === 'object' && route !== null ? route : null;
+    const path = sansBarres(String((objet ? objet.path : route) ?? '').trim());
+    if (!CHEMIN_ROUTE.test(path))
+      throw new Error(
+        `[pwa-seo] route « ${objet ? objet.path : route} » invalide : un chemin relatif à l’accueil, en minuscules ASCII et tirets (a-propos, lieux/1)`
+      );
+    if (SLUGS_RESERVES.has(path))
+      throw new Error(
+        `[pwa-seo] route « ${path} » réservée : ${path}.html est un fichier de l’app`
+      );
+    if (vus.has(path))
+      throw new Error(`[pwa-seo] route « ${path} » déclarée deux fois`);
+    vus.add(path);
+    const title = objet?.title ? String(objet.title) : '';
+    const description = objet?.description ? String(objet.description) : '';
+    return {
+      path,
+      ...(title ? { title } : {}),
+      ...(description ? { description } : {}),
+    };
+  });
+}
+
+/**
+ * Une route en collision avec une page de contenu écraserait son fichier ; la
+ * route `en` masquerait le dossier des pages anglaises.
+ *
+ * @param {ReturnType<typeof normalizeRoutes>} routes
+ * @param {ReturnType<typeof readContentPages>} pages
+ */
+function verifierRoutes(routes, pages) {
+  const prises = new Map(
+    pages.map(p => [p.chemin.replace(/\.html$/, ''), p.fichier])
+  );
+  const anglaises = pages.some(p => p.lang === 'en');
+  for (const route of routes) {
+    const page = prises.get(route.path);
+    if (page)
+      throw new Error(
+        `[pwa-seo] route « ${route.path} » : en collision avec la page de contenu ${page}`
+      );
+    if (anglaises && route.path === DOSSIER_EN)
+      throw new Error(
+        `[pwa-seo] route « ${route.path} » : ${DOSSIER_EN}/ porte les pages de contenu anglaises`
+      );
+  }
+}
+
+/**
+ * Le `<title>` remplacé — ou posé, s'il manque.
+ *
+ * @param {string} html
+ * @param {string} titre
+ */
+function avecTitre(html, titre) {
+  const bas = html.toLowerCase();
+  const debut = bas.indexOf('<title>');
+  if (debut < 0)
+    return avantFinHead(html, `<title>${echapperXml(titre)}</title>`);
+  const fin = bas.indexOf('</title>', debut + 7);
+  if (fin < 0) return html;
+  return `${html.slice(0, debut + 7)}${echapperXml(titre)}${html.slice(fin)}`;
+}
+
+/**
+ * Le contenu d'une balise `<meta>` remplacé ; la balise posée si elle manque
+ * et qu'`ajouter` le demande.
+ *
+ * @param {string} html
+ * @param {'name' | 'property'} attr
+ * @param {string} cle
+ * @param {string} valeur
+ * @param {boolean} ajouter
+ */
+function avecMeta(html, attr, cle, valeur, ajouter) {
+  let vue = false;
+  const out = html.replace(/<meta\b[^>]*>/gi, balise => {
+    if (
+      attribut(balise, 'name') !== cle &&
+      attribut(balise, 'property') !== cle
+    )
+      return balise;
+    vue = true;
+    return balise.replace(
+      /\bcontent\s*=\s*("[^"]*"|'[^']*')/i,
+      () => `content="${echapperXml(valeur)}"`
+    );
+  });
+  if (vue || !ajouter) return out;
+  return avantFinHead(
+    out,
+    `<meta ${attr}="${cle}" content="${echapperXml(valeur)}" />`
+  );
+}
+
+/**
+ * La canonique remplacée — ou posée, si elle manque.
+ *
+ * @param {string} html
+ * @param {string} url
+ */
+function avecCanonique(html, url) {
+  let vue = false;
+  const out = html.replace(/<link\b[^>]*>/gi, balise => {
+    if (!/^canonical$/i.test(attribut(balise, 'rel'))) return balise;
+    vue = true;
+    return balise.replace(
+      /\bhref\s*=\s*("[^"]*"|'[^']*')/i,
+      () => `href="${echapperXml(url)}"`
+    );
+  });
+  return vue
+    ? out
+    : avantFinHead(out, `<link rel="canonical" href="${echapperXml(url)}" />`);
+}
+
+/** Le début du contenu servi, ou -1. */
+function debutServi(html) {
+  return html.indexOf('<div data-dwc="served-content">');
+}
+
+/**
+ * Dans le contenu servi, le texte du `<h1>`, ou du premier `<p>` qui le suit
+ * (la description), remplacé.
+ *
+ * @param {string} html
+ * @param {'h1' | 'p'} balise
+ * @param {string} texte
+ */
+function avecServi(html, balise, texte) {
+  const debut = debutServi(html);
+  if (debut < 0) return html;
+  const depuis = balise === 'h1' ? debut : html.indexOf('</h1>', debut);
+  if (depuis < 0) return html;
+  const ouvre = html.indexOf(`<${balise}>`, depuis);
+  const ferme = ouvre < 0 ? -1 : html.indexOf(`</${balise}>`, ouvre);
+  if (ferme < 0) return html;
+  return `${html.slice(0, ouvre + balise.length + 2)}${echapperXml(texte)}${html.slice(ferme)}`;
+}
+
+/**
+ * Le texte propre à l'accueil (`content/accueil.md`), retiré du contenu servi
+ * — sections imbriquées comprises (celle des sources).
+ *
+ * @param {string} html
+ */
+function sansTexteAccueil(html) {
+  const debut = html.indexOf('<section data-dwc="served-text">');
+  if (debut < 0) return html;
+  let profondeur = 0;
+  let i = debut;
+  for (;;) {
+    const ouvre = html.indexOf('<section', i);
+    const ferme = html.indexOf('</section>', i);
+    if (ferme < 0) return html;
+    if (ouvre >= 0 && ouvre < ferme) {
+      profondeur += 1;
+      i = ouvre + 8;
+      continue;
+    }
+    profondeur -= 1;
+    i = ferme + 10;
+    if (profondeur === 0) return html.slice(0, debut) + html.slice(i);
+  }
+}
+
+/**
+ * LA PAGE D'UNE ROUTE PUBLIQUE : l'`index.html` CONSTRUIT, avec le titre, la
+ * description, la canonique (SANS extension) et l'Open Graph de la route
+ * (`og:url`, `og:title`, `og:description` ; `twitter:*` et `og:image:alt`
+ * suivent s'ils existent). Le contenu servi suit aussi : son `<h1>` et sa
+ * description sont ceux de la route, et le texte propre à l'accueil en est
+ * retiré.
+ *
+ * GitHub Pages sert `/<base>/<path>` depuis `<path>.html`, EN 200 (vérifié en
+ * ligne sur une page de contenu servie sans son extension) ; le routeur de la
+ * SPA affiche ensuite l'écran. Sans ce fichier, la même URL répondait 404 —
+ * `404.html` est servi avec ce statut —, et l'option `routes` mettait au plan
+ * de site des URL qu'aucun moteur ne pouvait indexer (relevé du 29/09/2026).
+ *
+ * @param {string} indexHtml
+ * @param {{ url: string, title?: string, description?: string }} route
+ */
+export function routePageHtml(indexHtml, { url, title, description }) {
+  let out = indexHtml;
+  if (title) {
+    out = avecTitre(out, title);
+    out = avecMeta(out, 'property', 'og:title', title, true);
+    out = avecMeta(out, 'name', 'twitter:title', title, false);
+    out = avecMeta(out, 'property', 'og:image:alt', title, false);
+    out = avecServi(out, 'h1', title);
+  }
+  if (description) {
+    out = avecMeta(out, 'name', 'description', description, true);
+    out = avecMeta(out, 'property', 'og:description', description, true);
+    out = avecMeta(out, 'name', 'twitter:description', description, false);
+    out = avecServi(out, 'p', description);
+  }
+  out = avecCanonique(out, url);
+  out = avecMeta(out, 'property', 'og:url', url, true);
+  return sansTexteAccueil(out);
+}
+
+/**
+ * UN DOCUMENT HORS INDEX : `<meta name="robots" content="noindex">` posé en
+ * tête de `<head>`, les balises `robots` écrites à la main retirées —
+ * `mister-footcoach` et `mister-puzzle` servaient `index, follow` sur leur
+ * `404.html` —, et la canonique retirée : une page `noindex` qui désigne une
+ * canonique envoie deux signaux contraires, et le moteur peut reporter le
+ * `noindex` sur la page désignée, ici l'accueil.
+ *
+ * Idempotent : deux passes ne posent qu'une balise.
+ *
+ * @param {string} html
+ */
+export function withNoindex(html) {
+  let out = retirerBalises(
+    html,
+    /<meta\b[^>]*>/gi,
+    b => !/^(?:robots|googlebot)$/i.test(attribut(b, 'name'))
+  );
+  out = retirerBalises(
+    out,
+    /<link\b[^>]*>/gi,
+    b => !/^canonical$/i.test(attribut(b, 'rel'))
+  );
+  const balise = '<meta name="robots" content="noindex" />';
+  const tete = /<head\b[^>]*>/i.exec(out);
+  if (!tete) return `${balise}\n${out}`;
+  const fin = tete.index + tete[0].length;
+  return `${out.slice(0, fin)}\n    ${balise}${out.slice(fin)}`;
+}
+
+/** Le fichier d'état SEO, publié avec le site (voir `seoState`). */
+export const SEO_STATE_FILE = 'seo-state.json';
+
+/** Ce qui sépare les parties d'une empreinte : rien ne le contient. */
+const SEPARATEUR = String.fromCharCode(0);
+
+/**
+ * Une empreinte courte : sha256 en hexadécimal, seize caractères.
+ *
+ * @param {string[]} parties
+ */
+function empreinte(parties) {
+  return createHash('sha256')
+    .update(parties.join(SEPARATEUR))
+    .digest('hex')
+    .slice(0, 16);
+}
+
+/** Les clés d'un JSON-LD qui changent sans que la page change. */
+const CLES_VOLATILES = new Set([
+  'dateModified',
+  'datePublished',
+  'dateCreated',
+  'uploadDate',
+  'softwareVersion',
+  'version',
+]);
+
+/**
+ * Un JSON-LD sans ses valeurs volatiles : les clés de `CLES_VOLATILES`, et le
+ * paramètre `v` des URL (une empreinte de cache, pas un contenu).
+ *
+ * @param {unknown} valeur
+ * @returns {unknown}
+ */
+function sansVolatiles(valeur) {
+  if (Array.isArray(valeur)) return valeur.map(sansVolatiles);
+  if (valeur && typeof valeur === 'object')
+    return Object.fromEntries(
+      Object.entries(valeur)
+        .filter(([cle]) => !CLES_VOLATILES.has(cle))
+        .map(([cle, v]) => [cle, sansVolatiles(v)])
+    );
+  if (typeof valeur === 'string' && /^https?:\/\//.test(valeur)) {
+    try {
+      const url = new URL(valeur);
+      url.searchParams.delete('v');
+      return url.href;
+    } catch {
+      return valeur;
+    }
+  }
+  return valeur;
+}
+
+/** Le contenu servi d'un accueil construit, ou `''`. */
+function blocServi(html) {
+  const debut = debutServi(html);
+  if (debut < 0) return '';
+  const fin = html.indexOf('<noscript>', debut);
+  return fin < 0 ? html.slice(debut) : html.slice(debut, fin);
+}
+
+/**
+ * L'EMPREINTE D'UN ACCUEIL : ce qu'un moteur en lit — titre, description,
+ * contenu servi, données structurées hors valeurs volatiles (dates, versions,
+ * paramètre `?v=` de cache). Deux builds du même contenu la partagent, quel
+ * que soit le jour ; changer un mot du texte servi la change.
+ *
+ * @param {string} html L'`index.html` construit.
+ */
+export function homeFingerprint(html) {
+  const donnees = blocsJsonLd(html).map(bloc => {
+    try {
+      return JSON.stringify(sansVolatiles(JSON.parse(bloc.json)));
+    } catch {
+      return bloc.json.trim();
+    }
+  });
+  return empreinte([
+    decoderEntites(contenuDuTitre(html).trim()),
+    metaDe(html, 'description'),
+    blocServi(html),
+    ...donnees,
+  ]);
+}
+
+/**
+ * LE `lastmod` RÉEL, et la liste de ce qui a changé.
+ *
+ * Relevé du 29/09/2026 : `lastmod` valait le jour du build pour TOUTES les
+ * URL, et les apps se redéploient presque chaque jour (Renovate, correctifs).
+ * La publication du hub signalait donc à IndexNow les 41 URL du parc à chaque
+ * passage — quinze fois le 27/09 —, et Google ignore un `lastmod` qu'il juge
+ * peu fiable.
+ *
+ * Chaque URL porte désormais une EMPREINTE de ce qui compte : pour l'accueil,
+ * `homeFingerprint` ; pour une page de contenu, sa source et son en-tête ;
+ * pour une route, son chemin, son titre et sa description. L'état du
+ * déploiement précédent — `seo-state.json`, publié avec le site, que la CI
+ * récupère avant le build — dit si elle a bougé :
+ *   - empreinte inchangée : l'ancien `lastmod` est repris ;
+ *   - empreinte nouvelle ou changée : `lastmod` vaut le jour du build, et
+ *     l'URL entre dans `changees` (`seo-changed.json`, lu par IndexNow) ;
+ *   - une page qui a `updated` ou `date` : cette date ÉDITORIALE prime pour
+ *     `lastmod`, changée ou non.
+ * Sans état précédent, tout est changé et daté du jour : le comportement
+ * d'avant.
+ *
+ * @param {{
+ *   entrees: Array<{ url: string, hash: string, date?: string }>,
+ *   precedent?: Record<string, { hash?: string, lastmod?: string }> | null,
+ *   aujourdHui?: string,
+ * }} opts
+ * @returns {{ etat: Record<string, { hash: string, lastmod: string }>, changees: string[] }}
+ */
+export function seoState({
+  entrees,
+  precedent = null,
+  aujourdHui = new Date().toISOString().slice(0, 10),
+}) {
+  /** @type {Record<string, { hash: string, lastmod: string }>} */
+  const etat = {};
+  /** @type {string[]} */
+  const changees = [];
+  for (const { url, hash, date } of entrees) {
+    const avant = precedent?.[url];
+    const inchangee = Boolean(avant) && avant?.hash === hash;
+    const ancien =
+      typeof avant?.lastmod === 'string' && DATE_ISO.test(avant.lastmod)
+        ? avant.lastmod
+        : '';
+    etat[url] = {
+      hash,
+      lastmod: date || (inchangee && ancien ? ancien : aujourdHui),
+    };
+    if (!inchangee) changees.push(url);
+  }
+  return { etat, changees };
+}
+
+/**
+ * L'état SEO du déploiement précédent, lu dans le fichier que désigne
+ * `PWA_SEO_PREVIOUS_STATE`. `null` sans variable, sans fichier, ou pour un
+ * contenu qui n'est pas un objet : tout sera alors « changé ».
+ *
+ * @param {string | undefined} chemin
+ * @returns {Record<string, { hash?: string, lastmod?: string }> | null}
+ */
+function etatPrecedent(chemin) {
+  if (!chemin) return null;
+  try {
+    const donnees = JSON.parse(readFileSync(chemin, 'utf8'));
+    return donnees && typeof donnees === 'object' && !Array.isArray(donnees)
+      ? donnees
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Écriture exclusive (`wx`) : refuse si le fichier existe déjà, sans course
+ * entre `existsSync` et `writeFileSync` (CodeQL js/file-system-race).
+ *
+ * @param {string} cible
+ * @param {string} contenu
+ * @param {string} message L'erreur à lever si le fichier existe.
+ */
+function ecrireExclusif(cible, contenu, message) {
+  mkdirSync(dirname(cible), { recursive: true });
+  try {
+    writeFileSync(cible, contenu, { encoding: 'utf8', flag: 'wx' });
+  } catch (err) {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'code' in err &&
+      err.code === 'EEXIST'
+    )
+      throw new Error(message, { cause: err });
+    throw err;
+  }
+}
+
+/**
+ * Plugin Vite : injecte les placeholders d'index.html, pose les balises et
+ * les données structurées de l'accueil, sert son contenu, écrit les pages de
+ * contenu et les routes publiques, puis le plan de site et l'état SEO.
  *
  * Placeholders remplacés dans index.html :
  *   __SEO_HOME_URL__     URL d'accueil canonique
@@ -1004,10 +2426,19 @@ ${page.html}
  *   __SEO_LOGO_URL__     URL absolue du logo (Open Graph / Twitter / JSON-LD)
  *   __PWA_ICON_QS__      query-string de cache-busting des icônes
  *
+ * Écrits au build dans le dossier de sortie : `sitemap.xml`, `seo-state.json`
+ * (voir `seoState`), les pages de contenu (`<slug>.html`, `en/<slug>.html`),
+ * les routes (`<path>.html`) et, sur demande, `robots.txt` et `llms.txt`.
+ * HORS du dossier de sortie : `seo-changed.json` (`PWA_SEO_CHANGED_FILE`).
+ *
  * @param {object} [opts]
- * @param {string}  [opts.siteName]        Nom du site (commentaire sitemap).
+ * @param {string}  [opts.siteName]        Nom du site pour `og:site_name`, quand
+ *   l'app n'est pas au catalogue — le nom du catalogue l'emporte.
  * @param {boolean} [opts.sitemap=true]    Générer sitemap.xml.
- * @param {boolean} [opts.robots=true]     Générer robots.txt.
+ * @param {boolean} [opts.robots=false]    Générer robots.txt. Un `robots.txt`
+ *   n'est lu qu'à la RACINE d'une origine : sous `/<app>/`, les robots
+ *   l'ignorent, et c'est `mister-guiiug.github.io` qui déclare les plans de
+ *   site du parc. À `true` pour une app servie à la racine d'une origine.
  * @param {string}  [opts.outDir='dist']   Dossier de sortie du build.
  * @param {string}  [opts.changefreq='weekly']
  * @param {string}  [opts.basePath]        Force le base path (sinon VITE_BASE_PATH).
@@ -1017,29 +2448,41 @@ ${page.html}
  *   Omis ou `false` : aucun fichier (défaut — Google ne s'en sert pas).
  *   `true` : fichier minimal depuis le catalogue (`defaultLlmsTxt`).
  *   Une chaîne : ce texte, tel quel.
+ * @param {boolean | import('./theme-boot.js').ThemeBootOptions} [opts.themeBoot]
+ *   Le script anti-FOUC, injecté en tête de `<head>`.
+ * @param {{ light?: string, dark?: string }} [opts.themeColor] Deux
+ *   `theme-color` par schéma, qui remplacent celle de l'index.
  * @param {Record<string,string>} [opts.extraReplacements={}] Placeholders custom → valeurs.
- * @param {boolean | object} [opts.jsonLd=true] Données structurées
- *   `WebApplication` injectées dans `<head>` (voir `webApplicationJsonLd`).
- *   `false` les coupe ; un objet surcharge des champs. Jamais injectées si la
- *   page porte déjà un `application/ld+json`.
- * @param {string[]} [opts.routes=[]] Chemins à ajouter au plan de site, relatifs
- *   à l'accueil (`'a-propos'`, `'en/'`). Seulement des écrans PUBLICS, servis
- *   à froid : un chemin derrière une connexion n'a rien à y faire.
- * @param {boolean} [opts.servedContent=true] Sert, au BUILD, le titre et la
- *   description de l'app dans son point de montage vide (voir
+ * @param {boolean | Record<string, unknown>} [opts.jsonLd=true] Données
+ *   structurées `WebApplication` injectées dans `<head>` (voir
+ *   `webApplicationJsonLd`). `false` les coupe ; un objet surcharge des
+ *   champs. Jamais injectées si la page porte déjà un `application/ld+json`.
+ * @param {Array<string | { path: string, title?: string, description?: string }>} [opts.routes=[]]
+ *   Routes PUBLIQUES, relatives à l'accueil : `'a-propos'`, ou `{ path:
+ *   'a-propos', title, description }`. Chacune devient au build un fichier
+ *   `<path>.html` — l'accueil construit, avec son titre, sa description, sa
+ *   canonique sans extension et son Open Graph (voir `routePageHtml`) — et
+ *   entre au plan de site. Un chemin invalide, réservé, ou en collision avec
+ *   une page de contenu fait échouer le build. Seulement des écrans servis à
+ *   froid : un chemin derrière une connexion n'a rien à y faire.
+ * @param {boolean} [opts.servedContent=true] Sert, au BUILD, le titre, la
+ *   description, le texte de `content/accueil.md`, les pages de contenu, les
+ *   apps sœurs et le dépôt dans le point de montage vide (voir
  *   `injectServedContent`). `false` le coupe.
  * @param {string | false} [opts.contentPages='content/pages'] Dossier des pages
  *   de contenu, relatif à la racine du projet (voir `contentPageHtml`). Chaque
- *   `<slug>.md` devient `<slug>.html` au build, entre au plan de site et au
- *   contenu servi. Un dossier absent ne produit rien ; `false` coupe.
+ *   `<slug>.md` devient `<slug>.html` au build, chaque `en/<slug>.md`
+ *   `en/<slug>.html` ; elles entrent au plan de site et au contenu servi. Un
+ *   dossier absent ne produit rien ; `false` coupe.
  * @param {string | false} [opts.ogImage] Image de partage, relative au dossier
  *   public. Par défaut `og-image.jpg` ou `og-image.png` s'il existe (voir
  *   `findShareImage`) ; `false` coupe.
  */
 export function pwaSeoPlugin(opts = {}) {
   const {
+    siteName,
     sitemap = true,
-    robots = true,
+    robots = false,
     outDir = 'dist',
     changefreq = 'weekly',
     basePath,
@@ -1055,6 +2498,9 @@ export function pwaSeoPlugin(opts = {}) {
     contentPages = CONTENT_PAGES_DIR,
     ogImage,
   } = opts;
+  // Refusées dès la configuration : une route qui ne peut pas devenir un
+  // fichier n'a pas à attendre la fin du build pour le dire.
+  const routesPubliques = normalizeRoutes(routes);
   const urlOpts = { basePath, logoPath, iconQuery };
   // Résolus depuis la config Vite : on respecte un `build.outDir` personnalisé
   // et on ne génère les fichiers (sitemap/robots/llms) qu'en mode build.
@@ -1062,13 +2508,36 @@ export function pwaSeoPlugin(opts = {}) {
   let isBuild = false;
   let racine = process.cwd();
   let publicDir = resolve(racine, 'public');
-  /** Les pages de contenu, lues une fois par build. */
+  /**
+   * Les pages de contenu, lues une fois par build.
+   * @type {ReturnType<typeof readContentPages> | null}
+   */
   let pagesLues = null;
   const pagesDeContenu = () => {
     if (contentPages === false) return [];
     pagesLues ??= readContentPages(resolve(racine, contentPages));
     return pagesLues;
   };
+  /**
+   * Le texte de `content/accueil.md`, rendu une fois par build.
+   * @type {string | null}
+   */
+  let accueilLu = null;
+  const texteAccueil = () => {
+    if (accueilLu === null) {
+      const fichier = resolve(racine, SERVED_HOME_FILE);
+      accueilLu = existsSync(fichier)
+        ? renderServedHome(readFileSync(fichier, 'utf8'), SERVED_HOME_FILE)
+        : '';
+    }
+    return accueilLu;
+  };
+  /**
+   * Ce que `writeBundle` a RÉELLEMENT écrit : le plan de site et l'état SEO ne
+   * listent que ça — plus jamais une URL au plan de site sans son fichier.
+   * @type {{ dist: string, pages: ReturnType<typeof readContentPages>, routes: ReturnType<typeof normalizeRoutes> }}
+   */
+  let ecrites = { dist: '', pages: [], routes: [] };
   return {
     name: 'mister-guiiug:pwa-seo',
 
@@ -1125,9 +2594,20 @@ export function pwaSeoPlugin(opts = {}) {
           ? resolve(racine, 'public')
           : config.publicDir;
       pagesLues = null;
+      accueilLu = null;
+      ecrites = { dist: '', pages: [], routes: [] };
+    },
+    /**
+     * Au début du build : les pages de contenu sont lues (une page fausse
+     * arrête tout ici, en la nommant), et les routes confrontées aux pages.
+     */
+    buildStart() {
+      if (!isBuild) return;
+      verifierRoutes(routesPubliques, pagesDeContenu());
     },
     transformIndexHtml(html) {
       const { homeUrl, logoUrl } = resolveSeoPublicUrls(urlOpts);
+      const fiche = ficheDe(homeUrl);
       // Le script anti-FOUC, INJECTÉ plutôt que recopié. Treize apps sur seize
       // en portent un à la main dans leur `index.html`, de dix à trente-trois
       // lignes ; il doit rester inline et synchrone, donc hors de portée d'un
@@ -1165,6 +2645,14 @@ export function pwaSeoPlugin(opts = {}) {
       for (const [marker, value] of Object.entries(extraReplacements)) {
         out = out.replaceAll(marker, value);
       }
+      // Les balises texte qui manquent (Open Graph, Twitter), AVANT l'image de
+      // partage et les données structurées : `twitter:card` y sera remplacé,
+      // et le `WebApplication` d'une app hors catalogue prend son nom dans
+      // `og:site_name`.
+      out = setTextMeta(out, {
+        siteName: fiche?.name || siteName,
+        url: homeUrl,
+      });
       // L'image de partage AVANT les données structurées : le `WebApplication`
       // prend son `image` dans la page.
       if (ogImage !== false) {
@@ -1187,108 +2675,165 @@ export function pwaSeoPlugin(opts = {}) {
           homeUrl,
           overrides: typeof jsonLd === 'object' ? jsonLd : {},
         });
-        if (donnees && out.includes('</head>')) {
-          out = out.replace('</head>', `  ${jsonLdScript(donnees)}\n  </head>`);
-        }
+        if (donnees && out.includes('</head>'))
+          out = avantFinHead(out, jsonLdScript(donnees));
       }
       // Au BUILD seulement : le serveur de développement reste tel quel, et
       // c'est ce qui est DÉPLOYÉ que les robots lisent.
       if (servedContent !== false && isBuild) {
         out = injectServedContent(out, {
           pages: pagesDeContenu().map(p => ({
-            href: `${homeUrl}${p.slug}.html`,
+            href: `${homeUrl}${p.chemin}`,
             titre: p.titre,
+            lang: p.lang,
           })),
+          accueil: texteAccueil(),
+          voisines: fiche ? relatedApps(fiche.id) : undefined,
+          depot: fiche?.repoUrl,
         }).html;
       }
       return out;
     },
     /**
-     * Les pages de contenu, écrites à côté de l'`index.html` CONSTRUIT, dont
-     * elles reprennent langue, couleur, icônes et image de partage.
+     * Les pages de contenu et les routes, écrites à côté de l'`index.html`
+     * CONSTRUIT. Avant elles, les captures du manifeste — que
+     * `vite-plugin-pwa` vient d'écrire — rejoignent le `WebApplication`.
      *
      * `writeBundle` et pas `closeBundle` : `vite-plugin-pwa` engendre le
      * service worker dans SON `closeBundle`, qui passe après tous les
      * `writeBundle`. Les pages sont donc sur le disque quand il dresse le
-     * précache — toujours, quel que soit l'ordre des plugins.
+     * précache — toujours, quel que soit l'ordre des plugins — et l'accueil y
+     * entre dans sa version finale.
      */
     writeBundle(options) {
       if (!isBuild) return;
-      const pages = pagesDeContenu();
-      if (!pages.length) return;
       const dist = options?.dir || resolve(process.cwd(), resolvedOutDir);
+      ecrites.dist = dist;
+      const pages = pagesDeContenu();
       const index = join(dist, 'index.html');
-      if (!existsSync(index)) {
-        console.warn(
-          `[pwa-seo] index.html introuvable dans ${dist} : pages de contenu non écrites.`
-        );
+      // Lire directement, sans `existsSync` avant : vérifier puis lire laisse
+      // une fenêtre où le fichier change (CodeQL js/file-system-race).
+      let indexHtml;
+      try {
+        indexHtml = readFileSync(index, 'utf8');
+      } catch (err) {
+        if (err?.code !== 'ENOENT') throw err;
+        if (pages.length || routesPubliques.length)
+          console.warn(
+            `[pwa-seo] index.html introuvable dans ${dist} : pages de contenu et routes non écrites.`
+          );
         return;
       }
-      const indexHtml = readFileSync(index, 'utf8');
       const { homeUrl } = resolveSeoPublicUrls(urlOpts);
+      const avec = avecCaptures(
+        indexHtml,
+        `${homeUrl}#app`,
+        capturesDuManifeste(dist, indexHtml, homeUrl)
+      );
+      if (avec !== indexHtml) {
+        writeFileSync(index, avec, 'utf8');
+        indexHtml = avec;
+      }
       for (const page of pages) {
-        const cible = join(dist, `${page.slug}.html`);
-        // Écriture exclusive (`wx`) : refuse si le fichier existe déjà, sans
-        // course entre existsSync et writeFileSync (CodeQL js/file-system-race).
-        try {
-          writeFileSync(
-            cible,
-            contentPageHtml({ page, pages, indexHtml, homeUrl }),
-            { encoding: 'utf8', flag: 'wx' }
+        ecrireExclusif(
+          join(dist, page.chemin),
+          contentPageHtml({ page, pages, indexHtml, homeUrl }),
+          `[pwa-seo] ${page.chemin} existe déjà dans ${dist} : choisir un autre slug.`
+        );
+        ecrites.pages.push(page);
+      }
+      for (const route of routesPubliques) {
+        if (estUnDossier(join(dist, route.path)))
+          throw new Error(
+            `[pwa-seo] route « ${route.path} » : le dossier ${route.path}/ existe dans ${dist} — GitHub Pages servirait le dossier, pas la route`
           );
-        } catch (err) {
-          if (
-            err &&
-            typeof err === 'object' &&
-            'code' in err &&
-            err.code === 'EEXIST'
-          )
-            throw new Error(
-              `[pwa-seo] ${page.slug}.html existe déjà dans ${dist} : choisir un autre slug.`,
-              { cause: err }
-            );
-          throw err;
-        }
+        ecrireExclusif(
+          join(dist, `${route.path}.html`),
+          routePageHtml(indexHtml, {
+            url: `${homeUrl}${route.path}`,
+            title: route.title,
+            description: route.description,
+          }),
+          `[pwa-seo] route « ${route.path} » : ${route.path}.html existe déjà dans ${dist} — choisir un autre chemin.`
+        );
+        ecrites.routes.push(route);
       }
     },
     async closeBundle() {
       // Hook de build : ne rien écrire en dev/serve (au cas où l'outil l'appelle).
       if (!isBuild) return;
-      const fs = await import('node:fs');
-      const path = await import('node:path');
       const { homeUrl } = resolveSeoPublicUrls(urlOpts);
-      const dist = path.resolve(process.cwd(), resolvedOutDir);
+      const dist = ecrites.dist || resolve(process.cwd(), resolvedOutDir);
       // Crée le dossier de sortie si absent (évite ENOENT quand le build
       // n'a encore rien émis, ou avec un `build.outDir` personnalisé).
-      fs.mkdirSync(dist, { recursive: true });
+      mkdirSync(dist, { recursive: true });
+      const indexPath = join(dist, 'index.html');
+      const indexHtml = existsSync(indexPath)
+        ? readFileSync(indexPath, 'utf8')
+        : '';
+
+      // L'état SEO : une empreinte par URL, le `lastmod` repris quand elle
+      // n'a pas bougé, et la liste de ce qui a changé (voir `seoState`).
+      /** @type {Array<{ url: string, hash: string, date?: string }>} */
+      const entrees = [
+        { url: homeUrl, hash: homeFingerprint(indexHtml) },
+        ...ecrites.routes.map(r => ({
+          url: `${homeUrl}${r.path}`,
+          hash: empreinte([r.path, r.title ?? '', r.description ?? '']),
+        })),
+        ...ecrites.pages.map(p => ({
+          url: `${homeUrl}${p.chemin}`,
+          hash: p.empreinte,
+          date: p.updated || p.date,
+        })),
+      ];
+      const { etat, changees } = seoState({
+        entrees,
+        precedent: etatPrecedent(process.env.PWA_SEO_PREVIOUS_STATE),
+      });
+      writeFileSync(
+        join(dist, SEO_STATE_FILE),
+        `${JSON.stringify(etat, null, 2)}\n`,
+        'utf8'
+      );
+      // HORS du site publié : la liste ne regarde que la CI (IndexNow).
+      const fichierChangees =
+        process.env.PWA_SEO_CHANGED_FILE ||
+        resolve(
+          racine,
+          'node_modules',
+          '.cache',
+          'pwa-seo',
+          'seo-changed.json'
+        );
+      mkdirSync(dirname(fichierChangees), { recursive: true });
+      writeFileSync(
+        fichierChangees,
+        `${JSON.stringify(changees, null, 2)}\n`,
+        'utf8'
+      );
+
       if (sitemap) {
-        // `lastmod` = le jour du build. Google ignore `changefreq` et
-        // `priority`, mais lit `lastmod` quand il est fiable : c'est le seul
-        // champ qui lui dise qu'il y a du neuf à revoir. Le build part d'une
-        // fusion, donc d'un changement réel. Relevé du 23/09/2026 : aucun des
-        // vingt et un plans de site n'en portait.
-        const lastmod = new Date().toISOString().slice(0, 10);
-        const urls = [
-          homeUrl,
-          ...routes.map(r => `${homeUrl}${String(r).replace(/^\//, '')}`),
-          ...pagesDeContenu().map(p => `${homeUrl}${p.slug}.html`),
-        ];
-        const entrees = urls
+        // `lastmod` : celui de l'état SEO — repris tant que l'empreinte ne
+        // bouge pas, la date éditoriale pour une page qui en porte une.
+        // Google ignore `changefreq` et `priority`, mais lit `lastmod` quand
+        // il est fiable : c'est le seul champ qui lui dise qu'il y a du neuf.
+        const blocs = entrees
           .map(
-            loc => `  <url>
-    <loc>${echapperXml(loc)}</loc>
-    <lastmod>${lastmod}</lastmod>
+            ({ url }) => `  <url>
+    <loc>${echapperXml(url)}</loc>
+    <lastmod>${etat[url].lastmod}</lastmod>
     <changefreq>${changefreq}</changefreq>
-    <priority>${loc === homeUrl ? '1.0' : '0.8'}</priority>
+    <priority>${url === homeUrl ? '1.0' : '0.8'}</priority>
   </url>`
           )
           .join('\n');
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entrees}
+${blocs}
 </urlset>
 `;
-        fs.writeFileSync(path.join(dist, 'sitemap.xml'), xml, 'utf8');
+        writeFileSync(join(dist, 'sitemap.xml'), xml, 'utf8');
       }
       if (robots) {
         const txt = `User-agent: *
@@ -1296,18 +2841,16 @@ Allow: /
 
 Sitemap: ${homeUrl}sitemap.xml
 `;
-        fs.writeFileSync(path.join(dist, 'robots.txt'), txt, 'utf8');
+        writeFileSync(join(dist, 'robots.txt'), txt, 'utf8');
       }
       // Défaut : pas de llms.txt. `true` → auto catalogue ; chaîne → telle quelle.
       if (llms === true || typeof llms === 'string') {
-        const indexPath = path.join(dist, 'index.html');
-        const html = fs.existsSync(indexPath)
-          ? fs.readFileSync(indexPath, 'utf8')
-          : '';
         const texte =
-          typeof llms === 'string' ? llms : defaultLlmsTxt({ homeUrl, html });
+          typeof llms === 'string'
+            ? llms
+            : defaultLlmsTxt({ homeUrl, html: indexHtml });
         if (texte) {
-          fs.writeFileSync(path.join(dist, 'llms.txt'), texte, 'utf8');
+          writeFileSync(join(dist, 'llms.txt'), texte, 'utf8');
         }
       }
     },
@@ -1315,7 +2858,8 @@ Sitemap: ${homeUrl}sitemap.xml
 }
 
 /**
- * Repli SPA pour GitHub Pages : `404.html` identique à `index.html`.
+ * Repli SPA pour GitHub Pages : `404.html` copié d'`index.html`, marqué
+ * `noindex`.
  *
  * GITHUB PAGES N'A PAS DE REPLI SPA. Rafraîchir `/miss-contraction/a-propos`
  * — ou ouvrir un lien partagé — sert sa page « File not found », pas l'app.
@@ -1329,6 +2873,11 @@ Sitemap: ${homeUrl}sitemap.xml
  * (molkky), le même plugin recopié à la lettre (dice). C'est ce plugin-là,
  * promu.
  *
+ * LA COPIE PORTE UN `noindex` (29/09/2026) : `/<app>/404.html` demandé tel
+ * quel répond 200, avec la canonique de l'accueil — un doublon, et deux apps
+ * y affichaient même `index, follow`. `withNoindex` pose la balise, retire
+ * celles écrites à la main et la canonique. Pour le visiteur, rien ne change.
+ *
  * Le service worker masque le défaut après la première visite (Workbox sert
  * `index.html` à toute navigation de son périmètre). Il reste entier pour un
  * lien partagé ouvert à froid, un navigateur sans service worker, et tout ce
@@ -1339,9 +2888,9 @@ Sitemap: ${homeUrl}sitemap.xml
  * les chemins n'a rien à découvrir.
  *
  * Le workflow réutilisable `pwa-deploy.yml` fait la même copie APRÈS le build
- * si le fichier manque : les apps déployées par lui sont couvertes sans
- * changer une ligne. Ce plugin sert au reste — `vite preview`, un autre
- * hébergeur, un déploiement écrit à la main.
+ * si le fichier manque, avec le même `noindex` : les apps déployées par lui
+ * sont couvertes sans changer une ligne. Ce plugin sert au reste — `vite
+ * preview`, un autre hébergeur, un déploiement écrit à la main.
  *
  *   plugins: [VitePWA(…), pwaSeoPlugin(…), spaFallbackPlugin()]
  *
@@ -1362,11 +2911,9 @@ export function spaFallbackPlugin(opts = {}) {
     async closeBundle() {
       // Hook de build : rien à copier en dev, où il n'y a pas de `dist`.
       if (!isBuild) return;
-      const fs = await import('node:fs');
-      const path = await import('node:path');
-      const dist = path.resolve(process.cwd(), resolvedOutDir);
-      const source = path.join(dist, from);
-      if (!fs.existsSync(source)) {
+      const dist = resolve(process.cwd(), resolvedOutDir);
+      const source = join(dist, from);
+      if (!existsSync(source)) {
         // Pas de coquille, pas de repli — et pas d'échec de build pour ça :
         // le défaut est déjà visible dans le déploiement, pas ici.
         console.warn(
@@ -1374,7 +2921,11 @@ export function spaFallbackPlugin(opts = {}) {
         );
         return;
       }
-      fs.copyFileSync(source, path.join(dist, to));
+      writeFileSync(
+        join(dist, to),
+        withNoindex(readFileSync(source, 'utf8')),
+        'utf8'
+      );
     },
   };
 }

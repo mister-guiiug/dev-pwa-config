@@ -483,3 +483,10 @@ test('la feuille d’impression rend le showroom lisible sur papier', () => {
   assert.match(SHOWROOM_JS, /addEventListener\('beforeprint'/);
   assert.match(SHOWROOM_JS, /addEventListener\('afterprint'/);
 });
+
+test('le showroom est hors index : une vitrine technique, pas une page de destination', () => {
+  // Audit SEO du 29/09/2026 : indexable, sans canonique ni plan de site, il
+  // concurrençait le hub et les pages des apps sur leurs propres noms.
+  const tete = INDEX_HTML.slice(0, INDEX_HTML.indexOf('</head>'));
+  assert.ok(tete.includes('<meta name="robots" content="noindex" />'));
+});

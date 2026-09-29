@@ -36,6 +36,51 @@ export const GITHUB_OWNER = 'mister-guiiug';
 export const FAMILY_ORIGIN = `https://${GITHUB_OWNER}.github.io`;
 
 /**
+ * L'ÉDITEUR DE TOUTE LA FAMILLE : UN nœud schema.org, UN `@id`, repris par
+ * RÉFÉRENCE partout ailleurs.
+ *
+ * Relevé du 29/09/2026 (audit SEO/GEO/AEO) : l'éditeur changeait d'une page à
+ * l'autre — `Person` « mister-guiiug » sur les accueils des apps et sur leurs
+ * pages de contenu, `Organization` « mister-guiiug » sur le hub, `Organization`
+ * « Mister Puzzle » sur mister-puzzle, « GuiiuG » en titre du hub — et aucune
+ * page ne partageait d'`@id`. Pour un graphe de connaissances, cela pouvait
+ * faire trois éditeurs distincts. Le hub déclare ce nœud sous l'`@id` `#org` ;
+ * les apps et les pages de contenu le reprennent tel quel dans leur `@graph`
+ * et y renvoient par `author` et `publisher`.
+ *
+ * Gelé : c'est une donnée publiée, qu'un consommateur étale dans son propre
+ * JSON-LD — pas un objet à modifier en place.
+ */
+export const PUBLISHER = Object.freeze({
+  '@type': 'Organization',
+  '@id': `${FAMILY_ORIGIN}/#org`,
+  name: GITHUB_OWNER,
+  alternateName: 'GuiiuG',
+  url: `${FAMILY_ORIGIN}/`,
+  logo: `${FAMILY_ORIGIN}/icon-512.png`,
+  sameAs: Object.freeze([`https://github.com/${GITHUB_OWNER}`]),
+});
+
+/**
+ * L'`@id` du site du parc (`WebSite`), déclaré par l'accueil du hub : chaque
+ * app et chaque page de contenu s'y rattachent par `isPartOf`.
+ */
+export const SITE_ID = `${FAMILY_ORIGIN}/#site`;
+
+/**
+ * La clé IndexNow de l'origine — PUBLIQUE par construction.
+ *
+ * Le hub la sert à `${FAMILY_ORIGIN}/<clé>.txt` : c'est ainsi qu'on prouve à
+ * IndexNow (Bing, Yandex, Seznam, Naver…) qu'on tient l'hôte. Une clé servie à
+ * la RACINE couvre toutes les URL de l'origine, donc les vingt sites du parc ;
+ * elle ne donne d'autre pouvoir que signaler des URL de cet hôte. Le
+ * déploiement de chaque app (`pwa-deploy.yml`) s'en sert pour signaler ce
+ * qu'il vient de publier — le workflow en porte une copie, qu'un test compare
+ * à celle-ci.
+ */
+export const INDEXNOW_KEY = '130a4eff7f375c02c7340dcc38504187';
+
+/**
  * Pseudo Buy Me a Coffee de la famille — le même que `.github/FUNDING.yml`.
  *
  * Séparé de l'URL parce que ce sont deux choses : le PSEUDO est ce qu'une app
@@ -728,7 +773,8 @@ export function pagesUrl(id) {
 //     différent : `icons/icon-192.png`, `logo.svg`, `icon.svg`, `logo.png`…) ;
 //   - `iconUrl: '<URL absolue>'` ou `iconUrl: null` (app sans icône web) ;
 //   - `appUrl`, `repoUrl`, `themeColor` (hébergement/casse custom) ;
-//   - `category`, `backend`, `platform` (défaut `'web'`).
+//   - `category`, `backend`, `platform` (défaut `'web'`) ;
+//   - `languages`, `features` : voir `FAMILY_APPS`.
 /**
  * Le port de développement de chaque application — UNIQUE, pour que deux apps
  * tournent côte à côte sur le même poste.
@@ -818,6 +864,8 @@ function app(id, name, description, maturity, overrides = {}) {
     iconUrl,
     themeColor: overrides.themeColor,
     devPort: overrides.devPort ?? DEV_PORTS[id],
+    languages: overrides.languages,
+    features: overrides.features,
   };
 }
 
@@ -828,6 +876,18 @@ function app(id, name, description, maturity, overrides = {}) {
  * outils du parc, pas des applications qu'on installe. Trier par maturité puis
  * nom est fait à l'affichage, pas ici.
  *
+ * `languages` et `features` sont RELEVÉS le 29/09/2026, dépôt par dépôt, et
+ * nourrissent le `WebApplication` de chaque accueil (`inLanguage`,
+ * `featureList`) :
+ *   - `languages` : les langues de l'INTERFACE, lues dans l'i18n de l'app —
+ *     un dictionnaire réel ET une façon de le choisir (sélecteur ou
+ *     `navigator.language`). Le français d'abord. Les cinq langues de
+ *     `miss-contraction` au-delà de fr/en ne couvrent qu'un cinquième des
+ *     clés : elles ne comptent pas ;
+ *   - `features` : trois à six fonctions RÉELLES, lues dans le README et
+ *     vérifiées dans le code — rien de prévu, rien de promotionnel, et aucune
+ *     note : l'absence voulue d'`aggregateRating` tient toujours.
+ *
  * @type {import('./apps-catalog').FamilyApp[]}
  */
 export const FAMILY_APPS = [
@@ -836,84 +896,233 @@ export const FAMILY_APPS = [
     'Miss Carbook',
     'Comparatif collaboratif de véhicules, en temps réel.',
     'alpha',
-    { category: 'outils', backend: 'supabase' }
+    {
+      category: 'outils',
+      backend: 'supabase',
+      languages: ['fr', 'en'],
+      features: [
+        'Dossiers partagés, rejoints par code ou par lien',
+        'Exigences communes classées par importance',
+        'Fiches de modèles avec photos et commentaires',
+        'Comparaison des modèles, export JSON ou CSV',
+        "Journal d'activité du dossier",
+        "Sauvegarde et import d'un dossier en archive ZIP",
+      ],
+    }
   ),
   app(
     'miss-contraction',
     'Miss Contraction',
     'Chronomètre de contractions et alertes maternité.',
     'stable',
-    { icon: 'icon.svg', category: 'sante', backend: 'local' }
+    {
+      icon: 'icon.svg',
+      category: 'sante',
+      backend: 'local',
+      languages: ['fr', 'en'],
+      features: [
+        'Chronomètre de contractions avec durée et intervalle',
+        'Alertes par seuils personnalisables et pré-alerte',
+        'Tableau détaillé des contractions, modifiable',
+        'Message pré-rempli pour la maternité (SMS, WhatsApp)',
+        'Fiche maternité avec appel en un geste',
+        "Sauvegarde JSON de l'historique et des réglages",
+      ],
+    }
   ),
   app(
     'miss-genius',
     'Miss Genius',
     'Simulateur de moyennes scolaires (notes, scénarios, objectifs).',
     'stable',
-    { icon: 'icons/icon-192.png', category: 'education', backend: 'local' }
+    {
+      icon: 'icons/icon-192.png',
+      category: 'education',
+      backend: 'local',
+      languages: ['fr', 'en'],
+      features: [
+        'Matières et notes avec coefficients',
+        'Calcul de la moyenne générale pondérée',
+        "Simulation de l'effet d'une note future",
+        'Note à viser pour atteindre un objectif',
+        "Scénarios d'hypothèses comparés entre eux",
+        'Notes rangées par trimestre, semestre ou année',
+      ],
+    }
   ),
   app(
     'miss-uwh',
     'Miss UWH',
     'Bilan comptable de saison pour club de hockey subaquatique.',
     'stable',
-    { icon: 'icons/icon-192.png', category: 'sport', backend: 'supabase' }
+    {
+      icon: 'icons/icon-192.png',
+      category: 'sport',
+      backend: 'supabase',
+      languages: ['fr', 'en'],
+      features: [
+        'Journal comptable avec solde recalculé en direct',
+        'Bilan de saison automatique par catégorie',
+        'Résultat net par événement du club',
+        'Clôture de saison et report du reliquat',
+        'Exports CSV, Excel multi-feuilles et bilan PDF',
+        'Registre des adhérents et suivi des cotisations',
+      ],
+    }
   ),
   app(
     'mister-cim10',
     'Mister CIM10',
     'Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).',
     'stable',
-    { category: 'sante', backend: 'local' }
+    {
+      category: 'sante',
+      backend: 'local',
+      languages: ['fr', 'en'],
+      features: [
+        'Suggestions de codes CIM-10 depuis un compte rendu',
+        'Recherche de code par libellé, synonyme ou code',
+        'Contrôle et remise en forme des codes saisis',
+        'Favoris pour ajouter un code en un geste',
+        'Export TXT, CSV ou JSON et impression',
+        'Dictée vocale du compte rendu',
+      ],
+    }
   ),
   app(
     'mister-footcoach',
     'Mister Footcoach',
     "Gestion d'équipes de foot : compositions, statistiques, entraînements.",
     'alpha',
-    { icon: 'logo.svg', category: 'sport', backend: 'supabase' }
+    {
+      icon: 'logo.svg',
+      category: 'sport',
+      backend: 'supabase',
+      languages: ['fr', 'en'],
+      features: [
+        'Équipes et fiches joueurs',
+        'Feuille de présences : présent, absent, excusé',
+        'Mode live de match : chrono, score et événements',
+        'Compositions par formation de foot à 8 et par poste',
+        "Statistiques d'équipe, buteurs et taux de présence",
+        'Export PDF de la feuille de match et des présences',
+      ],
+    }
   ),
   app(
     'mister-puzzle',
     'Mister Puzzle',
     'Suivi collaboratif de progression de puzzle en temps réel.',
     'stable',
-    { category: 'jeux', backend: 'firebase' }
+    {
+      category: 'jeux',
+      backend: 'firebase',
+      languages: ['fr', 'en'],
+      features: [
+        'Salle partagée par un code, sans inscription',
+        'Compteur de pièces synchronisé en temps réel',
+        'Courbe de progression, historique exportable en CSV ou JSON',
+        'Galerie photos à réordonner et faire pivoter',
+        'Checkpoints pour marquer les étapes du puzzle',
+        'Classement des contributeurs sur 24 h, 7 jours ou total',
+      ],
+    }
   ),
   app(
     'miss-ticket-pwa',
     'Miss Ticket',
     "Télécommande PWA pour l'application desktop Miss Ticket.",
     'alpha',
-    { category: 'outils', backend: 'firebase' }
+    {
+      category: 'outils',
+      backend: 'firebase',
+      languages: ['fr', 'en'],
+      // Ce que la PWA fait de son côté. Son README le dit : le desktop ne se
+      // connecte plus à Firestore depuis le 21/05/2026, la chaîne complète ne
+      // fonctionne donc pas aujourd'hui.
+      features: [
+        "Jumelage d'un poste desktop par scan de QR code",
+        'Suivi en temps réel des postes et de leurs sessions',
+        "Arrêt à distance d'une session ou de toutes",
+        'Historique local des sessions terminées',
+      ],
+    }
   ),
   app(
     'mister-doc',
     'Mister Doc',
     'Planning de gardes de médecins synchronisé : vue mensuelle, compteurs week-end et heures.',
     'stable',
-    { category: 'sante', backend: 'supabase' }
+    {
+      category: 'sante',
+      backend: 'supabase',
+      languages: ['fr', 'en'],
+      features: [
+        'Planning mensuel des gardes, groupé par semaine ISO',
+        'Bourse aux gardes : proposer, accepter ou décliner',
+        'Compteurs week-end, heures totales et HNC par médecin',
+        'Congés, formations et vœux de disponibilité',
+        'Export des compteurs en CSV, Excel et PDF',
+        'Abonnement calendrier iCalendar (.ics) des gardes',
+      ],
+    }
   ),
   app(
     'miss-lookhouse',
     'Miss LookHouse',
     'Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.',
     'beta',
-    { category: 'outils', backend: 'supabase' }
+    {
+      category: 'outils',
+      backend: 'supabase',
+      languages: ['fr'],
+      features: [
+        'Recherches surveillées par rayon ou zone dessinée',
+        "Import d'annonces par URL, JSON ou bookmarklet",
+        'Détection des doublons et des annonces republiées',
+        'Historique des prix et détection des baisses',
+        'Carte des annonces sur OpenStreetMap',
+        'Prix de référence DVF au m² sur la fiche annonce',
+      ],
+    }
   ),
   app(
     'miss-badminton',
     'Miss Badminton',
     'Suivi de scores et statistiques de badminton.',
     'stable',
-    { category: 'sport', backend: 'local' }
+    {
+      category: 'sport',
+      backend: 'local',
+      languages: ['fr', 'en', 'es'],
+      features: [
+        'Compteur de points au toucher, en simple ou en double',
+        'Règles réglables : sets, points, plafond, limite de temps',
+        'Balles de set et de match, changement de côté signalé',
+        'Chronomètre de match et partage du résultat',
+        'Historique avec classement, face-à-face et activité',
+        "Export et import de l'historique en JSON",
+      ],
+    }
   ),
   app(
     'miss-dice',
     'Miss Dice',
     'Lanceur de dé à 6 faces, 100 % hors ligne, installable.',
     'stable',
-    { category: 'jeux', backend: 'local' }
+    {
+      category: 'jeux',
+      backend: 'local',
+      languages: ['fr', 'en', 'es', 'de', 'it', 'pt'],
+      features: [
+        'Lanceur de 1 à 6 dés, du D4 au D20',
+        'Yahtzee, 421 et Cochon, de 1 à 8 joueurs',
+        'Lancer en notation JDR (2d6+3, 4d6kh3, dés Fudge)',
+        'Écran Décider : pile ou face, oui/non, tirage au sort',
+        'Statistiques et historique des lancers, export CSV',
+        "Reprise d'une partie sur un autre appareil, par lien ou QR",
+      ],
+    }
   ),
   app(
     'miss-supaboss',
@@ -922,7 +1131,21 @@ export const FAMILY_APPS = [
     'beta',
     // Pilote d'AUTRES comptes Supabase via un backend Node et un jeton
     // personnel : aucun client Supabase côté navigateur, d'où `api`.
-    { category: 'dev', backend: 'api' }
+    {
+      category: 'dev',
+      backend: 'api',
+      // L'anglais couvre toute l'interface ; seuls les libellés de `shared/`
+      // (statuts, quotas, dates relatives) restent en français.
+      languages: ['fr', 'en'],
+      features: [
+        'Inventaire consolidé des projets de plusieurs comptes',
+        'Pause et restauration de projets à la demande',
+        'Garde-fou de la limite de 2 projets actifs par compte',
+        'Suivi des quotas Free Plan : egress, base, MAU, stockage',
+        'Préparation de démo guidée en 5 étapes',
+        "Journal d'audit des actions sur les projets",
+      ],
+    }
   ),
   app(
     'miss-supatool',
@@ -932,7 +1155,19 @@ export const FAMILY_APPS = [
     // Même raison que `miss-supaboss` : elle parle à des projets Supabase
     // TIERS en HTTP nu (PostgREST, API Storage) et à un relais pour l'API de
     // management. Aucun `@supabase/supabase-js` dans le paquet, d'où `api`.
-    { category: 'dev', backend: 'api' }
+    {
+      category: 'dev',
+      backend: 'api',
+      languages: ['fr'],
+      features: [
+        'Création du projet Supabase cible depuis le navigateur',
+        'Comparaison des schémas et ordre de copie des tables',
+        'Copie de la structure : tables, index, vues, RLS, droits',
+        'Copie des lignes et des fichiers Storage',
+        'Mode simulation avant toute écriture dans la cible',
+        'Rapport JSON et remise à niveau des séquences',
+      ],
+    }
   ),
   app(
     'mister-molkky',
@@ -947,7 +1182,20 @@ export const FAMILY_APPS = [
     // `index.html` (23 663 octets, 192 px), comme `miss-genius` et `miss-uwh`.
     // Rien ne mesurait ce poids : un budget de bundle ne voit pas ce qui part
     // chez le voisin.
-    { icon: 'icons/icon-192.png', category: 'jeux', backend: 'supabase' }
+    {
+      icon: 'icons/icon-192.png',
+      category: 'jeux',
+      backend: 'supabase',
+      languages: ['fr', 'en'],
+      features: [
+        'Saisie des quilles tombées, score calculé',
+        'Variantes classique, inversée, libre et mode équipes',
+        'Partie en direct suivie par QR code ou code à 6 caractères',
+        'Statistiques par joueur, face-à-face et succès',
+        'Historique des parties avec replay animé',
+        'Mode entraînement solo sur une quille cible',
+      ],
+    }
   ),
   app(
     'mister-qowa',
@@ -956,7 +1204,20 @@ export const FAMILY_APPS = [
     'stable',
     // Pas de `favicon.svg` à la racine (404 vérifié en prod) : l'icône vit
     // dans `icons/`, et le SVG reste net à toute taille.
-    { icon: 'icons/icon.svg', category: 'jeux', backend: 'firebase' }
+    {
+      icon: 'icons/icon.svg',
+      category: 'jeux',
+      backend: 'firebase',
+      languages: ['fr', 'en', 'es', 'de', 'it'],
+      features: [
+        'Parties en direct rejointes avec un code PIN',
+        'Questions chronométrées : QCM, vrai/faux, libre, sondage',
+        'Score combinant justesse et rapidité de réponse',
+        'Classement en direct puis podium final',
+        'Génération de quiz par IA (Gemini ou Anthropic)',
+        'Historique des parties animées',
+      ],
+    }
   ),
   app(
     'mister-family-map',
@@ -966,7 +1227,19 @@ export const FAMILY_APPS = [
     // `loisirs` : la catégorie a été ajoutée pour elle. Sortir en famille n'est
     // ni un outil ni un jeu, et `outils` n'était qu'un pis-aller assumé à
     // l'ajout de l'app.
-    { category: 'loisirs', backend: 'supabase' }
+    {
+      category: 'loisirs',
+      backend: 'supabase',
+      languages: ['fr'],
+      features: [
+        'Carte des lieux avec regroupement des marqueurs',
+        'Filtres familiaux : âge, poussette, toilettes, météo',
+        "Agenda d'événements exportable en iCalendar (.ics)",
+        'Ajout de lieu guidé, avec contrôle des doublons',
+        'Favoris consultables hors ligne',
+        'Export JSON de toutes ses contributions',
+      ],
+    }
   ),
   app(
     'mister-miss-koh',
@@ -977,7 +1250,19 @@ export const FAMILY_APPS = [
     // un jeu ni un outil. La description NOMME Koh-Lanta — c'est ce qu'on
     // cherche — et garde « non officiel » : l'app n'a aucun lien avec TF1 ni
     // la production, et sa donnée vient de Wikipédia, source collaborative.
-    { category: 'loisirs', backend: 'supabase' }
+    {
+      category: 'loisirs',
+      backend: 'supabase',
+      languages: ['fr'],
+      features: [
+        'Anti-spoiler réglé sur le dernier épisode vu',
+        'Suivi des épisodes vus, cochés en cascade',
+        'Candidats regroupés par duo ou par tribu',
+        'Détail des conseils : voix par candidat et bulletins',
+        'Notes personnelles partageables par lien révocable',
+        "Portraits personnels gardés sur l'appareil, export ZIP",
+      ],
+    }
   ),
   app(
     'mister-quota',
@@ -992,6 +1277,15 @@ export const FAMILY_APPS = [
       iconUrl: null,
       category: 'dev',
       platform: 'desktop',
+      languages: ['fr'],
+      features: [
+        'Suivi de la consommation de plusieurs comptes IA',
+        'Avance ou retard sur la consommation idéale',
+        'Collecte automatique via les API Claude et Cursor',
+        'Saisie manuelle et import CSV de relevés',
+        'Alertes de seuil par notification système',
+        'Sauvegarde JSON restaurable et export CSV',
+      ],
     }
   ),
   app(
@@ -1001,7 +1295,19 @@ export const FAMILY_APPS = [
     'alpha',
     // `outils` : compter à plusieurs est un outil. Aucun paiement dans l'app,
     // et la description le dit : l'argent circule ailleurs, entre les gens.
-    { category: 'outils', backend: 'supabase' }
+    {
+      category: 'outils',
+      backend: 'supabase',
+      languages: ['fr', 'en'],
+      features: [
+        'Espaces avec personnes sans compte et regroupements',
+        'Répartition équitable, par montants ou par parts',
+        'Soldes et remboursements suggérés',
+        'Justificatifs photo réencodés sans métadonnées',
+        'Statistiques et exports CSV ou XLSX',
+        'Invitations par lien avec rôle, révocables',
+      ],
+    }
   ),
 ];
 

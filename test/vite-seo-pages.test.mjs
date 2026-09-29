@@ -13,17 +13,35 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  contentPageFiles,
   contentPageHtml,
   faqFromMarkdown,
   findShareImage,
+  formatLongDate,
   imageDimensions,
   parseContentPage,
   pwaSeoPlugin,
   readContentPages,
+  relatedApps,
   renderMarkdown,
   setShareImage,
   textOn,
 } from '../vite-pwa-base.js';
+
+// L'état SEO écrit `seo-changed.json` HORS du dossier de sortie : ici, dans un
+// dossier temporaire, et pas dans le `node_modules` du dépôt.
+process.env.PWA_SEO_CHANGED_FILE = join(
+  mkdtempSync(join(tmpdir(), 'seo-changed-')),
+  'seo-changed.json'
+);
+delete process.env.PWA_SEO_PREVIOUS_STATE;
+
+/** Le JSON-LD d'une page. */
+function jsonLdDe(html) {
+  return JSON.parse(
+    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)[1]
+  );
+}
 
 /** Un JPEG réduit à ses en-têtes : SOI, APP0, puis le cadre SOF0. */
 function jpeg(width, height) {
@@ -267,15 +285,43 @@ test('la page est autonome : SEO complet, CSP, aucune exécution', () => {
   assert.doesNotMatch(html, /rel="manifest"/);
   // Aucun script exécutable : le seul <script> est le JSON-LD.
   assert.equal(html.match(/<script\b/g).length, 1);
-  const ld = JSON.parse(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)[1]
-  );
+  const ld = jsonLdDe(html);
   const types = ld['@graph'].map(n => n['@type']);
-  assert.deepEqual(types, ['Article', 'BreadcrumbList', 'FAQPage']);
-  assert.equal(ld['@graph'][0].dateModified, '2026-09-25');
-  assert.equal(ld['@graph'][0].about.name, 'Mister Mölkky');
+  assert.deepEqual(types, [
+    'Article',
+    'BreadcrumbList',
+    'FAQPage',
+    'Organization',
+  ]);
+  const article = ld['@graph'][0];
+  assert.equal(article.datePublished, '2026-09-25');
+  assert.equal(article.dateModified, '2026-09-25', 'sans updated : la date');
+  // UN SEUL GRAPHE : l'éditeur, l'app et le site par leur @id.
+  const org = { '@id': 'https://mister-guiiug.github.io/#org' };
+  assert.deepEqual(article.author, org);
+  assert.deepEqual(article.publisher, org);
+  assert.deepEqual(article.about, { '@id': `${HOME}#app` });
+  assert.deepEqual(article.isPartOf, {
+    '@id': 'https://mister-guiiug.github.io/#site',
+  });
+  assert.equal(ld['@graph'][3]['@id'], org['@id']);
   assert.equal(ld['@graph'][1].itemListElement[2].item, url);
   assert.equal(ld['@graph'][2].mainEntity.length, 2);
+  // Open Graph : `fr_FR`, les dates de l'article, un alt qui décrit LA PAGE.
+  assert.match(html, /og:locale" content="fr_FR"/);
+  assert.match(html, /article:published_time" content="2026-09-25"/);
+  assert.match(html, /article:modified_time" content="2026-09-25"/);
+  assert.match(
+    html,
+    /og:image:alt" content="Règles du Mölkky : le jeu et le score"/
+  );
+  // La signature, visible sous le titre, et liée à la page de l'auteur.
+  assert.match(
+    html,
+    /<h1>Règles du Mölkky<\/h1>\n<p class="signature">Publié le <time datetime="2026-09-25">25 septembre 2026<\/time> · par <a href="https:\/\/mister-guiiug\.github\.io\/a-propos\.html" rel="author">mister-guiiug<\/a><\/p>/
+  );
+  // Sans traduction : aucun hreflang.
+  assert.doesNotMatch(html, /hreflang/);
   // L'encadré mène à l'app, la liste mène à l'autre page, pas à elle-même.
   assert.match(
     html,
@@ -285,6 +331,331 @@ test('la page est autonome : SEO complet, CSP, aucune exécution', () => {
   assert.doesNotMatch(html, /href="regles-du-molkky\.html"/);
   // Le texte du bouton contraste avec la couleur du thème.
   assert.match(html, /--accent:#4a7c2a;--sur-accent:#ffffff/);
+  // Avant le pied de page, les apps sœurs du catalogue.
+  assert.match(html, /<h2 id="dwc-voisines">Dans la même catégorie<\/h2>/);
+  for (const a of relatedApps('mister-molkky').apps)
+    assert.ok(
+      html.includes(`<a href="${a.appUrl}">${a.name}</a> — `),
+      `${a.id} absent`
+    );
+  assert.ok(html.indexOf('dwc-voisines') < html.indexOf('<footer>'));
+});
+
+test('answer : « En bref. » sous le titre, et abstract ; updated : « Mis à jour le »', () => {
+  const md = PAGE_MD.replace(
+    'date: 2026-09-25',
+    'date: 2026-09-25\nupdated: 2026-10-01\nanswer: « Le premier à 50 points **pile** gagne ; au-delà, on retombe à 25. »'
+  );
+  const page = parseContentPage(md, 'regles-du-molkky.md');
+  assert.equal(
+    page.answer,
+    'Le premier à 50 points **pile** gagne ; au-delà, on retombe à 25.'
+  );
+  // Les mots, pas la ponctuation que la typographie française isole (« ; »).
+  assert.equal(page.motsReponse, 12);
+  assert.equal(page.updated, '2026-10-01');
+  const html = contentPageHtml({ page, indexHtml: INDEX, homeUrl: HOME });
+  assert.match(
+    html,
+    /Publié le <time datetime="2026-09-25">25 septembre 2026<\/time> · Mis à jour le <time datetime="2026-10-01">1er octobre 2026<\/time> · par /
+  );
+  assert.match(
+    html,
+    /<p class="en-bref"><strong>En bref\.<\/strong> Le premier à 50 points <strong>pile<\/strong> gagne/
+  );
+  // Signature, puis « En bref », puis le texte.
+  assert.ok(html.indexOf('signature') < html.indexOf('en-bref'));
+  assert.ok(html.indexOf('en-bref') < html.indexOf('se joue avec'));
+  const article = jsonLdDe(html)['@graph'][0];
+  assert.equal(
+    article.abstract,
+    'Le premier à 50 points pile gagne ; au-delà, on retombe à 25.'
+  );
+  assert.equal(article.dateModified, '2026-10-01');
+  assert.match(html, /article:modified_time" content="2026-10-01"/);
+});
+
+test('une date qui n’en est pas une est refusée, en nommant le fichier', () => {
+  assert.throws(
+    () => parseContentPage(PAGE_MD.replace('2026-09-25', '25/09/2026'), 'r.md'),
+    /r\.md : date « 25\/09\/2026 » n’est pas une date AAAA-MM-JJ/
+  );
+  assert.throws(
+    () =>
+      parseContentPage(
+        PAGE_MD.replace('date: 2026-09-25', 'updated: 2026-02-30'),
+        'r.md'
+      ),
+    /updated « 2026-02-30 »/
+  );
+});
+
+test('formatLongDate : format long de la langue, sans fuseau', () => {
+  assert.equal(formatLongDate('2026-09-25'), '25 septembre 2026');
+  assert.equal(formatLongDate('2026-10-01', 'fr'), '1er octobre 2026');
+  assert.equal(formatLongDate('2026-09-25', 'en'), 'September 25, 2026');
+  assert.equal(formatLongDate('pas une date'), 'pas une date');
+});
+
+/** Une page anglaise qui traduit `regles-du-molkky`. */
+const PAGE_EN = `---
+title: Mölkky rules: the game and the score
+description: The Mölkky rules explained simply, and an app to keep the score.
+date: 2026-09-26
+translation: regles-du-molkky
+answer: "The first player to reach exactly 50 points wins; going over sends you back to 25."
+---
+
+# Mölkky rules
+
+The game is played with *twelve* pins. See [the French page](../regles-du-molkky.html).
+
+## Frequently asked questions
+
+### How many players?
+
+Two or more.
+
+## References
+
+- Official rules: https://www.molkky.com/rules.
+`;
+
+test('traduction : hreflang RÉCIPROQUES, x-default vers la française, lien visible', () => {
+  const racine = mkdtempSync(join(tmpdir(), 'dwc-pages-en-'));
+  try {
+    mkdirSync(join(racine, 'en'));
+    writeFileSync(join(racine, 'regles-du-molkky.md'), PAGE_MD);
+    writeFileSync(join(racine, 'en', 'molkky-rules.md'), PAGE_EN);
+    const pages = readContentPages(racine);
+    assert.deepEqual(
+      pages.map(p => [p.lang, p.chemin]),
+      [
+        ['fr', 'regles-du-molkky.html'],
+        ['en', 'en/molkky-rules.html'],
+      ]
+    );
+    const [fr, en] = pages;
+    const htmlFr = contentPageHtml({
+      page: fr,
+      pages,
+      indexHtml: INDEX,
+      homeUrl: HOME,
+    });
+    const htmlEn = contentPageHtml({
+      page: en,
+      pages,
+      indexHtml: INDEX,
+      homeUrl: HOME,
+    });
+    const urlFr = `${HOME}regles-du-molkky.html`;
+    const urlEn = `${HOME}en/molkky-rules.html`;
+    for (const html of [htmlFr, htmlEn]) {
+      assert.ok(
+        html.includes(`<link rel="alternate" hreflang="fr" href="${urlFr}" />`)
+      );
+      assert.ok(
+        html.includes(`<link rel="alternate" hreflang="en" href="${urlEn}" />`)
+      );
+      assert.ok(
+        html.includes(
+          `<link rel="alternate" hreflang="x-default" href="${urlFr}" />`
+        )
+      );
+    }
+    // La page anglaise se déclare en anglais, partout.
+    assert.match(htmlEn, /^<!doctype html>\n<html lang="en">/);
+    assert.match(htmlEn, /og:locale" content="en_US"/);
+    assert.match(htmlEn, /og:locale:alternate" content="fr_FR"/);
+    assert.ok(htmlEn.includes(`<link rel="canonical" href="${urlEn}" />`));
+    assert.match(
+      htmlEn,
+      /<p class="signature">Published <time datetime="2026-09-26">September 26, 2026<\/time> · by <a /
+    );
+    assert.match(htmlEn, /<strong>In short\.<\/strong> The first player/);
+    assert.match(htmlEn, /<nav aria-label="Breadcrumb">/);
+    assert.match(htmlEn, /<h2 id="dwc-voisines">In the same category<\/h2>/);
+    assert.doesNotMatch(htmlEn, /Dans la même catégorie| — Suivi/);
+    assert.match(
+      htmlEn,
+      /<p class="langue" lang="fr"><a href="[^"]*regles-du-molkky\.html" hreflang="fr">Lire en français<\/a><\/p>/
+    );
+    assert.match(
+      htmlFr,
+      /<p class="langue" lang="en"><a href="[^"]*en\/molkky-rules\.html" hreflang="en">Read in English<\/a><\/p>/
+    );
+    // Le lien relatif `../` est sûr depuis `en/`.
+    assert.match(
+      htmlEn,
+      /<a href="\.\.\/regles-du-molkky\.html">the French page<\/a>/
+    );
+    // La FAQ anglaise se lit sous « Frequently asked questions ».
+    const ldEn = jsonLdDe(htmlEn)['@graph'];
+    assert.equal(ldEn[0].inLanguage, 'en');
+    assert.deepEqual(ldEn[0].translationOfWork, { '@id': urlFr });
+    assert.deepEqual(jsonLdDe(htmlFr)['@graph'][0].workTranslation, {
+      '@id': urlEn,
+    });
+    assert.equal(ldEn.find(n => n['@type'] === 'FAQPage').mainEntity.length, 1);
+    // Les références : rendues à part, l'URL nue devenue un lien, en citation.
+    assert.match(
+      htmlEn,
+      /<section class="sources">\n<h2 id="references">References<\/h2>\n<ul><li>Official rules: <a href="https:\/\/www\.molkky\.com\/rules">https:\/\/www\.molkky\.com\/rules<\/a>\.<\/li><\/ul>\n<\/section>/
+    );
+    assert.deepEqual(ldEn[0].citation, ['https://www.molkky.com/rules']);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test('une traduction orpheline, ou en double, fait échouer la lecture', () => {
+  const racine = mkdtempSync(join(tmpdir(), 'dwc-pages-en-'));
+  try {
+    mkdirSync(join(racine, 'en'));
+    writeFileSync(join(racine, 'en', 'rules.md'), PAGE_EN);
+    assert.throws(
+      () => readContentPages(racine),
+      /en\/rules\.md : translation « regles-du-molkky » ne désigne aucune page française/
+    );
+    writeFileSync(join(racine, 'regles-du-molkky.md'), PAGE_MD);
+    writeFileSync(join(racine, 'en', 'rules-bis.md'), PAGE_EN);
+    assert.throws(
+      () => readContentPages(racine),
+      /en\/rules-bis\.md et en\/rules\.md traduisent la même page|en\/rules\.md et en\/rules-bis\.md traduisent la même page/
+    );
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test('contentPageFiles : les fichiers publiés, et eux seuls', () => {
+  const racine = mkdtempSync(join(tmpdir(), 'dwc-pages-'));
+  try {
+    mkdirSync(join(racine, 'en'));
+    for (const f of ['README.md', '_brouillon.md', 'a.md', 'notes.txt'])
+      writeFileSync(join(racine, f), PAGE_MD);
+    for (const f of ['README.md', 'b.md'])
+      writeFileSync(join(racine, 'en', f), PAGE_MD);
+    assert.deepEqual(contentPageFiles(racine), ['a.md', 'en/b.md']);
+    assert.deepEqual(contentPageFiles(join(racine, 'absent')), []);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test('la section des sources : un bloc à part, qui se referme au titre suivant', () => {
+  const html = renderMarkdown(
+    [
+      '# T',
+      '',
+      '## Sources',
+      '',
+      '- [OMS](https://www.who.int/fr) : la classification.',
+      '- ATIH : https://www.atih.sante.fr/cim-10-fr.',
+      '',
+      '## Après',
+      '',
+      'Une URL ici https://exemple.org reste du texte.',
+    ].join('\n')
+  );
+  assert.match(
+    html,
+    /<section class="sources">\n<h2 id="sources">Sources<\/h2>\n<ul><li><a href="https:\/\/www\.who\.int\/fr">OMS<\/a> : la classification\.<\/li><li>ATIH : <a href="https:\/\/www\.atih\.sante\.fr\/cim-10-fr">https:\/\/www\.atih\.sante\.fr\/cim-10-fr<\/a>\.<\/li><\/ul>\n<\/section>\n<h2 id="apres">Après<\/h2>/
+  );
+  assert.match(
+    html,
+    /<p>Une URL ici https:\/\/exemple\.org reste du texte\.<\/p>/
+  );
+  const avecSources = [
+    '---',
+    'title: T',
+    'description: D',
+    '---',
+    '',
+    '# T',
+    '',
+    '## Sources',
+    '',
+    '- [OMS](https://www.who.int/fr)',
+    '- https://www.atih.sante.fr/cim-10-fr',
+  ].join('\n');
+  assert.deepEqual(parseContentPage(avecSources, 's.md').sources, [
+    'https://www.who.int/fr',
+    'https://www.atih.sante.fr/cim-10-fr',
+  ]);
+});
+
+test('au build : les pages anglaises sous en/, au plan de site et au contenu servi', async () => {
+  const racine = mkdtempSync(join(tmpdir(), 'dwc-app-en-'));
+  const dist = join(racine, 'dist');
+  try {
+    mkdirSync(join(racine, 'content', 'pages', 'en'), { recursive: true });
+    mkdirSync(dist);
+    writeFileSync(
+      join(racine, 'content', 'pages', 'regles-du-molkky.md'),
+      PAGE_MD
+    );
+    writeFileSync(
+      join(racine, 'content', 'pages', 'en', 'molkky-rules.md'),
+      PAGE_EN
+    );
+    const plugin = pwaSeoPlugin({ basePath: '/mister-molkky/' });
+    plugin.configResolved({
+      command: 'build',
+      root: racine,
+      build: { outDir: dist },
+    });
+    plugin.buildStart();
+    const index = plugin.transformIndexHtml(INDEX);
+    assert.match(
+      index,
+      /<li lang="en"><a href="https:\/\/mister-guiiug\.github\.io\/mister-molkky\/en\/molkky-rules\.html" hreflang="en">Mölkky rules<\/a><\/li>/
+    );
+    writeFileSync(join(dist, 'index.html'), index);
+    plugin.writeBundle({ dir: dist });
+    assert.ok(existsSync(join(dist, 'en', 'molkky-rules.html')));
+    await plugin.closeBundle();
+    const xml = readFileSync(join(dist, 'sitemap.xml'), 'utf8');
+    assert.equal(xml.match(/<url>/g).length, 3);
+    assert.match(
+      xml,
+      /<loc>https:\/\/mister-guiiug\.github\.io\/mister-molkky\/en\/molkky-rules\.html<\/loc>\n\s*<lastmod>2026-09-26<\/lastmod>/
+    );
+    // La date éditoriale fixe le `lastmod` de la page française aussi.
+    assert.match(
+      xml,
+      /regles-du-molkky\.html<\/loc>\n\s*<lastmod>2026-09-25<\/lastmod>/
+    );
+    // Une route ne peut pas prendre la place des pages anglaises.
+    const fautif = pwaSeoPlugin({
+      basePath: '/mister-molkky/',
+      routes: ['en'],
+    });
+    fautif.configResolved({
+      command: 'build',
+      root: racine,
+      build: { outDir: dist },
+    });
+    assert.throws(
+      () => fautif.buildStart(),
+      /en\/ porte les pages de contenu anglaises/
+    );
+    const collision = pwaSeoPlugin({
+      basePath: '/mister-molkky/',
+      routes: ['regles-du-molkky'],
+    });
+    collision.configResolved({
+      command: 'build',
+      root: racine,
+      build: { outDir: dist },
+    });
+    assert.throws(
+      () => collision.buildStart(),
+      /en collision avec la page de contenu regles-du-molkky\.md/
+    );
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
 });
 
 test('textOn : noir sur clair, blanc sur foncé', () => {
@@ -458,7 +829,8 @@ test('contentPages: false et ogImage: false coupent tout', async () => {
       INDEX.replace('og-image.jpg?v=1', 'autre.png')
     );
     assert.match(index, /autre\.png/);
-    assert.doesNotMatch(index, /<ul>/);
+    // Aucune page de contenu listée — les apps sœurs, elles, le restent.
+    assert.doesNotMatch(index, /\/a\.html/);
     await plugin.closeBundle();
     assert.equal(
       readFileSync(join(racine, 'dist', 'sitemap.xml'), 'utf8').match(/<url>/g)

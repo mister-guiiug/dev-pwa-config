@@ -85,6 +85,10 @@
       "types": "./security.d.ts",
       "default": "./security.js"
     },
+    "./crawler": {
+      "types": "./crawler.d.ts",
+      "default": "./crawler.js"
+    },
     "./storage": {
       "types": "./storage.d.ts",
       "default": "./storage.js"
@@ -704,6 +708,8 @@
     "correlation.d.ts",
     "correlation.js",
     "security.d.ts",
+    "crawler.js",
+    "crawler.d.ts",
     "download.js",
     "download.d.ts",
     "share.js",

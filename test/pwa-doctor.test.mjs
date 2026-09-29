@@ -419,8 +419,20 @@ export function Shell() {
       'src/features/home/HomeScreen.tsx': `import { AppFooter } from '@mister-guiiug/dev-pwa-config/react/app-footer';
 export function HomeScreen() { return <AppFooter repoUrl={REPO_URL} issues />; }`,
       'src/features/about/AboutScreen.tsx': `export function AboutScreen() { return <AppFooter repoUrl={REPO_URL} issues />; }`,
-      'content/pages/demo.md':
-        '---\ntitle: Démo\ndescription: Une page de contenu pour le docteur.\n---\n\n# Démo\n\nTexte.',
+      // Conforme depuis le 29/09/2026 : une date, et une réponse courte de 40
+      // à 70 mots — la signature visible, `dateModified`, « En bref ».
+      'content/pages/demo.md': [
+        '---',
+        'title: Démo',
+        'description: Une page de contenu pour le docteur.',
+        'date: 2026-09-25',
+        'answer: Cette page de démonstration montre ce qu’une page de contenu conforme porte désormais : une date de publication, qui fixe la signature et le plan de site, et une réponse directe de quarante à soixante-dix mots, rendue sous le titre et reprise par les moteurs de réponse, qui citent volontiers une phrase complète et chiffrée.',
+        '---',
+        '',
+        '# Démo',
+        '',
+        'Texte.',
+      ].join('\n'),
       'dist/index.html': html,
       'dist/version.json': { version: '1.0.0' },
       'dist/manifest.webmanifest': {
@@ -1885,4 +1897,280 @@ test('le conseil « pas de .nvmrc » nomme la version que CE dépôt épingle', 
       `le docteur conseille « ${conseil.fix} » alors que .nvmrc dit « ${NODE_EPINGLE} »`
     );
   });
+});
+
+/* ── Le référencement (29/09/2026) ─────────────────────────────────────── */
+
+const REPONSE =
+  'Une réponse directe qui compte assez de mots pour satisfaire la règle du docteur, soit entre trente et quatre-vingts mots, avec un chiffre clé comme 42, et une phrase complète que les moteurs de réponse peuvent reprendre telle quelle sans avoir à lire toute la page ni à deviner le contexte.';
+
+/** Une page de contenu, en-tête complet sauf ce qu'on retire. */
+const pageMd = ({ date = '2026-09-25', answer = REPONSE, en = '' } = {}) =>
+  [
+    '---',
+    'title: Une page',
+    'description: Une page de contenu.',
+    ...(date ? [`date: ${date}`] : []),
+    ...(answer ? [`answer: ${answer}`] : []),
+    ...(en ? [`translation: ${en}`] : []),
+    '---',
+    '',
+    '# Une page',
+    '',
+    'Texte.',
+  ].join('\n');
+
+test('seo-content-pages compte les fichiers que le build publie, dans le dossier de l’option', async () => {
+  // Un README seul faisait taire le contrôle : le build, lui, l'ignore.
+  await repo(
+    {
+      'package.json': { name: 'miss-readme' },
+      'vite.config.ts': 'pwaSeoPlugin({})',
+      'content/pages/README.md': '# Notes de rédaction',
+      'content/pages/_brouillon.md': pageMd(),
+    },
+    root => assert.ok(trouve(root, 'seo-content-pages'))
+  );
+  // Des pages ailleurs, déclarées par `contentPages` : trouvées.
+  await repo(
+    {
+      'package.json': { name: 'miss-ailleurs' },
+      'vite.config.ts': "pwaSeoPlugin({ contentPages: 'docs/guides' })",
+      'docs/guides/a.md': pageMd(),
+    },
+    root => assert.equal(trouve(root, 'seo-content-pages'), undefined)
+  );
+  // Des pages anglaises seules comptent aussi.
+  await repo(
+    {
+      'package.json': { name: 'miss-en' },
+      'vite.config.ts': 'pwaSeoPlugin({})',
+      'content/pages/en/a.md': pageMd(),
+    },
+    root => assert.equal(trouve(root, 'seo-content-pages'), undefined)
+  );
+  // `contentPages: false` est une décision écrite : le contrôle se tait.
+  await repo(
+    {
+      'package.json': { name: 'miss-sans' },
+      'vite.config.ts': 'pwaSeoPlugin({ contentPages: false })',
+    },
+    root => assert.equal(trouve(root, 'seo-content-pages'), undefined)
+  );
+});
+
+test('optionContentPages lit false, un dossier, ou rien — jamais un commentaire', async () => {
+  const { optionContentPages } = await import('../scripts/pwa-doctor.mjs');
+  assert.equal(
+    optionContentPages('pwaSeoPlugin({ contentPages: false })'),
+    false
+  );
+  assert.equal(
+    optionContentPages('pwaSeoPlugin({ contentPages: "docs/pages" })'),
+    'docs/pages'
+  );
+  assert.equal(
+    optionContentPages('pwaSeoPlugin({ contentPages: DOSSIER })'),
+    undefined
+  );
+  assert.equal(
+    optionContentPages('pwaSeoPlugin({\n  // contentPages: false,\n})'),
+    undefined
+  );
+});
+
+test('seo-content-date : une page sans date, ou datée du futur, est une dette', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-dates' },
+      'vite.config.ts': 'pwaSeoPlugin({})',
+      'content/pages/sans-date.md': pageMd({ date: '' }),
+      'content/pages/futur.md': pageMd({ date: '2999-01-01' }),
+      'content/pages/juste.md': pageMd(),
+    },
+    root => {
+      const f = trouve(root, 'seo-content-date');
+      assert.equal(f.level, 'dette');
+      assert.match(f.message, /1 page\(s\) sans date : sans-date\.md/);
+      assert.match(f.message, /date future : futur\.md \(2999-01-01\)/);
+      assert.doesNotMatch(f.message, /juste\.md/);
+    }
+  );
+});
+
+test('seo-content-answer : absente, ou hors de 30 à 80 mots', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-reponses' },
+      'vite.config.ts': 'pwaSeoPlugin({})',
+      'content/pages/sans.md': pageMd({ answer: '' }),
+      'content/pages/courte.md': pageMd({
+        answer: 'Trop courte pour répondre.',
+      }),
+      'content/pages/juste.md': pageMd(),
+    },
+    root => {
+      const f = trouve(root, 'seo-content-answer');
+      assert.equal(f.level, 'dette');
+      assert.match(f.message, /1 page\(s\) sans réponse courte : sans\.md/);
+      assert.match(f.message, /courte\.md \(4 mots\)/);
+      assert.doesNotMatch(f.message, /juste\.md/);
+    }
+  );
+});
+
+/** L'`index.html` de mister-puzzle, réduit à ce qui le met en défaut. */
+const INDEX_PUZZLE = [
+  '<!doctype html><html lang="fr"><head>',
+  '<title>Mister Puzzle - suivi collaboratif de progression de puzzle</title>',
+  '<link rel="alternate" hreflang="fr" href="__SEO_HOME_URL__" />',
+  '<link rel="alternate" hreflang="en" href="__SEO_HOME_URL__" />',
+  '<link rel="alternate" hreflang="x-default" href="__SEO_HOME_URL__" />',
+  '<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Mister Puzzle","author":{"@type":"Organization","name":"Mister Puzzle"}}</script>',
+  '<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Comment rejoindre une partie sur Mister Puzzle ?","acceptedAnswer":{"@type":"Answer","text":"Avec le code."}}]}</script>',
+  '</head><body><div id="root"></div></body></html>',
+].join('\n');
+
+test('mister-puzzle, 29/09/2026 : FAQ invisible et hreflang identiques sont des DÉFAUTS, l’auteur une info', async () => {
+  await repo(
+    {
+      'package.json': { name: 'mister-puzzle-factice' },
+      'index.html': INDEX_PUZZLE,
+    },
+    root => {
+      const faq = trouve(root, 'seo-faq-visible');
+      assert.equal(faq.level, 'défaut');
+      assert.match(faq.message, /1 question\(s\) sur 1 absente\(s\)/);
+      assert.match(faq.message, /Comment rejoindre une partie/);
+      const hreflang = trouve(root, 'seo-hreflang');
+      assert.equal(hreflang.level, 'défaut');
+      assert.match(hreflang.message, /fr = en → __SEO_HOME_URL__/);
+      const entite = trouve(root, 'seo-entity');
+      assert.equal(entite.level, 'info');
+      assert.match(entite.message, /Organization « Mister Puzzle »/);
+      assert.match(entite.fix, /mister-guiiug\.github\.io\/#org/);
+    }
+  );
+});
+
+test('une FAQ VISIBLE, un auteur de la famille : rien à dire', async () => {
+  const index = INDEX_PUZZLE.split('\n')
+    .filter(l => !l.includes('hreflang'))
+    .join('\n')
+    .replace(
+      '"author":{"@type":"Organization","name":"Mister Puzzle"}',
+      '"author":{"@id":"https://mister-guiiug.github.io/#org"}'
+    )
+    .replace(
+      '<div id="root"></div>',
+      '<div id="root"></div><section><h2>Questions</h2><h3>Comment rejoindre une partie sur Mister&nbsp;Puzzle ?</h3></section>'
+    );
+  await repo(
+    { 'package.json': { name: 'mister-puzzle-propre' }, 'index.html': index },
+    root => {
+      for (const id of ['seo-faq-visible', 'seo-hreflang', 'seo-entity'])
+        assert.equal(trouve(root, id), undefined, id);
+    }
+  );
+});
+
+test('seo-hreflang : les pages construites se désignent l’une l’autre, ou c’est un défaut', async () => {
+  const alternates =
+    '<link rel="alternate" hreflang="fr" href="https://o/app/a.html" /><link rel="alternate" hreflang="en" href="https://o/app/en/a.html" />';
+  const page = (soi, avecAlternates) =>
+    `<html lang="fr"><head><link rel="canonical" href="${soi}" />${avecAlternates ? alternates : ''}</head><body></body></html>`;
+  const fichiers = reciproque => ({
+    'package.json': { name: 'miss-traduite' },
+    'vite.config.ts': 'pwaSeoPlugin({})',
+    'content/pages/a.md': pageMd(),
+    'content/pages/en/a.md': pageMd({ en: 'a' }),
+    'dist/index.html': '<html lang="fr"><head></head><body></body></html>',
+    'dist/a.html': page('https://o/app/a.html', true),
+    'dist/en/a.html': page('https://o/app/en/a.html', reciproque),
+  });
+  await repo(fichiers(true), root =>
+    assert.equal(trouve(root, 'seo-hreflang'), undefined)
+  );
+  await repo(fichiers(false), root => {
+    const f = trouve(root, 'seo-hreflang');
+    assert.equal(f.level, 'défaut');
+    assert.match(
+      f.message,
+      /dist\/a\.html : en → https:\/\/o\/app\/en\/a\.html ne la désigne pas en retour/
+    );
+  });
+});
+
+test('seo-runtime-title : le titre réécrit sans le statique est une info, et seulement lui', async () => {
+  const INDEX =
+    '<html><head><title>Miss Badminton - compteur de score et stats de badminton</title></head><body></body></html>';
+  // miss-badminton, 29/09/2026 : l'accueil réécrit en « Miss Badminton ».
+  await repo(
+    {
+      'package.json': { name: 'miss-titre' },
+      'index.html': INDEX,
+      'src/AppRouter.tsx':
+        'useEffect(() => { document.title = t(`documentTitle.${route}`); }, [route]);',
+      'src/i18n/messages.ts':
+        "export const fr = { documentTitle: { home: 'Miss Badminton' } };",
+      'src/routes.ts':
+        "export const ROUTE_META = { '/': { title: 'Miss Badminton - compteur de score et stats de badminton' } };",
+    },
+    root => {
+      const f = trouve(root, 'seo-runtime-title');
+      assert.equal(f.level, 'info');
+      assert.match(f.message, /src\/AppRouter\.tsx/);
+    }
+  );
+  const { titreRuntimeSansStatique } =
+    await import('../scripts/pwa-doctor.mjs');
+  const titre =
+    'Mister Mölkky - compteur de points multi-appareils pour Mölkky';
+  const propres = [
+    // mister-molkky : le titre de l'accueil vient d'une traduction.
+    [
+      {
+        rel: 'src/react/AppRouter.tsx',
+        text: 'document.title = t(`documentTitle.${key}`);',
+      },
+      { rel: 'src/i18n/messages.ts', text: `home: '${titre}',` },
+    ],
+    // Le titre statique capturé au démarrage, puis composé.
+    [
+      {
+        rel: 'src/App.tsx',
+        text: 'const BASE = document.title;\ndocument.title = `${ecran} – ${BASE}`;',
+      },
+    ],
+    // Une constante écrite à côté du titre statique.
+    [
+      { rel: 'src/App.tsx', text: 'document.title = APP_TITLE;' },
+      { rel: 'src/config.ts', text: `export const APP_TITLE = '${titre}';` },
+    ],
+    // Une comparaison n'est pas une affectation ; un test ne compte pas.
+    [
+      { rel: 'src/a.ts', text: "if (document.title === 'x') log();" },
+      { rel: 'src/a.test.ts', text: "document.title = 'x';" },
+    ],
+    // Un commentaire non plus.
+    [{ rel: 'src/b.ts', text: "// document.title = 'Mister Mölkky';" }],
+  ];
+  for (const source of propres)
+    assert.deepEqual(
+      titreRuntimeSansStatique(source, titre),
+      [],
+      source[0].rel
+    );
+  assert.deepEqual(
+    titreRuntimeSansStatique(
+      [
+        {
+          rel: 'src/useTitle.ts',
+          text: "const DEFAULT_TITLE = 'Mister Puzzle — progression';\ndocument.title = DEFAULT_TITLE;",
+        },
+      ],
+      'Mister Puzzle - suivi collaboratif de progression de puzzle'
+    ),
+    ['src/useTitle.ts']
+  );
 });
