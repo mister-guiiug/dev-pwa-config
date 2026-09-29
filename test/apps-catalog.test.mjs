@@ -536,38 +536,3 @@ test('PUBLISHER : UN nœud Organization, gelé, que le hub déclare sous #org', 
   // La clé PUBLIQUE que le hub sert à la racine de l'origine.
   assert.match(INDEXNOW_KEY, /^[0-9a-f]{32}$/);
 });
-
-test('languages : relevées, le français d’abord, en codes à deux lettres', () => {
-  for (const a of FAMILY_APPS) {
-    assert.ok(Array.isArray(a.languages) && a.languages.length, a.id);
-    assert.equal(a.languages[0], 'fr', `${a.id} : le français d’abord`);
-    assert.ok(
-      a.languages.every(l => /^[a-z]{2}$/.test(l)),
-      `${a.id} : codes à deux lettres`
-    );
-    assert.equal(new Set(a.languages).size, a.languages.length, a.id);
-  }
-});
-
-test('features : trois à six fonctions, courtes, sans point final ni doublon', () => {
-  for (const a of FAMILY_APPS) {
-    assert.ok(
-      Array.isArray(a.features) &&
-        a.features.length >= 3 &&
-        a.features.length <= 6,
-      `${a.id} : ${a.features?.length} fonctions`
-    );
-    for (const f of a.features) {
-      assert.ok([...f].length <= 70, `${a.id} : « ${f} » trop longue`);
-      assert.doesNotMatch(f, /\.$/, `${a.id} : « ${f} »`);
-      assert.match(f, /^\p{Lu}/u, `${a.id} : « ${f} » sans majuscule`);
-    }
-    assert.equal(new Set(a.features).size, a.features.length, a.id);
-    // Pas d'avis ni d'étoiles : l'absence voulue d'`aggregateRating` tient
-    // (« note » est ici une note SCOLAIRE — miss-genius).
-    assert.ok(
-      !a.features.some(f => /\b(?:avis|étoiles?|rating)\b/i.test(f)),
-      a.id
-    );
-  }
-});

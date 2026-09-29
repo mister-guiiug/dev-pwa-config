@@ -64,17 +64,6 @@ export interface FamilyApp {
   devPort?: number;
   /** Couleur de thème optionnelle (pour accentuer les cartes). */
   themeColor?: string;
-  /**
-   * Langues de l'INTERFACE, en codes à deux lettres, le français d'abord —
-   * relevées dans l'i18n de l'app (un dictionnaire réel et un moyen de le
-   * choisir). Reprises en `inLanguage` du `WebApplication` de l'accueil.
-   */
-  languages?: string[];
-  /**
-   * Trois à six fonctions réelles, en français court, lues dans le README et
-   * vérifiées dans le code. Reprises en `featureList` du `WebApplication`.
-   */
-  features?: string[];
 }
 
 /** Le nœud schema.org `Organization` de l'éditeur de toute la famille. */
