@@ -1,5 +1,24 @@
 # Changelog
 
+## 6.19.0
+
+### Minor Changes
+
+- 2c4d533: Référencement (SEO, GEO, AEO) : ce qu'a relevé l'audit du 29/09/2026, corrigé dans le socle.
+  
+  - **Pages de contenu.** L'en-tête accepte `date`, `updated`, `answer` (la réponse directe, 40 à 70 mots, guillemets englobants retirés) et `translation`. Sous le titre : la signature « Publié le … · Mis à jour le … · par mister-guiiug » (le nom mène à la page À propos du hub), puis le bloc « En bref. ». L'`Article` porte `datePublished`, `dateModified` (`updated`, sinon `date`), `abstract`, `citation` (les liens de la section `## Sources`, rendue à part), et désigne l'éditeur, l'app et le site par leurs `@id`. Open Graph : `og:locale` en `fr_FR` / `en_US` (plus « fr »), `article:published_time`, `article:modified_time`, un `og:image:alt` qui décrit la page. Avant le pied de page, « Dans la même catégorie » : les apps sœurs du catalogue. Une date invalide, une traduction orpheline ou en double font échouer le build en nommant le fichier.
+  - **Pages anglaises.** `content/pages/en/<slug>.md` sort en `<base>/en/<slug>.html`, en anglais de bout en bout (`lang`, `inLanguage`, libellés, FAQ sous `## Frequently asked questions`). Une page et sa traduction portent des `hreflang` `fr`, `en` et `x-default` réciproques, et un lien visible vers l'autre langue. Le plan de site et le contenu servi les listent.
+  - **Accueil servi.** `content/accueil.md` (Markdown court, sans `#`) est rendu après le titre et la description ; s'y ajoutent « Dans la même catégorie » et « Code source sur GitHub ». Les balises texte manquantes de l'accueil sont posées (`og:site_name`, `og:locale`, `og:title`, `og:description`, `og:url`, `og:type`, `twitter:*`), sans jamais remplacer une valeur écrite à la main — sauf `og:locale`, normalisé. `siteName` nomme désormais `og:site_name` d'une app hors catalogue.
+  - **Un seul graphe d'entités.** Le catalogue exporte `PUBLISHER` (`#org`), `SITE_ID` (`#site`) et `INDEXNOW_KEY`, et chaque app y gagne `languages` et `features`, relevés dans son code. Le `WebApplication` a un `@id` (`<app>#app`), désigne l'éditeur par `author` et `publisher`, le site par `isPartOf`, ne cite plus que le dépôt en `sameAs`, et porte `inLanguage` (les langues de l'interface), `featureList` et `screenshot` (les captures du manifeste construit). Toujours aucune note.
+  - **`lastmod` réel.** Le plugin calcule une empreinte par URL, publie `seo-state.json`, reprend le `lastmod` d'une URL inchangée (`PWA_SEO_PREVIOUS_STATE`) — une date éditoriale prime — et écrit la liste des URL changées hors du site (`PWA_SEO_CHANGED_FILE`). Le plan de site ne liste plus que ce qui a été écrit.
+  - **`pwa-deploy.yml`.** Récupère l'état SEO publié avant le build ; un nouveau job `indexnow` (entrée `indexnow`, vraie par défaut) signale après le déploiement les seules URL nouvelles ou modifiées, une fois la clé et chaque URL servies en 200, en un envoi, jamais bloquant. Le `404.html` recopié reçoit `noindex`.
+  - **Routes publiques en 200.** `routes` accepte `{ path, title, description }` ; chaque route devient `<path>.html`, copie de l'accueil avec ses textes, sa canonique sans extension et son Open Graph. Un chemin réservé, invalide ou en collision est refusé au build.
+  - **Et aussi.** `spaFallbackPlugin` marque `404.html` `noindex` (canonique retirée) ; `robots` passe à `false` par défaut (un `robots.txt` de sous-chemin n'a aucun effet) ; le gabarit `index.html` porte un titre de 50 caractères au moins et ses balises Open Graph et Twitter ; le showroom est hors index ; `probe-sites --seo` sonde ce qu'un moteur lit.
+  - **Docteur.** Nouvelles règles `seo-content-date`, `seo-content-answer` (dettes), `seo-faq-visible`, `seo-hreflang` (défauts), `seo-entity`, `seo-runtime-title` (infos) ; `seo-content-pages` compte désormais les mêmes fichiers que le build, dans le dossier de l'option `contentPages`.
+  - **Un robot reçoit la langue par défaut.** Le test en direct de la Search Console rendait `miss-contraction` en anglais : Google se présente en `en-US`. `createI18n` sert `fallbackLocale` à un robot connu (une préférence stockée garde la priorité), et le nouveau sous-chemin `crawler` exporte `isCrawlerUserAgent` pour les i18n maison.
+  - **Sentry sans données dans les URL.** `initSentry` retire la requête et le fragment des URL de ses fils d'Ariane (`fetch`, `xhr`, `navigation`, `ui`) — mister-cim10 envoyait le texte d'un compte rendu médical à l'OMS dans la chaîne de requête. Un `beforeBreadcrumb` de l'app passe avant, et son résultat est nettoyé ; `scrubBreadcrumb` est exporté.
+  - **Manifeste.** `pwaBaseOptions` reprend la description du catalogue quand l'app n'en passe pas (mister-settle publiait un manifeste sans description).
+
 ## 6.18.0
 
 ### Minor Changes
