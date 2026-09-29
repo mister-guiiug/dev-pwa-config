@@ -1998,6 +1998,46 @@ test('seo-content-date : une page sans date, ou datée du futur, est une dette',
   );
 });
 
+test('seo-content-date : la page du jour poussée à 0 h 30 à Paris n’est pas future', async () => {
+  // Relevé du 30/09/2026 (miss-carbook #123) : à 0 h 30 à Paris, la date UTC
+  // vaut encore la veille, et la page datée du jour sortait en dette — rouge
+  // sur les dépôts en `doctor-strict`.
+  await repo(
+    {
+      'package.json': { name: 'miss-minuit' },
+      'vite.config.ts': 'pwaSeoPlugin({})',
+      'content/pages/du-jour.md': pageMd({ date: '2026-09-30' }),
+      'content/pages/demain.md': pageMd({ date: '2026-10-01' }),
+    },
+    root => {
+      const f = diagnose(root, {
+        maintenant: '2026-09-29T22:30:00Z',
+      }).findings.find(x => x.id === 'seo-content-date');
+      assert.ok(
+        f,
+        'le lendemain, qu’aucun fuseau n’a atteint, reste une dette'
+      );
+      assert.match(f.message, /date future : demain\.md \(2026-10-01\)/);
+      assert.doesNotMatch(f.message, /du-jour\.md/);
+    }
+  );
+});
+
+test('dernierJourCommence : la date civile du fuseau le plus avancé (UTC+14)', async () => {
+  const { dernierJourCommence } = await import('../scripts/pwa-doctor.mjs');
+  // 0 h 30 à Paris le 30/09 : encore le 29 en UTC, déjà le 30 à UTC+14.
+  assert.equal(dernierJourCommence('2026-09-29T22:30:00Z'), '2026-09-30');
+  // Le lendemain commence à UTC+14 quand il est 10 h UTC.
+  assert.equal(dernierJourCommence('2026-09-29T09:59:59Z'), '2026-09-29');
+  assert.equal(dernierJourCommence('2026-09-29T10:00:00Z'), '2026-09-30');
+  assert.equal(
+    dernierJourCommence(new Date('2026-12-31T12:00:00Z')),
+    '2027-01-01'
+  );
+  // Un instant illisible vaut « maintenant » : jamais d'exception.
+  assert.match(dernierJourCommence('pas une date'), /^\d{4}-\d{2}-\d{2}$/);
+});
+
 test('seo-content-answer : absente, ou hors de 30 à 80 mots', async () => {
   await repo(
     {
