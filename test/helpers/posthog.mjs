@@ -14,42 +14,11 @@
  */
 
 /**
- * @returns {{ init: Function, capture: Function, register: Function,
- *   opt_in_capturing: Function, opt_out_capturing: Function,
- *   appels: { init: any[], capture: any[], register: any[], optIn: number,
- *     optOut: number } }}
+ * Le double lui-même vit dans `testing/posthog` depuis qu'il est publié : les
+ * apps en ont besoin pour éprouver leur écran de réglages, et deux copies
+ * finiraient par diverger. Il se souvient d'un retrait comme la vraie.
  */
-export function fauxPosthog() {
-  const appels = {
-    init: [],
-    capture: [],
-    register: [],
-    optIn: 0,
-    optOut: 0,
-    /** Les gestes de consentement, DANS L'ORDRE — un compteur ne le dit pas. */
-    gestes: [],
-  };
-  return {
-    appels,
-    init(cle, options) {
-      appels.init.push({ cle, options });
-    },
-    capture(event, params) {
-      appels.capture.push({ event, params });
-    },
-    register(props) {
-      appels.register.push(props);
-    },
-    opt_in_capturing() {
-      appels.optIn++;
-      appels.gestes.push('granted');
-    },
-    opt_out_capturing() {
-      appels.optOut++;
-      appels.gestes.push('denied');
-    },
-  };
-}
+export { fauxPosthog } from '../../testing/posthog.js';
 
 /**
  * Le `loader` à passer à `initAnalytics` ou à `ConsentBanner`.

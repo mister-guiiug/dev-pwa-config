@@ -325,3 +325,115 @@ test('la couture des tests e2e retient ce qui a été demandé', async () => {
     dom.restore();
   }
 });
+
+/* ── Retirer, puis redonner : la mémoire de PostHog suit la nôtre ─────── */
+
+test('un retrait inscrit par PostHog ne survit pas à un nouvel accord', async () => {
+  // Le défaut que le retrait en un clic aurait ouvert : posthog-js INSCRIT
+  // `opt_out_capturing` dans `localStorage` et le relit à `init`. Retirer son
+  // accord un jour, le redonner lors d'une autre visite, et la bibliothèque se
+  // chargeait en se croyant toujours refusée — le socle disait « accepté »,
+  // et plus rien ne partait.
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    const faux = fauxPosthog({ retire: true });
+    initAnalytics({ posthogKey: CLE, loader: chargeurFactice(faux) });
+
+    setAnalyticsConsent({ analytics: true });
+    await laisseCharger();
+
+    assert.equal(faux.appels.init.length, 1);
+    assert.equal(
+      faux.has_opted_out_capturing(),
+      false,
+      'la bibliothèque doit reprendre la collecte que notre choix accorde'
+    );
+    assert.equal(trackEvent('creation', { objet: 'lieu' }), true);
+    assert.deepEqual(faux.appels.capture.at(-1), {
+      event: 'creation',
+      params: { objet: 'lieu' },
+    });
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('un accord REJOUÉ ne compte pas un nouvel accord', async () => {
+  // Chaque instance du hook rejoue le choix mémorisé à son montage : ouvrir un
+  // écran de réglages qui porte `ConsentSection` repasse par
+  // `setAnalyticsConsent`, bibliothèque chargée et collecte ouverte. Or
+  // `opt_in_capturing` ENVOIE un `$opt_in` : l'appeler à chaque fois comptait
+  // un faux accord par ouverture d'écran.
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    const faux = await avecAccord();
+
+    setAnalyticsConsent({ analytics: true });
+    setAnalyticsConsent('granted');
+    await laisseCharger();
+    assert.equal(faux.appels.optIn, 0, 'aucun accord à reprendre');
+    assert.equal(faux.appels.init.length, 1);
+
+    // La contre-épreuve : un VRAI retour après un retrait, lui, reprend.
+    setAnalyticsConsent('denied');
+    setAnalyticsConsent({ analytics: true });
+    assert.deepEqual(faux.appels.gestes, ['denied', 'granted']);
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('deux accords simultanés ne chargent la bibliothèque qu’une fois', async () => {
+  // Le bandeau et la section d'un écran de réglages rejouent chacun l'accord
+  // d'hier au montage, avant que l'import du premier soit revenu.
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    const faux = fauxPosthog();
+    let imports = 0;
+    const charge = chargeurFactice(faux);
+    initAnalytics({
+      posthogKey: CLE,
+      loader: () => {
+        imports++;
+        return charge();
+      },
+    });
+
+    setAnalyticsConsent({ analytics: true });
+    setAnalyticsConsent({ analytics: true });
+    await laisseCharger();
+
+    assert.equal(imports, 1, 'un seul import');
+    assert.equal(faux.appels.init.length, 1, 'un seul init');
+    assert.equal(isAnalyticsLoaded(), true);
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
+test('un refus donné PENDANT le chargement est appris par la bibliothèque', async () => {
+  // Accepter puis refuser avant que le morceau arrive : l'import est parti,
+  // la bibliothèque s'initialise — et, par défaut, elle collecte.
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    const faux = fauxPosthog();
+    initAnalytics({ posthogKey: CLE, loader: chargeurFactice(faux) });
+
+    setAnalyticsConsent({ analytics: true });
+    setAnalyticsConsent('denied');
+    await laisseCharger();
+
+    assert.equal(faux.has_opted_out_capturing(), true);
+    assert.equal(trackEvent('clic'), false);
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});

@@ -61,11 +61,18 @@ export interface ConsentChoice {
   configured: boolean;
   /** Il y a quelque chose à mesurer ET rien n'a été décidé. */
   needed: boolean;
+  /**
+   * Combien de fois la question a été ROUVERTE par un `reset` depuis le
+   * montage — `0` tant qu'elle ne l'a pas été. Le bandeau s'en sert pour venir
+   * à l'écran et prendre le focus quand on le rappelle, jamais au premier
+   * affichage.
+   */
+  recalled: number;
   accept: () => void;
   refuse: () => void;
   /**
-   * Refuse, puis oublie le choix : le bandeau repose la question et rien n'est
-   * collecté entre-temps.
+   * Refuse, puis oublie le choix : le bandeau repose la question — il vient à
+   * l'écran et prend le focus — et rien n'est collecté entre-temps.
    */
   reset: () => void;
 }

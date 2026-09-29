@@ -137,6 +137,12 @@ const labels = {
     stateGranted: 'Publieksmeting: geaccepteerd',
     stateDenied: 'Publieksmeting: geweigerd',
     manage: 'Mijn keuze wijzigen',
+    sectionText:
+      'Deze app kan het gebruik meten met PostHog, op servers in de Europese Unie, en alleen als u akkoord gaat. Wat u typt, wordt nooit verzonden.',
+    sectionGranted: 'U hebt deze meting geaccepteerd.',
+    sectionDenied: 'U hebt deze meting geweigerd.',
+    sectionPending: 'U hebt nog geen keuze gemaakt.',
+    withdraw: 'Mijn toestemming intrekken',
   },
   privacy: {
     title: 'Uw gegevens',

@@ -84,6 +84,7 @@
     [data-dwc='offline-ready-dismiss'],
     [data-dwc='consent-accept'],
     [data-dwc='consent-refuse'],
+    [data-dwc='consent-section-action'],
     [data-dwc='pwa-install-actions'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
@@ -113,6 +114,10 @@
        comportement ne s'en aperçoive. */
     [data-dwc='consent-accept'],
     [data-dwc='consent-refuse'],
+    /* Le retrait, dans un écran de réglages, est un VRAI bouton — pas le lien
+       de pied de page de `consent-settings` : c'est le geste de la section,
+       et il doit se voir autant que l'« Accepter » qu'il défait. */
+    [data-dwc='consent-section-action'],
     [data-dwc='pwa-install-actions'] button
   ) {
     font: inherit;
@@ -637,6 +642,34 @@
    */
   [data-dwc='consent-settings-action'] {
     text-decoration: underline;
+  }
+
+  /*
+   * LA SECTION D'UN ÉCRAN DE RÉGLAGES : UNE COLONNE, ET RIEN QUI S'IMPOSE.
+   *
+   * Elle vit dans l'habillage de l'app qui l'accueille — ses cartes, ses
+   * titres, sa typographie. On n'y pose que l'ordre de lecture (titre, ce qui
+   * est mesuré, l'état, le geste) et des marges nulles, pour qu'elle se glisse
+   * dans une carte comme dans une liste. Le bouton, lui, est sur la règle
+   * partagée des « Bases » : cible tactile et aspect de bouton.
+   */
+  [data-dwc='consent-section'] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='consent-section-title'],
+  [data-dwc='consent-section-state'] {
+    margin: 0;
+  }
+
+  [data-dwc='consent-section-text'] {
+    margin: 0;
+    max-width: 60ch;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
   }
 
   /*

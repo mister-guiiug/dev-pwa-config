@@ -27,6 +27,7 @@
     [data-dwc='offline-ready-dismiss'],
     [data-dwc='consent-accept'],
     [data-dwc='consent-refuse'],
+    [data-dwc='consent-section-action'],
     [data-dwc='pwa-install-actions'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
@@ -56,6 +57,10 @@
        comportement ne s'en aperçoive. */
     [data-dwc='consent-accept'],
     [data-dwc='consent-refuse'],
+    /* Le retrait, dans un écran de réglages, est un VRAI bouton — pas le lien
+       de pied de page de `consent-settings` : c'est le geste de la section,
+       et il doit se voir autant que l'« Accepter » qu'il défait. */
+    [data-dwc='consent-section-action'],
     [data-dwc='pwa-install-actions'] button
   ) {
     font: inherit;

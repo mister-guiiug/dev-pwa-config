@@ -1,4 +1,10 @@
-import { createElement as h, useCallback, useEffect, useState } from 'react';
+import {
+  createElement as h,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useLabels } from './labels-core.js';
 import {
   getAnalyticsId,
@@ -218,8 +224,8 @@ export function clearConsentChoice(scope) {
  * @param {{ posthogKey?: string, posthogHost?: string,
  *   appName?: string, scope?: string }} [options]
  * @returns {{ choice: 'granted'|'denied'|null, configured: boolean,
- *   needed: boolean, accept: () => void, refuse: () => void,
- *   reset: () => void }}
+ *   needed: boolean, recalled: number, accept: () => void,
+ *   refuse: () => void, reset: () => void }}
  */
 /**
  * LES INSTANCES MONTÉES DU HOOK, pour qu'un choix fait ICI se voie LÀ.
@@ -235,10 +241,14 @@ export function clearConsentChoice(scope) {
  *
  * Entre ONGLETS, rien n'est fait ici : `localStorage` émet déjà `storage` pour
  * ça, et le prochain rendu à froid relit le stockage de toute façon.
+ *
+ * `rappel` DISTINGUE UNE QUESTION ROUVERTE D'UNE QUESTION JAMAIS POSÉE. Le
+ * bandeau qui revient parce que l'utilisateur l'a demandé doit venir à lui
+ * (voir `ConsentBanner`) ; celui qui paraît au premier chargement, non.
  */
 const abonnes = new Set();
-function diffuser(cle, choix) {
-  for (const abonne of abonnes) abonne(cle, choix);
+function diffuser(cle, choix, rappel = false) {
+  for (const abonne of abonnes) abonne(cle, choix, rappel);
 }
 
 /**
@@ -273,11 +283,16 @@ export function useConsentChoice(options = {}) {
     choixFrais(scope, maxAgeDays, purposeVersion)
   );
   const [configured, setConfigured] = useState(false);
+  // Un COMPTEUR et non un booléen : deux rappels de suite doivent se voir tous
+  // les deux, et un booléen déjà vrai ne changerait pas au second.
+  const [recalled, setRecalled] = useState(0);
 
   useEffect(() => {
     const cle = consentKey(scope);
-    const ecouter = (autre, choix) => {
-      if (autre === cle) setChoice(choix);
+    const ecouter = (autre, choix, rappel) => {
+      if (autre !== cle) return;
+      setChoice(choix);
+      if (rappel) setRecalled(n => n + 1);
     };
     abonnes.add(ecouter);
     return () => {
@@ -371,13 +386,14 @@ export function useConsentChoice(options = {}) {
     setAnalyticsConsent('denied');
     clearConsentChoice(scope);
     setChoice(null);
-    diffuser(consentKey(scope), null);
+    diffuser(consentKey(scope), null, true);
   }, [scope]);
 
   return {
     choice,
     configured,
     needed: configured && choice === null,
+    recalled,
     accept,
     refuse,
     reset,
@@ -432,7 +448,7 @@ export function ConsentBanner(props) {
   } = props;
 
   const labels = useLabels('consent');
-  const { needed, accept, refuse } = useConsentChoice({
+  const { needed, recalled, accept, refuse } = useConsentChoice({
     posthogKey,
     posthogHost,
     loader,
@@ -442,6 +458,28 @@ export function ConsentBanner(props) {
     purposeVersion,
     gaMeasurementId,
   });
+
+  /*
+   * RAPPELÉ, IL VIENT À L'UTILISATEUR ; AU PREMIER CHARGEMENT, IL ATTEND.
+   *
+   * Un réglage qui rouvre la question (« Modifier mon choix ») efface son
+   * bouton et rappelle ce bandeau. Mais la plupart des apps le montent EN FIN
+   * DE FLUX, sous le contenu : sur un long écran de réglages, il revenait
+   * hors de la vue. Le clic ne produisait rien de visible, et le focus, posé
+   * sur un bouton qui venait de disparaître, retombait sur `<body>` — un
+   * lecteur d'écran n'entendait plus rien.
+   *
+   * Prendre le focus le fait défiler jusqu'à lui et l'annonce par son nom.
+   * Le focus va à la RÉGION, pas à « Accepter » : poser le curseur sur l'une
+   * des deux réponses, ce serait déjà la suggérer.
+   *
+   * Seulement sur RAPPEL : au premier chargement, voler le focus au contenu
+   * qu'on vient d'ouvrir serait l'interruption que la `region` évite.
+   */
+  const region = useRef(/** @type {HTMLElement|null} */ (null));
+  useEffect(() => {
+    if (recalled > 0 && needed) region.current?.focus();
+  }, [recalled, needed]);
 
   if (!needed) return null;
 
@@ -453,6 +491,10 @@ export function ConsentBanner(props) {
       // annoncé par son nom, et l'application reste utilisable derrière.
       role: 'region',
       'aria-label': typeof title === 'string' ? title : labels.title,
+      ref: region,
+      // Focalisable par le code (rappel), jamais par la tabulation : la
+      // région n'est pas une commande, ses deux boutons le sont.
+      tabIndex: -1,
       'data-dwc': 'consent-banner',
       'data-placement': placement === 'fixed' ? 'fixed' : undefined,
       className,

@@ -135,6 +135,12 @@ const labels = {
     stateGranted: 'Misurazione del pubblico: accettata',
     stateDenied: 'Misurazione del pubblico: rifiutata',
     manage: 'Modifica la mia scelta',
+    sectionText:
+      'Questa applicazione può misurare il proprio utilizzo con PostHog, su server dell’Unione europea, e solo se Lei accetta. Ciò che digita non viene mai inviato.',
+    sectionGranted: 'Ha accettato questa misurazione.',
+    sectionDenied: 'Ha rifiutato questa misurazione.',
+    sectionPending: 'Non ha ancora fatto la sua scelta.',
+    withdraw: 'Revoca il mio consenso',
   },
   privacy: {
     title: 'I suoi dati',

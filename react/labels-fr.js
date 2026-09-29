@@ -165,6 +165,14 @@ const labels = {
     stateGranted: 'Mesure d’audience : acceptée',
     stateDenied: 'Mesure d’audience : refusée',
     manage: 'Modifier mon choix',
+    // `ConsentSection`, dans un écran de réglages : ce qui est mesuré, l'état
+    // du choix dans ses TROIS cas, et le retrait — un clic, comme l'accord.
+    sectionText:
+      'Cette application peut mesurer sa fréquentation avec PostHog, sur des serveurs de l’Union européenne, et seulement si vous l’acceptez. Ce que vous saisissez n’est jamais envoyé.',
+    sectionGranted: 'Vous avez accepté cette mesure.',
+    sectionDenied: 'Vous avez refusé cette mesure.',
+    sectionPending: 'Vous n’avez pas encore fait votre choix.',
+    withdraw: 'Retirer mon consentement',
   },
   /**
    * Le panneau qui dit ce que la mesure d'audience fait. `{months}` porte la
