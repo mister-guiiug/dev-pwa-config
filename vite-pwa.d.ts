@@ -23,6 +23,7 @@ export interface PwaOptions {
   id?: string;
   name?: string;
   shortName?: string;
+  /** Défaut : la description de l'app au catalogue (`apps-catalog`). */
   description?: string;
   /** Défaut : `/<id>/`. */
   basePath?: string;

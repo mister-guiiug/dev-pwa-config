@@ -695,6 +695,38 @@ réécrit. Une app sans i18n garde `'fr-FR'`, exactement comme avant.
 > le même séparateur que `formatNumber` produit déjà pour les milliers. Une
 > comparaison de chaînes écrite avec une espace ordinaire échoue donc.
 
+#### Un robot reçoit la langue par défaut
+
+Le 29/09/2026, le test en direct de la Search Console a rendu `miss-contraction`
+**en anglais** (« Start contraction », consentement en anglais) alors que la
+page est française : le moteur de rendu de Google se présente en `en-US`, et la
+langue initiale suivait `navigator.language`. Google indexait donc, pour une
+app française, un écran en anglais que ni son `<html lang>` ni son HTML
+statique ne disaient.
+
+`createI18n` choisit désormais : la préférence **stockée** d'abord (elle a été
+choisie), puis `fallbackLocale` pour un **robot connu**, puis
+`navigator.language`, puis `fallbackLocale`. Ce n'est pas un habillage pour
+robots : le robot reçoit ce que reçoit tout visiteur sans préférence, et ce que
+dit déjà le HTML servi. Une i18n maison fait le même geste avec le détecteur du
+socle, une ligne avant sa lecture de `navigator.language` :
+
+```ts
+import { isCrawlerUserAgent } from '@mister-guiiug/dev-pwa-config/crawler';
+
+const initiale = isCrawlerUserAgent(navigator.userAgent)
+  ? 'fr'
+  : detecterLangue();
+```
+
+Le détecteur reconnaît les robots nommés (Googlebot, Google-InspectionTool,
+Storebot-Google, AdsBot-Google, bingbot, BingPreview, Applebot, DuckDuckBot,
+YandexBot, Baiduspider, GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot,
+Claude-User, Claude-SearchBot, PerplexityBot, Perplexity-User,
+facebookexternalhit, Twitterbot, LinkedInBot) et, par repli, un jeton **entier**
+en `bot`, `crawler` ou `spider` — sans prendre pour un robot les téléphones
+CUBOT, ni aucun navigateur courant.
+
 ### Primitives d'interface
 
 Ces neuf composants n'ont pas été inventés : ils ont été **extraits** de ce que

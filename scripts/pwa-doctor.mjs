@@ -68,13 +68,27 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
 import { estPointDEntree } from './entree.mjs';
 import {
+  decodeEntities,
   escapesSite,
+  hreflangCollisions,
+  hreflangLinks,
   htmlMarkers,
+  jsonLdBlocks,
+  jsonLdNodes,
   manifestSummary,
   siteScope,
   sitePrefix,
+  visibleText,
 } from './site-readers.mjs';
-import { appById } from '../apps-catalog.js';
+import { appById, PUBLISHER } from '../apps-catalog.js';
+// LES MÊMES PAGES QUE LE BUILD : le docteur lit `content/pages` par les
+// fonctions du plugin, pas par une copie de ses règles — `seo-content-pages`
+// comptait tout `.md`, README compris, quand le build les ignorait.
+import {
+  CONTENT_PAGES_DIR,
+  contentPageFiles,
+  parseContentPage,
+} from '../vite-pwa-base.js';
 
 export const PRESET =
   'github>mister-guiiug/dev-pwa-config//renovate/default.json';
@@ -656,6 +670,194 @@ export function specJouee(text, filtre) {
   return titres.some(t => filtre.test(t));
 }
 
+/* ── Le référencement : pages, JSON-LD écrit à la main, titre ──────────── */
+
+/**
+ * L'option `contentPages` de `pwaSeoPlugin`, lue dans le TEXTE de
+ * `vite.config`, commentaires retirés : `false`, un dossier écrit en toutes
+ * lettres, ou `undefined` — le défaut, ou une valeur que le texte ne dit pas
+ * (une variable), qu'on ne devine pas.
+ *
+ * @param {string} viteConfig
+ * @returns {string | false | undefined}
+ */
+export function optionContentPages(viteConfig) {
+  const m =
+    /\bcontentPages\s*:\s*(?:(false)\b|(['"`])([^'"`\n]{1,200})\2)/.exec(
+      sansCommentaires.source(viteConfig ?? '')
+    );
+  if (!m) return undefined;
+  return m[1] ? false : m[3];
+}
+
+/**
+ * Les pages de contenu d'un dépôt, LUES COMME LE BUILD LES LIT : mêmes
+ * fichiers (`contentPageFiles` — ni README ni brouillon `_…`), même dossier
+ * (l'option `contentPages`), anglaises comprises (`en/`). Une page que le
+ * build refuserait est écartée ici : c'est le build qui le dit, en la nommant.
+ *
+ * @param {string} root
+ * @param {string} viteConfig
+ * @returns {{ fichiers: string[], pages: Array<ReturnType<typeof parseContentPage>> } | null}
+ *   `null` quand l'app a coupé les pages (`contentPages: false`).
+ */
+export function pagesDuDepot(root, viteConfig) {
+  const option = optionContentPages(viteConfig);
+  if (option === false) return null;
+  const dossier = join(root, option ?? CONTENT_PAGES_DIR);
+  const fichiers = contentPageFiles(dossier);
+  const pages = [];
+  for (const rel of fichiers) {
+    try {
+      pages.push(
+        parseContentPage(
+          readFileSync(join(dossier, rel), 'utf8'),
+          rel,
+          rel.startsWith('en/')
+            ? { lang: 'en', dossier: 'en/' }
+            : { lang: 'fr' }
+        )
+      );
+    } catch {
+      /* le build la refusera, en la nommant */
+    }
+  }
+  return { fichiers, pages };
+}
+
+/** Un texte comparable : minuscules, apostrophes et blancs unifiés. */
+const comparable = texte =>
+  decodeEntities(String(texte ?? ''))
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[’‘`´]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/** Les questions des `FAQPage` d'une liste de nœuds JSON-LD. */
+function questionsFaq(noeuds) {
+  return noeuds
+    .filter(n => [].concat(n['@type']).includes('FAQPage'))
+    .flatMap(n => [].concat(n.mainEntity ?? []))
+    .map(q => (typeof q?.name === 'string' ? q.name : ''))
+    .filter(Boolean);
+}
+
+/** Les types JSON-LD qui ont un auteur ou un éditeur à désigner. */
+const TYPES_OEUVRE = new Set([
+  'WebApplication',
+  'SoftwareApplication',
+  'MobileApplication',
+  'WebSite',
+  'WebPage',
+  'Article',
+  'BlogPosting',
+  'NewsArticle',
+  'CreativeWork',
+  'HowTo',
+]);
+
+/** Une valeur `author` / `publisher` désigne-t-elle l'éditeur de la famille ? */
+const designeEditeur = valeur =>
+  [].concat(valeur ?? []).some(v => v?.['@id'] === PUBLISHER['@id']);
+
+/** Un auteur tel qu'on le lit : « Organization « Mister Puzzle » ». */
+function decrireAuteur(valeur) {
+  const v = [].concat(valeur ?? [])[0];
+  if (!v) return 'aucun auteur';
+  if (typeof v === 'string') return `« ${v} »`;
+  return `${v['@type'] ?? 'un auteur'}${v.name ? ` « ${v.name} »` : ''}${v['@id'] ? ` (${v['@id']})` : ''}`;
+}
+
+/** Une AFFECTATION de `document.title` — pas une comparaison. */
+const AFFECTE_TITRE = /\bdocument\.title\s*=(?!=)/;
+/** Une LECTURE de `document.title` : le titre statique, capturé ou composé. */
+const LIT_TITRE = /\bdocument\.title\b(?!\s*=(?!=))/;
+/** Un fichier de traduction : un titre qu'on y trouve est un titre affiché. */
+const FICHIER_TRADUCTION =
+  /(?:^|\/)(?:i18n|locales?|langs?|translations?|messages?)(?:\/|\.|$)/i;
+/** Ce qui ne désigne rien dans le membre droit d'une affectation. */
+const MOTS_VIDES = new Set([
+  'document',
+  'title',
+  'window',
+  'const',
+  'let',
+  'var',
+  'return',
+  'true',
+  'false',
+  'null',
+  'undefined',
+  'this',
+  'new',
+  'typeof',
+]);
+
+/**
+ * LE TITRE RÉÉCRIT À L'EXÉCUTION, SANS LE TITRE STATIQUE.
+ *
+ * Google rend le JavaScript : le titre qu'il indexe est celui du DOM rendu,
+ * pas le `<title>` écrit pour lui. Relevé du 29/09/2026 : miss-badminton
+ * réécrit l'accueil en « Miss Badminton » (14 caractères) quand son `<title>`
+ * en fait 56 ; mister-cim10 et miss-contraction faisaient de même, avant d'être
+ * corrigées ce jour-là.
+ *
+ * L'HEURISTIQUE, VOLONTAIREMENT PRUDENTE — une info, jamais plus. Un fichier
+ * de `src/` (tests exclus, commentaires retirés) qui AFFECTE `document.title`
+ * est mis en cause SAUF s'il reprend le titre statique d'une de ces façons :
+ *   1. il LIT `document.title` (capturé au démarrage, ou composé) ;
+ *   2. le titre statique est écrit dans ce fichier même ;
+ *   3. il est écrit dans un fichier de TRADUCTION (`i18n`, `locales`,
+ *      `messages`…) : le titre affiché en vient, par une clé ;
+ *   4. l'affectation nomme une constante écrite sur la même ligne que le
+ *      titre statique (`APP_TITLE = '…'`).
+ * Ce qu'elle ne voit pas : un titre composé ailleurs, par une indirection de
+ * plus — d'où une info, qui nomme le fichier, et le droit de réponse
+ * (`pwaDoctor.refus`) pour un titre d'écran voulu.
+ *
+ * @param {Array<{ rel: string, text: string }>} source
+ * @param {string} titreStatique Le `<title>` de `index.html`.
+ * @returns {string[]} Les fichiers en cause.
+ */
+export function titreRuntimeSansStatique(source, titreStatique) {
+  const titre = comparable(titreStatique);
+  if (!titre) return [];
+  const fichiers = source
+    .filter(f => !/\.test\.|\.spec\./.test(f.rel))
+    .map(f => ({ rel: f.rel, text: sansCommentaires.source(f.text) }));
+  const lignesDuTitre = fichiers.flatMap(f =>
+    f.text
+      .split('\n')
+      .filter(l => comparable(l).includes(titre))
+      .map(ligne => ({ rel: f.rel, ligne }))
+  );
+  const traduit = lignesDuTitre.some(l => FICHIER_TRADUCTION.test(l.rel));
+  const fautifs = [];
+  for (const f of fichiers) {
+    if (!AFFECTE_TITRE.test(f.text)) continue;
+    if (LIT_TITRE.test(f.text)) continue;
+    if (lignesDuTitre.some(l => l.rel === f.rel)) continue;
+    if (traduit) continue;
+    const noms = [
+      ...f.text.matchAll(/\bdocument\.title\s*=(?!=)([^;\n]{0,200})/g),
+    ]
+      .flatMap(m => m[1].match(/[A-Za-z_$][\w$]{2,}/g) ?? [])
+      .filter(n => !MOTS_VIDES.has(n));
+    const nomme = noms.some(n =>
+      lignesDuTitre.some(l =>
+        // Échappement complet avant d'insérer le nom dans une RegExp (CodeQL
+        // js/incomplete-sanitization), même si un identifiant n'a que `\w` et `$`.
+        new RegExp(
+          `(?<![\\w$])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w$])`
+        ).test(l.ligne)
+      )
+    );
+    if (!nomme) fautifs.push(f.rel);
+  }
+  return fautifs;
+}
+
 /**
  * LE CONTEXTE : tout ce que le diagnostic lit sur le disque, lu UNE fois.
  *
@@ -1188,24 +1390,191 @@ export function reglesSource(ctx, api) {
     dette(
       'seo-plugin',
       'pas de pwaSeoPlugin',
-      'sitemap, robots, canonique, Open Graph en un import (vite-pwa-base)'
+      'plan de site, Open Graph, JSON-LD, contenu servi et pages de contenu en un import (vite-seo)'
     );
   }
   // Pages de contenu : le levier AEO du parc (relève du 25/09/2026). Sans
   // elles, les moteurs n'ont que l'accueil SPA. Une app avec pwaSeoPlugin et
   // sans `content/pages/*.md` reste à la case départ.
-  if (viteConfig && /pwaSeoPlugin/.test(viteConfig)) {
-    const pagesDir = join(root, 'content', 'pages');
-    const pagesMd = existsSync(pagesDir)
-      ? readdirSync(pagesDir).filter(f => f.endsWith('.md')).length
-      : 0;
-    if (pagesMd === 0) {
+  //
+  // COMPTÉES COMME LE BUILD LES COMPTE (29/09/2026) : le contrôle comptait tout
+  // `.md` de `content/pages`, en dur — un README seul le faisait taire, alors
+  // que le build l'ignore, et une app qui déplaçait ses pages (`contentPages`)
+  // était déclarée sans pages. `contentPages: false` est une décision écrite :
+  // le contrôle se tait.
+  const seo = Boolean(viteConfig) && /pwaSeoPlugin/.test(viteConfig);
+  const pagesLues = seo ? pagesDuDepot(root, viteConfig) : null;
+  const pages = pagesLues?.pages ?? [];
+  if (pagesLues && !pagesLues.fichiers.length) {
+    dette(
+      'seo-content-pages',
+      'pas de page de contenu (content/pages/*.md) : rien à classer hors de l’accueil SPA',
+      'écrire une page qui répond à une vraie recherche (voir docs/CONFIGS.md § pages de contenu)'
+    );
+  }
+  if (pages.length) {
+    // LA DATE. Aucune des vingt pages du parc n'en portait au 29/09/2026 : pas
+    // de « Publié le », pas de `dateModified`, un `lastmod` qui changeait à
+    // chaque build. Une date FUTURE ferait mentir tout cela à la fois.
+    const aujourdHui = new Date().toISOString().slice(0, 10);
+    const sansDate = pages.filter(p => !p.date).map(p => p.fichier);
+    const futures = pages
+      .filter(
+        p =>
+          (p.date && p.date > aujourdHui) ||
+          (p.updated && p.updated > aujourdHui)
+      )
+      .map(
+        p =>
+          `${p.fichier} (${[p.date, p.updated].filter(d => d && d > aujourdHui).join(', ')})`
+      );
+    if (sansDate.length || futures.length) {
       dette(
-        'seo-content-pages',
-        'pas de page de contenu (content/pages/*.md) : rien à classer hors de l’accueil SPA',
-        'écrire une page qui répond à une vraie recherche (voir docs/CONFIGS.md § pages de contenu)'
+        'seo-content-date',
+        [
+          sansDate.length
+            ? `${sansDate.length} page(s) sans date : ${sansDate.join(', ')}`
+            : '',
+          futures.length ? `date future : ${futures.join(', ')}` : '',
+        ]
+          .filter(Boolean)
+          .join(' ; '),
+        'date: AAAA-MM-JJ (publication) et updated: AAAA-MM-JJ (dernière mise à jour de fond) dans l’en-tête — ils fixent la signature visible, datePublished / dateModified et le lastmod du plan de site'
       );
     }
+    // LA RÉPONSE COURTE. Le premier paragraphe des pages annonçait la suite
+    // (« Voici comment… ») au lieu de répondre : rien à citer pour un moteur
+    // de réponse. `answer` est rendu sous le titre (« En bref. ») et repris
+    // en `abstract`. Visée : 40 à 70 mots ; tolérée : 30 à 80.
+    const sansReponse = pages.filter(p => !p.answer).map(p => p.fichier);
+    const horsBornes = pages
+      .filter(
+        p =>
+          p.answer && ((p.motsReponse ?? 0) < 30 || (p.motsReponse ?? 0) > 80)
+      )
+      .map(p => `${p.fichier} (${p.motsReponse} mots)`);
+    if (sansReponse.length || horsBornes.length) {
+      dette(
+        'seo-content-answer',
+        [
+          sansReponse.length
+            ? `${sansReponse.length} page(s) sans réponse courte : ${sansReponse.join(', ')}`
+            : '',
+          horsBornes.length
+            ? `réponse hors de 30 à 80 mots : ${horsBornes.join(', ')}`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ; '),
+        'answer: … dans l’en-tête — la réponse directe, 40 à 70 mots, sur une ligne, avec le chiffre clé'
+      );
+    }
+  }
+
+  // LE JSON-LD ÉCRIT À LA MAIN, là où le plugin s'abstient (il n'injecte rien
+  // dans une page qui en porte déjà). Relevé du 29/09/2026 sur mister-puzzle :
+  // un `FAQPage` dont aucune question n'apparaît nulle part, des `hreflang` fr,
+  // en et x-default vers la MÊME URL, un auteur « Mister Puzzle ».
+  const ldMain = jsonLdNodes(jsonLdBlocks(indexHtml));
+  const construit = readText(root, 'dist/index.html');
+
+  // Une FAQ balisée doit être VISIBLE : c'est la règle de Google, et un
+  // balisage trompeur est un risque, pas un gain. Le HTML servi est celui du
+  // build s'il existe (contenu servi compris), sinon l'`index.html`.
+  const questions = questionsFaq(ldMain);
+  if (questions.length) {
+    const servi = comparable(visibleText(construit ?? indexHtml));
+    const absentes = questions.filter(q => !servi.includes(comparable(q)));
+    if (absentes.length) {
+      defaut(
+        'seo-faq-visible',
+        `FAQPage écrit à la main dans index.html : ${absentes.length} question(s) sur ${questions.length} absente(s) du HTML servi (« ${absentes[0]} »${absentes.length > 1 ? '…' : ''}) — Google exige qu'une FAQ balisée soit visible`,
+        'retirer le FAQPage de index.html, ou afficher ces questions — leur place est une page de contenu (content/pages), qui balise sa FAQ elle-même'
+      );
+    }
+  }
+
+  // DES HREFLANG QUI DISENT QUELQUE CHOSE : deux langues, deux URL, et une
+  // traduction qui répond à celle qui la désigne. Lus dans l'`index.html`,
+  // dans l'accueil construit, et dans les pages de contenu construites.
+  const hreflang = [];
+  for (const [ou, html] of [
+    ['index.html', indexHtml],
+    ['dist/index.html', construit ?? ''],
+  ]) {
+    for (const c of hreflangCollisions(hreflangLinks(html)))
+      hreflang.push(`${ou} : ${c}`);
+  }
+  /** Les pages construites : leur canonique, et ce qu'elles désignent. */
+  const construites = new Map();
+  for (const p of pages) {
+    const html = readText(root, join('dist', p.chemin));
+    if (!html) continue;
+    const canonique = htmlMarkers(html).canonicalHref;
+    if (canonique)
+      construites.set(canonique, {
+        fichier: p.chemin,
+        liens: hreflangLinks(html),
+      });
+  }
+  for (const [url, page] of construites) {
+    for (const c of hreflangCollisions(page.liens))
+      hreflang.push(`dist/${page.fichier} : ${c}`);
+    for (const { lang, href } of page.liens) {
+      if (lang.toLowerCase() === 'x-default' || href === url) continue;
+      const cible = construites.get(href);
+      if (!cible || !cible.liens.some(l => l.href === url))
+        hreflang.push(
+          `dist/${page.fichier} : ${lang} → ${href} ne la désigne pas en retour`
+        );
+    }
+  }
+  const francaises = new Set(
+    pages.filter(p => p.lang !== 'en').map(p => p.slug)
+  );
+  for (const p of pages) {
+    if (p.lang === 'en' && p.translation && !francaises.has(p.translation))
+      hreflang.push(
+        `${p.fichier} : translation « ${p.translation} » ne désigne aucune page française`
+      );
+  }
+  if (hreflang.length) {
+    defaut(
+      'seo-hreflang',
+      `hreflang sans effet : ${hreflang.slice(0, 3).join(' ; ')}${hreflang.length > 3 ? ` (+${hreflang.length - 3})` : ''}`,
+      'un hreflang relie des URL DISTINCTES et réciproques : retirer ceux de index.html (la langue s’y choisit côté client), et traduire par content/pages/en/<slug>.md + translation: <slug-fr>'
+    );
+  }
+
+  // UN SEUL ÉDITEUR. Le plugin désigne l'éditeur de la famille par son `@id`
+  // (`PUBLISHER`, `#org`) ; un JSON-LD écrit à la main qui en déclare un autre
+  // refait une entité de plus pour les graphes de connaissances.
+  const auteurs = ldMain
+    .filter(n => [].concat(n['@type']).some(t => TYPES_OEUVRE.has(t)))
+    .filter(n => !designeEditeur(n.author) && !designeEditeur(n.publisher))
+    .map(
+      n =>
+        `${[].concat(n['@type'])[0]} : ${decrireAuteur(n.author ?? n.publisher)}`
+    );
+  if (auteurs.length) {
+    info(
+      'seo-entity',
+      `JSON-LD écrit à la main hors du graphe de la famille — ${auteurs.join(' ; ')}`,
+      `retirer ce JSON-LD (pwaSeoPlugin l’engendre, graphe complet), ou désigner author et publisher par { "@id": "${PUBLISHER['@id']}" }`
+    );
+  }
+
+  // LE TITRE RÉÉCRIT À L'EXÉCUTION (voir `titreRuntimeSansStatique`).
+  const titreStatique = decodeEntities(htmlMarkers(indexHtml).title ?? '');
+  const reecrits = titreStatique.includes('__')
+    ? []
+    : titreRuntimeSansStatique(source, titreStatique);
+  if (reecrits.length) {
+    info(
+      'seo-runtime-title',
+      `document.title réécrit sans reprendre le titre statique « ${titreStatique} » (${reecrits.join(', ')}) : Google indexe le titre RENDU`,
+      'sur l’accueil, garder le titre statique ; ailleurs, le composer avec lui (`${écran} – ${TITRE}`), ou le relire au démarrage (`const TITRE = document.title`)'
+    );
   }
   if (viteConfig && !/themeColor/.test(viteConfig)) {
     dette(
@@ -1395,7 +1764,7 @@ export function reglesBuild(ctx, api) {
       dette(
         'description',
         'pas de <meta name="description">',
-        'pwaSeoPlugin la pose'
+        '<meta name="description" content="…"> dans index.html — pwaSeoPlugin la reprend (Open Graph, JSON-LD, contenu servi), il ne l’écrit pas'
       );
     // Bing Webmaster (SEO/GEO) signale « Title too short » sous ~50 caractères —
     // relevé du 26/09/2026 sur miss-dice et confirmé sur la quasi-totalité du
@@ -1458,7 +1827,11 @@ export function reglesBuild(ctx, api) {
       dette('csp', 'pas de Content-Security-Policy', 'cspPlugin() de vite-csp');
     if (!m.ogImage) dette('og-image', 'pas de og:image', 'pwaSeoPlugin');
     if (!m.canonical)
-      dette('canonical', 'pas de rel="canonical"', 'pwaSeoPlugin');
+      dette(
+        'canonical',
+        'pas de rel="canonical"',
+        '<link rel="canonical" href="__SEO_HOME_URL__" /> dans index.html — pwaSeoPlugin remplace le marqueur'
+      );
 
     // LES ASSETS RESTENT-ILS SOUS LE SITE ? Jugés à l'aune de la CANONIQUE, pas
     // du préfixe déduit des scripts : celui-ci se replie sur `/` quand les
@@ -1682,6 +2055,12 @@ export const CATALOGUE = [
   { id: 'bottom-nav-muette', famille: 'source', niveau: 'défaut' },
   { id: 'seo-plugin', famille: 'source', niveau: 'dette' },
   { id: 'seo-content-pages', famille: 'source', niveau: 'dette' },
+  { id: 'seo-content-date', famille: 'source', niveau: 'dette' },
+  { id: 'seo-content-answer', famille: 'source', niveau: 'dette' },
+  { id: 'seo-faq-visible', famille: 'source', niveau: 'défaut' },
+  { id: 'seo-hreflang', famille: 'source', niveau: 'défaut' },
+  { id: 'seo-entity', famille: 'source', niveau: 'info' },
+  { id: 'seo-runtime-title', famille: 'source', niveau: 'info' },
   { id: 'theme-color', famille: 'source', niveau: 'dette' },
   { id: 'csp', famille: 'source', niveau: 'dette' },
   { id: 'version-manifest', famille: 'source', niveau: 'dette' },

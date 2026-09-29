@@ -1,11 +1,14 @@
 /**
- * Le repli SPA de GitHub Pages : `404.html` identique à `index.html`.
+ * Le repli SPA de GitHub Pages : `404.html` copié d'`index.html`, marqué
+ * `noindex`.
  *
  * Mesuré le 02/09/2026 : quatre apps à routage par chemin servaient la page
  * « File not found » de GitHub sur un lien profond, et trois autres avaient
  * chacune recopié la même correction. Ce qui est verrouillé ici : la copie a
- * lieu au build, pas en dev ; elle est octet pour octet fidèle ; un `outDir`
- * de la config est honoré ; et l'absence d'`index.html` ne casse pas le build.
+ * lieu au build, pas en dev ; elle est fidèle à l'accueil, au `noindex` près
+ * (29/09/2026 : `/<app>/404.html` répondait 200, doublon de l'accueil) ; un
+ * `outDir` de la config est honoré ; et l'absence d'`index.html` ne casse pas
+ * le build.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,10 +23,10 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { spaFallbackPlugin } from '../vite-pwa-base.js';
+import { spaFallbackPlugin, withNoindex } from '../vite-pwa-base.js';
 
 const HTML =
-  '<!doctype html><html><head><title>App</title></head><body><div id="root"></div></body></html>';
+  '<!doctype html><html><head><title>App</title><link rel="canonical" href="https://o/app/" /></head><body><div id="root"></div></body></html>';
 
 async function withDist(run) {
   const root = mkdtempSync(join(tmpdir(), 'dwc-spa-'));
@@ -36,13 +39,21 @@ async function withDist(run) {
   }
 }
 
-test('au build, 404.html est une copie exacte d’index.html', async () => {
+test('au build, 404.html est la copie d’index.html, marquée noindex', async () => {
   await withDist(async outDir => {
     writeFileSync(join(outDir, 'index.html'), HTML);
     const plugin = spaFallbackPlugin();
     plugin.configResolved({ command: 'build', build: { outDir } });
     await plugin.closeBundle();
-    assert.equal(readFileSync(join(outDir, '404.html'), 'utf8'), HTML);
+    const copie = readFileSync(join(outDir, '404.html'), 'utf8');
+    assert.equal(copie, withNoindex(HTML));
+    assert.ok(copie.includes('<meta name="robots" content="noindex" />'));
+    // La coquille démarre toujours : le corps est intact.
+    assert.ok(copie.endsWith('<body><div id="root"></div></body></html>'));
+    // Plus de canonique : `noindex` et canonique se contrediraient.
+    assert.doesNotMatch(copie, /canonical/);
+    // L'accueil, lui, n'est pas touché.
+    assert.equal(readFileSync(join(outDir, 'index.html'), 'utf8'), HTML);
   });
 });
 
@@ -65,7 +76,10 @@ test('l’outDir de la config l’emporte sur le défaut, et `to` se renomme', a
     const plugin = spaFallbackPlugin({ to: 'not-found.html' });
     plugin.configResolved({ command: 'build', build: { outDir: custom } });
     await plugin.closeBundle();
-    assert.equal(readFileSync(join(custom, 'not-found.html'), 'utf8'), HTML);
+    assert.equal(
+      readFileSync(join(custom, 'not-found.html'), 'utf8'),
+      withNoindex(HTML)
+    );
     assert.ok(!existsSync(join(outDir, '404.html')));
   });
 });

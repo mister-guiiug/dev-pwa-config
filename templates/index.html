@@ -5,7 +5,9 @@
 
   Cible : <projet>/index.html
   Personnalisation :
-   - lang, <title>, meta description, theme-color, apple-mobile-web-app-title
+   - lang, <title> (__CE_QUE_FAIT_L_APP_EN_MOTS_CHERCHES__ – __APP_NAME__,
+     50 caractères au moins : voir le commentaire du titre), meta
+     description, theme-color, apple-mobile-web-app-title, Open Graph
    - liens icônes (générées par `pwa-icons`)
    - clé localStorage du thème (défaut `dwc_theme`, alignée sur useTheme)
    - CSP : voir le commentaire dédié (offline-first vs Supabase/Firebase)
@@ -110,9 +112,46 @@
     />
     <meta name="apple-mobile-web-app-title" content="__APP_NAME__" />
 
+    <!--
+      LE TITRE : 50 CARACTÈRES AU MOINS, CE QUE L'APP FAIT D'ABORD.
+      Bing signale « Title too short » sous 50 caractères, et `pwa-doctor` le
+      mesure (`seo-title-length`) ; un titre égal au nom de l'app, comme ce
+      gabarit le portait jusqu'au socle 6.19.0, le déclenchait à coup sûr.
+      Personne ne cherche le nom d'une app : on cherche ce qu'elle fait. Forme
+      conseillée « <ce que l'app fait, en mots cherchés> – <Nom> », par exemple
+      « Compteur de points Mölkky multi-appareils – Mister Mölkky ».
+      La description : 120 à 155 caractères, une vraie phrase-réponse.
+
+      Google indexe le titre RENDU : un `document.title` réécrit à l'exécution
+      doit reprendre celui-ci (`seo-runtime-title`).
+    -->
+    <title>__CE_QUE_FAIT_L_APP_EN_MOTS_CHERCHES__ – __APP_NAME__</title>
     <meta name="description" content="__APP_DESCRIPTION__" />
     <link rel="canonical" href="__SEO_HOME_URL__" />
-    <title>__APP_NAME__</title>
+
+    <!--
+      OPEN GRAPH ET TWITTER. `pwaSeoPlugin` pose ceux qui manquent à partir du
+      titre, de la description, de la canonique et du catalogue — et
+      l'image de partage si `public/og-image.jpg` existe (`npx pwa-og-image`).
+      Les écrire ici les fige : une valeur écrite à la main n'est jamais
+      remplacée, sauf `og:locale`, normalisé (`fr` → `fr_FR`). Les garder
+      identiques au titre et à la description, ou les retirer.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="__APP_NAME__" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:url" content="__SEO_HOME_URL__" />
+    <meta
+      property="og:title"
+      content="__CE_QUE_FAIT_L_APP_EN_MOTS_CHERCHES__ – __APP_NAME__"
+    />
+    <meta property="og:description" content="__APP_DESCRIPTION__" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="__CE_QUE_FAIT_L_APP_EN_MOTS_CHERCHES__ – __APP_NAME__"
+    />
+    <meta name="twitter:description" content="__APP_DESCRIPTION__" />
   </head>
   <body>
     <div id="app"></div>

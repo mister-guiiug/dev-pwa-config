@@ -201,3 +201,111 @@ test('le contexte de l’app l’emporte sur la version injectée', async () => 
     dom.restore();
   }
 });
+
+/* ── Les fils d'Ariane de Sentry, sans requête ni fragment ─────────────── */
+
+/**
+ * LE CONSTAT (29/09/2026). mister-cim10 envoie le texte d'un compte rendu
+ * médical à l'API de l'OMS dans la chaîne de requête ; Sentry gardait l'URL
+ * complète dans ses fils d'Ariane, et l'envoyait avec l'erreur suivante.
+ */
+test('scrubBreadcrumb : origine et chemin, ni requête ni fragment', async () => {
+  const { scrubBreadcrumb } = await import('../react/observability.js');
+  const fetchCrumb = {
+    category: 'fetch',
+    data: {
+      method: 'GET',
+      url: 'https://id.who.int/icd/release/11/mms/search?q=douleur+thoracique+depuis+3+jours#top',
+      status_code: 500,
+    },
+  };
+  const propre = scrubBreadcrumb(fetchCrumb);
+  assert.equal(propre.data.url, 'https://id.who.int/icd/release/11/mms/search');
+  assert.equal(propre.data.method, 'GET');
+  assert.equal(propre.data.status_code, 500);
+  // Copié, jamais modifié en place.
+  assert.match(fetchCrumb.data.url, /douleur/);
+
+  assert.deepEqual(
+    scrubBreadcrumb({
+      category: 'navigation',
+      data: {
+        from: '/mister-cim10/?texte=secret',
+        to: '/mister-cim10/#/aide?x=1',
+      },
+    }).data,
+    { from: '/mister-cim10/', to: '/mister-cim10/' }
+  );
+  assert.equal(
+    scrubBreadcrumb({ category: 'xhr', data: { url: '/api/x?token=abc' } }).data
+      .url,
+    '/api/x'
+  );
+  // `ui.*` : les URL d'un texte libre.
+  assert.equal(
+    scrubBreadcrumb({
+      category: 'ui.click',
+      message: 'a[href="https://o/app/p?q=secret"] > span',
+    }).message,
+    'a[href="https://o/app/p"] > span'
+  );
+  // Les autres catégories passent telles quelles, même objet.
+  const journal = { category: 'console', message: 'https://o/?q=1' };
+  assert.equal(scrubBreadcrumb(journal), journal);
+  assert.equal(scrubBreadcrumb(null), null);
+});
+
+test('initSentry branche le nettoyage APRÈS le beforeBreadcrumb de l’app', async () => {
+  const { initSentry, setForwarder: relais } =
+    await import('../react/observability.js');
+  const vus = [];
+  let options = null;
+  const Sentry = {
+    init: o => {
+      options = o;
+    },
+    captureException: () => {},
+  };
+  try {
+    await initSentry({
+      dsn: 'https://cle@o.ingest.sentry.io/1',
+      loader: async () => Sentry,
+      beforeBreadcrumb: (crumb, hint) => {
+        vus.push([crumb.data?.url, hint]);
+        // L'app voit l'URL complète, et peut écarter un fil.
+        return crumb.data?.url?.includes('ignorer') ? null : crumb;
+      },
+    });
+    assert.equal(typeof options.beforeBreadcrumb, 'function');
+    const sortie = options.beforeBreadcrumb(
+      { category: 'fetch', data: { url: 'https://o/api?q=secret' } },
+      { input: 1 }
+    );
+    assert.equal(sortie.data.url, 'https://o/api');
+    assert.deepEqual(vus[0], ['https://o/api?q=secret', { input: 1 }]);
+    assert.equal(
+      options.beforeBreadcrumb({
+        category: 'fetch',
+        data: { url: 'https://o/ignorer?q=1' },
+      }),
+      null
+    );
+
+    // Sans hook de l'app : le nettoyage seul.
+    await initSentry({
+      dsn: 'https://cle@o.ingest.sentry.io/1',
+      loader: async () => Sentry,
+    });
+    assert.equal(
+      options.beforeBreadcrumb({
+        category: 'navigation',
+        data: { from: '/a?x=1', to: '/b#c' },
+      }).data.to,
+      '/b'
+    );
+    // Le reste de l'initialisation est inchangé.
+    assert.equal(options.dsn, 'https://cle@o.ingest.sentry.io/1');
+  } finally {
+    relais(null);
+  }
+});

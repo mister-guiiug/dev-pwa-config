@@ -151,3 +151,112 @@ test('probe : un lien profond qui rend le corps d’index.html est une coquille,
       : fauxFetch(url);
   assert.equal((await probe('miss-x', pageGitHub)).fallback, 'page GitHub');
 });
+
+/* ── Les lectures du référencement, et le mode `--seo` (29/09/2026) ─────── */
+
+test('visibleText : ce qu’un robot sans JavaScript lit, entités décodées', async () => {
+  const { visibleText } = await import('../scripts/site-readers.mjs');
+  const texte = visibleText(
+    '<html><head><title>T</title><style>p{x:1}</style><script>var a="<p>";</script>' +
+      '<script type="application/ld+json">{"name":"caché"}</script></head>' +
+      '<body><!-- note --><h1>Règles&nbsp;du&#160;jeu</h1><p>A &amp; B</p>' +
+      '<template><p>modèle</p></template><noscript>Sans JS</noscript></body></html>'
+  );
+  assert.equal(texte, 'T Règles du jeu A & B Sans JS');
+});
+
+test('jsonLdTypes : les types de tête et ceux du @graph, sans doublon', async () => {
+  const { jsonLdTypes } = await import('../scripts/site-readers.mjs');
+  const html =
+    '<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication"},{"@type":"Organization"}]}</script>' +
+    '<script type="application/ld+json">{"@type":["Article","WebApplication"]}</script>' +
+    '<script type="application/ld+json">pas du json</script>';
+  assert.deepEqual(jsonLdTypes(html), [
+    'WebApplication',
+    'Organization',
+    'Article',
+  ]);
+});
+
+test('hreflangLinks et hreflangCollisions : deux langues, une URL, c’est un défaut', async () => {
+  const { hreflangCollisions, hreflangLinks } =
+    await import('../scripts/site-readers.mjs');
+  const liens = hreflangLinks(
+    '<link rel="alternate" hreflang="fr" href="https://o/a/" />' +
+      '<link\n  rel="alternate"\n  hreflang="en"\n  href="https://o/a/" />' +
+      '<link rel="alternate" hreflang="x-default" href="https://o/a/" />' +
+      '<link rel="alternate icon" href="/favicon.ico" />'
+  );
+  assert.equal(liens.length, 3);
+  assert.deepEqual(hreflangCollisions(liens), ['fr = en → https://o/a/']);
+  // x-default désigne, par construction, l'URL d'une des langues.
+  assert.deepEqual(
+    hreflangCollisions([
+      { lang: 'fr', href: 'https://o/a.html' },
+      { lang: 'en', href: 'https://o/en/a.html' },
+      { lang: 'x-default', href: 'https://o/a.html' },
+    ]),
+    []
+  );
+});
+
+test('servedContentWords : les mots du contenu servi, sans le noscript', async () => {
+  const { servedContentWords } = await import('../scripts/site-readers.mjs');
+  assert.equal(
+    servedContentWords(
+      '<div id="app"><div data-dwc="served-content"><h1>Miss Dice - lanceur</h1><p>Lancer un dé.</p><noscript><p>Il faut JavaScript.</p></noscript></div></div>'
+    ),
+    6
+  );
+  assert.equal(servedContentWords('<div id="app"></div>'), 0);
+});
+
+test('probe --seo : longueurs, JSON-LD, contenu servi, pages et hreflang', async () => {
+  const { probe, seoLine, sitemapLocs } =
+    await import('../scripts/probe-sites.mjs');
+  const base = 'https://mister-guiiug.github.io/miss-x/';
+  const accueil = HTML.replace(
+    '<body><div id="root"></div></body>',
+    '<body><div id="root"><div data-dwc="served-content"><h1>Miss X</h1><p>Une app.</p></div></div></body>'
+  ).replace(
+    '</head>',
+    '<script type="application/ld+json">{"@graph":[{"@type":"WebApplication"},{"@type":"Organization"}]}</script></head>'
+  );
+  const plan = `<urlset><url><loc>${base}</loc></url><url><loc>${base}regles.html</loc></url><url><loc>${base}en/rules.html</loc></url><url><loc>${base}absente.html</loc></url></urlset>`;
+  const pageTraduite =
+    '<html><head><link rel="alternate" hreflang="fr" href="x" /><link rel="alternate" hreflang="en" href="y" /><script type="application/ld+json">{"@type":"Article"}</script></head></html>';
+  const reponse = (body, status = 200) => ({
+    ok: status < 400,
+    status,
+    headers: { get: () => null },
+    text: async () => body,
+    arrayBuffer: async () => new ArrayBuffer(0),
+  });
+  const fauxFetch = async url => {
+    if (url === base) return reponse(accueil);
+    if (url === `${base}sitemap.xml`) return reponse(plan);
+    if (url.endsWith('/regles.html') || url.endsWith('/en/rules.html'))
+      return reponse(pageTraduite);
+    return reponse('', 404);
+  };
+  assert.deepEqual(sitemapLocs(plan).length, 4);
+  const r = await probe('miss-x', fauxFetch, { seo: true });
+  assert.equal(r.seo.titleLength, 6);
+  assert.equal(r.seo.descriptionLength, 7);
+  assert.deepEqual(r.seo.jsonLdTypes, ['WebApplication', 'Organization']);
+  assert.equal(r.seo.servedWords, 4);
+  assert.deepEqual(
+    r.seo.pages.map(p => [p.en, p.status, p.hreflang]),
+    [
+      [false, 200, 2],
+      [true, 200, 2],
+      [false, 404, 0],
+    ]
+  );
+  assert.equal(
+    seoLine(r),
+    'miss-x              titre=6c  desc=7c  ld=WebApplication+Organization  servi=4 mots  pages=1/2  en=1/1  hreflang=accueil:0 pages:2/3'
+  );
+  // Sans `--seo`, la sonde reste ce qu'elle était.
+  assert.equal((await probe('miss-x', fauxFetch)).seo, undefined);
+});

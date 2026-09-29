@@ -248,6 +248,69 @@ export function installErrorReporter(options = {}) {
   );
 }
 
+/** Les catégories de fil d'Ariane Sentry qui portent des URL. */
+const CATEGORIES_AVEC_URL = /^(?:fetch|xhr|navigation|ui)(?:\.|$)/;
+
+/** Les champs de `data` qui SONT une URL (réseau, navigation). */
+const CHAMPS_URL = new Set(['url', 'from', 'to']);
+
+/** Une URL — absolue ou relative — sans sa requête ni son fragment. */
+function sansRequete(url) {
+  const coupe = url.search(/[?#]/);
+  return coupe < 0 ? url : url.slice(0, coupe);
+}
+
+/** Dans un texte libre, chaque URL absolue perd sa requête et son fragment. */
+function texteSansRequetes(texte) {
+  return texte.replace(/\bhttps?:\/\/[^\s"'<>]+/gi, sansRequete);
+}
+
+/**
+ * UN FIL D'ARIANE SENTRY SANS REQUÊTE NI FRAGMENT DANS SES URL.
+ *
+ * LE CONSTAT (29/09/2026). Sentry garde, dans ses fils d'Ariane, l'URL
+ * COMPLÈTE de chaque requête `fetch`/`xhr` et de chaque navigation. Or
+ * mister-cim10 envoie le texte d'un compte rendu médical à l'API de l'OMS DANS
+ * la chaîne de requête : ce texte partait chez Sentry avec la première erreur
+ * qui suivait. Une donnée de santé, dans un outil de suivi d'erreurs.
+ *
+ * Pour les catégories `fetch`, `xhr`, `navigation` et `ui` (`ui.click`,
+ * `ui.input`…), les URL gardent leur origine et leur chemin ; requête et
+ * fragment disparaissent — dans `data.url`, `data.from`, `data.to`, et dans
+ * toute URL absolue d'un texte (`message`, autres champs de `data`). Les
+ * autres catégories passent telles quelles. Le fil d'Ariane est COPIÉ, jamais
+ * modifié en place.
+ *
+ * `initSentry` le branche en `beforeBreadcrumb`, APRÈS celui que l'app
+ * fournit : celle-ci peut encore filtrer sur l'URL complète, mais ce qui part
+ * est toujours nettoyé. Une app qui initialise Sentry elle-même le passe à son
+ * propre `beforeBreadcrumb`.
+ *
+ * @template T
+ * @param {T} crumb
+ * @returns {T}
+ */
+export function scrubBreadcrumb(crumb) {
+  if (!crumb || typeof crumb !== 'object') return crumb;
+  const source = /** @type {Record<string, any>} */ (crumb);
+  if (!CATEGORIES_AVEC_URL.test(String(source.category ?? ''))) return crumb;
+  const out = { ...source };
+  if (typeof out.message === 'string')
+    out.message = texteSansRequetes(out.message);
+  if (out.data && typeof out.data === 'object' && !Array.isArray(out.data)) {
+    /** @type {Record<string, unknown>} */
+    const data = { ...out.data };
+    for (const [cle, valeur] of Object.entries(data)) {
+      if (typeof valeur !== 'string') continue;
+      data[cle] = CHAMPS_URL.has(cle)
+        ? sansRequete(valeur)
+        : texteSansRequetes(valeur);
+    }
+    out.data = data;
+  }
+  return /** @type {T} */ (out);
+}
+
 /**
  * Initialise Sentry SI un dsn est fourni (sinon no-op → @sentry/react jamais
  * importé, bundle prod inchangé). Câble Sentry comme forwarder.
@@ -257,16 +320,32 @@ export function installErrorReporter(options = {}) {
  * Sans `loader`, l'import dynamique est volontairement NON analysable
  * (spécificateur non littéral + @vite-ignore) : Rolldown/Vite 8 échouait
  * au build de tout consommateur sans la peer optionnelle installée.
+ *
+ * Les fils d'Ariane de Sentry passent par `scrubBreadcrumb` : ni requête ni
+ * fragment dans leurs URL. Un `beforeBreadcrumb` de l'app passe AVANT — il voit
+ * l'URL complète et peut écarter le fil (`null`) —, et ce qu'il rend est
+ * nettoyé à son tour.
  */
 export async function initSentry(options = {}) {
   const { dsn, release, environment, tracesSampleRate, loader } = options;
+  const avantFil = options.beforeBreadcrumb;
   if (!dsn) return null;
   try {
     const specifier = '@sentry' + '/react';
     const Sentry = loader
       ? await loader()
       : await import(/* @vite-ignore */ specifier);
-    Sentry.init({ dsn, release, environment, tracesSampleRate });
+    Sentry.init({
+      dsn,
+      release,
+      environment,
+      tracesSampleRate,
+      beforeBreadcrumb: (/** @type {any} */ crumb, /** @type {any} */ hint) => {
+        const suite =
+          typeof avantFil === 'function' ? avantFil(crumb, hint) : crumb;
+        return suite ? scrubBreadcrumb(suite) : suite;
+      },
+    });
     setForwarder((error, context, breadcrumbs) => {
       // Le fil d'Ariane part en `extra` plutôt que par `addBreadcrumb` : il est
       // déjà masqué, déjà ordonné, et joint à CETTE exception — alors que les

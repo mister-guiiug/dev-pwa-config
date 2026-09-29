@@ -6,8 +6,9 @@
  * useI18n }`. Chaque app fournit son propre dictionnaire `messages` (une entrée
  * par locale, même forme) et appelle `createI18n` une fois au niveau module.
  *
- * - Locale initiale : localStorage[storageKey] si valide, sinon `navigator.language`
- *   (2 lettres) si connue, sinon `fallbackLocale`.
+ * - Locale initiale : localStorage[storageKey] si valide, sinon `fallbackLocale`
+ *   pour un ROBOT connu (voir plus bas), sinon `navigator.language` (2 lettres)
+ *   si connue, sinon `fallbackLocale`.
  * - `setLocale` persiste dans localStorage et met à jour `lang`/`dir` sur `<html>`.
  *
  * `storageKey` EST DÉSORMAIS OPTIONNEL (défaut : `'dwc_locale'`, même famille
@@ -37,6 +38,16 @@
  * rien ne rappelait, et que personne ne faisait. Il est fait ici, sauf
  * `labels: false`.
  *
+ * UN ROBOT REÇOIT LA LANGUE PAR DÉFAUT. Le 29/09/2026, le test en direct de la
+ * Search Console a rendu `miss-contraction` EN ANGLAIS — « Start contraction »,
+ * consentement en anglais — alors que la page est française (`lang="fr"`,
+ * contenu servi en français) : le moteur de rendu de Google se présente en
+ * `en-US`, et la détection suivait `navigator.language`. Un robot connu
+ * (`isCrawlerUserAgent`, module `crawler`) reçoit donc `fallbackLocale`, la
+ * langue du HTML statique. Ce n'est pas un habillage pour robots : c'est ce
+ * que reçoit tout visiteur sans préférence. Une préférence STOCKÉE garde la
+ * priorité — elle a été choisie, pas devinée.
+ *
  * Composants en `createElement` (pas de JSX) : le package est servi tel quel,
  * sans étape de build. La logique pure de traduction vit dans `i18n-core.js`.
  *
@@ -57,6 +68,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { isCrawlerUserAgent } from '../crawler.js';
 import { createFormatters, setDefaultLocale } from '../format.js';
 import { createTranslator, plural } from './i18n-core.js';
 // LE PROVIDER COMPLET, ET C'EST VOULU. `createI18n` reçoit la locale de
@@ -126,6 +138,9 @@ export function createI18n(config) {
     } catch {
       /* localStorage indisponible : on ignore */
     }
+    // Un robot rend la page dans la langue du HTML statique, pas dans celle
+    // qu'il annonce : le moteur de rendu de Google se dit `en-US`.
+    if (isCrawlerUserAgent(window.navigator?.userAgent)) return fallbackLocale;
     const nav = window.navigator?.language?.slice(0, 2).toLowerCase();
     if (nav && known.has(nav)) return nav;
     return fallbackLocale;

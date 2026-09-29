@@ -5,6 +5,15 @@
  *
  *   node scripts/probe-sites.mjs [app…]            # défaut : le catalogue
  *   node scripts/probe-sites.mjs --json > relevé.json
+ *   node scripts/probe-sites.mjs --seo [app…]      # ce qu'un moteur en lit
+ *
+ * LE MODE `--seo` (29/09/2026). La sortie texte n'affichait ni le JSON-LD, ni
+ * le contenu servi, ni la longueur du titre et de la description, et la sonde
+ * ne lisait aucune page de contenu : l'audit SEO du parc a dû écrire ses
+ * propres scripts. Par app, il affiche les longueurs du titre et de la
+ * description, les types JSON-LD de l'accueil, les mots du contenu servi, le
+ * statut des pages de contenu du plan de site (françaises et anglaises, `en/`)
+ * et la présence des `hreflang`. `--json` porte le détail sous `seo`.
  *
  * POURQUOI CET OUTIL EXISTE. Le 02/09/2026, une seule sonde — rafraîchir un
  * lien profond — a trouvé quatre apps qui servaient la page 404 de GitHub.
@@ -39,10 +48,14 @@
 import { FAMILY_APPS, GITHUB_OWNER, pagesUrl } from '../apps-catalog.js';
 import { estPointDEntree } from './entree.mjs';
 import {
+  decodeEntities,
+  hreflangLinks,
   htmlMarkers,
   isAppShell,
+  jsonLdTypes,
   manifestSummary,
   resolveUrl,
+  servedContentWords,
 } from './site-readers.mjs';
 
 const ORIGIN = `https://${GITHUB_OWNER}.github.io`;
@@ -68,8 +81,68 @@ async function transferred(url, fetchImpl) {
   }
 }
 
+/** Les `<loc>` d'un plan de site, entités décodées. */
+export function sitemapLocs(xml) {
+  return [...String(xml).matchAll(/<loc>([^<]{1,2048})<\/loc>/g)].map(m =>
+    decodeEntities(m[1].trim())
+  );
+}
+
+/** Une longueur en caractères (glyphes), entités décodées ; `null` sans texte. */
+const longueur = texte =>
+  texte == null ? null : [...decodeEntities(texte)].length;
+
+/**
+ * CE QU'UN MOTEUR LIT D'UN SITE (`--seo`) : l'accueil, puis chaque page de
+ * contenu que déclare son plan de site — tout `<loc>` en `.html`, les pages
+ * anglaises sous `en/`. Pour chacune : le statut, les types JSON-LD, le nombre
+ * de `hreflang`.
+ *
+ * @param {string} app
+ * @param {string} html L'accueil, déjà lu.
+ * @param {typeof fetch} fetchImpl
+ */
+export async function probeSeo(app, html, fetchImpl = fetch) {
+  const base = `${ORIGIN}/${app}/`;
+  const m = htmlMarkers(html);
+  let locs = [];
+  try {
+    const plan = await fetchImpl(`${base}sitemap.xml`, { redirect: 'follow' });
+    if (plan.ok) locs = sitemapLocs(await plan.text());
+  } catch {
+    /* pas de plan de site : aucune page à sonder */
+  }
+  const pages = [];
+  for (const url of locs.filter(u => u.endsWith('.html'))) {
+    let status = 0;
+    let corps = '';
+    try {
+      const res = await fetchImpl(url, { redirect: 'follow' });
+      status = res.status;
+      if (res.ok) corps = await res.text();
+    } catch {
+      /* injoignable : statut 0 */
+    }
+    pages.push({
+      url,
+      en: new URL(url).pathname.startsWith(`/${app}/en/`),
+      status,
+      hreflang: hreflangLinks(corps).length,
+      jsonLdTypes: jsonLdTypes(corps),
+    });
+  }
+  return {
+    titleLength: longueur(m.title),
+    descriptionLength: longueur(m.descriptionContent),
+    jsonLdTypes: jsonLdTypes(html),
+    servedWords: servedContentWords(html),
+    hreflang: hreflangLinks(html).length,
+    pages,
+  };
+}
+
 /** Sonde un site. `fetchImpl` est injectable pour les tests. */
-export async function probe(app, fetchImpl = fetch) {
+export async function probe(app, fetchImpl = fetch, options = {}) {
   const base = `${ORIGIN}/${app}/`;
   const res = await fetchImpl(base, { redirect: 'follow' });
   const html = await res.text();
@@ -119,7 +192,28 @@ export async function probe(app, fetchImpl = fetch) {
     annex,
     fallback,
     initialJsKb: Math.round(initialJsBytes / 1024),
+    ...(options.seo ? { seo: await probeSeo(app, html, fetchImpl) } : {}),
   };
+}
+
+/** La ligne `--seo` d'un site. */
+export function seoLine(r) {
+  const s = r.seo;
+  const fr = s.pages.filter(p => !p.en);
+  const en = s.pages.filter(p => p.en);
+  const servies = liste =>
+    `${liste.filter(p => p.status === 200).length}/${liste.length}`;
+  const avecHreflang = s.pages.filter(p => p.hreflang > 0).length;
+  return [
+    r.app.padEnd(18),
+    `titre=${s.titleLength ?? '-'}c`,
+    `desc=${s.descriptionLength ?? '-'}c`,
+    `ld=${s.jsonLdTypes.join('+') || '-'}`,
+    `servi=${s.servedWords} mots`,
+    `pages=${servies(fr)}`,
+    `en=${servies(en)}`,
+    `hreflang=accueil:${s.hreflang} pages:${avecHreflang}/${s.pages.length}`,
+  ].join('  ');
 }
 
 function line(r) {
@@ -149,6 +243,7 @@ function line(r) {
 
 export async function run(args = []) {
   const json = args.includes('--json');
+  const seo = args.includes('--seo');
   const demandees = args.filter(a => !a.startsWith('--'));
   const apps = demandees.length
     ? demandees
@@ -159,9 +254,9 @@ export async function run(args = []) {
   const results = [];
   for (const app of apps) {
     try {
-      const r = await probe(app);
+      const r = await probe(app, fetch, { seo });
       results.push(r);
-      if (!json) console.log(line(r));
+      if (!json) console.log(seo ? seoLine(r) : line(r));
     } catch (error) {
       if (!json)
         console.log(`${app.padEnd(18)}  injoignable : ${error.message}`);

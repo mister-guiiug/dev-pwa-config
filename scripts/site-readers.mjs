@@ -96,6 +96,180 @@ export function htmlMarkers(source) {
   };
 }
 
+/** Les entités HTML courantes. `&nbsp;` devient une espace ordinaire. */
+const ENTITES = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+};
+
+/** Un texte HTML, ses entités décodées (nommées courantes et numériques). */
+export function decodeEntities(texte) {
+  return String(texte).replace(
+    /&(#x[0-9a-f]{1,6}|#\d{1,7}|[a-z]{2,8});/gi,
+    (tout, code) => {
+      if (code[0] === '#') {
+        const n =
+          code[1].toLowerCase() === 'x'
+            ? parseInt(code.slice(2), 16)
+            : parseInt(code.slice(1), 10);
+        try {
+          return String.fromCodePoint(n);
+        } catch {
+          return tout;
+        }
+      }
+      return ENTITES[code.toLowerCase()] ?? tout;
+    }
+  );
+}
+
+/** Les éléments dont le contenu n'est pas du texte lu. */
+const SANS_TEXTE = new Set(['script', 'style', 'template']);
+
+/**
+ * LE TEXTE QU'UN ROBOT SANS JAVASCRIPT LIT : balises retirées, `script`,
+ * `style`, `template` et commentaires écartés, entités décodées, blancs
+ * réduits. Le contenu d'un `noscript` compte : c'est précisément ce qu'un tel
+ * robot affiche. Balayage linéaire, sans regex sur le document.
+ */
+export function visibleText(source) {
+  const html = String(source);
+  const bas = html.toLowerCase();
+  const morceaux = [];
+  let i = 0;
+  while (i < html.length) {
+    const debut = html.indexOf('<', i);
+    if (debut === -1) {
+      morceaux.push(html.slice(i));
+      break;
+    }
+    morceaux.push(html.slice(i, debut));
+    if (bas.startsWith('<!--', debut)) {
+      const fin = bas.indexOf('-->', debut + 4);
+      i = fin === -1 ? html.length : fin + 3;
+      continue;
+    }
+    const fin = html.indexOf('>', debut);
+    if (fin === -1) break;
+    morceaux.push(' ');
+    const nom = /^<([a-z][a-z0-9-]*)/.exec(
+      bas.slice(debut, Math.min(fin, debut + 32))
+    )?.[1];
+    if (nom && SANS_TEXTE.has(nom)) {
+      const ferme = bas.indexOf(`</${nom}`, fin);
+      if (ferme === -1) break;
+      const apres = bas.indexOf('>', ferme);
+      i = apres === -1 ? html.length : apres + 1;
+      continue;
+    }
+    i = fin + 1;
+  }
+  return decodeEntities(morceaux.join('')).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Les blocs `<script type="application/ld+json">` d'un HTML, LUS. Un bloc
+ * illisible est ignoré. Balayage linéaire (`indexOf`).
+ */
+export function jsonLdBlocks(source) {
+  const html = String(source);
+  const bas = html.toLowerCase();
+  const blocs = [];
+  let i = 0;
+  for (;;) {
+    const debut = bas.indexOf('<script', i);
+    if (debut === -1) break;
+    const ouverture = bas.indexOf('>', debut);
+    if (ouverture === -1) break;
+    const fermeture = bas.indexOf('</script', ouverture);
+    if (fermeture === -1) break;
+    if (bas.slice(debut, ouverture).includes('application/ld+json')) {
+      try {
+        blocs.push(JSON.parse(html.slice(ouverture + 1, fermeture)));
+      } catch {
+        /* illisible : un autre contrôle le dira, pas celui-ci */
+      }
+    }
+    i = fermeture + 8;
+  }
+  return blocs;
+}
+
+/** Les nœuds typés d'un JSON-LD : ceux de tête, et ceux de leurs `@graph`. */
+export function jsonLdNodes(blocs) {
+  const noeuds = [];
+  const visiter = valeur => {
+    if (Array.isArray(valeur)) {
+      valeur.forEach(visiter);
+      return;
+    }
+    if (!valeur || typeof valeur !== 'object') return;
+    if (Array.isArray(valeur['@graph'])) valeur['@graph'].forEach(visiter);
+    if (valeur['@type']) noeuds.push(valeur);
+  };
+  visiter(blocs);
+  return noeuds;
+}
+
+/** Les types JSON-LD d'un HTML, dans l'ordre, sans doublon. */
+export function jsonLdTypes(source) {
+  const types = [];
+  for (const noeud of jsonLdNodes(jsonLdBlocks(source))) {
+    for (const type of [].concat(noeud['@type'])) {
+      if (typeof type === 'string' && !types.includes(type)) types.push(type);
+    }
+  }
+  return types;
+}
+
+/** Les `<link rel="alternate" hreflang="…" href="…">` d'un HTML. */
+export function hreflangLinks(source) {
+  return tags(source)
+    .map(flatten)
+    .filter(
+      t => is(t, 'link') && has(t, 'rel="alternate"') && has(t, 'hreflang="')
+    )
+    .map(t => ({ lang: attr(t, 'hreflang'), href: attr(t, 'href') }))
+    .filter(lien => lien.lang && lien.href);
+}
+
+/**
+ * Deux langues qui désignent la MÊME URL : un `hreflang` qui ne distingue
+ * rien. `x-default` est à part — il désigne, par construction, l'URL d'une
+ * des langues. Rend les paires en cause (`fr = en → URL`).
+ */
+export function hreflangCollisions(liens) {
+  const parUrl = new Map();
+  for (const { lang, href } of liens) {
+    if (lang.toLowerCase() === 'x-default') continue;
+    parUrl.set(href, [...(parUrl.get(href) ?? []), lang]);
+  }
+  return [...parUrl]
+    .filter(([, langues]) => new Set(langues).size > 1)
+    .map(([href, langues]) => `${[...new Set(langues)].join(' = ')} → ${href}`);
+}
+
+/**
+ * Les mots du CONTENU SERVI d'un accueil (`data-dwc="served-content"`),
+ * `noscript` exclu ; 0 sans contenu servi. Seuls les jetons qui portent une
+ * lettre ou un chiffre comptent.
+ */
+export function servedContentWords(source) {
+  const html = String(source);
+  const repere = html.indexOf('data-dwc="served-content"');
+  if (repere === -1) return 0;
+  const debut = html.lastIndexOf('<', repere);
+  const noscript = html.indexOf('<noscript', repere);
+  const fin = noscript === -1 ? html.indexOf('</div>', repere) : noscript;
+  return visibleText(html.slice(debut, fin === -1 ? undefined : fin))
+    .split(' ')
+    .filter(mot => /[\p{L}\p{N}]/u.test(mot)).length;
+}
+
 /** Les scripts chargés au démarrage : modules et `modulepreload`. */
 export function initialScripts(source) {
   const out = [];

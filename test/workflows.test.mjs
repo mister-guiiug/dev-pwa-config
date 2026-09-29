@@ -22,7 +22,16 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 const dir = new URL('../.github/workflows/', import.meta.url);
 
@@ -186,4 +195,139 @@ test('le docteur reçoit un jeton en CI, sinon son contrôle GitHub est muet', (
   // Le jeton AUTOMATIQUE du run, pas un secret déclaré : un appelant n'a rien
   // à passer, et `metadata: read` suffit à lire `has_issues`.
   assert.doesNotMatch(doctor, /secrets\.GITHUB_TOKEN|secrets\.GH_TOKEN/);
+});
+
+/* ── Le déploiement signale ce qu'il change (socle 6.19.0) ─────────────── */
+
+/** Le bloc littéral `NOM: |` d'un workflow, désindenté. */
+function blocLitteral(source, nom) {
+  const lignes = source.split('\n');
+  const i = lignes.findIndex(l => l.trim() === `${nom}: |`);
+  assert.ok(i >= 0, `${nom} introuvable`);
+  const indentCle = lignes[i].length - lignes[i].trimStart().length;
+  const corps = [];
+  for (const l of lignes.slice(i + 1)) {
+    if (l.trim() && l.length - l.trimStart().length <= indentCle) break;
+    corps.push(l);
+  }
+  const indent = Math.min(
+    ...corps.filter(l => l.trim()).map(l => l.length - l.trimStart().length)
+  );
+  return `${corps
+    .map(l => l.slice(indent))
+    .join('\n')
+    .trimEnd()}\n`;
+}
+
+/** Le texte d'un job, de sa clé à la suivante. */
+function job(source, nom) {
+  const debut = source.indexOf(`\n  ${nom}:\n`);
+  assert.ok(debut > 0, `job ${nom} absent`);
+  const suite = source.slice(debut + 1).search(/\n {2}[a-z-]+:\n/);
+  return source.slice(debut, suite > 0 ? debut + 1 + suite : undefined);
+}
+
+test('l’état SEO précédent est récupéré AVANT le build, sans jamais le bloquer', () => {
+  const deploy = read('pwa-deploy.yml');
+  const etape = deploy.indexOf('name: État SEO précédent');
+  assert.ok(etape > 0, 'étape absente');
+  assert.ok(etape < deploy.indexOf('npm run build'), 'après le build');
+  const bloc = deploy.slice(etape, deploy.indexOf('- name: Build'));
+  assert.match(bloc, /seo-state\.json/);
+  assert.match(bloc, /PWA_SEO_PREVIOUS_STATE=/);
+  // Tolérant : un `curl` qui échoue ne fait pas échouer l'étape.
+  assert.match(bloc, /if curl -fsSL[^\n]*; then/);
+  // Le build écrit la liste des URL changées HORS du site publié.
+  const build = deploy.slice(deploy.indexOf('- name: Build'));
+  assert.match(
+    build.slice(0, build.indexOf('npm run build')),
+    /PWA_SEO_CHANGED_FILE: \$\{\{ runner\.temp \}\}\/seo-changed\.json/
+  );
+  // La liste sort du job, avant l'envoi de l'artefact.
+  assert.match(
+    deploy,
+    /seo-changed: \$\{\{ steps\.seo-changed\.outputs\.urls \}\}/
+  );
+  assert.ok(
+    deploy.indexOf('id: seo-changed') < deploy.indexOf('upload-pages-artifact')
+  );
+});
+
+test('le job indexnow : après le déploiement, jamais bloquant, la clé du catalogue', async () => {
+  const { INDEXNOW_KEY } = await import('../apps-catalog.js');
+  const deploy = read('pwa-deploy.yml');
+  assert.match(deploy, /^ {6}indexnow:\n(?: {8}.*\n)*? {8}default: true/m);
+  const indexnow = job(deploy, 'indexnow');
+  assert.match(indexnow, /needs: \[build, deploy\]/);
+  assert.match(indexnow, /continue-on-error: true/);
+  assert.match(indexnow, /permissions: \{\}/);
+  assert.match(indexnow, /if: \$\{\{ inputs\.indexnow && /);
+  assert.match(indexnow, /github\.repository_owner == 'mister-guiiug'/);
+  assert.match(indexnow, /seo-changed != '\[\]'/);
+  // La copie de la clé PUBLIQUE est celle du catalogue.
+  assert.match(indexnow, new RegExp(`CLE: ${INDEXNOW_KEY}\\n`));
+  assert.match(indexnow, /HOTE: mister-guiiug\.github\.io\n/);
+  const script = blocLitteral(indexnow, 'INDEXNOW_JS');
+  // Le point d'entrée comparé en entier : un seul appel, vers IndexNow.
+  const points = [...script.matchAll(/fetch\('([^']+)'/g)].map(m => m[1]);
+  assert.deepEqual(points, ['https://api.indexnow.org/indexnow']);
+  assert.match(script, /keyLocation/);
+  // Une entrée n'entre jamais dans le script : elle passe par env:.
+  assert.doesNotMatch(script, /\$\{\{/);
+});
+
+/** Lance un script du workflow comme la CI le fait. */
+function lancer(script, args = [], env = {}) {
+  return spawnSync(
+    process.execPath,
+    ['--input-type=module', '-e', script, ...args],
+    { encoding: 'utf8', env: { ...process.env, ...env }, timeout: 20_000 }
+  );
+}
+
+test('le script IndexNow ne signale rien pour une liste vide ou un autre hôte', () => {
+  const script = blocLitteral(
+    job(read('pwa-deploy.yml'), 'indexnow'),
+    'INDEXNOW_JS'
+  );
+  const env = { HOTE: 'mister-guiiug.github.io', CLE: 'cle' };
+  for (const URLS of [
+    '[]',
+    'pas du json',
+    JSON.stringify(['https://exemple.org/app/', 'pas une url']),
+  ]) {
+    const r = lancer(script, [], { ...env, URLS });
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Rien à signaler sur mister-guiiug\.github\.io\./);
+  }
+});
+
+test('le 404.html du déploiement reçoit noindex, sans canonique ni robots contraires', () => {
+  const deploy = read('pwa-deploy.yml');
+  const script = blocLitteral(deploy, 'NOINDEX_JS');
+  const dossier = mkdtempSync(join(tmpdir(), 'dwc-404-'));
+  try {
+    const fichier = join(dossier, '404.html');
+    writeFileSync(
+      fichier,
+      '<!doctype html>\n<html>\n  <head>\n    <meta name="robots" content="index, follow" />\n    <link rel="canonical" href="https://o/app/" />\n    <title>App</title>\n  </head>\n  <body><div id="root"></div></body>\n</html>\n'
+    );
+    const r = lancer(script, [fichier]);
+    assert.equal(r.status, 0, r.stderr);
+    const html = readFileSync(fichier, 'utf8');
+    assert.equal(html.match(/name="robots"/g).length, 1);
+    assert.match(html, /<head>\n {4}<meta name="robots" content="noindex" \/>/);
+    assert.doesNotMatch(html, /index, follow|canonical/);
+    // Une seconde passe ne touche plus à rien.
+    lancer(script, [fichier]);
+    assert.equal(readFileSync(fichier, 'utf8'), html);
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+  // L'étape s'applique aussi au 404.html qu'un build a déjà écrit.
+  const etape = deploy.slice(deploy.indexOf('- name: SPA fallback'));
+  assert.match(
+    etape.slice(0, etape.indexOf('- name: URL modifiées')),
+    /if \[ -f "\$BUILD_DIR\/404\.html" \]; then\n\s+node --input-type=module -e "\$NOINDEX_JS"/
+  );
 });

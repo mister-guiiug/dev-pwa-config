@@ -162,19 +162,23 @@ test: {
 
 ### `vite.config.ts` (SEO + analytics)
 
+_Le référencement seulement : la mesure d'audience ne passe plus par ce plugin
+(voir [Mesure d'audience](#mesure-daudience-mister-guiiugdev-pwa-configanalytics)).
+Le même module est exporté sous `./vite-seo` et `./vite-pwa-base`._
+
 ```ts
-import { pwaSeoPlugin } from '@mister-guiiug/dev-pwa-config/vite-pwa-base';
+import {
+  pwaSeoPlugin,
+  spaFallbackPlugin,
+} from '@mister-guiiug/dev-pwa-config/vite-seo';
 
 export default defineConfig({
   plugins: [
     react(),
     pwaSeoPlugin({
-      siteName: 'Mister Puzzle',
-      basePath: '/mister-puzzle/', // sinon VITE_BASE_PATH
-      logoPath: '/logo.svg', // → __SEO_LOGO_URL__ (OG/Twitter/JSON-LD)
+      basePath: '/mister-molkky/', // sinon VITE_BASE_PATH
+      logoPath: '/logo.svg', // → __SEO_LOGO_URL__
       iconQuery: '?v=1.0.1', // → __PWA_ICON_QS__ (cache-busting)
-      posthogKey: 'phc_…', // ID explicite (sinon VITE_POSTHOG_KEY)
-      llms: '# Mon app\n…', // opt-in : true = auto catalogue ; chaîne = texte ; omis = rien
 
       // Le script anti-FOUC, injecté en tête de <head>. `legacyKeys` migre la
       // préférence déjà enregistrée : SIX clés distinctes existent dans la
@@ -184,57 +188,143 @@ export default defineConfig({
       // Deux <meta name="theme-color"> par schéma, qui remplacent celle de
       // l'index. Dix apps sur quinze gardaient une barre claire en sombre.
       themeColor: { light: '#0f766e', dark: '#0b1220' },
+
+      // Des écrans PUBLICS servis en 200 (voir « Routes publiques »).
+      routes: [
+        {
+          path: 'a-propos',
+          title: 'À propos de Mister Mölkky, compteur de points',
+          description:
+            'Qui a fait l’app, ce qu’elle garde, comment la joindre.',
+        },
+      ],
     }),
+    spaFallbackPlugin(), // 404.html = index.html, marqué noindex
   ],
 });
 ```
 
-**Le consentement précède le tag.** Les fragments PostHog sont désormais
-précédés d'un `gtag('consent', 'default', …)` où tous les signaux sont `denied`.
-C'est la seule position où le mode consentement de Google en tient compte : une
-commande postérieure au chargement n'a pas d'effet rétroactif. `consent: false`
-restaure le comportement d'avant, pour un déploiement qui gère le consentement
-ailleurs (une CMP).
+Options : `siteName` (le nom pour `og:site_name` d'une app **hors catalogue** —
+le nom du catalogue l'emporte), `sitemap` (défaut `true`), `robots` (défaut
+**`false`**, voir plus bas), `outDir`, `changefreq`, `basePath`, `logoPath`,
+`iconQuery`, `llms` (opt-in : `true` = auto catalogue, une chaîne = ce texte,
+omis = rien), `themeBoot`, `themeColor`, `extraReplacements`, `jsonLd`,
+`routes`, `servedContent`, `contentPages`, `ogImage`.
 
-Placeholders remplacés dans `index.html` : `__ANALYTICS_HEAD__` (dans `<head>`),
-`__ANALYTICS_BODY__` (début de `<body>`), `__SEO_HOME_URL__`, `__SEO_LOGO_URL__`,
-`__PWA_ICON_QS__`. Génère `sitemap.xml` + `robots.txt`. `llms.txt` seulement
-si `llms: true` (auto catalogue) ou `llms: '…'` (texte) — omis par défaut :
-Google ne s'en sert pas pour le ranking génératif.
+Variables d'environnement lues au build : `VITE_BASE_PATH`,
+`VITE_PUBLIC_SITE_ORIGIN`, `PWA_SEO_PREVIOUS_STATE` et `PWA_SEO_CHANGED_FILE`
+(voir « Plan de site, `lastmod` réel, IndexNow »). Le plugin est un
+**sur-ensemble** des anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`,
+miss-carbook `htmlTrackingPlugin()`), désormais factorisés ici.
 
-**Données structurées, sans réglage.** Le plugin injecte dans `<head>` un
-`WebApplication` schema.org : nom et catégorie tirés du catalogue
-(`FAMILY_APPS`), description, image et langue tirées de l'`index.html`, plus
-une `ViewAction` vers l'accueil. Rien
-n'est injecté si la page porte déjà un `application/ld+json`. `jsonLd: false` le
-coupe ; `jsonLd: { … }` surcharge des champs. Le plan de site porte `lastmod`
-(jour du build) ; `routes: ['a-propos', 'en/']` y ajoute des écrans PUBLICS.
-Le `robots.txt` écrit dans `dist/` est ignoré des robots — un `robots.txt` n'est
-lu qu'à la racine d'une origine ; c'est `mister-guiiug.github.io` qui déclare
-les plans de site de tout le parc.
+#### Ce que le plugin pose dans `index.html`
 
-**Contenu servi, sans réglage.** Au build, le premier `<div id="…"></div>` VIDE
-du `<body>` (`app`, `root`, `react-root`…) reçoit le titre de la page en `<h1>`,
-sa description et un lien vers l'accueil du parc. C'est ce que lit un robot qui
-n'exécute pas le JavaScript. React le remplace au premier rendu
-(`createRoot().render()` vide le conteneur) ; d'ici là, le visiteur voit le nom
-de l'app plutôt qu'une page blanche. Un point de montage qui porte déjà du
-contenu n'est pas touché ; `servedContent: false` coupe l'injection. Rien n'est
-injecté en développement.
+- **Les marqueurs** `__SEO_HOME_URL__` (l'URL d'accueil), `__SEO_LOGO_URL__` et
+  `__PWA_ICON_QS__`, plus ceux d'`extraReplacements`.
+- **Les balises texte qui manquent** : `og:type` (`website`), `og:site_name`
+  (le nom du catalogue), `og:locale` (tiré de `<html lang>` : `fr` → `fr_FR`),
+  `og:url` (la canonique), `og:title` (le `<title>`), `og:description` (la
+  description), `twitter:card`, `twitter:title` et `twitter:description`. Une
+  valeur écrite à la main n'est **jamais** remplacée — sauf `og:locale`,
+  normalisé, parce que « fr » n'est pas le format `langue_TERRITOIRE`
+  qu'attend Open Graph. Relevé du 29/09/2026 : six accueils n'avaient ni
+  `og:site_name` ni `og:locale`.
+- **L'image de partage.** Si le dossier public porte `og-image.jpg` (ou `.png`)
+  — celle que dessine `npx pwa-og-image` —, les balises écrites à la main sont
+  remplacées par le jeu complet : `og:image` (avec une empreinte de contenu,
+  que les réseaux gardent en cache par URL), `og:image:type`, `:width`,
+  `:height`, `:alt`, `twitter:card` en `summary_large_image` et
+  `twitter:image`. `ogImage: 'autre.jpg'` change de fichier, `false` coupe.
+- **Les données structurées**, dans `<head>` (voir ci-dessous). Rien n'est
+  injecté si la page porte déjà un `application/ld+json` ; `jsonLd: false` les
+  coupe, `jsonLd: { … }` surcharge des champs du `WebApplication`.
+- **Le contenu servi**, au build seulement (voir plus bas).
 
-**Pages de contenu, sans réglage.** Chaque `content/pages/<slug>.md` de l'app
-devient au build un fichier HTML **statique** `<base>/<slug>.html`, lu tel quel
-par tout robot. Il entre au plan de site, il est listé en liens dans le contenu
-servi de l'accueil, et le gabarit ajoute l'en-tête de l'app (icône, nom), le fil
-d'Ariane, un encadré « Ouvrir <App> », une CSP stricte et les données
-structurées : `Article`, `BreadcrumbList`, et `FAQPage` tiré de la section
-`## Questions fréquentes` (chaque `###` est une question). Langue, couleur,
-icônes et image de partage sont lues dans l'`index.html` construit.
+#### Un seul graphe d'entités
+
+L'éditeur de la famille est **un** nœud, déclaré par le hub sous l'`@id`
+`https://mister-guiiug.github.io/#org`, et exporté par le catalogue :
+`PUBLISHER` (`Organization`, nom « mister-guiiug », `alternateName`
+« GuiiuG », logo, `sameAs` GitHub), `SITE_ID` (`…/#site`, le `WebSite` du parc)
+et `INDEXNOW_KEY` (la clé IndexNow, publique). Relevé du 29/09/2026 :
+l'éditeur était une `Person` sur les apps, une `Organization` sur le hub, une
+autre `Organization` sur mister-puzzle, et aucune page ne partageait d'`@id`.
+
+Le `WebApplication` injecté vit dans un `@graph`, avec le nœud `PUBLISHER`
+complet :
+
+- `@id` `<URL de l'app>#app` — les pages de contenu le désignent par `about` ;
+- `author` et `publisher` → `{ "@id": "…/#org" }`, `isPartOf` →
+  `{ "@id": "…/#site" }` ;
+- `sameAs` : le dépôt **seulement** (l'accueil du parc est une autre entité,
+  déjà reliée par `isPartOf`) ;
+- `inLanguage` : les langues de l'interface relevées au catalogue
+  (`languages`, par exemple `["fr", "en"]`), sinon `<html lang>` ;
+- `featureList` : les fonctions du catalogue (`features`, trois à six) ;
+- `screenshot` : les captures du **manifeste construit**, en URL absolues —
+  reportées au build, une fois `vite-plugin-pwa` passé ;
+- nom et catégorie tirés du catalogue, description, image et langue de la
+  page, `offers` à 0 €, `isAccessibleForFree`, une `ViewAction`.
+
+Pas de note ni d'avis : Google n'affiche la fiche enrichie d'une application
+qu'avec une note, et en inventer une serait une donnée fausse.
+
+#### Le contenu servi
+
+Au build, le premier `<div id="…"></div>` VIDE du `<body>` (`app`, `root`,
+`react-root`…) reçoit, dans cet ordre :
+
+1. le `<title>` de la page en `<h1>`, et sa description ;
+2. le texte de **`content/accueil.md`**, s'il existe ;
+3. les liens vers les pages de contenu — une page anglaise porte `lang` et
+   `hreflang="en"` ;
+4. « **Dans la même catégorie** » : les apps sœurs du catalogue (même
+   catégorie, web seulement, quatre au plus ; complétées par rotation sous
+   deux, le titre devenant « À découvrir aussi ») ;
+5. « **Code source sur GitHub** » (le `repoUrl` du catalogue) ;
+6. le lien vers l'accueil du parc, et un `noscript`.
+
+C'est ce que lit un robot qui n'exécute pas le JavaScript — au relevé du
+29/09/2026, 32 à 52 mots par accueil, rien sur « pour qui », « comment ça
+marche » ou « où vont mes données », et aucun lien vers une autre app. React
+le remplace au premier rendu (`createRoot().render()` vide le conteneur) ;
+d'ici là, le visiteur voit le nom de l'app plutôt qu'une page blanche. Pas de
+script, un style en ligne ; un point de montage qui porte déjà du contenu n'est
+pas touché ; `servedContent: false` coupe. Rien n'est injecté en développement.
+
+**`content/accueil.md`** est écrit app par app, en Markdown court : `##` et
+`###`, paragraphes, listes, gras, italique, liens. **Pas de `#`** — l'accueil a
+déjà son titre, le `<h1>` tiré du `<title>` : un `#` fait échouer le build en
+nommant le fichier. Un en-tête `---` en tête, même vide, est toléré et ignoré.
+Le texte se lit aligné à gauche, avec ses puces.
+
+#### Pages de contenu — le contrat avec les rédacteurs
+
+Chaque `content/pages/<slug>.md` devient au build un fichier HTML
+**statique** `<base>/<slug>.html` ; chaque `content/pages/en/<slug>.md`, un
+fichier `<base>/en/<slug>.html`. Ils sont lus tels quels par tout robot,
+entrent au plan de site et au contenu servi de l'accueil. Les fichiers qui
+commencent par `_` et les `README.md` sont ignorés.
+
+L'en-tête, une clé `clé: valeur` par ligne :
+
+| Clé           | Rôle                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `title`       | **Obligatoire.** Le `<title>` (50 à 65 caractères).                                                                       |
+| `description` | **Obligatoire.** La meta description (130 à 160 caractères).                                                              |
+| `slug`        | Facultatif : sinon le nom du fichier. Minuscules ASCII et tirets ; ni `index`, ni `404`, ni `sw`, ni `offline`.           |
+| `date`        | `AAAA-MM-JJ` : la publication. « Publié le … », `datePublished`, `article:published_time`.                                |
+| `updated`     | `AAAA-MM-JJ`, facultatif : la dernière mise à jour DE FOND. « Mis à jour le … », `dateModified`, `article:modified_time`. |
+| `answer`      | La réponse directe, 40 à 70 mots, sur UNE ligne, avec le chiffre clé. Des guillemets englobants sont retirés.             |
+| `translation` | Sur une page ANGLAISE : le slug de la page française qu'elle traduit.                                                     |
 
 ```md
 ---
 title: Règles du Mölkky : le jeu, le score et les pénalités
 description: Les règles du Mölkky expliquées simplement… (130 à 160 caractères)
+date: 2026-09-25
+updated: 2026-09-29
+answer: Le premier joueur à atteindre exactement 50 points gagne ; une quille seule vaut son numéro, plusieurs valent leur nombre, et dépasser 50 ramène à 25. Trois lancers ratés de suite éliminent le joueur.
 ---
 
 # Règles du Mölkky
@@ -250,34 +340,149 @@ Paragraphe, **gras**, _italique_, `code`, [lien](https://…) ou [page sœur](au
 ### Combien de joueurs ?
 
 Réponse.
+
+## Sources
+
+- [Fédération française de Mölkky](https://…) : le règlement officiel.
 ```
 
-Le Markdown reconnu est volontairement court (titres `#` à `###`, paragraphes,
-listes, gras, italique, code, liens `https:` ou vers une page de l'app) ; tout
-est échappé, aucun HTML ne passe. Un en-tête incomplet, deux `#`, un slug
-invalide (`index`, accents) ou déjà pris font échouer le build en nommant le
-fichier. **Pourquoi `.html` dans l'URL** : le service worker répond `index.html`
-à toute navigation SAUF aux chemins à extension (`NAVIGATE_FALLBACK_DENY_FILES`)
+La page anglaise, `content/pages/en/molkky-rules.md`, porte le même en-tête
+plus `translation: regles-du-molkky` ; sa FAQ se lit sous
+`## Frequently asked questions`, ses sources sous `## References`.
+
+**Le Markdown reconnu** est volontairement court : titres `#` à `###`,
+paragraphes, listes, gras, italique, code, liens `https:`, `mailto:`, ancres,
+ou vers une autre page de l'app (`autre.html`, `en/autre.html`,
+`../autre.html`). Tout est échappé, aucun HTML ne passe. La FAQ se lit dans
+`## Questions fréquentes` (ou `## Frequently asked questions`) : chaque `###`
+est une question. La section `## Sources` (ou `## References`) est rendue à
+part — plus petite, les longues URL coupées —, ses URL nues deviennent des
+liens, et ses liens sont repris en `citation`.
+
+**Ce que le gabarit ajoute** : l'en-tête de l'app (icône, nom), le fil
+d'Ariane, sous le titre la **signature** « Publié le 25 septembre 2026 · Mis à
+jour le 29 septembre 2026 · par mister-guiiug » (le nom mène à
+`https://mister-guiiug.github.io/a-propos.html` ; en anglais « Published … ·
+Updated … · by … ») puis le bloc « **En bref.** » (« In short. ») tiré
+d'`answer` ; l'encadré « Ouvrir <App> », « À lire aussi » (les autres pages de
+la même langue), « **Dans la même catégorie** » avant le pied de page, une CSP
+stricte, et les données structurées : `Article` (`datePublished`,
+`dateModified` = `updated`, sinon `date`, `abstract` = `answer`, `author` et
+`publisher` → `#org`, `about` → `<app>#app`, `isPartOf` → `#site`),
+`BreadcrumbList`, `FAQPage`, et le nœud `Organization`. Open Graph : `og:locale`
+`fr_FR` ou `en_US`, `article:published_time`, `article:modified_time`, et un
+`og:image:alt` qui décrit la page. La langue (`lang`, `inLanguage`) est celle de
+la PAGE, plus celle de l'accueil.
+
+**Traductions.** Une page française et sa traduction portent toutes deux
+`<link rel="alternate">` `hreflang="fr"`, `hreflang="en"` et `x-default` (la
+française) — **réciproques par construction** — et un lien visible vers l'autre
+langue. Rien sans traduction : un `hreflang` n'a de sens qu'entre des URL
+distinctes.
+
+**Ce qui fait échouer le build, en nommant le fichier** : un en-tête
+incomplet, deux `#`, un slug invalide ou déjà pris dans sa langue, une `date`
+ou un `updated` qui n'est pas une date, une `translation` qui ne désigne aucune
+page française, deux pages anglaises qui traduisent la même.
+
+**Pourquoi `.html` dans l'URL** : le service worker répond `index.html` à
+toute navigation SAUF aux chemins à extension (`NAVIGATE_FALLBACK_DENY_FILES`)
 — une page en `/regles/` serait remplacée par l'app chez qui l'a déjà ouverte.
 `contentPages: 'autre/dossier'` change de dossier, `false` coupe.
 
-**Image de partage.** Si le dossier public porte `og-image.jpg` (ou `.png`) —
-celle que dessine `npx pwa-og-image` —, le plugin remplace les balises écrites à
-la main par le jeu complet : `og:image` (avec une empreinte de contenu, que les
-réseaux gardent en cache par URL), `og:image:type`, `:width`, `:height`, `:alt`,
-`twitter:card` en `summary_large_image` et `twitter:image`. Le `WebApplication`
-la reprend en `image`. `ogImage: 'autre.jpg'` change de fichier, `false` coupe.
-Variables d'env de build : `VITE_POSTHOG_KEY`,
-`VITE_PUBLIC_SITE_ORIGIN`, `VITE_BASE_PATH`. Le plugin est un **sur-ensemble** des
-anciens plugins maison (mister-puzzle `vite-plugin-seo.ts`, miss-carbook
-`htmlTrackingPlugin()`), désormais factorisés ici.
+#### Plan de site, `lastmod` réel, IndexNow
+
+Le plan de site (`<base>/sitemap.xml`) liste l'accueil, les routes publiques
+et les pages de contenu — françaises et anglaises — **effectivement écrites**.
+
+**`lastmod` ne vaut plus le jour du build.** Relevé du 29/09/2026 : toutes les
+URL du parc changeaient de `lastmod` à chaque déploiement, et la publication du
+hub signalait les 41 URL à IndexNow à chaque passage. Le plugin calcule
+désormais une **empreinte** par URL — pour l'accueil : titre, description,
+contenu servi et JSON-LD hors valeurs volatiles ; pour une page : sa source et
+son en-tête ; pour une route : son chemin et ses textes — et publie
+`<base>/seo-state.json` (`{ url: { hash, lastmod } }`). Au déploiement
+suivant :
+
+- `PWA_SEO_PREVIOUS_STATE` désigne l'état publié la fois d'avant :
+  `pwa-deploy.yml` le récupère (`curl`) avant le build ;
+- une empreinte inchangée reprend son ancien `lastmod` ; une empreinte
+  nouvelle ou changée prend le jour du build ;
+- une page qui porte `updated` ou `date` : **cette date éditoriale prime** ;
+- sans état précédent, tout est « modifié » et daté du jour — le
+  comportement d'avant.
+
+La liste des URL nouvelles ou modifiées est écrite dans `seo-changed.json`,
+**hors** du site publié : `PWA_SEO_CHANGED_FILE`, sinon
+`node_modules/.cache/pwa-seo/seo-changed.json`. `pwa-deploy.yml` la passe au
+job **`indexnow`** : après le déploiement, il attend que la clé
+(`https://mister-guiiug.github.io/<clé>.txt`) puis chaque URL répondent 200 —
+Bing enregistre sinon un « Page Fetch Failed » — et fait **un** envoi groupé.
+Rien n'est envoyé hors de `mister-guiiug.github.io` ni pour une liste vide ; un
+échec ne fait jamais échouer le déploiement. L'entrée `indexnow: false` le
+coupe. Un déploiement écrit à la main pose les deux variables lui-même.
+
+#### Routes publiques en 200
+
+GitHub Pages n'a pas de repli SPA en 200 : `/<app>/a-propos` répondait **404**
+(le `404.html` est servi avec ce statut), et l'option `routes` mettait au plan
+de site des URL qu'aucun moteur ne pouvait indexer. Chaque route (`'a-propos'`,
+ou `{ path, title, description }`) devient désormais un fichier
+`<base>/<path>.html` : l'`index.html` construit, avec son `<title>`, sa
+description, sa canonique **sans extension**, son `og:url`, son `og:title`,
+son `og:description` — et son contenu servi, sans le texte propre à l'accueil.
+GitHub Pages sert `/<base>/<path>` depuis ce fichier, en 200 ; le routeur de la
+SPA affiche ensuite l'écran. Seulement des écrans servis à froid : un chemin
+derrière une connexion n'a rien à y faire.
+
+Refusés au build, en nommant la route : un chemin hors du motif (minuscules
+ASCII, tirets, segments séparés par `/` — pas de requête `?…`), réservé
+(`index`, `404`, `sw`, `offline`), en double, en collision avec une page de
+contenu, `en` quand il y a des pages anglaises, ou un dossier du build
+(`assets`).
+
+#### `404.html`, `robots.txt`, `llms.txt`
+
+- **`404.html`** (`spaFallbackPlugin`, et la copie de `pwa-deploy.yml`) porte
+  `<meta name="robots" content="noindex">` ; ses balises `robots` écrites à la
+  main et sa canonique sont retirées — une page `noindex` qui désigne une
+  canonique envoie deux signaux contraires. Demandé tel quel,
+  `/<app>/404.html` répondait 200 avec la canonique de l'accueil.
+- **`robots.txt`** n'est plus écrit par défaut (`robots: false`) : il n'est
+  lu qu'à la racine d'une origine, et c'est `mister-guiiug.github.io` qui
+  déclare les plans de site de tout le parc. `robots: true` pour une app
+  servie à la racine d'un domaine.
+- **`llms.txt`** reste opt-in (`llms: true` ou une chaîne) : Google ne s'en
+  sert pas.
+
+#### Ce que le docteur en vérifie
+
+`pwa-doctor` lit les pages comme le build les lit (`contentPageFiles`, le
+dossier de l'option `contentPages`) :
+
+| Contrôle             | Niveau | Ce qui le déclenche                                                                                    |
+| -------------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `seo-content-pages`  | dette  | aucune page publiable (un README seul ne compte plus) ; muet avec `contentPages: false`                |
+| `seo-content-date`   | dette  | une page sans `date`, ou une `date` / un `updated` dans le futur                                       |
+| `seo-content-answer` | dette  | une page sans `answer`, ou une réponse hors de 30 à 80 mots                                            |
+| `seo-faq-visible`    | défaut | un `FAQPage` écrit à la main dans `index.html` dont une question n'apparaît pas dans le HTML servi     |
+| `seo-hreflang`       | défaut | deux langues vers la même URL, une traduction qui ne désigne pas en retour, ou orpheline               |
+| `seo-entity`         | info   | un JSON-LD écrit à la main dont l'auteur n'est pas l'`@id` de la famille                               |
+| `seo-runtime-title`  | info   | `src/` réécrit `document.title` sans reprendre le titre statique (heuristique : voir `pwa-doctor.mjs`) |
+
+Et, sur les sites publiés, `node scripts/probe-sites.mjs --seo` (outil du
+dépôt) affiche par app les longueurs du titre et de la description, les types
+JSON-LD, les mots du contenu servi, le statut des pages de contenu (et `en/`)
+et la présence des `hreflang`.
 
 ### Mesure d'audience (`@mister-guiiug/dev-pwa-config/analytics`)
 
-Le tag était posé, la mesure n'existait pas. Mesure sur les seize apps : neuf
-portent les marqueurs `__ANALYTICS_*__`, trois ont recopié un extrait `gtag` en
-dur, sept n'ont rien — et **aucune** n'envoie le moindre événement ni la moindre
-vue de page après le chargement initial.
+Le tag était posé, la mesure n'existait pas. Mesure sur les seize apps, avant
+ce module : neuf portaient les marqueurs `__ANALYTICS_*__` (que `pwaSeoPlugin`
+ne traite plus, et que le parc a retirés en septembre 2026), trois avaient
+recopié un extrait `gtag` en dur, sept n'avaient rien — et **aucune**
+n'envoyait le moindre événement ni la moindre vue de page après le chargement
+initial.
 
 **La voie courte : monter le bandeau, et rien d'autre.** `ConsentBanner` appelle
 `initAnalytics` lui-même s'il le faut, rejoue le choix mémorisé et pose la
@@ -458,7 +663,7 @@ export default defineConfig(({ command }) => ({
     cspPlugin({
       dev: command === 'serve',
       connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
-      analytics: true, // ← si pwaSeoPlugin injecte PostHog
+      analytics: true, // ← si l'app mesure (ConsentBanner, PostHog)
     }),
     VitePWA({ ... }),
   ],
@@ -466,13 +671,14 @@ export default defineConfig(({ command }) => ({
 ```
 
 `cspPlugin` doit venir **après** `pwaSeoPlugin` : il hashe le HTML final, donc
-les scripts inline injectés en amont.
+les scripts inline injectés en amont (le script anti-FOUC de `themeBoot`). Les
+blocs JSON-LD ne sont pas exécutés : ils restent hors de `script-src`.
 
 **`analytics: true` n'est pas cosmétique.** PostHog charge un `<script src>`
 externe, que `default-src 'self'` bloque sans la moindre erreur de build.
-Activer les deux plugins sans cette option coupe donc l'analytics **en
-silence**. L'option ajoute exactement les
-hôtes que `pwaSeoPlugin` injecte (`script`, `img`, `connect`, `frame`).
+Mesurer (`ConsentBanner`) sous `cspPlugin` sans cette option coupe donc
+l'analytics **en silence**. L'option ajoute exactement les hôtes de PostHog
+(`ANALYTICS_HOSTS` : `script` et `connect`).
 
 **Ce qu'une CSP en `<meta>` ne peut pas faire.** La spécification exclut
 `frame-ancestors`, `report-uri` et `sandbox` d'une politique délivrée par
@@ -549,12 +755,14 @@ rien — il n'y a rien à demander — et les deux premières vérifications n'o
 d'objet. Poser une valeur factice dans le `.env` du mode e2e :
 
 ```sh
-VITE_POSTHOG_KEY=G-E2E0000000
+VITE_POSTHOG_KEY=phc_e2e00000000000000000000
 ```
 
-Le trafic vers Google est intercepté par la garde elle-même : rien ne sort, et
-aucune propriété réelle n'est touchée. Elle lit `dataLayer`, que `gtag` remplit
-avant tout appel réseau.
+Le trafic vers PostHog est intercepté par la garde elle-même : rien ne sort, et
+aucun projet réel n'est touché. Elle lit `window.__DWC_MESURE`, que le socle
+remplit au moment de l'appel, avant tout échange réseau. (La clé doit avoir la
+forme d'une clé PostHog, `phc_` suivi d'au moins vingt caractères : sinon
+`ConsentBanner` ne rend rien.)
 
 Pour une app sans mesure, `{ consentement: false }` ne garde que le service
 worker — et la vue de page devient invérifiable, ce que la garde refuse de
