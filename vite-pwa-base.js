@@ -42,6 +42,8 @@ import {
   PUBLISHER,
   SITE_ID,
 } from './apps-catalog.js';
+// Lu au build seulement : hors du catalogue, qui part dans le bundle.
+import { appSeo } from './apps-seo.js';
 
 import { createHash } from 'node:crypto';
 import {
@@ -381,9 +383,9 @@ export function setTextMeta(html, opts = {}) {
  * `Person` redéclarée sur chaque page, sans `@id` : pour un graphe de
  * connaissances, un éditeur par page.
  *
- * `inLanguage` : les langues de l'INTERFACE relevées au catalogue
+ * `inLanguage` : les langues de l'INTERFACE relevées dans `apps-seo.js`
  * (`languages`), sinon celle de la page — quinze apps sont multilingues, le
- * `<html lang>` n'en disait qu'une. `featureList` : les fonctions du catalogue
+ * `<html lang>` n'en disait qu'une. `featureList` : les fonctions qu'il relève
  * (`features`). `screenshot` : les captures du MANIFESTE en URL absolues — le
  * plugin les reporte au build, une fois le manifeste écrit (`writeBundle`).
  *
@@ -414,7 +416,8 @@ export function webApplicationJsonLd({
       ? imagePage
       : (fiche?.iconUrl ?? undefined);
   const lang = langueDe(html);
-  const langues = fiche?.languages?.length ? [...fiche.languages] : lang;
+  const seo = fiche ? appSeo(fiche.id) : undefined;
+  const langues = seo?.languages.length ? [...seo.languages] : lang;
   const categorie = fiche?.category
     ? SCHEMA_APPLICATION_CATEGORIES[fiche.category]
     : undefined;
@@ -434,9 +437,7 @@ export function webApplicationJsonLd({
         operatingSystem: 'Web',
         browserRequirements: 'Requires JavaScript',
         ...(langues?.length ? { inLanguage: langues } : {}),
-        ...(fiche?.features?.length
-          ? { featureList: [...fiche.features] }
-          : {}),
+        ...(seo?.features.length ? { featureList: [...seo.features] } : {}),
         isAccessibleForFree: true,
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
         // ViewAction : ce qu'un moteur de réponse peut proposer (« ouvrir

@@ -698,6 +698,8 @@
     "testing",
     "apps-catalog.js",
     "apps-catalog.d.ts",
+    "apps-seo.js",
+    "apps-seo.d.ts",
     "analytics.js",
     "analytics.d.ts",
     "format.js",

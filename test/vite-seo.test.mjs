@@ -28,7 +28,8 @@ import {
   webApplicationJsonLd,
   withNoindex,
 } from '../vite-pwa-base.js';
-import { appById, CATEGORIES, PUBLISHER, SITE_ID } from '../apps-catalog.js';
+import { CATEGORIES, PUBLISHER, SITE_ID } from '../apps-catalog.js';
+import { appSeo } from '../apps-seo.js';
 
 // L'état SEO écrit `seo-changed.json` HORS du dossier de sortie : ici, dans un
 // dossier temporaire, et pas dans le `node_modules` du dépôt.
@@ -114,13 +115,13 @@ test('UN SEUL GRAPHE : @id, éditeur et site par référence, sameAs = le dépô
   assert.equal(org.alternateName, 'GuiiuG');
 });
 
-test('inLanguage suit les langues du catalogue ; featureList ses fonctions', () => {
+test('inLanguage suit les langues relevées ; featureList les fonctions', () => {
   const dice = appDe(
     pwaSeoPlugin({ basePath: '/miss-dice/' }).transformIndexHtml(PAGE)
   );
-  assert.deepEqual(dice.inLanguage, appById('miss-dice').languages);
+  assert.deepEqual(dice.inLanguage, appSeo('miss-dice').languages);
   assert.ok(dice.inLanguage.length > 1, 'miss-dice parle six langues');
-  assert.deepEqual(dice.featureList, appById('miss-dice').features);
+  assert.deepEqual(dice.featureList, appSeo('miss-dice').features);
   // Une app hors catalogue garde la langue de sa page, sans featureList.
   const hors = webApplicationJsonLd({
     html: PAGE,
