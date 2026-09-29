@@ -725,6 +725,36 @@ export function pagesDuDepot(root, viteConfig) {
   return { fichiers, pages };
 }
 
+/** Le fuseau le plus avancé du globe : UTC+14 (îles de la Ligne). */
+const AVANCE_MAX_MS = 14 * 60 * 60 * 1000;
+
+/**
+ * LE DERNIER JOUR DÉJÀ COMMENCÉ QUELQUE PART : la date civile du fuseau le
+ * plus avancé. Une page n'est datée du futur que si AUCUN fuseau n'a encore
+ * atteint sa date.
+ *
+ * Le contrôle comparait à la date UTC. Or les pages s'écrivent à Paris : entre
+ * 0 h et 2 h (1 h l'hiver), la date UTC y vaut encore la veille, et une page
+ * datée du jour passait pour future — une dette, qui rougit la CI des dépôts
+ * en `doctor-strict`. Relevé le 30/09/2026 sur miss-carbook #123, poussée
+ * vers 0 h 30.
+ *
+ * Pourquoi pas l'heure de Paris : il faudrait les données de fuseaux d'ICU,
+ * dont `formatLongDate` se passe déjà, et le parc publie aussi en anglais. Le
+ * prix : une date du lendemain passe sans dette quand il est plus de 10 h UTC
+ * — elle devient vraie dans la journée.
+ *
+ * @param {Date | string | number} [maintenant] L'instant du contrôle ; un
+ *   instant illisible vaut « maintenant ».
+ * @returns {string} `AAAA-MM-JJ`
+ */
+export function dernierJourCommence(maintenant = new Date()) {
+  const t = new Date(maintenant).getTime();
+  return new Date((Number.isFinite(t) ? t : Date.now()) + AVANCE_MAX_MS)
+    .toISOString()
+    .slice(0, 10);
+}
+
 /** Un texte comparable : minuscules, apostrophes et blancs unifiés. */
 const comparable = texte =>
   decodeEntities(String(texte ?? ''))
@@ -866,7 +896,9 @@ export function titreRuntimeSansStatique(source, titreStatique) {
  * contexte : elles se jouent séparément, dans un test, sans relire un octet.
  *
  * @param {string} dir Racine de l'app.
- * @param {{ hasIssues?: boolean | null, repo?: string | null }} [faits]
+ * @param {{ hasIssues?: boolean | null, repo?: string | null, maintenant?: Date | string | number }} [faits]
+ *   `maintenant` : l'instant du contrôle, que les tests fixent (défaut : l'heure
+ *   de la machine).
  */
 export function contexteDepot(dir, faits = {}) {
   const root = resolve(dir);
@@ -1415,8 +1447,9 @@ export function reglesSource(ctx, api) {
   if (pages.length) {
     // LA DATE. Aucune des vingt pages du parc n'en portait au 29/09/2026 : pas
     // de « Publié le », pas de `dateModified`, un `lastmod` qui changeait à
-    // chaque build. Une date FUTURE ferait mentir tout cela à la fois.
-    const aujourdHui = new Date().toISOString().slice(0, 10);
+    // chaque build. Une date FUTURE ferait mentir tout cela à la fois — future
+    // PARTOUT, pas seulement en UTC (`dernierJourCommence`).
+    const aujourdHui = dernierJourCommence(faits?.maintenant);
     const sansDate = pages.filter(p => !p.date).map(p => p.fichier);
     const futures = pages
       .filter(
