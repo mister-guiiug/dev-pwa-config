@@ -137,6 +137,12 @@ const labels = {
     stateGranted: 'Reichweitenmessung: zugestimmt',
     stateDenied: 'Reichweitenmessung: abgelehnt',
     manage: 'Meine Auswahl ändern',
+    sectionText:
+      'Diese App kann ihre Nutzung mit PostHog messen, auf Servern in der Europäischen Union, und nur, wenn Sie zustimmen. Was Sie eingeben, wird nie gesendet.',
+    sectionGranted: 'Sie haben dieser Messung zugestimmt.',
+    sectionDenied: 'Sie haben diese Messung abgelehnt.',
+    sectionPending: 'Sie haben noch keine Auswahl getroffen.',
+    withdraw: 'Meine Einwilligung widerrufen',
   },
   privacy: {
     title: 'Ihre Daten',

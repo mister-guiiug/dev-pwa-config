@@ -570,3 +570,46 @@ test('la prop héritée de GA4 est acceptée UNE version, et elle crie', async (
     dom.restore();
   }
 });
+
+/* ── Le bandeau rappelé vient à l'utilisateur ──────────────────────────── */
+
+const banniere = container =>
+  container.querySelector('[data-dwc="consent-banner"]');
+
+test('RAPPELÉ, le bandeau prend le focus — au premier affichage, jamais', async () => {
+  // Monté en fin de flux, il revenait hors de la vue sur un long écran de
+  // réglages, et le focus, posé sur un bouton qui venait de disparaître,
+  // retombait sur `<body>`. Le clic ne produisait rien de perceptible.
+  let dom = prepare();
+  let vue = await mount(h(ConsentBanner, props()));
+  assert.ok(banniere(vue.container), 'la question est posée');
+  assert.notEqual(
+    document.activeElement,
+    banniere(vue.container),
+    'au premier affichage, le bandeau ne vole pas le focus au contenu'
+  );
+  await vue.unmount();
+  dom.restore();
+
+  dom = prepare('granted');
+  vue = await mount(
+    h('div', null, [
+      h(ConsentBanner, { key: 'b', ...props() }),
+      h(ConsentSettings, { key: 'r', ...props() }),
+    ])
+  );
+  await vue.act(() => reglage(vue.container).click());
+
+  assert.equal(
+    document.activeElement,
+    banniere(vue.container),
+    'rappelé, le bandeau prend le focus — ce qui le fait aussi défiler à l’écran'
+  );
+  // Le focus va à la RÉGION, pas à l'une des deux réponses : poser le curseur
+  // sur « Accepter », ce serait déjà la suggérer.
+  assert.equal(banniere(vue.container).getAttribute('role'), 'region');
+  assert.equal(banniere(vue.container).tabIndex, -1, 'hors de la tabulation');
+
+  await vue.unmount();
+  dom.restore();
+});

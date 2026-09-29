@@ -137,6 +137,18 @@ const state = {
 let chargeur = null;
 
 /**
+ * LE CHARGEMENT EN COURS, pour qu'il n'y en ait qu'un.
+ *
+ * `chargeTag` attend un `import()` : entre l'appel et la fin, `state.loaded`
+ * vaut encore `false`. Deux instances de `useConsentChoice` montées ensemble —
+ * le bandeau, et la section d'un écran de réglages — rejouent chacune un accord
+ * mémorisé dans ce laps. Sans ce verrou, chacune importait la bibliothèque et
+ * appelait `init` pour son compte.
+ * @type {Promise<void>|null}
+ */
+let chargement = null;
+
+/**
  * La vue d'arrivée mise de côté faute de consentement, rejouée par
  * `setAnalyticsConsent` dès l'accord. Une seule : c'est l'écran sur lequel
  * l'utilisateur répond à la question, et les suivants passent par le hook.
@@ -246,8 +258,49 @@ export function getAnalyticsClient() {
  * `opt_out_capturing_by_default` : là, le script serait téléchargé, évalué, et
  * n'attendrait qu'un appel pour parler. Ici il n'est pas là.
  */
-async function chargeTag() {
-  if (state.loaded || !state.id || typeof window === 'undefined') return;
+function chargeTag() {
+  if (state.loaded || !state.id || typeof window === 'undefined')
+    return Promise.resolve();
+  // Un échec (paquet absent, réseau coupé) libère le verrou : l'accord suivant
+  // retentera, comme avant.
+  chargement ??= importeEtInitialise().finally(() => {
+    chargement = null;
+  });
+  return chargement;
+}
+
+/**
+ * POSTHOG A SA PROPRE MÉMOIRE DU CONSENTEMENT, ET ELLE PEUT CONTREDIRE LA NÔTRE.
+ *
+ * `opt_out_capturing` ne coupe pas seulement la collecte : il l'INSCRIT, sous
+ * `__ph_opt_in_out_<clé>` dans `localStorage`, et `init` relit cette
+ * inscription à la visite suivante (posthog-js 1.434, `ConsentManager`). Un
+ * visiteur qui retirait son accord puis le redonnait LORS D'UNE AUTRE VISITE
+ * rechargeait donc une bibliothèque qui se croyait toujours refusée : le
+ * bandeau disait « accepté », le stockage du socle aussi, et plus rien ne
+ * partait — sans erreur ni avertissement. Tant qu'aucune app n'offrait le
+ * retrait, personne ne pouvait y tomber ; `ConsentSection` l'offre.
+ *
+ * NOTRE CHOIX FAIT FOI, CELUI DE POSTHOG LE SUIT — une fois, au chargement.
+ * `opt_in_capturing` n'est rappelé que si la bibliothèque se croit retirée :
+ * il ENVOIE un événement `$opt_in`, et l'appeler à chaque chargement compterait
+ * un accord à chaque visite.
+ *
+ * Et si l'accord a été retiré PENDANT l'import (accepter puis refuser avant que
+ * le morceau arrive), la bibliothèque, qui collecte par défaut, doit l'apprendre.
+ *
+ * @param {any} client
+ */
+function aligneApresChargement(client) {
+  if (state.granted) {
+    if (client.has_opted_out_capturing?.() === true)
+      client.opt_in_capturing?.();
+  } else {
+    client.opt_out_capturing?.();
+  }
+}
+
+async function importeEtInitialise() {
   let mod;
   try {
     // AVEC `loader`, l'import est ANALYSABLE par Vite : le morceau est émis et
@@ -279,6 +332,8 @@ async function chargeTag() {
   if (state.appName && typeof posthog.register === 'function') {
     posthog.register({ app_name: state.appName });
   }
+
+  aligneApresChargement(posthog);
 }
 
 /**
@@ -367,7 +422,17 @@ export function setAnalyticsConsent(consent) {
     return false;
   }
 
-  if (state.client?.opt_in_capturing) state.client.opt_in_capturing();
+  // UN ACCORD REJOUÉ N'EST PAS UN NOUVEL ACCORD. Chaque instance du hook rejoue
+  // le choix mémorisé à son montage : ouvrir un écran de réglages qui porte
+  // `ConsentSection` repasse donc ici, bibliothèque déjà chargée et collecte
+  // déjà ouverte. `opt_in_capturing` envoyant un `$opt_in`, l'appeler sans
+  // condition comptait un faux accord à chaque ouverture de l'écran. On ne
+  // reprend la collecte que si la bibliothèque ne dit pas qu'elle collecte —
+  // une bibliothèque qui ne sait pas le dire est reprise, comme avant.
+  if (state.client?.opt_in_capturing) {
+    if (state.client.has_opted_out_capturing?.() !== false)
+      state.client.opt_in_capturing();
+  }
   void chargeTag().then(() => {
     if (!attente) return;
     const { path, title } = attente;
@@ -617,6 +682,7 @@ export function resetAnalytics() {
   state.appName = null;
   state.client = null;
   chargeur = null;
+  chargement = null;
   // Sans cette ligne, la vue mise de côté par un test fuiterait dans le
   // suivant — et y partirait au premier accord.
   attente = null;

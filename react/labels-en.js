@@ -134,6 +134,12 @@ const labels = {
     stateGranted: 'Audience measurement: accepted',
     stateDenied: 'Audience measurement: declined',
     manage: 'Change my choice',
+    sectionText:
+      'This app can measure its traffic with PostHog, on servers in the European Union, and only if you accept. What you type is never sent.',
+    sectionGranted: 'You have accepted this measurement.',
+    sectionDenied: 'You have declined this measurement.',
+    sectionPending: 'You have not made your choice yet.',
+    withdraw: 'Withdraw my consent',
   },
   privacy: {
     title: 'Your data',

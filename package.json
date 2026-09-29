@@ -353,6 +353,10 @@
       "types": "./react/consent-banner.d.ts",
       "default": "./react/consent-banner.js"
     },
+    "./react/consent-section": {
+      "types": "./react/consent-section.d.ts",
+      "default": "./react/consent-section.js"
+    },
     "./react/privacy-notice": {
       "types": "./react/privacy-notice.d.ts",
       "default": "./react/privacy-notice.js"

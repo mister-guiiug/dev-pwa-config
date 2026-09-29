@@ -135,6 +135,12 @@ const labels = {
     stateGranted: 'Medição de audiência: aceite',
     stateDenied: 'Medição de audiência: recusada',
     manage: 'Alterar a minha escolha',
+    sectionText:
+      'Esta aplicação pode medir a sua utilização com a PostHog, em servidores da União Europeia, e só se aceitar. O que escreve nunca é enviado.',
+    sectionGranted: 'Aceitou esta medição.',
+    sectionDenied: 'Recusou esta medição.',
+    sectionPending: 'Ainda não fez a sua escolha.',
+    withdraw: 'Retirar o meu consentimento',
   },
   privacy: {
     title: 'Os seus dados',

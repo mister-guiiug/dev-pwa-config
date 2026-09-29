@@ -89,8 +89,21 @@ export interface LabelGroups {
     stateGranted: string;
     /** `ConsentSettings` : l'état courant, accord refusé. */
     stateDenied: string;
-    /** `ConsentSettings` : ce que le clic fait — rappeler le bandeau. */
+    /**
+     * `ConsentSettings` et `ConsentSection` (après un refus) : ce que le clic
+     * fait — rappeler le bandeau.
+     */
     manage: string;
+    /** `ConsentSection` : ce qui est mesuré, par qui, où, et à quelle condition. */
+    sectionText: string;
+    /** `ConsentSection` : l'état, accord donné. */
+    sectionGranted: string;
+    /** `ConsentSection` : l'état, accord refusé ou retiré. */
+    sectionDenied: string;
+    /** `ConsentSection` : l'état, question encore ouverte au bandeau. */
+    sectionPending: string;
+    /** `ConsentSection` : le retrait, en un clic — sans reposer la question. */
+    withdraw: string;
   };
   /**
    * `PrivacyNotice` : ce que la mesure fait, dit au visiteur. Les paires

@@ -167,6 +167,34 @@
   }
 
   /*
+   * LA SECTION D'UN ÉCRAN DE RÉGLAGES : UNE COLONNE, ET RIEN QUI S'IMPOSE.
+   *
+   * Elle vit dans l'habillage de l'app qui l'accueille — ses cartes, ses
+   * titres, sa typographie. On n'y pose que l'ordre de lecture (titre, ce qui
+   * est mesuré, l'état, le geste) et des marges nulles, pour qu'elle se glisse
+   * dans une carte comme dans une liste. Le bouton, lui, est sur la règle
+   * partagée des « Bases » : cible tactile et aspect de bouton.
+   */
+  [data-dwc='consent-section'] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='consent-section-title'],
+  [data-dwc='consent-section-state'] {
+    margin: 0;
+  }
+
+  [data-dwc='consent-section-text'] {
+    margin: 0;
+    max-width: 60ch;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  /*
    * LE REPLI D'INFORMATION, SUR SA PROPRE LIGNE.
    *
    * `flex-basis: 100%` et `order: 1` le posent SOUS les deux boutons. Sans eux
