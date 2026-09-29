@@ -61,6 +61,10 @@
       "types": "./testing/pwa-register.d.ts",
       "default": "./testing/pwa-register.js"
     },
+    "./testing/posthog": {
+      "types": "./testing/posthog.d.ts",
+      "default": "./testing/posthog.js"
+    },
     "./apps-catalog": {
       "types": "./apps-catalog.d.ts",
       "default": "./apps-catalog.js"

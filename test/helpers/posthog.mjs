@@ -14,58 +14,11 @@
  */
 
 /**
- * LA MÉMOIRE DU RETRAIT, COMME LA VRAIE. posthog-js inscrit `opt_out_capturing`
- * dans `localStorage`, et `init` relit cette inscription à la visite suivante :
- * `retire: true` simule un visiteur qui a retiré son accord lors d'une visite
- * précédente. Sans ce réglage, le double ne pouvait pas montrer qu'un accord
- * redonné plus tard restait lettre morte.
- *
- * @param {{ retire?: boolean }} [reglages]
- * @returns {{ init: Function, capture: Function, register: Function,
- *   opt_in_capturing: Function, opt_out_capturing: Function,
- *   has_opted_out_capturing: Function,
- *   appels: { init: any[], capture: any[], register: any[], optIn: number,
- *     optOut: number, gestes: string[] } }}
+ * Le double lui-même vit dans `testing/posthog` depuis qu'il est publié : les
+ * apps en ont besoin pour éprouver leur écran de réglages, et deux copies
+ * finiraient par diverger. Il se souvient d'un retrait comme la vraie.
  */
-export function fauxPosthog(reglages = {}) {
-  const appels = {
-    init: [],
-    capture: [],
-    register: [],
-    optIn: 0,
-    optOut: 0,
-    /** Les gestes de consentement, DANS L'ORDRE — un compteur ne le dit pas. */
-    gestes: [],
-  };
-  let retire = reglages.retire === true;
-  return {
-    appels,
-    init(cle, options) {
-      appels.init.push({ cle, options });
-    },
-    capture(event, params) {
-      // Comme la vraie : une bibliothèque qui se croit retirée n'envoie rien.
-      if (retire) return;
-      appels.capture.push({ event, params });
-    },
-    register(props) {
-      appels.register.push(props);
-    },
-    opt_in_capturing() {
-      retire = false;
-      appels.optIn++;
-      appels.gestes.push('granted');
-    },
-    opt_out_capturing() {
-      retire = true;
-      appels.optOut++;
-      appels.gestes.push('denied');
-    },
-    has_opted_out_capturing() {
-      return retire;
-    },
-  };
-}
+export { fauxPosthog } from '../../testing/posthog.js';
 
 /**
  * Le `loader` à passer à `initAnalytics` ou à `ConsentBanner`.

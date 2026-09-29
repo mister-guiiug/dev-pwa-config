@@ -22,12 +22,22 @@ export interface ConsentSectionProps {
   /** Version des finalités : un choix d'une autre version est reposé. */
   purposeVersion?: number;
   className?: string;
+  /** Classe du titre — celle des titres de section de l'écran qui l'accueille. */
+  titleClassName?: string;
+  /** Classe du bouton — pour les apps qui ont leurs propres boutons. */
+  actionClassName?: string;
   /** Niveau du titre, selon l'écran qui accueille la section. Défaut 2. */
   headingLevel?: 2 | 3 | 4 | 5 | 6;
   /** Remplace le titre (« Mesure d'audience »). */
   title?: ReactNode;
   /** Remplace le texte qui dit ce qui est mesuré, par qui, et où. */
   description?: ReactNode;
+  /**
+   * Appelé quand « Modifier mon choix » rouvre la question au bandeau, dans le
+   * même rendu. Pour des réglages ouverts PAR-DESSUS l'écran (tiroir modal,
+   * surimpression) : les fermer, sans quoi le bandeau rouvert reste dessous.
+   */
+  onReopen?: () => void;
 }
 
 /**

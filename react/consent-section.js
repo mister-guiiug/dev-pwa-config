@@ -51,14 +51,27 @@ import { useConsentChoice } from './consent-banner.js';
  * arrivé directement sur les réglages ferait charger un spécificateur que le
  * navigateur ne sait pas résoudre, et plus rien ne partirait.
  *
+ * `onReopen` — QUAND LES RÉGLAGES RECOUVRENT LE BANDEAU. Deux apps du parc
+ * les ouvrent par-dessus l'écran : un tiroir modal (miss-dice), une
+ * surimpression plein écran (miss-ticket-pwa). Le bandeau rouvert y serait
+ * dessous — invisible, et son focus caché derrière un dialogue. `onReopen` est
+ * appelé dans le même geste que le rappel : l'app y ferme son panneau, et le
+ * bandeau paraît, focalisé.
+ *
+ * `titleClassName` et `actionClassName` habillent le titre et le bouton aux
+ * classes de l'app qui l'accueille — plusieurs n'importent pas `components.css`
+ * et ont leurs propres boutons.
+ *
  * Non stylé, sinon la cible tactile du bouton : cibler
  * `[data-dwc="consent-section"]`.
  *
  * @param {{ posthogKey?: string, posthogHost?: string,
  *   loader?: () => Promise<unknown>, appName?: string, scope?: string,
  *   maxAgeDays?: number, purposeVersion?: number, className?: string,
+ *   titleClassName?: string, actionClassName?: string,
  *   headingLevel?: 2|3|4|5|6, title?: import('react').ReactNode,
- *   description?: import('react').ReactNode }} props
+ *   description?: import('react').ReactNode,
+ *   onReopen?: () => void }} props
  */
 export function ConsentSection(props = {}) {
   const {
@@ -70,9 +83,12 @@ export function ConsentSection(props = {}) {
     maxAgeDays,
     purposeVersion,
     className,
+    titleClassName,
+    actionClassName,
     headingLevel,
     title,
     description,
+    onReopen,
   } = props;
 
   const labels = useLabels('consent');
@@ -102,6 +118,14 @@ export function ConsentSection(props = {}) {
         ? labels.sectionDenied
         : labels.sectionPending;
 
+  // Rappeler, puis laisser l'app dégager la vue : les deux mises à jour
+  // partent dans le même rendu, et le bandeau prend le focus APRÈS que le
+  // panneau qui le recouvrait a rendu le sien.
+  const rouvrir = () => {
+    reset();
+    onReopen?.();
+  };
+
   return h(
     'section',
     {
@@ -112,7 +136,11 @@ export function ConsentSection(props = {}) {
     },
     h(
       `h${niveau}`,
-      { id: titreId, 'data-dwc': 'consent-section-title' },
+      {
+        id: titreId,
+        'data-dwc': 'consent-section-title',
+        className: titleClassName,
+      },
       title ?? labels.title
     ),
     h(
@@ -129,9 +157,10 @@ export function ConsentSection(props = {}) {
           'button',
           {
             type: 'button',
+            className: actionClassName,
             'data-dwc': 'consent-section-action',
             'data-action': choice === 'granted' ? 'withdraw' : 'manage',
-            onClick: choice === 'granted' ? refuse : reset,
+            onClick: choice === 'granted' ? refuse : rouvrir,
           },
           choice === 'granted' ? labels.withdraw : labels.manage
         )

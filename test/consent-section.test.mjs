@@ -12,7 +12,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createElement as h } from 'react';
+import { createElement as h, useState } from 'react';
 
 import { ConsentSection } from '../react/consent-section.js';
 import {
@@ -22,7 +22,8 @@ import {
 } from '../react/consent-banner.js';
 import { LabelsProvider } from '../react/labels-core.js';
 import en from '../react/labels-en.js';
-import { resetAnalytics } from '../analytics.js';
+import { parsePosthogKey, resetAnalytics } from '../analytics.js';
+import { CLE_DE_TEST } from '../testing/posthog.js';
 import {
   chargeurFactice,
   fauxPosthog,
@@ -269,4 +270,94 @@ test('cloisonnée comme le bandeau : le choix d’une autre app ne s’y lit pas
 
   await vue.unmount();
   dom.restore();
+});
+
+test('des réglages PAR-DESSUS l’écran : `onReopen` les ferme dans le même geste', async () => {
+  // miss-dice ouvre ses réglages dans un tiroir modal, miss-ticket-pwa dans une
+  // surimpression plein écran : le bandeau rouvert serait dessous, invisible,
+  // et son focus caché derrière un dialogue.
+  let dom = prepare('denied');
+  let fermetures = 0;
+  const Reglages = () => {
+    const [ouverts, setOuverts] = useState(true);
+    return h('div', null, [
+      h(ConsentBanner, { key: 'bandeau', ...props() }),
+      ouverts
+        ? h(
+            'div',
+            { key: 'tiroir', role: 'dialog' },
+            h(ConsentSection, {
+              ...props(),
+              onReopen: () => {
+                fermetures++;
+                setOuverts(false);
+              },
+            })
+          )
+        : null,
+    ]);
+  };
+  let vue = await mount(h(Reglages));
+
+  await vue.act(() => q(vue.container, 'section-action').click());
+
+  assert.equal(fermetures, 1);
+  assert.equal(vue.container.querySelector('[role="dialog"]'), null);
+  const bandeau = q(vue.container, 'banner');
+  assert.ok(bandeau, 'la question est rouverte');
+  assert.equal(document.activeElement, bandeau, 'et le bandeau a le focus');
+  await vue.unmount();
+  dom.restore();
+
+  // Le RETRAIT, lui, ne ferme rien : il se fait sur place, et l'écran le dit.
+  dom = prepare('granted');
+  fermetures = 0;
+  vue = await mount(h(Reglages));
+  await laisseCharger();
+  await vue.act(() => q(vue.container, 'section-action').click());
+  assert.equal(fermetures, 0);
+  assert.ok(vue.container.querySelector('[role="dialog"]'));
+  await vue.unmount();
+  dom.restore();
+});
+
+test('le titre et le bouton prennent les classes de l’app qui les accueille', async () => {
+  // miss-dice et miss-contraction n'importent pas `components.css` : leurs
+  // boutons ont leurs propres classes.
+  const dom = prepare('granted');
+  const vue = await mount(
+    h(
+      ConsentSection,
+      props({
+        className: 'carte',
+        titleClassName: 'titre-de-section',
+        actionClassName: 'bouton bouton--discret',
+      })
+    )
+  );
+
+  assert.equal(q(vue.container, 'section').className, 'carte');
+  assert.equal(q(vue.container, 'section-title').className, 'titre-de-section');
+  assert.equal(
+    q(vue.container, 'section-action').className,
+    'bouton bouton--discret'
+  );
+
+  await vue.unmount();
+  dom.restore();
+});
+
+test('le double publié pour les apps : une clé valide, et la mémoire du retrait', () => {
+  // Sans clé au bon format, la section ne rend rien : un test d'app qui
+  // l'oublierait passerait au vert sur un écran vide.
+  assert.equal(parsePosthogKey(CLE_DE_TEST), CLE_DE_TEST);
+
+  const faux = fauxPosthog();
+  assert.equal(faux.has_opted_out_capturing(), false);
+  faux.capture('creation', { objet: 'lieu' });
+  faux.opt_out_capturing();
+  faux.capture('creation', { objet: 'lieu' });
+  assert.equal(faux.has_opted_out_capturing(), true);
+  assert.equal(faux.appels.capture.length, 1, 'retirée, elle n’envoie plus');
+  assert.equal(fauxPosthog({ retire: true }).has_opted_out_capturing(), true);
 });
