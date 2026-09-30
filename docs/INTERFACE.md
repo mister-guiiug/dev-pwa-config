@@ -869,6 +869,16 @@ Non stylés par défaut, comme les autres : importer
 prête à l'emploi, ou cibler `[data-dwc="button"][data-variant][data-size]` &
 consorts.
 
+**Le survol ne repeint pas.** `components.css` signale le survol d'un `Button`
+par un relèvement d'un pixel, et celui des deux aplats (`primary`, `danger`),
+comme de « Mettre à jour » dans le bandeau, par un halo de leur propre teinte.
+Ni le fond ni l'encre ne changent : le contraste au survol est celui du repos,
+que les palettes garantissent. `filter: brightness(1.08)`, qui le précédait,
+éclaircissait les deux et faisait passer onze paires du parc sous 4,5:1. Le
+survol ne s'applique que sous `@media (hover: hover)` : au doigt, `:hover`
+reste collé après le tap. Une app qui repeint le survol chez elle en porte le
+contraste.
+
 ### Graphiques minuscules (`/sparkline` + `/react/sparkline`)
 
 Cinq apps ont des séries à montrer — historique de prix, consommation de

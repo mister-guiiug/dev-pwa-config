@@ -85,8 +85,47 @@
     color: var(--dwc-primary-contrast, Canvas);
   }
 
-  [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
-    filter: brightness(1.08);
+  /*
+   * LE SURVOL NE REPEINT PAS LE BOUTON. Il passait par `filter:
+   * brightness(1.08)`, qui éclaircit le fond ET l'encre : sous une encre
+   * claire, le fond se rapproche d'elle. Sur les 38 palettes de `themes.js`,
+   * le contraste baissait au survol dans 20 pour `primary` comme pour `danger`,
+   * et passait sous 4,5:1 dans onze cas qui le tenaient au repos : huit en
+   * `danger`, deux en `outline`, mister-molkky clair en `primary` (4,99 →
+   * 4,39). Aucun sens de variation n'est sûr pour toutes les paires : foncer
+   * aide sous le blanc et nuit sous une encre sombre.
+   *
+   * Le survol se dit donc sans toucher aux couleurs, et le contraste au survol
+   * EST celui du repos, que les palettes garantissent. Le relèvement d'un pixel
+   * est celui de la carte d'application, que huit apps avaient écrit ; le halo
+   * des deux aplats, de leur propre teinte, est celui que mister-miss-koh
+   * posait déjà sur ses boutons.
+   *
+   * Sous `(hover: hover)` seulement : sur un écran tactile, `:hover` COLLE
+   * après le tap (relevé par mister-miss-koh), et le bouton restait éclairci.
+   */
+  @media (hover: hover) {
+    [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
+      transform: translateY(-1px);
+    }
+
+    [data-dwc='button'][data-variant='primary']:hover:not(:disabled):not(
+        [aria-disabled='true']
+      ) {
+      box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--dwc-primary, CanvasText) 35%, transparent);
+    }
+
+    [data-dwc='button'][data-variant='danger']:hover:not(:disabled):not(
+        [aria-disabled='true']
+      ) {
+      box-shadow: 0 4px 12px
+        color-mix(
+          in srgb,
+          var(--dwc-danger, light-dark(#b91c1c, #fb7185)) 35%,
+          transparent
+        );
+    }
   }
 
   /*

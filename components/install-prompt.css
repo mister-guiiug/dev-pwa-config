@@ -195,8 +195,14 @@
     font-weight: 600;
   }
 
-  [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
-    filter: brightness(1.08);
+  /* Le survol de la variante `primary` de `Button`, et pour la même raison :
+     il ne repeint pas le bouton (voir la section « Button »). */
+  @media (hover: hover) {
+    [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--dwc-primary, CanvasText) 35%, transparent);
+    }
   }
 
   [data-dwc='update-banner-update'][aria-busy='true'] {
