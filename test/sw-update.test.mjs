@@ -886,6 +886,43 @@ test('les deux sorties ne disent pas la même chose', async () => {
   }
 });
 
+test('les gestes font bloc, sous le titre, dans l’ordre de toujours', async () => {
+  // LE DÉFAUT REPRODUIT. Frères du titre, les boutons se séparaient dès que la
+  // ligne manquait de place : sur 393 px, « Plus tard (4 h) » tombait seul sous
+  // « Mettre à jour » (mister-miss-koh, 30/09/2026). Groupés, ils passent
+  // ensemble. L'ordre et les sélecteurs de chaque bouton ne changent pas : les
+  // habillages des apps restent valables.
+  const env = setupSw();
+  try {
+    const { state, registerSW } = fakeRegisterSW();
+    const view = await mount(
+      h(UpdatePromptBanner, {
+        registerSW,
+        snoozeHours: 24,
+        secondaryActions: 'both',
+      })
+    );
+    await view.act(() => state.needRefresh());
+
+    const bandeau = view.container.querySelector('[data-dwc="update-banner"]');
+    const actions = bandeau.querySelector('[data-dwc="update-banner-actions"]');
+    assert.ok(actions, 'les boutons ne sont pas groupés');
+    assert.deepEqual(
+      [...bandeau.children].map(e => e.dataset.dwc),
+      ['update-banner-title', 'update-banner-actions'],
+      'le titre et les gestes sont les deux seuls enfants du bandeau'
+    );
+    assert.deepEqual(
+      [...actions.children].map(e => e.dataset.dwc),
+      ['update-banner-update', 'update-banner-dismiss', 'update-banner-ignore'],
+      'le geste principal vient toujours en premier'
+    );
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
 test('sans report à offrir, « both » ne double pas l’écartement', async () => {
   // `snoozeHours` à 0 : il n'y a rien à reporter. Deux boutons qui écartent
   // tous deux pour la session ne diraient rien de plus que le seul d'« auto ».

@@ -1753,12 +1753,14 @@
           <div class="sr-demo-stage">
             <div data-dwc="update-banner" role="status">
               <span data-dwc="update-banner-title">Mise à jour disponible</span>
-              <button type="button" data-dwc="update-banner-update">
-                Mettre à jour
-              </button>
-              <button type="button" data-dwc="update-banner-dismiss">
-                Plus tard
-              </button>
+              <div data-dwc="update-banner-actions">
+                <button type="button" data-dwc="update-banner-update">
+                  Mettre à jour
+                </button>
+                <button type="button" data-dwc="update-banner-dismiss">
+                  Plus tard (4 h)
+                </button>
+              </div>
             </div>
           </div>
           <details>
@@ -1768,6 +1770,7 @@
               <ul class="sr-selectors">
                 <li><code>[data-dwc="update-banner"]</code></li>
                 <li><code>[data-dwc="update-banner-title"]</code></li>
+                <li><code>[data-dwc="update-banner-actions"]</code></li>
                 <li><code>[data-dwc="update-banner-update"]</code></li>
                 <li><code>[data-dwc="update-banner-dismiss"]</code></li>
               </ul>
