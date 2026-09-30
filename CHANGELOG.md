@@ -12,6 +12,7 @@
   - **« Mettre à jour » porte la couleur principale** (`--dwc-primary`, `--dwc-primary-contrast`, la paire de la variante `primary` de `Button`), en demi-gras, avec un survol. Le titre passe en demi-gras.
   - **L'attente se voit** : `aria-busy` rend le bouton à 80 % et le curseur d'attente.
   - **Contraste forcé et impression** : le survol devient `Highlight`, l'attente `GrayText` ; à l'impression, le libellé passe à l'encre système. La bordure prend la teinte du fond, jamais `transparent`.
+  - **À la montée, une app qui habille elle-même le bandeau SANS importer `components.css` ni `components/install-prompt.css`** reçoit un `<div>` de plus, sans règle : ses boutons n'y sont plus des éléments flexibles du bandeau. Elle doit donner au conteneur sa disposition (`display: flex`, `gap`, `flex-wrap`). Relevé sur les vingt et une : miss-contraction et miss-dice, migrées avec cette version.
 
 ## 6.20.1
 
