@@ -210,6 +210,20 @@
       border-color: GrayText;
     }
 
+    /* Le bouton de mise à jour, pour les mêmes raisons que `Button` :
+       `filter` et `opacity` ne sont pas forcés. */
+    [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
+      filter: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+
+    [data-dwc='update-banner-update'][aria-busy='true'] {
+      opacity: 1;
+      color: GrayText;
+      border-color: GrayText;
+    }
+
     /* 2 — séparer le panneau de son voile. `outline` avec un décalage négatif
        plutôt qu'une bordure : dessiné à l'intérieur, il ne décale rien et ne
        peut pas être rogné par le bord de l'écran. */
@@ -292,6 +306,7 @@
     [data-dwc='button'][data-variant='primary'],
     [data-dwc='button'][data-variant='danger'],
     [data-dwc='confirm-confirm'],
+    [data-dwc='update-banner-update'],
     [data-dwc='bottom-nav-badge'],
     span[data-dwc='family-app-icon'] {
       color: CanvasText;

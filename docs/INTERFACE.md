@@ -349,6 +349,15 @@ CSS existant reste donc valable. Sans report à offrir (`snoozeHours` à 0),
 `'both'` se comporte exactement comme `'auto'` : deux boutons qui écartent tous
 deux pour la session ne diraient rien de plus.
 
+**Les gestes font bloc** (6.21.0). Les boutons sont groupés dans
+`[data-dwc="update-banner-actions"]` : à côté du titre quand la place le permet,
+dessous sinon, alignés à droite. Frères du titre, ils se séparaient sur un
+téléphone, « Plus tard (4 h) » seul sur sa ligne. « Mettre à jour » porte la
+couleur principale (`--dwc-primary`), et `aria-busy` le montre en attente. Neuf
+applications du parc l'avaient écrit chez elles ; l'ordre et le sélecteur de
+chaque bouton ne changent pas, leurs habillages restent donc valables, et le
+bloc local peut partir à la montée.
+
 **Le « prêt hors ligne »** — que `useUpdatePrompt` expose depuis toujours sans
 que rien ne l'affiche — se rend avec `showOfflineReady`. Il sort sous
 `[data-dwc="offline-ready"]`, et **jamais en même temps** que la mise à jour :

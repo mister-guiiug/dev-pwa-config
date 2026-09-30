@@ -171,55 +171,64 @@ function Banner(props) {
       'data-placement': colle,
     },
     h('span', { 'data-dwc': 'update-banner-title' }, title ?? labels.title),
+    // LES GESTES FONT BLOC. Frères du titre, les boutons se séparaient dès que
+    // la ligne manquait de place : sur 393 px, « Plus tard (4 h) » tombait seul
+    // sous « Mettre à jour » (relevé du 30/09/2026 sur mister-miss-koh). Groupés,
+    // ils passent ensemble sous le titre : c'est l'idiome de `consent-actions`.
+    // L'ordre ne change pas, et les sélecteurs de chaque bouton non plus.
     h(
-      'button',
-      {
-        type: 'button',
-        // `aria-disabled` plutôt que `disabled` : un bouton retiré du parcours
-        // pendant l'opération renvoie le focus sur `<body>` (même choix que
-        // `Button`). Le double clic est bloqué par la garde, pas par le DOM.
-        onClick: () => {
-          if (updating) return;
-          // AVANT `update()`, et non après : la mise à jour recharge le
-          // document. Un événement posé après ne partirait jamais — PostHog
-          // met en file et vide par lots, et le rechargement emporte la file.
-          trackEvent(GESTES.MAJ, { etape: 'appliquee' });
-          void update();
-        },
-        'aria-disabled': updating || undefined,
-        'aria-busy': updating || undefined,
-        'data-dwc': 'update-banner-update',
-      },
-      updating
-        ? (updatingLabel ?? labels.updating)
-        : (updateLabel ?? labels.update)
-    ),
-    // `update-banner-dismiss` DÉSIGNE TOUJOURS LE MÊME BOUTON : celui de
-    // toujours, à sa place de toujours, avec son action de toujours (le report
-    // dès que `snoozeHours > 0`, malgré son nom). `'both'` n'en change ni le
-    // libellé ni le comportement — il AJOUTE seulement le suivant. Deux apps
-    // habillent ce sélecteur dans leur CSS ; opter pour deux sorties ne doit
-    // rien leur décoiffer.
-    h(
-      'button',
-      {
-        type: 'button',
-        onClick: onSecondary,
-        'data-dwc': 'update-banner-dismiss',
-      },
-      secondaryLabel
-    ),
-    bothExits
-      ? h(
-          'button',
-          {
-            type: 'button',
-            onClick: dismiss,
-            'data-dwc': 'update-banner-ignore',
+      'div',
+      { 'data-dwc': 'update-banner-actions' },
+      h(
+        'button',
+        {
+          type: 'button',
+          // `aria-disabled` plutôt que `disabled` : un bouton retiré du parcours
+          // pendant l'opération renvoie le focus sur `<body>` (même choix que
+          // `Button`). Le double clic est bloqué par la garde, pas par le DOM.
+          onClick: () => {
+            if (updating) return;
+            // AVANT `update()`, et non après : la mise à jour recharge le
+            // document. Un événement posé après ne partirait jamais — PostHog
+            // met en file et vide par lots, et le rechargement emporte la file.
+            trackEvent(GESTES.MAJ, { etape: 'appliquee' });
+            void update();
           },
-          ignoreLabel ?? labels.ignore
-        )
-      : null
+          'aria-disabled': updating || undefined,
+          'aria-busy': updating || undefined,
+          'data-dwc': 'update-banner-update',
+        },
+        updating
+          ? (updatingLabel ?? labels.updating)
+          : (updateLabel ?? labels.update)
+      ),
+      // `update-banner-dismiss` DÉSIGNE TOUJOURS LE MÊME BOUTON : celui de
+      // toujours, à sa place de toujours, avec son action de toujours (le report
+      // dès que `snoozeHours > 0`, malgré son nom). `'both'` n'en change ni le
+      // libellé ni le comportement — il AJOUTE seulement le suivant. Deux apps
+      // habillent ce sélecteur dans leur CSS ; opter pour deux sorties ne doit
+      // rien leur décoiffer.
+      h(
+        'button',
+        {
+          type: 'button',
+          onClick: onSecondary,
+          'data-dwc': 'update-banner-dismiss',
+        },
+        secondaryLabel
+      ),
+      bothExits
+        ? h(
+            'button',
+            {
+              type: 'button',
+              onClick: dismiss,
+              'data-dwc': 'update-banner-ignore',
+            },
+            ignoreLabel ?? labels.ignore
+          )
+        : null
+    )
   );
 }
 

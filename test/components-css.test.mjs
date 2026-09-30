@@ -366,6 +366,35 @@ test('un sélecteur `:has()` ne partage jamais sa liste', () => {
   );
 });
 
+test('le bandeau de mise à jour : les gestes font bloc, et le principal se voit', () => {
+  // Neuf apps du parc avaient réécrit ces règles chez elles (relevé du
+  // 30/09/2026) : huit peignaient « Mettre à jour » de leur couleur
+  // principale. Le socle les porte ; ce test garde qu'elles y restent.
+  const regle = selecteur => {
+    const i = CSS.indexOf(`${selecteur} {`);
+    assert.notEqual(i, -1, `règle ${selecteur} absente`);
+    return CSS.slice(i, CSS.indexOf('}', i));
+  };
+
+  const actions = regle("[data-dwc='update-banner-actions']");
+  assert.match(actions, /display:\s*flex/);
+  assert.match(
+    actions,
+    /flex-wrap:\s*wrap/,
+    'sur 320 px, les gestes déborderaient'
+  );
+  assert.match(actions, /justify-content:\s*flex-end/);
+
+  const principal = regle("[data-dwc='update-banner-update']");
+  assert.match(principal, /background:\s*var\(--dwc-primary,/);
+  assert.match(principal, /color:\s*var\(--dwc-primary-contrast,/);
+  assert.doesNotMatch(
+    principal,
+    /border-color:\s*transparent/,
+    'une bordure transparente effacerait le bouton en contraste forcé'
+  );
+});
+
 test('la barre basse collée emmène au-dessus d’elle le bandeau de mise à jour et les toasts', () => {
   // Le bandeau est rendu APRÈS `children` : en flux, tout en bas du document.
   // Sous `BottomNav placement="fixed"`, il finissait hors écran puis, page

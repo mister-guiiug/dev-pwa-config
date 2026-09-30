@@ -485,6 +485,59 @@
     font-size: var(--text-fluid-sm, 0.9rem);
   }
 
+  /*
+   * LES GESTES FONT BLOC, ET LE PRINCIPAL SE VOIT.
+   *
+   * Les boutons étaient frères du titre, dans une même ligne souple : sur
+   * 393 px, le titre et « Mettre à jour » la remplissaient, et « Plus tard
+   * (4 h) » tombait seul sur la suivante, à gauche (mister-miss-koh, relevé du
+   * 30/09/2026). Les deux portaient en plus le même habillage neutre : rien ne
+   * disait lequel était le geste attendu.
+   *
+   * NEUF APPS DU PARC L'AVAIENT CORRIGÉ CHEZ ELLES, chacune à sa façon. Huit
+   * peignaient « Mettre à jour » de leur couleur principale (miss-badminton,
+   * miss-contraction, miss-dice, miss-genius, mister-footcoach,
+   * mister-miss-koh, mister-molkky, mister-puzzle), quatre passaient le titre
+   * sur sa propre ligne, trois marquaient l'attente. Le socle reprend ce
+   * qu'elles avaient en commun.
+   *
+   * Groupés dans `update-banner-actions`, les boutons restent ensemble : à
+   * côté du titre quand la place le permet, dessous sinon, alignés à droite
+   * comme les gestes d'une boîte de dialogue. `flex-wrap` sur les actions
+   * aussi : sur 320 px, ils s'empilent plutôt que de déborder.
+   */
+  [data-dwc='update-banner-title'] {
+    font-weight: 600;
+  }
+
+  [data-dwc='update-banner-actions'] {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  /* La couleur principale, avec la paire de jetons de la variante `primary`
+     de `Button`, dont les palettes garantissent déjà le contraste. La bordure
+     prend la teinte du fond plutôt que `transparent` : en contraste forcé,
+     une bordure transparente effacerait le contour du bouton. */
+  [data-dwc='update-banner-update'] {
+    border-color: var(--dwc-primary, CanvasText);
+    background: var(--dwc-primary, CanvasText);
+    color: var(--dwc-primary-contrast, Canvas);
+    font-weight: 600;
+  }
+
+  [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
+    filter: brightness(1.08);
+  }
+
+  [data-dwc='update-banner-update'][aria-busy='true'] {
+    cursor: progress;
+    opacity: 0.8;
+  }
+
   /* ── ConsentBanner ─────────────────────────────────────────────────────── */
 
   /*
@@ -2610,6 +2663,20 @@
       border-color: GrayText;
     }
 
+    /* Le bouton de mise à jour, pour les mêmes raisons que `Button` :
+       `filter` et `opacity` ne sont pas forcés. */
+    [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
+      filter: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+
+    [data-dwc='update-banner-update'][aria-busy='true'] {
+      opacity: 1;
+      color: GrayText;
+      border-color: GrayText;
+    }
+
     /* 2 — séparer le panneau de son voile. `outline` avec un décalage négatif
        plutôt qu'une bordure : dessiné à l'intérieur, il ne décale rien et ne
        peut pas être rogné par le bord de l'écran. */
@@ -2692,6 +2759,7 @@
     [data-dwc='button'][data-variant='primary'],
     [data-dwc='button'][data-variant='danger'],
     [data-dwc='confirm-confirm'],
+    [data-dwc='update-banner-update'],
     [data-dwc='bottom-nav-badge'],
     span[data-dwc='family-app-icon'] {
       color: CanvasText;

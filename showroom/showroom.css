@@ -1936,6 +1936,14 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border-color: var(--sr-fc-gray);
 }
 
+.sr-fc-panel[data-fix='on']
+  .sr-fc-demo
+  [data-dwc='update-banner-update'][aria-busy='true'] {
+  opacity: 1;
+  color: var(--sr-fc-gray);
+  border-color: var(--sr-fc-gray);
+}
+
 .sr-fc-panel[data-fix='on'] .sr-fc-demo [data-dwc='sheet-panel'] {
   outline: 1px solid var(--sr-fc-text);
   outline-offset: -1px;
