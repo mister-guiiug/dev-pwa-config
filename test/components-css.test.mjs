@@ -395,6 +395,99 @@ test('le bandeau de mise à jour : les gestes font bloc, et le principal se voit
   );
 });
 
+/**
+ * Les règles « feuilles » du fichier, avec les @-règles qui les enveloppent.
+ * Suffisant ici : la feuille n'emploie pas l'imbrication CSS, un bloc contient
+ * donc soit des déclarations, soit des règles.
+ */
+function regles(css) {
+  const out = [];
+  const pile = [];
+  let debut = 0;
+  for (let i = 0; i < css.length; i += 1) {
+    if (css[i] === '{') {
+      pile.push({ prelude: css.slice(debut, i).trim(), ouverture: i });
+      debut = i + 1;
+    } else if (css[i] === '}') {
+      const bloc = pile.pop();
+      if (bloc && !bloc.prelude.startsWith('@')) {
+        out.push({
+          selecteur: bloc.prelude.replace(/\s+/g, ' '),
+          corps: css.slice(bloc.ouverture + 1, i),
+          contexte: pile.map(p => p.prelude).filter(p => p.startsWith('@')),
+        });
+      }
+      debut = i + 1;
+    }
+  }
+  return out;
+}
+
+test('au survol, un bouton garde son fond et son encre', () => {
+  // `filter: brightness(1.08)` éclaircissait le fond ET l'encre. Sous une encre
+  // claire, le fond se rapproche d'elle : sur les 38 palettes de `themes.js`,
+  // le contraste baissait au survol dans 20 pour `primary` comme pour `danger`,
+  // et passait sous 4,5:1 dans 11 cas qui le tenaient au repos (8 en `danger`,
+  // dont miss-uwh clair 4,70 → 4,10 ; 2 en `outline` ; mister-molkky clair
+  // 4,99 → 4,39 en `primary`). Aucun sens de variation n'est sûr pour toutes
+  // les paires : foncer aide sous le blanc et nuit sous une encre sombre. Le
+  // survol ne repeint donc plus : le contraste au survol EST celui du repos,
+  // que les palettes garantissent déjà.
+  const survols = regles(CSS).filter(
+    r =>
+      r.selecteur.includes(':hover') &&
+      /\[data-dwc='(button|update-banner-update)'\]/.test(r.selecteur) &&
+      // La paire système `Highlight` / `HighlightText` du contraste forcé est
+      // choisie par l'utilisateur : elle ne compose rien.
+      !r.contexte.some(c => c.includes('forced-colors'))
+  );
+  assert.ok(
+    survols.length,
+    'aucun survol de bouton relevé : le motif a changé'
+  );
+
+  const repeints = survols
+    .filter(r =>
+      /(?:^|;)\s*(?:filter|background(?:-[a-z]+)?|color|opacity|mix-blend-mode)\s*:/.test(
+        r.corps
+      )
+    )
+    .map(r => r.selecteur);
+  assert.deepEqual(
+    repeints,
+    [],
+    'ces survols repeignent le bouton : le contraste au survol ne serait plus celui que les palettes garantissent'
+  );
+
+  // mister-miss-koh l'a relevé le 06/09/2026 : sur un écran tactile, `:hover`
+  // COLLE après le tap, et le bouton reste dans l'état de survol.
+  const collants = survols
+    .filter(r => !r.contexte.some(c => /\(hover:\s*hover\)/.test(c)))
+    .map(r => r.selecteur);
+  assert.deepEqual(
+    collants,
+    [],
+    'ces survols s’appliquent aussi au doigt : les poser sous @media (hover: hover)'
+  );
+});
+
+test('aucun survol ne passe par un filtre', () => {
+  // Un filtre recolore le texte avec le reste : le même défaut attendrait le
+  // prochain composant qui s'en servirait pour signaler le survol.
+  const filtres = regles(CSS)
+    .filter(
+      r =>
+        r.selecteur.includes(':hover') &&
+        /(?:^|;)\s*filter\s*:(?!\s*none\b)/.test(r.corps)
+    )
+    .map(r => r.selecteur);
+  assert.deepEqual(
+    filtres,
+    [],
+    'survol par filtre : le signaler sans recolorer'
+  );
+});
+
 test('la barre basse collée emmène au-dessus d’elle le bandeau de mise à jour et les toasts', () => {
   // Le bandeau est rendu APRÈS `children` : en flux, tout en bas du document.
   // Sous `BottomNav placement="fixed"`, il finissait hors écran puis, page

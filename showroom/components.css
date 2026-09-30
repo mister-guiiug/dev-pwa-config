@@ -529,8 +529,14 @@
     font-weight: 600;
   }
 
-  [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
-    filter: brightness(1.08);
+  /* Le survol de la variante `primary` de `Button`, et pour la même raison :
+     il ne repeint pas le bouton (voir la section « Button »). */
+  @media (hover: hover) {
+    [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--dwc-primary, CanvasText) 35%, transparent);
+    }
   }
 
   [data-dwc='update-banner-update'][aria-busy='true'] {
@@ -1259,8 +1265,47 @@
     color: var(--dwc-primary-contrast, Canvas);
   }
 
-  [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
-    filter: brightness(1.08);
+  /*
+   * LE SURVOL NE REPEINT PAS LE BOUTON. Il passait par `filter:
+   * brightness(1.08)`, qui éclaircit le fond ET l'encre : sous une encre
+   * claire, le fond se rapproche d'elle. Sur les 38 palettes de `themes.js`,
+   * le contraste baissait au survol dans 20 pour `primary` comme pour `danger`,
+   * et passait sous 4,5:1 dans onze cas qui le tenaient au repos : huit en
+   * `danger`, deux en `outline`, mister-molkky clair en `primary` (4,99 →
+   * 4,39). Aucun sens de variation n'est sûr pour toutes les paires : foncer
+   * aide sous le blanc et nuit sous une encre sombre.
+   *
+   * Le survol se dit donc sans toucher aux couleurs, et le contraste au survol
+   * EST celui du repos, que les palettes garantissent. Le relèvement d'un pixel
+   * est celui de la carte d'application, que huit apps avaient écrit ; le halo
+   * des deux aplats, de leur propre teinte, est celui que mister-miss-koh
+   * posait déjà sur ses boutons.
+   *
+   * Sous `(hover: hover)` seulement : sur un écran tactile, `:hover` COLLE
+   * après le tap (relevé par mister-miss-koh), et le bouton restait éclairci.
+   */
+  @media (hover: hover) {
+    [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
+      transform: translateY(-1px);
+    }
+
+    [data-dwc='button'][data-variant='primary']:hover:not(:disabled):not(
+        [aria-disabled='true']
+      ) {
+      box-shadow: 0 4px 12px
+        color-mix(in srgb, var(--dwc-primary, CanvasText) 35%, transparent);
+    }
+
+    [data-dwc='button'][data-variant='danger']:hover:not(:disabled):not(
+        [aria-disabled='true']
+      ) {
+      box-shadow: 0 4px 12px
+        color-mix(
+          in srgb,
+          var(--dwc-danger, light-dark(#b91c1c, #fb7185)) 35%,
+          transparent
+        );
+    }
   }
 
   /*
@@ -2644,16 +2689,19 @@
       border-color: currentColor;
     }
 
-    /* `filter` n'est pas forcé : `brightness()` viendrait délaver une palette
-       que l'utilisateur a précisément choisie. La paire système prévue pour
-       la mise en évidence dit la même chose, en respectant son réglage. */
-    [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
-      filter: none;
-      background: Highlight;
-      color: HighlightText;
+    /* Le halo du survol disparaît ici avec tous les `box-shadow` : la paire
+       système prévue pour la mise en évidence le remplace, en respectant le
+       réglage de l'utilisateur. Sous `(hover: hover)`, comme le survol
+       ordinaire. */
+    @media (hover: hover) {
+      [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']),
+      [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
+        background: Highlight;
+        color: HighlightText;
+      }
     }
 
-    /* `opacity` n'est pas forcé non plus : le bouton désactivé resterait à
+    /* `opacity` n'est pas forcée : le bouton désactivé resterait à
        pleine couleur système sous 45 % d'opacité, donc lisible et trompeur.
        `GrayText` est le signal que les technologies d'assistance attendent. */
     [data-dwc='button']:disabled,
@@ -2663,14 +2711,8 @@
       border-color: GrayText;
     }
 
-    /* Le bouton de mise à jour, pour les mêmes raisons que `Button` :
-       `filter` et `opacity` ne sont pas forcés. */
-    [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
-      filter: none;
-      background: Highlight;
-      color: HighlightText;
-    }
-
+    /* Le bouton de mise à jour, pour la même raison que `Button` : `opacity`
+       n'est pas forcée. */
     [data-dwc='update-banner-update'][aria-busy='true'] {
       opacity: 1;
       color: GrayText;

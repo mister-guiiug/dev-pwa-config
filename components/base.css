@@ -191,16 +191,19 @@
       border-color: currentColor;
     }
 
-    /* `filter` n'est pas forcé : `brightness()` viendrait délaver une palette
-       que l'utilisateur a précisément choisie. La paire système prévue pour
-       la mise en évidence dit la même chose, en respectant son réglage. */
-    [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']) {
-      filter: none;
-      background: Highlight;
-      color: HighlightText;
+    /* Le halo du survol disparaît ici avec tous les `box-shadow` : la paire
+       système prévue pour la mise en évidence le remplace, en respectant le
+       réglage de l'utilisateur. Sous `(hover: hover)`, comme le survol
+       ordinaire. */
+    @media (hover: hover) {
+      [data-dwc='button']:hover:not(:disabled):not([aria-disabled='true']),
+      [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
+        background: Highlight;
+        color: HighlightText;
+      }
     }
 
-    /* `opacity` n'est pas forcé non plus : le bouton désactivé resterait à
+    /* `opacity` n'est pas forcée : le bouton désactivé resterait à
        pleine couleur système sous 45 % d'opacité, donc lisible et trompeur.
        `GrayText` est le signal que les technologies d'assistance attendent. */
     [data-dwc='button']:disabled,
@@ -210,14 +213,8 @@
       border-color: GrayText;
     }
 
-    /* Le bouton de mise à jour, pour les mêmes raisons que `Button` :
-       `filter` et `opacity` ne sont pas forcés. */
-    [data-dwc='update-banner-update']:hover:not([aria-busy='true']) {
-      filter: none;
-      background: Highlight;
-      color: HighlightText;
-    }
-
+    /* Le bouton de mise à jour, pour la même raison que `Button` : `opacity`
+       n'est pas forcée. */
     [data-dwc='update-banner-update'][aria-busy='true'] {
       opacity: 1;
       color: GrayText;
