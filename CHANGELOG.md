@@ -1,5 +1,29 @@
 # Changelog
 
+## 6.22.0
+
+### Minor Changes
+
+- b606688: Miss Devises entre au catalogue : convertisseur de devises visuel (billets et pièces dessinés, conversion dans les deux sens, historique des taux, carnet annoté), `alpha`, `outils`, `local`, port de développement 5213. Sa palette (l'or des pièces, `#a16207`) rejoint `themes.js`, ses langues et fonctions `apps-seo.js`, et son relevé d'adoption `showroom/adoption.js`. Le showroom compte désormais six apps sans serveur.
+- ba7cd3e: Les pairs optionnelles sortent de `peerDependencies`. GitHub Packages ne sert pas `peerDependenciesMeta` : le tarball le porte, les métadonnées du registre non (demande d'évolution chez GitHub depuis 2023). npm tenait donc les 23 pairs « optionnelles » pour obligatoires et les installait dans chaque app. Mesuré sur mister-miss-koh : 125 entrées de verrou et 228 Mo de `node_modules` en trop, dont Firebase et `@grpc/grpc-js`, dont les deux avis du 30/09 remontaient dans tout le parc.
+  
+  - `peerDependencies` ne garde que les 11 pairs obligatoires, dont `web-vitals`, devenue obligatoire : le repli de `initWebVitals` est un import littéral, que Vite résout au build dans toute app qui embarque l'observabilité.
+  - Les 22 autres passent dans `optionalPeers`, plage inchangée, un champ que npm ignore et que `scripts/plafonds.mjs` et `migrate-consumers.mjs --peers` relisent. `peerDependenciesMeta` disparaît.
+  - Le README liste ces pairs, leur plage et les modules qui les attendent ; un test garde la table alignée sur `optionalPeers`.
+  
+  **Avant de monter**, une app déclare ce que ses modules utilisent. Relevé du 01/10/2026 par le parseur de TypeScript, imports internes suivis : six apps sont concernées (`sharp`, commitlint, `uqr`, `@playwright/test`, `@axe-core/playwright`, `playwright`), chacune par sa PR. **Après la montée**, re-résoudre le verrou (`npx -y npm@11.19.1 install --package-lock-only --ignore-scripts`) pour en retirer les pairs qui n'y sont plus attendues.
+
+### Patch Changes
+
+- 6bfcca0: `supabase/setup-cli` passe en v3.0.1, épinglée au même SHA dans l'action `supabase-migrate` et dans `pwa-supabase-test.yml`. L'action était en v1.7.1, et le réutilisable suivait le tag mobile `@v1`. La v1 tournait sur Node 20, que GitHub déclare obsolète. La v3 installe le CLI depuis npm (le paquet `supabase`, binaires `@supabase/cli-*`) avec le Node et le npm du runner : la version, même `latest`, ne se résout plus par l'API GitHub. Les images de `supabase start` viennent toujours de public.ecr.aws : comme la v1 depuis la v1.7.2, la v3.0.1 laisse le CLI choisir son registre au lieu d'imposer GHCR, qui bride.
+  
+  Le CLI reste en 2.119.0. Renovate le suit désormais sur npm, la source même de l'installation : annotation `datasource=npm depName=supabase`, et un `extractVersionTemplate` qui accepte les versions sans « v ». L'ancien, `^v…`, aurait écarté toutes les versions npm sans un message. `test/supabase-cli-epingle.test.mjs` garde ces deux points, et le même SHA dans les deux appels.
+  
+  Rien à faire dans les applications. `npm` tourne dans le dépôt appelant et lit donc son `.npmrc`, qui dans tout le parc ne vise que le scope `@mister-guiiug`.
+- cd8d007: `Stat` rend un `<dl>` valide. Un `<div data-dwc="stat-head">` enveloppait le seul `<dt>`, suivi de `<dd>` libres : axe le relevait sur tout écran à chiffre-clé (règle « definition-list », contrôle « structured-dlitems », impact sérieux). Relevé sur miss-devises le 01/10/2026 ; mister-miss-koh, mister-settle, mister-quota et miss-supatool rendaient la même structure.
+  
+  L'icône passe DANS le `<dt>` (`stat-label`), qui reprend la mise en ligne libellé / icône. Le sélecteur `[data-dwc="stat-head"]` disparaît : aucune application du parc ne le ciblait.
+
 ## 6.21.3
 
 ### Patch Changes
