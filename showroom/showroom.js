@@ -2705,16 +2705,15 @@
       ],
       build: function (p) {
         var fig = dwc('figure', 'stat', {});
-        var head = dwc('div', 'stat-head', {});
+        // L'icône dans le libellé, comme le composant : plus d'en-tête.
         var label = dwc('figcaption', 'stat-label', {});
         label.textContent = t('ui.pg.members', 'Adhérents');
-        head.appendChild(label);
         if (p.icon) {
           var icon = dwc('span', 'stat-icon', { 'aria-hidden': 'true' });
           icon.appendChild(plusIcon());
-          head.appendChild(icon);
+          label.appendChild(icon);
         }
-        fig.appendChild(head);
+        fig.appendChild(label);
 
         var value = dwc('p', 'stat-value', {});
         value.textContent = '128';
@@ -3546,12 +3545,10 @@
 
     screen.appendChild(
       el('dl', { 'data-dwc': 'stat' }, [
-        el('div', { 'data-dwc': 'stat-head' }, [
-          el('dt', {
-            'data-dwc': 'stat-label',
-            text: t('ui.demo.members', 'Adhérents'),
-          }),
-        ]),
+        el('dt', {
+          'data-dwc': 'stat-label',
+          text: t('ui.demo.members', 'Adhérents'),
+        }),
         el('dd', { 'data-dwc': 'stat-value', text: '128' }),
         el('dd', { 'data-dwc': 'stat-delta', 'data-trend': 'up' }, [
           el('span', { 'aria-hidden': 'true', text: '↑ ' }),

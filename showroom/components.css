@@ -1563,14 +1563,13 @@
     box-shadow: var(--dwc-shadow, none);
   }
 
-  [data-dwc='stat-head'] {
+  /* Le <dt> porte l'icône : plus d'en-tête <div>, qui rendait le <dl>
+     invalide. La mise en ligne libellé / icône passe ici. */
+  [data-dwc='stat-label'] {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-  }
-
-  [data-dwc='stat-label'] {
     font-size: var(--text-fluid-sm, 0.9rem);
     color: var(--dwc-text-soft, GrayText);
   }
