@@ -13,25 +13,27 @@ inputs:
   cli-version:
     description: 'Version du CLI Supabase'
     required: false
-    # ÉPINGLÉE, et non `latest`. `latest` fait résoudre la version par
-    # `setup-cli`, qui interroge l'API GitHub SANS jeton
-    # (`resolveLatestVersion`, setup-cli v1.7.1). Le 30/09/2026, sous la charge
-    # d'une campagne sur le parc, la limite de débit a fait échouer ce job sur
-    # miss-carbook (« Failed to resolve latest Supabase CLI release: rate limit
-    # exceeded ») : rien d'appliqué, et le déploiement sauté. Une version fixe
-    # se télécharge directement (`releases/download/v<version>/`), sans l'API,
-    # et rend en plus les migrations reproductibles. Même version dans
-    # `pwa-supabase-migrate.yml` et `pwa-supabase-test.yml`
-    # (test/supabase-cli-epingle.test.mjs) ; Renovate la propose à jour
+    # ÉPINGLÉE, et non `latest` : les migrations appliquées par la CI doivent
+    # être reproductibles. Avec setup-cli v1, `latest` passait en plus par
+    # l'API GitHub SANS jeton, et la limite de débit a fait échouer ce job sur
+    # miss-carbook le 30/09/2026 (« Failed to resolve latest Supabase CLI
+    # release: rate limit exceeded ») : rien d'appliqué, et le déploiement
+    # sauté. Depuis setup-cli v3, le CLI s'installe depuis npm (le paquet
+    # `supabase`), sans l'API. Même version dans `pwa-supabase-migrate.yml` et
+    # `pwa-supabase-test.yml` (test/supabase-cli-epingle.test.mjs) ; Renovate
+    # la propose à jour depuis npm, la source même de l'installation
     # (`customManagers` de renovate.json, d'après la ligne ci-dessous).
-    # renovate: datasource=github-releases depName=supabase/cli
+    # renovate: datasource=npm depName=supabase
     default: '2.119.0'
 
 runs:
   using: 'composite'
   steps:
     # Action tierce épinglée au SHA (supply-chain) ; Renovate met à jour le pin.
-    - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+    # v3 : action composite qui installe le CLI par npm (Node 20+ et npm requis,
+    # ceux du runner, sinon elle pose Node 24). La v1 tournait sur Node 20,
+    # que GitHub déclare obsolète. Même SHA dans `pwa-supabase-test.yml`.
+    - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
       with:
         version: ${{ inputs.cli-version }}
 

@@ -10,7 +10,7 @@
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)\\s+default: '(?<currentValue>[^']+)'"
       ],
-      "extractVersionTemplate": "^v(?<version>.+)$"
+      "extractVersionTemplate": "^v?(?<version>.+)$"
     }
   ]
 }
