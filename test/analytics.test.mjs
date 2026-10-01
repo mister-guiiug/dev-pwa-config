@@ -144,6 +144,15 @@ test('LES RÉGLAGES DE VIE PRIVÉE sont réellement passés à init', async () =
     // l'écriture de valeur le jour où le parc quittera `github.io`.
     assert.equal(options.cross_subdomain_cookie, false);
     assert.equal(options.person_profiles, 'identified_only');
+    // RETIRER SON ACCORD EFFACE L'IDENTIFIANT. Sans cette option, le retrait
+    // coupait la collecte mais laissait `ph_<clé>_posthog` sur l'appareil, et
+    // un accord redonné une autre fois reprenait le MÊME identifiant — mesuré
+    // sur posthog-js 1.435.5 le 01/10/2026 (voir `OPTIONS_VIE_PRIVEE`).
+    assert.equal(
+      options.opt_out_persistence_by_default,
+      true,
+      'un retrait laisserait l’identifiant de visite dans le navigateur'
+    );
     // Le nuage EUROPÉEN — seule raison d'avoir quitté GA4.
     assert.match(options.api_host, /^https:\/\/eu\./u);
     // Et l'objet ne se modifie pas par mégarde d'un appel à l'autre.
