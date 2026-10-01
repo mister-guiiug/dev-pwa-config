@@ -54,6 +54,46 @@
   }
 
   /*
+   * SUR UN TÉLÉPHONE, LES TROIS LIENS TIENNENT SUR UNE RANGÉE.
+   *
+   * « Code source », « M'offrir un café », « Signaler un problème » : en 13 px
+   * avec 12 px d'écart, il leur faut 374 px, et une colonne de téléphone en
+   * offre 343 sur un écran de 375 px, 361 sur un de 393. Le troisième passait
+   * seul à la ligne, 56 px plus bas. Deux applications l'avaient corrigé
+   * chacune de son côté : mister-miss-koh sous 30rem, miss-devises#4 sous
+   * 28rem.
+   *
+   * Resserrés (12 px, écarts de 8 et 4 px), ils en prennent 337. Et quand le
+   * signalement ferme le pied de page, `flex: 1 1 0%` ne le compte qu'à son
+   * mot le plus long au moment de remplir la rangée, puis l'élargit jusqu'à
+   * sa largeur naturelle (`max-width: max-content`) : si la place manque
+   * encore, son libellé se replie dans la rangée au lieu de la quitter. Le
+   * retour à la ligne reste permis, donc rien ne déborde, et ce que
+   * l'application ajoute (`children`, `links`, `version`, `after`) se range
+   * comme avant.
+   *
+   * `max-width`, la seule de la feuille : au-delà de 30rem, la règle de base
+   * s'applique telle quelle, et il n'y a rien à restaurer.
+   */
+  @media (max-width: 30rem) {
+    [data-dwc='app-footer'] {
+      gap: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    [data-dwc='app-footer'] > [data-dwc='footer-source'],
+    [data-dwc='app-footer'] > [data-dwc='footer-sponsor'],
+    [data-dwc='app-footer'] > [data-dwc='footer-issues'] {
+      gap: 0.25rem;
+    }
+
+    [data-dwc='app-footer'] > [data-dwc='footer-issues']:last-child {
+      flex: 1 1 0%;
+      max-width: max-content;
+    }
+  }
+
+  /*
    * Le numéro de version : discret par défaut, lisible quand même.
    *
    * `--dwc-text-soft` est un gris SECONDAIRE, pas un gris décoratif : il tient
