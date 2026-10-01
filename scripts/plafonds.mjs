@@ -14,11 +14,14 @@
  * audit`), ni mise à jour de patch (c'est Renovate).
  *
  * TOUS LES PLAFONDS NE SE VALENT PAS, et l'avoir ignoré a coûté un
- * ordonnancement entier. Ce dépôt déclare trente-deux peers dont vingt-deux
- * OPTIONNELLES : une peer optionnelle en conflit **n'arrête pas** `npm install`
- * — elle dit seulement que le socle se décrit mal. Une peer non optionnelle,
- * elle, fait échouer l'installation (`ERESOLVE`) et interdit réellement la
- * montée. Le 12/09/2026, sept plafonds étaient signalés ici, **deux seulement
+ * ordonnancement entier. Ce dépôt déclare onze pairs OBLIGATOIRES
+ * (`peerDependencies`) et vingt-deux OPTIONNELLES (`optionalPeers`, depuis le
+ * 01/10/2026 : GitHub Packages perd `peerDependenciesMeta`, et npm traitait
+ * alors les optionnelles comme des dures). Une pair optionnelle en conflit
+ * **n'arrête pas** `npm install` — npm ne la voit même plus : elle dit
+ * seulement que le socle se décrit mal. Une pair obligatoire, elle, fait
+ * échouer l'installation (`ERESOLVE`) et interdit réellement la montée. Le
+ * 12/09/2026, sept plafonds étaient signalés ici, **deux seulement
  * mordaient** ; un chantier a été planifié derrière `@testing-library/jest-dom
  * ^6.0.0` comme s'il s'agissait d'un mur, alors que la résolution réelle passe
  * sans broncher. D'où la colonne « Mord ? ».
@@ -439,16 +442,22 @@ export async function run(args = []) {
     readFileSync(new URL('../package.json', import.meta.url), 'utf8')
   );
 
+  // Les pairs optionnelles vivent dans `optionalPeers` depuis le 01/10/2026 :
+  // GitHub Packages perd `peerDependenciesMeta`, et npm les installait comme
+  // des pairs dures. Leur plage reste un plafond — mou, puisque npm ne la voit
+  // plus — et la sonde la relit ici.
   const declarations = {
     ...pkg.peerDependencies,
+    ...pkg.optionalPeers,
     ...(avecDev ? pkg.devDependencies : {}),
   };
   const publiees = await versionsPubliees(Object.keys(declarations));
   const lignes = analyse(declarations, publiees, {
-    peers: Object.keys(pkg.peerDependencies ?? {}),
-    optionnelles: Object.entries(pkg.peerDependenciesMeta ?? {})
-      .filter(([, meta]) => meta?.optional)
-      .map(([nom]) => nom),
+    peers: [
+      ...Object.keys(pkg.peerDependencies ?? {}),
+      ...Object.keys(pkg.optionalPeers ?? {}),
+    ],
+    optionnelles: Object.keys(pkg.optionalPeers ?? {}),
     decisions: DECISIONS,
   });
 

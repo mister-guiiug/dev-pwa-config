@@ -735,6 +735,53 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions suffit à lire le paquet, à con
     NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+### Les pairs optionnelles, à déclarer par l’app
+
+**GitHub Packages ne sert pas `peerDependenciesMeta`.** Le tarball du socle le
+porte, les métadonnées que lit npm non (relevé du 01/10/2026 ; le support de
+GitHub classe ce manque en demande d’évolution depuis 2023, voir
+[la discussion #51104](https://github.com/orgs/community/discussions/51104)).
+npm tenait donc pour OBLIGATOIRES les pairs que le socle disait optionnelles,
+et les installait dans chaque app : chez mister-miss-koh, 125 entrées de
+verrou et 228 Mo de `node_modules`, dont Firebase et `@grpc/grpc-js`.
+
+Depuis le 01/10/2026, le socle déclare donc :
+
+- en `peerDependencies`, ses **11 pairs obligatoires** : la chaîne ESLint,
+  Prettier, TypeScript, Vitest, et `web-vitals`, que l’observabilité importe ;
+- en `optionalPeers`, un champ que npm ignore, ses **22 pairs optionnelles**
+  et leur plage, que `scripts/plafonds.mjs` et `migrate-consumers.mjs --peers`
+  relisent.
+
+**Une app déclare elle-même ce que ses modules attendent.** Sans le paquet, le
+build échoue en le nommant (`failed to resolve import`) ; hors de la plage,
+rien ne prévient : la table dit ce qui est éprouvé.
+
+| Paquet                            | Plage                               | Pour                                                                                                     |
+| --------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `@axe-core/playwright`            | `^4.8.0`                            | `playwright-a11y`, qui reçoit `AxeBuilder` de l’app                                                      |
+| `@commitlint/cli`                 | `^19.0.0 \|\| ^20.0.0 \|\| ^21.0.0` | le hook `commit-msg`                                                                                     |
+| `@commitlint/config-conventional` | `^19.0.0 \|\| ^20.0.0 \|\| ^21.0.0` | `commitlint`                                                                                             |
+| `@playwright/test`                | `^1.49.0`                           | `playwright-base`, `playwright-a11y`, `playwright-entree`, et les bins `pwa-screenshots`, `pwa-og-image` |
+| `@rive-app/react-canvas`          | `^4.0.0`                            | `react/rive`                                                                                             |
+| `@sentry/react`                   | `^10.75.2 \|\| ^11.0.0`             | `react/observability`, par son `loader`                                                                  |
+| `@supabase/supabase-js`           | `^2.0.0`                            | `supabase-client`                                                                                        |
+| `@testing-library/jest-dom`       | `^6.0.0 \|\| ^7.0.0`                | `vitest-setup`                                                                                           |
+| `@vitest/browser`                 | `^4.0.0 \|\| ^5.0.0`                | `vitest-browser-base`                                                                                    |
+| `firebase`                        | `>=9.0.0`                           | `realtime/firebase`, `push/firebase`, qui reçoivent les objets de l’app                                  |
+| `leaflet`                         | `^1.9.0`                            | `map/leaflet`                                                                                            |
+| `lucide-react`                    | `^1.0.0`                            | les icônes que l’app passe aux composants                                                                |
+| `maplibre-gl`                     | `^6.0.0`                            | `map/maplibre`                                                                                           |
+| `playwright`                      | `^1.49.0`                           | `pwa-screenshots`, `pwa-og-image`, à défaut de `@playwright/test`                                        |
+| `posthog-js`                      | `^1.434.7`                          | `react/consent-banner`, par son `loader`                                                                 |
+| `qr-scanner`                      | `^1.4.0`                            | `react/use-qr-scanner`                                                                                   |
+| `react`                           | `^19.0.0`                           | `react/*`                                                                                                |
+| `sharp`                           | `>=0.33.0`                          | le bin `pwa-icons`                                                                                       |
+| `tailwindcss`                     | `^4.0.0`                            | `tailwind-preset.css`, `components.css`                                                                  |
+| `uqr`                             | `^0.1.3`                            | `qr`                                                                                                     |
+| `vite`                            | `^8.0.0`                            | les greffons `vite-*`, le bin `pwa-screenshots`                                                          |
+| `zod`                             | `^4.0.0`                            | `vite-csp`                                                                                               |
+
 ## Monter à ESLint 10
 
 ESLint 9 est sorti du support (`npm` le dit à chaque installation). **Le socle

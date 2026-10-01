@@ -31,7 +31,10 @@ const PARENT_DIR = join(SELF_ROOT, '..');
 const selfPkg = JSON.parse(
   readFileSync(join(SELF_ROOT, 'package.json'), 'utf8')
 );
-const peers = selfPkg.peerDependencies ?? {};
+// Obligatoires ET optionnelles : une app qui déclare `lucide-react` s'aligne
+// sur la plage du socle, que celle-ci vive dans `peerDependencies` ou, depuis
+// le 01/10/2026, dans `optionalPeers`.
+const peers = { ...selfPkg.peerDependencies, ...selfPkg.optionalPeers };
 
 const args = process.argv.slice(2);
 const WRITE = args.includes('--write') || args.includes('--install');
