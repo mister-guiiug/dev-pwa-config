@@ -148,8 +148,16 @@ test('web-vitals est une peer OPTIONNELLE, et le module l’importe paresseuseme
     /\^4\.2\./,
     `la plage doit continuer d'accepter la v4 (lue : ${plage})`
   );
-  // 2. La peer reste OPTIONNELLE : une app qui ne mesure rien ne l'installe pas.
-  assert.equal(pkg.peerDependenciesMeta['web-vitals'].optional, true);
+  // 2. La peer est OBLIGATOIRE, et c'est le code qui le veut. Le repli de
+  //    `initWebVitals` est un import LITTÉRAL, `import('web-vitals')` : Vite le
+  //    résout au build dans toute app qui embarque l'observabilité, qu'elle
+  //    mesure ou non. « Optionnelle » n'a tenu que parce que GitHub Packages,
+  //    qui perd `peerDependenciesMeta`, l'installait partout (relevé du
+  //    01/10/2026 : 18 apps sur 23 la tiraient sans la déclarer).
+  assert.ok(
+    !(pkg.optionalPeers && 'web-vitals' in pkg.optionalPeers),
+    'web-vitals ne peut pas être optionnelle : son import de repli est résolu au build'
+  );
   const source = readFileSync(
     new URL('../web-vitals.js', import.meta.url),
     'utf8'

@@ -54,15 +54,51 @@ test('chaque entrée de "files" existe (sera publiée)', () => {
   }
 });
 
-test('chaque peer marqué optionnel existe bien dans peerDependencies', () => {
-  // `npm uninstall <pkg>` retire l'entrée de peerDependencies mais LAISSE
-  // celle de peerDependenciesMeta : l'optionalité survit sans la dépendance.
-  for (const name of Object.keys(pkg.peerDependenciesMeta ?? {})) {
+// GITHUB PACKAGES NE SERT PAS `peerDependenciesMeta` (relevé le 01/10/2026 :
+// le tarball le porte, les métadonnées du registre non, et le support de
+// GitHub le classe en demande d'évolution depuis 2023). npm tenait donc pour
+// OBLIGATOIRES les vingt-trois pairs que le socle disait optionnelles, et les
+// installait dans chaque app : 125 entrées de verrou et 228 Mo chez koh,
+// firebase et `@grpc/grpc-js` compris. Une pair optionnelle vit donc hors de
+// `peerDependencies`, dans `optionalPeers`, que npm ignore et que les outils
+// du socle lisent.
+test('aucune optionalité confiée à peerDependenciesMeta, que le registre perd', () => {
+  assert.equal(
+    pkg.peerDependenciesMeta,
+    undefined,
+    'une pair optionnelle va dans optionalPeers : GitHub Packages perd peerDependenciesMeta'
+  );
+});
+
+test('une pair est obligatoire OU optionnelle, jamais les deux', () => {
+  const optionnelles = pkg.optionalPeers ?? {};
+  assert.ok(Object.keys(optionnelles).length > 0, 'optionalPeers est vide');
+  for (const [nom, plage] of Object.entries(optionnelles)) {
     assert.ok(
-      pkg.peerDependencies?.[name],
-      `peerDependenciesMeta.${name} sans peerDependencies.${name}`
+      !(nom in (pkg.peerDependencies ?? {})),
+      `${nom} est à la fois dans peerDependencies et dans optionalPeers`
+    );
+    assert.ok(
+      typeof plage === 'string' && plage.trim(),
+      `optionalPeers.${nom} n'a pas de plage`
     );
   }
+});
+
+test('le README nomme chaque pair optionnelle, et elles seules', () => {
+  // La table du README est ce qu'une app lit pour savoir quoi déclarer : une
+  // pair absente de la table serait une installation qui manque sans prévenir.
+  const readme = readFileSync(join(root, 'README.md'), 'utf8');
+  const debut = readme.indexOf('### Les pairs optionnelles');
+  assert.ok(debut >= 0, 'section « Les pairs optionnelles » absente du README');
+  const fin = readme.indexOf('\n#', debut + 1);
+  const section = readme.slice(debut, fin < 0 ? undefined : fin);
+  const nommees = [...section.matchAll(/^\| `([^`]+)`/gm)].map(m => m[1]);
+  assert.deepEqual(
+    [...nommees].sort(),
+    Object.keys(pkg.optionalPeers ?? {}).sort(),
+    'la table du README et optionalPeers divergent'
+  );
 });
 
 test('parité .d.ts ↔ .js pour chaque export typé', () => {

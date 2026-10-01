@@ -239,9 +239,11 @@ test('DECISIONS ne nomme que des paquets réellement déclarés', () => {
   const pkg = JSON.parse(
     readFileSync(new URL('../package.json', import.meta.url), 'utf8')
   );
+  // Obligatoire ou optionnelle : les deux sont des plafonds.
+  const pairs = { ...pkg.peerDependencies, ...pkg.optionalPeers };
   for (const nom of Object.keys(DECISIONS)) {
     assert.ok(
-      nom in pkg.peerDependencies,
+      nom in pairs,
       `${nom} est dans DECISIONS mais n’est plus une peer`
     );
   }
