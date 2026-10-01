@@ -156,7 +156,7 @@ const labels = {
     retentionText: 'Detailed data is kept for {months} months, then deleted.',
     stored: 'What is stored on your device',
     storedText:
-      'A visit identifier set by PostHog (cookie and local storage), and your choice, kept in this browser so the question is not asked again on every visit.',
+      'If you accept, a visit identifier that PostHog keeps in this browser’s storage. Either way, your choice, also kept in this browser so the question is not asked again on every visit.',
     errors: 'If something goes wrong',
     errorsText:
       'When the application hits an error, a technical report goes to Sentry, on its servers in Germany: the message, the place in the code, the page address, your browser and your IP address. Never what you type. This report does not depend on the choice above — it exists to fix, not to measure.',

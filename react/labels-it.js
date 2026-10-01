@@ -158,7 +158,7 @@ const labels = {
       'I dati dettagliati sono conservati {months} mesi, poi cancellati.',
     stored: 'Che cosa viene salvato sul suo dispositivo',
     storedText:
-      'Un identificativo di visita depositato da PostHog (cookie e memoria locale) e la sua scelta, conservata in questo browser per non riproporre la domanda a ogni visita.',
+      'Se accetta, un identificativo di visita che PostHog conserva nella memoria di questo browser. In ogni caso, la sua scelta, conservata anch’essa in questo browser per non riproporre la domanda a ogni visita.',
     errors: 'In caso di errore',
     errorsText:
       'Quando l’applicazione incontra un errore, un rapporto tecnico viene inviato a Sentry, sui suoi server in Germania: il messaggio, il punto del codice, l’indirizzo della pagina, il suo browser e il suo indirizzo IP. Mai ciò che digita. Questo rapporto non dipende dalla scelta qui sopra: serve a riparare, non a misurare.',

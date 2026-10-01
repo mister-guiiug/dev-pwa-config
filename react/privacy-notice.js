@@ -46,6 +46,17 @@ import { ConsentSettings } from './consent-banner.js';
  * durée qu'on n'a pas vérifiée est exactement ce que le reste de ce fichier
  * refuse de faire pour le responsable du traitement.
  *
+ * UNE TROISIÈME, DU 01/10/2026 : LE COOKIE. « Ce qui est déposé sur votre
+ * appareil » annonçait « cookie et stockage local ». Le texte datait du
+ * 20/09/2026 (#323), et le même jour #324 passait PostHog en
+ * `persistence: 'localStorage'` justement pour ne plus poser AUCUN cookie : le
+ * panneau décrivait une persistance qui n'existait plus. Il dit désormais ce
+ * qui est gardé et où — un identifiant dans le stockage du navigateur, si l'on
+ * accepte ; le choix, dans tous les cas — sans « aucun cookie » non plus : un
+ * identifiant en stockage local est un traceur au même titre, et le présenter
+ * comme une absence de cookie rassurerait à tort. Un test lie ce texte à
+ * `OPTIONS_VIE_PRIVEE.persistence`, dans les sept langues.
+ *
  * LES ERREURS, ET POURQUOI ELLES SONT UNE SECTION À PART. Depuis le 19/09/2026
  * dix-sept applications embarquent un DSN Sentry, et `initSentry` s'exécute au
  * chargement du module — AVANT toute question, donc hors du choix que le

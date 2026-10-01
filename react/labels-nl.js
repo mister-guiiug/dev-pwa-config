@@ -160,7 +160,7 @@ const labels = {
       'Gedetailleerde gegevens worden {months} maanden bewaard en daarna verwijderd.',
     stored: 'Wat op uw apparaat wordt opgeslagen',
     storedText:
-      'Een bezoekidentificatie van PostHog (cookie en lokale opslag), en uw keuze, bewaard in deze browser zodat de vraag niet bij elk bezoek terugkomt.',
+      'Als u akkoord gaat, een bezoekidentificatie die PostHog in de opslag van deze browser bewaart. In elk geval uw keuze, ook in deze browser bewaard, zodat de vraag niet bij elk bezoek terugkomt.',
     errors: 'Bij een fout',
     errorsText:
       'Wanneer de applicatie op een fout stuit, gaat een technisch rapport naar Sentry, op zijn servers in Duitsland: de melding, de plek in de code, het adres van de pagina, uw browser en uw IP-adres. Nooit wat u typt. Dit rapport hangt niet af van de keuze hierboven — het dient om te herstellen, niet om te meten.',

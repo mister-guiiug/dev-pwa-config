@@ -176,8 +176,9 @@ const labels = {
   },
   /**
    * Le panneau qui dit ce que la mesure d'audience fait. `{months}` porte la
-   * conservation réglée dans GA4, `{contact}` l'adresse où exercer ses droits
-   * — deux valeurs que le code ne peut pas connaître, d'où l'interpolation.
+   * conservation réglée dans le projet PostHog, `{contact}` l'adresse où
+   * exercer ses droits — deux valeurs que le code ne peut pas connaître, d'où
+   * l'interpolation.
    */
   privacy: {
     title: 'Vos données',
@@ -195,7 +196,7 @@ const labels = {
       'Les données détaillées sont conservées {months} mois, puis supprimées.',
     stored: 'Ce qui est déposé sur votre appareil',
     storedText:
-      'Un identifiant de visite déposé par PostHog (cookie et stockage local), et votre choix, gardé dans ce navigateur pour ne pas vous reposer la question à chaque visite.',
+      'Si vous acceptez, un identifiant de visite, que PostHog garde dans le stockage de ce navigateur. Dans tous les cas, votre choix, gardé lui aussi dans ce navigateur pour ne pas vous reposer la question à chaque visite.',
     errors: 'En cas d’erreur',
     errorsText:
       'Quand l’application rencontre une erreur, un rapport technique part chez Sentry, sur ses serveurs d’Allemagne : le message, l’endroit du code, l’adresse de la page, votre navigateur et votre adresse IP. Jamais ce que vous saisissez. Ce rapport ne dépend pas du choix ci-dessus — il sert à réparer, pas à mesurer.',
