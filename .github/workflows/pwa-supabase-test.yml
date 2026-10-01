@@ -75,9 +75,10 @@ jobs:
 
       # Épinglée au SHA, comme dans l'action `supabase-migrate` (même SHA) :
       # `@v1` suivait un tag mobile, et tournait sur Node 20, que GitHub déclare
-      # obsolète. La v3 installe le CLI par npm, et laisse le CLI se replier sur
-      # un autre registre d'images quand GHCR limite les téléchargements
-      # (v3.0.1) — ceux de `supabase start`, juste en dessous.
+      # obsolète. La v3 installe le CLI par npm. Comme la v1 depuis la v1.7.2,
+      # la v3.0.1 laisse le CLI ≥ 2.108.0 choisir son registre d'images au lieu
+      # d'imposer GHCR, qui bride : celles de `supabase start`, juste en
+      # dessous, viennent de public.ecr.aws.
       - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
           version: ${{ inputs.cli-version }}
