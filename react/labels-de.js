@@ -160,7 +160,7 @@ const labels = {
       'Detaillierte Daten werden {months} Monate gespeichert und danach gelöscht.',
     stored: 'Was auf Ihrem Gerät gespeichert wird',
     storedText:
-      'Eine Besuchskennung von PostHog (Cookie und lokaler Speicher) und Ihre Wahl, in diesem Browser gespeichert, damit die Frage nicht bei jedem Besuch erneut gestellt wird.',
+      'Wenn Sie zustimmen, eine Besuchskennung, die PostHog im Speicher dieses Browsers ablegt. In jedem Fall Ihre Wahl, ebenfalls in diesem Browser gespeichert, damit die Frage nicht bei jedem Besuch erneut gestellt wird.',
     errors: 'Im Fehlerfall',
     errorsText:
       'Wenn die Anwendung auf einen Fehler stößt, geht ein technischer Bericht an Sentry, auf dessen Server in Deutschland: die Meldung, die Stelle im Code, die Adresse der Seite, Ihr Browser und Ihre IP-Adresse. Niemals das, was Sie eingeben. Dieser Bericht hängt nicht von der obigen Wahl ab — er dient der Behebung, nicht der Messung.',

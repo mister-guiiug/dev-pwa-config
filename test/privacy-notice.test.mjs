@@ -21,6 +21,9 @@
  *     nommaient Google dans les sept langues alors que la mesure passe par
  *     PostHog et les erreurs par Sentry. Un test refuse désormais le retour du
  *     nom.
+ *  5. **Ce qui est déposé est ce que le code dépose.** Le panneau annonçait
+ *     « cookie et stockage local » alors que PostHog ne pose plus aucun cookie
+ *     depuis la 6.2.0. Un test lie désormais ce texte à la persistance réelle.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -30,7 +33,7 @@ import { PrivacyNotice, MARQUEUR_MOTIF } from '../react/privacy-notice.js';
 import { ConsentBanner, consentKey } from '../react/consent-banner.js';
 import { LABELS } from '../react/labels.js';
 import fr from '../react/labels-fr.js';
-import { resetAnalytics } from '../analytics.js';
+import { OPTIONS_VIE_PRIVEE, resetAnalytics } from '../analytics.js';
 import { mount, setupDom } from './helpers/dom.mjs';
 
 const CLE = 'phc_abcdefghijklmnopqrstuvwxyz0123456789';
@@ -180,6 +183,28 @@ test('aucune locale ne nomme plus Google', async () => {
     assert.ok(
       /PostHog/.test(bloc) && /Sentry/.test(bloc),
       `${locale} : les deux destinataires réels doivent être nommés`
+    );
+  }
+});
+
+test('ce qui est déposé suit la persistance réelle, dans les sept langues', () => {
+  // LE DÉFAUT QUE CE TEST EMPÊCHE DE REVENIR. Le 20/09/2026, #323 écrivait
+  // « cookie et stockage local » dans les sept langues ; le même jour, #324
+  // passait PostHog en `persistence: 'localStorage'`, précisément pour ne plus
+  // poser AUCUN cookie. Le texte a survécu dix jours à ce qu'il décrivait.
+  //
+  // Le texte ne dit pas non plus « aucun cookie » : un identifiant gardé dans
+  // le stockage du navigateur est un traceur au même titre (CNIL), et le
+  // présenter en creux comme une absence de cookie rassurerait à tort. Il dit
+  // ce qui est gardé, et où. D'où une règle à double sens : le mot n'y figure
+  // que si la persistance réglée pose réellement un cookie.
+  const poseUnCookie = /cookie/i.test(String(OPTIONS_VIE_PRIVEE.persistence));
+  for (const [locale, dictionnaire] of Object.entries(LABELS)) {
+    const depose = dictionnaire.privacy?.storedText ?? '';
+    assert.equal(
+      /cookie/i.test(depose),
+      poseUnCookie,
+      `${locale} : « ${depose} » ne suit pas la persistance « ${OPTIONS_VIE_PRIVEE.persistence} »`
     );
   }
 });
