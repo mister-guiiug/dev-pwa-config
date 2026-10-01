@@ -56,9 +56,10 @@ on:
         type: string
         required: false
         # ÉPINGLÉE, et non `latest` : voir
-        # .github/actions/supabase-migrate/action.yml (limite de débit de
-        # l'API GitHub, reproductibilité). Même version partout.
-        # renovate: datasource=github-releases depName=supabase/cli
+        # .github/actions/supabase-migrate/action.yml (reproductibilité ; la
+        # limite de débit de l'API GitHub du temps de setup-cli v1). Même
+        # version partout.
+        # renovate: datasource=npm depName=supabase
         default: '2.119.0'
       deploy-functions:
         description: 'Déployer aussi supabase/functions/ (Edge Functions) après les migrations'

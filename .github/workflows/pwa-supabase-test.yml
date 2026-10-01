@@ -46,10 +46,11 @@ on:
         type: string
         required: false
         # ÉPINGLÉE, et non `latest` : voir
-        # .github/actions/supabase-migrate/action.yml (limite de débit de
-        # l'API GitHub, reproductibilité). Même version partout : la pile
-        # jetable éprouve les migrations avec le CLI qui les appliquera.
-        # renovate: datasource=github-releases depName=supabase/cli
+        # .github/actions/supabase-migrate/action.yml (reproductibilité ; la
+        # limite de débit de l'API GitHub du temps de setup-cli v1). Même
+        # version partout : la pile jetable éprouve les migrations avec le CLI
+        # qui les appliquera.
+        # renovate: datasource=npm depName=supabase
         default: '2.119.0'
       exclude:
         description: >-
@@ -72,7 +73,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: supabase/setup-cli@v1
+      # Épinglée au SHA, comme dans l'action `supabase-migrate` (même SHA) :
+      # `@v1` suivait un tag mobile, et tournait sur Node 20, que GitHub déclare
+      # obsolète. La v3 installe le CLI par npm, et laisse le CLI se replier sur
+      # un autre registre d'images quand GHCR limite les téléchargements
+      # (v3.0.1) — ceux de `supabase start`, juste en dessous.
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
         with:
           version: ${{ inputs.cli-version }}
 
