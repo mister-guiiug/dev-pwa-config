@@ -22,9 +22,10 @@ export declare const HOTE_PAR_DEFAUT: string;
 /**
  * Les réglages de vie privée posés à l'initialisation, en CODE et non dans une
  * console : `autocapture` et l'enregistrement de session désactivés, pas de
- * vue de page automatique (`usePageViews` s'en charge), pas de cookie
- * inter-sous-domaines (le parc est sous un suffixe public), et aucun profil de
- * personne pour un visiteur anonyme.
+ * vue de page automatique (`usePageViews` s'en charge), aucun cookie
+ * (persistance `localStorage` seule), aucun profil de personne pour un
+ * visiteur anonyme, et un retrait qui efface l'identifiant de visite du
+ * stockage (`opt_out_persistence_by_default`).
  */
 export declare const OPTIONS_VIE_PRIVEE: Readonly<Record<string, unknown>>;
 

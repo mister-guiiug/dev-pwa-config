@@ -66,6 +66,10 @@ export const HOTE_PAR_DEFAUT = 'https://eu.i.posthog.com';
  *    paragraphe suivant.
  *  - `person_profiles: 'identified_only'` — aucun profil de personne n'est créé
  *    pour un visiteur anonyme, et ce parc n'identifie personne.
+ *  - `opt_out_persistence_by_default: true` — RETIRER SON ACCORD EFFACE
+ *    L'IDENTIFIANT. Sans lui, le retrait coupait la collecte mais laissait
+ *    l'identifiant de visite dans le navigateur, et un accord redonné plus tard
+ *    le reprenait (voir le paragraphe qui suit la sonde de domaine).
  *
  * POURQUOI `persistence` ET PAS SEULEMENT `cross_subdomain_cookie`.
  *
@@ -112,6 +116,41 @@ export const HOTE_PAR_DEFAUT = 'https://eu.i.posthog.com';
  * cette origine serait même `true`. Sur un domaine à nous, le cookie
  * redeviendrait légitime, mais `localStorage` resterait suffisant : c'est une
  * décision à reprendre sciemment, pas un réglage à défaire par réflexe.
+ *
+ * POURQUOI `opt_out_persistence_by_default` — MESURÉ, PAS SUPPOSÉ.
+ *
+ * Depuis la 6.20, chaque application offre le retrait en un clic
+ * (`ConsentSection`). Le retrait appelle `opt_out_capturing()` : la collecte
+ * s'arrête. Mesuré le 01/10/2026 sur posthog-js 1.435.5 — la version que
+ * verrouillent les apps —, dans jsdom, réseau coupé, avec ces options-ci :
+ *
+ *     après le retrait, dans localStorage :
+ *       sans l'option   __ph_opt_in_out_<clé>  ph_<clé>_posthog
+ *       avec l'option   __ph_opt_in_out_<clé>
+ *     accord redonné à la visite suivante :
+ *       sans l'option   le MÊME identifiant revient
+ *       avec l'option   un identifiant NEUF
+ *
+ * `ph_<clé>_posthog` porte l'identifiant de visite (et la session). Sans
+ * l'option, il restait sur l'appareil après le retrait, et la continuité
+ * survivait au retrait : un visiteur qui changeait d'avis une semaine plus tard
+ * redevenait le même. Avec elle, `opt_out_capturing` passe la persistance en
+ * `set_disabled(true)`, qui en efface les entrées (`remove()`), et rien n'est
+ * réécrit tant que le refus tient — pas même à l'initialisation d'une visite
+ * suivante. Ce qui reste : `__ph_opt_in_out_<clé>`, la mémoire du refus par
+ * PostHog elle-même (un 0, pas un identifiant), et en `sessionStorage` le
+ * booléen `…_primary_window_exists`, qui part avec l'onglet.
+ *
+ * CE QUE L'OPTION NE CHANGE PAS. Rien avant l'accord : la bibliothèque n'est
+ * même pas chargée. Rien pour qui a accepté : la persistance ne se coupe que
+ * sur un refus explicite (`isOptedOut()`).
+ *
+ * SA LIMITE, CONNUE ET ASSUMÉE. Un accord redonné DANS LA MÊME PAGE retrouve
+ * l'identifiant gardé en mémoire : `set_disabled` efface le stockage, pas les
+ * `props` de l'instance. Le seul remède serait `reset()`, et il remet aussi à
+ * zéro le consentement de PostHog (`consent.reset()`) — appelé après un retrait,
+ * il ROUVRIRAIT la collecte. Le stockage est vidé, et d'une visite à l'autre
+ * l'identifiant est neuf : c'est ce qui compte pour qu'un retrait en soit un.
  */
 export const OPTIONS_VIE_PRIVEE = Object.freeze({
   autocapture: false,
@@ -121,6 +160,7 @@ export const OPTIONS_VIE_PRIVEE = Object.freeze({
   persistence: 'localStorage',
   cross_subdomain_cookie: false,
   person_profiles: 'identified_only',
+  opt_out_persistence_by_default: true,
 });
 
 /** @type {{ id: string|null, hote: string, loaded: boolean, granted: boolean, appName: string|null, client: any }} */
@@ -403,9 +443,11 @@ function estAccorde(consent) {
  *   setAnalyticsConsent('denied');              // tout refuser
  *
  * Le refus après un accord ne décharge pas le script — c'est impossible une
- * fois évalué. Il coupe la collecte (`opt_out_capturing`), ce qui est le seul
- * comportement honnête : autant le dire ici plutôt que de laisser croire à un
- * retrait complet.
+ * fois évalué. Il coupe la collecte (`opt_out_capturing`) et, par
+ * `opt_out_persistence_by_default`, efface l'identifiant de visite du
+ * stockage ; l'instance garde le sien en mémoire jusqu'au rechargement (voir
+ * `OPTIONS_VIE_PRIVEE`). Autant le dire ici plutôt que de laisser croire à un
+ * retrait plus complet qu'il n'est.
  *
  * @param {'granted'|'denied'|Record<string, boolean|'granted'|'denied'>|boolean} consent
  */
