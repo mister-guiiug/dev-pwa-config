@@ -42,6 +42,19 @@ import { useConsentChoice } from './consent-banner.js';
  * et l'état, en `role="status"`, annonce le changement au lecteur d'écran. Deux
  * boutons distincts auraient laissé tomber le focus sur `<body>`.
  *
+ * UN GROUPE, PAS UN SECOND REPÈRE. Nommée par son titre, une `<section>` est
+ * une `region` : un repère, comme le bandeau, et du même nom, « Mesure
+ * d'audience ». Les deux sont à l'écran ensemble à la première visite, et
+ * juste après « Modifier mon choix », c'est-à-dire dans le parcours que la
+ * section déclenche elle-même. axe-core le relevait (`landmark-unique`,
+ * mesuré le 01/10/2026). La liste des repères d'un lecteur d'écran y montrait
+ * deux « Mesure d'audience » sans dire lequel pose la question. `role="group"`
+ * garde le nom, que le lecteur annonce quand le focus entre sur le bouton, et
+ * qui dit de quoi « Retirer mon consentement » parle. Le seul repère qui reste
+ * est le bandeau, là où la question se pose. Renommer le bandeau à la place
+ * aurait séparé son nom de son titre visible, et cassé les tests d'apps qui le
+ * trouvent par ce nom.
+ *
  * SANS IDENTIFIANT DE MESURE, RIEN — titre compris. Il n'y a rien à mesurer,
  * donc rien à régler : même règle que le bandeau.
  *
@@ -129,6 +142,9 @@ export function ConsentSection(props = {}) {
   return h(
     'section',
     {
+      // Un groupe nommé, pas une région : voir « UN GROUPE, PAS UN SECOND
+      // REPÈRE » plus haut.
+      role: 'group',
       'aria-labelledby': titreId,
       'data-dwc': 'consent-section',
       'data-choice': choice ?? undefined,

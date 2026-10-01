@@ -212,6 +212,51 @@ test('ouvrir l’écran de réglages ne compte pas un second accord', async () =
   dom.restore();
 });
 
+test('à côté du bandeau, un seul repère « Mesure d’audience » : le bandeau', async () => {
+  // Nommée par son titre, une `<section>` est une `region`, un repère du même
+  // nom que le bandeau : axe-core relevait les deux (`landmark-unique`). Le
+  // rôle se calcule ici comme le fait HTML-AAM, réduit à ce que ces deux
+  // composants rendent : un rôle explicite l'emporte, et une `<section>`
+  // n'est une région que si elle a un nom.
+  const nom = el =>
+    el.getAttribute('aria-label') ??
+    document.getElementById(el.getAttribute('aria-labelledby') ?? '')
+      ?.textContent ??
+    '';
+  const role = el =>
+    el.getAttribute('role') ??
+    (el.tagName === 'SECTION' && nom(el) ? 'region' : null);
+  const reperes = container =>
+    [...container.querySelectorAll('*')]
+      .filter(el => role(el) === 'region')
+      .map(el => `${el.dataset.dwc} « ${nom(el)} »`);
+
+  // Première visite : le bandeau pose la question, la section dit l'attente.
+  let dom = prepare();
+  let vue = await mount(appAvecReglages());
+  assert.deepEqual(reperes(vue.container), [
+    'consent-banner « Mesure d’audience »',
+  ]);
+  // La section garde son nom : le lecteur d'écran l'annonce quand le focus
+  // entre sur le bouton, et il dit de quoi le bouton parle.
+  const section = q(vue.container, 'section');
+  assert.equal(role(section), 'group');
+  assert.equal(nom(section), 'Mesure d’audience');
+  await vue.unmount();
+  dom.restore();
+
+  // Et juste après « Modifier mon choix », le parcours que la section
+  // déclenche elle-même.
+  dom = prepare('denied');
+  vue = await mount(appAvecReglages());
+  await vue.act(() => q(vue.container, 'section-action').click());
+  assert.deepEqual(reperes(vue.container), [
+    'consent-banner « Mesure d’audience »',
+  ]);
+  await vue.unmount();
+  dom.restore();
+});
+
 test('le titre prend le niveau demandé, et nomme la section', async () => {
   const dom = prepare('granted');
   let vue = await mount(h(ConsentSection, props({ headingLevel: 3 })));
