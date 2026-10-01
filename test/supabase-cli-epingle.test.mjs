@@ -25,12 +25,32 @@ const FICHIERS = [
   '.github/workflows/pwa-supabase-test.yml',
 ];
 
-/** Le `default:` du champ `cli-version`, annotation Renovate comprise. */
-const CLI_VERSION_RE =
-  /\n[ \t]+cli-version:\r?\n(?:[ \t]+[^\n]*\n)*?[ \t]+# renovate: datasource=github-releases depName=supabase\/cli\r?\n[ \t]+default: '([^']+)'\r?\n/;
+const ANNOTATION =
+  '# renovate: datasource=github-releases depName=supabase/cli';
 
 const lire = f => readFileSync(join(root, f), 'utf8');
-const epingle = f => lire(f).match(CLI_VERSION_RE)?.[1];
+
+/**
+ * Le `default:` du champ `cli-version`, s'il suit l'annotation Renovate.
+ *
+ * Lu LIGNE À LIGNE, et non par une seule expression : la première version,
+ * `(?:[ \t]+[^\n]*\n)*?`, imbriquait deux quantificateurs qui se recouvrent,
+ * et CodeQL l'a relevée (retours arrière exponentiels, sévérité haute).
+ */
+function epingle(f) {
+  const lignes = lire(f).split(/\r?\n/);
+  const debut = lignes.findIndex(l => /^\s+cli-version:\s*$/.test(l));
+  if (debut === -1) return undefined;
+  const retrait = lignes[debut].search(/\S/);
+  for (let i = debut + 1; i < lignes.length; i++) {
+    // Une ligne moins retirée que la clé : on est sorti de son bloc.
+    if (lignes[i].trim() && lignes[i].search(/\S/) <= retrait) return undefined;
+    const valeur = /^\s+default: '([^']+)'$/.exec(lignes[i]);
+    if (valeur)
+      return lignes[i - 1].trim() === ANNOTATION ? valeur[1] : undefined;
+  }
+  return undefined;
+}
 
 test('chaque cli-version est épinglée à une version complète, annotée pour Renovate', () => {
   for (const f of FICHIERS) {
