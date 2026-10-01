@@ -219,6 +219,46 @@ test('Stat : la tendance ne repose pas sur la seule couleur', () => {
   assert.match(html, /en hausse/, 'libellé textuel attendu');
 });
 
+/** Les balises filles d'un élément : celles de profondeur 1 sous la racine. */
+function enfantsDirects(html) {
+  const enfants = [];
+  let profondeur = 0;
+  for (const [, fermante, nom, auto] of html.matchAll(
+    /<(\/?)([a-z][a-z0-9-]*)\b[^>]*?(\/?)>/gi
+  )) {
+    if (fermante) {
+      profondeur -= 1;
+      continue;
+    }
+    if (profondeur === 1) enfants.push(nom);
+    if (!auto) profondeur += 1;
+  }
+  return enfants;
+}
+
+// UN <dl> NE CONTIENT QUE DES <dt> ET DES <dd>, ou des <div> qui en
+// regroupent. Un <div> d'en-tête autour du seul <dt>, suivi de <dd> libres,
+// est invalide : axe le relève (règle « definition-list », contrôle
+// « structured-dlitems », impact sérieux) dès qu'un écran affiche un
+// chiffre-clé. Relevé sur
+// miss-devises le 01/10/2026 ; koh, settle, quota et supatool rendaient le
+// même.
+test('Stat : un <dl> valide, l’icône dans le <dt>', () => {
+  const html = render(Stat, {
+    label: 'Solde',
+    value: '12 €',
+    delta: '+3',
+    trend: 'up',
+    trendLabel: 'en hausse',
+    icon: h('svg', { 'data-test': 'icone' }),
+  });
+  assert.deepEqual(enfantsDirects(html), ['dt', 'dd', 'dd']);
+  assert.match(
+    html,
+    /<dt[^>]*data-dwc="stat-label"[^>]*>Solde<span[^>]*data-dwc="stat-icon"[^>]*aria-hidden="true"[^>]*><svg data-test="icone"><\/svg><\/span><\/dt>/
+  );
+});
+
 test('Stat : pas de bloc de variation sans delta', () => {
   const html = render(Stat, { label: 'L', value: 1 });
   assert.doesNotMatch(html, /stat-delta/);

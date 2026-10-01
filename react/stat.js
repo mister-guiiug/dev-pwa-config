@@ -25,10 +25,14 @@ export function Stat(props = {}) {
   return h(
     'dl',
     { className, 'data-dwc': 'stat' },
+    // L'ICÔNE VIT DANS LE <dt>. Un <dl> ne contient que des <dt> et des <dd>
+    // (ou des <div> qui les regroupent ENTIERS) : l'ancien en-tête, un <div>
+    // autour du seul <dt>, rendait la liste invalide pour axe
+    // (« definition-list », impact sérieux) sur tout écran à chiffre-clé.
     h(
-      'div',
-      { 'data-dwc': 'stat-head' },
-      h('dt', { 'data-dwc': 'stat-label' }, label),
+      'dt',
+      { 'data-dwc': 'stat-label' },
+      label,
       icon
         ? h('span', { 'data-dwc': 'stat-icon', 'aria-hidden': 'true' }, icon)
         : null
