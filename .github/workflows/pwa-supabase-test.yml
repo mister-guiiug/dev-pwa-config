@@ -45,7 +45,12 @@ on:
         description: 'Version du CLI Supabase'
         type: string
         required: false
-        default: 'latest'
+        # ÉPINGLÉE, et non `latest` : voir
+        # .github/actions/supabase-migrate/action.yml (limite de débit de
+        # l'API GitHub, reproductibilité). Même version partout : la pile
+        # jetable éprouve les migrations avec le CLI qui les appliquera.
+        # renovate: datasource=github-releases depName=supabase/cli
+        default: '2.119.0'
       exclude:
         description: >-
           Services de la pile locale à NE PAS démarrer (liste séparée par des
