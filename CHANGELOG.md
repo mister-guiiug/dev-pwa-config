@@ -1,5 +1,28 @@
 # Changelog
 
+## 6.21.1
+
+### Patch Changes
+
+- f57634c: Retirer son consentement efface aussi l'identifiant de visite de PostHog : `OPTIONS_VIE_PRIVEE` pose `opt_out_persistence_by_default: true`.
+  
+  Mesuré le 01/10/2026 sur posthog-js 1.435.5, la version que verrouillent les apps. Sans l'option, le retrait (`opt_out_capturing`) coupait la collecte mais laissait `ph_<clé>_posthog` dans le `localStorage`, et un accord redonné lors d'une visite suivante reprenait le MÊME identifiant : la continuité survivait au retrait. Avec elle, le retrait efface ces entrées, rien n'est réécrit tant que le refus tient, et un nouvel accord crée un identifiant neuf. Il ne reste que la mémoire du refus par PostHog (`__ph_opt_in_out_<clé>`, un 0) et un booléen de `sessionStorage` qui part avec l'onglet.
+  
+  Rien ne change avant l'accord (la bibliothèque n'est pas chargée) ni pour qui a accepté. Limite connue : un accord redonné dans la même page retrouve l'identifiant gardé en mémoire. `reset()` l'éviterait, mais il remet aussi à zéro le consentement de PostHog et rouvrirait la collecte.
+- e597058: `PrivacyNotice` ne dit plus que PostHog dépose un cookie : depuis la 6.2.0 (#324), la persistance est `localStorage` seul, et le panneau annonçait encore « cookie et stockage local » dans les sept langues.
+  
+  « Ce qui est déposé sur votre appareil » dit maintenant ce qui est gardé et où : si l'on accepte, un identifiant de visite dans le stockage du navigateur ; dans tous les cas, le choix. Le texte ne dit pas non plus « aucun cookie » : un identifiant en stockage local est un traceur au même titre (CNIL), et le présenter comme une absence de cookie rassurerait à tort. Un test lie désormais ce texte à `OPTIONS_VIE_PRIVEE.persistence`, dans les sept langues : le mot « cookie » n'y figure que si la persistance réglée en pose un.
+- 6ee1d1c: Le survol des boutons ne repeint plus : le contraste au survol est celui du repos.
+  
+  `Button` et « Mettre à jour » (`update-banner-update`) signalaient le survol par `filter: brightness(1.08)`, qui éclaircit le fond ET l'encre. Sous une encre claire, le fond se rapproche d'elle. Mesuré sur les 38 palettes de `themes.js` : le contraste baissait au survol dans 20 palettes en `primary` comme en `danger`, et passait sous 4,5:1 dans onze cas qui le tenaient au repos (huit en `danger`, deux en `outline`, mister-molkky clair en `primary` : 4,99 → 4,39). Aucun sens de variation n'est sûr pour toutes les paires : foncer aide sous le blanc et nuit sous une encre sombre.
+  
+  - **Tous les boutons** se relèvent d'un pixel au survol, comme la carte d'application (huit apps avaient écrit ce relèvement).
+  - **Les deux aplats** (`primary`, `danger`) et « Mettre à jour » gagnent un halo de leur propre teinte, celui que mister-miss-koh posait déjà sur ses boutons.
+  - **Sous `@media (hover: hover)` seulement** : sur un écran tactile, `:hover` restait collé après le tap (relevé par mister-miss-koh).
+  - **Contraste forcé** : la paire système `Highlight` / `HighlightText` reste le signal du survol, sous la même condition.
+  
+  Deux garde-fous dans `test/components-css.test.mjs` : aucun survol de bouton ne touche au fond, à l'encre, au filtre ni à l'opacité, et aucun survol du fichier ne passe par un filtre.
+
 ## 6.21.0
 
 ### Minor Changes
