@@ -253,6 +253,17 @@ export const APP_SEO = Object.freeze(
           'Invitations par lien avec rôle, révocables',
         ],
       },
+      'miss-devises': {
+        languages: ['fr', 'en'],
+        features: [
+          'Conversion euro et devise dans les deux sens, à chaque chiffre',
+          'Billets et pièces de 41 devises dessinés, avec leur valeur en euros',
+          'Montant décomposé en coupures, ou composé en les touchant',
+          'Historique sur 1 mois, 6 mois ou 1 an, montant saisi comparé',
+          'Carnet de conversions annotées, exportable en fichier',
+          'Taux de la BCE ou de marché, hors ligne avec le dernier connu',
+        ],
+      },
     }).map(([id, s]) => [id, gele(s)])
   )
 );

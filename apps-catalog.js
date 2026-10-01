@@ -749,6 +749,63 @@ const CONSUMED = {
     'vitest-setup',
     'xlsx',
   ],
+  // Relevée le 01/10/2026, à l'inscription : les imports réels du code
+  // (`from`, `import()`, `@import`, `extends`, imports nus), pas les mentions
+  // en commentaire. Seule app à importer la géométrie `sparkline` sans le
+  // composant : elle dessine une courbe en grand, que `react/sparkline` ne
+  // fait pas (les trois autres adoptants passent par lui).
+  'miss-devises': [
+    'analytics',
+    'apps-catalog',
+    'commitlint',
+    'components.css',
+    'download',
+    'eslint-react',
+    'format',
+    'id',
+    'idb',
+    'lint-staged',
+    'logger',
+    'playwright-a11y',
+    'playwright-base',
+    'playwright-entree',
+    'prettier',
+    'react/app-footer',
+    'react/app-shell',
+    'react/app-updates',
+    'react/button',
+    'react/card',
+    'react/chrome-prefs',
+    'react/confirm-dialog',
+    'react/connection-banner',
+    'react/consent-banner',
+    'react/consent-section',
+    'react/empty-state',
+    'react/error-boundary',
+    'react/family-about',
+    'react/field',
+    'react/i18n',
+    'react/observability',
+    'react/segmented-control',
+    'react/sheet',
+    'react/stat',
+    'react/theme-provider',
+    'react/toast',
+    'react/use-page-views',
+    'react/version',
+    'sparkline',
+    'tailwind-preset.css',
+    'testing/posthog',
+    'tsconfig-app-react',
+    'tsconfig-node',
+    'versioned-store',
+    'vite-csp',
+    'vite-pwa',
+    'vite-pwa-base',
+    'vite-version',
+    'vitest-base',
+    'vitest-setup',
+  ],
 };
 
 /** Tous les sous-chemins consommés au moins une fois, triés. */
@@ -801,6 +858,7 @@ const DEV_PORTS = {
   'mister-doc': 5210,
   'miss-badminton': 5211,
   'miss-dice': 5212,
+  'miss-devises': 5213,
   'miss-lookhouse': 5214,
   'mister-molkky': 5215,
   'mister-qowa': 5216,
@@ -1118,6 +1176,19 @@ export const FAMILY_APPS = [
     {
       category: 'outils',
       backend: 'supabase',
+    }
+  ),
+  app(
+    'miss-devises',
+    'Miss Devises',
+    'Convertisseur de devises visuel : billets et pièces dessinés, conversion dans les deux sens, historique des taux et carnet annoté.',
+    'alpha',
+    // `outils` : il n'y a pas de catégorie « voyage », et une app seule ne la
+    // fonde pas. `local` : sans compte ni serveur, les taux viennent d'API
+    // publiques lues par l'appareil (ADR 0013 de l'app).
+    {
+      category: 'outils',
+      backend: 'local',
     }
   ),
 ];

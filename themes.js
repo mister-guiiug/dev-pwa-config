@@ -914,6 +914,52 @@ export const FAMILY_THEMES = [
       danger: '#f2b8b5',
     },
   },
+  {
+    id: 'miss-devises',
+    name: 'Miss Devises',
+    tagline:
+      'L’or des pièces sur des neutres clairs ; un or vif, encre presque noire, dans le sombre.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    // Relevée dans son `src/index.css` le 01/10/2026. Ce qu'elle ne
+    // redéfinit pas (`primary-soft`, `info`, le rayon) vient de `tokens.css`.
+    radius: '0.75rem',
+    light: {
+      bg: '#f7f8fa',
+      surface: '#ffffff',
+      surface2: '#eef1f5',
+      text: '#131720',
+      textSoft: '#5a6472',
+      border: '#d9dfe7',
+      // L'or des pièces : 4,9:1 contre le blanc, 4,6:1 contre le fond.
+      primary: '#a16207',
+      primaryContrast: '#ffffff',
+      primarySoft: '#ebedf1',
+      // Pas d'accent propre : le vert de réussite tient ce rôle.
+      accent: '#1b6b3a',
+      info: '#1a5fb4',
+      success: '#1b6b3a',
+      warning: '#8a5a00',
+      danger: '#b3261e',
+    },
+    dark: {
+      bg: '#0f1115',
+      surface: '#171b22',
+      surface2: '#1f242d',
+      text: '#e8ecf2',
+      textSoft: '#a3adbb',
+      border: '#2c333d',
+      primary: '#facc15',
+      primaryContrast: '#1a1300',
+      primarySoft: '#262c35',
+      accent: '#7fd6a0',
+      info: '#86b6f0',
+      success: '#7fd6a0',
+      warning: '#e8c07d',
+      danger: '#f2b8b5',
+    },
+  },
 ];
 
 /** Thème d'une app par son identifiant de dépôt. */
