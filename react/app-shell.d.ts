@@ -10,6 +10,12 @@ export type AppShellProps = {
   linkComponent?: ElementType;
   hrefProp?: string;
   navItems?: BottomNavItem[];
+  /**
+   * Chemin courant, RELATIF AU ROUTEUR (`useLocation().pathname`), transmis
+   * au `currentPath` de `BottomNav`. Obligatoire dès que le routeur a un
+   * `basename` : sans lui, aucun onglet n'est actif une fois déployé.
+   */
+  navCurrentPath?: string;
   navPlacement?: 'static' | 'fixed';
   navLabel?: string;
   width?: 'sm' | 'md' | 'lg' | 'xl' | 'full';

@@ -208,6 +208,7 @@ import { Link } from 'react-router-dom';
 <AppShell
   title={titles[pathname]}
   navItems={nav}
+  navCurrentPath={pathname} /* useLocation().pathname : obligatoire sous un basename */
   linkComponent={Link}
   hrefProp="to"
   beforeMain={<ConnectionBanner />}
