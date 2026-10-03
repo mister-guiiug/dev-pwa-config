@@ -3,7 +3,7 @@ import type { InstallCadence, InstallFallback } from '../install.js';
 export interface UseInstallPromptOptions {
   /** Défaut : `localStorage`. `sessionStorage` pour ne rien garder. */
   storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null;
-  /** Défaut : `'dwc_pwa_install'`. */
+  /** Défaut : `installStateKey()` (`./install`) — une clé par app. */
   storageKey?: string;
   /** L'ancienne clé booléenne à migrer, si l'app en avait choisi une. */
   legacyKey?: string;

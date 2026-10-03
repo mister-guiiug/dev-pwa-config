@@ -11,7 +11,7 @@ export interface PwaInstallPromptProps {
    * `storageKey`.
    */
   dismissKey?: string;
-  /** Clé de la cadence (défaut `dwc_pwa_install`). */
+  /** Clé de la cadence (défaut `installStateKey()` : une clé par app). */
   storageKey?: string;
   /**
    * Quand reproposer. Défaut : au premier lancement, puis tous les 30 jours,

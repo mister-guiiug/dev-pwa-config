@@ -22,6 +22,7 @@ import {
   LEGACY_DISMISS_KEY,
   countInstallVisit,
   installFallback,
+  installStateKey,
   isAppInstalled,
   nextInstallState,
   readInstallState,
@@ -287,4 +288,88 @@ test('un lancement compte pour une visite, quel que soit le nombre d’appels', 
   // Et la visite est bien ÉCRITE : sans persistance, `minVisits` ne pourrait
   // rien compter d'un lancement à l'autre.
   assert.equal(JSON.parse(storage.map.get(INSTALL_STATE_KEY)).visits, 1);
+});
+
+/* ── Une origine, vingt applications ────────────────────────────────────── */
+
+// Les vingt sites de la famille sont servis sous `<compte>.github.io/<dépôt>/` :
+// UN SEUL `localStorage` pour tous. Un `fakeStorage` partagé joue l'origine,
+// et chaque app y range son état sous sa propre clé.
+const ORIGINE_T0 = 1_000_000_000_000;
+const deuxApps = () => {
+  const origine = fakeStorage();
+  return {
+    origine,
+    koh: { storage: origine, key: installStateKey('/mister-miss-koh/') },
+    genius: { storage: origine, key: installStateKey('/miss-genius/') },
+  };
+};
+/** Une visite, sans le garde « un lancement par stockage » de `countInstallVisit`. */
+const visiter = options =>
+  writeInstallState(
+    nextInstallState(readInstallState(options), 'visit'),
+    options
+  );
+
+test('la clé de cadence porte l’application, sauf à la racine', () => {
+  assert.equal(
+    installStateKey('/mister-miss-koh/'),
+    `${INSTALL_STATE_KEY}:/mister-miss-koh/`
+  );
+  assert.notEqual(
+    installStateKey('/mister-miss-koh/'),
+    installStateKey('/miss-genius/')
+  );
+  // À la racine (le hub, le serveur de développement), rien à cloisonner.
+  assert.equal(installStateKey('/'), INSTALL_STATE_KEY);
+  // Hors d'un build Vite, `import.meta.env.BASE_URL` n'existe pas.
+  assert.equal(installStateKey(), INSTALL_STATE_KEY);
+});
+
+test('installer une app ne fait pas taire l’invite des autres', () => {
+  // Signalé sur Android le 03/10/2026 : « si une application est déjà
+  // installée, impossible d'installer les autres ». La clé était nue, et le
+  // `done: true` d'une installation valait pour la famille entière.
+  const { koh, genius } = deuxApps();
+  visiter(koh);
+  writeInstallState(nextInstallState(readInstallState(koh), 'installed'), koh);
+  assert.equal(readInstallState(koh).done, true);
+
+  const état = visiter(genius);
+  assert.equal(état.done, false);
+  assert.equal(shouldOfferInstall(état, {}, ORIGINE_T0), true);
+});
+
+test('une invite affichée dans une app n’arme pas le report des autres', () => {
+  // `shown` arme trente jours de silence, et `maxPrompts` compte les
+  // affichages : sur une clé commune, la première app vue taisait les autres
+  // pendant un mois, et trois apps épuisaient les invites de la famille.
+  const { koh, genius } = deuxApps();
+  visiter(koh);
+  for (let i = 0; i < DEFAULT_CADENCE.maxPrompts; i += 1)
+    writeInstallState(
+      nextInstallState(readInstallState(koh), 'shown', {}, ORIGINE_T0),
+      koh
+    );
+  assert.equal(
+    shouldOfferInstall(readInstallState(koh), {}, ORIGINE_T0),
+    false
+  );
+
+  const état = visiter(genius);
+  assert.equal(état.shown, 0);
+  assert.equal(shouldOfferInstall(état, {}, ORIGINE_T0), true);
+});
+
+test('l’ancienne clé nue n’est pas reprise : elle peut être celle d’une autre app', () => {
+  // C'est elle qui portait le `done: true` d'une installation ailleurs. La
+  // recopier dans la clé de l'app perpétuerait la fuite qu'on ferme.
+  const { origine, genius } = deuxApps();
+  origine.setItem(
+    INSTALL_STATE_KEY,
+    JSON.stringify({ v: 1, visits: 4, shown: 2, until: 0, done: true })
+  );
+  const état = readInstallState(genius);
+  assert.equal(état.done, false);
+  assert.equal(état.shown, 0);
 });
