@@ -365,10 +365,12 @@ globalThis.SHOWROOM_CATALOGUE = {
         fr: [
           'Ne pas y rendre `<AppFooter>` : la règle famille le veut sur l’accueil et À propos seulement — `pwa-doctor` (`liens-famille`) refuse la coquille.',
           'Ne pas oublier `linkComponent` / `hrefProp` : sans eux, la barre et le retour restent des `<a href>`, et le routeur ne voit rien.',
+          'Ne pas oublier `navCurrentPath` sous un `basename` : sans `useLocation().pathname`, la barre lit le chemin du navigateur, et aucun onglet n’est actif une fois déployé, jamais en développement.',
         ],
         en: [
           'Don’t render `<AppFooter>` inside it: the family rule wants it on home and About only — `pwa-doctor` (`liens-famille`) rejects the shell.',
           'Don’t forget `linkComponent` / `hrefProp`: without them the bar and back stay plain `<a href>`, and the router sees nothing.',
+          'Don’t forget `navCurrentPath` under a `basename`: without `useLocation().pathname` the bar reads the browser path, and no tab is ever active once deployed, never in development.',
         ],
       },
       a11y: {

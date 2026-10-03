@@ -55,6 +55,34 @@ test('AppShell : `actions={null}` retire le ThemeToggle, `beforeMain` hors du ma
   assert.ok(html.indexOf('data-after') > html.indexOf('id="contenu"'));
 });
 
+/*
+ * L'ONGLET COURANT VIENT DU ROUTEUR, PAS DU NAVIGATEUR. `BottomNav` exige
+ * `currentPath` dès que le routeur a un `basename` : sans lui il lit
+ * `location.pathname`, qui vaut `/miss-devises/` une fois déployé là où
+ * l'entrée vaut `/`. La coquille ne le transmettait pas, et n'avait aucune prop
+ * pour le recevoir : aucun onglet actif en ligne sur le squelette et sur
+ * miss-devises (relevé le 03/10/2026). Rendu serveur : sans `location`, seul
+ * le chemin transmis peut désigner l'onglet.
+ */
+test('AppShell : `navCurrentPath` désigne l’onglet courant', () => {
+  const html = render(
+    AppShell,
+    {
+      title: 'T',
+      navItems: [
+        { href: '/', label: 'Accueil', end: true },
+        { href: '/historique', label: 'Historique' },
+      ],
+      navCurrentPath: '/historique',
+    },
+    'x'
+  );
+  const lien = href => html.match(new RegExp(`<a href="${href}"[^>]*>`))?.[0];
+  assert.ok(lien('/historique'), 'onglet « Historique » rendu');
+  assert.match(lien('/historique'), /aria-current="page"/);
+  assert.doesNotMatch(lien('/'), /aria-current/);
+});
+
 test('AppShell : skipLabel et locale anglaise', () => {
   const html = renderToStaticMarkup(
     h(LabelsProvider, { locale: 'en' }, h(AppShell, { title: 'T' }, 'x'))

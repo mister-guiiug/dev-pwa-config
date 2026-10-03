@@ -18,6 +18,14 @@ import { useLabels } from './labels-core.js';
  * l'accueil et À propos seulement — `FamilyAbout` / `AppFooter` y pourvoient.
  * `pwa-doctor` (`liens-famille`) refuse un footer dans la coquille.
  *
+ * `navCurrentPath` EST OBLIGATOIRE SOUS UN `basename`, pour la même raison que
+ * le `currentPath` de `BottomNav`, à qui il est transmis : sans lui, la barre
+ * lit `location.pathname` (`/miss-devises/` une fois déployé) là où ses
+ * entrées valent `/`, et aucun onglet n'est actif. Jamais en développement ni
+ * en e2e, servis sous `/`. La coquille ne le transmettait pas et n'avait
+ * aucune prop pour le recevoir : le squelette et miss-devises étaient touchés
+ * en ligne (relevé le 03/10/2026). Passer `useLocation().pathname`.
+ *
  * @param {{
  *   title?: import('react').ReactNode,
  *   actions?: import('react').ReactNode,
@@ -26,6 +34,7 @@ import { useLabels } from './labels-core.js';
  *   linkComponent?: unknown,
  *   hrefProp?: string,
  *   navItems?: import('./bottom-nav.js').BottomNavItem[],
+ *   navCurrentPath?: string,
  *   navPlacement?: 'static'|'fixed',
  *   navLabel?: string,
  *   width?: 'sm'|'md'|'lg'|'xl'|'full',
@@ -49,6 +58,7 @@ export function AppShell(props = {}) {
     linkComponent = 'a',
     hrefProp = 'href',
     navItems,
+    navCurrentPath,
     navPlacement = 'fixed',
     navLabel,
     width = 'md',
@@ -106,6 +116,7 @@ export function AppShell(props = {}) {
       navItems?.length
         ? h(BottomNav, {
             items: navItems,
+            currentPath: navCurrentPath,
             linkComponent,
             hrefProp,
             placement: navPlacement,
