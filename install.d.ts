@@ -33,7 +33,7 @@ export interface InstallCadence {
   minVisits: number;
 }
 
-/** L'enregistrement rangé sous {@link INSTALL_STATE_KEY}. */
+/** L'enregistrement rangé sous {@link installStateKey}. */
 export interface InstallState {
   v: 1;
   /** Chargements de page comptés depuis le premier. */
@@ -50,7 +50,10 @@ export type InstallEvent =
   'visit' | 'shown' | 'snooze' | 'dismiss' | 'installed';
 
 export interface InstallStateOptions {
-  /** Défaut : {@link INSTALL_STATE_KEY}. */
+  /**
+   * Défaut : {@link installStateKey}`()` — `dwc_pwa_install:/<dépôt>/` dans le
+   * build d'une app, une clé par app.
+   */
   key?: string;
   /**
    * L'ancienne clé booléenne à migrer. Défaut : {@link LEGACY_DISMISS_KEY}.
@@ -64,8 +67,17 @@ export interface InstallStateOptions {
   now?: number;
 }
 
+/** Le PRÉFIXE de la clé de cadence, jamais la clé elle-même. */
 export declare const INSTALL_STATE_KEY: string;
 export declare const LEGACY_DISMISS_KEY: string;
+
+/**
+ * La clé de cadence DE CETTE APP : `dwc_pwa_install:/<dépôt>/` dans un build,
+ * `dwc_pwa_install` à la racine. Les apps de la famille partagent une origine,
+ * donc un `localStorage` : une clé nue faisait d'une installation celle de
+ * toutes.
+ */
+export declare function installStateKey(scope?: string): string;
 export declare const DEFAULT_CADENCE: Readonly<InstallCadence>;
 
 /** `true` si la page tourne DEPUIS l'application installée. */

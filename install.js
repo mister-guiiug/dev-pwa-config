@@ -30,8 +30,40 @@
  * l'autre.
  */
 
-/** Clé de l'état de cadence. Un seul enregistrement JSON, versionné. */
+import { appScopedKey } from './storage.js';
+
+/**
+ * Le PRÉFIXE de la clé de l'état de cadence — un seul enregistrement JSON,
+ * versionné, rangé sous {@link installStateKey}.
+ */
 export const INSTALL_STATE_KEY = 'dwc_pwa_install';
+
+/**
+ * LA CLÉ PORTE L'APPLICATION — et c'est la troisième clé du même défaut.
+ *
+ * L'état était rangé sous `'dwc_pwa_install'`, une clé NUE. Les vingt sites de
+ * la famille partagent l'origine `<compte>.github.io`, donc un seul
+ * `localStorage` : la cadence était celle de la FAMILLE. Installer une app y
+ * écrivait `done: true` pour toutes, et plus aucune autre ne proposait
+ * l'installation — signalé sur Android le 03/10/2026. Le reste suivait : une
+ * invite affichée dans une app taisait les dix-neuf autres pendant trente
+ * jours, et les trois invites prévues l'étaient pour toute la famille.
+ *
+ * Le consentement (4.17.1) puis le report de mise à jour (16/09/2026) avaient
+ * payé le même défaut ; ni l'une ni l'autre correction n'avait balayé celle-ci.
+ *
+ * AUCUNE REPRISE DE L'ANCIENNE CLÉ, ET C'EST DÉLIBÉRÉ. Son contenu est l'état
+ * d'une autre app aussi souvent que celui de l'app courante — le `done: true`
+ * qui bloquait est précisément là. Le recopier perpétuerait la fuite. Le coût :
+ * chaque app repart d'une cadence neuve. Sur Chromium, une app déjà installée
+ * ne reçoit pas `beforeinstallprompt` et ne se voit donc rien proposer ; sur
+ * iOS, où rien ne le dit, la marche à suivre peut reparaître une fois.
+ *
+ * @param {string} [scope] Portée explicite ; sinon le chemin de base de l'app.
+ */
+export function installStateKey(scope) {
+  return appScopedKey(INSTALL_STATE_KEY, scope);
+}
 
 /**
  * L'ancienne clé booléenne du bandeau, écrite jusqu'à la 4.5.1 incluse.
@@ -246,7 +278,7 @@ const days = n => Math.max(0, Number(n) || 0) * 86_400_000;
  */
 export function readInstallState(options = {}) {
   const {
-    key = INSTALL_STATE_KEY,
+    key = installStateKey(),
     legacyKey = LEGACY_DISMISS_KEY,
     now = Date.now(),
   } = options;
@@ -277,7 +309,7 @@ export function readInstallState(options = {}) {
  * @param {import('./install.js').InstallStateOptions} [options]
  */
 export function writeInstallState(state, options = {}) {
-  const { key = INSTALL_STATE_KEY } = options;
+  const { key = installStateKey() } = options;
   try {
     getStorage(options)?.setItem(key, JSON.stringify(state));
   } catch {
