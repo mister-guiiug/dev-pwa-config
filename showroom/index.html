@@ -413,6 +413,27 @@
   <body>
     <a class="sr-skip" href="#contenu" data-i18n="ui.skip">Aller au contenu</a>
 
+    <div
+      class="sr-news"
+      id="sr-news"
+      hidden
+      role="region"
+      aria-labelledby="sr-news-title"
+    >
+      <p class="sr-news-body">
+        <strong id="sr-news-title"></strong>
+        <span id="sr-news-items"></span>
+      </p>
+      <button
+        type="button"
+        class="sr-app-link"
+        id="sr-news-dismiss"
+        data-i18n="ui.news.ok"
+      >
+        OK
+      </button>
+    </div>
+
     <header class="sr-topbar" data-sommaire="closed">
       <div class="sr-topbar-inner">
         <div class="sr-brand">
@@ -467,6 +488,14 @@
               >Ouvrir l’app</a
             >
           </div>
+          <div
+            class="sr-recent"
+            id="sr-recent"
+            hidden
+            role="group"
+            data-i18n-aria="ui.recent.legend"
+            aria-label="Habillages récents"
+          ></div>
         </div>
 
         <label class="sr-cmd">
@@ -795,8 +824,55 @@
             data-i18n="ui.compare.cta"
             >Comparer deux apps</a
           >
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-export-review"
+            data-i18n="ui.export.cta"
+          >
+            Exporter pour revue
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-tour-start"
+            data-i18n="ui.tour.start"
+          >
+            Parcours guidé
+          </button>
         </p>
       </section>
+
+      <aside
+        class="sr-tour"
+        id="sr-tour"
+        hidden
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="sr-tour-title"
+      >
+        <ol class="sr-tour-steps" id="sr-tour-steps"></ol>
+        <h2 class="sr-tour-title" id="sr-tour-title"></h2>
+        <p class="sr-tour-body" id="sr-tour-body"></p>
+        <p class="sr-tour-actions">
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-tour-skip"
+            data-i18n="ui.tour.skip"
+          >
+            Quitter
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-tour-next"
+            data-i18n="ui.tour.next"
+          >
+            Étape suivante
+          </button>
+        </p>
+      </aside>
 
       <!-- ── Vitrine des dépôts ────────────────────────────────────────── -->
       <section class="sr-section" id="apps" aria-labelledby="apps-title">
@@ -3052,6 +3128,35 @@
           éléments d’interface. Un thème d’app qui échoue ici échoue aussi dans
           l’app.
         </p>
+
+        <h3 class="sr-subtitle" data-i18n="a11y.campaignTitle">
+          Campagne contraste multi-apps
+        </h3>
+        <p data-i18n="a11y.campaignIntro">
+          Ratios calculés sur les palettes déclarées (sans habiller la page) —
+          pour prioriser une campagne, pas une app à la fois. Seuil AA 4,5:1.
+        </p>
+        <p class="sr-control">
+          <label for="a11y-campaign-scheme">Schéma de couleurs</label>
+          <select id="a11y-campaign-scheme">
+            <option value="light">Clair</option>
+            <option value="dark">Sombre</option>
+          </select>
+        </p>
+        <p class="sr-cat-count" id="a11y-campaign-status" role="status"></p>
+        <div class="sr-table-wrap">
+          <table class="sr-table sr-campaign" id="a11y-campaign">
+            <thead>
+              <tr>
+                <th data-i18n="ui.campaign.app">App</th>
+                <th data-i18n="ui.campaign.textBg">text / surface</th>
+                <th data-i18n="ui.campaign.primaryOn">primary / on</th>
+                <th data-i18n="ui.campaign.softText">soft / text</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
         <h3 class="sr-subtitle" data-i18n="a11y.fc.title">Contraste forcé</h3>
         <p data-i18n="a11y.fc.intro">

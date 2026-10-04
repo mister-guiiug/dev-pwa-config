@@ -442,6 +442,152 @@ html[data-inspect='on'] .sr-inspect-hot {
   backdrop-filter: blur(10px);
 }
 
+.sr-news {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+  padding: 0.55rem var(--spacing-fluid-md);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--ds-info) 35%, var(--ds-border));
+  background: color-mix(in srgb, var(--ds-info) 10%, var(--ds-surface));
+  font-size: var(--text-fluid-xs);
+}
+
+.sr-news[hidden] {
+  display: none;
+}
+
+.sr-news-body {
+  margin: 0;
+  flex: 1 1 16rem;
+}
+
+.sr-news-body strong {
+  margin-right: 0.35rem;
+}
+
+.sr-recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.sr-recent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.85rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  font: inherit;
+  font-size: var(--text-fluid-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sr-recent-chip[aria-pressed='true'] {
+  border-color: var(--ds-primary);
+  background: var(--ds-primary-soft);
+}
+
+.sr-recent-chip .sr-sw {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ds-text) 18%, transparent);
+}
+
+.sr-tour {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 12;
+  max-width: 24rem;
+  margin: 0 var(--spacing-fluid-md) 0.75rem auto;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--ds-info) 40%, var(--ds-border));
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  box-shadow: 0 0.4rem 1.2rem
+    color-mix(in srgb, var(--ds-text) 14%, transparent);
+}
+
+.sr-tour[hidden] {
+  display: none;
+}
+
+.sr-tour-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  list-style: none;
+}
+
+.sr-tour-steps li {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  color: var(--ds-text-soft);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.sr-tour-steps li[aria-current='step'] {
+  border-color: var(--ds-primary);
+  background: var(--ds-primary-soft);
+  color: var(--ds-text);
+}
+
+.sr-tour-steps li.done {
+  color: var(--ds-success);
+}
+
+.sr-tour-title {
+  margin: 0 0 0.35rem;
+  font-size: var(--text-fluid-md);
+}
+
+.sr-tour-body {
+  margin: 0 0 0.65rem;
+  font-size: var(--text-fluid-sm);
+  color: var(--ds-text-soft);
+}
+
+.sr-tour-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.sr-campaign .sr-cell-ok {
+  color: var(--ds-success);
+  font-weight: 700;
+}
+
+.sr-campaign .sr-cell-ko {
+  color: var(--ds-danger);
+  font-weight: 700;
+  background: color-mix(in srgb, var(--ds-danger) 10%, transparent);
+}
+
+.sr-export-canvas {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 640px;
+  height: 280px;
+}
+
 .sr-dock-label {
   flex: 0 0 auto;
   font-size: var(--text-fluid-xs);
@@ -614,6 +760,10 @@ html[data-inspect='on'] .sr-inspect-hot {
 }
 
 .sr-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
   margin: var(--spacing-fluid-sm) 0 0;
 }
 
@@ -1574,10 +1724,53 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 /* ── Fiches de démonstration de composant ────────────────────────────────── */
 .sr-demo {
+  --sr-demo-split: 1fr 1fr;
   border: 1px solid var(--ds-border);
   border-radius: var(--ds-radius);
   overflow: hidden;
   margin-bottom: var(--spacing-fluid-md);
+}
+
+@media (min-width: 48rem) {
+  .sr-demo {
+    display: grid;
+    grid-template-columns: var(--sr-demo-split);
+    grid-template-rows: auto 1fr;
+  }
+
+  .sr-demo-head {
+    grid-column: 1 / -1;
+  }
+
+  .sr-demo-split-body {
+    display: contents;
+  }
+
+  .sr-demo .sr-demo-docs {
+    grid-column: 1;
+    grid-row: 2;
+    border-right: 1px solid var(--ds-border);
+    min-width: 0;
+  }
+
+  .sr-demo .sr-demo-stage {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    align-self: stretch;
+  }
+
+  .sr-demo .sr-demo-gutter {
+    display: none;
+  }
+
+  .sr-demo details {
+    border-top: 0;
+  }
+
+  .sr-demo details[open] {
+    height: 100%;
+  }
 }
 
 .sr-demo-head {
@@ -2963,6 +3156,9 @@ span[data-dwc='family-app-icon'] {
   .sr-section-chip,
   .sr-pair-controls,
   .sr-dock,
+  .sr-news,
+  .sr-recent,
+  .sr-tour,
   .sr-inspect-tip,
   .sr-cheatsheet,
   .sr-copy,
