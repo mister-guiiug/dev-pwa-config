@@ -703,6 +703,43 @@
           <table class="sr-table" id="apps-table"></table>
         </div>
 
+        <div class="sr-adoption" id="apps-adoption" hidden>
+          <h3 data-i18n="ui.apps.adoptionTitle" id="apps-adoption-title">
+            Adoption du paquet
+          </h3>
+          <p class="sr-note" data-i18n="ui.apps.adoptionIntro">
+            Combien d’apps importent chaque symbole — pour guider une campagne,
+            pas seulement lire le README. Les copies locales (dette)
+            apparaissent en dessous quand le relevé en a trouvé.
+          </p>
+          <p class="sr-metrics-date" id="apps-adoption-date"></p>
+          <div class="sr-table-wrap">
+            <table class="sr-table" id="apps-adoption-table">
+              <thead>
+                <tr>
+                  <th data-i18n="ui.apps.adoptionSymbol">Symbole</th>
+                  <th data-i18n="ui.apps.adoptionCount">Apps</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="sr-table-wrap" id="apps-adoption-dups-wrap" hidden>
+            <h4 data-i18n="ui.apps.adoptionDupsTitle">
+              Recopié plutôt qu’importé
+            </h4>
+            <table class="sr-table" id="apps-adoption-dups">
+              <thead>
+                <tr>
+                  <th id="apps-adoption-dups-symbol">Symbole</th>
+                  <th id="apps-adoption-dups-count">Apps</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
         <p class="sr-note" data-i18n="apps.note">
           <strong>Le domaine et la maturité sont éditoriaux</strong>, saisis à
           la main : ils disent une intention, pas une version publiée. La
@@ -3259,6 +3296,10 @@
          Vide tant qu'il n'est pas passé : la vitrine n'affiche alors aucune
          mesure, et c'est un état valide, pas une panne. -->
     <script src="metrics.js"></script>
+    <!-- Relevé local d'adoption (symbole → N apps). Engendré par
+         `node scripts/measure-adoption.mjs --write` ; vide tant qu'il n'a pas
+         tourné — la carte d'adoption reste alors masquée. -->
+    <script src="adoption.js"></script>
     <script src="snippets.js"></script>
     <script src="catalogue.js"></script>
     <script src="screenshots.js"></script>

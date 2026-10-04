@@ -51,46 +51,24 @@ const SELF = 'dev-pwa-config';
 /**
  * PUBLICATION AUTOMATIQUE : un workflow du dépôt POUSSE lui-même sur `main`.
  *
- * `parc-dashboard` se relève chaque nuit — `releve.yml` reconstruit
- * `index.html` et `historique.json`, puis fait `git commit` + `git push` sous
- * l'identité `github-actions[bot]`. Or ce robot n'a AUCUN contournement : la
- * règle `pull_request` refuserait ce push, et le relevé s'éteindrait.
+ * `parc-dashboard` commit l'instantané du jour sous `github-actions[bot]`.
+ * Sur un dépôt de compte personnel, GitHub refuse le bypass Integration
+ * Actions (« must be part of the … organization ») : on ne peut donc PAS
+ * ajouter `pull_request` + checks sans éteindre ce push (panne silencieuse
+ * déjà vue sur le showroom metrics, 02–13/09/2026).
  *
- * ET IL S'ÉTEINDRAIT EN SILENCE. C'est déjà arrivé, sur un autre dépôt :
- * `dev-pwa-config / Showroom metrics` a échoué chaque nuit du 02/09 au 13/09
- * 2026 avec `GH013 … Changes must be made through a pull request`, pendant que
- * la vitrine continuait d'afficher des mesures figées. **Un job nocturne rouge
- * dans un dépôt à CI verte ne se voit pas** — douze jours pour s'en apercevoir.
- * Ce Set existe pour que la même panne ne soit pas reposée à la main.
- *
- * ON NE RETIRE QUE `pull_request`, PAS LE RESTE. Le push nocturne est une
- * avance rapide ordinaire (`git push` nu, vérifié : aucun `--force`), donc
- * `non_fast_forward` ne le gêne pas et continue de refuser une réécriture
- * d'historique. Ces dépôts gardent donc DEUX protections, là où le laisser
- * hors du passage en masse — l'état constaté le 23/09/2026 — n'en laissait
- * aucune.
- *
- * Pas de `required_status_checks` non plus : il n'a de sens qu'avec une règle
- * `pull_request`, puisqu'il garde l'entrée d'une PR.
+ * ON NE RETIRE QUE `pull_request` (et les checks qui n'ont de sens qu'avec
+ * elle). `deletion` + `non_fast_forward` restent. Le contexte cible
+ * (`Règles du relevé`) est déjà dans `CHECKS` pour le jour où le dépôt
+ * sera sous organisation, ou où l'instantané ne poussera plus sur `main`.
  */
 const AUTO_PUBLIE = new Set(['parc-dashboard']);
 
 /**
  * Contextes exigés d'un dépôt — UN SEUL ENDROIT.
  *
- * Le défaut de `CHECKS` vise les applications, qui rapportent toutes
- * `ci / Format · Lint · Type · Test · Build`. Un dépôt qui se publie
- * lui-même n'exige aucun check : `required_status_checks` n'a de sens
- * qu'avec une règle `pull_request`, dont il garde l'entrée.
- *
- * SANS CETTE EXCEPTION, `parc-dashboard` SE FAISAIT REFUSER pour la mauvaise
- * raison : le défaut lui prêtait le contexte des apps, que sa CI ne rapporte
- * pas (elle rend `build`, `deploy`, `report-build-status`, `Règles du
- * relevé`). Le garde le sauvait donc par accident — et `--force` aurait levé
- * ce sauvetage-là en même temps que le reste.
- *
- * Le calcul vivait en DEUX exemplaires. Une troisième copie aurait fini
- * par diverger.
+ * Le défaut de `CHECKS` vise les applications. AUTO_PUBLIE n'exige aucun
+ * check tant que `pull_request` est absente (voir ci-dessus).
  */
 function contextesPour(repo) {
   if (AUTO_PUBLIE.has(repo)) return [];
@@ -292,6 +270,13 @@ const CHECKS = {
    */
   'mister-guiiug': [],
 
+  /**
+   * Ops : CI locale `ci.yml` → check-run « Règles du relevé ». Pas le défaut
+   * des apps (`ci / Format · …`). Entrée cible pour le jour où AUTO_PUBLIE
+   * pourra exiger `pull_request` (compte perso : bypass Actions refusé).
+   */
+  'parc-dashboard': ['Règles du relevé'],
+
   default: ['ci / Format · Lint · Type · Test · Build'],
 };
 
@@ -384,9 +369,8 @@ function rulesetFor(repo) {
     },
   };
 
-  // Un dépôt qui se publie lui-même pousse sur `main` depuis un workflow, sous
-  // une identité sans contournement : la règle `pull_request` l'éteindrait.
-  // Les deux autres ne le gênent pas — son push est une avance rapide.
+  // Un dépôt qui se publie lui-même pousse sur `main` depuis un workflow :
+  // sans bypass Actions (compte perso), `pull_request` l'éteindrait.
   if (AUTO_PUBLIE.has(repo)) {
     return {
       ...base,
@@ -576,7 +560,7 @@ for (const repo of targets) {
   console.log(`\n→ ${OWNER}/${repo}`);
   console.log(
     AUTO_PUBLIE.has(repo)
-      ? '  · PUBLICATION AUTOMATIQUE : pas de règle `pull_request`, son workflow pousse sur `main`'
+      ? `  · PUBLICATION AUTOMATIQUE : pas de \`pull_request\` (compte perso — bypass Actions refusé) ; cible future : ${(CHECKS[repo] || []).join(', ') || 'aucun'}`
       : `  · checks exigés : ${contexts.join(', ') || 'aucun'}`
   );
 
