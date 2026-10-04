@@ -208,7 +208,7 @@ ce qu'elles ont appris est dans les bilans.
 
 | #       | Ce qui reste                                                                                          | À qui                  |
 | ------- | ----------------------------------------------------------------------------------------------------- | ---------------------- |
-| T12–T15 | retirer les modules `experimental-modules.js` à la date indiquée ; engendrer les `.d.ts`              | une majeure (v7)       |
+| T12–T15 | retirer les modules `experimental-modules.js` à la date indiquée ; engendrer les `.d.ts`              | une majeure (v7) — voir [`docs/V7.md`](docs/V7.md) |
 | F8      | « Nouveautés » après une mise à jour, alimentée par `version.json` et le CHANGELOG                    | si un besoin l'appelle |
 | —       | activer le hook « Custom Access Token » et la liste d'URL de retour sur les projets Supabase hébergés | propriétaire           |
 | —       | OIDC Firebase (Workload Identity) pour puzzle / qowa / ticket-pwa — supprimer `FIREBASE_TOKEN`        | propriétaire (GCP)     |
