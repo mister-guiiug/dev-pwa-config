@@ -186,6 +186,44 @@
     });
   }
 
+  /** Mobile : le rail TOC se replie derrière « Sommaire ». */
+  function setupSommaire() {
+    var bar = document.querySelector('.sr-topbar');
+    var btn = document.getElementById('sr-sommaire-toggle');
+    if (!bar || !btn) return;
+    btn.addEventListener('click', function () {
+      var open = bar.getAttribute('data-sommaire') === 'open';
+      bar.setAttribute('data-sommaire', open ? 'closed' : 'open');
+      btn.setAttribute('aria-expanded', String(!open));
+      syncHeaderOffset();
+    });
+    window.addEventListener(
+      'resize',
+      function () {
+        if (!window.matchMedia('(max-width: 40rem)').matches) {
+          bar.setAttribute('data-sommaire', 'closed');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+        syncHeaderOffset();
+      },
+      { passive: true }
+    );
+  }
+
+  /** Panneau préférences : fermer au clic dehors et sur Échap. */
+  function setupPrefs() {
+    var prefs = document.getElementById('sr-prefs');
+    if (!prefs) return;
+    document.addEventListener('click', function (event) {
+      if (!prefs.open) return;
+      if (prefs.contains(event.target)) return;
+      prefs.open = false;
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && prefs.open) prefs.open = false;
+    });
+  }
+
   // Sonde hors écran : sert à faire évaluer les `clamp()` / `env()` par le
   // navigateur plutôt qu'à les recalculer en JS.
   var probe = document.createElement('div');
@@ -535,6 +573,7 @@
     }
 
     renderSwatches();
+    paintHeaderSwatches();
     // Le contraste dépend du thème appliqué : on le recalcule à chaque bascule.
     measureContrast();
     labelTableCells();
@@ -545,6 +584,23 @@
     syncAppGrid();
     renderDemoStage();
     renderCompare();
+  }
+
+  /** Pastilles primaire / surface / texte à côté du select « Habiller ». */
+  function paintHeaderSwatches() {
+    var host = document.getElementById('theme-swatches');
+    if (!host) return;
+    var styles = getComputedStyle(root);
+    var map = {
+      primary: '--ds-primary',
+      surface: '--ds-surface',
+      text: '--ds-text',
+    };
+    host.querySelectorAll('[data-swatch]').forEach(function (el) {
+      var key = el.getAttribute('data-swatch');
+      var value = styles.getPropertyValue(map[key] || '').trim();
+      if (value) el.style.background = value;
+    });
   }
 
   /* ── Schéma clair / sombre / système ───────────────────────────────── */
@@ -3994,6 +4050,8 @@
   });
 
   watchRail();
+  setupSommaire();
+  setupPrefs();
 
   applyScheme(currentScheme, currentTheme);
   syncSchemeInputs(currentScheme, currentTheme);

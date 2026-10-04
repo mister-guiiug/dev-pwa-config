@@ -413,39 +413,32 @@
   <body>
     <a class="sr-skip" href="#contenu" data-i18n="ui.skip">Aller au contenu</a>
 
-    <header class="sr-topbar">
+    <header class="sr-topbar" data-sommaire="closed">
       <div class="sr-topbar-inner">
         <div class="sr-brand">
-          <h1 data-i18n="intro.title" id="intro-title">
-            Le design system de la famille miss-* / mister-*
-          </h1>
-          <span>@mister-guiiug/dev-pwa-config</span>
+          <p class="sr-brand-name" data-i18n="topbar.brand">Showroom</p>
+          <span class="sr-brand-pkg">@mister-guiiug/dev-pwa-config</span>
         </div>
 
-        <nav class="sr-sites" aria-labelledby="sr-sites-label">
-          <span
-            id="sr-sites-label"
-            class="sr-visually-hidden"
-            data-i18n="ui.sites"
-            >Pages du parc</span
-          >
-          <a
-            href="https://mister-guiiug.github.io/"
-            data-i18n="ui.site.catalogue"
-            >Catalogue</a
-          >
-          <a
-            href="https://mister-guiiug.github.io/dev-pwa-config/"
-            aria-current="page"
-            data-i18n="ui.site.showroom"
-            >Showroom</a
-          >
-          <a
-            href="https://mister-guiiug.github.io/parc-dashboard/"
-            data-i18n="ui.site.parc"
-            >Parc</a
-          >
-        </nav>
+        <!-- Job principal : endosser une application. -->
+        <div class="sr-theme-primary">
+          <label for="theme-app" data-i18n="topbar.themeLabel">Habiller</label>
+          <div class="sr-theme-primary-row">
+            <select id="theme-app">
+              <option value="generic">Générique — preset seul</option>
+            </select>
+            <div
+              class="sr-theme-swatches"
+              id="theme-swatches"
+              aria-hidden="true"
+            >
+              <span data-swatch="primary"></span>
+              <span data-swatch="surface"></span>
+              <span data-swatch="text"></span>
+            </div>
+          </div>
+        </div>
+
         <label class="sr-cmd">
           <span class="sr-visually-hidden" data-i18n="ui.cmd.label"
             >Rechercher sur cette page</span
@@ -471,25 +464,22 @@
           <ul class="sr-cmd-list" id="sr-cmd-list" role="listbox" hidden></ul>
         </label>
 
-        <!-- Même dessin que `SunIcon`, `MoonIcon` et `SystemIcon` du paquet :
-             le trait porte l'état, le nom accessible reste le mot. -->
-        <div class="sr-topbar-tools">
-          <p class="sr-control sr-theme-pick">
-            <label
-              class="sr-visually-hidden"
-              for="theme-app"
-              data-i18n="topbar.themeLabel"
-              >Thème</label
+        <!-- Clair/sombre + langue regroupés : une icône, un panneau. -->
+        <details class="sr-prefs" id="sr-prefs">
+          <summary class="sr-prefs-summary">
+            <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+              />
+            </svg>
+            <span class="sr-visually-hidden" data-i18n="ui.prefs.summary"
+              >Préférences</span
             >
-            <select id="theme-app">
-              <option value="generic">Générique — preset seul</option>
-            </select>
-          </p>
-          <div class="sr-topbar-switches">
+          </summary>
+          <div class="sr-prefs-panel">
             <fieldset class="sr-control">
-              <legend class="sr-visually-hidden" data-i18n="ui.scheme.legend">
-                Schéma de couleurs
-              </legend>
+              <legend data-i18n="ui.scheme.legend">Schéma de couleurs</legend>
               <div class="sr-segmented">
                 <input
                   type="radio"
@@ -542,9 +532,7 @@
             </fieldset>
 
             <fieldset class="sr-control">
-              <legend class="sr-visually-hidden" data-i18n="ui.lang.label">
-                Langue
-              </legend>
+              <legend data-i18n="ui.lang.label">Langue</legend>
               <div class="sr-segmented">
                 <input
                   type="radio"
@@ -565,48 +553,90 @@
               </div>
             </fieldset>
           </div>
-        </div>
+        </details>
       </div>
 
-      <nav class="sr-rail" aria-labelledby="rail-label">
-        <p id="rail-label" class="sr-visually-hidden" data-i18n="ui.rail">
-          Sur cette page
-        </p>
-        <ul class="sr-toc">
-          <li><a href="#apps" data-i18n="ui.toc.apps">Applications</a></li>
-          <li>
-            <a href="#fondations" data-i18n="ui.toc.fondations">Fondations</a>
-          </li>
-          <li>
-            <a href="#catalogue" data-i18n="ui.toc.catalogue">Catalogue</a>
-          </li>
-          <li><a href="#couleurs" data-i18n="ui.toc.couleurs">Couleurs</a></li>
-          <li>
-            <a href="#primitives" data-i18n="ui.toc.primitives">Primitives</a>
-          </li>
-          <li>
-            <a href="#composants" data-i18n="ui.toc.composants"
-              >Composants applicatifs</a
-            >
-          </li>
-          <li>
-            <a href="#decisions" data-i18n="ui.toc.decisions">Lequel choisir</a>
-          </li>
-          <li><a href="#hooks" data-i18n="ui.toc.hooks">Hooks</a></li>
-          <li>
-            <a href="#a11y" data-i18n="ui.toc.a11y"
-              >Contrôles d’accessibilité</a
-            >
-          </li>
-          <li><a href="#demo" data-i18n="ui.toc.demo">Démo</a></li>
-          <li><a href="#stack" data-i18n="ui.toc.stack">Stack</a></li>
-          <li>
-            <a href="#integration" data-i18n="ui.toc.integration"
-              >Intégration</a
-            >
-          </li>
-        </ul>
-      </nav>
+      <div class="sr-topbar-secondary">
+        <nav class="sr-sites" aria-labelledby="sr-sites-label">
+          <span
+            id="sr-sites-label"
+            class="sr-visually-hidden"
+            data-i18n="ui.sites"
+            >Pages du parc</span
+          >
+          <a
+            href="https://mister-guiiug.github.io/"
+            data-i18n="ui.site.catalogue"
+            >Catalogue</a
+          >
+          <a
+            href="https://mister-guiiug.github.io/dev-pwa-config/"
+            aria-current="page"
+            data-i18n="ui.site.showroom"
+            >Showroom</a
+          >
+          <a
+            href="https://mister-guiiug.github.io/parc-dashboard/"
+            data-i18n="ui.site.parc"
+            >Parc</a
+          >
+        </nav>
+
+        <button
+          type="button"
+          class="sr-sommaire-toggle"
+          id="sr-sommaire-toggle"
+          aria-expanded="false"
+          aria-controls="sr-rail"
+          data-i18n="ui.toc.sommaire"
+        >
+          Sommaire
+        </button>
+
+        <nav class="sr-rail" id="sr-rail" aria-labelledby="rail-label">
+          <p id="rail-label" class="sr-visually-hidden" data-i18n="ui.rail">
+            Sur cette page
+          </p>
+          <ul class="sr-toc">
+            <li><a href="#apps" data-i18n="ui.toc.apps">Applications</a></li>
+            <li>
+              <a href="#fondations" data-i18n="ui.toc.fondations">Fondations</a>
+            </li>
+            <li>
+              <a href="#catalogue" data-i18n="ui.toc.catalogue">Catalogue</a>
+            </li>
+            <li>
+              <a href="#couleurs" data-i18n="ui.toc.couleurs">Couleurs</a>
+            </li>
+            <li>
+              <a href="#primitives" data-i18n="ui.toc.primitives">Primitives</a>
+            </li>
+            <li>
+              <a href="#composants" data-i18n="ui.toc.composants"
+                >Composants applicatifs</a
+              >
+            </li>
+            <li>
+              <a href="#decisions" data-i18n="ui.toc.decisions"
+                >Lequel choisir</a
+              >
+            </li>
+            <li><a href="#hooks" data-i18n="ui.toc.hooks">Hooks</a></li>
+            <li>
+              <a href="#a11y" data-i18n="ui.toc.a11y"
+                >Contrôles d’accessibilité</a
+              >
+            </li>
+            <li><a href="#demo" data-i18n="ui.toc.demo">Démo</a></li>
+            <li><a href="#stack" data-i18n="ui.toc.stack">Stack</a></li>
+            <li>
+              <a href="#integration" data-i18n="ui.toc.integration"
+                >Intégration</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
     </header>
 
     <main class="sr-main" id="contenu">
@@ -616,6 +646,9 @@
         id="intro"
         aria-labelledby="intro-title"
       >
+        <h1 data-i18n="intro.title" id="intro-title">
+          Le design system de la famille miss-* / mister-*
+        </h1>
         <p class="sr-lede" data-i18n="intro.lede">
           Ce paquet partage une <strong>structure</strong>, pas une identité :
           échelles fluides, points de rupture, safe-areas iOS, cible tactile, et
