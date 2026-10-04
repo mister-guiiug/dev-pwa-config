@@ -21,7 +21,20 @@
   var DENSITY_KEY = 'dwc_showroom_density';
   var PAIR_A_KEY = 'dwc_showroom_pair_a';
   var PAIR_B_KEY = 'dwc_showroom_pair_b';
+  var RECENT_KEY = 'dwc_showroom_recent';
+  var NEWS_KEY = 'dwc_showroom_news';
+  var TOUR_KEY = 'dwc_showroom_tour_done';
   var PKG_LABEL = '@mister-guiiug/dev-pwa-config';
+  /** Identifiant du ruban « nouveautés » — avancer pour réafficher. */
+  var NEWS_ID = 'wave3-2026-10-04';
+  var NEWS_ITEMS = [
+    'parcours guidé',
+    'export revue',
+    'tokens dans Ctrl+K',
+    'split doc/live',
+    'campagne contraste',
+    'habillages récents',
+  ];
 
   /* ── Langue ────────────────────────────────────────────────────────── *
    * Le français n'est pas dans un dictionnaire : c'est le HTML lui-même,
@@ -3963,11 +3976,406 @@
   function selectTheme(theme) {
     currentTheme = theme;
     write(APP_KEY, theme.id);
+    pushRecent(theme.id);
     applyScheme(currentScheme, theme);
     syncSchemeInputs(currentScheme, theme);
     // `applyTheme` rafraîchit déjà l'aperçu, la vitrine et cette légende.
     applyTheme(theme);
+    renderRecent();
     syncUrl();
+  }
+
+  function readRecent() {
+    try {
+      var raw = localStorage.getItem(RECENT_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function pushRecent(id) {
+    if (!id || id === 'generic') return;
+    var list = readRecent().filter(function (x) {
+      return x !== id;
+    });
+    list.unshift(id);
+    write(RECENT_KEY, JSON.stringify(list.slice(0, 3)));
+  }
+
+  function renderRecent() {
+    var host = document.getElementById('sr-recent');
+    if (!host) return;
+    var list = readRecent().filter(function (id) {
+      return themeById(id) && id !== 'generic';
+    });
+    host.textContent = '';
+    host.hidden = list.length === 0;
+    host.setAttribute(
+      'aria-label',
+      t('ui.recent.legend', 'Habillages récents')
+    );
+    var scheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    list.forEach(function (id) {
+      var theme = themeById(id);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sr-recent-chip';
+      btn.setAttribute('aria-pressed', String(theme.id === currentTheme.id));
+      var pal = paletteForTheme(theme, scheme) || {};
+      var sw = document.createElement('span');
+      sw.className = 'sr-sw';
+      sw.setAttribute('aria-hidden', 'true');
+      if (pal.primary) sw.style.background = pal.primary;
+      btn.appendChild(sw);
+      btn.appendChild(
+        document.createTextNode(
+          themeDisplayName(theme).replace(/^Miss |^Mister /, '')
+        )
+      );
+      btn.addEventListener('click', function () {
+        selectTheme(theme);
+      });
+      host.appendChild(btn);
+    });
+  }
+
+  function setupNews() {
+    var banner = document.getElementById('sr-news');
+    if (!banner) return;
+    if (read(NEWS_KEY, '') === NEWS_ID) {
+      banner.hidden = true;
+      return;
+    }
+    var title = document.getElementById('sr-news-title');
+    var items = document.getElementById('sr-news-items');
+    var dismiss = document.getElementById('sr-news-dismiss');
+    if (title) title.textContent = t('ui.news.title', 'Nouveautés showroom');
+    if (items) {
+      items.textContent =
+        t('ui.news.since', 'depuis votre dernière visite :') +
+        ' ' +
+        t('ui.news.list', NEWS_ITEMS.join(', '));
+    }
+    banner.hidden = false;
+    if (dismiss) {
+      dismiss.addEventListener('click', function () {
+        write(NEWS_KEY, NEWS_ID);
+        banner.hidden = true;
+      });
+    }
+  }
+
+  var TOUR_STEPS = [
+    {
+      id: 'habiller',
+      target: 'theme-picker',
+      titleKey: 'ui.tour.step1.title',
+      title: 'Habiller la page',
+      bodyKey: 'ui.tour.step1.body',
+      body: 'Ouvrez Habiller et choisissez une application — toute la page prend sa palette.',
+    },
+    {
+      id: 'couleurs',
+      target: 'couleurs',
+      titleKey: 'ui.tour.step2.title',
+      title: 'Lire les couleurs',
+      bodyKey: 'ui.tour.step2.body',
+      body: 'Les rôles sémantiques (--ds-*) sont ce que la bascule réécrit. Comparez deux apps plus bas.',
+    },
+    {
+      id: 'primitives',
+      target: 'primitives',
+      titleKey: 'ui.tour.step3.title',
+      title: 'Essayer les primitives',
+      bodyKey: 'ui.tour.step3.body',
+      body: 'Matrices Button et Badge : c’est là que les régressions de contraste se voient.',
+    },
+  ];
+  var tourStep = 0;
+
+  function setupTour() {
+    var panel = document.getElementById('sr-tour');
+    var start = document.getElementById('sr-tour-start');
+    var next = document.getElementById('sr-tour-next');
+    var skip = document.getElementById('sr-tour-skip');
+    if (!panel) return;
+
+    function renderTour() {
+      var step = TOUR_STEPS[tourStep];
+      if (!step) {
+        endTour(true);
+        return;
+      }
+      var stepsEl = document.getElementById('sr-tour-steps');
+      var title = document.getElementById('sr-tour-title');
+      var body = document.getElementById('sr-tour-body');
+      if (stepsEl) {
+        stepsEl.textContent = '';
+        TOUR_STEPS.forEach(function (s, i) {
+          var li = document.createElement('li');
+          li.textContent = i + 1 + ' ' + t(s.titleKey, s.title);
+          if (i === tourStep) li.setAttribute('aria-current', 'step');
+          if (i < tourStep) li.className = 'done';
+          stepsEl.appendChild(li);
+        });
+      }
+      if (title) title.textContent = t(step.titleKey, step.title);
+      if (body) body.textContent = t(step.bodyKey, step.body);
+      if (next) {
+        next.textContent =
+          tourStep >= TOUR_STEPS.length - 1
+            ? t('ui.tour.finish', 'Terminer')
+            : t('ui.tour.next', 'Étape suivante');
+      }
+      panel.hidden = false;
+      var target = document.getElementById(step.target);
+      if (target) {
+        if (step.target === 'theme-picker') {
+          var picker = document.getElementById('theme-picker');
+          if (picker) picker.open = true;
+        }
+        target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }
+    }
+
+    function endTour(done) {
+      panel.hidden = true;
+      var picker = document.getElementById('theme-picker');
+      if (picker) picker.open = false;
+      if (done) write(TOUR_KEY, '1');
+    }
+
+    function beginTour() {
+      tourStep = 0;
+      renderTour();
+    }
+
+    if (start) start.addEventListener('click', beginTour);
+    if (skip)
+      skip.addEventListener('click', function () {
+        endTour(true);
+      });
+    if (next)
+      next.addEventListener('click', function () {
+        tourStep += 1;
+        renderTour();
+      });
+
+    if (
+      paramOr('tour', '') === '1' ||
+      (!read(TOUR_KEY, '') && paramOr('tour', 'auto') !== '0')
+    ) {
+      // Auto seulement si jamais fait et pas ?tour=0 — on n'auto-démarre PAS
+      // pour ne pas surprendre les habitués ; seul ?tour=1 force.
+      if (paramOr('tour', '') === '1') beginTour();
+    }
+  }
+
+  function setupExportReview() {
+    var btn = document.getElementById('sr-export-review');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      exportReviewCard();
+    });
+  }
+
+  function exportReviewCard() {
+    var btn = document.getElementById('sr-export-review');
+    var canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 280;
+    canvas.className = 'sr-export-canvas';
+    var ctx = canvas.getContext('2d');
+    if (!ctx) {
+      window.alert(
+        t('ui.export.fail', 'Export indisponible dans ce navigateur.')
+      );
+      return;
+    }
+    var scheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    var pal = paletteForTheme(currentTheme, scheme) || {};
+    var bg = pal.surface || (scheme === 'dark' ? '#161b22' : '#ffffff');
+    var text = pal.text || (scheme === 'dark' ? '#e6e9ef' : '#14181f');
+    var primary = pal.primary || text;
+    var soft = pal.primarySoft || pal.surface2 || bg;
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = text;
+    ctx.font = '700 22px Segoe UI, system-ui, sans-serif';
+    ctx.fillText(themeDisplayName(currentTheme), 24, 40);
+    ctx.font = '400 14px Segoe UI, system-ui, sans-serif';
+    ctx.fillStyle = pal.textSoft || text;
+    ctx.fillText(
+      t('ui.export.caption', 'Showroom · {scheme}').replace(
+        '{scheme}',
+        scheme === 'dark'
+          ? t('ui.scheme.dark', 'Sombre')
+          : t('ui.scheme.light', 'Clair')
+      ),
+      24,
+      64
+    );
+    var colors = [
+      ['primary', primary],
+      ['soft', soft],
+      ['text', text],
+      ['surface', bg],
+    ];
+    colors.forEach(function (entry, i) {
+      var x = 24 + i * 72;
+      ctx.fillStyle = entry[1];
+      ctx.fillRect(x, 90, 56, 56);
+      ctx.strokeStyle = text;
+      ctx.globalAlpha = 0.25;
+      ctx.strokeRect(x + 0.5, 90.5, 55, 55);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = text;
+      ctx.font = '12px ui-monospace, Consolas, monospace';
+      ctx.fillText(entry[0], x, 166);
+    });
+    var labels = ['Primary', 'Secondary', 'Ghost'];
+    labels.forEach(function (label, i) {
+      var x = 24 + i * 140;
+      var y = 195;
+      if (i === 0) {
+        ctx.fillStyle = primary;
+        ctx.fillRect(x, y, 120, 40);
+        ctx.fillStyle = pal.primaryContrast || bg;
+      } else if (i === 1) {
+        ctx.strokeStyle = primary;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 1, y + 1, 118, 38);
+        ctx.fillStyle = text;
+      } else {
+        ctx.fillStyle = soft;
+        ctx.fillRect(x, y, 120, 40);
+        ctx.fillStyle = text;
+      }
+      ctx.font = '600 14px Segoe UI, system-ui, sans-serif';
+      ctx.fillText(label, x + 18, y + 26);
+    });
+    canvas.toBlob(function (blob) {
+      if (!blob) {
+        window.alert(
+          t('ui.export.fail', 'Export indisponible dans ce navigateur.')
+        );
+        return;
+      }
+      var done = function () {
+        if (!btn) return;
+        btn.textContent = t('ui.export.done', 'Image prête');
+        window.setTimeout(function () {
+          btn.textContent = t('ui.export.cta', 'Exporter pour revue');
+        }, 1600);
+      };
+      if (navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard
+          .write([new ClipboardItem({ 'image/png': blob })])
+          .then(done)
+          .catch(function () {
+            downloadBlob(blob, 'showroom-' + currentTheme.id + '.png');
+            done();
+          });
+      } else {
+        downloadBlob(blob, 'showroom-' + currentTheme.id + '.png');
+        done();
+      }
+    }, 'image/png');
+  }
+
+  function downloadBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    window.setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+
+  function setupDemoSplit() {
+    document.querySelectorAll('.sr-demo').forEach(function (demo) {
+      if (demo.querySelector('.sr-demo-docs')) return;
+      var details = demo.querySelector(':scope > details');
+      if (!details) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'sr-demo-docs';
+      demo.insertBefore(wrap, details);
+      wrap.appendChild(details);
+    });
+  }
+
+  function renderContrastCampaign() {
+    var table = document.getElementById('a11y-campaign');
+    var status = document.getElementById('a11y-campaign-status');
+    var select = document.getElementById('a11y-campaign-scheme');
+    if (!table) return;
+    var scheme = select && select.value === 'dark' ? 'dark' : 'light';
+    var tbody = table.querySelector('tbody');
+    tbody.textContent = '';
+    var fails = 0;
+    themes.forEach(function (theme) {
+      var pal = paletteForTheme(theme, scheme);
+      if (!pal) return;
+      var pairs = [
+        [pal.text, pal.surface || pal.bg],
+        [pal.primaryContrast, pal.primary],
+        [pal.text, pal.primarySoft || pal.surface2],
+      ];
+      var tr = document.createElement('tr');
+      var name = document.createElement('th');
+      name.scope = 'row';
+      name.textContent = themeDisplayName(theme);
+      tr.appendChild(name);
+      pairs.forEach(function (pair) {
+        var td = document.createElement('td');
+        var ratio = pair[0] && pair[1] ? contrastRatio(pair[0], pair[1]) : null;
+        if (ratio == null) {
+          td.textContent = '—';
+        } else {
+          var ok = ratio >= 4.5;
+          if (!ok) fails += 1;
+          td.textContent = ratio.toFixed(1);
+          td.className = ok ? 'sr-cell-ok' : 'sr-cell-ko';
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    if (status) {
+      status.textContent = fails
+        ? t('ui.campaign.fails', '{n} échecs sous 4,5:1').replace(
+            '{n}',
+            String(fails)
+          )
+        : t('ui.campaign.ok', 'Tous les ratios ≥ 4,5:1');
+    }
+  }
+
+  function setupContrastCampaign() {
+    var select = document.getElementById('a11y-campaign-scheme');
+    if (select && !select.dataset.bound) {
+      select.dataset.bound = '1';
+      select.value =
+        root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      select.addEventListener('change', renderContrastCampaign);
+    }
+    // Libellés du select (pas de data-i18n : clés déjà prises par les prefs).
+    if (select) {
+      var label = document.querySelector('label[for="a11y-campaign-scheme"]');
+      if (label)
+        label.textContent = t('ui.scheme.legend', 'Schéma de couleurs');
+      Array.prototype.forEach.call(select.options, function (opt) {
+        opt.textContent =
+          opt.value === 'dark'
+            ? t('ui.scheme.dark', 'Sombre')
+            : t('ui.scheme.light', 'Clair');
+      });
+    }
+    renderContrastCampaign();
   }
 
   function setInspect(on) {
@@ -4726,7 +5134,10 @@
     fillThemeSelect(document.getElementById('theme-app'));
     fillThemeSelect(document.getElementById('theme-app-dock'));
     renderThemeGrid();
+    setupDemoSplit();
     applyTheme(currentTheme);
+    renderRecent();
+    setupContrastCampaign();
     measure();
     // Après le rendu : les tableaux engendrés doivent être étiquetés eux aussi.
     labelTableCells();
@@ -4798,12 +5209,15 @@
   setupThemePicker();
   setupDock();
   setupCheatsheet();
+  setupExportReview();
+  setupTour();
 
   currentDensity = applyDensity(currentDensity);
   applyScheme(currentScheme, currentTheme);
   syncSchemeInputs(currentScheme, currentTheme);
   applyLang(initialLang);
   renderGenerated();
+  setupNews();
   setupInspect();
   setupSectionFocus();
   syncPrefsBadge();
@@ -4826,6 +5240,8 @@
         component: t('ui.cmd.component', 'Composant'),
         app: t('ui.cmd.app', 'Application'),
         filter: t('ui.cmd.filter', 'Filtrer'),
+        token: t('ui.cmd.token', 'Token'),
+        action: t('ui.cmd.action', 'Action'),
       };
     }
 
@@ -4846,6 +5262,37 @@
           label: item.name || item.id,
           href: '#app-' + item.id,
         });
+      });
+      var styles = getComputedStyle(root);
+      ROLES.forEach(function (role) {
+        var value = styles.getPropertyValue(role[1]).trim();
+        out.push({
+          kind: 'token',
+          label: role[1] + (value ? ' · ' + value : ''),
+          href: '#couleurs',
+          token: role[1],
+          value: value,
+          search: (
+            role[0] +
+            ' ' +
+            role[1] +
+            ' ' +
+            role[2] +
+            ' ' +
+            value
+          ).toLowerCase(),
+        });
+        if (value) {
+          out.push({
+            kind: 'action',
+            label: t('ui.cmd.copyToken', 'Copier {token}').replace(
+              '{token}',
+              role[1]
+            ),
+            copy: value,
+            search: (role[0] + ' ' + role[1] + ' copy copier').toLowerCase(),
+          });
+        }
       });
       return out;
     }
@@ -4906,7 +5353,8 @@
       }
       hits = index()
         .filter(function (item) {
-          return item.label.toLowerCase().indexOf(term) !== -1;
+          var hay = item.search || item.label.toLowerCase();
+          return hay.indexOf(term) !== -1;
         })
         .slice(0, 7);
       hits.unshift({
@@ -4925,6 +5373,12 @@
     function go(hit) {
       close();
       input.value = '';
+      if (hit.copy) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(hit.copy).catch(function () {});
+        }
+        return;
+      }
       if (hit.filter != null) {
         appQuery = hit.filter;
         renderAppGrid();

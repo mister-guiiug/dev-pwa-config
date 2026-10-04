@@ -38,6 +38,8 @@ const DYNAMIC_PREFIXES = [
   'ui.backend.',
   'ui.category.',
   'ui.platform.',
+  // Étapes du parcours guidé : clés portées par TOUR_STEPS (titleKey/bodyKey).
+  'ui.tour.step',
 ];
 
 test('chaque langue déclare un dictionnaire non vide', () => {
