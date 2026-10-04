@@ -206,12 +206,12 @@ ce qu'elles ont appris est dans les bilans.
 
 **Ce qui reste ouvert :**
 
-| #       | Ce qui reste                                                                                          | À qui                  |
-| ------- | ----------------------------------------------------------------------------------------------------- | ---------------------- |
-| T12–T15 | retirer les modules `experimental-modules.js` à la date indiquée ; engendrer les `.d.ts`              | une majeure (v7)       |
-| F8      | « Nouveautés » après une mise à jour, alimentée par `version.json` et le CHANGELOG                    | si un besoin l'appelle |
-| —       | activer le hook « Custom Access Token » et la liste d'URL de retour sur les projets Supabase hébergés | propriétaire           |
-| —       | OIDC Firebase (Workload Identity) pour puzzle / qowa / ticket-pwa — supprimer `FIREBASE_TOKEN`        | propriétaire (GCP)     |
+| #       | Ce qui reste                                                                                                                          | À qui                  |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| T12–T15 | élargir l’adoption des modules peu utilisés (apport + campagnes apps), puis types / foyer catalogue ; voir [`docs/V7.md`](docs/V7.md) | une majeure (v7)       |
+| F8      | « Nouveautés » après une mise à jour, alimentée par `version.json` et le CHANGELOG                                                    | si un besoin l'appelle |
+| —       | activer le hook « Custom Access Token » et la liste d'URL de retour sur les projets Supabase hébergés                                 | propriétaire           |
+| —       | OIDC Firebase (Workload Identity) pour puzzle / qowa / ticket-pwa — supprimer `FIREBASE_TOKEN`                                        | propriétaire (GCP)     |
 
 _Livré depuis (04/10/2026) : `pwa-env`, `pwa-doctor --fix`, `wf-permissions`,
 gabarits `ci.yml`/`index.html` retirés, dette `links`/`Stat` fermée, registre

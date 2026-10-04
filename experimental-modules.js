@@ -7,20 +7,17 @@
  * le retirer. Les chemins restent importables jusqu'au retrait.
  *
  * Mis à jour à la main quand `scripts/dead-exports` / le relevé README
- * montrent un zéro durable. Ne PAS y mettre un module encore importé.
+ * montrent un zéro durable. Ne PAS y mettre un module encore importé par
+ * ≥ 2 apps (ou le squelette) — voir docs/V7.md.
+ *
+ * Relevé parc 04/10/2026 : `speech` retiré du registre (dice, cim10, molkky).
  */
 export const EXPERIMENTAL_MODULES = [
-  {
-    subpath: 'speech',
-    since: '2026-10-04',
-    retireAfter: '2027-01-04',
-    note: 'aucun importateur parc au relevé stratégique',
-  },
   {
     subpath: 'haptics',
     since: '2026-10-04',
     retireAfter: '2027-01-04',
-    note: 'adoption ponctuelle historique ; hors squelette',
+    note: '1 adoptant (miss-contraction) ; hors squelette',
   },
   {
     subpath: 'vcard',
@@ -32,19 +29,19 @@ export const EXPERIMENTAL_MODULES = [
     subpath: 'markdown',
     since: '2026-10-04',
     retireAfter: '2027-01-04',
-    note: 'zéro importateur',
+    note: '1 adoptant (mister-miss-koh)',
   },
   {
     subpath: 'audio',
     since: '2026-10-04',
     retireAfter: '2027-01-04',
-    note: 'zéro importateur',
+    note: '1 adoptant (mister-molkky)',
   },
   {
     subpath: 'similarity',
     since: '2026-10-04',
     retireAfter: '2027-01-04',
-    note: 'hors squelette',
+    note: 'family-map + bac-sable ; arbitrer si bac-sable compte',
   },
   {
     subpath: 'geocode-ban',
@@ -86,7 +83,7 @@ export const EXPERIMENTAL_MODULES = [
     subpath: 'react/use-long-press',
     since: '2026-10-04',
     retireAfter: '2027-01-04',
-    note: 'hook sans adoptant',
+    note: '1 adoptant (miss-badminton)',
   },
   {
     subpath: 'react/use-fullscreen',
