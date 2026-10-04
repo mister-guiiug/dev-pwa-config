@@ -19,7 +19,9 @@
 globalThis.SHOWROOM_I18N = {
   en: {
     /* ── Chrome ───────────────────────────────────────────────────────── */
-    'topbar.themeLabel': 'Theme',
+    'topbar.brand': 'Showroom',
+    'topbar.themeLabel': 'Dress',
+    'ui.prefs.summary': 'Preferences',
     'ui.sites': 'Family pages',
     'ui.site.catalogue': 'Catalogue',
     'ui.site.showroom': 'Showroom',
@@ -37,6 +39,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.scheme.system': 'System',
     'ui.lang.label': 'Language',
     'ui.rail': 'On this page',
+    'ui.toc.sommaire': 'Contents',
 
     /* ── Intro ────────────────────────────────────────────────────────── */
     'intro.title': 'The miss-* / mister-* family design system',

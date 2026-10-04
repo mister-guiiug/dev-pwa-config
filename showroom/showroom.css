@@ -188,8 +188,8 @@ pre code {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem 1rem;
-  padding: 0.45rem var(--spacing-fluid-md) 0.35rem;
+  gap: 0.55rem 0.85rem;
+  padding: 0.4rem var(--spacing-fluid-md) 0.3rem;
 }
 
 .sr-brand {
@@ -197,55 +197,203 @@ pre code {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 0.12rem;
-  margin-right: auto;
+  gap: 0.05rem;
   min-width: 0;
 }
 
-/* Marque à gauche, commandes groupées à droite. Sous `sm`, le groupe passe
-   à la ligne : une seconde rangée pleine, pas un sélecteur seul au milieu
-   d'une ligne vide. */
-.sr-topbar-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.sr-theme-pick {
+.sr-brand-name {
   margin: 0;
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
-.sr-control.sr-theme-pick select {
-  max-width: 20rem;
+.sr-brand-pkg {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--text-fluid-xs);
+  color: var(--ds-text-soft);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
+/* Contrôle primaire : endosser une app. */
+.sr-theme-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: min(16rem, 100%);
+  flex: 1 1 14rem;
+  max-width: 22rem;
+}
+
+.sr-theme-primary > label {
+  font-size: var(--text-fluid-xs);
+  font-weight: 600;
+  color: var(--ds-text-soft);
+}
+
+.sr-theme-primary-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.sr-theme-primary select {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  font: inherit;
+  font-size: var(--text-fluid-sm);
+  font-weight: 600;
+  color: var(--ds-text);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-primary);
+  border-radius: calc(var(--ds-radius) * 0.7);
+  padding: 0.4rem 0.65rem;
+  min-height: 2.5rem;
+}
+
+.sr-theme-swatches {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 0.2rem;
+}
+
+.sr-theme-swatches [data-swatch] {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ds-text) 18%, transparent);
+  background: var(--ds-border);
+}
+
+.sr-theme-swatches [data-swatch='surface'] {
+  border-radius: 0.2rem;
+}
+
+/* Liens parc : discrets — le job du showroom n'est pas la nav inter-sites. */
 .sr-sites {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.15rem 0.65rem;
 }
 
 .sr-sites a {
   display: inline-flex;
   align-items: center;
-  min-height: 2rem;
-  padding: 0.1rem 0.65rem;
+  min-height: 1.75rem;
+  padding: 0.05rem 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--ds-text-soft);
+  font-size: var(--text-fluid-xs);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sr-sites a:hover {
+  color: var(--ds-text);
+}
+
+.sr-sites a[aria-current='page'] {
+  border-bottom-color: var(--ds-primary);
+  background: none;
+  color: var(--ds-text);
+  font-weight: 700;
+}
+
+.sr-topbar-secondary {
+  max-width: 68rem;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  padding: 0 0 0.15rem;
+  padding-inline: var(--spacing-fluid-md);
+}
+
+.sr-sommaire-toggle {
+  display: none;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.7rem;
   border: 1px solid var(--ds-border);
   border-radius: 999px;
   background: var(--ds-surface);
   color: var(--ds-text);
+  font: inherit;
   font-size: var(--text-fluid-xs);
   font-weight: 600;
-  text-decoration: none;
+  cursor: pointer;
 }
 
-.sr-sites a[aria-current='page'] {
+.sr-sommaire-toggle[aria-expanded='true'] {
   border-color: var(--ds-primary);
-  background: color-mix(in srgb, var(--ds-primary) 12%, var(--ds-surface));
   color: var(--ds-primary);
+}
+
+/* Préférences regroupées (schéma + langue). */
+.sr-prefs {
+  position: relative;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.sr-prefs-summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.35rem;
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius) * 0.7);
+  background: var(--ds-surface);
+  color: var(--ds-text-soft);
+  cursor: pointer;
+}
+
+.sr-prefs-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sr-prefs[open] .sr-prefs-summary {
+  border-color: var(--ds-primary);
+  color: var(--ds-primary);
+}
+
+.sr-prefs-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 12.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 0.75rem;
+  background: var(--ds-surface);
+  box-shadow: 0 0.4rem 1.2rem
+    color-mix(in srgb, var(--ds-text) 12%, transparent);
+}
+
+.sr-prefs-panel legend {
+  margin: 0 0 0.35rem;
+  padding: 0;
+  font-size: var(--text-fluid-xs);
+  font-weight: 600;
+  color: var(--ds-text-soft);
 }
 
 .sr-cmd {
@@ -369,97 +517,74 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
     column-gap: 0.5rem;
   }
 
-  /* Le titre et les icônes restent sur la première ligne. Les liens, la
-     recherche, puis le sélecteur de thème prennent chacun une ligne pleine. */
-  .sr-topbar-tools {
-    display: contents;
-  }
-
   .sr-brand {
     grid-column: 1;
     grid-row: 1;
-    margin-right: 0;
   }
 
-  .sr-topbar-switches {
+  .sr-prefs {
     grid-column: 2;
     grid-row: 1;
+    margin-left: 0;
+    justify-self: end;
   }
 
-  .sr-sites,
+  .sr-theme-primary {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-width: none;
+  }
+
   .sr-cmd {
     grid-column: 1 / -1;
+    grid-row: 3;
     min-width: 0;
     max-width: none;
+  }
+
+  .sr-topbar-secondary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.4rem 0.5rem;
   }
 
   .sr-sites {
-    grid-row: 2;
-  }
-
-  .sr-cmd {
-    grid-row: 3;
-  }
-
-  .sr-theme-pick {
     grid-column: 1 / -1;
-    grid-row: 4;
-    min-width: 0;
   }
 
-  .sr-control.sr-theme-pick select {
-    width: 100%;
-    max-width: none;
+  .sr-sommaire-toggle {
+    display: inline-flex;
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .sr-rail {
+    grid-column: 1 / -1;
+  }
+
+  .sr-topbar[data-sommaire='closed'] .sr-rail {
+    display: none;
   }
 }
 
-/* Sous ~376 px le titre et les cinq icônes ne tiennent plus côte à côte :
-   chaque commande prend une ligne pleine, sans texte écrasé. */
 @media (max-width: 23.5rem) {
   .sr-brand,
-  .sr-theme-pick,
-  .sr-topbar-switches {
+  .sr-prefs {
     grid-column: 1 / -1;
   }
 
-  .sr-brand {
-    grid-row: 1;
-  }
-
-  .sr-sites {
-    grid-row: 2;
-  }
-
-  .sr-cmd {
-    grid-row: 3;
-  }
-
-  .sr-theme-pick {
-    grid-row: 4;
-  }
-
-  .sr-topbar-switches {
-    grid-row: 5;
+  .sr-prefs {
     justify-self: start;
   }
 }
 
-.sr-brand h1 {
-  margin: 0;
+.sr-hero h1 {
+  margin: 0 0 0.65rem;
   font-family: var(--ds-font-display);
-  font-size: clamp(1.05rem, 2.1vw, 1.35rem);
+  font-size: clamp(1.45rem, 3.2vw, 2rem);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
-}
-
-.sr-brand span {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .sr-control {
@@ -538,13 +663,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   line-height: 1;
 }
 
-.sr-topbar-switches {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.sr-topbar-switches fieldset {
+.sr-prefs-panel fieldset {
   border: 0;
   margin: 0;
   padding: 0;
@@ -666,13 +785,12 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   font-weight: 600;
 }
 
-/* Le sommaire reste sous la main : la barre est déjà collée, le rail défile
-   en travers quand les douze sections ne tiennent pas. */
+/* Chips de sommaire : une rangée qui défile, pas un second mur. */
 .sr-rail {
-  max-width: 68rem;
-  margin: 0.15rem auto 0;
+  flex: 1 1 12rem;
+  min-width: 0;
   overflow-x: auto;
-  border-top: 1px solid var(--ds-border);
+  border-top: 0;
   scrollbar-width: none;
 }
 
@@ -680,7 +798,13 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   flex-wrap: nowrap;
   width: max-content;
   margin: 0;
-  padding: 0.3rem var(--spacing-fluid-md);
+  padding: 0.2rem 0;
+  gap: 0.35rem;
+}
+
+.sr-rail .sr-toc a {
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem;
 }
 
 .sr-subtitle {
@@ -2322,7 +2446,10 @@ span[data-dwc='family-app-icon'] {
 
   /* Ce qui ne sert qu'à piloter la page. */
   .sr-skip,
-  .sr-topbar-tools,
+  .sr-prefs,
+  .sr-cmd,
+  .sr-theme-swatches,
+  .sr-sommaire-toggle,
   .sr-copy,
   .sr-pg-controls,
   .sr-cat-controls,
@@ -2342,7 +2469,9 @@ span[data-dwc='family-app-icon'] {
     backdrop-filter: none;
   }
 
+  .sr-topbar[data-sommaire='closed'] .sr-rail,
   .sr-rail {
+    display: block !important;
     overflow: visible;
     border: 0;
     max-width: none;
