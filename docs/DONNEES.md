@@ -402,6 +402,43 @@ Ce que la file garantit — et que les copies rataient :
 au fil de la file) ; `sync-queue` est la version hors-React, plus complète,
 pour une couche backend ou un service de synchronisation.
 
+### Cache de lecture serveur (`/react/query-client`)
+
+Le troisième chemin — ni la montée (`sync-queue`) ni la descente (`realtime/`) :
+le **cache de lecture** TanStack Query. Promu de quatre apps (miss-supaboss,
+miss-supatool, miss-devises, mister-miss-koh) qui écrivaient la même fabrique
+singleton.
+
+```ts
+import {
+  getQueryClient,
+  createQueryClient,
+} from '@mister-guiiug/dev-pwa-config/react/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
+
+// Defaults famille : staleTime 30 s, retry 1, refetchOnWindowFocus false,
+// refetchOnReconnect true. Une app les surcharge (taux à 1 h, focus true…).
+const client = getQueryClient({
+  queries: { staleTime: 3_600_000, gcTime: 3_600_000 },
+});
+
+// L'app pose le provider — le socle ne l'impose pas.
+<QueryClientProvider client={client}>{children}</QueryClientProvider>;
+```
+
+Ce que le module refuse volontairement :
+
+- **pas de provider dans le baril `react`** — importerait `@tanstack/react-query`
+  chez les apps locales qui n'en ont pas besoin (même motif que
+  `react/observability`) ;
+- **pas de `useMutation` branché sur `sync-queue`** — sémantiques différentes
+  (lettres mortes, fusion `keyOf`, persistance) ;
+- **`refetchOnWindowFocus: false` par défaut** — un référentiel ou des taux
+  ne se relisent pas entiers à chaque retour d'onglet ; miss-supaboss demande
+  `true` explicitement.
+
+Pair optionnelle : `@tanstack/react-query` `^5.0.0`.
+
 ### Temps réel (`/realtime`, `/realtime/supabase`)
 
 Le chemin **descendant** : recevoir ce que les autres ont changé, et savoir
