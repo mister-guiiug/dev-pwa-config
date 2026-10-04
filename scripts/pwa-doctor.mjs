@@ -4,6 +4,7 @@
  *
  *   npx pwa-doctor                 # depuis la racine de l'app, après le build
  *   npx pwa-doctor --strict        # en CI : une dette suffit à échouer
+ *   npx pwa-doctor --fix           # réécrit les fichiers figés corrigeables
  *   npx pwa-doctor --dir ../x --json
  *
  * À QUOI ÇA SERT. Le 02/09/2026, une app n'était pas installable (manifeste
@@ -67,6 +68,8 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
 import { estPointDEntree } from './entree.mjs';
+import { applyFixes, FIXABLE, permissionsManquantes } from './doctor-fix.mjs';
+import { check as checkEnvManifest } from './pwa-env.mjs';
 import {
   decodeEntities,
   escapesSite,
@@ -81,6 +84,7 @@ import {
   visibleText,
 } from './site-readers.mjs';
 import { appById, PUBLISHER } from '../apps-catalog.js';
+import { experimentalImports } from '../experimental-modules.js';
 // LES MÊMES PAGES QUE LE BUILD : le docteur lit `content/pages` par les
 // fonctions du plugin, pas par une copie de ses règles — `seo-content-pages`
 // comptait tout `.md`, README compris, quand le build les ignorait.
@@ -1296,6 +1300,23 @@ export function reglesWorkflows(ctx, api) {
         'les passer en vars — un secret masque les journaux, pas la valeur'
       );
     }
+
+    // Un appelant qui accorde moins que le réutilisable échoue au DÉMARRAGE
+    // (startup_failure), sans journal et sans bloquer la fusion — le Lighthouse
+    // du squelette l'a payé neuf fois avant le 06/09/2026.
+    for (const w of workflows) {
+      const gaps = permissionsManquantes(w.text);
+      if (!gaps.length) continue;
+      const detail = gaps
+        .map(g => `${g.workflow} manque ${g.missing.join(', ')}`)
+        .join(' ; ');
+      defaut(
+        'wf-permissions',
+        `${basename(w.rel)} : ${detail}`,
+        'aligner le bloc permissions: de l’appelant sur celui du réutilisable (voir en-tête du workflow socle)'
+      );
+      break;
+    }
   }
 }
 
@@ -1632,6 +1653,39 @@ export function reglesSource(ctx, api) {
       'versionPlugin({ manifest: true }) (vite-version) + <AppVersion updates /> (react/app-version)'
     );
   }
+  // Manifeste d'env (CONFIG.md) : s'il est posé, ses invariants tiennent.
+  if (existsSync(join(root, 'config/env.manifest.json'))) {
+    const envCheck = checkEnvManifest(root);
+    if (!envCheck.ok) {
+      const invariants = envCheck.errors.filter(
+        e => !e.includes('.env.example')
+      );
+      if (invariants.length) {
+        defaut(
+          'env-manifest',
+          `config/env.manifest.json invalide : ${invariants[0]}`,
+          'pwa-env check — corriger le manifeste'
+        );
+      } else {
+        dette(
+          'env-manifest',
+          envCheck.errors[0] ?? '.env.example désaligné du manifeste',
+          'pwa-env sync --write'
+        );
+      }
+    }
+  }
+
+  // Modules expérimentaux (retrait daté) : info, pas dette — le code compile.
+  const exps = experimentalImports(srcText);
+  if (exps.length) {
+    info(
+      'experimental-import',
+      `import de module(s) experimental : ${exps.join(', ')}`,
+      'voir experimental-modules.js — migrer ou accepter le retrait à la date indiquée'
+    );
+  }
+
   // Toute VITE_* que le code lit doit figurer dans `.env.example` : c'est la
   // seule documentation qu'un nouveau venu lira.
   const lues = [
@@ -2082,6 +2136,7 @@ export const CATALOGUE = [
   { id: 'wf-v3', famille: 'workflows', niveau: 'dette' },
   { id: 'secrets-inherit', famille: 'workflows', niveau: 'défaut' },
   { id: 'vite-en-secret', famille: 'workflows', niveau: 'dette' },
+  { id: 'wf-permissions', famille: 'workflows', niveau: 'défaut' },
   { id: 'auto-update', famille: 'source', niveau: 'dette' },
   { id: 'prefetch-routes', famille: 'source', niveau: 'dette' },
   { id: 'nav-attente', famille: 'source', niveau: 'dette' },
@@ -2097,6 +2152,8 @@ export const CATALOGUE = [
   { id: 'theme-color', famille: 'source', niveau: 'dette' },
   { id: 'csp', famille: 'source', niveau: 'dette' },
   { id: 'version-manifest', famille: 'source', niveau: 'dette' },
+  { id: 'env-manifest', famille: 'source', niveau: 'défaut' },
+  { id: 'experimental-import', famille: 'source', niveau: 'info' },
   { id: 'env-example', famille: 'source', niveau: 'dette' },
   { id: 'env-example-incomplet', famille: 'source', niveau: 'dette' },
   { id: 'liens-famille', famille: 'source', niveau: 'dette' },
@@ -2264,6 +2321,7 @@ export async function run(args = []) {
     args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined;
   const dir = at('--dir') ?? process.cwd();
   const strict = args.includes('--strict');
+  const doFix = args.includes('--fix');
 
   // `--regles` ne lit aucun dépôt : c'est le catalogue du docteur, pour savoir
   // ce qui est contrôlé AVANT de le lancer, et pour écrire un `--only` ou un
@@ -2294,10 +2352,28 @@ export async function run(args = []) {
     );
     return 2;
   }
-  const faits = await faitsDepot(resolve(dir), {
+  const root = resolve(dir);
+  const faits = await faitsDepot(root, {
     offline: args.includes('--no-github'),
   });
-  const report = diagnose(dir, faits, options);
+  let report = diagnose(dir, faits, options);
+
+  if (doFix) {
+    const candidates = report.findings.filter(f => FIXABLE.has(f.id));
+    const { written } = applyFixes(root, candidates, {
+      nodeVersion: '26.10.0',
+      preset: PRESET,
+    });
+    if (written.length) {
+      console.log(`pwa-doctor --fix : ${written.length} fichier(s)`);
+      for (const w of written) console.log(`  ✓ ${w}`);
+      console.log('');
+      report = diagnose(dir, faits, options);
+    } else {
+      console.log('pwa-doctor --fix : rien à corriger parmi les findings.\n');
+    }
+  }
+
   if (args.includes('--json')) console.log(JSON.stringify(report, null, 2));
   else console.log(format(report));
   const defauts = report.findings.some(f => f.level === 'défaut');

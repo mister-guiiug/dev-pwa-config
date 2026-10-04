@@ -11,7 +11,7 @@ projets PWA de la famille `miss-*` et `mister-*`.
 
 ## Où lire quoi
 
-Le manuel de ce socle ne tenait plus dans une page : 167 sous-chemins, huit
+Le manuel de ce socle ne tenait plus dans une page : 167 sous-chemins, neuf
 binaires, onze workflows réutilisables. Il vit dans `docs/`, découpé par sujet,
 et rien n'y a été résumé, seulement déplacé.
 
@@ -105,8 +105,9 @@ disait 46 : douze doublons étaient donc **invisibles à l'instrument** — neuf
 besoins qu'il ne savait pas acquitter, trois façades qu'il comptait comme des
 réécritures. Le reste de la baisse est du travail réel. Confondre les deux
 attribuerait à la campagne ce que personne n'a fait (voir `CAMPAGNE.md`). Au
-relevé du 07/09 (tableau ci-dessous), il ne reste que trois fichiers recopiés :
-`links` (2) et `Stat` (1).
+relevé du 07/09, il ne restait que trois fichiers (`links` ×2, `Stat` ×1) —
+fermé le 04/10/2026. Le tableau ci-dessous doit rester à zéro dans la colonne
+« Encore recopié ».
 
 **Et il SOUS-ESTIME encore la dette.** Il compte les copies d'un catalogue de
 besoins **déjà nommés** : une app qui réécrit quelque chose que le catalogue
@@ -145,17 +146,12 @@ plafond assumé n'est pas un défaut — il doit seulement rester une décision.
 
 _Relevé du 2026-10-01 sur 21 dépôts, par `npm run adoption`._
 
-> **Dette d'adoption : 3 fichiers recopiés** dans 21 apps, sur 2 besoins distincts. Les pires : `links` (2), `Stat` (1).
->
-> **Aucun de ces doublons ne manque au socle** : tout est déjà publié. Ce n'est pas un problème de modules, c'en est un de migration — `node scripts/adopt.mjs` en fait l’essai à blanc, app par app.
-
 | Export ou module              | Importé par | Encore recopié dans |
 | ----------------------------- | ----------- | ------------------- |
 | `baseTestOptions`             | 20 / 21     | —                   |
 | `pwaSeoPlugin`                | 20 / 21     | —                   |
 | `UpdatePromptBanner`          | 20 / 21     | —                   |
 | `versionPlugin`               | 20 / 21     | —                   |
-| `links`                       | 16 / 21     | 2 / 21              |
 | `ConfirmDialog`               | 16 / 21     | —                   |
 | `createLogger`                | 16 / 21     | —                   |
 | `cspPlugin`                   | 16 / 21     | —                   |
@@ -223,11 +219,11 @@ _Relevé du 2026-10-01 sur 21 dépôts, par `npm run adoption`._
 | `RegisterSW`                  | 4 / 21      | —                   |
 | `SegmentedControl`            | 4 / 21      | —                   |
 | `setDefaultLocale`            | 4 / 21      | —                   |
+| `Stat`                        | 4 / 21      | —                   |
 | `SyncQueue`                   | 4 / 21      | —                   |
 | `SyncQueueEntry`              | 4 / 21      | —                   |
 | `textWidth`                   | 4 / 21      | —                   |
 | `validateImageFile`           | 4 / 21      | —                   |
-| `Stat`                        | 3 / 21      | 1 / 21              |
 | `AppVersion`                  | 3 / 21      | —                   |
 | `BadgeTone`                   | 3 / 21      | —                   |
 | `compressImageToMaxBytes`     | 3 / 21      | —                   |
@@ -939,9 +935,11 @@ Restent deux gestes, volontairement hors du générateur :
 6. **CI/CD** (secrets passés NOMMÉMENT — jamais `inherit` — + `permissions` au niveau caller) : `ci.yml` →
    `pwa-ci.yml@v6`, `deploy.yml` → `pwa-deploy.yml@v6`, `lighthouse.yml` →
    `pwa-lighthouse.yml@v6`.
-7. **PWA/SEO** : `index.html` depuis [`templates/index.html`](./templates/index.html) +
-   `pwaSeoPlugin` + `cspPlugin` dans `vite.config.ts`.
+7. **PWA/SEO** : `index.html` depuis le squelette `pwa-starter-kit` (plus depuis
+   `templates/`) + `pwaSeoPlugin` + `cspPlugin` dans `vite.config.ts`. Préférer
+   `npx create-lg-pwa-app` à une copie manuelle.
 8. **Famille** : `<FamilyApps>` (écran Réglages/À propos) + `.github/FUNDING.yml`.
+9. **Env** (opt-in) : `config/env.manifest.json` + `pwa-env check` / `sync`.
 
 ## Reusable workflows GitHub Actions
 
@@ -1070,26 +1068,27 @@ jobs:
 
 ## Templates non-importables (à copier-coller)
 
-Le dossier [`templates/`](./templates/) contient des fichiers que les outils (VSCode, husky, etc.) ne savent pas importer depuis un paquet npm. Ils servent de **référence** au démarrage d'un nouveau projet — copier dans le projet puis ajuster.
+Le dossier [`templates/`](./templates/) contient des fichiers que les outils
+(VSCode, husky, etc.) ne savent pas importer depuis un paquet npm. **La
+composition d'une app (CI, `index.html`, Vite) vient du squelette
+`pwa-starter-kit`**, pas d'ici — voir [`templates/README.md`](./templates/README.md).
 
-| Template                                                                           | Cible projet                            | Personnalisation typique                                                                    |
-| ---------------------------------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [`templates/vscode/extensions.json`](./templates/vscode/extensions.json)           | `<projet>/.vscode/extensions.json`      | Aucune (à dupliquer tel quel)                                                               |
-| [`templates/vscode/settings.json`](./templates/vscode/settings.json)               | `<projet>/.vscode/settings.json`        | Aucune                                                                                      |
-| [`templates/vscode/tasks.json`](./templates/vscode/tasks.json)                     | `<projet>/.vscode/tasks.json`           | Ajouter les tasks `test:e2e:critical`, `test:e2e:a11y` etc. selon les scripts du projet     |
-| [`templates/vscode/launch.json`](./templates/vscode/launch.json)                   | `<projet>/.vscode/launch.json`          | Adapter `url` au base path (`/mister-puzzle/`, etc.) et `sourceMapPathOverrides`            |
-| [`templates/github-workflows/ci.yml`](./templates/github-workflows/ci.yml)         | `<projet>/.github/workflows/ci.yml`     | **Préférer le reusable `pwa-ci.yml`** (template déprécié, conservé pour cas hors-stack)     |
-| [`templates/github-workflows/deploy.yml`](./templates/github-workflows/deploy.yml) | `<projet>/.github/workflows/deploy.yml` | Lister les `VITE_*` de l'app dans `build-env` (lues en `vars`) et `required-env`            |
-| [`templates/husky/pre-commit`](./templates/husky/pre-commit)                       | `<projet>/.husky/pre-commit`            | Aucune                                                                                      |
-| [`templates/husky/commit-msg`](./templates/husky/commit-msg)                       | `<projet>/.husky/commit-msg`            | Aucune                                                                                      |
-| [`templates/.editorconfig`](./templates/.editorconfig)                             | `<projet>/.editorconfig`                | Aucune                                                                                      |
-| [`templates/index.html`](./templates/index.html)                                   | `<projet>/index.html`                   | CSP (Supabase/Firebase ; PostHog par `cspPlugin`), titre/desc/theme-color, placeholders SEO |
-| [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | Remplacer `22` (plancher d'`engines`) par `26.10.0`, l'épingle du parc                      |
-| [`templates/.npmrc`](./templates/.npmrc)                                           | `<projet>/.npmrc`                       | Aucune (registre scope + `include=optional` — bindings natifs Vite 8)                       |
-| [`templates/FUNDING.yml`](./templates/FUNDING.yml)                                 | `<projet>/.github/FUNDING.yml`          | Aucune (handle sponsor famille `mister.guiiug`)                                             |
-| [`templates/.lighthouserc.json`](./templates/.lighthouserc.json)                   | `<projet>/.lighthouserc.json`           | Ajuster les seuils (`minScore`) par catégorie                                               |
-| [`templates/e2e/a11y.spec.ts`](./templates/e2e/a11y.spec.ts)                       | `<projet>/e2e/a11y.spec.ts`             | Adapter les routes/zones ; `npm i -D @axe-core/playwright`                                  |
-| [`templates/changesets/config.json`](./templates/changesets/config.json)           | `<projet>/.changeset/config.json`       | Adapter `access` (restricted vs public)                                                     |
+| Template                                                                           | Cible projet                            | Personnalisation typique                                                                |
+| ---------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`templates/vscode/extensions.json`](./templates/vscode/extensions.json)           | `<projet>/.vscode/extensions.json`      | Aucune (à dupliquer tel quel)                                                           |
+| [`templates/vscode/settings.json`](./templates/vscode/settings.json)               | `<projet>/.vscode/settings.json`        | Aucune                                                                                  |
+| [`templates/vscode/tasks.json`](./templates/vscode/tasks.json)                     | `<projet>/.vscode/tasks.json`           | Ajouter les tasks `test:e2e:critical`, `test:e2e:a11y` etc. selon les scripts du projet |
+| [`templates/vscode/launch.json`](./templates/vscode/launch.json)                   | `<projet>/.vscode/launch.json`          | Adapter `url` au base path (`/mister-puzzle/`, etc.) et `sourceMapPathOverrides`        |
+| [`templates/github-workflows/deploy.yml`](./templates/github-workflows/deploy.yml) | `<projet>/.github/workflows/deploy.yml` | Lister les `VITE_*` via `pwa-env sync` si manifeste présent                             |
+| [`templates/husky/pre-commit`](./templates/husky/pre-commit)                       | `<projet>/.husky/pre-commit`            | Aucune                                                                                  |
+| [`templates/husky/commit-msg`](./templates/husky/commit-msg)                       | `<projet>/.husky/commit-msg`            | Aucune                                                                                  |
+| [`templates/.editorconfig`](./templates/.editorconfig)                             | `<projet>/.editorconfig`                | Ou `pwa-doctor --fix`                                                                   |
+| [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | `26.10.0` (épingle du parc)                                                             |
+| [`templates/.npmrc`](./templates/.npmrc)                                           | `<projet>/.npmrc`                       | Aucune (registre scope + `include=optional` — bindings natifs Vite 8)                   |
+| [`templates/FUNDING.yml`](./templates/FUNDING.yml)                                 | `<projet>/.github/FUNDING.yml`          | Aucune (handle sponsor famille `mister.guiiug`)                                         |
+| [`templates/.lighthouserc.json`](./templates/.lighthouserc.json)                   | `<projet>/.lighthouserc.json`           | Ajuster les seuils (`minScore`) par catégorie                                           |
+| [`templates/e2e/a11y.spec.ts`](./templates/e2e/a11y.spec.ts)                       | `<projet>/e2e/a11y.spec.ts`             | Adapter les routes/zones ; `npm i -D @axe-core/playwright`                              |
+| [`templates/changesets/config.json`](./templates/changesets/config.json)           | `<projet>/.changeset/config.json`       | Adapter `access` (restricted vs public)                                                 |
 
 ## Renovate — hébergé par le socle
 

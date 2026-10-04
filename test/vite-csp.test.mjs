@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { cspPlugin, ANALYTICS_HOSTS } from '../vite-csp.js';
 import { FAMILY_ORIGIN } from '../apps-catalog.js';
@@ -321,18 +321,12 @@ test('une directive inerte en <meta> est retirée, et signalée', () => {
   );
 });
 
-test('le template ne porte plus de directive inerte', () => {
-  const template = readFileSync(
-    new URL('../templates/index.html', import.meta.url),
-    'utf8'
-  );
-  const meta =
-    /http-equiv="Content-Security-Policy"[\s\S]*?content="([^"]+)"/.exec(
-      template
-    );
-  assert.ok(meta, 'CSP statique introuvable dans le template');
-  assert.doesNotMatch(meta[1], /frame-ancestors/);
-  assert.match(meta[1], /frame-src 'none'/);
+test('cspPlugin n’émet pas de directive méta inerte (frame-ancestors)', () => {
+  // `frame-ancestors` n'a d'effet qu'en en-tête HTTP ; en <meta> elle est
+  // ignorée. Le plugin ne doit donc pas la poser — et `frame-src 'none'` reste.
+  const csp = render(HTML, { dev: false });
+  assert.doesNotMatch(csp, /frame-ancestors/);
+  assert.match(csp, /frame-src 'none'/);
 });
 
 test('le script anti-FOUC injecté par pwaSeoPlugin est haché par la CSP', async () => {
