@@ -23,7 +23,7 @@ et rien n'y a été résumé, seulement déplacé.
 | [`docs/DONNEES.md`](docs/DONNEES.md)       | Persistance, magasin versionné, coffre chiffré, Supabase, file hors-ligne, temps réel, carte, auth, PDF/Excel/iCal      |
 | [`docs/BINS.md`](docs/BINS.md)             | Binaires `pwa-*` : `doctor`, `bundle-budget`, `icons`, `pgtap`, `screenshots`, `og-image`, `bindings`, `typecheck-7`    |
 | [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md) | Ce qu'a demandé chaque majeure                                                                                          |
-| [`docs/V7.md`](docs/V7.md)                 | Périmètre de la prochaine majeure (rétrécissement, types, catalogue)                                                    |
+| [`docs/V7.md`](docs/V7.md)                 | Périmètre v7 : catalogue des modules (apport + évolutions apps), types, foyer catalogue                                 |
 
 Et les dossiers d'analyse, qui ne sont pas des manuels : [`CAMPAGNE.md`](CAMPAGNE.md)
 (adoption), [`GISEMENTS.md`](GISEMENTS.md) (promotion), [`PARC.md`](PARC.md) (le
