@@ -592,6 +592,35 @@ function ghJson(args) {
  * @param {unknown} input
  * @returns {string | null}
  */
+function stripSurroundingSlashes(value) {
+  let s = value;
+  while (s.startsWith('/')) s = s.slice(1);
+  while (s.endsWith('/')) s = s.slice(0, -1);
+  return s;
+}
+
+function looksLikeGithubSlug(value) {
+  const i = value.indexOf('/');
+  if (i <= 0 || i !== value.lastIndexOf('/')) return false;
+  const owner = value.slice(0, i);
+  const repo = value.slice(i + 1);
+  if (!owner || !repo) return false;
+  for (const part of [owner, repo]) {
+    for (let k = 0; k < part.length; k++) {
+      const c = part[k];
+      const ok =
+        (c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') ||
+        c === '_' ||
+        c === '.' ||
+        c === '-';
+      if (!ok) return false;
+    }
+  }
+  return true;
+}
+
 export function githubRepoSlug(input) {
   if (input == null) return null;
   let s = String(input).trim();
@@ -599,21 +628,22 @@ export function githubRepoSlug(input) {
   if (s.startsWith('git+')) s = s.slice(4);
   if (s.endsWith('.git')) s = s.slice(0, -4);
   if (s.startsWith('git@github.com:')) {
-    const rest = s.slice('git@github.com:'.length).replace(/\/+$/, '');
-    return /^\w[\w.-]*\/\w[\w.-]*$/.test(rest) ? rest : null;
+    const rest = stripSurroundingSlashes(s.slice('git@github.com:'.length));
+    return looksLikeGithubSlug(rest) ? rest : null;
   }
   try {
     const u = new URL(s.includes('://') ? s : `https://${s}`);
     if (u.hostname !== 'github.com' && u.hostname !== 'www.github.com') {
       return null;
     }
-    const parts = u.pathname.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
+    const parts = stripSurroundingSlashes(u.pathname).split('/');
     if (parts.length >= 2 && parts[0] && parts[1]) {
-      return `${parts[0]}/${parts[1]}`;
+      const slug = `${parts[0]}/${parts[1]}`;
+      return looksLikeGithubSlug(slug) ? slug : null;
     }
     return null;
   } catch {
-    return /^\w[\w.-]*\/\w[\w.-]*$/.test(s) ? s : null;
+    return looksLikeGithubSlug(s) ? s : null;
   }
 }
 
