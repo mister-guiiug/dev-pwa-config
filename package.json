@@ -65,6 +65,10 @@
       "types": "./testing/posthog.d.ts",
       "default": "./testing/posthog.js"
     },
+    "./testing/query": {
+      "types": "./testing/query.d.ts",
+      "default": "./testing/query.js"
+    },
     "./apps-catalog": {
       "types": "./apps-catalog.d.ts",
       "default": "./apps-catalog.js"
