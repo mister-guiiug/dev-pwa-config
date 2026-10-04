@@ -417,7 +417,12 @@
       <div class="sr-topbar-inner">
         <div class="sr-brand">
           <p class="sr-brand-name" data-i18n="topbar.brand">Showroom</p>
-          <span class="sr-brand-pkg">@mister-guiiug/dev-pwa-config</span>
+          <span
+            class="sr-brand-pkg"
+            id="theme-brand-status"
+            title="@mister-guiiug/dev-pwa-config"
+            >@mister-guiiug/dev-pwa-config</span
+          >
         </div>
 
         <!-- Job principal : endosser une application. -->
@@ -436,6 +441,15 @@
               <span data-swatch="surface"></span>
               <span data-swatch="text"></span>
             </div>
+            <a
+              class="sr-theme-open"
+              id="theme-open-app"
+              hidden
+              target="_blank"
+              rel="noopener noreferrer"
+              data-i18n="ui.apps.open"
+              >Ouvrir l’app</a
+            >
           </div>
         </div>
 
@@ -473,6 +487,7 @@
                 d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
               />
             </svg>
+            <span class="sr-prefs-badge" id="sr-prefs-badge" hidden></span>
             <span class="sr-visually-hidden" data-i18n="ui.prefs.summary"
               >Préférences</span
             >
@@ -552,9 +567,53 @@
                 </label>
               </div>
             </fieldset>
+
+            <fieldset class="sr-control">
+              <legend data-i18n="ui.density.legend">Densité</legend>
+              <div class="sr-segmented">
+                <input
+                  type="radio"
+                  name="density"
+                  id="density-comfort"
+                  value="comfort"
+                  checked
+                />
+                <label for="density-comfort">
+                  <span class="sr-ico sr-ico-code" aria-hidden="true">A</span>
+                  <span
+                    class="sr-visually-hidden"
+                    data-i18n="ui.density.comfort"
+                    >Confort</span
+                  >
+                </label>
+                <input
+                  type="radio"
+                  name="density"
+                  id="density-compact"
+                  value="compact"
+                />
+                <label for="density-compact">
+                  <span class="sr-ico sr-ico-code" aria-hidden="true">A₋</span>
+                  <span
+                    class="sr-visually-hidden"
+                    data-i18n="ui.density.compact"
+                    >Compact</span
+                  >
+                </label>
+              </div>
+            </fieldset>
           </div>
         </details>
       </div>
+      <div
+        class="sr-progress"
+        id="sr-progress"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+        aria-hidden="true"
+      ></div>
 
       <div class="sr-topbar-secondary">
         <nav class="sr-sites" aria-labelledby="sr-sites-label">
@@ -597,44 +656,76 @@
           <p id="rail-label" class="sr-visually-hidden" data-i18n="ui.rail">
             Sur cette page
           </p>
-          <ul class="sr-toc">
-            <li><a href="#apps" data-i18n="ui.toc.apps">Applications</a></li>
-            <li>
-              <a href="#fondations" data-i18n="ui.toc.fondations">Fondations</a>
-            </li>
-            <li>
-              <a href="#catalogue" data-i18n="ui.toc.catalogue">Catalogue</a>
-            </li>
-            <li>
-              <a href="#couleurs" data-i18n="ui.toc.couleurs">Couleurs</a>
-            </li>
-            <li>
-              <a href="#primitives" data-i18n="ui.toc.primitives">Primitives</a>
-            </li>
-            <li>
-              <a href="#composants" data-i18n="ui.toc.composants"
-                >Composants applicatifs</a
+          <div class="sr-toc-groups">
+            <div class="sr-toc-group">
+              <p class="sr-toc-group-label" data-i18n="ui.toc.group.parc">
+                Parc
+              </p>
+              <ul class="sr-toc">
+                <li>
+                  <a href="#apps" data-i18n="ui.toc.apps">Applications</a>
+                </li>
+                <li>
+                  <a href="#catalogue" data-i18n="ui.toc.catalogue"
+                    >Catalogue</a
+                  >
+                </li>
+                <li><a href="#demo" data-i18n="ui.toc.demo">Démo</a></li>
+              </ul>
+            </div>
+            <div class="sr-toc-group">
+              <p class="sr-toc-group-label" data-i18n="ui.toc.group.systeme">
+                Système
+              </p>
+              <ul class="sr-toc">
+                <li>
+                  <a href="#fondations" data-i18n="ui.toc.fondations"
+                    >Fondations</a
+                  >
+                </li>
+                <li>
+                  <a href="#couleurs" data-i18n="ui.toc.couleurs">Couleurs</a>
+                </li>
+                <li>
+                  <a href="#primitives" data-i18n="ui.toc.primitives"
+                    >Primitives</a
+                  >
+                </li>
+                <li>
+                  <a href="#composants" data-i18n="ui.toc.composants"
+                    >Composants applicatifs</a
+                  >
+                </li>
+                <li>
+                  <a href="#decisions" data-i18n="ui.toc.decisions"
+                    >Lequel choisir</a
+                  >
+                </li>
+                <li><a href="#hooks" data-i18n="ui.toc.hooks">Hooks</a></li>
+                <li>
+                  <a href="#a11y" data-i18n="ui.toc.a11y"
+                    >Contrôles d’accessibilité</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <div class="sr-toc-group">
+              <p
+                class="sr-toc-group-label"
+                data-i18n="ui.toc.group.integration"
               >
-            </li>
-            <li>
-              <a href="#decisions" data-i18n="ui.toc.decisions"
-                >Lequel choisir</a
-              >
-            </li>
-            <li><a href="#hooks" data-i18n="ui.toc.hooks">Hooks</a></li>
-            <li>
-              <a href="#a11y" data-i18n="ui.toc.a11y"
-                >Contrôles d’accessibilité</a
-              >
-            </li>
-            <li><a href="#demo" data-i18n="ui.toc.demo">Démo</a></li>
-            <li><a href="#stack" data-i18n="ui.toc.stack">Stack</a></li>
-            <li>
-              <a href="#integration" data-i18n="ui.toc.integration"
-                >Intégration</a
-              >
-            </li>
-          </ul>
+                Intégration
+              </p>
+              <ul class="sr-toc">
+                <li><a href="#stack" data-i18n="ui.toc.stack">Stack</a></li>
+                <li>
+                  <a href="#integration" data-i18n="ui.toc.integration"
+                    >Intégration</a
+                  >
+                </li>
+              </ul>
+            </div>
+          </div>
         </nav>
       </div>
     </header>
@@ -656,11 +747,22 @@
           la typographie de titrage et les arrondis appartiennent à chaque
           application.
         </p>
-        <p class="sr-theme-note">
+        <a class="sr-theme-note" href="#couleurs" id="theme-note">
           <strong id="theme-name">Générique — preset seul</strong><br />
           <span id="theme-tagline"
             >Ce que le preset fournit réellement : de la structure, pas de
             couleur. Palette monochrome de référence.</span
+          >
+          <span class="sr-theme-note-cta" data-i18n="ui.theme.noteCta"
+            >Voir les couleurs →</span
+          >
+        </a>
+        <p class="sr-hero-actions">
+          <a
+            class="sr-app-link"
+            href="#couleurs-pair"
+            data-i18n="ui.compare.cta"
+            >Comparer deux apps</a
           >
         </p>
       </section>
@@ -681,16 +783,11 @@
         </p>
 
         <div class="sr-cat-controls">
-          <p class="sr-control">
-            <label for="apps-search" data-i18n="ui.apps.search"
-              >Rechercher</label
+          <p class="sr-control sr-apps-search-hint">
+            <span data-i18n="ui.apps.searchViaCmd"
+              >Recherche unifiée en haut de page (<kbd>Ctrl</kbd
+              ><kbd>K</kbd>)</span
             >
-            <input
-              type="search"
-              id="apps-search"
-              autocomplete="off"
-              spellcheck="false"
-            />
           </p>
           <p class="sr-control">
             <label for="apps-config" data-i18n="ui.apps.consumes"
@@ -727,6 +824,12 @@
         <div class="sr-apps-status">
           <p class="sr-cat-count" id="apps-count" role="status"></p>
           <span class="sr-metrics-date" id="apps-metrics-date"></span>
+          <span
+            class="sr-view-chip"
+            id="apps-view-chip"
+            hidden
+            role="status"
+          ></span>
           <!-- L'état de la vitrine vit déjà dans l'URL ; encore faut-il
                pouvoir l'attraper sans passer par la barre d'adresse. -->
           <span id="apps-share"></span>
@@ -746,18 +849,36 @@
             apparaissent en dessous quand le relevé en a trouvé.
           </p>
           <p class="sr-metrics-date" id="apps-adoption-date"></p>
+          <p class="sr-control">
+            <label for="apps-adoption-sort" data-i18n="ui.apps.adoptionSort"
+              >Trier</label
+            >
+            <select id="apps-adoption-sort">
+              <option value="most" data-i18n="ui.apps.adoptionSortMost">
+                Plus adopté
+              </option>
+              <option value="least" data-i18n="ui.apps.adoptionSortLeast">
+                Moins adopté
+              </option>
+            </select>
+          </p>
           <div class="sr-table-wrap">
             <table class="sr-table" id="apps-adoption-table">
               <thead>
                 <tr>
                   <th data-i18n="ui.apps.adoptionSymbol">Symbole</th>
                   <th data-i18n="ui.apps.adoptionCount">Apps</th>
+                  <th data-i18n="ui.apps.adoptionShare">Part</th>
                 </tr>
               </thead>
               <tbody></tbody>
             </table>
           </div>
-          <div class="sr-table-wrap" id="apps-adoption-dups-wrap" hidden>
+          <div
+            class="sr-table-wrap sr-adoption-dups"
+            id="apps-adoption-dups-wrap"
+            hidden
+          >
             <h4 data-i18n="ui.apps.adoptionDupsTitle">
               Recopié plutôt qu’importé
             </h4>
@@ -1144,6 +1265,29 @@
           outil. Les voici simultanément, pour le thème sélectionné.
         </p>
         <div id="compare" class="sr-compare"></div>
+
+        <h3
+          class="sr-subtitle"
+          id="couleurs-pair"
+          data-i18n="couleurs.pairTitle"
+        >
+          Deux applications, côte à côte
+        </h3>
+        <p data-i18n="couleurs.pairIntro">
+          Choisir deux habillages pour comparer leurs primaires et surfaces dans
+          le schéma courant — utile avant une revue visuelle croisée.
+        </p>
+        <div class="sr-pair-controls">
+          <p class="sr-control">
+            <label for="pair-a" data-i18n="ui.compare.left">App A</label>
+            <select id="pair-a"></select>
+          </p>
+          <p class="sr-control">
+            <label for="pair-b" data-i18n="ui.compare.right">App B</label>
+            <select id="pair-b"></select>
+          </p>
+        </div>
+        <div id="compare-pair" class="sr-compare"></div>
 
         <p class="sr-note" id="palette-source" data-i18n="couleurs.p2">
           Palette du thème courant, lue via <code>getComputedStyle</code>.

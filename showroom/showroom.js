@@ -18,6 +18,10 @@
   var APP_KEY = 'dwc_showroom_app';
   var SCHEME_KEY = 'dwc_theme';
   var LANG_KEY = 'dwc_showroom_lang';
+  var DENSITY_KEY = 'dwc_showroom_density';
+  var PAIR_A_KEY = 'dwc_showroom_pair_a';
+  var PAIR_B_KEY = 'dwc_showroom_pair_b';
+  var PKG_LABEL = '@mister-guiiug/dev-pwa-config';
 
   /* ── Langue ────────────────────────────────────────────────────────── *
    * Le français n'est pas dans un dictionnaire : c'est le HTML lui-même,
@@ -145,12 +149,24 @@
 
   /**
    * Le sommaire suit la section visible. Une seule ancre porte
-   * `aria-current`, et elle est ramenée dans le rail s'il défile.
+   * `aria-current`, et elle est ramenée au centre du rail s'il défile.
+   * La barre de progression du topbar suit le scroll de la page.
    */
   function watchRail() {
     syncHeaderOffset();
     window.addEventListener('resize', syncHeaderOffset);
-    var links = document.querySelectorAll('.sr-rail a');
+    var progress = document.getElementById('sr-progress');
+    function updateProgress() {
+      if (!progress) return;
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      progress.style.transform = 'scaleX(' + ratio + ')';
+      progress.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
+    }
+    updateProgress();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+
+    var links = document.querySelectorAll('.sr-rail a[href^="#"]');
     if (!links.length || !('IntersectionObserver' in window)) return;
     var byId = {};
     links.forEach(function (link) {
@@ -166,15 +182,12 @@
             link.removeAttribute('aria-current');
           });
           current.setAttribute('aria-current', 'location');
-          var rail = current.closest('.sr-rail');
-          if (!rail) return;
-          var pad = 12;
-          var left = current.offsetLeft;
-          var right = left + current.offsetWidth;
-          if (left < rail.scrollLeft + pad) {
-            rail.scrollLeft = Math.max(0, left - pad);
-          } else if (right > rail.scrollLeft + rail.clientWidth - pad) {
-            rail.scrollLeft = right - rail.clientWidth + pad;
+          if (typeof current.scrollIntoView === 'function') {
+            current.scrollIntoView({
+              inline: 'center',
+              block: 'nearest',
+              behavior: 'smooth',
+            });
           }
         });
       },
@@ -222,6 +235,38 @@
     document.addEventListener('keydown', function (event) {
       if (event.key === 'Escape' && prefs.open) prefs.open = false;
     });
+  }
+
+  function browserLang() {
+    var code = (navigator.language || 'fr').slice(0, 2);
+    return LANGS.indexOf(code) === -1 ? 'fr' : code;
+  }
+
+  /** Point discret quand schéma ou langue s'écartent du navigateur. */
+  function syncPrefsBadge() {
+    var badge = document.getElementById('sr-prefs-badge');
+    if (!badge) return;
+    var off = currentScheme !== 'system' || lang !== browserLang();
+    badge.hidden = !off;
+    badge.title = off
+      ? t(
+          'ui.prefs.custom',
+          'Préférences personnalisées (schéma ou langue forcé)'
+        )
+      : '';
+  }
+
+  function applyDensity(next) {
+    var value = next === 'compact' ? 'compact' : 'comfort';
+    root.setAttribute('data-density', value);
+    document
+      .querySelectorAll('input[name="density"]')
+      .forEach(function (input) {
+        input.checked = input.value === value;
+      });
+    write(DENSITY_KEY, value);
+    syncHeaderOffset();
+    return value;
   }
 
   // Sonde hors écran : sert à faire évaluer les `clamp()` / `env()` par le
@@ -289,6 +334,12 @@
       setOrDrop(url, 'category', appFacets.category);
       setOrDrop(url, 'config', appFacets.config);
       setOrDrop(url, 'view', appView === 'grid' ? '' : appView);
+      setOrDrop(
+        url,
+        'density',
+        currentDensity === 'comfort' ? '' : currentDensity
+      );
+      setOrDrop(url, 'pair', pairA + ',' + pairB);
       history.replaceState(null, '', url);
     } catch {
       /* URL non manipulable (file://) : le stockage prend le relais */
@@ -574,6 +625,8 @@
 
     renderSwatches();
     paintHeaderSwatches();
+    paintBrandStatus(theme);
+    paintOpenApp(theme);
     // Le contraste dépend du thème appliqué : on le recalcule à chaque bascule.
     measureContrast();
     labelTableCells();
@@ -584,6 +637,64 @@
     syncAppGrid();
     renderDemoStage();
     renderCompare();
+    renderPairCompare();
+    syncPrefsBadge();
+  }
+
+  /** Sous-titre de marque : paquet générique, sinon « Habillé · App ». */
+  function paintBrandStatus(theme) {
+    var el = document.getElementById('theme-brand-status');
+    if (!el) return;
+    var name = t('theme.' + theme.id + '.name', theme.name);
+    if (theme.id === 'generic') {
+      el.textContent = PKG_LABEL;
+      el.title = PKG_LABEL;
+      return;
+    }
+    el.textContent = t('ui.brand.dressed', 'Habillé · {app}').replace(
+      '{app}',
+      name
+    );
+    el.title = PKG_LABEL + ' — ' + name;
+  }
+
+  /** Lien direct vers Pages (ou releases desktop) pour le thème courant. */
+  function paintOpenApp(theme) {
+    var link = document.getElementById('theme-open-app');
+    if (!link) return;
+    if (theme.id === 'generic') {
+      link.hidden = true;
+      link.removeAttribute('href');
+      return;
+    }
+    var item = null;
+    for (var i = 0; i < APPS.length; i++) {
+      if (APPS[i].id === theme.id) {
+        item = APPS[i];
+        break;
+      }
+    }
+    if (!item || !item.appUrl) {
+      link.hidden = true;
+      link.removeAttribute('href');
+      return;
+    }
+    link.hidden = false;
+    link.href = item.appUrl;
+    var openLabel =
+      item.platform === 'desktop'
+        ? t('ui.apps.releases', 'Téléchargements')
+        : t('ui.apps.open', 'Ouvrir l’app');
+    link.textContent = openLabel;
+    link.setAttribute(
+      'aria-label',
+      openLabel +
+        ' — ' +
+        item.name +
+        ' (' +
+        t('ui.newTab', 'nouvel onglet') +
+        ')'
+    );
   }
 
   /** Pastilles primaire / surface / texte à côté du select « Habiller ». */
@@ -1814,6 +1925,55 @@
     ),
   };
 
+  var currentDensity =
+    paramOr('density', read(DENSITY_KEY, 'comfort')) === 'compact'
+      ? 'compact'
+      : 'comfort';
+  var adoptionSort = 'most';
+
+  function parsePairParam() {
+    var raw = paramOr('pair', '');
+    if (raw && raw.indexOf(',') !== -1) {
+      var parts = raw.split(',');
+      return [parts[0] || '', parts[1] || ''];
+    }
+    return [read(PAIR_A_KEY, ''), read(PAIR_B_KEY, '')];
+  }
+  var pairInit = parsePairParam();
+  var pairA = pairInit[0];
+  var pairB = pairInit[1];
+
+  function appsFiltersActive() {
+    return !!(
+      appQuery.trim() ||
+      appFacets.maturity !== 'all' ||
+      appFacets.backend !== 'all' ||
+      appFacets.category !== 'all' ||
+      appFacets.config !== 'all' ||
+      appSort !== 'curated' ||
+      appView !== 'grid'
+    );
+  }
+
+  function resetAppsFilters() {
+    appQuery = '';
+    appFacets.maturity = 'all';
+    appFacets.backend = 'all';
+    appFacets.category = 'all';
+    appFacets.config = 'all';
+    appSort = 'curated';
+    appView = 'grid';
+    var configSelect = document.getElementById('apps-config');
+    if (configSelect) configSelect.value = 'all';
+    var sortSelect = document.getElementById('apps-sort');
+    if (sortSelect) sortSelect.value = 'curated';
+    renderAppViewToggle();
+    renderAppGrid();
+    renderAppSort();
+    renderViewChip();
+    syncUrl();
+  }
+
   /**
    * Deux lettres du mot distinctif. « Miss » et « Mister » préfixent seize
    * noms : une seule initiale, et la grille afficherait seize fois « M ».
@@ -2119,6 +2279,7 @@
     var dateNode = document.getElementById('apps-adoption-date');
     var dupsWrap = document.getElementById('apps-adoption-dups-wrap');
     var dupsTable = document.getElementById('apps-adoption-dups');
+    var sortSelect = document.getElementById('apps-adoption-sort');
     if (!host || !table) return;
     var data = globalThis.SHOWROOM_ADOPTION;
     var measured =
@@ -2128,6 +2289,16 @@
       return;
     }
     host.hidden = false;
+    if (sortSelect) {
+      sortSelect.value = adoptionSort;
+      if (!sortSelect.dataset.bound) {
+        sortSelect.dataset.bound = '1';
+        sortSelect.addEventListener('change', function () {
+          adoptionSort = sortSelect.value === 'least' ? 'least' : 'most';
+          renderAdoption();
+        });
+      }
+    }
     if (dateNode) {
       var ago = timeAgo(data.generatedAt);
       dateNode.textContent = ago
@@ -2137,12 +2308,14 @@
           )
         : '';
     }
+    var total = measured;
     var rows = Object.entries(data.bySymbol)
       .map(function (entry) {
         return [entry[0], entry[1].length];
       })
       .sort(function (a, b) {
-        return b[1] - a[1] || a[0].localeCompare(b[0]);
+        var delta = adoptionSort === 'least' ? a[1] - b[1] : b[1] - a[1];
+        return delta || a[0].localeCompare(b[0]);
       });
     var tbody = table.querySelector('tbody');
     tbody.textContent = '';
@@ -2155,8 +2328,28 @@
       var c2 = document.createElement('td');
       c2.textContent = String(row[1]);
       c2.title = (data.bySymbol[row[0]] || []).join(', ');
+      var c3 = document.createElement('td');
+      var pct = total ? Math.round((row[1] / total) * 100) : 0;
+      var bar = document.createElement('span');
+      bar.className = 'sr-adoption-bar';
+      bar.setAttribute('role', 'img');
+      bar.setAttribute(
+        'aria-label',
+        pct +
+          '% — ' +
+          row[1] +
+          '/' +
+          total +
+          ' ' +
+          t('ui.apps.adoptionCount', 'Apps').toLowerCase()
+      );
+      var fill = document.createElement('span');
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      c3.appendChild(bar);
       tr.appendChild(c1);
       tr.appendChild(c2);
+      tr.appendChild(c3);
       tbody.appendChild(tr);
     });
     var dups = data.byDuplicate ? Object.entries(data.byDuplicate) : [];
@@ -2195,6 +2388,26 @@
     }
   }
 
+  function renderViewChip() {
+    var chip = document.getElementById('apps-view-chip');
+    if (!chip) return;
+    if (!appsFiltersActive()) {
+      chip.hidden = true;
+      chip.textContent = '';
+      return;
+    }
+    chip.hidden = false;
+    chip.textContent = '';
+    var label = document.createElement('span');
+    label.textContent = t('ui.apps.filtered', 'Vue filtrée');
+    var reset = document.createElement('button');
+    reset.type = 'button';
+    reset.textContent = t('ui.apps.resetChip', 'Réinitialiser');
+    reset.addEventListener('click', resetAppsFilters);
+    chip.appendChild(label);
+    chip.appendChild(reset);
+  }
+
   function renderAppShare() {
     var host = document.getElementById('apps-share');
     if (!host) return;
@@ -2207,6 +2420,7 @@
         t('ui.apps.share', 'Copier le lien de cette vue')
       )
     );
+    renderViewChip();
   }
 
   function renderAppSort() {
@@ -2490,6 +2704,7 @@
       renderAppTable(shown);
       renderAppCount(count, shown.length);
       syncAppFacets();
+      renderViewChip();
       return;
     }
 
@@ -2507,18 +2722,9 @@
       reset.className = 'sr-app-link';
       reset.textContent = t('ui.apps.reset', 'Tout réafficher');
       reset.addEventListener('click', function () {
-        appQuery = '';
-        appFacets.maturity = 'all';
-        appFacets.backend = 'all';
-        appFacets.category = 'all';
-        appFacets.config = 'all';
-        var search = document.getElementById('apps-search');
-        if (search) search.value = '';
-        var configSelect = document.getElementById('apps-config');
-        if (configSelect) configSelect.value = 'all';
-        renderAppGrid();
-        syncUrl();
-        if (search) search.focus();
+        resetAppsFilters();
+        var cmd = document.getElementById('sr-cmd');
+        if (cmd) cmd.focus();
       });
       empty.appendChild(reset);
       grid.appendChild(empty);
@@ -2530,6 +2736,7 @@
 
     renderAppCount(count, shown.length);
     syncAppFacets();
+    renderViewChip();
   }
 
   function renderAppCount(node, n) {
@@ -3386,6 +3593,131 @@
     });
   }
 
+  function fillPairSelect(select, selected) {
+    if (!select) return;
+    var previous = select.value;
+    select.textContent = '';
+    themes.forEach(function (theme) {
+      var option = document.createElement('option');
+      option.value = theme.id;
+      option.textContent = t('theme.' + theme.id + '.name', theme.name);
+      select.appendChild(option);
+    });
+    var want = selected || previous;
+    if (want && themeById(want)) select.value = want;
+    else if (themes[1]) select.value = themes[1].id;
+    else if (themes[0]) select.value = themes[0].id;
+  }
+
+  function setupPairCompare() {
+    var a = document.getElementById('pair-a');
+    var b = document.getElementById('pair-b');
+    if (!a || !b) return;
+    if (!pairA) pairA = themes[1] ? themes[1].id : 'generic';
+    if (!pairB) {
+      pairB = themes[2] ? themes[2].id : themes[0] ? themes[0].id : 'generic';
+    }
+    fillPairSelect(a, pairA);
+    fillPairSelect(b, pairB);
+    pairA = a.value;
+    pairB = b.value;
+    function onChange() {
+      pairA = a.value;
+      pairB = b.value;
+      write(PAIR_A_KEY, pairA);
+      write(PAIR_B_KEY, pairB);
+      renderPairCompare();
+      syncUrl();
+    }
+    if (!a.dataset.bound) {
+      a.dataset.bound = '1';
+      a.addEventListener('change', onChange);
+      b.addEventListener('change', onChange);
+    }
+  }
+
+  /** Deux apps côte à côte dans le schéma courant (pas clair/sombre). */
+  function renderPairCompare() {
+    var host = document.getElementById('compare-pair');
+    if (!host) return;
+    host.textContent = '';
+    var scheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    var generics = null;
+    [pairA, pairB].forEach(function (id) {
+      var theme = themeById(id);
+      if (!theme) return;
+      var palette = theme.usesCssDefaults
+        ? (generics || (generics = readGenericPalettes()))[scheme]
+        : theme[scheme] || theme.dark || theme.light;
+      if (!palette) return;
+      var panel = document.createElement('div');
+      panel.className = 'sr-compare-panel';
+      paintPalette(panel, palette, scheme);
+      if (theme.radius) {
+        panel.style.setProperty('--ds-radius', theme.radius);
+        panel.style.setProperty('--dwc-radius', theme.radius);
+      }
+      var title = document.createElement('p');
+      title.className = 'sr-compare-title';
+      title.textContent = t('theme.' + theme.id + '.name', theme.name);
+      panel.appendChild(title);
+      ROLES.forEach(function (role) {
+        var value = palette[role[0]];
+        if (!value) return;
+        var line = document.createElement('div');
+        line.className = 'sr-compare-line';
+        line.appendChild(swatchDot(value));
+        var name = document.createElement('code');
+        name.textContent = role[1].replace('--ds-', '');
+        var hex = document.createElement('span');
+        hex.className = 'sr-computed';
+        hex.textContent = value;
+        line.appendChild(name);
+        line.appendChild(hex);
+        attachCopy(line, value, t('ui.copyToken', 'Copier') + ' ' + value);
+        panel.appendChild(line);
+      });
+      host.appendChild(panel);
+    });
+  }
+
+  /**
+   * Deep-link `?focus=ShareButton` : scroll + surbrillance temporaire.
+   * Accepte un id DOM, un id de composant (`doc-…`) ou une app (`app-…`).
+   */
+  function applyFocusFromUrl() {
+    var focus = paramOr('focus', '');
+    if (!focus) return;
+    var candidates = [focus, 'doc-' + focus, 'app-' + focus];
+    var target = null;
+    for (var i = 0; i < candidates.length; i++) {
+      target = document.getElementById(candidates[i]);
+      if (target) break;
+    }
+    if (!target) {
+      var items = catalogueItems();
+      for (var j = 0; j < items.length; j++) {
+        if (items[j].id.toLowerCase() === focus.toLowerCase()) {
+          target = document.getElementById(items[j].href.slice(1));
+          break;
+        }
+      }
+    }
+    if (!target) return;
+    target.classList.add('sr-focus-flash');
+    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    window.setTimeout(function () {
+      target.classList.remove('sr-focus-flash');
+    }, 1800);
+    try {
+      var url = new URL(location.href);
+      url.searchParams.delete('focus');
+      history.replaceState(null, '', url);
+    } catch {
+      /* file:// */
+    }
+  }
+
   /**
    * Palette du thème générique, lue dans la feuille de style : elle n'existe
    * nulle part ailleurs, et la recopier en JS créerait la dérive qu'on évite
@@ -3886,6 +4218,7 @@
       write(SCHEME_KEY, currentScheme);
       applyScheme(currentScheme, currentTheme);
       applyTheme(currentTheme);
+      syncPrefsBadge();
       syncUrl();
     });
   });
@@ -3960,6 +4293,7 @@
     renderAppGrid();
     renderPlayground();
     renderForcedColors();
+    setupPairCompare();
     applyTheme(currentTheme);
     measure();
     // Après le rendu : les tableaux engendrés doivent être étiquetés eux aussi.
@@ -3977,19 +4311,9 @@
     });
   }
 
-  // Vitrine : la recherche suit la frappe, le tri attend le choix. Les deux
-  // commandes sont restituées depuis l'URL — un lien vers « les apps Supabase
-  // en bêta » doit montrer ce qu'il promet.
-  var appSearch = document.getElementById('apps-search');
-  if (appSearch) {
-    appSearch.value = appQuery;
-    appSearch.addEventListener('input', function () {
-      appQuery = appSearch.value;
-      renderAppGrid();
-      syncUrl();
-    });
-  }
-
+  // Vitrine : la recherche vit dans la commande d'en-tête (Ctrl+K). Le tri
+  // et les facettes restent ici — un lien « apps Supabase en bêta » doit
+  // encore montrer ce qu'il promet.
   var appConfigSelect = document.getElementById('apps-config');
   if (appConfigSelect) {
     appConfigSelect.addEventListener('change', function () {
@@ -3999,30 +4323,12 @@
     });
   }
 
-  /*
-   * `/` amène à la recherche de la vitrine — la convention de toutes les docs
-   * cherchables. Ignoré dès qu'on est déjà en train de saisir quelque part,
-   * sinon la touche disparaîtrait du clavier au milieu d'un mot.
-   */
-  document.addEventListener('keydown', function (event) {
-    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey)
-      return;
-    var active = document.activeElement;
-    var tag = active ? active.tagName : '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-    if (active && active.isContentEditable) return;
-    var search = document.getElementById('apps-search');
-    if (!search) return;
-    event.preventDefault();
-    search.focus();
-    search.select();
-  });
-
   var appSortSelect = document.getElementById('apps-sort');
   if (appSortSelect) {
     appSortSelect.addEventListener('change', function () {
       appSort = appSortSelect.value;
       renderAppGrid();
+      renderViewChip();
       syncUrl();
     });
   }
@@ -4032,11 +4338,7 @@
   // Langue : préférence stockée, sinon celle du navigateur, sinon français.
   // Même forme que le schéma : deux radios, le code langue en icône.
   var storedLang = paramOr('lang', read(LANG_KEY, ''));
-  var initialLang =
-    storedLang ||
-    (LANGS.indexOf((navigator.language || 'fr').slice(0, 2)) !== -1
-      ? navigator.language.slice(0, 2)
-      : 'fr');
+  var initialLang = storedLang || browserLang();
 
   document.querySelectorAll('input[name="lang"]').forEach(function (input) {
     input.checked = input.value === initialLang;
@@ -4045,6 +4347,15 @@
       write(LANG_KEY, input.value);
       applyLang(input.value);
       renderGenerated();
+      syncPrefsBadge();
+      syncUrl();
+    });
+  });
+
+  document.querySelectorAll('input[name="density"]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      if (!input.checked) return;
+      currentDensity = applyDensity(input.value);
       syncUrl();
     });
   });
@@ -4053,16 +4364,18 @@
   setupSommaire();
   setupPrefs();
 
+  currentDensity = applyDensity(currentDensity);
   applyScheme(currentScheme, currentTheme);
   syncSchemeInputs(currentScheme, currentTheme);
   applyLang(initialLang);
   renderGenerated();
+  syncPrefsBadge();
   syncUrl();
   setupCommand();
+  applyFocusFromUrl();
 
-  /* Recherche d'en-tête. Ctrl+K (⌘K) et « / » y amènent le curseur, comme
-     sur le catalogue. Les résultats sont les sections, les composants et
-     les applications déjà rendus sur la page. */
+  /* Recherche unifiée. Ctrl+K (⌘K) et « / » y amènent le curseur.
+     Sections, composants, apps — et filtre de la vitrine Apps. */
   function setupCommand() {
     var input = document.getElementById('sr-cmd');
     var list = document.getElementById('sr-cmd-list');
@@ -4075,12 +4388,13 @@
         section: t('ui.cmd.section', 'Section'),
         component: t('ui.cmd.component', 'Composant'),
         app: t('ui.cmd.app', 'Application'),
+        filter: t('ui.cmd.filter', 'Filtrer'),
       };
     }
 
     function index() {
       var out = [];
-      document.querySelectorAll('.sr-toc a').forEach(function (a) {
+      document.querySelectorAll('.sr-rail a[href^="#"]').forEach(function (a) {
         var label = (a.textContent || '').replace(/\s+/g, ' ').trim();
         var href = a.getAttribute('href');
         if (label && href)
@@ -4157,20 +4471,42 @@
         .filter(function (item) {
           return item.label.toLowerCase().indexOf(term) !== -1;
         })
-        .slice(0, 8);
-      active = hits.length ? 0 : -1;
+        .slice(0, 7);
+      hits.unshift({
+        kind: 'filter',
+        label: t('ui.cmd.filterApps', 'Apps contenant « {q} »').replace(
+          '{q}',
+          q.trim()
+        ),
+        filter: q.trim(),
+        href: '#apps',
+      });
+      active = 0;
       render();
     }
 
     function go(hit) {
-      var href = hit.href;
       close();
       input.value = '';
+      if (hit.filter != null) {
+        appQuery = hit.filter;
+        renderAppGrid();
+        renderViewChip();
+        syncUrl();
+        var apps = document.getElementById('apps');
+        if (apps) apps.scrollIntoView({ block: 'start' });
+        return;
+      }
+      var href = hit.href;
       if (href.charAt(0) === '#') {
         var target = document.getElementById(href.slice(1));
         if (target) {
           target.scrollIntoView({ block: 'start' });
-          if (history.replaceState) history.replaceState(null, '', href);
+          if (history.replaceState) {
+            var url = new URL(location.href);
+            url.hash = href;
+            history.replaceState(null, '', url);
+          }
         } else {
           location.hash = href;
         }
@@ -4215,6 +4551,7 @@
       if (
         tag === 'INPUT' ||
         tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
         (e.target && e.target.isContentEditable)
       )
         return;

@@ -22,6 +22,7 @@ globalThis.SHOWROOM_I18N = {
     'topbar.brand': 'Showroom',
     'topbar.themeLabel': 'Dress',
     'ui.prefs.summary': 'Preferences',
+    'ui.prefs.custom': 'Custom preferences (forced scheme or language)',
     'ui.sites': 'Family pages',
     'ui.site.catalogue': 'Catalogue',
     'ui.site.showroom': 'Showroom',
@@ -32,14 +33,27 @@ globalThis.SHOWROOM_I18N = {
     'ui.cmd.section': 'Section',
     'ui.cmd.component': 'Component',
     'ui.cmd.app': 'App',
+    'ui.cmd.filter': 'Filter',
+    'ui.cmd.filterApps': 'Apps matching “{q}”',
     'ui.skip': 'Skip to content',
     'ui.scheme.legend': 'Colour scheme',
     'ui.scheme.light': 'Light',
     'ui.scheme.dark': 'Dark',
     'ui.scheme.system': 'System',
     'ui.lang.label': 'Language',
+    'ui.density.legend': 'Density',
+    'ui.density.comfort': 'Comfort',
+    'ui.density.compact': 'Compact',
     'ui.rail': 'On this page',
     'ui.toc.sommaire': 'Contents',
+    'ui.toc.group.parc': 'Estate',
+    'ui.toc.group.systeme': 'System',
+    'ui.toc.group.integration': 'Integration',
+    'ui.brand.dressed': 'Dressed · {app}',
+    'ui.theme.noteCta': 'View colours →',
+    'ui.compare.cta': 'Compare two apps',
+    'ui.compare.left': 'App A',
+    'ui.compare.right': 'App B',
 
     /* ── Intro ────────────────────────────────────────────────────────── */
     'intro.title': 'The miss-* / mister-* family design system',
@@ -63,7 +77,10 @@ globalThis.SHOWROOM_I18N = {
       'Sixteen public repositories, <strong>fifteen</strong> of which consume this package — the desktop application imports none of it, and the “subpaths” field is what revealed it. This grid is not a list kept by hand in the page: it is generated from <code>apps-catalog.js</code> — the very file the applications import to show one another. Anything wrong here would be wrong in their footers.',
     'apps.note':
       '<strong>Domain and maturity are editorial</strong>, entered by hand: they state an intent, not a published version. <strong>Persistence</strong> and <strong>subpaths</strong> are <strong>surveyed</strong> in each app’s code — the real <code>import</code>s and <code>extends</code>, not an intention — and left blank where they were not: a filter that says “not surveyed” beats invented data. The <em>Consumes</em> filter therefore answers the first question a design system should ask itself: who actually uses what? <code>components.css</code> has a single adopter out of sixteen. The badges are painted with each application’s real primary colour, never with a remote icon: this showroom makes no network request.',
-    'ui.apps.search': 'Search',
+    'ui.apps.searchViaCmd':
+      'Unified search at the top of the page (<kbd>Ctrl</kbd><kbd>K</kbd>)',
+    'ui.apps.filtered': 'Filtered view',
+    'ui.apps.resetChip': 'Reset',
     'ui.apps.sort': 'Sort',
     'ui.apps.sortBy.curated': 'Catalogue order',
     'ui.apps.sortBy.maturity': 'Maturity',
@@ -97,6 +114,10 @@ globalThis.SHOWROOM_I18N = {
       'How many apps import each symbol — to steer a campaign, not only read the README. Local copies (debt) appear below when the survey found any.',
     'ui.apps.adoptionSymbol': 'Symbol',
     'ui.apps.adoptionCount': 'Apps',
+    'ui.apps.adoptionShare': 'Share',
+    'ui.apps.adoptionSort': 'Sort',
+    'ui.apps.adoptionSortMost': 'Most adopted',
+    'ui.apps.adoptionSortLeast': 'Least adopted',
     'ui.apps.adoptionDupsTitle': 'Copied instead of imported',
     'ui.apps.adoptionDate': 'adoption surveyed {ago}',
     'ui.ago.today': 'today',
@@ -171,6 +192,9 @@ globalThis.SHOWROOM_I18N = {
     'couleurs.compareTitle': 'Light and dark, side by side',
     'couleurs.compareIntro':
       'Validating a palette by toggling between schemes is a poor tool. Here they are simultaneously, for the selected theme.',
+    'couleurs.pairTitle': 'Two applications, side by side',
+    'couleurs.pairIntro':
+      'Pick two dressings to compare their primaries and surfaces in the current scheme — useful before a cross-app visual review.',
 
     /* ── Primitives ───────────────────────────────────────────────────── */
     'primitives.h21': 'Interface primitives',
