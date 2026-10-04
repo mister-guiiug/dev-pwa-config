@@ -746,7 +746,7 @@ Depuis le 01/10/2026, le socle déclare donc :
 
 - en `peerDependencies`, ses **11 pairs obligatoires** : la chaîne ESLint,
   Prettier, TypeScript, Vitest, et `web-vitals`, que l’observabilité importe ;
-- en `optionalPeers`, un champ que npm ignore, ses **22 pairs optionnelles**
+- en `optionalPeers`, un champ que npm ignore, ses **23 pairs optionnelles**
   et leur plage, que `scripts/plafonds.mjs` et `migrate-consumers.mjs --peers`
   relisent.
 
@@ -763,6 +763,7 @@ rien ne prévient : la table dit ce qui est éprouvé.
 | `@rive-app/react-canvas`          | `^4.0.0`                            | `react/rive`                                                                                             |
 | `@sentry/react`                   | `^10.75.2 \|\| ^11.0.0`             | `react/observability`, par son `loader`                                                                  |
 | `@supabase/supabase-js`           | `^2.0.0`                            | `supabase-client`                                                                                        |
+| `@tanstack/react-query`           | `^5.0.0`                            | `react/query-client`                                                                                     |
 | `@testing-library/jest-dom`       | `^6.0.0 \|\| ^7.0.0`                | `vitest-setup`                                                                                           |
 | `@vitest/browser`                 | `^4.0.0 \|\| ^5.0.0`                | `vitest-browser-base`                                                                                    |
 | `firebase`                        | `>=9.0.0`                           | `realtime/firebase`, `push/firebase`, qui reçoivent les objets de l’app                                  |

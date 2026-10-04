@@ -15,7 +15,7 @@
  *
  * TOUS LES PLAFONDS NE SE VALENT PAS, et l'avoir ignoré a coûté un
  * ordonnancement entier. Ce dépôt déclare onze pairs OBLIGATOIRES
- * (`peerDependencies`) et vingt-deux OPTIONNELLES (`optionalPeers`, depuis le
+ * (`peerDependencies`) et vingt-trois OPTIONNELLES (`optionalPeers`, depuis le
  * 01/10/2026 : GitHub Packages perd `peerDependenciesMeta`, et npm traitait
  * alors les optionnelles comme des dures). Une pair optionnelle en conflit
  * **n'arrête pas** `npm install` — npm ne la voit même plus : elle dit
