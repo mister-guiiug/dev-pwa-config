@@ -517,13 +517,11 @@ l'exécution a démenti ou révélé**, qui ne se trouve nulle part ailleurs.
 
 **Restent ouverts :**
 
-- **`pwa-doctor --fix` et `pwa-env`** (CONFIG.md phase 2) : fichiers figés
-  resynchronisés depuis le squelette, manifeste d'env engendrant `.env.example`
-  et `deploy.yml`. Preuve visée : un seul `vitest.config.ts` au lieu de dix-sept.
-- **Rétrécir le socle** : sortir le catalogue et les palettes, isoler les
-  sous-chemins sans adoptant en `experimental/*` avec date de retrait, engendrer
-  les `.d.ts` au lieu de les écrire, amender `CONTRIBUTING.md` — « un module
-  entre s'il est utilisé par le squelette ou par deux apps ». Coûte une majeure.
+- **`pwa-doctor --fix` et `pwa-env`** — ✅ livrés (04/10/2026). Manifeste
+  opt-in ; campagne phase 3 (une PR par app) encore à faire.
+- **Rétrécir le socle** : registre `experimental-modules.js` + règle
+  CONTRIBUTING posés ; restent le retrait daté, sortir catalogue/palettes, et
+  engendrer les `.d.ts`. Coûte une majeure.
 - **Un squelette Tauri**, seulement si un troisième projet Tauri naît ; la
   source serait la CI de `mister-commitia`.
 

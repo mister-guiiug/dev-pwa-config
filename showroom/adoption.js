@@ -798,14 +798,9 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [
-        {
-          exported: 'links',
-          file: 'links.ts',
-        },
-      ],
+      duplicates: [],
       kept: [],
-      measuredAt: '2026-09-07T20:23:54.785Z',
+      measuredAt: '2026-10-04T00:00:00.000Z',
     },
     'miss-ticket-pwa': {
       symbols: [
@@ -837,6 +832,7 @@ globalThis.SHOWROOM_ADOPTION = {
         'readRaw',
         'recordError',
         'repoUrl',
+        'Stat',
         'swStub',
         'unregisterServiceWorkers',
         'useActionGuard',
@@ -861,6 +857,7 @@ globalThis.SHOWROOM_ADOPTION = {
         '/react/i18n',
         '/react/icons-lucide',
         '/react/observability',
+        '/react/stat',
         '/react/use-action-guard',
         '/react/use-online',
         '/storage',
@@ -875,14 +872,9 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [
-        {
-          exported: 'Stat',
-          file: 'StatCard.tsx',
-        },
-      ],
+      duplicates: [],
       kept: [],
-      measuredAt: '2026-09-07T20:23:54.785Z',
+      measuredAt: '2026-10-04T00:00:00.000Z',
     },
     'miss-uwh': {
       symbols: [
@@ -1574,14 +1566,9 @@ globalThis.SHOWROOM_ADOPTION = {
         '/vitest-base',
         '/vitest-setup',
       ],
-      duplicates: [
-        {
-          exported: 'links',
-          file: 'links.ts',
-        },
-      ],
+      duplicates: [],
       kept: [],
-      measuredAt: '2026-09-07T20:23:54.785Z',
+      measuredAt: '2026-10-04T00:00:00.000Z',
     },
     'mister-molkky': {
       symbols: [
@@ -2684,7 +2671,7 @@ globalThis.SHOWROOM_ADOPTION = {
       'mister-miss-koh',
       'mister-settle',
     ],
-    Stat: ['miss-devises', 'miss-supatool', 'mister-settle'],
+    Stat: ['miss-devises', 'miss-supatool', 'miss-ticket-pwa', 'mister-settle'],
     TextField: [
       'miss-devises',
       'miss-genius',
@@ -2920,8 +2907,5 @@ globalThis.SHOWROOM_ADOPTION = {
     useAuthContext: ['mister-settle'],
     writeJson: ['mister-settle'],
   },
-  byDuplicate: {
-    links: ['miss-supatool', 'mister-miss-koh'],
-    Stat: ['miss-ticket-pwa'],
-  },
+  byDuplicate: {},
 };

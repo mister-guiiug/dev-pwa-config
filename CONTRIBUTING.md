@@ -20,10 +20,11 @@ version sur laquelle on développe, et le relever serait une rupture.
 ## Les quatre règles du dépôt
 
 **1. Le socle promeut, il n'invente pas.** Un composant, un hook ou une option
-n'entre pas parce qu'il serait utile : il entre parce que plusieurs apps l'ont
-déjà écrit chacune de leur côté. Le commentaire en tête de chaque module dit
-d'où il vient (« quatre apps avaient convergé sur… ») — c'est une exigence, pas
-un ornement.
+n'entre pas parce qu'il serait utile : il entre parce que **le squelette l'utilise
+ou qu'au moins deux apps** l'ont déjà écrit chacune de leur côté. Le commentaire
+en tête de chaque module dit d'où il vient (« quatre apps avaient convergé
+sur… ») — c'est une exigence, pas un ornement. Un sous-chemin sans adoptant est
+daté dans `experimental-modules.js` et pourra quitter à la majeure suivante.
 
 **2. Promouvoir sans migrer, c'est ne pas avoir fini.** Le relevé du 23/08/2026
 est sans appel : quatre exports sur vingt-deux sont réellement importés, et

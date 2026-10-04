@@ -404,8 +404,25 @@ test('le conforme : silence complet — la définition exécutable de « conform
       '.lighthouserc.json': {},
       // Un titre que le filtre par défaut de la CI (`@critical|@a11y`) joue.
       'e2e/a11y.spec.ts': "test.describe('@a11y accessibilité', () => {});",
-      '.github/workflows/ci.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}\nwith:\n  run-e2e: true`,
-      '.github/workflows/lighthouse.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-lighthouse.yml@v${MAJEUR}`,
+      '.github/workflows/ci.yml': [
+        'permissions:',
+        '  contents: read',
+        '  packages: read',
+        'jobs:',
+        '  ci:',
+        `    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}`,
+        '    with:',
+        '      run-e2e: true',
+      ].join('\n'),
+      '.github/workflows/lighthouse.yml': [
+        'permissions:',
+        '  contents: read',
+        '  packages: read',
+        '  pull-requests: write',
+        'jobs:',
+        '  lighthouse:',
+        `    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-lighthouse.yml@v${MAJEUR}`,
+      ].join('\n'),
       '.github/workflows/cleanup-runs.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/cleanup-runs.yml@v${MAJEUR}`,
       '.github/workflows/keepalive.yml': `uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v${MAJEUR}`,
       'vite.config.ts': `versionPlugin({ manifest: true }); pwaSeoPlugin({ themeColor: { light: '#fff', dark: '#000' } }); cspPlugin(); VitePWA({ registerType: 'prompt' })`,
@@ -707,6 +724,9 @@ test('un commentaire qui MET EN GARDE contre un défaut n’est pas ce défaut',
  */
 
 const AVEC_INHERIT = [
+  'permissions:',
+  '  contents: read',
+  '  packages: read',
   'jobs:',
   '  ci:',
   `    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-ci.yml@v${MAJEUR}`,

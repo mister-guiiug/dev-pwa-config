@@ -286,16 +286,17 @@ configuration est incomplète, et renvoyait déjà vers un `.env.example` qui
 n'existait pas. C'est exactement `envGuardPlugin()`, écrit pour une app sur
 dix-sept, dans la pile même où mister-qowa échoue en silence.
 
-**Phase 2 — le socle, côté déclaration.** Schéma du manifeste, `pwa-env check`
-(hors ligne, en CI sur chaque PR), `pwa-env sync --write`, `pwa-env audit` (en
-ligne, sur la session `gh`). `pwa-doctor` délègue à `pwa-env check` ses quatre
-contrôles actuels au lieu de les dupliquer.
+**Phase 2 — le socle, côté déclaration. ✅ livrée (bin `pwa-env`).** Schéma du
+manifeste, `pwa-env check` (hors ligne), `pwa-env sync --write`, `pwa-env audit`
+(en ligne, sur la session `gh`). `pwa-doctor` signale `env-manifest` quand le
+fichier est présent et invalide. Référence : `mister-doc/config/env.manifest.json`
+et le squelette.
 
-**Phase 3 — les apps, une PR chacune.** Manifeste écrit, `VITE_*` déplacées de
-`secrets` vers `vars`, `secrets: inherit` remplacé par la liste engendrée,
-orphelins supprimés. Commencer par **mister-doc**, qui est déjà conforme : son
-manifeste sert de référence et sa PR ne change que des fichiers, pas des
-valeurs.
+**Phase 3 — les apps, une PR chacune.** Manifestes posés dans le parc
+(`scripts/scaffold-env-manifests.mjs --write --sync` pour (re)générer ;
+`pwa-env check` vert sur chaque app touchée). Reste par dépôt : PR qui déplace
+les `VITE_*` encore en `secrets` vers `vars` si besoin, et `pwa-env audit` une
+fois les valeurs GitHub alignées. Référence : **mister-doc** et le squelette.
 
 **Phase 4 — le cycle de vie.** Environnement `production`, PAT fine-grained
 datés, OIDC pour les trois dépôts Firebase, échéances de rotation.

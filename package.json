@@ -687,7 +687,8 @@
     "pwa-screenshots": "./scripts/pwa-screenshots.mjs",
     "pwa-og-image": "./scripts/pwa-og-image.mjs",
     "pwa-bindings": "./scripts/bindings-natifs.mjs",
-    "pwa-typecheck-7": "./scripts/pwa-typecheck-7.mjs"
+    "pwa-typecheck-7": "./scripts/pwa-typecheck-7.mjs",
+    "pwa-env": "./scripts/pwa-env.mjs"
   },
   "files": [
     "eslint-base.js",
@@ -827,12 +828,15 @@
     "idb.js",
     "idb.d.ts",
     "scripts/pwa-doctor.mjs",
+    "scripts/pwa-env.mjs",
+    "scripts/doctor-fix.mjs",
     "scripts/pwa-pgtap.mjs",
     "scripts/pwa-screenshots.mjs",
     "scripts/pwa-og-image.mjs",
     "scripts/bindings-natifs.mjs",
     "scripts/site-readers.mjs",
-    "scripts/entree.mjs"
+    "scripts/entree.mjs",
+    "experimental-modules.js"
   ],
   "peerDependencies": {
     "@eslint/js": "^9.39.4 || ^10.0.0",

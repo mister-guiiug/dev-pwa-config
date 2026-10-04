@@ -206,12 +206,16 @@ ce qu'elles ont appris est dans les bilans.
 
 **Ce qui reste ouvert :**
 
-| #       | Ce qui reste                                                                                                                                 | À qui                  |
-| ------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| T1      | poser le secret `RENOVATE_TOKEN` sur le socle — aucun script ne peut le faire                                                                | propriétaire           |
-| T12–T15 | rétrécir le socle : retirer les gabarits qui doublent le squelette, engendrer le manifeste par codemod, dater les sous-chemins sans adoptant | une majeure            |
-| F8      | « Nouveautés » après une mise à jour, alimentée par `version.json` et le CHANGELOG                                                           | si un besoin l'appelle |
-| —       | activer le hook « Custom Access Token » et la liste d'URL de retour sur les projets Supabase hébergés                                        | propriétaire           |
+| #       | Ce qui reste                                                                                          | À qui                  |
+| ------- | ----------------------------------------------------------------------------------------------------- | ---------------------- |
+| T1      | poser le secret `RENOVATE_TOKEN` sur le socle — aucun script ne peut le faire                         | propriétaire           |
+| T12–T15 | retirer les modules `experimental-modules.js` à la date indiquée ; engendrer les `.d.ts`              | une majeure (v7)       |
+| F8      | « Nouveautés » après une mise à jour, alimentée par `version.json` et le CHANGELOG                    | si un besoin l'appelle |
+| —       | activer le hook « Custom Access Token » et la liste d'URL de retour sur les projets Supabase hébergés | propriétaire           |
+
+_Livré depuis (04/10/2026) : `pwa-env`, `pwa-doctor --fix`, `wf-permissions`,
+gabarits `ci.yml`/`index.html` retirés, dette `links`/`Stat` fermée, registre
+experimental + règle CONTRIBUTING « squelette ou ≥2 apps »._
 
 F7 (écrire hors ligne) est livré depuis : le squelette porte la file sur son
 port, et `mister-doc` la sienne avec le conflit d'occupant traité.
