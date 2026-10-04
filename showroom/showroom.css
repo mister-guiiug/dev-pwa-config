@@ -699,6 +699,28 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   max-width: 70ch;
 }
 
+.sr-adoption {
+  margin: var(--spacing-fluid-md) 0 0;
+  padding: var(--spacing-fluid-sm) 0 0;
+  border-top: 1px solid var(--ds-border);
+}
+
+.sr-adoption h3 {
+  margin: 0 0 0.35rem;
+  font-size: var(--text-fluid-md);
+}
+
+.sr-adoption h4 {
+  margin: var(--spacing-fluid-sm) 0 0.35rem;
+  font-size: var(--text-fluid-sm);
+}
+
+.sr-adoption .sr-table-wrap {
+  margin-top: 0.5rem;
+  max-height: 22rem;
+  overflow: auto;
+}
+
 /* ── Tableaux de tokens ──────────────────────────────────────────────────── */
 .sr-table-wrap {
   overflow-x: auto;

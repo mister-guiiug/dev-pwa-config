@@ -89,6 +89,13 @@ globalThis.SHOWROOM_I18N = {
     'ui.apps.th.app': 'Application',
     'ui.apps.th.configs': 'Subpaths',
     'ui.apps.sortBy.updated': 'Last activity',
+    'ui.apps.adoptionTitle': 'Package adoption',
+    'ui.apps.adoptionIntro':
+      'How many apps import each symbol — to steer a campaign, not only read the README. Local copies (debt) appear below when the survey found any.',
+    'ui.apps.adoptionSymbol': 'Symbol',
+    'ui.apps.adoptionCount': 'Apps',
+    'ui.apps.adoptionDupsTitle': 'Copied instead of imported',
+    'ui.apps.adoptionDate': 'adoption surveyed {ago}',
     'ui.ago.today': 'today',
     'ui.ago.days': '{n} d ago',
     'ui.ago.months': '{n} months ago',

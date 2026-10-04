@@ -2053,6 +2053,92 @@
       : '';
   }
 
+  /**
+   * Carte d'adoption (symbole → N apps). Les données viennent de
+   * `adoption.js` (relevé local) : sans mesure, la section reste masquée.
+   */
+  function renderAdoption() {
+    var host = document.getElementById('apps-adoption');
+    var table = document.getElementById('apps-adoption-table');
+    var dateNode = document.getElementById('apps-adoption-date');
+    var dupsWrap = document.getElementById('apps-adoption-dups-wrap');
+    var dupsTable = document.getElementById('apps-adoption-dups');
+    if (!host || !table) return;
+    var data = globalThis.SHOWROOM_ADOPTION;
+    var measured =
+      data && typeof data.measured === 'number' ? data.measured : 0;
+    if (!measured || !data.bySymbol) {
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    if (dateNode) {
+      var ago = timeAgo(data.generatedAt);
+      dateNode.textContent = ago
+        ? t('ui.apps.adoptionDate', 'adoption relevée {ago}').replace(
+            '{ago}',
+            ago
+          )
+        : '';
+    }
+    var rows = Object.entries(data.bySymbol)
+      .map(function (entry) {
+        return [entry[0], entry[1].length];
+      })
+      .sort(function (a, b) {
+        return b[1] - a[1] || a[0].localeCompare(b[0]);
+      });
+    var tbody = table.querySelector('tbody');
+    tbody.textContent = '';
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      var c1 = document.createElement('td');
+      var code = document.createElement('code');
+      code.textContent = row[0];
+      c1.appendChild(code);
+      var c2 = document.createElement('td');
+      c2.textContent = String(row[1]);
+      c2.title = (data.bySymbol[row[0]] || []).join(', ');
+      tr.appendChild(c1);
+      tr.appendChild(c2);
+      tbody.appendChild(tr);
+    });
+    var dups = data.byDuplicate ? Object.entries(data.byDuplicate) : [];
+    if (dupsWrap && dupsTable) {
+      if (!dups.length) {
+        dupsWrap.hidden = true;
+      } else {
+        dupsWrap.hidden = false;
+        var dupSym = document.getElementById('apps-adoption-dups-symbol');
+        var dupCnt = document.getElementById('apps-adoption-dups-count');
+        if (dupSym) dupSym.textContent = t('ui.apps.adoptionSymbol', 'Symbole');
+        if (dupCnt) dupCnt.textContent = t('ui.apps.adoptionCount', 'Apps');
+        var dupRows = dups
+          .map(function (entry) {
+            return [entry[0], entry[1].length];
+          })
+          .sort(function (a, b) {
+            return b[1] - a[1] || a[0].localeCompare(b[0]);
+          });
+        var dupBody = dupsTable.querySelector('tbody');
+        dupBody.textContent = '';
+        dupRows.forEach(function (row) {
+          var tr = document.createElement('tr');
+          var c1 = document.createElement('td');
+          var code = document.createElement('code');
+          code.textContent = row[0];
+          c1.appendChild(code);
+          var c2 = document.createElement('td');
+          c2.textContent = String(row[1]);
+          c2.title = (data.byDuplicate[row[0]] || []).join(', ');
+          tr.appendChild(c1);
+          tr.appendChild(c2);
+          dupBody.appendChild(tr);
+        });
+      }
+    }
+  }
+
   function renderAppShare() {
     var host = document.getElementById('apps-share');
     if (!host) return;
@@ -3814,6 +3900,7 @@
     renderAppSort();
     renderAppShare();
     renderMetricsDate();
+    renderAdoption();
     renderAppGrid();
     renderPlayground();
     renderForcedColors();
