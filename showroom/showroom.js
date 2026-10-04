@@ -5208,7 +5208,6 @@
     });
   });
 
-
   /* ── Vague 4 : scènes, présentation, recettes, checklist, CSS, viewport ─ */
 
   var FLUID_TYPE = [
@@ -5548,9 +5547,11 @@
     if (!on) {
       presentIndex = -1;
       root.removeAttribute('data-present');
-      document.querySelectorAll('[data-present-current]').forEach(function (el) {
-        el.removeAttribute('data-present-current');
-      });
+      document
+        .querySelectorAll('[data-present-current]')
+        .forEach(function (el) {
+          el.removeAttribute('data-present-current');
+        });
       var barOff = document.getElementById('sr-present-bar');
       if (barOff) barOff.hidden = true;
       return;
