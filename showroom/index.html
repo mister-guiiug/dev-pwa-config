@@ -840,8 +840,154 @@
           >
             Parcours guidé
           </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-present-start"
+            data-i18n="ui.present.start"
+          >
+            Présenter
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-scenes-open"
+            data-i18n="ui.scenes.open"
+          >
+            Scènes
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-recipe-start"
+            data-i18n="ui.recipe.start"
+          >
+            Recettes
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-export-css"
+            data-i18n="ui.css.cta"
+          >
+            Exporter le CSS
+          </button>
         </p>
       </section>
+
+      <aside
+        class="sr-present-bar"
+        id="sr-present-bar"
+        hidden
+        role="region"
+        data-i18n-aria="ui.present.region"
+        aria-label="Mode présentation"
+      >
+        <p class="sr-present-status" id="sr-present-status"></p>
+        <p class="sr-present-actions">
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-present-prev"
+            data-i18n="ui.present.prev"
+          >
+            Précédent
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-present-next"
+            data-i18n="ui.present.next"
+          >
+            Suivant
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-present-exit"
+            data-i18n="ui.present.exit"
+          >
+            Quitter
+          </button>
+        </p>
+      </aside>
+
+      <dialog
+        class="sr-scenes"
+        id="sr-scenes"
+        aria-labelledby="sr-scenes-title"
+      >
+        <form method="dialog" class="sr-scenes-inner">
+          <h2 id="sr-scenes-title" data-i18n="ui.scenes.title">Scènes</h2>
+          <p class="sr-note" data-i18n="ui.scenes.intro">
+            Enregistrez l’état courant (habillage, schéma, section, paire) sous
+            un nom, puis rouvrez-le ou partagez
+            <code>?scene=…</code>.
+          </p>
+          <p class="sr-control">
+            <label for="sr-scene-name" data-i18n="ui.scenes.name"
+              >Nom de la scène</label
+            >
+            <input
+              type="text"
+              id="sr-scene-name"
+              maxlength="48"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button
+              type="button"
+              class="sr-app-link"
+              id="sr-scene-save"
+              data-i18n="ui.scenes.save"
+            >
+              Enregistrer
+            </button>
+          </p>
+          <ul class="sr-scene-list" id="sr-scene-list"></ul>
+          <button type="submit" class="sr-app-link" data-i18n="ui.scenes.close">
+            Fermer
+          </button>
+        </form>
+      </dialog>
+
+      <aside
+        class="sr-recipe"
+        id="sr-recipe"
+        hidden
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="sr-recipe-title"
+      >
+        <div
+          class="sr-recipe-rail"
+          id="sr-recipe-rail"
+          role="list"
+          data-i18n-aria="ui.recipe.rail"
+          aria-label="Recettes"
+        ></div>
+        <p class="sr-recipe-meta" id="sr-recipe-meta"></p>
+        <h2 class="sr-recipe-title" id="sr-recipe-title"></h2>
+        <p class="sr-recipe-body" id="sr-recipe-body"></p>
+        <p class="sr-recipe-actions">
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-recipe-skip"
+            data-i18n="ui.recipe.skip"
+          >
+            Quitter
+          </button>
+          <button
+            type="button"
+            class="sr-app-link"
+            id="sr-recipe-next"
+            data-i18n="ui.recipe.next"
+          >
+            Étape suivante
+          </button>
+        </p>
+      </aside>
 
       <aside
         class="sr-tour"
@@ -999,6 +1145,36 @@
               <tbody></tbody>
             </table>
           </div>
+
+          <div class="sr-checklist" id="apps-checklist">
+            <h4 data-i18n="ui.check.title" id="apps-checklist-title">
+              Checklist d’adoption
+            </h4>
+            <p class="sr-note" data-i18n="ui.check.intro">
+              Pour une app du relevé : présent, recopié localement, ou absent —
+              avec un lien vers la démo concernée.
+            </p>
+            <p class="sr-control">
+              <label for="apps-checklist-app" data-i18n="ui.check.app"
+                >Application</label
+              >
+              <select id="apps-checklist-app"></select>
+              <button
+                type="button"
+                class="sr-app-link"
+                id="apps-checklist-copy"
+                data-i18n="ui.check.copy"
+              >
+                Copier les écarts
+              </button>
+            </p>
+            <p
+              class="sr-checklist-summary"
+              id="apps-checklist-summary"
+              role="status"
+            ></p>
+            <ul class="sr-checklist-list" id="apps-checklist-list"></ul>
+          </div>
         </div>
 
         <p class="sr-note" data-i18n="apps.note">
@@ -1137,6 +1313,37 @@
           <code>text-fluid-2xl</code>… La colonne « Rendu » utilise la police de
           titrage du thème courant.
         </p>
+
+        <div
+          class="sr-viewport-twin"
+          id="sr-viewport-twin"
+          data-i18n-aria="ui.viewport.legend"
+          aria-label="Viewport jumeau"
+        >
+          <h3 class="sr-subtitle" data-i18n="ui.viewport.title">
+            Viewport jumeau
+          </h3>
+          <p class="sr-note" data-i18n="ui.viewport.intro">
+            Même échelle fluide, calculée à 390&nbsp;px et 1280&nbsp;px — sans
+            redimensionner la fenêtre.
+          </p>
+          <div class="sr-viewport-grid">
+            <div class="sr-viewport-pane" data-width="390">
+              <p class="sr-viewport-label">
+                <span data-i18n="ui.viewport.phone">Téléphone</span>
+                <span>390 px</span>
+              </p>
+              <ul class="sr-viewport-scale" id="sr-viewport-phone"></ul>
+            </div>
+            <div class="sr-viewport-pane" data-width="1280">
+              <p class="sr-viewport-label">
+                <span data-i18n="ui.viewport.desk">Bureau</span>
+                <span>1280 px</span>
+              </p>
+              <ul class="sr-viewport-scale" id="sr-viewport-desk"></ul>
+            </div>
+          </div>
+        </div>
 
         <h3 class="sr-subtitle" data-i18n="fondations.h32">
           Familles de police
@@ -3676,6 +3883,10 @@
           <div>
             <dt><kbd>?</kbd></dt>
             <dd data-i18n="ui.cheat.help">Cette aide</dd>
+          </div>
+          <div>
+            <dt><kbd>p</kbd></dt>
+            <dd data-i18n="ui.cheat.present">Mode présentation</dd>
           </div>
           <div>
             <dt><kbd>Esc</kbd></dt>

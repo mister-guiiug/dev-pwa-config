@@ -67,7 +67,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.news.title': 'Showroom updates',
     'ui.news.since': 'since your last visit:',
     'ui.news.list':
-      'guided tour, review export, tokens in Ctrl+K, doc/live split, contrast campaign, recent dressings',
+      'saved scenes, presentation mode, recipes, adoption checklist, theme CSS export, twin viewport',
     'ui.recent.legend': 'Recent dressings',
     'ui.export.cta': 'Export for review',
     'ui.export.done': 'Image ready',
@@ -86,6 +86,79 @@ globalThis.SHOWROOM_I18N = {
     'ui.tour.step3.title': 'Try the primitives',
     'ui.tour.step3.body':
       'Button and Badge matrices: that is where contrast regressions show up.',
+    'ui.present.start': 'Present',
+    'ui.present.prev': 'Previous',
+    'ui.present.next': 'Next',
+    'ui.present.exit': 'Exit',
+    'ui.present.status': '{n} / {total} · {title}',
+    'ui.scenes.open': 'Scenes',
+    'ui.scenes.title': 'Scenes',
+    'ui.scenes.intro':
+      'Save the current state (dressing, scheme, section, pair) under a name, then reopen it or share <code>?scene=…</code>.',
+    'ui.scenes.name': 'Scene name',
+    'ui.scenes.save': 'Save',
+    'ui.scenes.close': 'Close',
+    'ui.scenes.empty': 'No scene saved on this device.',
+    'ui.scenes.apply': 'Open',
+    'ui.scenes.copy': 'Copy link',
+    'ui.scenes.delete': 'Delete',
+    'ui.recipe.start': 'Recipes',
+    'ui.recipe.skip': 'Quit',
+    'ui.recipe.next': 'Next step',
+    'ui.recipe.finish': 'Finish',
+    'ui.recipe.meta': 'Step {n} / {total}',
+    'ui.recipe.form': 'Form',
+    'ui.recipe.empty': 'Empty state',
+    'ui.recipe.nav': 'Bottom nav',
+    'ui.recipe.toast': 'Toast + error',
+    'ui.recipe.form.s1.title': 'Login form',
+    'ui.recipe.form.s1.body':
+      'LoginForm is the shared email/password shell — start here for a sign-in screen.',
+    'ui.recipe.form.s2.title': 'Fields and buttons',
+    'ui.recipe.form.s2.body':
+      'The Button matrix shows variants × sizes; Field carries label, hint and error.',
+    'ui.recipe.form.s3.title': 'Confirm before submit',
+    'ui.recipe.form.s3.body':
+      'ConfirmDialog for destructive or irreversible actions after the form.',
+    'ui.recipe.empty.s1.title': 'EmptyState',
+    'ui.recipe.empty.s1.body':
+      'Title, help text, one action — when the list has nothing to show.',
+    'ui.recipe.empty.s2.title': 'ErrorBanner',
+    'ui.recipe.empty.s2.body':
+      'A recoverable failure is not an empty set: ErrorBanner keeps the next step visible.',
+    'ui.recipe.nav.s1.title': 'BottomNav',
+    'ui.recipe.nav.s1.body':
+      'Mobile primary navigation — use placement="fixed", never a hand-rolled position:fixed.',
+    'ui.recipe.nav.s2.title': 'PageContainer reserve',
+    'ui.recipe.nav.s2.body':
+      'PageContainer reserve="bottom-nav" leaves room for the bar so content is not hidden.',
+    'ui.recipe.nav.s3.title': 'AppHeader',
+    'ui.recipe.nav.s3.body':
+      'Top chrome pairs with the bottom bar; keep titles and actions here.',
+    'ui.recipe.toast.s1.title': 'Toast',
+    'ui.recipe.toast.s1.body':
+      'Transient feedback after an action — not a place for errors that need a retry.',
+    'ui.recipe.toast.s2.title': 'ErrorBanner',
+    'ui.recipe.toast.s2.body':
+      'Persistent errors belong in ErrorBanner, next to a recovery action.',
+    'ui.check.title': 'Adoption checklist',
+    'ui.check.intro':
+      'For an app in the survey: present, local equivalent, or missing — with a link to the matching demo.',
+    'ui.check.app': 'Application',
+    'ui.check.copy': 'Copy gaps',
+    'ui.check.present': 'present',
+    'ui.check.kept': 'local equivalent',
+    'ui.check.absent': 'missing',
+    'ui.check.summary': '{ok} present · {kept} local · {ko} missing',
+    'ui.check.none': 'No gaps on this checklist.',
+    'ui.css.cta': 'Export CSS',
+    'ui.css.done': 'CSS ready',
+    'ui.viewport.title': 'Twin viewport',
+    'ui.viewport.intro':
+      'The same fluid scale, computed at 390&nbsp;px and 1280&nbsp;px — without resizing the window.',
+    'ui.viewport.phone': 'Phone',
+    'ui.viewport.desk': 'Desktop',
+    'ui.cheat.present': 'Presentation mode',
     'ui.cmd.token': 'Token',
     'ui.cmd.action': 'Action',
     'ui.cmd.copyToken': 'Copy {token}',

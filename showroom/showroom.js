@@ -26,14 +26,15 @@
   var TOUR_KEY = 'dwc_showroom_tour_done';
   var PKG_LABEL = '@mister-guiiug/dev-pwa-config';
   /** Identifiant du ruban « nouveautés » — avancer pour réafficher. */
-  var NEWS_ID = 'wave3-2026-10-04';
+  var NEWS_ID = 'wave4-2026-10-04';
+  var SCENES_KEY = 'dwc_showroom_scenes';
   var NEWS_ITEMS = [
-    'parcours guidé',
-    'export revue',
-    'tokens dans Ctrl+K',
-    'split doc/live',
-    'campagne contraste',
-    'habillages récents',
+    'scènes enregistrées',
+    'mode présentation',
+    'recettes',
+    'checklist d’adoption',
+    'export CSS du thème',
+    'viewport jumeau',
   ];
 
   /* ── Langue ────────────────────────────────────────────────────────── *
@@ -357,6 +358,7 @@
       setOrDrop(url, 'pair', pairA + ',' + pairB);
       setOrDrop(url, 'inspect', inspectOn ? '1' : '');
       setOrDrop(url, 'section', sectionFocus || '');
+      setOrDrop(url, 'scene', activeSceneId || '');
       history.replaceState(null, '', url);
     } catch {
       /* URL non manipulable (file://) : le stockage prend le relais */
@@ -919,6 +921,7 @@
   /* ── Mesures en direct ─────────────────────────────────────────────── */
 
   function measure() {
+    if (typeof renderViewportTwin === 'function') renderViewportTwin();
     document
       .querySelectorAll('#type-scale tr[data-token]')
       .forEach(function (row) {
@@ -5138,6 +5141,8 @@
     applyTheme(currentTheme);
     renderRecent();
     setupContrastCampaign();
+    renderChecklist();
+    renderViewportTwin();
     measure();
     // Après le rendu : les tableaux engendrés doivent être étiquetés eux aussi.
     labelTableCells();
@@ -5203,6 +5208,754 @@
     });
   });
 
+
+  /* ── Vague 4 : scènes, présentation, recettes, checklist, CSS, viewport ─ */
+
+  var FLUID_TYPE = [
+    { token: '--text-fluid-xs', label: 'xs', min: 0.7, vw: 1.6, max: 0.8125 },
+    { token: '--text-fluid-sm', label: 'sm', min: 0.8125, vw: 1.9, max: 0.95 },
+    { token: '--text-fluid-base', label: 'base', min: 0.9, vw: 2.2, max: 1.05 },
+    { token: '--text-fluid-lg', label: 'lg', min: 1, vw: 2.6, max: 1.25 },
+    { token: '--text-fluid-xl', label: 'xl', min: 1.15, vw: 3, max: 1.5 },
+    { token: '--text-fluid-2xl', label: '2xl', min: 1.35, vw: 4.2, max: 2 },
+  ];
+
+  var ADOPTION_CHECKS = [
+    { symbol: 'ThemeProvider', href: '#hooks' },
+    { symbol: 'EmptyState', href: '#composants' },
+    { symbol: 'ShareButton', href: '#composants', alts: ['shareOrCopy'] },
+    { symbol: 'BottomNav', href: '#composants' },
+    { symbol: 'LoginForm', href: '#composants' },
+    { symbol: 'ToastProvider', href: '#composants', alts: ['useToast'] },
+    { symbol: 'ConfirmDialog', href: '#composants' },
+    { symbol: 'ConsentBanner', href: '#composants' },
+  ];
+
+  var RECIPES = [
+    {
+      id: 'form',
+      titleKey: 'ui.recipe.form',
+      steps: [
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.form.s1.title',
+          bodyKey: 'ui.recipe.form.s1.body',
+          hot: '[data-snippet="LoginForm"]',
+        },
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.form.s2.title',
+          bodyKey: 'ui.recipe.form.s2.body',
+          hot: '#button-matrix',
+        },
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.form.s3.title',
+          bodyKey: 'ui.recipe.form.s3.body',
+          hot: '[data-snippet="ConfirmDialog"]',
+        },
+      ],
+    },
+    {
+      id: 'empty',
+      titleKey: 'ui.recipe.empty',
+      steps: [
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.empty.s1.title',
+          bodyKey: 'ui.recipe.empty.s1.body',
+          hot: '[data-dwc="empty-state"]',
+        },
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.empty.s2.title',
+          bodyKey: 'ui.recipe.empty.s2.body',
+          hot: '[data-snippet="ErrorBanner"]',
+        },
+      ],
+    },
+    {
+      id: 'nav',
+      titleKey: 'ui.recipe.nav',
+      steps: [
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.nav.s1.title',
+          bodyKey: 'ui.recipe.nav.s1.body',
+          hot: '[data-snippet="BottomNav"]',
+        },
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.nav.s2.title',
+          bodyKey: 'ui.recipe.nav.s2.body',
+          hot: '[data-snippet="PageContainer"]',
+        },
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.nav.s3.title',
+          bodyKey: 'ui.recipe.nav.s3.body',
+          hot: '[data-snippet="AppHeader"]',
+        },
+      ],
+    },
+    {
+      id: 'toast',
+      titleKey: 'ui.recipe.toast',
+      steps: [
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.toast.s1.title',
+          bodyKey: 'ui.recipe.toast.s1.body',
+          hot: '[data-snippet="Toast"]',
+        },
+        {
+          target: '#composants',
+          titleKey: 'ui.recipe.toast.s2.title',
+          bodyKey: 'ui.recipe.toast.s2.body',
+          hot: '[data-snippet="ErrorBanner"]',
+        },
+      ],
+    },
+  ];
+
+  var presentIndex = -1;
+  var presentSections = [];
+  var recipeId = '';
+  var recipeStep = 0;
+  var activeSceneId = '';
+
+  function slugifyScene(name) {
+    var s = String(name || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return s || 'scene';
+  }
+
+  function readScenes() {
+    try {
+      var raw = localStorage.getItem(SCENES_KEY);
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function writeScenes(list) {
+    write(SCENES_KEY, JSON.stringify(list.slice(0, 12)));
+  }
+
+  function captureSceneState() {
+    return {
+      app: currentTheme.id,
+      scheme: currentScheme,
+      lang: lang,
+      density: currentDensity,
+      pair: pairA && pairB ? pairA + ',' + pairB : '',
+      inspect: inspectOn ? '1' : '',
+      section: sectionFocus || '',
+      hash: (location.hash || '').replace(/^#/, ''),
+    };
+  }
+
+  function applySceneState(state) {
+    if (!state || typeof state !== 'object') return;
+    if (state.lang && LANGS.indexOf(state.lang) !== -1) {
+      lang = state.lang;
+      write(LANG_KEY, lang);
+      applyLang(lang);
+    }
+    if (state.density) currentDensity = applyDensity(state.density);
+    if (state.scheme) {
+      currentScheme = state.scheme;
+      write(SCHEME_KEY, currentScheme);
+    }
+    if (state.app) {
+      var theme = themeById(state.app);
+      currentTheme = theme;
+      write(APP_KEY, theme.id);
+      pushRecent(theme.id);
+    }
+    if (state.pair && state.pair.indexOf(',') !== -1) {
+      var parts = state.pair.split(',');
+      pairA = parts[0] || pairA;
+      pairB = parts[1] || pairB;
+      write(PAIR_A_KEY, pairA);
+      write(PAIR_B_KEY, pairB);
+    }
+    applyScheme(currentScheme, currentTheme);
+    syncSchemeInputs(currentScheme, currentTheme);
+    applyTheme(currentTheme);
+    setInspect(state.inspect === '1');
+    setSectionFocus(state.section || '');
+    if (state.hash) {
+      var el = document.getElementById(state.hash);
+      if (el) el.scrollIntoView({ block: 'start' });
+    }
+    renderGenerated();
+    syncUrl();
+  }
+
+  function sceneUrl(scene) {
+    var url = new URL(location.href);
+    var st = scene.state || {};
+    url.searchParams.set('scene', scene.id);
+    url.searchParams.set('app', st.app || 'generic');
+    url.searchParams.set('scheme', st.scheme || 'system');
+    if (st.lang) url.searchParams.set('lang', st.lang);
+    else url.searchParams.delete('lang');
+    setOrDrop(url, 'density', st.density === 'comfort' ? '' : st.density || '');
+    setOrDrop(url, 'pair', st.pair || '');
+    setOrDrop(url, 'inspect', st.inspect || '');
+    setOrDrop(url, 'section', st.section || '');
+    url.hash = st.hash ? '#' + st.hash : '';
+    return url.toString();
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return legacyCopy(text) ? Promise.resolve() : Promise.reject();
+      });
+    }
+    return legacyCopy(text) ? Promise.resolve() : Promise.reject();
+  }
+
+  function renderScenes() {
+    var list = document.getElementById('sr-scene-list');
+    if (!list) return;
+    list.textContent = '';
+    var scenes = readScenes();
+    if (!scenes.length) {
+      var empty = document.createElement('li');
+      empty.textContent = t(
+        'ui.scenes.empty',
+        'Aucune scène enregistrée sur cet appareil.'
+      );
+      list.appendChild(empty);
+      return;
+    }
+    scenes.forEach(function (scene) {
+      var li = document.createElement('li');
+      if (scene.id === activeSceneId) li.setAttribute('aria-current', 'true');
+      var main = document.createElement('div');
+      var title = document.createElement('p');
+      title.className = 'sr-scene-title';
+      title.textContent = scene.name;
+      main.appendChild(title);
+      var meta = document.createElement('div');
+      meta.className = 'sr-scene-meta';
+      ['app', 'scheme', 'section'].forEach(function (key) {
+        if (!scene.state || !scene.state[key]) return;
+        var chip = document.createElement('span');
+        chip.className = 'sr-scene-chip';
+        chip.textContent = key + ' · ' + scene.state[key];
+        meta.appendChild(chip);
+      });
+      main.appendChild(meta);
+      li.appendChild(main);
+      var actions = document.createElement('div');
+      actions.className = 'sr-scene-actions';
+      var open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'sr-app-link';
+      open.textContent = t('ui.scenes.apply', 'Ouvrir');
+      open.addEventListener('click', function () {
+        activeSceneId = scene.id;
+        applySceneState(scene.state);
+        renderScenes();
+      });
+      var copy = document.createElement('button');
+      copy.type = 'button';
+      copy.className = 'sr-app-link';
+      copy.textContent = t('ui.scenes.copy', 'Copier le lien');
+      copy.addEventListener('click', function () {
+        copyText(sceneUrl(scene)).then(function () {
+          copy.textContent = t('ui.copied', 'Copié');
+          window.setTimeout(function () {
+            copy.textContent = t('ui.scenes.copy', 'Copier le lien');
+          }, 1200);
+        });
+      });
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'sr-app-link';
+      del.textContent = t('ui.scenes.delete', 'Supprimer');
+      del.addEventListener('click', function () {
+        writeScenes(
+          readScenes().filter(function (s) {
+            return s.id !== scene.id;
+          })
+        );
+        if (activeSceneId === scene.id) activeSceneId = '';
+        renderScenes();
+        syncUrl();
+      });
+      actions.appendChild(open);
+      actions.appendChild(copy);
+      actions.appendChild(del);
+      li.appendChild(actions);
+      list.appendChild(li);
+    });
+  }
+
+  function setupScenes() {
+    var dialog = document.getElementById('sr-scenes');
+    var openBtn = document.getElementById('sr-scenes-open');
+    var saveBtn = document.getElementById('sr-scene-save');
+    var nameInput = document.getElementById('sr-scene-name');
+    if (!dialog || !openBtn) return;
+    function openScenes() {
+      renderScenes();
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+      if (nameInput) nameInput.focus();
+    }
+    openBtn.addEventListener('click', openScenes);
+    if (saveBtn && nameInput) {
+      saveBtn.addEventListener('click', function () {
+        var name = nameInput.value.trim();
+        if (!name) {
+          nameInput.focus();
+          return;
+        }
+        var id = slugifyScene(name);
+        var scenes = readScenes().filter(function (s) {
+          return s.id !== id;
+        });
+        scenes.unshift({ id: id, name: name, state: captureSceneState() });
+        writeScenes(scenes);
+        activeSceneId = id;
+        nameInput.value = '';
+        renderScenes();
+        syncUrl();
+      });
+    }
+    var fromUrl = paramOr('scene', '');
+    if (fromUrl) activeSceneId = fromUrl;
+  }
+
+  function presentSectionsList() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll('main .sr-section[id]')
+    );
+  }
+
+  function setPresent(on, index) {
+    if (!on) {
+      presentIndex = -1;
+      root.removeAttribute('data-present');
+      document.querySelectorAll('[data-present-current]').forEach(function (el) {
+        el.removeAttribute('data-present-current');
+      });
+      var barOff = document.getElementById('sr-present-bar');
+      if (barOff) barOff.hidden = true;
+      return;
+    }
+    presentSections = presentSectionsList();
+    if (!presentSections.length) return;
+    presentIndex = Math.max(
+      0,
+      Math.min(index || 0, presentSections.length - 1)
+    );
+    root.setAttribute('data-present', 'on');
+    var bar = document.getElementById('sr-present-bar');
+    if (bar) bar.hidden = false;
+    presentSections.forEach(function (section, i) {
+      if (i === presentIndex) section.setAttribute('data-present-current', '');
+      else section.removeAttribute('data-present-current');
+    });
+    var status = document.getElementById('sr-present-status');
+    var current = presentSections[presentIndex];
+    if (status && current) {
+      var heading = current.querySelector('h1, h2');
+      status.textContent = t('ui.present.status', '{n} / {total} · {title}')
+        .replace('{n}', String(presentIndex + 1))
+        .replace('{total}', String(presentSections.length))
+        .replace(
+          '{title}',
+          (heading && heading.textContent.trim()) || current.id
+        );
+    }
+    if (current) current.scrollIntoView({ block: 'start' });
+  }
+
+  function setupPresent() {
+    var start = document.getElementById('sr-present-start');
+    var prev = document.getElementById('sr-present-prev');
+    var next = document.getElementById('sr-present-next');
+    var exit = document.getElementById('sr-present-exit');
+    if (start)
+      start.addEventListener('click', function () {
+        setPresent(true, 0);
+      });
+    if (prev)
+      prev.addEventListener('click', function () {
+        if (presentIndex < 0) return;
+        setPresent(true, presentIndex - 1);
+      });
+    if (next)
+      next.addEventListener('click', function () {
+        if (presentIndex < 0) return;
+        setPresent(true, presentIndex + 1);
+      });
+    if (exit)
+      exit.addEventListener('click', function () {
+        setPresent(false);
+      });
+    document.addEventListener('keydown', function (event) {
+      var tag = (event.target && event.target.tagName) || '';
+      var typing =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        (event.target && event.target.isContentEditable);
+      if (typing) return;
+      if (presentIndex >= 0) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          setPresent(false);
+          return;
+        }
+        if (
+          event.key === 'ArrowRight' ||
+          event.key === 'ArrowDown' ||
+          event.key === ' '
+        ) {
+          event.preventDefault();
+          setPresent(true, presentIndex + 1);
+          return;
+        }
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          setPresent(true, presentIndex - 1);
+          return;
+        }
+      }
+      if (
+        (event.key === 'p' || event.key === 'P') &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        if (presentIndex >= 0) setPresent(false);
+        else setPresent(true, 0);
+      }
+    });
+  }
+
+  function clearRecipeHot() {
+    document.querySelectorAll('.sr-recipe-hot').forEach(function (el) {
+      el.classList.remove('sr-recipe-hot');
+    });
+  }
+
+  function recipeById(id) {
+    for (var i = 0; i < RECIPES.length; i += 1) {
+      if (RECIPES[i].id === id) return RECIPES[i];
+    }
+    return null;
+  }
+
+  function renderRecipe() {
+    var panel = document.getElementById('sr-recipe');
+    var rail = document.getElementById('sr-recipe-rail');
+    var title = document.getElementById('sr-recipe-title');
+    var body = document.getElementById('sr-recipe-body');
+    var meta = document.getElementById('sr-recipe-meta');
+    var next = document.getElementById('sr-recipe-next');
+    if (!panel || !rail) return;
+    rail.textContent = '';
+    RECIPES.forEach(function (recipe) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('role', 'listitem');
+      btn.textContent = t(recipe.titleKey, recipe.id);
+      if (recipe.id === recipeId) btn.setAttribute('aria-current', 'true');
+      btn.addEventListener('click', function () {
+        startRecipe(recipe.id);
+      });
+      rail.appendChild(btn);
+    });
+    var recipe = recipeById(recipeId);
+    if (!recipe) {
+      panel.hidden = true;
+      clearRecipeHot();
+      return;
+    }
+    panel.hidden = false;
+    var step = recipe.steps[recipeStep] || recipe.steps[0];
+    if (title) title.textContent = t(step.titleKey, step.titleKey);
+    if (body) body.textContent = t(step.bodyKey, step.bodyKey);
+    if (meta)
+      meta.textContent = t('ui.recipe.meta', 'Étape {n} / {total}')
+        .replace('{n}', String(recipeStep + 1))
+        .replace('{total}', String(recipe.steps.length));
+    if (next)
+      next.textContent =
+        recipeStep >= recipe.steps.length - 1
+          ? t('ui.recipe.finish', 'Terminer')
+          : t('ui.recipe.next', 'Étape suivante');
+    clearRecipeHot();
+    var target = document.querySelector(step.target);
+    if (target) target.scrollIntoView({ block: 'start' });
+    var hot = document.querySelector(step.hot || step.target);
+    if (hot) hot.classList.add('sr-recipe-hot');
+  }
+
+  function startRecipe(id) {
+    recipeId = id || RECIPES[0].id;
+    recipeStep = 0;
+    renderRecipe();
+  }
+
+  function stopRecipe() {
+    recipeId = '';
+    recipeStep = 0;
+    renderRecipe();
+  }
+
+  function setupRecipes() {
+    var start = document.getElementById('sr-recipe-start');
+    var skip = document.getElementById('sr-recipe-skip');
+    var next = document.getElementById('sr-recipe-next');
+    if (start)
+      start.addEventListener('click', function () {
+        startRecipe(RECIPES[0].id);
+      });
+    if (skip) skip.addEventListener('click', stopRecipe);
+    if (next)
+      next.addEventListener('click', function () {
+        var recipe = recipeById(recipeId);
+        if (!recipe) return;
+        if (recipeStep >= recipe.steps.length - 1) stopRecipe();
+        else {
+          recipeStep += 1;
+          renderRecipe();
+        }
+      });
+  }
+
+  function checklistAppId() {
+    var select = document.getElementById('apps-checklist-app');
+    return (select && select.value) || '';
+  }
+
+  function adoptionEntry(appId) {
+    var data = globalThis.SHOWROOM_ADOPTION;
+    if (!data || !data.apps) return null;
+    return data.apps[appId] || null;
+  }
+
+  function checkStatus(entry, check) {
+    if (!entry) return 'ko';
+    var symbols = entry.symbols || [];
+    var kept = entry.kept || [];
+    var names = [check.symbol].concat(check.alts || []);
+    for (var i = 0; i < names.length; i += 1) {
+      if (symbols.indexOf(names[i]) !== -1) return 'ok';
+    }
+    for (var k = 0; k < kept.length; k += 1) {
+      if (names.indexOf(kept[k].exported) !== -1) return 'kept';
+    }
+    return 'ko';
+  }
+
+  function renderChecklist() {
+    var host = document.getElementById('apps-checklist');
+    var select = document.getElementById('apps-checklist-app');
+    var list = document.getElementById('apps-checklist-list');
+    var summary = document.getElementById('apps-checklist-summary');
+    if (!host || !select || !list) return;
+    var data = globalThis.SHOWROOM_ADOPTION;
+    if (!data || !data.measured) {
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    var ids = Object.keys(data.apps || {}).sort();
+    var previous = select.value;
+    select.textContent = '';
+    ids.forEach(function (id) {
+      var opt = document.createElement('option');
+      opt.value = id;
+      var theme = themeById(id);
+      opt.textContent = theme ? themeDisplayName(theme) : id;
+      select.appendChild(opt);
+    });
+    if (previous && ids.indexOf(previous) !== -1) select.value = previous;
+    else if (ids.indexOf(currentTheme.id) !== -1)
+      select.value = currentTheme.id;
+    else if (ids.length) select.value = ids[0];
+
+    var entry = adoptionEntry(select.value);
+    list.textContent = '';
+    var ok = 0;
+    var keptN = 0;
+    var ko = 0;
+    ADOPTION_CHECKS.forEach(function (check) {
+      var status = checkStatus(entry, check);
+      if (status === 'ok') ok += 1;
+      else if (status === 'kept') keptN += 1;
+      else ko += 1;
+      var li = document.createElement('li');
+      var mark = document.createElement('span');
+      mark.setAttribute('aria-hidden', 'true');
+      mark.textContent = status === 'ok' ? '✓' : status === 'kept' ? '·' : '×';
+      var label = document.createElement('a');
+      label.href = check.href;
+      label.textContent = check.symbol;
+      var badge = document.createElement('span');
+      badge.className =
+        status === 'ok'
+          ? 'sr-check-ok'
+          : status === 'kept'
+            ? 'sr-check-kept'
+            : 'sr-check-ko';
+      badge.textContent =
+        status === 'ok'
+          ? t('ui.check.present', 'présent')
+          : status === 'kept'
+            ? t('ui.check.kept', 'équivalent local')
+            : t('ui.check.absent', 'absent');
+      li.appendChild(mark);
+      li.appendChild(label);
+      li.appendChild(badge);
+      list.appendChild(li);
+    });
+    if (summary) {
+      summary.textContent = t(
+        'ui.check.summary',
+        '{ok} présents · {kept} locaux · {ko} absents'
+      )
+        .replace('{ok}', String(ok))
+        .replace('{kept}', String(keptN))
+        .replace('{ko}', String(ko));
+    }
+  }
+
+  function setupChecklist() {
+    var select = document.getElementById('apps-checklist-app');
+    var copy = document.getElementById('apps-checklist-copy');
+    if (select && !select.dataset.bound) {
+      select.dataset.bound = '1';
+      select.addEventListener('change', renderChecklist);
+    }
+    if (copy && !copy.dataset.bound) {
+      copy.dataset.bound = '1';
+      copy.addEventListener('click', function () {
+        var entry = adoptionEntry(checklistAppId());
+        var gaps = ADOPTION_CHECKS.filter(function (check) {
+          return checkStatus(entry, check) !== 'ok';
+        }).map(function (check) {
+          var st = checkStatus(entry, check);
+          return (
+            check.symbol +
+            ' — ' +
+            (st === 'kept'
+              ? t('ui.check.kept', 'équivalent local')
+              : t('ui.check.absent', 'absent'))
+          );
+        });
+        var text = gaps.length
+          ? gaps.join('\n')
+          : t('ui.check.none', 'Aucun écart sur cette checklist.');
+        copyText(text).then(function () {
+          copy.textContent = t('ui.copied', 'Copié');
+          window.setTimeout(function () {
+            copy.textContent = t('ui.check.copy', 'Copier les écarts');
+          }, 1200);
+        });
+      });
+    }
+    renderChecklist();
+  }
+
+  function themeCssText() {
+    var scheme =
+      currentScheme === 'dark' ||
+      (currentScheme === 'system' &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ? 'dark'
+        : 'light';
+    var pal = paletteForTheme(currentTheme, scheme) || {};
+    var lines = [
+      ':root[data-app="' +
+        currentTheme.id +
+        '"][data-theme="' +
+        scheme +
+        '"] {',
+    ];
+    ROLES.forEach(function (role) {
+      var value = pal[role[0]];
+      if (value) lines.push('  ' + role[1] + ': ' + value + ';');
+    });
+    if (pal.bgImage && pal.bgImage !== 'none')
+      lines.push('  --ds-bg-image: ' + pal.bgImage + ';');
+    if (currentTheme.fontDisplay)
+      lines.push('  --ds-font-display: ' + currentTheme.fontDisplay + ';');
+    if (currentTheme.radius)
+      lines.push('  --ds-radius: ' + currentTheme.radius + ';');
+    lines.push('}');
+    return lines.join('\n');
+  }
+
+  function setupExportCss() {
+    var btn = document.getElementById('sr-export-css');
+    if (!btn || btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', function () {
+      var css = themeCssText();
+      var blob = new Blob([css + '\n'], { type: 'text/css;charset=utf-8' });
+      var scheme =
+        root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      downloadBlob(blob, 'theme-' + currentTheme.id + '-' + scheme + '.css');
+      var prev = btn.textContent;
+      btn.textContent = t('ui.css.done', 'CSS prêt');
+      window.setTimeout(function () {
+        btn.textContent = prev || t('ui.css.cta', 'Exporter le CSS');
+      }, 1400);
+    });
+  }
+
+  function fluidPx(widthPx, minRem, vw, maxRem) {
+    var rem = parseFloat(getComputedStyle(root).fontSize) || 16;
+    var preferred = (vw / 100) * widthPx;
+    var lo = minRem * rem;
+    var hi = maxRem * rem;
+    return Math.min(hi, Math.max(lo, preferred));
+  }
+
+  function renderViewportTwin() {
+    var panes = [
+      ['sr-viewport-phone', 390],
+      ['sr-viewport-desk', 1280],
+    ];
+    panes.forEach(function (pane) {
+      var host = document.getElementById(pane[0]);
+      if (!host) return;
+      host.textContent = '';
+      FLUID_TYPE.forEach(function (row) {
+        var li = document.createElement('li');
+        var sample = document.createElement('span');
+        sample.className = 'sr-vp-sample';
+        var px = fluidPx(pane[1], row.min, row.vw, row.max);
+        sample.style.fontSize = px.toFixed(1) + 'px';
+        sample.textContent = 'Aa · ' + row.label;
+        var meta = document.createElement('span');
+        meta.className = 'sr-vp-px';
+        meta.textContent = px.toFixed(1) + ' px';
+        li.appendChild(sample);
+        li.appendChild(meta);
+        host.appendChild(li);
+      });
+    });
+  }
+
   watchRail();
   setupSommaire();
   setupPrefs();
@@ -5211,6 +5964,11 @@
   setupCheatsheet();
   setupExportReview();
   setupTour();
+  setupScenes();
+  setupPresent();
+  setupRecipes();
+  setupExportCss();
+  setupChecklist();
 
   currentDensity = applyDensity(currentDensity);
   applyScheme(currentScheme, currentTheme);
