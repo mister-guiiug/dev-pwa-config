@@ -376,7 +376,7 @@ for (const id of targets) {
     continue;
   }
 
-  let prev = null;
+  let prev;
   try {
     prev = JSON.parse(readFileSync(manifestPath, 'utf8'));
   } catch {

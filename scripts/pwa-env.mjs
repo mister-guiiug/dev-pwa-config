@@ -497,7 +497,7 @@ export function check(root) {
   errors.push(...v.errors);
   warnings.push(...v.warnings);
 
-  let envText = null;
+  let envText;
   try {
     envText = readFileSync(join(root, '.env.example'), 'utf8');
   } catch {
@@ -532,7 +532,7 @@ export function sync(root, options = {}) {
   const written = [];
   const envPath = join(root, '.env.example');
   const envNext = renderEnvExample(manifest);
-  let envPrev = null;
+  let envPrev;
   try {
     envPrev = readFileSync(envPath, 'utf8');
   } catch {
