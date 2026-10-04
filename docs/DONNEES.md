@@ -439,6 +439,10 @@ Ce que le module refuse volontairement :
 
 Pair optionnelle : `@tanstack/react-query` `^5.0.0`.
 
+Pour les tests : `@mister-guiiug/dev-pwa-config/testing/query` expose
+`wrapWithQueryClient` et `clearQueryClient` — le wrapping que quatre apps
+recopiaient (`QueryClientProvider` + `getQueryClient().clear()`).
+
 ### Temps réel (`/realtime`, `/realtime/supabase`)
 
 Le chemin **descendant** : recevoir ce que les autres ont changé, et savoir

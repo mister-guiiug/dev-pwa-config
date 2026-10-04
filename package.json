@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-pwa-config",
-  "version": "6.23.0",
+  "version": "6.24.0",
   "private": false,
   "engines": {
     "node": ">=22"
@@ -64,6 +64,10 @@
     "./testing/posthog": {
       "types": "./testing/posthog.d.ts",
       "default": "./testing/posthog.js"
+    },
+    "./testing/query": {
+      "types": "./testing/query.d.ts",
+      "default": "./testing/query.js"
     },
     "./apps-catalog": {
       "types": "./apps-catalog.d.ts",
