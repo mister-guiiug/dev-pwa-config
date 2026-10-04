@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Renovate AUTO-HÉBERGÉ, lancé par .github/workflows/renovate.yml sur tous les dépôts du compte. Les règles sont dans default.json ; ici, seulement QUELS dépôts et COMMENT.",
+  "description": "Renovate AUTO-HÉBERGÉ, lancé par .github/workflows/renovate.yml sur tous les dépôts du compte. Les règles sont dans default.json ; ici, seulement QUELS dépôts et COMMENT. `miss-ticket` est exclu : dépôt privé sur plan Free (pas de rulesets / apps GitHub utiles), hors périmètre du runner auto-hébergé — ne pas le confondre avec `miss-ticket-pwa`.",
   "platform": "github",
   "autodiscover": true,
   "autodiscoverFilter": ["mister-guiiug/*", "!mister-guiiug/miss-ticket"],
