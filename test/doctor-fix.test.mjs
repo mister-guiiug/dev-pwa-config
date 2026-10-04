@@ -45,6 +45,22 @@ jobs:
   assert.deepEqual(permissionsManquantes(yaml), []);
 });
 
+test('permissionsManquantes lit pull-requests après un commentaire', () => {
+  const yaml = `
+permissions:
+  contents: read
+  packages: read
+  # pwa-lighthouse.yml demande pull-requests: write
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-lighthouse.yml@v6
+`;
+  assert.deepEqual(permissionsManquantes(yaml), []);
+  assert.equal(parsePermissionsTopLevel(yaml)?.['pull-requests'], 'write');
+});
+
 test('parsePermissionsTopLevel lit le bloc racine', () => {
   const map = parsePermissionsTopLevel(`
 permissions:

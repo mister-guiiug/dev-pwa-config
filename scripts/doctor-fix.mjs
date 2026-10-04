@@ -222,23 +222,24 @@ export function applyFixes(root, findings, ctx = {}) {
  * Ignore les `permissions:` imbriqués dans un job.
  */
 export function parsePermissionsTopLevel(text) {
+  // Retirer les commentaires : un appelant documente souvent `pull-requests`
+  // juste au-dessus de la clé — sans quoi la ligne vide résiduelle coupait
+  // le bloc et le docteur annonçait à tort une permission manquante.
   const sans = String(text).replace(/^[ \t]*#.*$/gm, '');
-  const m =
-    /^permissions:\s*\n((?:[ \t]+[a-z0-9_-]+:[ \t]*[a-z]+[ \t]*\n)+)/m.exec(
-      sans
-    );
-  if (!m) {
-    const star = /^permissions:\s*(read-all|write-all)\s*$/m.exec(sans);
-    if (star) return { '*': star[1] };
-    return null;
-  }
+  const star = /^permissions:\s*(read-all|write-all)\s*$/m.exec(sans);
+  if (star) return { '*': star[1] };
+  const start = /^permissions:\s*$/m.exec(sans);
+  if (!start) return null;
   /** @type {Record<string, string>} */
   const map = {};
-  for (const line of m[1].split('\n')) {
-    const pm = /^\s+([a-z0-9_-]+):\s*([a-z]+)\s*$/.exec(line);
+  const rest = sans.slice(start.index + start[0].length);
+  for (const raw of rest.split('\n')) {
+    if (!raw.trim()) continue;
+    if (!/^[ \t]/.test(raw)) break;
+    const pm = /^[ \t]+([a-z0-9_-]+):\s*([a-z]+)\s*$/.exec(raw.trimEnd());
     if (pm) map[pm[1]] = pm[2];
   }
-  return map;
+  return Object.keys(map).length ? map : null;
 }
 
 /**

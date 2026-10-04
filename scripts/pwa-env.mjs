@@ -26,8 +26,13 @@ const REQUIRED = new Set(['always', 'prod', 'optional']);
 
 export function loadManifest(root) {
   const path = join(root, MANIFEST_REL);
-  if (!existsSync(path)) return null;
-  const raw = JSON.parse(readFileSync(path, 'utf8'));
+  let text;
+  try {
+    text = readFileSync(path, 'utf8');
+  } catch {
+    return null;
+  }
+  const raw = JSON.parse(text);
   if (!raw || typeof raw !== 'object') {
     throw new Error(`${MANIFEST_REL} : JSON objet attendu`);
   }
@@ -188,7 +193,9 @@ export function renderEnvExample(manifest) {
     lines.push(`${e.name}=`);
     lines.push('');
   }
-  return lines.join('\n').replace(/\n+$/, '\n');
+  let out = lines.join('\n');
+  while (out.endsWith('\n\n')) out = out.slice(0, -1);
+  return out.endsWith('\n') ? out : `${out}\n`;
 }
 
 /**
@@ -237,7 +244,7 @@ export function matchYamlLiteralBlock(text, key) {
   let length = m[0].length;
   const bodyLines = [];
   for (const raw of text.slice(m.index + m[0].length).split('\n')) {
-    const line = raw.replace(/\s+$/, '');
+    const line = raw.trimEnd();
     if (!line.trim()) {
       // Ligne vide : encore dans le bloc si le suivant reste plus indenté.
       bodyLines.push(line);
@@ -274,7 +281,7 @@ export function preserveBuildEnvExtras(text, knownNames) {
   if (!hit) return [];
   const extras = [];
   for (const raw of hit.body.split('\n')) {
-    const line = raw.replace(/\s+$/, '');
+    const line = raw.trimEnd();
     if (!line.trim()) continue;
     const trimmed = line.trim();
     const name = /^([A-Z][A-Z0-9_]*)=/.exec(trimmed)?.[1];
@@ -296,6 +303,88 @@ function replaceSpan(text, hit, replacement) {
   return (
     text.slice(0, hit.index) + replacement + text.slice(hit.index + hit.length)
   );
+}
+
+/**
+ * Bloc `secrets:` du job (entrées `NAME: ${{ secrets.NAME }}`).
+ * @param {string} text
+ * @returns {{ index: number, length: number } | null}
+ */
+function matchJobSecretsBlock(text) {
+  const m = /^([ \t]*)secrets:\s*$/m.exec(text);
+  if (!m) return null;
+  const indent = m[1];
+  let length = m[0].length;
+  let i = m.index + m[0].length;
+  // Sauter le \n après secrets:
+  if (text[i] === '\n') {
+    length += 1;
+    i += 1;
+  }
+  while (i < text.length) {
+    const nl = text.indexOf('\n', i);
+    const line = text.slice(i, nl < 0 ? text.length : nl);
+    if (!line.trim()) break;
+    if (!line.startsWith(indent) || line[indent.length] === undefined) break;
+    // Même indentation que `secrets:` → clé sœur (fin du bloc).
+    if (
+      line.startsWith(indent) &&
+      !line.startsWith(`${indent} `) &&
+      !line.startsWith(`${indent}\t`)
+    ) {
+      break;
+    }
+    const entry = line.trim();
+    if (!/^[A-Z][A-Z0-9_]*:\s*\$\{\{\s*secrets\./.test(entry)) break;
+    length += line.length + (nl < 0 ? 0 : 1);
+    if (nl < 0) break;
+    i = nl + 1;
+  }
+  return { index: m.index, length };
+}
+
+/**
+ * Index juste après le job `uses: …pwa-deploy.yml@…` (+ `with:` éventuel).
+ * @param {string} text
+ * @returns {number} -1 si introuvable
+ */
+function findPwaDeployJobEnd(text) {
+  const lines = text.split('\n');
+  let usesIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes('pwa-deploy.yml@') && /^\s*uses:\s*/.test(lines[i])) {
+      usesIdx = i;
+      break;
+    }
+  }
+  if (usesIdx < 0) return -1;
+  let end = usesIdx + 1;
+  if (end < lines.length && /^\s*with:\s*$/.test(lines[end])) {
+    end += 1;
+    const withIndent = lines[usesIdx + 1].match(/^([ \t]*)/)?.[1] ?? '    ';
+    while (end < lines.length) {
+      const line = lines[end];
+      if (!line.trim()) {
+        end += 1;
+        continue;
+      }
+      if (
+        line.startsWith(withIndent) &&
+        (line.startsWith(`${withIndent} `) ||
+          line.startsWith(`${withIndent}\t`))
+      ) {
+        end += 1;
+        continue;
+      }
+      break;
+    }
+  }
+  // Position caractère au début de la ligne `end` (ou EOF).
+  let pos = 0;
+  for (let i = 0; i < end && i < lines.length; i++) {
+    pos += lines[i].length + 1;
+  }
+  return Math.min(pos, text.length);
 }
 
 /**
@@ -338,7 +427,9 @@ export function patchDeployYml(text, blocks) {
   if (blocks.required.length) {
     const hit = matchYamlLiteralBlock(next, 'required-env');
     const ind =
-      hit?.indent ?? matchYamlLiteralBlock(next, 'build-env')?.indent ?? '      ';
+      hit?.indent ??
+      matchYamlLiteralBlock(next, 'build-env')?.indent ??
+      '      ';
     const block = `${ind}required-env: |\n${blocks.requiredEnv}\n`;
     if (hit) {
       const updated = replaceSpan(next, hit, block);
@@ -349,7 +440,11 @@ export function patchDeployYml(text, blocks) {
     } else {
       const buildHit = matchYamlLiteralBlock(next, 'build-env');
       if (buildHit) {
-        next = replaceSpan(next, buildHit, `${next.slice(buildHit.index, buildHit.index + buildHit.length)}${block}`);
+        next = replaceSpan(
+          next,
+          buildHit,
+          `${next.slice(buildHit.index, buildHit.index + buildHit.length)}${block}`
+        );
         changed = true;
       }
     }
@@ -357,20 +452,19 @@ export function patchDeployYml(text, blocks) {
 
   if (blocks.deploySecrets.length) {
     const block = `    secrets:\n${blocks.secrets}\n`;
-    const secretsRe =
-      /^([ \t]*)secrets:\s*\n(?:[ \t]+[A-Z0-9_]+:\s*\$\{\{\s*secrets\.[A-Z0-9_]+\s*\}\}[^\n]*\n)*/m;
-    if (secretsRe.test(next)) {
-      const updated = next.replace(secretsRe, block);
+    const secretsHit = matchJobSecretsBlock(next);
+    if (secretsHit) {
+      const updated = replaceSpan(next, secretsHit, block);
       if (updated !== next) {
         next = updated;
         changed = true;
       }
     } else {
-      next = next.replace(
-        /(uses:\s*[^\n]*pwa-deploy\.yml@[^\n]+\n(?:[ \t]+with:[\s\S]*?)(?=\n\S|\n*$))/,
-        m => `${m.trimEnd()}\n${block}`
-      );
-      changed = next !== text || changed;
+      const injectAt = findPwaDeployJobEnd(next);
+      if (injectAt >= 0) {
+        next = `${next.slice(0, injectAt).trimEnd()}\n${block}${next.slice(injectAt)}`;
+        changed = true;
+      }
     }
   }
 
@@ -403,9 +497,12 @@ export function check(root) {
   errors.push(...v.errors);
   warnings.push(...v.warnings);
 
-  const envText = existsSync(join(root, '.env.example'))
-    ? readFileSync(join(root, '.env.example'), 'utf8')
-    : null;
+  let envText = null;
+  try {
+    envText = readFileSync(join(root, '.env.example'), 'utf8');
+  } catch {
+    envText = null;
+  }
   const cmp = compareEnvExample(manifest, envText);
   errors.push(...cmp.errors);
 
@@ -435,7 +532,12 @@ export function sync(root, options = {}) {
   const written = [];
   const envPath = join(root, '.env.example');
   const envNext = renderEnvExample(manifest);
-  const envPrev = existsSync(envPath) ? readFileSync(envPath, 'utf8') : null;
+  let envPrev = null;
+  try {
+    envPrev = readFileSync(envPath, 'utf8');
+  } catch {
+    envPrev = null;
+  }
   if (envPrev !== envNext) {
     planned.push('.env.example');
     if (options.write) {
@@ -444,16 +546,25 @@ export function sync(root, options = {}) {
     }
   }
 
-  const deployRel = existsSync(join(root, '.github/workflows/deploy.yml'))
-    ? '.github/workflows/deploy.yml'
-    : existsSync(join(root, '.github/workflows/pages.yml'))
-      ? '.github/workflows/pages.yml'
-      : null;
+  /** @type {string | null} */
+  let deployRel = null;
+  let prevDeploy = null;
+  for (const rel of [
+    '.github/workflows/deploy.yml',
+    '.github/workflows/pages.yml',
+  ]) {
+    try {
+      prevDeploy = readFileSync(join(root, rel), 'utf8');
+      deployRel = rel;
+      break;
+    } catch {
+      /* essayer le suivant */
+    }
+  }
 
-  if (deployRel) {
+  if (deployRel && prevDeploy !== null) {
     const blocks = renderDeployBlocks(manifest);
-    const prev = readFileSync(join(root, deployRel), 'utf8');
-    const { text, changed, reason } = patchDeployYml(prev, blocks);
+    const { text, changed, reason } = patchDeployYml(prevDeploy, blocks);
     if (reason && !changed) {
       /* rien */
     } else if (changed) {
@@ -474,6 +585,36 @@ function ghJson(args) {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   return out.trim() ? JSON.parse(out) : null;
+}
+
+/**
+ * owner/repo depuis une URL git, un remote, ou un slug déjà nu.
+ * @param {unknown} input
+ * @returns {string | null}
+ */
+export function githubRepoSlug(input) {
+  if (input == null) return null;
+  let s = String(input).trim();
+  if (!s) return null;
+  if (s.startsWith('git+')) s = s.slice(4);
+  if (s.endsWith('.git')) s = s.slice(0, -4);
+  if (s.startsWith('git@github.com:')) {
+    const rest = s.slice('git@github.com:'.length).replace(/\/+$/, '');
+    return /^\w[\w.-]*\/\w[\w.-]*$/.test(rest) ? rest : null;
+  }
+  try {
+    const u = new URL(s.includes('://') ? s : `https://${s}`);
+    if (u.hostname !== 'github.com' && u.hostname !== 'www.github.com') {
+      return null;
+    }
+    const parts = u.pathname.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      return `${parts[0]}/${parts[1]}`;
+    }
+    return null;
+  } catch {
+    return /^\w[\w.-]*\/\w[\w.-]*$/.test(s) ? s : null;
+  }
 }
 
 /**
@@ -510,19 +651,8 @@ export function audit(root, options = {}) {
   } catch {
     /* pas un clone git, ou pas de remote */
   }
-  const repo = options.repo || fromPkg || fromGit;
-  const slug = (() => {
-    if (!repo) return null;
-    const s = String(repo)
-      .replace(/^git\+/, '')
-      .replace(/\.git$/, '')
-      .replace(/^https:\/\/github\.com\//, '')
-      .replace(/^git@github\.com:/, '');
-    return s.includes('github.com/')
-      ? s.split('github.com/')[1].replace(/\/$/, '')
-      : s;
-  })();
-  if (!slug || !slug.includes('/')) {
+  const slug = githubRepoSlug(options.repo || fromPkg || fromGit);
+  if (!slug) {
     return {
       ok: false,
       errors: [

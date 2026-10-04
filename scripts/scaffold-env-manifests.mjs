@@ -26,12 +26,13 @@ const args = process.argv.slice(2);
 const WRITE = args.includes('--write');
 const DO_SYNC = args.includes('--sync');
 const rootFlag = args.indexOf('--root');
-const ROOT = resolve(
-  rootFlag >= 0 ? args[rootFlag + 1] : join(here, '..')
-);
+const ROOT = resolve(rootFlag >= 0 ? args[rootFlag + 1] : join(here, '..'));
 
 const PURPOSES = {
-  VITE_SUPABASE_URL: { purpose: 'URL du projet Supabase', provider: 'supabase' },
+  VITE_SUPABASE_URL: {
+    purpose: 'URL du projet Supabase',
+    provider: 'supabase',
+  },
   VITE_SUPABASE_ANON_KEY: {
     purpose: 'Clé anon publique (RLS)',
     provider: 'supabase',
@@ -204,7 +205,6 @@ function viteFromEnvFile(appDir, rel) {
 /** Clés présentes dans un `.env.production` suivi par git (store `committed`). */
 function viteFromCommittedProduction(appDir) {
   const rel = '.env.production';
-  if (!existsSync(join(appDir, rel))) return new Set();
   try {
     // ls-files --error-unmatch : suivi → exit 0.
     execFileSync('git', ['-C', appDir, 'ls-files', '--error-unmatch', rel], {
@@ -221,16 +221,21 @@ function requiredFromDeploy(appDir) {
     readText(join(appDir, '.github/workflows/deploy.yml')) ??
     readText(join(appDir, '.github/workflows/pages.yml'));
   if (!deploy) return new Set();
-  const m = /required-env:\s*\|[^\n]*\n((?:[ \t]+[A-Z0-9_]+\s*\n)*)/.exec(
-    deploy
-  );
-  if (!m) return new Set();
-  return new Set(
-    m[1]
-      .split('\n')
-      .map(l => l.trim())
-      .filter(l => /^VITE_/.test(l))
-  );
+  const names = new Set();
+  let inBlock = false;
+  for (const raw of deploy.split('\n')) {
+    if (/^\s*required-env:\s*\|/.test(raw)) {
+      inBlock = true;
+      continue;
+    }
+    if (!inBlock) continue;
+    if (raw.trim() && !/^\s/.test(raw)) break;
+    const name = raw.trim();
+    if (!name) continue;
+    if (!/^[A-Z][A-Z0-9_]*$/.test(name)) break;
+    if (name.startsWith('VITE_')) names.add(name);
+  }
+  return names;
 }
 
 /**
@@ -371,9 +376,12 @@ for (const id of targets) {
     continue;
   }
 
-  const prev = existsSync(manifestPath)
-    ? JSON.parse(readFileSync(manifestPath, 'utf8'))
-    : null;
+  let prev = null;
+  try {
+    prev = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  } catch {
+    prev = null;
+  }
   const prevNames = new Set((prev?.entries ?? []).map(e => e.name));
   const nextNames = new Set(next.entries.map(e => e.name));
   const added = [...nextNames].filter(n => !prevNames.has(n));
@@ -450,7 +458,9 @@ for (const r of report) {
   }
 }
 
-const todo = report.filter(r => r.status === 'à créer' || r.status === 'à enrichir');
+const todo = report.filter(
+  r => r.status === 'à créer' || r.status === 'à enrichir'
+);
 console.log(
   `\n${report.length} apps, ${todo.length} à écrire` +
     (WRITE ? ' — écrit.' : ' — relancer avec --write [--sync]')

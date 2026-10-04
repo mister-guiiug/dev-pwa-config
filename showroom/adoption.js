@@ -2907,6 +2907,5 @@ globalThis.SHOWROOM_ADOPTION = {
     useAuthContext: ['mister-settle'],
     writeJson: ['mister-settle'],
   },
-  byDuplicate: {
-  },
+  byDuplicate: {},
 };
