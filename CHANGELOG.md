@@ -1,5 +1,13 @@
 # Changelog
 
+## 6.24.0
+
+### Minor Changes
+
+- 0e2a8d0: `pwa-env` (check / sync / audit) pour `config/env.manifest.json` — une vérité, `.env.example` et blocs deploy dérivés. `pwa-doctor --fix` réécrit les fichiers figés corrigeables ; nouveau contrôle `wf-permissions` (permissions caller vs réutilisable) et `env-manifest` / `experimental-import`. Registre `experimental-modules.js` + règle CONTRIBUTING « squelette ou ≥2 apps ». Gabarits `ci.yml` / `index.html` retirés (source = squelette).
+- 51197a6: `react/query-client` — fabrique TanStack Query aux defaults PWA (`refetchOnWindowFocus: false`, `retry: 1`, `staleTime` 30 s). Promu de miss-supaboss, miss-supatool, miss-devises et mister-miss-koh. Pair optionnelle `@tanstack/react-query` ; hors du baril `react` (comme l'observabilité). Pas de provider imposé.
+- 5a2ea01: `testing/query` — `wrapWithQueryClient` / `clearQueryClient` pour les tests des apps (Provider + reset du singleton). Promu des wrappings déjà écrits chez miss-supaboss, miss-devises, miss-supatool et mister-miss-koh.
+
 ## 6.23.0
 
 ### Minor Changes
