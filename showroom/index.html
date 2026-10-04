@@ -425,22 +425,38 @@
           >
         </div>
 
-        <!-- Job principal : endosser une application. -->
+        <!-- Job principal : endosser une application (grille visuelle). -->
         <div class="sr-theme-primary">
-          <label for="theme-app" data-i18n="topbar.themeLabel">Habiller</label>
+          <span id="theme-app-label" data-i18n="topbar.themeLabel"
+            >Habiller</span
+          >
           <div class="sr-theme-primary-row">
-            <select id="theme-app">
+            <details class="sr-theme-picker" id="theme-picker">
+              <summary
+                class="sr-theme-picker-summary"
+                aria-labelledby="theme-app-label theme-picker-current"
+              >
+                <span id="theme-picker-current">Générique — preset seul</span>
+                <div
+                  class="sr-theme-swatches"
+                  id="theme-swatches"
+                  aria-hidden="true"
+                >
+                  <span data-swatch="primary"></span>
+                  <span data-swatch="surface"></span>
+                  <span data-swatch="text"></span>
+                </div>
+              </summary>
+              <div
+                class="sr-theme-grid"
+                id="theme-grid"
+                role="listbox"
+                aria-labelledby="theme-app-label"
+              ></div>
+            </details>
+            <select id="theme-app" class="sr-visually-hidden" tabindex="-1">
               <option value="generic">Générique — preset seul</option>
             </select>
-            <div
-              class="sr-theme-swatches"
-              id="theme-swatches"
-              aria-hidden="true"
-            >
-              <span data-swatch="primary"></span>
-              <span data-swatch="surface"></span>
-              <span data-swatch="text"></span>
-            </div>
             <a
               class="sr-theme-open"
               id="theme-open-app"
@@ -602,6 +618,14 @@
                 </label>
               </div>
             </fieldset>
+
+            <fieldset class="sr-control">
+              <legend data-i18n="ui.inspect.legend">Inspecteur</legend>
+              <label class="sr-switch">
+                <input type="checkbox" id="inspect-toggle" name="inspect" />
+                <span data-i18n="ui.inspect.toggle">Survol → tokens</span>
+              </label>
+            </fieldset>
           </div>
         </details>
       </div>
@@ -651,6 +675,13 @@
         >
           Sommaire
         </button>
+
+        <span
+          class="sr-section-chip"
+          id="sr-section-chip"
+          hidden
+          role="status"
+        ></span>
 
         <nav class="sr-rail" id="sr-rail" aria-labelledby="rail-label">
           <p id="rail-label" class="sr-visually-hidden" data-i18n="ui.rail">
@@ -1288,6 +1319,27 @@
           </p>
         </div>
         <div id="compare-pair" class="sr-compare"></div>
+
+        <h3 class="sr-subtitle" data-i18n="couleurs.diffTitle">
+          Écarts entre les deux apps
+        </h3>
+        <p data-i18n="couleurs.diffIntro">
+          Seuls les rôles qui diffèrent — pour une revue croisée sans lire deux
+          panneaux entiers.
+        </p>
+        <div class="sr-table-wrap">
+          <table class="sr-table" id="compare-diff">
+            <thead>
+              <tr>
+                <th data-i18n="ui.compare.role">Rôle</th>
+                <th id="compare-diff-a">App A</th>
+                <th id="compare-diff-b">App B</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="sr-note" id="compare-diff-same" hidden></p>
 
         <p class="sr-note" id="palette-source" data-i18n="couleurs.p2">
           Palette du thème courant, lue via <code>getComputedStyle</code>.
@@ -3465,6 +3517,71 @@
         </div>
       </div>
     </div>
+
+    <!-- Dock mobile : Habiller reste à portée sans remonter le header. -->
+    <div class="sr-dock" id="sr-dock">
+      <label class="sr-dock-label" for="theme-app-dock">Habiller</label>
+      <select id="theme-app-dock" aria-labelledby="theme-app-label"></select>
+      <a
+        class="sr-theme-open"
+        id="theme-open-app-dock"
+        hidden
+        target="_blank"
+        rel="noopener noreferrer"
+        >Ouvrir l’app</a
+      >
+    </div>
+
+    <div
+      class="sr-inspect-tip"
+      id="sr-inspect-tip"
+      hidden
+      role="status"
+      aria-live="polite"
+    ></div>
+
+    <dialog
+      class="sr-cheatsheet"
+      id="sr-cheatsheet"
+      aria-labelledby="cheat-title"
+    >
+      <form method="dialog" class="sr-cheatsheet-inner">
+        <h2 id="cheat-title" data-i18n="ui.cheat.title">Raccourcis</h2>
+        <dl class="sr-cheat-list">
+          <div>
+            <dt><kbd>Ctrl</kbd><kbd>K</kbd></dt>
+            <dd data-i18n="ui.cheat.cmd">Recherche unifiée</dd>
+          </div>
+          <div>
+            <dt><kbd>/</kbd></dt>
+            <dd data-i18n="ui.cheat.slash">Focus recherche</dd>
+          </div>
+          <div>
+            <dt><kbd>i</kbd></dt>
+            <dd data-i18n="ui.cheat.inspect">Basculer l’inspecteur</dd>
+          </div>
+          <div>
+            <dt><kbd>d</kbd></dt>
+            <dd data-i18n="ui.cheat.density">Densité compacte</dd>
+          </div>
+          <div>
+            <dt><kbd>Alt</kbd>+clic sommaire</dt>
+            <dd data-i18n="ui.cheat.section">Épingler une section</dd>
+          </div>
+          <div>
+            <dt><kbd>?</kbd></dt>
+            <dd data-i18n="ui.cheat.help">Cette aide</dd>
+          </div>
+          <div>
+            <dt><kbd>Esc</kbd></dt>
+            <dd data-i18n="ui.cheat.esc">Fermer panneau / aide</dd>
+          </div>
+        </dl>
+        <button type="submit" class="sr-app-link" data-i18n="ui.cheat.close">
+          Fermer
+        </button>
+      </form>
+    </dialog>
 
     <script src="themes.js"></script>
     <!-- Miroir engendré de `apps-catalog.js` (`npm run sync`). -->

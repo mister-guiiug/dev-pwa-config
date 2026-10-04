@@ -66,6 +66,8 @@
     });
     var cmdInput = document.getElementById('sr-cmd');
     if (cmdInput) cmdInput.placeholder = t('ui.cmd.placeholder', 'Rechercher…');
+    var dockLabel = document.querySelector('.sr-dock-label');
+    if (dockLabel) dockLabel.textContent = t('topbar.themeLabel', 'Habiller');
   }
 
   // Rôle sémantique → variable CSS + libellé. `on` désigne la couleur sur
@@ -340,6 +342,8 @@
         currentDensity === 'comfort' ? '' : currentDensity
       );
       setOrDrop(url, 'pair', pairA + ',' + pairB);
+      setOrDrop(url, 'inspect', inspectOn ? '1' : '');
+      setOrDrop(url, 'section', sectionFocus || '');
       history.replaceState(null, '', url);
     } catch {
       /* URL non manipulable (file://) : le stockage prend le relais */
@@ -627,6 +631,7 @@
     paintHeaderSwatches();
     paintBrandStatus(theme);
     paintOpenApp(theme);
+    syncThemeControls(theme);
     // Le contraste dépend du thème appliqué : on le recalcule à chaque bascule.
     measureContrast();
     labelTableCells();
@@ -660,13 +665,10 @@
 
   /** Lien direct vers Pages (ou releases desktop) pour le thème courant. */
   function paintOpenApp(theme) {
-    var link = document.getElementById('theme-open-app');
-    if (!link) return;
-    if (theme.id === 'generic') {
-      link.hidden = true;
-      link.removeAttribute('href');
-      return;
-    }
+    var links = [
+      document.getElementById('theme-open-app'),
+      document.getElementById('theme-open-app-dock'),
+    ];
     var item = null;
     for (var i = 0; i < APPS.length; i++) {
       if (APPS[i].id === theme.id) {
@@ -674,27 +676,124 @@
         break;
       }
     }
-    if (!item || !item.appUrl) {
-      link.hidden = true;
-      link.removeAttribute('href');
-      return;
+    var hide = theme.id === 'generic' || !item || !item.appUrl;
+    var openLabel = '';
+    if (!hide) {
+      openLabel =
+        item.platform === 'desktop'
+          ? t('ui.apps.releases', 'Téléchargements')
+          : t('ui.apps.open', 'Ouvrir l’app');
     }
-    link.hidden = false;
-    link.href = item.appUrl;
-    var openLabel =
-      item.platform === 'desktop'
-        ? t('ui.apps.releases', 'Téléchargements')
-        : t('ui.apps.open', 'Ouvrir l’app');
-    link.textContent = openLabel;
-    link.setAttribute(
-      'aria-label',
-      openLabel +
-        ' — ' +
-        item.name +
-        ' (' +
-        t('ui.newTab', 'nouvel onglet') +
-        ')'
-    );
+    links.forEach(function (link) {
+      if (!link) return;
+      if (hide) {
+        link.hidden = true;
+        link.removeAttribute('href');
+        return;
+      }
+      link.hidden = false;
+      link.href = item.appUrl;
+      link.textContent = openLabel;
+      link.setAttribute(
+        'aria-label',
+        openLabel +
+          ' — ' +
+          item.name +
+          ' (' +
+          t('ui.newTab', 'nouvel onglet') +
+          ')'
+      );
+    });
+  }
+
+  function themeDisplayName(theme) {
+    return t('theme.' + theme.id + '.name', theme.name);
+  }
+
+  function paintPickerCurrent(theme) {
+    var label = document.getElementById('theme-picker-current');
+    if (label) label.textContent = themeDisplayName(theme);
+  }
+
+  function renderThemeGrid() {
+    var grid = document.getElementById('theme-grid');
+    if (!grid) return;
+    grid.textContent = '';
+    var scheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    var generics = null;
+    themes.forEach(function (theme) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'sr-theme-tile';
+      button.setAttribute('role', 'option');
+      button.dataset.themeId = theme.id;
+      button.setAttribute(
+        'aria-selected',
+        String(theme.id === currentTheme.id)
+      );
+      var row = document.createElement('span');
+      row.className = 'sr-theme-tile-swatches';
+      row.setAttribute('aria-hidden', 'true');
+      var palette;
+      if (theme.usesCssDefaults) {
+        generics = generics || readGenericPalettes();
+        palette = generics[scheme] || {};
+      } else {
+        var s =
+          theme.schemes.indexOf(scheme) === -1 ? theme.schemes[0] : scheme;
+        palette = theme[s] || theme.dark || theme.light || {};
+      }
+      ['primary', 'surface', 'text'].forEach(function (role) {
+        var dot = document.createElement('span');
+        dot.dataset.role = role;
+        if (palette[role]) dot.style.background = palette[role];
+        row.appendChild(dot);
+      });
+      var name = document.createElement('span');
+      name.textContent = themeDisplayName(theme);
+      button.appendChild(row);
+      button.appendChild(name);
+      button.addEventListener('click', function () {
+        selectTheme(theme);
+        var picker = document.getElementById('theme-picker');
+        if (picker) picker.open = false;
+      });
+      grid.appendChild(button);
+    });
+  }
+
+  function syncThemeControls(theme) {
+    var select = document.getElementById('theme-app');
+    var dock = document.getElementById('theme-app-dock');
+    if (select) select.value = theme.id;
+    if (dock) dock.value = theme.id;
+    paintPickerCurrent(theme);
+    document
+      .querySelectorAll('#theme-grid .sr-theme-tile')
+      .forEach(function (tile) {
+        tile.setAttribute(
+          'aria-selected',
+          String(tile.dataset.themeId === theme.id)
+        );
+      });
+  }
+
+  function fillThemeSelect(select) {
+    if (!select) return;
+    select.textContent = '';
+    var groupGeneric = document.createElement('optgroup');
+    groupGeneric.label = t('ui.groups.reference', 'Référence');
+    var groupApps = document.createElement('optgroup');
+    groupApps.label = t('ui.groups.apps', 'Applications consommatrices');
+    themes.forEach(function (theme) {
+      var option = document.createElement('option');
+      option.value = theme.id;
+      option.textContent = themeDisplayName(theme);
+      (theme.id === 'generic' ? groupGeneric : groupApps).appendChild(option);
+    });
+    select.appendChild(groupGeneric);
+    select.appendChild(groupApps);
+    select.value = currentTheme.id;
   }
 
   /** Pastilles primaire / surface / texte à côté du select « Habiller ». */
@@ -1942,6 +2041,8 @@
   var pairInit = parsePairParam();
   var pairA = pairInit[0];
   var pairB = pairInit[1];
+  var inspectOn = paramOr('inspect', '') === '1';
+  var sectionFocus = paramOr('section', '');
 
   function appsFiltersActive() {
     return !!(
@@ -3679,6 +3780,107 @@
       });
       host.appendChild(panel);
     });
+    renderPairDiff();
+  }
+
+  function paletteForTheme(theme, scheme) {
+    if (!theme) return null;
+    if (theme.usesCssDefaults) {
+      return readGenericPalettes()[scheme];
+    }
+    return theme[scheme] || theme.dark || theme.light || null;
+  }
+
+  /** Table des seuls rôles qui diffèrent entre App A et App B. */
+  function renderPairDiff() {
+    var table = document.getElementById('compare-diff');
+    var sameNote = document.getElementById('compare-diff-same');
+    var headA = document.getElementById('compare-diff-a');
+    var headB = document.getElementById('compare-diff-b');
+    if (!table) return;
+    var scheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    var themeA = themeById(pairA);
+    var themeB = themeById(pairB);
+    var palA = paletteForTheme(themeA, scheme);
+    var palB = paletteForTheme(themeB, scheme);
+    if (headA) headA.textContent = themeDisplayName(themeA);
+    if (headB) headB.textContent = themeDisplayName(themeB);
+    var tbody = table.querySelector('tbody');
+    tbody.textContent = '';
+    if (!palA || !palB) {
+      if (sameNote) {
+        sameNote.hidden = false;
+        sameNote.textContent = t(
+          'ui.compare.missing',
+          'Palette indisponible pour l’une des deux apps.'
+        );
+      }
+      return;
+    }
+    var diffs = 0;
+    var same = 0;
+    var extras = [];
+    if (themeA.radius !== themeB.radius) {
+      extras.push(['radius', themeA.radius || '—', themeB.radius || '—']);
+    }
+    ROLES.forEach(function (role) {
+      var a = palA[role[0]] || '';
+      var b = palB[role[0]] || '';
+      if (!a && !b) return;
+      if (a === b) {
+        same += 1;
+        return;
+      }
+      diffs += 1;
+      var tr = document.createElement('tr');
+      var c0 = document.createElement('td');
+      var code = document.createElement('code');
+      code.textContent = role[0];
+      c0.appendChild(code);
+      var c1 = document.createElement('td');
+      if (a) {
+        c1.appendChild(swatchDot(a));
+        c1.appendChild(document.createTextNode(' ' + a));
+      } else c1.textContent = '—';
+      var c2 = document.createElement('td');
+      if (b) {
+        c2.appendChild(swatchDot(b));
+        c2.appendChild(document.createTextNode(' ' + b));
+      } else c2.textContent = '—';
+      tr.appendChild(c0);
+      tr.appendChild(c1);
+      tr.appendChild(c2);
+      tbody.appendChild(tr);
+    });
+    extras.forEach(function (row) {
+      diffs += 1;
+      var tr = document.createElement('tr');
+      row.forEach(function (cell, i) {
+        var td = document.createElement('td');
+        if (i === 0) {
+          var code = document.createElement('code');
+          code.textContent = cell;
+          td.appendChild(code);
+        } else td.textContent = cell;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    if (sameNote) {
+      if (!diffs) {
+        sameNote.hidden = false;
+        sameNote.textContent = t(
+          'ui.compare.allSame',
+          'Aucun écart sur les rôles sémantiques dans ce schéma.'
+        );
+      } else {
+        sameNote.hidden = false;
+        sameNote.textContent = t(
+          'ui.compare.hiddenSame',
+          '{n} rôles identiques masqués'
+        ).replace('{n}', String(same));
+      }
+    }
   }
 
   /**
@@ -3761,13 +3963,261 @@
   function selectTheme(theme) {
     currentTheme = theme;
     write(APP_KEY, theme.id);
-    var select = document.getElementById('theme-app');
-    if (select) select.value = theme.id;
     applyScheme(currentScheme, theme);
     syncSchemeInputs(currentScheme, theme);
     // `applyTheme` rafraîchit déjà l'aperçu, la vitrine et cette légende.
     applyTheme(theme);
     syncUrl();
+  }
+
+  function setInspect(on) {
+    inspectOn = !!on;
+    root.setAttribute('data-inspect', inspectOn ? 'on' : 'off');
+    var toggle = document.getElementById('inspect-toggle');
+    if (toggle) toggle.checked = inspectOn;
+    var tip = document.getElementById('sr-inspect-tip');
+    if (tip && !inspectOn) {
+      tip.hidden = true;
+      tip.textContent = '';
+    }
+    document.querySelectorAll('.sr-inspect-hot').forEach(function (el) {
+      el.classList.remove('sr-inspect-hot');
+    });
+    syncUrl();
+  }
+
+  function setSectionFocus(id) {
+    sectionFocus = id || '';
+    document
+      .querySelectorAll('.sr-section[data-section-pinned]')
+      .forEach(function (el) {
+        el.removeAttribute('data-section-pinned');
+      });
+    if (sectionFocus) {
+      var section = document.getElementById(sectionFocus);
+      if (section && section.classList.contains('sr-section')) {
+        section.setAttribute('data-section-pinned', '');
+        root.setAttribute('data-section-focus', sectionFocus);
+      } else {
+        sectionFocus = '';
+        root.removeAttribute('data-section-focus');
+      }
+    } else {
+      root.removeAttribute('data-section-focus');
+    }
+    renderSectionChip();
+    syncUrl();
+  }
+
+  function renderSectionChip() {
+    var chip = document.getElementById('sr-section-chip');
+    if (!chip) return;
+    if (!sectionFocus) {
+      chip.hidden = true;
+      chip.textContent = '';
+      return;
+    }
+    var link = document.querySelector(
+      '.sr-rail a[href="#' + sectionFocus + '"]'
+    );
+    var label = link
+      ? (link.textContent || '').replace(/\s+/g, ' ').trim()
+      : sectionFocus;
+    chip.hidden = false;
+    chip.textContent = '';
+    var text = document.createElement('span');
+    text.textContent = t('ui.section.chip', 'Mode section · {name}').replace(
+      '{name}',
+      label
+    );
+    var reset = document.createElement('button');
+    reset.type = 'button';
+    reset.textContent = t('ui.section.reset', 'Tout réafficher');
+    reset.addEventListener('click', function () {
+      setSectionFocus('');
+    });
+    chip.appendChild(text);
+    chip.appendChild(reset);
+  }
+
+  function setupThemePicker() {
+    var picker = document.getElementById('theme-picker');
+    if (!picker) return;
+    document.addEventListener('click', function (event) {
+      if (!picker.open) return;
+      if (picker.contains(event.target)) return;
+      picker.open = false;
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && picker.open) picker.open = false;
+    });
+  }
+
+  function setupDock() {
+    var dock = document.getElementById('theme-app-dock');
+    if (!dock || dock.dataset.bound) return;
+    dock.dataset.bound = '1';
+    dock.addEventListener('change', function () {
+      selectTheme(themeById(dock.value));
+    });
+  }
+
+  function setupInspect() {
+    var tip = document.getElementById('sr-inspect-tip');
+    var toggle = document.getElementById('inspect-toggle');
+    if (toggle) {
+      toggle.checked = inspectOn;
+      toggle.addEventListener('change', function () {
+        setInspect(toggle.checked);
+      });
+    }
+    setInspect(inspectOn);
+    if (!tip) return;
+    var hot = null;
+    document.addEventListener(
+      'mousemove',
+      function (event) {
+        if (!inspectOn) return;
+        var target = event.target;
+        if (!(target instanceof Element)) return;
+        if (
+          target.closest(
+            '.sr-topbar, .sr-dock, .sr-inspect-tip, .sr-cheatsheet, .sr-prefs'
+          )
+        ) {
+          tip.hidden = true;
+          if (hot) {
+            hot.classList.remove('sr-inspect-hot');
+            hot = null;
+          }
+          return;
+        }
+        var el =
+          target.closest(
+            '[data-dwc], .sr-swatch, .sr-compare-panel, .sr-app, .sr-theme-tile, button, a, code'
+          ) || target;
+        if (hot && hot !== el) hot.classList.remove('sr-inspect-hot');
+        hot = el;
+        el.classList.add('sr-inspect-hot');
+        var cs = getComputedStyle(el);
+        var rootCs = getComputedStyle(root);
+        var color = cs.color;
+        var bg = cs.backgroundColor;
+        if (!bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') {
+          bg =
+            rootCs.getPropertyValue('--ds-surface').trim() ||
+            cs.backgroundColor;
+        }
+        var primary = rootCs.getPropertyValue('--ds-primary').trim();
+        var ratio = contrastRatio(color, bg);
+        tip.textContent = '';
+        var title = document.createElement('div');
+        var codeTitle = document.createElement('code');
+        var dwc = el.getAttribute('data-dwc');
+        codeTitle.textContent = dwc
+          ? 'data-dwc="' + dwc + '"'
+          : el.tagName.toLowerCase();
+        title.appendChild(codeTitle);
+        tip.appendChild(title);
+        function line(label, value) {
+          if (!value) return;
+          var row = document.createElement('div');
+          row.className = 'sr-inspect-hex';
+          var dot = document.createElement('span');
+          dot.className = 'sr-inspect-dot';
+          dot.style.background = value;
+          var code = document.createElement('code');
+          code.textContent = label + ' · ' + value;
+          row.appendChild(dot);
+          row.appendChild(code);
+          tip.appendChild(row);
+        }
+        line('color', color);
+        line('background', bg);
+        line('--ds-primary', primary);
+        if (ratio != null) {
+          var c = document.createElement('div');
+          c.style.marginTop = '0.25rem';
+          c.style.color = 'var(--ds-text-soft)';
+          c.textContent =
+            t('ui.inspect.contrast', 'Contraste texte') +
+            ' : ' +
+            ratio.toFixed(1) +
+            ':1';
+          tip.appendChild(c);
+        }
+        tip.hidden = false;
+        var x = Math.min(
+          event.clientX + 14,
+          window.innerWidth - tip.offsetWidth - 8
+        );
+        var y = Math.min(
+          event.clientY + 14,
+          window.innerHeight - tip.offsetHeight - 8
+        );
+        tip.style.left = Math.max(8, x) + 'px';
+        tip.style.top = Math.max(8, y) + 'px';
+      },
+      { passive: true }
+    );
+  }
+
+  function setupSectionFocus() {
+    document.querySelectorAll('.sr-rail a[href^="#"]').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        if (!event.altKey) return;
+        event.preventDefault();
+        var id = (link.getAttribute('href') || '').slice(1);
+        setSectionFocus(sectionFocus === id ? '' : id);
+        var target = document.getElementById(id);
+        if (target) target.scrollIntoView({ block: 'start' });
+      });
+      link.title = t('ui.section.hint', 'Alt+clic pour épingler cette section');
+    });
+    if (sectionFocus) setSectionFocus(sectionFocus);
+    else renderSectionChip();
+  }
+
+  function setupCheatsheet() {
+    var dialog = document.getElementById('sr-cheatsheet');
+    if (!dialog) return;
+    function openCheat() {
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+    }
+    function closeCheat() {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    }
+    document.addEventListener('keydown', function (event) {
+      var tag = (event.target && event.target.tagName) || '';
+      var typing =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        (event.target && event.target.isContentEditable);
+      if (typing) return;
+      if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
+        event.preventDefault();
+        if (dialog.open) closeCheat();
+        else openCheat();
+        return;
+      }
+      if (event.key === 'i' || event.key === 'I') {
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        event.preventDefault();
+        setInspect(!inspectOn);
+        return;
+      }
+      if (event.key === 'd' || event.key === 'D') {
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        event.preventDefault();
+        currentDensity = applyDensity(
+          currentDensity === 'compact' ? 'comfort' : 'compact'
+        );
+        syncUrl();
+      }
+    });
   }
 
   /**
@@ -4183,31 +4633,10 @@
   var currentScheme = paramOr('scheme', read(SCHEME_KEY, 'system'));
   var currentTheme = themeById(paramOr('app', read(APP_KEY, 'generic')));
 
+  fillThemeSelect(select);
   if (select) {
-    select.textContent = '';
-    var groupGeneric = document.createElement('optgroup');
-    groupGeneric.label = t('ui.groups.reference', 'Référence');
-    var groupApps = document.createElement('optgroup');
-    groupApps.label = t('ui.groups.apps', 'Applications consommatrices');
-
-    themes.forEach(function (theme) {
-      var option = document.createElement('option');
-      option.value = theme.id;
-      option.textContent = theme.name;
-      (theme.id === 'generic' ? groupGeneric : groupApps).appendChild(option);
-    });
-
-    select.appendChild(groupGeneric);
-    select.appendChild(groupApps);
-    select.value = currentTheme.id;
-
     select.addEventListener('change', function () {
-      currentTheme = themeById(select.value);
-      write(APP_KEY, currentTheme.id);
-      applyScheme(currentScheme, currentTheme);
-      syncSchemeInputs(currentScheme, currentTheme);
-      applyTheme(currentTheme);
-      syncUrl();
+      selectTheme(themeById(select.value));
     });
   }
 
@@ -4294,6 +4723,9 @@
     renderPlayground();
     renderForcedColors();
     setupPairCompare();
+    fillThemeSelect(document.getElementById('theme-app'));
+    fillThemeSelect(document.getElementById('theme-app-dock'));
+    renderThemeGrid();
     applyTheme(currentTheme);
     measure();
     // Après le rendu : les tableaux engendrés doivent être étiquetés eux aussi.
@@ -4363,12 +4795,17 @@
   watchRail();
   setupSommaire();
   setupPrefs();
+  setupThemePicker();
+  setupDock();
+  setupCheatsheet();
 
   currentDensity = applyDensity(currentDensity);
   applyScheme(currentScheme, currentTheme);
   syncSchemeInputs(currentScheme, currentTheme);
   applyLang(initialLang);
   renderGenerated();
+  setupInspect();
+  setupSectionFocus();
   syncPrefsBadge();
   syncUrl();
   setupCommand();
