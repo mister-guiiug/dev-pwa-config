@@ -40,6 +40,8 @@ const DYNAMIC_PREFIXES = [
   'ui.platform.',
   // Étapes du parcours guidé : clés portées par TOUR_STEPS (titleKey/bodyKey).
   'ui.tour.step',
+  // Recettes : titleKey / bodyKey portés par l’objet RECIPES (pas de t('…') littéral).
+  'ui.recipe.',
 ];
 
 test('chaque langue déclare un dictionnaire non vide', () => {
