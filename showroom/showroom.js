@@ -4182,6 +4182,7 @@
   }
 
   function exportReviewCard() {
+    var btn = document.getElementById('sr-export-review');
     var canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 280;
@@ -4263,6 +4264,7 @@
         return;
       }
       var done = function () {
+        if (!btn) return;
         btn.textContent = t('ui.export.done', 'Image prête');
         window.setTimeout(function () {
           btn.textContent = t('ui.export.cta', 'Exporter pour revue');
