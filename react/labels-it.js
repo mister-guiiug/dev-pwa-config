@@ -71,6 +71,7 @@ const labels = {
     source: 'Codice sorgente',
     sponsor: 'Offrimi un caffè',
     otherApps: 'Le nostre altre app',
+    newTab: 'Si apre in una nuova scheda',
   },
   categories: {
     sante: 'Salute',

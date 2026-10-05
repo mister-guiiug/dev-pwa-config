@@ -70,6 +70,7 @@ const labels = {
     source: 'Source code',
     sponsor: 'Buy me a coffee',
     otherApps: 'Our other apps',
+    newTab: 'Opens in a new tab',
   },
   categories: {
     sante: 'Health',

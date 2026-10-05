@@ -22,6 +22,8 @@ on:
       - 'test/apps-catalog.test.mjs'
       - 'test/showroom-resolution.test.mjs'
       - 'test/showroom-csp.test.mjs'
+      - 'test/showroom-chrome.test.mjs'
+      - 'themes.js'
       - 'scripts/showroom-imports.mjs'
       - 'scripts/showroom-csp.mjs'
       - '.github/workflows/showroom-pages.yml'
@@ -61,11 +63,14 @@ jobs:
       # `showroom/`, le seul dossier téléversé : un import qui en sort marche
       # depuis le dépôt et casse la page publiée. `showroom-csp` vérifie la
       # politique de sécurité et l'empreinte du script en ligne.
+      # `showroom-chrome` vérifie que le texte de la page tient 4,5:1 dans
+      # chacun des habillages.
       - name: Parité preset / components / catalogue ↔ showroom
         run: >-
           node --test test/showroom.test.mjs test/components-css.test.mjs
           test/showroom-i18n.test.mjs test/apps-catalog.test.mjs
           test/showroom-resolution.test.mjs test/showroom-csp.test.mjs
+          test/showroom-chrome.test.mjs
 
       # LE RELEVÉ A LIEU ICI, ET N'EST PAS COMMITÉ. Il l'était, par un push
       # direct sur `main` depuis `showroom-metrics.yml` — que le ruleset

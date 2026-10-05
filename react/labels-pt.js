@@ -71,6 +71,7 @@ const labels = {
     source: 'Código-fonte',
     sponsor: 'Pague-me um café',
     otherApps: 'As nossas outras aplicações',
+    newTab: 'Abre num novo separador',
   },
   categories: {
     sante: 'Saúde',

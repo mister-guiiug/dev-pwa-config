@@ -469,7 +469,7 @@
         </div>
 
         <!-- Job principal : endosser une application (grille visuelle). -->
-        <div class="sr-theme-primary">
+        <div class="sr-theme-primary" id="sr-theme-row">
           <span id="theme-app-label" data-i18n="topbar.themeLabel"
             >Habiller</span
           >
@@ -497,7 +497,15 @@
                 aria-labelledby="theme-app-label"
               ></div>
             </details>
-            <select id="theme-app" class="sr-visually-hidden" tabindex="-1">
+            <!-- Miroir programmatique de la grille : hors du parcours clavier ET
+                 de l'arbre d'accessibilité (un second sélecteur sans nom, que
+                 la grille visible double déjà). -->
+            <select
+              id="theme-app"
+              class="sr-visually-hidden"
+              tabindex="-1"
+              aria-hidden="true"
+            >
               <option value="generic">Générique — preset seul</option>
             </select>
             <a
@@ -545,19 +553,40 @@
           <ul class="sr-cmd-list" id="sr-cmd-list" role="listbox" hidden></ul>
         </label>
 
+        <!-- Petit écran, en-tête replié au défilement : ce bouton redéploie
+             les rangées « Habiller » et recherche (voir setupCompactHeader). -->
+        <button
+          type="button"
+          class="sr-topbar-expand"
+          id="sr-topbar-expand"
+          aria-controls="sr-theme-row sr-cmd"
+          aria-expanded="true"
+          hidden
+        >
+          <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <span class="sr-visually-hidden" data-i18n="ui.topbar.expand"
+            >Afficher la recherche et l’habillage</span
+          >
+        </button>
+
         <!-- Clair/sombre + langue regroupés : une icône, un panneau. -->
         <details class="sr-prefs" id="sr-prefs">
+          <!-- Un globe et le code de la langue courante, visibles : l'ancien
+               soleil se confondait avec celui du schéma « Clair », et rien ne
+               disait qu'on change de langue ici. -->
           <summary class="sr-prefs-summary">
             <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-              />
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
             </svg>
             <span class="sr-prefs-badge" id="sr-prefs-badge" hidden></span>
             <span class="sr-visually-hidden" data-i18n="ui.prefs.summary"
               >Préférences</span
             >
+            <span class="sr-prefs-lang" id="sr-prefs-lang">FR</span>
           </summary>
           <div class="sr-prefs-panel">
             <fieldset class="sr-control">
@@ -989,7 +1018,7 @@
           aria-label="Recettes"
         ></div>
         <p class="sr-recipe-meta" id="sr-recipe-meta"></p>
-        <h2 class="sr-recipe-title" id="sr-recipe-title"></h2>
+        <h2 class="sr-recipe-title" id="sr-recipe-title">Recette</h2>
         <p class="sr-recipe-body" id="sr-recipe-body"></p>
         <p class="sr-recipe-actions">
           <button
@@ -1020,7 +1049,7 @@
         aria-labelledby="sr-tour-title"
       >
         <ol class="sr-tour-steps" id="sr-tour-steps"></ol>
-        <h2 class="sr-tour-title" id="sr-tour-title"></h2>
+        <h2 class="sr-tour-title" id="sr-tour-title">Parcours guidé</h2>
         <p class="sr-tour-body" id="sr-tour-body"></p>
         <p class="sr-tour-actions">
           <button
@@ -1381,7 +1410,10 @@
             <tbody>
               <tr>
                 <th scope="row"><code>--font-sans</code></th>
-                <td style="font-family: var(--font-sans)">
+                <td
+                  style="font-family: var(--font-sans)"
+                  data-i18n="fondations.fontSans"
+                >
                   Interface système — 0123456789
                 </td>
               </tr>
@@ -1499,7 +1531,7 @@
 
         <h3 class="sr-subtitle" data-i18n="fondations.h35">Safe-areas iOS</h3>
         <div class="sr-safe-demo py-safe px-safe">
-          <div>
+          <div data-i18n="fondations.safeDemo">
             Zone de contenu à l’intérieur des
             <code>env(safe-area-inset-*)</code>. Utilitaires :
             <code>pt-safe</code>, <code>pb-safe</code>, <code>px-safe</code>,
@@ -1511,8 +1543,10 @@
           <table class="sr-table">
             <thead>
               <tr>
-                <th scope="col">Inset</th>
-                <th scope="col">Valeur mesurée</th>
+                <th scope="col" data-i18n="fondations.safeInset">Inset</th>
+                <th scope="col" data-i18n="fondations.safeValue">
+                  Valeur mesurée
+                </th>
               </tr>
             </thead>
             <tbody id="safe-areas">
@@ -1554,11 +1588,12 @@
               type="button"
               class="sr-btn sr-btn--ghost"
               style="min-height: 1.75rem; padding: 0.1rem 0.4rem"
+              data-i18n="fondations.tooSmall"
             >
               Trop petit
             </button>
           </span>
-          <span class="sr-note" style="margin: 0"
+          <span class="sr-note" style="margin: 0" data-i18n="fondations.dashed"
             >Le pointillé rouge matérialise le minimum de 2,75 rem.</span
           >
         </div>
@@ -1897,7 +1932,9 @@
         </p>
         <div data-snippet="Sheet"></div>
 
-        <h3 class="sr-subtitle">SegmentedControl — onglets « pilule »</h3>
+        <h3 class="sr-subtitle" data-i18n="primitives.h3segmented">
+          SegmentedControl — onglets « pilule »
+        </h3>
         <div
           data-dwc="segmented"
           role="tablist"
@@ -1975,7 +2012,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h41">EmptyState</h4>
+            <h3 data-i18n="composants.h41">EmptyState</h3>
             <p data-i18n="composants.p2">État vide avec action suivante.</p>
           </div>
           <div class="sr-demo-stage">
@@ -2023,7 +2060,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h42">ErrorBanner</h4>
+            <h3 data-i18n="composants.h42">ErrorBanner</h3>
             <p data-i18n="composants.p5">
               Erreur récupérable. <code>severity</code> distingue le temporaire
               du permanent ; <code>role</code> passe de <code>alert</code> à
@@ -2080,7 +2117,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h43">SyncStatusBadge</h4>
+            <h3 data-i18n="composants.h43">SyncStatusBadge</h3>
             <p data-i18n="composants.p6">
               État de synchronisation. Le compteur n’apparaît que sur
               <code>pending</code>.
@@ -2123,7 +2160,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h44">ErrorBoundary</h4>
+            <h3 data-i18n="composants.h44">ErrorBoundary</h3>
             <p data-i18n="composants.p7">
               UI de repli par défaut (évite l’écran blanc). Le bouton «
               sauvegarde » n’apparaît que si <code>onDownloadBackup</code> est
@@ -2159,7 +2196,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h45">PwaInstallPrompt</h4>
+            <h3 data-i18n="composants.h45">PwaInstallPrompt</h3>
             <p data-i18n="composants.p9">
               Bannière passive (<code>role="region"</code>, pas
               <code>dialog</code> : elle ne piège pas le focus). Deux visages :
@@ -2172,7 +2209,8 @@
               data-dwc="pwa-install-prompt"
               data-method="prompt"
               role="region"
-              aria-label="Installer l’application"
+              aria-label="Exemple : invite d’installation, bouton natif"
+              data-i18n-aria="composants.aria.installNative"
             >
               <p data-dwc="pwa-install-title" data-i18n="composants.p10">
                 Installer l’application
@@ -2191,7 +2229,8 @@
               data-method="instructions"
               data-platform="ios"
               role="region"
-              aria-label="Installer l’application"
+              aria-label="Exemple : invite d’installation, iPhone et Safari"
+              data-i18n-aria="composants.aria.installIos"
             >
               <p data-dwc="pwa-install-title" data-i18n="composants.p10b">
                 Installer l’application
@@ -2222,7 +2261,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h411">ShareButton</h4>
+            <h3 data-i18n="composants.h411">ShareButton</h3>
             <p data-i18n="composants.p21">
               Partage natif, repli presse-papiers. L’annulation n’affiche
               rien&nbsp;: fermer la feuille de partage n’est pas un échec.
@@ -2256,7 +2295,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h412">Sparkline · BarChart · Gauge</h4>
+            <h3 data-i18n="composants.h412">Sparkline · BarChart · Gauge</h3>
             <p data-i18n="composants.p412">
               Le tracé est <code>aria-hidden</code>&nbsp;: la donnée est dite en
               toutes lettres dans un texte à côté. Un graphique qui ne dit rien
@@ -2324,7 +2363,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h46">UpdatePromptBanner</h4>
+            <h3 data-i18n="composants.h46">UpdatePromptBanner</h3>
             <p data-i18n="composants.p12">
               <code>registerSW</code> est reçu en prop, plus importé en dur : le
               module a rejoint le barrel. Le bouton
@@ -2360,21 +2399,67 @@
         </article>
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h49">ConfirmDialog</h4>
+            <h3 data-i18n="composants.h49">ConfirmDialog</h3>
             <p data-i18n="composants.p16">
               Sept apps sur seize en avaient un, tous différents. Le focus
               s’ouvre sur <em>Annuler</em> — jamais sur la confirmation.
             </p>
           </div>
+          <!-- Le VRAI balisage du composant (racine, voile, panneau
+               alertdialog), fermé tant qu'on ne l'ouvre pas : son h2 n'entre
+               dans le plan de la page qu'avec la boîte de dialogue. -->
           <div class="sr-demo-stage">
-            <div data-dwc="confirm-panel">
-              <h2 data-dwc="confirm-title">Supprimer la partie&nbsp;?</h2>
-              <div data-dwc="confirm-body">Cette action est définitive.</div>
-              <div data-dwc="confirm-actions">
-                <button type="button" data-dwc="confirm-cancel">Annuler</button>
-                <button type="button" data-dwc="confirm-confirm">
-                  Supprimer
-                </button>
+            <button
+              type="button"
+              class="sr-btn"
+              id="confirm-demo-open"
+              aria-haspopup="dialog"
+              data-i18n="composants.confirmOpen"
+            >
+              Supprimer la partie…
+            </button>
+            <div id="confirm-demo" hidden>
+              <div data-dwc="confirm" data-destructive>
+                <div data-dwc="confirm-backdrop" aria-hidden="true"></div>
+                <div
+                  role="alertdialog"
+                  aria-modal="true"
+                  aria-labelledby="confirm-demo-title"
+                  aria-describedby="confirm-demo-body"
+                  tabindex="-1"
+                  data-dwc="confirm-panel"
+                >
+                  <h2
+                    id="confirm-demo-title"
+                    data-dwc="confirm-title"
+                    data-i18n="composants.confirmTitle"
+                  >
+                    Supprimer la partie&nbsp;?
+                  </h2>
+                  <div
+                    id="confirm-demo-body"
+                    data-dwc="confirm-body"
+                    data-i18n="composants.confirmBody"
+                  >
+                    Cette action est définitive.
+                  </div>
+                  <div data-dwc="confirm-actions">
+                    <button
+                      type="button"
+                      data-dwc="confirm-cancel"
+                      data-i18n="composants.confirmCancel"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      data-dwc="confirm-confirm"
+                      data-i18n="composants.confirmOk"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2397,7 +2482,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h50">Toast</h4>
+            <h3 data-i18n="composants.h50">Toast</h3>
             <p data-i18n="composants.p17">
               Deux régions vivantes montées en permanence, et aucun rôle sur le
               message : c’est ce qui évite la double annonce constatée dans deux
@@ -2457,7 +2542,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h51">BottomNav</h4>
+            <h3 data-i18n="composants.h51">BottomNav</h3>
             <p data-i18n="composants.p18">
               Sept apps sur seize en ont une. L’onglet courant n’est jamais
               distingué par la seule couleur : <code>aria-current</code>, un
@@ -2465,7 +2550,11 @@
             </p>
           </div>
           <div class="sr-demo-stage">
-            <nav data-dwc="bottom-nav" aria-label="Navigation d’exemple">
+            <nav
+              data-dwc="bottom-nav"
+              aria-label="Exemple : barre d’onglets"
+              data-i18n-aria="composants.aria.bottomNav"
+            >
               <a href="#composants" data-dwc="bottom-nav-item" data-current
                 ><span data-dwc="bottom-nav-label">Accueil</span
                 ><span data-dwc="bottom-nav-sr">Page actuelle</span></a
@@ -2501,7 +2590,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h53">AppHeader</h4>
+            <h3 data-i18n="composants.h53">AppHeader</h3>
             <p data-i18n="composants.p22">
               Neuf apps ont un en-tête. Le titre EST le <code>h1</code> de la
               page ; le retour est un lien quand il a une destination, un bouton
@@ -2579,7 +2668,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h57">AppShell</h4>
+            <h3 data-i18n="composants.h57">AppShell</h3>
             <p data-i18n="composants.p26">
               La coquille assemblée : lien d’évitement, en-tête, contenu borné,
               barre basse. Le pied de page n’y est PAS — Accueil et À propos
@@ -2650,7 +2739,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h54">PageContainer</h4>
+            <h3 data-i18n="composants.h54">PageContainer</h3>
             <p data-i18n="composants.p23">
               Centré, borné à un palier de largeur, zones sûres iOS comprises —
               celle du bas surtout, sans laquelle le dernier bouton d’une vue
@@ -2688,7 +2777,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h55">LoginForm</h4>
+            <h3 data-i18n="composants.h55">LoginForm</h3>
             <p data-i18n="composants.p24">
               Quatre apps avaient le même écran : deux champs, un bouton, une
               erreur traduite. Le formulaire est présentationnel — l’appelant
@@ -2770,7 +2859,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h56">MfaChallenge</h4>
+            <h3 data-i18n="composants.h56">MfaChallenge</h3>
             <p data-i18n="composants.p25">
               L’étape TOTP au login, promue de mister-doc et miss-uwh : clavier
               numérique, code reçu proposé par le système, voie de secours et
@@ -2866,7 +2955,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h52">ThemeToggle</h4>
+            <h3 data-i18n="composants.h52">ThemeToggle</h3>
             <p data-i18n="composants.p19">
               Cinq apps en ont un. Celui-ci parcourt les <em>trois</em> états de
               <code>useTheme</code> : une bascule à deux états interdit de
@@ -2918,7 +3007,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h58">ChromePrefs</h4>
+            <h3 data-i18n="composants.h58">ChromePrefs</h3>
             <p data-i18n="composants.p27">
               Groupe accessible thème + langue (ou densités) : une seule
               étiquette pour ce que le hub et plusieurs apps juxtaposent déjà.
@@ -2965,7 +3054,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h47">AppFooter</h4>
+            <h3 data-i18n="composants.h47">AppFooter</h3>
             <p data-i18n="composants.p13">
               Lien code source + lien sponsor, ouverture sécurisée.
             </p>
@@ -3033,7 +3122,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h59">FamilyAbout</h4>
+            <h3 data-i18n="composants.h59">FamilyAbout</h3>
             <p data-i18n="composants.p28">
               L’écran À propos famille : installation, intro métier, grille des
               sœurs (<code>showSource={false}</code>), pied de page. Promu du
@@ -3066,7 +3155,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h410">AppVersion</h4>
+            <h3 data-i18n="composants.h410">AppVersion</h3>
             <p data-i18n="composants.p20">
               Le numéro de version, injecté au build par
               <code>vite-version</code>&nbsp;: ce qui tourne, ce qui vient
@@ -3116,7 +3205,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h48">FamilyApps</h4>
+            <h3 data-i18n="composants.h48">FamilyApps</h3>
             <p data-i18n="composants.p14">
               Grille « nos autres applications », alimentée par
               <code>apps-catalog.js</code>, avec badge de maturité.
@@ -3125,7 +3214,8 @@
           <div class="sr-demo-stage">
             <section
               data-dwc="family-apps"
-              aria-label="Nos autres applications"
+              aria-label="Exemple : nos autres applications"
+              data-i18n-aria="composants.aria.familyApps"
             >
               <div data-dwc="family-links">
                 <a
@@ -3854,7 +3944,13 @@
     </div>
 
     <!-- Dock mobile : Habiller reste à portée sans remonter le header. -->
-    <div class="sr-dock" id="sr-dock">
+    <div
+      class="sr-dock"
+      id="sr-dock"
+      role="region"
+      aria-label="Habiller la page"
+      data-i18n-aria="ui.dock.region"
+    >
       <label class="sr-dock-label" for="theme-app-dock">Habiller</label>
       <select id="theme-app-dock" aria-labelledby="theme-app-label"></select>
       <a

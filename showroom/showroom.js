@@ -14,7 +14,13 @@
  * Tout import reste DANS `showroom/` : c'est le seul dossier que publie Pages.
  * `./command.js` est la copie octet pour octet que pose `npm run sync`.
  */
-import { attachCommandCombobox, filterCommandItems } from './command.js';
+import {
+  attachCommandCombobox,
+  filterCommandItems,
+  isCommandHotkey,
+  isSlashHotkey,
+} from './command.js';
+import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
 
 (function () {
   'use strict';
@@ -62,6 +68,14 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     originalHtml[el.dataset.i18n] = el.innerHTML;
   });
 
+  // Les noms accessibles posés en dur (`aria-label`) se traduisent aussi :
+  // `data-i18n-aria` existait dans la page sans que rien ne le lise, et les
+  // régions nommées restaient en français dans la page anglaise.
+  var originalAria = {};
+  document.querySelectorAll('[data-i18n-aria]').forEach(function (el) {
+    originalAria[el.dataset.i18nAria] = el.getAttribute('aria-label') || '';
+  });
+
   /** Traduit une clé ; `fallback` est le libellé français par défaut. */
   function t(key, fallback) {
     if (lang === 'fr') return fallback;
@@ -81,7 +95,17 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
       }
       if (value !== undefined) el.innerHTML = value;
     });
+    document.querySelectorAll('[data-i18n-aria]').forEach(function (el) {
+      var key = el.dataset.i18nAria;
+      var value = lang === 'fr' ? undefined : (DICTS[lang] || {})[key];
+      el.setAttribute(
+        'aria-label',
+        value === undefined ? originalAria[key] : value
+      );
+    });
     root.lang = lang;
+    var codeLangue = document.getElementById('sr-prefs-lang');
+    if (codeLangue) codeLangue.textContent = lang.toUpperCase();
     // L'icône est le visage du bouton ; le titre reprend le mot traduit,
     // celui que le nom accessible porte déjà.
     document.querySelectorAll('.sr-segmented label').forEach(function (label) {
@@ -168,9 +192,134 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
 
   /** La barre change de hauteur (réglages ouverts, rail). Les ancres doivent
    *  dégager ce qu'elle couvre vraiment, pas une constante. */
+  /**
+   * `smooth`, sauf si la personne a demandé moins de mouvement. La règle CSS
+   * `scroll-behavior: auto` de `prefers-reduced-motion` ne couvre PAS un
+   * `scrollIntoView({ behavior: 'smooth' })` : l'option du script l'emporte.
+   */
+  function scrollBehavior() {
+    return window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth';
+  }
+
+  /**
+   * Hauteur réelle de l'en-tête collant, dans `--sr-header`. Elle sert au
+   * `scroll-padding-top` de la page : une ancre, une recherche ou un focus
+   * clavier ne finissent pas SOUS l'en-tête.
+   */
   function syncHeaderOffset() {
     var bar = document.querySelector('.sr-topbar');
     if (bar) root.style.setProperty('--sr-header', bar.offsetHeight + 'px');
+  }
+
+  /**
+   * Amène une destination sous l'en-tête et y porte le focus : son titre si
+   * elle en a un, sinon elle-même. Sans cela, après une recherche, le focus
+   * restait dans le champ et la lecture d'écran ne suivait pas.
+   */
+  function focusDestination(target) {
+    if (!target) return;
+    // Une fiche vit souvent dans le `<details>` « Sélecteurs CSS » d'une démo,
+    // replié : la recherche y menait sans rien montrer, et le focus échouait
+    // sur un élément non rendu. On déplie le chemin jusqu'à elle.
+    for (
+      var parent = target.parentElement;
+      parent;
+      parent = parent.parentElement
+    ) {
+      if (parent.tagName === 'DETAILS' && !parent.open) parent.open = true;
+    }
+    // La hauteur courante, pas celle du dernier rendu : un en-tête qui vient
+    // de se replier ou de grandir déplacerait sinon la destination.
+    syncHeaderOffset();
+    target.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+    var cible = /^H[1-6]$/.test(target.tagName)
+      ? target
+      : target.querySelector('h1, h2, h3, h4, h5, h6') || target;
+    if (!cible.hasAttribute('tabindex') && cible.tabIndex < 0) {
+      cible.setAttribute('tabindex', '-1');
+    }
+    cible.focus({ preventScroll: true });
+  }
+
+  /**
+   * Petit écran : passé le haut de page, l'en-tête replie ses rangées
+   * « Habiller » et recherche. Il occupait 307 px sur 812 en portrait (38 %)
+   * et 184 sur 375 en paysage (49 %), défilement compris. Un bouton les
+   * redéploie ; le focus dans l'en-tête et Ctrl+K aussi.
+   *
+   * Le repli dépend de la POSITION, pas du sens du défilement : un saut vers
+   * une ancre ne fait pas grandir l'en-tête par-dessus sa destination.
+   */
+  function setupCompactHeader() {
+    var bar = document.querySelector('.sr-topbar');
+    var toggle = document.getElementById('sr-topbar-expand');
+    if (!bar || !toggle || !window.matchMedia) return;
+    // Petit en largeur (portrait) OU en hauteur (paysage).
+    var petit = window.matchMedia('(max-width: 40rem), (max-height: 31.25rem)');
+    var SEUIL = 160;
+    var deplieA = null;
+
+    function update() {
+      var loin = petit.matches && window.scrollY > SEUIL;
+      // Déplié à la demande : il le reste jusqu'à 400 px plus loin.
+      if (deplieA !== null && Math.abs(window.scrollY - deplieA) > 400) {
+        deplieA = null;
+      }
+      var occupe =
+        bar.contains(document.activeElement) ||
+        bar.querySelector('details[open]') !== null;
+      var compact = loin && deplieA === null && !occupe;
+      var avant = bar.hasAttribute('data-compact');
+      if (compact) bar.setAttribute('data-compact', '');
+      else bar.removeAttribute('data-compact');
+      // Le dock du pouce prend le relais de la rangée « Habiller » repliée.
+      if (compact) root.setAttribute('data-header-compact', '');
+      else root.removeAttribute('data-header-compact');
+      toggle.hidden = !loin;
+      toggle.setAttribute('aria-expanded', String(!compact));
+      // Mesure seulement au changement d'état : pas de mise en page forcée
+      // à chaque évènement de défilement.
+      if (avant !== compact) syncHeaderOffset();
+    }
+
+    function deplier() {
+      if (!bar.hasAttribute('data-compact')) return;
+      deplieA = window.scrollY;
+      update();
+    }
+
+    toggle.addEventListener('click', function () {
+      if (bar.hasAttribute('data-compact')) {
+        deplier();
+        var cmd = document.getElementById('sr-cmd');
+        if (cmd) cmd.focus();
+      } else {
+        deplieA = null;
+        bar.setAttribute('data-compact', '');
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    // Ctrl+K ou « / » sur un en-tête replié : le champ doit exister AVANT
+    // que `command.js` lui donne le focus. Phase de capture : ce gestionnaire
+    // passe avant le sien.
+    window.addEventListener(
+      'keydown',
+      function (event) {
+        if (isCommandHotkey(event) || isSlashHotkey(event)) deplier();
+      },
+      true
+    );
+    bar.addEventListener('focusin', update);
+    bar.addEventListener('focusout', function () {
+      window.setTimeout(update, 0);
+    });
+    bar.addEventListener('toggle', update, true);
+    window.addEventListener('scroll', update, { passive: true });
+    if (petit.addEventListener) petit.addEventListener('change', update);
+    update();
   }
 
   /**
@@ -181,6 +330,12 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
   function watchRail() {
     syncHeaderOffset();
     window.addEventListener('resize', syncHeaderOffset);
+    // La hauteur change aussi sans redimensionnement : en-tête replié,
+    // sommaire ouvert, libellés traduits qui passent à la ligne.
+    var bar = document.querySelector('.sr-topbar');
+    if (bar && 'ResizeObserver' in window) {
+      new ResizeObserver(syncHeaderOffset).observe(bar);
+    }
     var progress = document.getElementById('sr-progress');
     function updateProgress() {
       if (!progress) return;
@@ -212,7 +367,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
             current.scrollIntoView({
               inline: 'center',
               block: 'nearest',
-              behavior: 'smooth',
+              behavior: scrollBehavior(),
             });
           }
         });
@@ -617,6 +772,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     if (theme.fontDisplay)
       style.setProperty('--ds-font-display', theme.fontDisplay);
     if (theme.radius) style.setProperty('--ds-radius', theme.radius);
+    applyChromeInks(theme, scheme);
 
     var hints = [];
     if (theme.schemes.indexOf('light') === -1) {
@@ -669,6 +825,26 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     renderCompare();
     renderPairCompare();
     syncPrefsBadge();
+  }
+
+  /**
+   * Encres du chrome, dérivées de la palette habillée (voir `contraste.js`) :
+   * le texte de la page tient 4,5:1 dans chaque thème, les démos gardent les
+   * couleurs réelles de l'app. Une palette illisible (couleur non
+   * hexadécimale) retombe sur les replis CSS, qui sont la palette elle-même.
+   */
+  function applyChromeInks(theme, scheme) {
+    var style = root.style;
+    try {
+      var chrome = paletteChrome(paletteOf(theme, scheme));
+      VARIABLES_CHROME.forEach(function (paire) {
+        style.setProperty(paire[1], chrome[paire[0]]);
+      });
+    } catch {
+      VARIABLES_CHROME.forEach(function (paire) {
+        style.removeProperty(paire[1]);
+      });
+    }
   }
 
   /** Sous-titre de marque : paquet générique, sinon « Habillé · App ». */
@@ -917,8 +1093,10 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
               : ratio >= 3
                 ? t('ui.contrast.aaLarge', 'AA (grand texte)')
                 : '✗');
+          // Le verdict est du texte du chrome : encres sûres. Le vert brut du
+          // thème générique (#15803d) tombait à 4,39:1 sur la surface 2.
           badge.style.color =
-            ratio >= 4.5 ? 'var(--ds-success)' : 'var(--ds-danger)';
+            ratio >= 4.5 ? 'var(--sr-ink-success)' : 'var(--sr-ink-danger)';
           meta.appendChild(badge);
         }
       }
@@ -1192,6 +1370,65 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     });
   }
 
+  /**
+   * Démo de ConfirmDialog : le vrai balisage du composant, ouvert sur
+   * demande. Fermée, la boîte n'existe pas pour les technologies d'assistance,
+   * et son h2 n'entre pas dans le plan de la page. Ouverte, elle se comporte
+   * comme le composant : focus sur Annuler, Tab qui boucle, Échap, voile et
+   * boutons qui ferment, focus rendu au bouton d'ouverture.
+   */
+  function setupConfirmDemo() {
+    var host = document.getElementById('confirm-demo');
+    var opener = document.getElementById('confirm-demo-open');
+    if (!host || !opener) return;
+    var racine = host.querySelector('[data-dwc="confirm"]');
+    var panel = host.querySelector('[data-dwc="confirm-panel"]');
+    var cancel = host.querySelector('[data-dwc="confirm-cancel"]');
+
+    function close() {
+      host.hidden = true;
+      document.removeEventListener('keydown', onKeyDown);
+      opener.focus();
+    }
+
+    function onKeyDown(event) {
+      if (event.key === 'Escape') {
+        close();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      var items = [...panel.querySelectorAll(FOCUSABLE)];
+      if (!items.length) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    opener.addEventListener('click', function () {
+      host.hidden = false;
+      document.addEventListener('keydown', onKeyDown);
+      if (cancel) cancel.focus();
+    });
+    racine.addEventListener('mousedown', function (event) {
+      var surLeVoile =
+        event.target === racine ||
+        (event.target instanceof Element &&
+          event.target.matches('[data-dwc="confirm-backdrop"]'));
+      if (surLeVoile) close();
+    });
+    host
+      .querySelectorAll('[data-dwc="confirm-actions"] button')
+      .forEach(function (button) {
+        button.addEventListener('click', close);
+      });
+  }
+
   /* ── Contrôles d'accessibilité, mesurés sur la page ────────────────── */
 
   var TARGET_MIN = 44;
@@ -1287,7 +1524,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
             text: ok
               ? t('ui.a11y.pass', '✓ ≥ 44 px')
               : t('ui.a11y.fail', '✗ sous le seuil'),
-            color: ok ? 'var(--ds-success)' : 'var(--ds-danger)',
+            color: ok ? 'var(--sr-ink-success)' : 'var(--sr-ink-danger)',
           },
         ])
       );
@@ -1378,7 +1615,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         text: ok
           ? t('ui.a11y.ok', '✓ conforme')
           : t('ui.a11y.ko', '✗ insuffisant'),
-        color: ok ? 'var(--ds-success)' : 'var(--ds-danger)',
+        color: ok ? 'var(--sr-ink-success)' : 'var(--sr-ink-danger)',
       },
     ]);
 
@@ -1404,30 +1641,43 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         attachCopy(
           cell,
           fix.color,
-          t('ui.a11y.copyFix', 'Copier la couleur proposée')
+          t(
+            'ui.a11y.copyFixFor',
+            'Copier la couleur proposée pour {label}'
+          ).replace('{label}', label)
         );
       }
       // Cliquer la ligne va voir l'élément mesuré et le met en évidence :
       // un constat qu'on ne peut pas localiser ne se corrige pas.
       if (element) {
+        // Un vrai bouton dans la ligne, et non la ligne entière en
+        // `role="button"` : une ligne de tableau qui se dit bouton perd sa
+        // sémantique de tableau, et elle contenait déjà un bouton de copie
+        // (axe : nested-interactive).
         tr.classList.add('sr-row-locatable');
-        tr.tabIndex = 0;
-        tr.setAttribute('role', 'button');
-        tr.title = t('ui.a11y.locate', 'Localiser sur la page');
         var locate = function () {
-          element.scrollIntoView({ block: 'center' });
+          element.scrollIntoView({
+            block: 'center',
+            behavior: scrollBehavior(),
+          });
           element.dataset.srHighlight = '';
           setTimeout(function () {
             delete element.dataset.srHighlight;
           }, 2200);
         };
-        tr.addEventListener('click', locate);
-        tr.addEventListener('keydown', function (event) {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            locate();
-          }
-        });
+        var bouton = document.createElement('button');
+        bouton.type = 'button';
+        bouton.className = 'sr-locate';
+        bouton.textContent = t('ui.a11y.locate', 'Localiser');
+        bouton.setAttribute(
+          'aria-label',
+          t('ui.a11y.locateFor', 'Localiser sur la page : {label}').replace(
+            '{label}',
+            label
+          )
+        );
+        bouton.addEventListener('click', locate);
+        if (tr.firstElementChild) tr.firstElementChild.appendChild(bouton);
       }
     }
 
@@ -1561,7 +1811,16 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         var head = document.createElement('p');
         head.className = 'sr-snippet-head';
         head.textContent = t('ui.usage', 'Utilisation');
-        attachCopy(head, code, t('ui.copySnippet', 'Copier l’extrait'));
+        // Un nom par bouton : vingt-cinq « Copier l’extrait » identiques ne
+        // se distinguaient pas dans la liste des boutons.
+        attachCopy(
+          head,
+          code,
+          t('ui.copySnippetOf', 'Copier l’extrait de {name}').replace(
+            '{name}',
+            id
+          )
+        );
 
         var pre = document.createElement('pre');
         var el = document.createElement('code');
@@ -2131,10 +2390,13 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
    * page est clair et la primaire d'une autre app souvent claire aussi.
    */
   function inkOn(color) {
-    var onLight = contrastRatio(color, '#ffffff');
-    var onDark = contrastRatio(color, '#14181f');
-    if (onLight == null || onDark == null) return '';
-    return onLight >= onDark ? '#ffffff' : '#14181f';
+    // Blanc ou encre sombre, et le noir si aucune ne tient 4,5:1 : sur le
+    // violet de miss-dice (#7c5cf6), le blanc plafonnait à 4,45:1.
+    try {
+      return encreSur(color);
+    } catch {
+      return '';
+    }
   }
 
   function paintMonogram(el) {
@@ -2665,6 +2927,9 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     var desc = document.createElement('p');
     desc.className = 'sr-app-desc';
     desc.textContent = item.description;
+    // Le catalogue n'écrit ses descriptions qu'en français (apps-catalog.js) :
+    // dans la page anglaise, la lecture d'écran doit le savoir (WCAG 3.1.2).
+    if (lang !== 'fr') desc.lang = 'fr';
     body.appendChild(desc);
 
     var meta = document.createElement('p');
@@ -2864,6 +3129,9 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     renderAppCount(count, shown.length);
     syncAppFacets();
     renderViewChip();
+    // La vue tableau et le panneau d'adoption apparaissent ici : leurs
+    // boîtes défilantes doivent recevoir focus et nom à ce moment-là.
+    labelScrollableTables();
   }
 
   function renderAppCount(node, n) {
@@ -2955,6 +3223,67 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         });
       });
     });
+  }
+
+  /**
+   * Un tableau qui déborde se fait défiler au clavier aussi : sa boîte prend
+   * le focus et un nom (WCAG 2.1.1 ; axe : scrollable-region-focusable, relevé
+   * sur le tableau d'adoption). Seulement s'il déborde : sinon ce serait une
+   * région de plus, sans raison, dans la liste des repères.
+   */
+  function labelScrollableTables() {
+    document
+      .querySelectorAll('.sr-table-wrap, main pre')
+      .forEach(function (boite) {
+        // En largeur (téléphone) comme en hauteur : le tableau d'adoption a
+        // une hauteur bornée et défile verticalement, même sur grand écran ;
+        // un extrait de code déborde en largeur sur téléphone.
+        var deborde =
+          !boite.hidden &&
+          boite.getClientRects().length > 0 &&
+          (boite.scrollWidth > boite.clientWidth + 1 ||
+            boite.scrollHeight > boite.clientHeight + 1);
+        if (!deborde) {
+          if (boite.hasAttribute('data-scroll-region')) {
+            ['data-scroll-region', 'tabindex', 'role', 'aria-label'].forEach(
+              function (attribut) {
+                boite.removeAttribute(attribut);
+              }
+            );
+          }
+          return;
+        }
+        var nom;
+        if (boite.tagName === 'PRE') {
+          // L'extrait d'une fiche porte le nom de son composant ; celui du bac
+          // à sable, le composant réglé. Deux régions sans nom distinct ne se
+          // distinguent pas dans la liste des repères.
+          var fiche = boite.closest('[data-snippet]');
+          nom = boite.closest('#pg-code')
+            ? t(
+                'ui.code.scrollPg',
+                'Code défilant du bac à sable : {name}'
+              ).replace('{name}', pgCurrent)
+            : t('ui.code.scroll', 'Code défilant : {name}').replace(
+                '{name}',
+                fiche ? fiche.dataset.snippet : ''
+              );
+        } else {
+          var titre =
+            boite.querySelector('h1, h2, h3, h4, h5, h6, caption') ||
+            boite
+              .closest('.sr-adoption, .sr-demo, section')
+              ?.querySelector('h2, h3, h4');
+          nom = t('ui.table.scroll', 'Tableau défilant : {name}').replace(
+            '{name}',
+            titre ? titre.textContent.replace(/\s+/g, ' ').trim() : ''
+          );
+        }
+        boite.setAttribute('data-scroll-region', '');
+        boite.setAttribute('tabindex', '0');
+        boite.setAttribute('role', 'region');
+        boite.setAttribute('aria-label', nom);
+      });
   }
 
   /* ── Bac à sable ───────────────────────────────────────────────────── *
@@ -3335,6 +3664,9 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     var text = spec.note ? spec.note(props) : '';
     note.textContent = text;
     note.hidden = !text;
+    // L'extrait change de longueur et de composant : son nom et son état
+    // défilant aussi.
+    labelScrollableTables();
   }
 
   function renderPlayground() {
@@ -3428,7 +3760,10 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         function () {
           return pgCodeText;
         },
-        t('ui.copySnippet', 'Copier l’extrait')
+        t('ui.copySnippetOf', 'Copier l’extrait de {name}').replace(
+          '{name}',
+          pgCurrent
+        )
       )
     );
     var pre = document.createElement('pre');
@@ -3566,8 +3901,13 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     // La barre basse est la démonstration la plus nette du chapitre : son
     // onglet courant ne se distingue QUE par la couleur dans quatre apps sur
     // sept, et le forçage ramène les deux teintes à la même encre.
+    // Deux panneaux (sans et avec correctifs) portent chacun cette barre :
+    // deux repères de même nom ne se distinguent pas à la lecture d'écran.
+    var corrige = host.closest('[data-fix]')?.getAttribute('data-fix') === 'on';
     var nav = dwc('nav', 'bottom-nav', {
-      'aria-label': t('ui.fc.nav', 'Navigation principale'),
+      'aria-label': corrige
+        ? t('ui.fc.navOn', 'Exemple : barre d’onglets, avec correctifs')
+        : t('ui.fc.navOff', 'Exemple : barre d’onglets, sans correctifs'),
     });
     [
       [t('ui.fc.tab.home', 'Accueil'), true],
@@ -3668,6 +4008,17 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     });
     el.style.setProperty('--dwc-radius', 'var(--ds-radius)');
     el.style.colorScheme = scheme;
+    // Le chrome posé DANS ce panneau (valeurs, libellés) lit les encres de
+    // SA palette, pas celles de la page : un panneau sombre dans une page
+    // claire hériterait sinon d'une encre faite pour un fond clair.
+    try {
+      var chrome = paletteChrome(palette);
+      VARIABLES_CHROME.forEach(function (paire) {
+        el.style.setProperty(paire[1], chrome[paire[0]]);
+      });
+    } catch {
+      /* palette non hexadécimale : les encres de la page restent */
+    }
   }
 
   function renderCompare() {
@@ -3712,7 +4063,14 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         hex.textContent = value;
         line.appendChild(name);
         line.appendChild(hex);
-        attachCopy(line, value, t('ui.copyToken', 'Copier') + ' ' + value);
+        attachCopy(
+          line,
+          value,
+          t('ui.copyTokenIn', 'Copier {value} ({token}, {panel})')
+            .replace('{value}', value)
+            .replace('{token}', role[1])
+            .replace('{panel}', title.textContent)
+        );
         panel.appendChild(line);
       });
 
@@ -3801,7 +4159,14 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         hex.textContent = value;
         line.appendChild(name);
         line.appendChild(hex);
-        attachCopy(line, value, t('ui.copyToken', 'Copier') + ' ' + value);
+        attachCopy(
+          line,
+          value,
+          t('ui.copyTokenIn', 'Copier {value} ({token}, {panel})')
+            .replace('{value}', value)
+            .replace('{token}', role[1])
+            .replace('{panel}', title.textContent)
+        );
         panel.appendChild(line);
       });
       host.appendChild(panel);
@@ -3933,7 +4298,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     }
     if (!target) return;
     target.classList.add('sr-focus-flash');
-    target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    target.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
     window.setTimeout(function () {
       target.classList.remove('sr-focus-flash');
     }, 1800);
@@ -4054,16 +4419,10 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     });
   }
 
-  function setupNews() {
-    var banner = document.getElementById('sr-news');
-    if (!banner) return;
-    if (read(NEWS_KEY, '') === NEWS_ID) {
-      banner.hidden = true;
-      return;
-    }
+  /** Texte du ruban, rejoué à chaque changement de langue. */
+  function renderNews() {
     var title = document.getElementById('sr-news-title');
     var items = document.getElementById('sr-news-items');
-    var dismiss = document.getElementById('sr-news-dismiss');
     if (title) title.textContent = t('ui.news.title', 'Nouveautés showroom');
     if (items) {
       items.textContent =
@@ -4071,6 +4430,17 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         ' ' +
         t('ui.news.list', NEWS_ITEMS.join(', '));
     }
+  }
+
+  function setupNews() {
+    var banner = document.getElementById('sr-news');
+    if (!banner) return;
+    if (read(NEWS_KEY, '') === NEWS_ID) {
+      banner.hidden = true;
+      return;
+    }
+    var dismiss = document.getElementById('sr-news-dismiss');
+    renderNews();
     banner.hidden = false;
     if (dismiss) {
       dismiss.addEventListener('click', function () {
@@ -4149,7 +4519,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
           var picker = document.getElementById('theme-picker');
           if (picker) picker.open = true;
         }
-        target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        target.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
       }
     }
 
@@ -4559,7 +4929,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         if (ratio != null) {
           var c = document.createElement('div');
           c.style.marginTop = '0.25rem';
-          c.style.color = 'var(--ds-text-soft)';
+          c.style.color = 'var(--sr-ink-soft)';
           c.textContent =
             t('ui.inspect.contrast', 'Contraste texte') +
             ' : ' +
@@ -4751,14 +5121,18 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
       button.className = 'sr-gallery-tile';
       button.dataset.themeId = theme.id;
       button.setAttribute('aria-pressed', String(theme.id === currentTheme.id));
-      var label = t('ui.demo.dress', 'Habiller la page avec {app}').replace(
-        '{app}',
-        name
-      );
-      if (darkOnly) label += ' (' + t('ui.demo.darkOnly', 'Sombre seul') + ')';
-      button.setAttribute('aria-label', label);
       paintTheme(button, theme, scheme, palette);
 
+      // Le nom accessible est le TEXTE visible de la tuile (nom, et « Sombre
+      // seul »), précédé d'un verbe pour les lecteurs d'écran. Un
+      // `aria-label` le remplaçait : le texte visible n'était pas dans le nom
+      // (WCAG 2.5.3). Les échantillons (Aa, Valider…) sont décoratifs.
+      button.appendChild(
+        el('span', {
+          class: 'sr-visually-hidden',
+          text: t('ui.demo.dressPrefix', 'Habiller la page avec') + ' ',
+        })
+      );
       var head = el('span', { class: 'sr-gallery-head' });
       head.appendChild(el('span', { class: 'sr-gallery-name', text: name }));
       if (darkOnly) {
@@ -4786,7 +5160,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
       button.appendChild(dots);
 
       button.appendChild(
-        el('span', { class: 'sr-gallery-surface' }, [
+        el('span', { class: 'sr-gallery-surface', 'aria-hidden': 'true' }, [
           el('span', { class: 'sr-gallery-ink', text: 'Aa' }),
           el('span', {
             class: 'sr-gallery-ink-soft',
@@ -4796,7 +5170,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
       );
 
       button.appendChild(
-        el('span', { class: 'sr-gallery-sample' }, [
+        el('span', { class: 'sr-gallery-sample', 'aria-hidden': 'true' }, [
           el('span', {
             'data-dwc': 'button',
             'data-variant': 'primary',
@@ -4852,7 +5226,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     caption.className = 'sr-note';
     caption.style.marginTop = 'var(--spacing-fluid-sm)';
     caption.textContent =
-      currentTheme.name +
+      t('theme.' + currentTheme.id + '.name', currentTheme.name) +
       ' — ' +
       t('theme.' + currentTheme.id + '.tagline', currentTheme.tagline);
 
@@ -4977,6 +5351,9 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
   function renderFamilyApps() {
     var list = document.getElementById('family-app-list');
     if (!list) return;
+    // Rejoué à chaque changement de langue : sans remise à zéro, chaque
+    // bascule ajoutait trois cartes de plus à la démo.
+    list.textContent = '';
 
     DEMO_APPS.forEach(function (entry) {
       var theme = themeById(entry[0]);
@@ -4987,14 +5364,9 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.dataset.dwc = 'family-app';
-      link.setAttribute(
-        'aria-label',
-        theme.name +
-          ' (' +
-          maturityLabel(maturity) +
-          ') — ' +
-          t('ui.newTab', 'nouvel onglet')
-      );
+      // Comme le composant : le nom accessible est le texte de la carte, et
+      // l'ouverture dans un nouvel onglet passe en description (WCAG 2.5.3).
+      link.title = t('ui.newTab', 'Ouvre un nouvel onglet');
 
       // Chemin de repli du composant : initiale du nom quand l'icône distante
       // n'est pas chargée (le showroom reste hors ligne).
@@ -5157,6 +5529,10 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
     // Après le rendu : les tableaux engendrés doivent être étiquetés eux aussi.
     labelTableCells();
     attachTokenCopies();
+    labelScrollableTables();
+    // L'en-tête vient d'être rempli (thème courant, habillages récents) : sa
+    // hauteur a pu changer depuis la première mesure.
+    syncHeaderOffset();
   }
 
   // Recherche de l'index : `input` et non `change`, pour que la grille suive
@@ -5192,6 +5568,7 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
   }
 
   setupSheet();
+  setupConfirmDemo();
 
   // Les formulaires des démos (LoginForm, MfaChallenge) ne doivent rien
   // envoyer. Ils le disaient par `onsubmit="return false;"`, un gestionnaire
@@ -5216,6 +5593,8 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
       if (!input.checked) return;
       write(LANG_KEY, input.value);
       applyLang(input.value);
+      // Le ruban est écrit une fois au chargement : il restait en français.
+      renderNews();
       renderGenerated();
       syncPrefsBadge();
       syncUrl();
@@ -5981,6 +6360,29 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
 
   watchRail();
   setupSommaire();
+  setupCompactHeader();
+  document.addEventListener(
+    'toggle',
+    function (event) {
+      if (event.target instanceof HTMLDetailsElement && event.target.open) {
+        labelScrollableTables();
+      }
+    },
+    true
+  );
+  var labelPending = false;
+  window.addEventListener(
+    'resize',
+    function () {
+      if (labelPending) return;
+      labelPending = true;
+      window.requestAnimationFrame(function () {
+        labelPending = false;
+        labelScrollableTables();
+      });
+    },
+    { passive: true }
+  );
   setupPrefs();
   setupThemePicker();
   setupDock();
@@ -6088,15 +6490,14 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
         renderAppGrid();
         renderViewChip();
         syncUrl();
-        var apps = document.getElementById('apps');
-        if (apps) apps.scrollIntoView({ block: 'start' });
+        focusDestination(document.getElementById('apps'));
         return;
       }
       var href = hit.href;
       if (href.charAt(0) === '#') {
         var target = document.getElementById(href.slice(1));
         if (target) {
-          target.scrollIntoView({ block: 'start' });
+          focusDestination(target);
           if (history.replaceState) {
             var url = new URL(location.href);
             url.hash = href;

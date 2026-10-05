@@ -18,6 +18,9 @@ await import('../showroom/i18n.js');
 const DICTS = globalThis.SHOWROOM_I18N;
 
 const docKeys = [...HTML.matchAll(/data-i18n="([^"]+)"/g)].map(m => m[1]);
+// Noms accessibles traduisibles : `data-i18n-aria` porte la clé, `aria-label`
+// le français. L'attribut existait sans que rien ne le lise ni ne le vérifie.
+const ariaKeys = [...HTML.matchAll(/data-i18n-aria="([^"]+)"/g)].map(m => m[1]);
 // Clés utilisées par le code généré : `t('clé', 'repli français')`.
 const codeKeys = [...JS.matchAll(/\bt\(\s*'([\w.-]+)'/g)].map(m => m[1]);
 // Clés construites dynamiquement (`t('ui.role.' + role[0], …)`) : on les
@@ -76,7 +79,7 @@ test('chaque bloc du document est traduit dans toutes les langues', () => {
 });
 
 test('aucune clé orpheline dans les dictionnaires', () => {
-  const known = new Set([...docKeys, ...codeKeys]);
+  const known = new Set([...docKeys, ...ariaKeys, ...codeKeys]);
   for (const [lang, dict] of Object.entries(DICTS)) {
     const orphans = Object.keys(dict).filter(
       key => !known.has(key) && !DYNAMIC_PREFIXES.some(p => key.startsWith(p))
@@ -114,4 +117,21 @@ test('index.html charge i18n.js avant showroom.js', () => {
   const main = HTML.indexOf('showroom.js"');
   assert.ok(i18n !== -1 && main !== -1);
   assert.ok(i18n < main, 'showroom.js lirait un dictionnaire non défini');
+});
+
+test('chaque nom accessible traduisible a sa traduction', () => {
+  assert.ok(
+    ariaKeys.length >= 4,
+    'aucun data-i18n-aria relevé : motif changé ?'
+  );
+  for (const [lang, dict] of Object.entries(DICTS)) {
+    const missing = ariaKeys.filter(key => dict[key] === undefined);
+    assert.deepEqual(
+      missing,
+      [],
+      `aria-label non traduits en ${lang} : ils resteraient en français`
+    );
+  }
+  // Et la page les lit vraiment.
+  assert.match(JS, /data-i18n-aria/);
 });
