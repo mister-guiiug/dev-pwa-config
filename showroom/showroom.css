@@ -178,6 +178,16 @@ pre code {
   padding: 0;
 }
 
+/* `hidden` l'emporte sur l'habillage. Ce que le script masque par l'attribut
+   restait affiché dès qu'une règle posait un `display` : la puce de section
+   et celle de la vue de la vitrine, vides, prenaient une ligne de l'en-tête
+   sur téléphone, et le lien « Ouvrir l'app », sans adresse sous le thème
+   générique, restait visible sur ordinateur (relevé le 06/10/2026, déjà
+   présent avant les lots de l'audit). */
+[hidden] {
+  display: none !important;
+}
+
 .sr-visually-hidden {
   position: absolute;
   width: 1px;
