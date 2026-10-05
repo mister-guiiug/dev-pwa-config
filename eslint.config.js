@@ -49,11 +49,28 @@ export default defineConfig([
     },
   },
   {
-    // Le showroom est une page statique chargeable en `file://` : pas de
-    // modules, tout est posé sur `globalThis` par des `<script src>`.
+    // Miroirs / i18n du showroom : `<script src>` classiques posés sur
+    // `globalThis`. `showroom.js` est un module ESM (Ctrl+K via `command.js`).
     files: ['showroom/*.js'],
+    ignores: ['showroom/showroom.js'],
     languageOptions: {
       sourceType: 'script',
+      globals: {
+        ...globals.browser,
+        SHOWROOM_APPS: 'readonly',
+        SHOWROOM_THEMES: 'readonly',
+        SHOWROOM_METRICS: 'readonly',
+        SHOWROOM_SCREENSHOTS: 'readonly',
+        SHOWROOM_SNIPPETS: 'readonly',
+        SHOWROOM_CATALOGUE: 'readonly',
+        SHOWROOM_I18N: 'readonly',
+      },
+    },
+  },
+  {
+    files: ['showroom/showroom.js'],
+    languageOptions: {
+      sourceType: 'module',
       globals: {
         ...globals.browser,
         SHOWROOM_APPS: 'readonly',
