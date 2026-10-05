@@ -23,7 +23,7 @@ import {
   themes,
 } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { maturityLabel, SHOTS, themeById } from './communs.js?v=9f5191d160';
+import { maturityLabel, SHOTS, themeById } from './communs.js?v=0f95ffd5f1';
 import { copyButton } from './presse-papier.js?v=8913ceeeb8';
 import {
   labelTableCells,

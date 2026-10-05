@@ -10,10 +10,10 @@ import {
 } from './command.js?v=822f1c9e81';
 import { etat, root, syncUrl } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { ROLES } from './communs.js?v=9f5191d160';
-import { focusDestination } from './navigation.js?v=bed0b21921';
+import { ROLES } from './communs.js?v=0f95ffd5f1';
+import { focusDestination } from './navigation.js?v=1ee0f765a8';
 import { catalogueItems } from './fiches.js?v=7a128b2142';
-import { APPS, renderAppGrid, renderViewChip } from './vitrine.js?v=0ce4105834';
+import { APPS, renderAppGrid, renderViewChip } from './vitrine.js?v=32fd06c619';
 
 /* Recherche unifiée. Ctrl+K (⌘K) et « / » y amènent le curseur.
    Sections, composants, apps — et filtre de la vitrine Apps. */

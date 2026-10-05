@@ -10,8 +10,8 @@
  */
 
 import { t } from './langue.js?v=d92afbcf3f';
-import { dwc, schemeIcon } from './communs.js?v=9f5191d160';
-import { headRow, row } from './controles.js?v=f6572eb5d8';
+import { dwc, schemeIcon } from './communs.js?v=0f95ffd5f1';
+import { headRow, row } from './controles.js?v=b9fcfeb8a4';
 
 /**
  * Régressions constatées, et la règle qui les rattrape. L'ordre suit celui du

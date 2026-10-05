@@ -5,7 +5,7 @@
 
 import { etat } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { themeById, themeDisplayName } from './communs.js?v=9f5191d160';
+import { themeById, themeDisplayName } from './communs.js?v=0f95ffd5f1';
 import { copyText } from './presse-papier.js?v=8913ceeeb8';
 
 var ADOPTION_CHECKS = [

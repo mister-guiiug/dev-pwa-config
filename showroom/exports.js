@@ -5,8 +5,8 @@
 
 import { etat, root } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { ROLES, themeDisplayName } from './communs.js?v=9f5191d160';
-import { paletteForTheme } from './palettes.js?v=1de85c623a';
+import { ROLES, themeDisplayName } from './communs.js?v=0f95ffd5f1';
+import { paletteForTheme } from './palettes.js?v=cf070637d3';
 
 export function setupExportReview() {
   var btn = document.getElementById('sr-export-review');

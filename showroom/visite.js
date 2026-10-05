@@ -5,7 +5,7 @@
 
 import { paramOr, read, root, TOUR_KEY, write } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { scrollBehavior } from './navigation.js?v=bed0b21921';
+import { scrollBehavior } from './navigation.js?v=1ee0f765a8';
 
 var TOUR_STEPS = [
   {

@@ -10,7 +10,7 @@ import {
   maturityLabel,
   SVG_NS,
   themeById,
-} from './communs.js?v=9f5191d160';
+} from './communs.js?v=0f95ffd5f1';
 
 function svg(width, height, viewBox, children) {
   var el = document.createElementNS(SVG_NS, 'svg');

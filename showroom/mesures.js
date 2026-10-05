@@ -6,7 +6,7 @@
  */
 
 import { root } from './etat.js?v=542f37cc5d';
-import { measureTargets } from './controles.js?v=f6572eb5d8';
+import { measureTargets } from './controles.js?v=b9fcfeb8a4';
 
 // Sonde hors écran : sert à faire évaluer les `clamp()` / `env()` par le
 // navigateur plutôt qu'à les recalculer en JS.

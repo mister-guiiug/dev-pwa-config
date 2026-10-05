@@ -8,7 +8,7 @@
 
 import { DENSITY_KEY, root, themes, write } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { syncHeaderOffset } from './navigation.js?v=bed0b21921';
+import { syncHeaderOffset } from './navigation.js?v=1ee0f765a8';
 
 // Rôle sémantique → variable CSS + libellé. `on` désigne la couleur sur
 // laquelle le rôle est censé être posé (calcul du contraste WCAG).

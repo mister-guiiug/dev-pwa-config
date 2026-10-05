@@ -6,14 +6,14 @@
 
 import { etat, rappels, root, themes } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { SHOTS, themeDisplayName } from './communs.js?v=9f5191d160';
-import { contrastRatio } from './controles.js?v=f6572eb5d8';
+import { SHOTS, themeDisplayName } from './communs.js?v=0f95ffd5f1';
+import { contrastRatio } from './controles.js?v=b9fcfeb8a4';
 import {
   paintPalette,
   paletteForTheme,
   paletteOf,
   schemeForTheme,
-} from './palettes.js?v=1de85c623a';
+} from './palettes.js?v=cf070637d3';
 
 export function setupDemoSplit() {
   document.querySelectorAll('.sr-demo').forEach(function (demo) {

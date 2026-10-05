@@ -25,21 +25,21 @@ import {
   ROLES,
   themeById,
   themeDisplayName,
-} from './communs.js?v=9f5191d160';
-import { syncPrefsBadge } from './navigation.js?v=bed0b21921';
-import { contrastRatio, measureContrast } from './controles.js?v=f6572eb5d8';
+} from './communs.js?v=0f95ffd5f1';
+import { syncPrefsBadge } from './navigation.js?v=1ee0f765a8';
+import { contrastRatio, measureContrast } from './controles.js?v=b9fcfeb8a4';
 import {
   paletteForTheme,
   paletteOf,
   readGenericPalettes,
-} from './palettes.js?v=1de85c623a';
+} from './palettes.js?v=cf070637d3';
 import { labelTableCells } from './tableaux.js?v=ab72120a8e';
-import { APPS, syncAppGrid } from './vitrine.js?v=0ce4105834';
+import { APPS, syncAppGrid } from './vitrine.js?v=32fd06c619';
 import {
   renderCompare,
   renderPairCompare,
-} from './comparaison.js?v=836d88c6e5';
-import { renderDemoCurrent, renderDemoStage } from './galerie.js?v=6fe79b8a24';
+} from './comparaison.js?v=a3ca09a590';
+import { renderDemoCurrent, renderDemoStage } from './galerie.js?v=2095bea587';
 
 /**
  * Habille la page : couleurs, puis tout ce qui en dépend (textes du thème,

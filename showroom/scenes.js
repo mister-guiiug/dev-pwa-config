@@ -18,7 +18,7 @@ import {
   write,
 } from './etat.js?v=542f37cc5d';
 import { applyLang, LANGS, t } from './langue.js?v=d92afbcf3f';
-import { applyDensity, themeById } from './communs.js?v=9f5191d160';
+import { applyDensity, themeById } from './communs.js?v=0f95ffd5f1';
 import { copyText } from './presse-papier.js?v=8913ceeeb8';
 import {
   applyScheme,
@@ -27,8 +27,8 @@ import {
   setInspect,
   setSectionFocus,
   syncSchemeInputs,
-} from './habillage.js?v=39c29a9e63';
-import { renderGenerated } from './rendu.js?v=82aa0a4420';
+} from './habillage.js?v=fa63e171e2';
+import { renderGenerated } from './rendu.js?v=0736a30e7d';
 
 etat.activeSceneId = '';
 

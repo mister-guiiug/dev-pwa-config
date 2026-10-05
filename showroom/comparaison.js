@@ -15,16 +15,16 @@ import {
   write,
 } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { ROLES, themeById, themeDisplayName } from './communs.js?v=9f5191d160';
-import { scrollBehavior } from './navigation.js?v=bed0b21921';
+import { ROLES, themeById, themeDisplayName } from './communs.js?v=0f95ffd5f1';
+import { scrollBehavior } from './navigation.js?v=1ee0f765a8';
 import { attachCopy } from './presse-papier.js?v=8913ceeeb8';
-import { swatchDot } from './controles.js?v=f6572eb5d8';
+import { swatchDot } from './controles.js?v=b9fcfeb8a4';
 import { catalogueItems } from './fiches.js?v=7a128b2142';
 import {
   paintPalette,
   paletteForTheme,
   readGenericPalettes,
-} from './palettes.js?v=1de85c623a';
+} from './palettes.js?v=cf070637d3';
 
 export function renderCompare() {
   var host = document.getElementById('compare');

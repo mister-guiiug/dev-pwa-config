@@ -6,9 +6,9 @@
 
 import { etat } from './etat.js?v=542f37cc5d';
 import { t } from './langue.js?v=d92afbcf3f';
-import { syncHeaderOffset } from './navigation.js?v=bed0b21921';
-import { measure, renderViewportTwin } from './mesures.js?v=4e4329c849';
-import { measureTargets } from './controles.js?v=f6572eb5d8';
+import { syncHeaderOffset } from './navigation.js?v=1ee0f765a8';
+import { measure, renderViewportTwin } from './mesures.js?v=773565962c';
+import { measureTargets } from './controles.js?v=b9fcfeb8a4';
 import {
   BADGE_TONES,
   BADGE_VARIANTS,
@@ -39,25 +39,25 @@ import {
   renderAppSort,
   renderAppViewToggle,
   renderMetricsDate,
-} from './vitrine.js?v=0ce4105834';
-import { renderPlayground } from './bac-a-sable.js?v=af82689c34';
-import { renderForcedColors } from './contraste-force.js?v=7e08df9ad3';
-import { setupPairCompare } from './comparaison.js?v=836d88c6e5';
+} from './vitrine.js?v=32fd06c619';
+import { renderPlayground } from './bac-a-sable.js?v=7c50e94346';
+import { renderForcedColors } from './contraste-force.js?v=3b736cf205';
+import { setupPairCompare } from './comparaison.js?v=a3ca09a590';
 import {
   renderDemoCurrent,
   renderDemoStage,
   setupContrastCampaign,
   setupDemoSplit,
-} from './galerie.js?v=6fe79b8a24';
+} from './galerie.js?v=2095bea587';
 import {
   applyTheme,
   fillThemeSelect,
   renderRecent,
   renderThemeDependents,
   renderThemeGrid,
-} from './habillage.js?v=39c29a9e63';
-import { renderChecklist } from './checklist.js?v=f355de422d';
-import { renderFamilyApps } from './famille.js?v=a526879827';
+} from './habillage.js?v=fa63e171e2';
+import { renderChecklist } from './checklist.js?v=b999ff683c';
+import { renderFamilyApps } from './famille.js?v=ee51f606b4';
 
 // Les matrices doivent exister AVANT la première mesure : les contrôles
 // a11y s'appuient sur les éléments réellement présents dans le document.

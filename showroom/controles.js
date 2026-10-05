@@ -6,7 +6,7 @@
  */
 
 import { t } from './langue.js?v=d92afbcf3f';
-import { scrollBehavior } from './navigation.js?v=bed0b21921';
+import { scrollBehavior } from './navigation.js?v=1ee0f765a8';
 import { attachCopy } from './presse-papier.js?v=8913ceeeb8';
 import { BADGE_TONES, BUTTON_VARIANTS } from './primitives.js?v=65b65fa9c3';
 

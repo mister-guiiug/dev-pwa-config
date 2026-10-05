@@ -9,8 +9,6 @@ import { isCommandHotkey, isSlashHotkey } from './command.js?v=822f1c9e81';
 import { etat, root } from './etat.js?v=542f37cc5d';
 import { browserLang, t } from './langue.js?v=d92afbcf3f';
 
-/** La barre change de hauteur (réglages ouverts, rail). Les ancres doivent
- *  dégager ce qu'elle couvre vraiment, pas une constante. */
 /**
  * `smooth`, sauf si la personne a demandé moins de mouvement. La règle CSS
  * `scroll-behavior: auto` de `prefers-reduced-motion` ne couvre PAS un
@@ -31,6 +29,84 @@ export function scrollBehavior() {
 export function syncHeaderOffset() {
   var bar = document.querySelector('.sr-topbar');
   if (bar) root.style.setProperty('--sr-header', bar.offsetHeight + 'px');
+}
+
+// Ce qui, pendant une arrivée, dit que la personne a repris la main. Seuls
+// comptent les gestes qui COMMENCENT après le départ : la recherche choisit
+// sur `mousedown`, et le `click` du même appui arrive ensuite.
+var GESTES = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
+
+/**
+ * Garde une destination sous l'en-tête le temps que la page se mette en
+ * place autour d'elle.
+ *
+ * Hors de l'écran, une section n'a qu'une taille estimée
+ * (`content-visibility`, 1 600 px) : un saut d'ancre calcule sa destination
+ * avec ces estimations, puis les sections qui entrent dans l'écran prennent
+ * leur vraie taille et poussent la cible. Sur téléphone, où une section
+ * dépasse souvent 6 000 px, le sommaire laissait la vue à des milliers de
+ * pixels de sa destination ; et l'en-tête, qui se replie en défilant,
+ * changeait sous elle la marge à dégager (relevé le 06/10/2026). On
+ * réaligne donc d'image en image, jusqu'à trois images immobiles, sans
+ * jamais reprendre la main après un geste de l'utilisateur, ni au-delà de
+ * trois secondes.
+ *
+ * @param {Element} cible
+ */
+export function stabiliser(cible) {
+  var fini = false;
+  var immobiles = 0;
+  var arreter = function () {
+    fini = true;
+    GESTES.forEach(function (type) {
+      window.removeEventListener(type, arreter, true);
+    });
+  };
+  var pas = function () {
+    if (fini) return;
+    syncHeaderOffset();
+    var marge = parseFloat(getComputedStyle(root).scrollPaddingTop) || 0;
+    var avant = window.scrollY;
+    if (Math.abs(cible.getBoundingClientRect().top - marge) > 1) {
+      cible.scrollIntoView({ block: 'start', behavior: 'auto' });
+    }
+    // Rien n'a bougé : alignée, ou en bas de page, où elle ne peut monter.
+    immobiles = window.scrollY === avant ? immobiles + 1 : 0;
+    if (immobiles >= 3) arreter();
+    else window.requestAnimationFrame(pas);
+  };
+  GESTES.forEach(function (type) {
+    window.addEventListener(type, arreter, { capture: true, passive: true });
+  });
+  window.setTimeout(arreter, 3000);
+  window.requestAnimationFrame(pas);
+}
+
+/**
+ * Les ancres natives (sommaire, liens de la page, adresse partagée avec un
+ * `#`) sautent sans script : on stabilise seulement leur arrivée.
+ */
+export function setupArrivees() {
+  document.addEventListener('click', function (event) {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    var lien =
+      event.target instanceof Element && event.target.closest('a[href^="#"]');
+    if (!lien) return;
+    var id = decodeURIComponent(lien.getAttribute('href').slice(1));
+    var cible = id && document.getElementById(id);
+    // Le saut natif suit ce clic : on prend la suite.
+    if (cible) {
+      window.setTimeout(function () {
+        stabiliser(cible);
+      }, 0);
+    }
+  });
+  var id = decodeURIComponent(location.hash.slice(1));
+  var cible = id && document.getElementById(id);
+  if (cible) stabiliser(cible);
 }
 
 /**
@@ -56,22 +132,38 @@ export function focusDestination(target) {
   target.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
   // Défilement lissé + `content-visibility` : la destination est calculée
   // au départ avec la taille estimée des sections, qui prennent leur vraie
-  // taille au passage. On réaligne à l'arrivée, une fois, et jamais plus
-  // tard que trois secondes (sans quoi un défilement de l'utilisateur, bien
-  // après, ramènerait la vue ici).
+  // taille au passage. On stabilise à l'arrivée, et jamais plus tard que
+  // trois secondes (sans quoi un défilement de l'utilisateur, bien après,
+  // ramènerait la vue ici).
+  //
+  // Et jamais après un geste de l'utilisateur : un appui, une molette ou une
+  // touche pendant le trajet interrompt le défilement, et la fin de CE
+  // défilement-là ramenait la vue ici, contre son geste (relevé le
+  // 06/10/2026 : Ctrl+K vers les hooks, puis un lien vers la vitrine
+  // avant l'arrivée, et la page revenait aux hooks).
   if (scrollBehavior() === 'smooth' && 'onscrollend' in window) {
     var fini = false;
-    var realigner = function () {
-      if (fini) return;
+    var arreter = function () {
       fini = true;
-      window.removeEventListener('scrollend', realigner);
-      target.scrollIntoView({ block: 'start', behavior: 'auto' });
+      window.removeEventListener('scrollend', arriver);
+      GESTES.forEach(function (type) {
+        window.removeEventListener(type, arreter, true);
+      });
     };
-    window.addEventListener('scrollend', realigner);
-    window.setTimeout(function () {
-      fini = true;
-      window.removeEventListener('scrollend', realigner);
-    }, 3000);
+    var arriver = function () {
+      if (fini) return;
+      arreter();
+      stabiliser(target);
+    };
+    window.addEventListener('scrollend', arriver);
+    // En capture sur `window` : le geste qui a déclenché ce trajet (l'appui
+    // sur un résultat, Entrée dans la recherche) a déjà passé cette étape.
+    GESTES.forEach(function (type) {
+      window.addEventListener(type, arreter, { capture: true, passive: true });
+    });
+    window.setTimeout(arreter, 3000);
+  } else {
+    stabiliser(target);
   }
   var cible = /^H[1-6]$/.test(target.tagName)
     ? target

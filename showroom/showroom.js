@@ -27,21 +27,22 @@ import {
   write,
 } from './etat.js?v=542f37cc5d';
 import { applyLang, browserLang } from './langue.js?v=d92afbcf3f';
-import { applyDensity, themeById } from './communs.js?v=9f5191d160';
+import { applyDensity, themeById } from './communs.js?v=0f95ffd5f1';
 import {
   revelerAncre,
+  setupArrivees,
   setupCompactHeader,
   setupPrefs,
   setupSommaire,
   syncPrefsBadge,
   watchRail,
-} from './navigation.js?v=bed0b21921';
-import { measure } from './mesures.js?v=4e4329c849';
+} from './navigation.js?v=1ee0f765a8';
+import { measure } from './mesures.js?v=773565962c';
 import { setupConfirmDemo, setupSheet } from './modales.js?v=45ebf95b5b';
 import { renderCatalogueIndex } from './fiches.js?v=7a128b2142';
 import { scheduleScrollLabels } from './tableaux.js?v=ab72120a8e';
-import { renderAppGrid, renderViewChip } from './vitrine.js?v=0ce4105834';
-import { applyFocusFromUrl } from './comparaison.js?v=836d88c6e5';
+import { renderAppGrid, renderViewChip } from './vitrine.js?v=32fd06c619';
+import { applyFocusFromUrl } from './comparaison.js?v=a3ca09a590';
 import {
   applyScheme,
   applyTheme,
@@ -54,14 +55,14 @@ import {
   setupSectionFocus,
   setupThemePicker,
   syncSchemeInputs,
-} from './habillage.js?v=39c29a9e63';
-import { setupPresent, setupTour } from './visite.js?v=50a5797252';
-import { setupExportCss, setupExportReview } from './exports.js?v=ca8809fcbd';
+} from './habillage.js?v=fa63e171e2';
+import { setupPresent, setupTour } from './visite.js?v=40c5633821';
+import { setupExportCss, setupExportReview } from './exports.js?v=9bf90ecd4e';
 import { setupRecipes } from './recettes.js?v=5aff704b0a';
-import { setupChecklist } from './checklist.js?v=f355de422d';
-import { renderGenerated, retranslate } from './rendu.js?v=82aa0a4420';
-import { setupScenes } from './scenes.js?v=c0f2d7f137';
-import { setupCommand } from './recherche.js?v=0a4106a3d7';
+import { setupChecklist } from './checklist.js?v=b999ff683c';
+import { renderGenerated, retranslate } from './rendu.js?v=0736a30e7d';
+import { setupScenes } from './scenes.js?v=6890973361';
+import { setupCommand } from './recherche.js?v=e7e4ce8c2a';
 
 var select = document.getElementById('theme-app');
 etat.currentScheme = paramOr('scheme', read(SCHEME_KEY, 'system'));
@@ -226,4 +227,7 @@ syncUrl();
 setupCommand();
 window.addEventListener('hashchange', revelerAncre);
 revelerAncre();
+// Après le rendu : une adresse avec un `#` vise une section dont la taille
+// n'est connue qu'une fois engendrée.
+setupArrivees();
 applyFocusFromUrl();
