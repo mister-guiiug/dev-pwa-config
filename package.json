@@ -297,6 +297,10 @@
       "types": "./cn.d.ts",
       "default": "./cn.js"
     },
+    "./command": {
+      "types": "./command.d.ts",
+      "default": "./command.js"
+    },
     "./react": {
       "types": "./react/index.d.ts",
       "default": "./react/index.js"
@@ -829,6 +833,8 @@
     "id.d.ts",
     "cn.js",
     "cn.d.ts",
+    "command.js",
+    "command.d.ts",
     "backup.js",
     "backup.d.ts",
     "versioned-store.js",
