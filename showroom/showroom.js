@@ -49,14 +49,6 @@ import {
   // lit aussi le script en ligne. L'avancer dans index.html le réaffiche.
   var NEWS_ID = document.documentElement.getAttribute('data-news-id') || '';
   var SCENES_KEY = 'dwc_showroom_scenes';
-  var NEWS_ITEMS = [
-    'scènes enregistrées',
-    'mode présentation',
-    'recettes',
-    'checklist d’adoption',
-    'export CSS du thème',
-    'viewport jumeau',
-  ];
 
   /* ── Langue ────────────────────────────────────────────────────────── *
    * Le français n'est pas dans un dictionnaire : c'est le HTML lui-même,
@@ -4503,36 +4495,17 @@ import {
     });
   }
 
-  /** Texte du ruban, rejoué à chaque changement de langue. */
-  function renderNews() {
-    // Le texte français est déjà dans la page : on n'écrit que ce qui change,
-    // pour ne rien repeindre ni déplacer au chargement.
-    var ecrire = function (el, texte) {
-      var actuel = el.textContent.replace(/\s+/g, ' ').trim();
-      if (actuel !== texte) el.textContent = texte;
-    };
-    var title = document.getElementById('sr-news-title');
-    var items = document.getElementById('sr-news-items');
-    if (title) ecrire(title, t('ui.news.title', 'Nouveautés showroom'));
-    if (items) {
-      ecrire(
-        items,
-        t('ui.news.since', 'depuis votre dernière visite :') +
-          ' ' +
-          t('ui.news.list', NEWS_ITEMS.join(', '))
-      );
-    }
-  }
-
   /**
    * Le ruban est affiché (ou non) par le script en ligne, avant le premier
-   * rendu : ici, on ne fait que le traduire et lui donner son bouton.
+   * rendu, et traduit comme tout bloc `data-i18n` : ici, on ne lui donne
+   * que son bouton. Son texte vivait en double (une liste dans ce fichier,
+   * une copie dans la page, deux clés anglaises) : il n'est plus que dans la
+   * page et dans i18n.js.
    */
   function setupNews() {
     var banner = document.getElementById('sr-news');
     if (!banner || root.getAttribute('data-news') !== 'on') return;
     var dismiss = document.getElementById('sr-news-dismiss');
-    renderNews();
     if (dismiss) {
       dismiss.addEventListener('click', function () {
         write(NEWS_KEY, NEWS_ID);
@@ -5739,8 +5712,6 @@ import {
       if (!input.checked) return;
       write(LANG_KEY, input.value);
       applyLang(input.value);
-      // Le ruban est écrit une fois au chargement : il restait en français.
-      renderNews();
       retranslate();
       syncPrefsBadge();
       syncUrl();

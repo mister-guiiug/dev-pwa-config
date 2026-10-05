@@ -65,9 +65,8 @@ globalThis.SHOWROOM_I18N = {
     'ui.compare.hiddenSame': '{n} identical roles hidden',
     'ui.news.ok': 'OK',
     'ui.news.title': 'Showroom updates',
-    'ui.news.since': 'since your last visit:',
-    'ui.news.list':
-      'saved scenes, presentation mode, recipes, adoption checklist, theme CSS export, twin viewport',
+    'ui.news.body':
+      'since your last visit: saved scenes, presentation mode, recipes, adoption checklist, theme CSS export, twin viewport',
     'ui.recent.legend': 'Recent dressings',
     'ui.export.cta': 'Export for review',
     'ui.export.done': 'Image ready',

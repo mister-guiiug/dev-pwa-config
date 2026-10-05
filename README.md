@@ -430,7 +430,12 @@ réellement :
   outillage de test ;
 - une bascule **français / anglais**. Le français est le HTML lui-même, capturé
   au chargement ; `showroom/i18n.js` ne porte que les autres langues, et
-  `test/showroom-i18n.test.mjs` refuse qu'un bloc reste sans traduction.
+  `test/showroom-i18n.test.mjs` refuse qu'un bloc reste sans traduction, ou
+  qu'une traduction survive à un changement du français : chaque clé anglaise
+  garde l'empreinte du français qu'elle traduit
+  (`test/showroom-i18n-empreintes.json`). `npm run sync` signale une empreinte
+  périmée sans la réécrire ; une fois l'anglais relu,
+  `npm run sync -- --traductions-revues` l'acquitte.
 
 ```bash
 npm run showroom

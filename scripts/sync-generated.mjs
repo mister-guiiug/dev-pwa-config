@@ -59,6 +59,11 @@ import {
   avecVersionsHtml,
   empreintesDuDossier,
 } from './showroom-cache.mjs';
+import {
+  FICHIER_EMPREINTES,
+  empreintesAJour,
+  lireEmpreintes,
+} from './showroom-i18n.mjs';
 import { estPointDEntree } from './entree.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -509,6 +514,28 @@ async function main() {
     index
   );
   writeFileSync(index, avecEmpreintesCsp(formate));
+
+  // Empreintes du français que traduit chaque clé anglaise : une clé nouvelle
+  // reçoit la sienne, une clé disparue la perd, et une empreinte devenue
+  // fausse est SIGNALÉE, jamais remise à jour en silence. Après relecture de
+  // l'anglais : `npm run sync -- --traductions-revues`.
+  await import('../showroom/i18n.js');
+  const { empreintes, aRelire } = empreintesAJour(
+    globalThis.SHOWROOM_I18N,
+    lireEmpreintes(),
+    { revues: process.argv.includes('--traductions-revues') }
+  );
+  const fichierEmpreintes = fileURLToPath(FICHIER_EMPREINTES);
+  writeFileSync(
+    fichierEmpreintes,
+    await format(JSON.stringify(empreintes, null, 2) + '\n', fichierEmpreintes)
+  );
+  if (aRelire.length) {
+    console.warn(
+      `Traductions à relire, leur français a changé : ${aRelire.join(', ')}.\n` +
+        "Une fois l'anglais revu : npm run sync -- --traductions-revues"
+    );
+  }
 
   console.log(
     `showroom/components.css, showroom/command.js, ` +
