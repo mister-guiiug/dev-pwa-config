@@ -190,36 +190,49 @@ function instructionDImport(t, k) {
  * et `import('x')` avec une chaîne littérale.
  *
  * @param {string} source
- * @returns {{ specificateur: string, start: number, end: number }[]}
+ * @returns {{ specificateur: string, start: number, end: number,
+ *   dynamique: boolean, profondeur: number }[]}
  *   `start`/`end` bornent le texte du spécificateur, guillemets exclus.
+ *   `profondeur` compte les accolades ouvertes autour de l'import : un
+ *   `import()` à 0 s'exécute au chargement du module, au-delà le plus souvent
+ *   dans le corps d'une fonction, donc à son appel seulement.
  */
 export function importsDe(source) {
   const t = jetons(source);
   const out = [];
-  const garder = j =>
-    out.push({ specificateur: j.value, start: j.start, end: j.end });
+  let profondeur = 0;
+  const garder = (j, dynamique) =>
+    out.push({
+      specificateur: j.value,
+      start: j.start,
+      end: j.end,
+      dynamique,
+      profondeur,
+    });
   for (let k = 0; k < t.length; k += 1) {
     const j = t[k];
+    if (j.type === 'punct' && j.value === '{') profondeur += 1;
+    if (j.type === 'punct' && j.value === '}') profondeur -= 1;
     if (j.type !== 'ident') continue;
     const suivant = t[k + 1];
     const precedent = t[k - 1];
     // `objet.import('x')` est un appel de méthode, pas un import.
     if (precedent?.type === 'punct' && precedent.value === '.') continue;
     if (j.value === 'import') {
-      if (suivant?.type === 'str') garder(suivant);
+      if (suivant?.type === 'str') garder(suivant, false);
       else if (
         suivant?.type === 'punct' &&
         suivant.value === '(' &&
         t[k + 2]?.type === 'str'
       ) {
-        garder(t[k + 2]);
+        garder(t[k + 2], true);
       }
     } else if (
       j.value === 'from' &&
       suivant?.type === 'str' &&
       instructionDImport(t, k)
     ) {
-      garder(suivant);
+      garder(suivant, false);
     }
   }
   return out;

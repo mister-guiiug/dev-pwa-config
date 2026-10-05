@@ -127,6 +127,143 @@ test('index.html ne charge que des fichiers de showroom/', () => {
   assert.deepEqual(ecarts, []);
 });
 
+/* ── Le job de publication n'installe rien ─────────────────────────────── */
+
+// Il rejoue des tests et des scripts avec Node seul, sans `npm ci`. Un test
+// qu'il rejoue peut importer, par un `import()`, un module qui charge jsdom :
+// tout passe en local et dans la CI, qui installent les dépendances, et c'est
+// la publication qui échoue. C'est arrivé le 06/10/2026, relevé avant fusion :
+// deux tests de la liste chargeaient jsdom et React à travers
+// `scripts/sync-generated.mjs`. Cette garde suit les imports de proche en
+// proche, depuis chaque fichier que le job lance.
+//
+// Sa limite, assumée : dans un module importé, un `import()` écrit dans le
+// corps d'une fonction n'est pas suivi, puisqu'il ne s'exécute qu'à l'appel
+// (Prettier, les démos et les empreintes, dans le `main()` de `npm run
+// sync`). Dans un fichier lancé, il l'est toujours : un test l'appelle.
+
+const RACINE = new URL('../', import.meta.url);
+const relatif = url => url.href.slice(RACINE.href.length);
+const lireSiPresent = url =>
+  existsSync(fileURLToPath(url)) ? readFileSync(url, 'utf8') : null;
+
+/** Les commandes `run:` d'un workflow, lignes repliées rejointes. */
+export function commandesDuWorkflow(yaml) {
+  const lignes = yaml.split('\n');
+  const commandes = [];
+  for (let i = 0; i < lignes.length; i += 1) {
+    const m = /^(\s*)(?:-\s+)?run:\s*(.*)$/.exec(lignes[i]);
+    if (!m) continue;
+    let texte = /^[>|]/.test(m[2]) ? '' : m[2];
+    while (i + 1 < lignes.length && lignes[i + 1].search(/\S/) > m[1].length) {
+      i += 1;
+      texte += ` ${lignes[i].trim()}`;
+    }
+    commandes.push(texte.trim());
+  }
+  return commandes;
+}
+
+/**
+ * Les imports d'un paquet (ni `node:`, ni relatifs) atteints depuis `depart`,
+ * de proche en proche, imports dynamiques compris (voir la limite ci-dessus).
+ *
+ * @param {URL} depart un fichier que le job lance
+ * @param {(url: URL) => string | null} lire le source, ou `null` s'il manque
+ */
+export function dependancesExternes(depart, lire = lireSiPresent) {
+  const vus = new Set();
+  const ecarts = new Set();
+  const visiter = (fichier, lance) => {
+    if (vus.has(fichier.href)) return;
+    vus.add(fichier.href);
+    const source = lire(fichier);
+    if (source === null) return;
+    for (const { specificateur, dynamique, profondeur } of importsDe(source)) {
+      if (dynamique && profondeur > 0 && !lance) continue;
+      if (specificateur.startsWith('node:')) continue;
+      if (/^\.{1,2}\//.test(specificateur)) {
+        const cible = new URL(specificateur, fichier);
+        cible.search = '';
+        cible.hash = '';
+        if (/\.m?js$/.test(cible.pathname)) visiter(cible, false);
+        continue;
+      }
+      ecarts.add(`${relatif(fichier)} importe « ${specificateur} »`);
+    }
+  };
+  visiter(depart, true);
+  return [...ecarts];
+}
+
+/** La garde, sur des sources en mémoire. */
+const gardeSur = (depart, sources) =>
+  dependancesExternes(
+    new URL(depart, RACINE),
+    url => sources[url.href.slice(RACINE.href.length)] ?? null
+  );
+
+test('la garde suit un import dynamique écrit dans le test lui-même', () => {
+  assert.deepEqual(
+    gardeSur('test/t.test.mjs', {
+      'test/t.test.mjs': [
+        "test('x', async () => {",
+        "  const m = await import('../scripts/s.mjs');",
+        '});',
+      ].join('\n'),
+      'scripts/s.mjs': [
+        "import { readFileSync } from 'node:fs';",
+        "import { JSDOM } from 'jsdom';",
+      ].join('\n'),
+    }),
+    ['scripts/s.mjs importe « jsdom »']
+  );
+});
+
+test('la garde suit les imports statiques et ceux du chargement, pas les paresseux', () => {
+  assert.deepEqual(
+    gardeSur('test/t.test.mjs', {
+      'test/t.test.mjs': "import { f } from '../scripts/s.mjs';",
+      'scripts/s.mjs': [
+        "import { g } from './t.mjs';",
+        'async function format(texte) {',
+        "  const prettier = await import('prettier');",
+        '}',
+        'export async function main() {',
+        "  const { JSDOM } = await import('jsdom');",
+        '}',
+      ].join('\n'),
+      'scripts/t.mjs': "const r = await import('react');",
+    }),
+    ['scripts/t.mjs importe « react »']
+  );
+});
+
+test('le job de publication ne lance que du code sans dépendance', () => {
+  const yaml = readFileSync(
+    new URL('.github/workflows/showroom-pages.yml', RACINE),
+    'utf8'
+  );
+  const lances = [
+    ...new Set(
+      commandesDuWorkflow(yaml).flatMap(commande =>
+        [
+          ...commande.matchAll(/(?:^|\s)((?:test|scripts)\/[\w.-]+\.m?js)/g),
+        ].map(m => m[1])
+      )
+    ),
+  ];
+  assert.ok(
+    lances.length >= 10,
+    `${lances.length} fichiers lancés relevés : motif du workflow changé ?`
+  );
+  assert.deepEqual(
+    lances.flatMap(nom => dependancesExternes(new URL(nom, RACINE))),
+    [],
+    'le job de publication n’installe aucune dépendance : sortir ce test de sa liste, ou ce module de sa chaîne d’imports'
+  );
+});
+
 test('showroom/command.js est la copie exacte du module du paquet', () => {
   assert.equal(
     lire('command.js'),

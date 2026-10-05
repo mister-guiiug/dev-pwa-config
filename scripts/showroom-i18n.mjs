@@ -10,8 +10,10 @@
  * - `npm run sync` ajoute l'empreinte d'une clé NOUVELLE (sa traduction vient
  *   d'être écrite), retire celle d'une clé disparue, et ne touche JAMAIS à une
  *   empreinte devenue fausse : il la signale.
- * - `test/showroom-i18n.test.mjs` échoue tant qu'une empreinte ne correspond
- *   plus au français.
+ * - `test/showroom-i18n-empreintes.test.mjs` échoue tant qu'une empreinte ne
+ *   correspond plus au français. Il est séparé de `showroom-i18n.test.mjs`,
+ *   que le job de publication rejoue sans rien installer : importer ce
+ *   module (jsdom) l'aurait fait échouer à chaque publication.
  * - Une fois l'anglais relu : `npm run sync -- --traductions-revues`.
  *
  * Le français vient de trois endroits : le HTML (`data-i18n`, contenu ;

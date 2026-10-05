@@ -62,13 +62,11 @@ import {
   avecVersionsHtml,
   empreintesDuDossier,
 } from './showroom-cache.mjs';
-import {
-  FICHIER_EMPREINTES,
-  empreintesAJour,
-  lireEmpreintes,
-} from './showroom-i18n.mjs';
-import { avecDemos, DEMOS } from './showroom-demos.mjs';
 import { estPointDEntree } from './entree.mjs';
+// Les démos (react, react-dom, jsdom) et les empreintes de traduction (jsdom)
+// sont importées DANS `main()`, comme Prettier : des tests importent ce module
+// pour ses fonctions, et le job de publication du showroom les rejoue sans
+// rien installer.
 
 const root = new URL('../', import.meta.url);
 const at = path => fileURLToPath(new URL(path, root));
@@ -513,6 +511,7 @@ async function main() {
   // Les démos d'abord, rendues par `react/` entre leurs marqueurs ; puis les
   // `?v=`. L'empreinte CSP se calcule APRÈS Prettier : il reformate aussi le
   // script en ligne, et le navigateur hache le texte tel qu'il est servi.
+  const { avecDemos, DEMOS } = await import('./showroom-demos.mjs');
   const index = at('showroom/index.html');
   const formate = await format(
     avecVersionsHtml(avecDemos(readFileSync(index, 'utf8')), versionDe),
@@ -524,6 +523,8 @@ async function main() {
   // reçoit la sienne, une clé disparue la perd, et une empreinte devenue
   // fausse est SIGNALÉE, jamais remise à jour en silence. Après relecture de
   // l'anglais : `npm run sync -- --traductions-revues`.
+  const { FICHIER_EMPREINTES, empreintesAJour, lireEmpreintes } =
+    await import('./showroom-i18n.mjs');
   await import('../showroom/i18n.js');
   const { empreintes, aRelire } = empreintesAJour(
     globalThis.SHOWROOM_I18N,
