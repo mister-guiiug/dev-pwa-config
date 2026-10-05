@@ -46,7 +46,9 @@ test('chaque démo engendrée est le rendu actuel de son composant', () => {
 
 test('les deux dérives relevées le 05/10 sont corrigées par construction', () => {
   assert.match(bloc('BottomNav'), /aria-current="page"/);
-  assert.match(bloc('AppHeader'), /<h1[^>]*data-dwc="app-header-title"/);
+  // Un vrai titre, plus un `<p>` mis en forme : h4 par la prop `as`, la
+  // page ayant déjà son h1 (voir scripts/showroom-demos.mjs).
+  assert.match(bloc('AppHeader'), /<h4[^>]*data-dwc="app-header-title"/);
 });
 
 // Démos ENCORE écrites à la main, chacune avec sa raison. La liste ne peut

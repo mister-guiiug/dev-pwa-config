@@ -265,6 +265,11 @@ export const DEMOS = {
         AppHeader,
         {
           title: 'Trésorerie',
+          // Le titre est le h1 de l'app ; `as` sert « quand la page en a
+          // déjà un », dit le composant, et c'est le cas ici. Rendu en h1,
+          // il faisait un second titre de premier niveau au milieu de la
+          // page, et un saut h1 → h3 que relevait axe.
+          as: 'h4',
           backHref: '#composants',
           // Pas collant dans une page qui fait défiler quarante écrans : c'est
           // une prop du composant, pas un style ajouté à la main.
