@@ -19,9 +19,12 @@
  *                             dossier, le seul publié : elle ne peut pas
  *                             importer `../apps-catalog.js` → le catalogue lui
  *                             est projeté sur `globalThis` ;
- *   showroom/index.html       l'empreinte CSP de son script en ligne et les
- *                             `?v=<empreinte>` de cache de ses ressources.
- *                             (Le bloc JSON-LD des apps en a été retiré le
+ *   showroom/index.html       l'empreinte CSP de son script en ligne, les
+ *                             `?v=<empreinte>` de cache de ses ressources, et
+ *                             les démos rendues par les vrais composants de
+ *                             `react/` (`scripts/showroom-demos.mjs`) : écrites
+ *                             à la main, deux avaient dérivé sans que rien le
+ *                             dise. (Le bloc JSON-LD des apps en a été retiré le
  *                             05/10/2026 : la page est hors index depuis le
  *                             29/09, aucun moteur ne le lisait) ;
  *   showroom/themes.js        même raison que `apps.js` : les seize palettes
@@ -64,6 +67,7 @@ import {
   empreintesAJour,
   lireEmpreintes,
 } from './showroom-i18n.mjs';
+import { avecDemos, DEMOS } from './showroom-demos.mjs';
 import { estPointDEntree } from './entree.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -506,11 +510,12 @@ async function main() {
     accesDisque((chemin, contenu) => format(contenu, chemin))
   );
 
-  // L'empreinte CSP se calcule APRÈS Prettier : il reformate aussi le script
-  // en ligne, et le navigateur hache le texte tel qu'il est servi.
+  // Les démos d'abord, rendues par `react/` entre leurs marqueurs ; puis les
+  // `?v=`. L'empreinte CSP se calcule APRÈS Prettier : il reformate aussi le
+  // script en ligne, et le navigateur hache le texte tel qu'il est servi.
   const index = at('showroom/index.html');
   const formate = await format(
-    avecVersionsHtml(readFileSync(index, 'utf8'), versionDe),
+    avecVersionsHtml(avecDemos(readFileSync(index, 'utf8')), versionDe),
     index
   );
   writeFileSync(index, avecEmpreintesCsp(formate));
@@ -537,11 +542,12 @@ async function main() {
     );
   }
 
+  const nombreDemos = Object.keys(DEMOS).length;
   console.log(
     `showroom/components.css, showroom/command.js, ` +
       `components/*.css (${morceaux.length}), ` +
-      `showroom/apps.js, showroom/themes.js, les empreintes de la page et ` +
-      `le tableau du ` +
+      `showroom/apps.js, showroom/themes.js, les démos (${nombreDemos}) et ` +
+      `les empreintes de la page, le tableau du ` +
       `README régénérés (${FAMILY_APPS.length} apps, ` +
       `${FAMILY_THEMES.length} thèmes, ${CONFIG_SUBPATHS.length} sous-chemins).`
   );

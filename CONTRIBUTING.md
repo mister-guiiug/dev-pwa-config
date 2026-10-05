@@ -37,7 +37,9 @@ répètent une information qui vit ailleurs : les copies du showroom
 le tableau du README. Tous sont
 produits par `npm run sync`, et un test compare chacun à sa source. Une copie
 non engendrée finit toujours par diverger — c'est déjà arrivé, sur la
-persistance de `miss-uwh`.
+persistance de `miss-uwh`. Les démos du showroom aussi répètent quelque chose :
+le DOM des composants. Celles qui le peuvent sont rendues par `react/` au même
+`npm run sync`.
 
 **4. Un correctif s'accompagne du test qui échouait.** Écrire d'abord le test
 qui reproduit le défaut, le voir rouge, puis corriger. La perte d'écriture de la

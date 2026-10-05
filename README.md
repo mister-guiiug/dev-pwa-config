@@ -483,10 +483,16 @@ palettes), la copie `showroom/components.css` et les morceaux publiés
 `components/*.css` (tous deux tirés de `components.css`), la copie
 `showroom/command.js` (la recherche Ctrl+K du paquet), les tableaux « Projets
 consommateurs » et « Adoption réelle »
-ci-dessus, et deux choses que la page ne peut pas tenir à la main :
-l'empreinte CSP de son script en ligne, et un `?v=<empreinte du contenu>` sur
+ci-dessus, et trois choses que la page ne peut pas tenir à la main :
+l'empreinte CSP de son script en ligne, un `?v=<empreinte du contenu>` sur
 chaque fichier qu'elle charge (Pages sert dix minutes en cache, sous un nom
-fixe : sans empreinte, une page neuve pouvait tourner avec un script ancien).
+fixe : sans empreinte, une page neuve pouvait tourner avec un script ancien),
+et ses démos de composants, rendues par les vrais composants de `react/`
+(`scripts/showroom-demos.mjs`). Écrites à la main, la barre d'onglets avait
+perdu son `aria-current` et l'en-tête son `h1`, sans que rien le dise ;
+`test/showroom-demos.test.mjs` refuse désormais une démo périmée, et tient la
+liste de celles encore écrites à la main, chacune avec sa raison : elle ne peut
+que raccourcir.
 La CI relance `npm run sync` et refuse le moindre écart ;
 `test/apps-catalog.test.mjs` compare en outre le catalogue à ses dérivés, et
 vérifie que les comptes annoncés par la section « Stack » (« 9 apps » Supabase,
