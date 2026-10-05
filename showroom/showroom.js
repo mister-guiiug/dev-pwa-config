@@ -19,8 +19,12 @@ import {
   filterCommandItems,
   isCommandHotkey,
   isSlashHotkey,
-} from './command.js';
-import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
+} from './command.js?v=822f1c9e81';
+import {
+  encreSur,
+  paletteChrome,
+  VARIABLES_CHROME,
+} from './contraste.js?v=286644156b';
 
 (function () {
   'use strict';
@@ -41,8 +45,9 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
   var NEWS_KEY = 'dwc_showroom_news';
   var TOUR_KEY = 'dwc_showroom_tour_done';
   var PKG_LABEL = '@mister-guiiug/dev-pwa-config';
-  /** Identifiant du ruban « nouveautés » — avancer pour réafficher. */
-  var NEWS_ID = 'wave4-2026-10-04';
+  // Identifiant du ruban « nouveautés » : porté par `<html data-news-id>`, que
+  // lit aussi le script en ligne. L'avancer dans index.html le réaffiche.
+  var NEWS_ID = document.documentElement.getAttribute('data-news-id') || '';
   var SCENES_KEY = 'dwc_showroom_scenes';
   var NEWS_ITEMS = [
     'scènes enregistrées',
@@ -93,7 +98,10 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
       if (value === undefined && lang !== 'fr') {
         value = originalHtml[el.dataset.i18n];
       }
-      if (value !== undefined) el.innerHTML = value;
+      // Seulement ce qui change. Au chargement en français, chacun des quelque
+      // 340 blocs était remplacé par lui-même : des nœuds recréés et remis en
+      // page pour rien, juste après le premier affichage.
+      if (value !== undefined && el.innerHTML !== value) el.innerHTML = value;
     });
     document.querySelectorAll('[data-i18n-aria]').forEach(function (el) {
       var key = el.dataset.i18nAria;
@@ -235,6 +243,25 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
     // de se replier ou de grandir déplacerait sinon la destination.
     syncHeaderOffset();
     target.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+    // Défilement lissé + `content-visibility` : la destination est calculée
+    // au départ avec la taille estimée des sections, qui prennent leur vraie
+    // taille au passage. On réaligne à l'arrivée, une fois, et jamais plus
+    // tard que trois secondes (sans quoi un défilement de l'utilisateur, bien
+    // après, ramènerait la vue ici).
+    if (scrollBehavior() === 'smooth' && 'onscrollend' in window) {
+      var fini = false;
+      var realigner = function () {
+        if (fini) return;
+        fini = true;
+        window.removeEventListener('scrollend', realigner);
+        target.scrollIntoView({ block: 'start', behavior: 'auto' });
+      };
+      window.addEventListener('scrollend', realigner);
+      window.setTimeout(function () {
+        fini = true;
+        window.removeEventListener('scrollend', realigner);
+      }, 3000);
+    }
     var cible = /^H[1-6]$/.test(target.tagName)
       ? target
       : target.querySelector('h1, h2, h3, h4, h5, h6') || target;
@@ -363,10 +390,18 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
             link.removeAttribute('aria-current');
           });
           current.setAttribute('aria-current', 'location');
-          if (typeof current.scrollIntoView === 'function') {
-            current.scrollIntoView({
-              inline: 'center',
-              block: 'nearest',
+          // Le rail défile lui-même, horizontalement. Un `scrollIntoView` sur
+          // le lien faisait défiler la PAGE : le rail est dans l'en-tête
+          // collant, donc dans la zone de `scroll-padding-top`, et le
+          // navigateur l'en « sortait » en remontant la page de 51 px après
+          // chaque saut d'ancre.
+          var rail = current.closest('.sr-rail');
+          if (rail && rail.scrollWidth > rail.clientWidth) {
+            rail.scrollTo({
+              left:
+                current.offsetLeft -
+                rail.offsetLeft -
+                (rail.clientWidth - current.offsetWidth) / 2,
               behavior: scrollBehavior(),
             });
           }
@@ -746,7 +781,18 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
 
   /* ── Application d'un thème ────────────────────────────────────────── */
 
+  /**
+   * Habille la page : couleurs, puis tout ce qui en dépend (textes du thème,
+   * nuancier, mesures). Le changement de LANGUE n'appelle que la seconde
+   * moitié : réécrire la palette sur `<html>` restylait les 7 900 nœuds de la
+   * page pour des couleurs qui n'avaient pas changé.
+   */
   function applyTheme(theme) {
+    applyThemeColors(theme);
+    renderThemeDependents(theme);
+  }
+
+  function applyThemeColors(theme) {
     var scheme = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
     var style = root.style;
 
@@ -773,7 +819,10 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
       style.setProperty('--ds-font-display', theme.fontDisplay);
     if (theme.radius) style.setProperty('--ds-radius', theme.radius);
     applyChromeInks(theme, scheme);
+  }
 
+  /** Ce qui suit le thème appliqué : textes, nuancier, mesures, aperçus. */
+  function renderThemeDependents(theme) {
     var hints = [];
     if (theme.schemes.indexOf('light') === -1) {
       hints.push(
@@ -3131,7 +3180,7 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
     renderViewChip();
     // La vue tableau et le panneau d'adoption apparaissent ici : leurs
     // boîtes défilantes doivent recevoir focus et nom à ce moment-là.
-    labelScrollableTables();
+    scheduleScrollLabels();
   }
 
   function renderAppCount(node, n) {
@@ -3284,6 +3333,20 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
         boite.setAttribute('role', 'region');
         boite.setAttribute('aria-label', nom);
       });
+  }
+
+  // Une seule mesure par image, quel que soit le nombre de rendus qui la
+  // demandent : chaque appel direct forçait une mise en page complète de la
+  // page (trois par changement de langue).
+  var scrollLabelsPending = false;
+  function scheduleScrollLabels() {
+    if (scrollLabelsPending) return;
+    scrollLabelsPending = true;
+    var plusTard = window.requestAnimationFrame || window.setTimeout;
+    plusTard(function () {
+      scrollLabelsPending = false;
+      labelScrollableTables();
+    });
   }
 
   /* ── Bac à sable ───────────────────────────────────────────────────── *
@@ -3666,7 +3729,7 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
     note.hidden = !text;
     // L'extrait change de longueur et de composant : son nom et son état
     // défilant aussi.
-    labelScrollableTables();
+    scheduleScrollLabels();
   }
 
   function renderPlayground() {
@@ -4321,23 +4384,17 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
    * matche QUE l'élément racine. On bascule donc l'attribut, on lit, on
    * restaure — le tout dans la même tâche, donc sans repeint intermédiaire.
    */
+  /**
+   * Les palettes du thème générique, telles que les définit showroom.css.
+   *
+   * Elles étaient relues à chaque rendu en basculant deux fois `data-theme`
+   * sur `<html>` : deux restylages complets de la page, quatre fois par
+   * changement de langue. Et sous un thème d'app, la lecture voyait les
+   * surcharges en ligne de ce thème au lieu des valeurs génériques. Le cliché
+   * ôte ces surcharges, et il est pris une seule fois.
+   */
   function readGenericPalettes() {
-    var previous = root.getAttribute('data-theme');
-    var out = {};
-
-    ['light', 'dark'].forEach(function (scheme) {
-      root.setAttribute('data-theme', scheme);
-      var styles = getComputedStyle(root);
-      var palette = {};
-      ROLES.forEach(function (role) {
-        palette[role[0]] = styles.getPropertyValue(role[1]).trim();
-      });
-      out[scheme] = palette;
-    });
-
-    if (previous) root.setAttribute('data-theme', previous);
-    else root.removeAttribute('data-theme');
-    return out;
+    return snapshotGenericPalettes();
   }
 
   /* ── Galerie de démo par application ───────────────────────────────── */
@@ -4421,31 +4478,38 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
 
   /** Texte du ruban, rejoué à chaque changement de langue. */
   function renderNews() {
+    // Le texte français est déjà dans la page : on n'écrit que ce qui change,
+    // pour ne rien repeindre ni déplacer au chargement.
+    var ecrire = function (el, texte) {
+      var actuel = el.textContent.replace(/\s+/g, ' ').trim();
+      if (actuel !== texte) el.textContent = texte;
+    };
     var title = document.getElementById('sr-news-title');
     var items = document.getElementById('sr-news-items');
-    if (title) title.textContent = t('ui.news.title', 'Nouveautés showroom');
+    if (title) ecrire(title, t('ui.news.title', 'Nouveautés showroom'));
     if (items) {
-      items.textContent =
+      ecrire(
+        items,
         t('ui.news.since', 'depuis votre dernière visite :') +
-        ' ' +
-        t('ui.news.list', NEWS_ITEMS.join(', '));
+          ' ' +
+          t('ui.news.list', NEWS_ITEMS.join(', '))
+      );
     }
   }
 
+  /**
+   * Le ruban est affiché (ou non) par le script en ligne, avant le premier
+   * rendu : ici, on ne fait que le traduire et lui donner son bouton.
+   */
   function setupNews() {
     var banner = document.getElementById('sr-news');
-    if (!banner) return;
-    if (read(NEWS_KEY, '') === NEWS_ID) {
-      banner.hidden = true;
-      return;
-    }
+    if (!banner || root.getAttribute('data-news') !== 'on') return;
     var dismiss = document.getElementById('sr-news-dismiss');
     renderNews();
-    banner.hidden = false;
     if (dismiss) {
       dismiss.addEventListener('click', function () {
         write(NEWS_KEY, NEWS_ID);
-        banner.hidden = true;
+        root.removeAttribute('data-news');
       });
     }
   }
@@ -5480,6 +5544,61 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
   // Tout ce qui est ENGENDRÉ doit être reconstruit à chaque changement de
   // langue : les matrices, la grille famille, la palette et les mesures
   // portent des libellés traduits.
+  /**
+   * Changement de langue : réécrire le TEXTE engendré, sans réappliquer la
+   * palette ni remesurer les jetons de la page. Rejouer tout
+   * `renderGenerated` coûtait 240 à 500 ms par bascule (mesuré le
+   * 05/10/2026), surtout en styles recalculés et en mises en page forcées.
+   * Les mesures (`measure`) ne dépendent pas de la langue : seul le tableau
+   * des cibles, qui porte des verdicts traduits, est réécrit.
+   */
+  function retranslate() {
+    buildMatrix(
+      document.getElementById('button-matrix'),
+      t('ui.matrix.variant', 'Variante'),
+      BUTTON_VARIANTS,
+      BUTTON_COLUMNS,
+      makeButton,
+      'ui.button.'
+    );
+    buildMatrix(
+      document.getElementById('badge-matrix'),
+      t('ui.matrix.tone', 'Ton'),
+      BADGE_TONES,
+      BADGE_VARIANTS,
+      makeBadge,
+      'ui.tone.'
+    );
+    renderFamilyApps();
+    renderComponentDocs();
+    renderDecisions();
+    renderHooks();
+    renderCatalogueFilters();
+    renderCatalogueIndex();
+    renderAppFacets();
+    renderAppConfigFilter();
+    renderAppViewToggle();
+    renderAppSort();
+    renderAppShare();
+    renderMetricsDate();
+    renderAdoption();
+    renderAppGrid();
+    renderPlayground();
+    renderForcedColors();
+    fillThemeSelect(document.getElementById('theme-app'));
+    fillThemeSelect(document.getElementById('theme-app-dock'));
+    renderThemeGrid();
+    renderThemeDependents(currentTheme);
+    renderRecent();
+    setupContrastCampaign();
+    renderChecklist();
+    renderViewportTwin();
+    measureTargets();
+    labelTableCells();
+    attachTokenCopies();
+    scheduleScrollLabels();
+  }
+
   function renderGenerated() {
     buildMatrix(
       document.getElementById('button-matrix'),
@@ -5529,7 +5648,7 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
     // Après le rendu : les tableaux engendrés doivent être étiquetés eux aussi.
     labelTableCells();
     attachTokenCopies();
-    labelScrollableTables();
+    scheduleScrollLabels();
     // L'en-tête vient d'être rempli (thème courant, habillages récents) : sa
     // hauteur a pu changer depuis la première mesure.
     syncHeaderOffset();
@@ -5595,7 +5714,7 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
       applyLang(input.value);
       // Le ruban est écrit une fois au chargement : il restait en français.
       renderNews();
-      renderGenerated();
+      retranslate();
       syncPrefsBadge();
       syncUrl();
     });
@@ -6365,24 +6484,12 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
     'toggle',
     function (event) {
       if (event.target instanceof HTMLDetailsElement && event.target.open) {
-        labelScrollableTables();
+        scheduleScrollLabels();
       }
     },
     true
   );
-  var labelPending = false;
-  window.addEventListener(
-    'resize',
-    function () {
-      if (labelPending) return;
-      labelPending = true;
-      window.requestAnimationFrame(function () {
-        labelPending = false;
-        labelScrollableTables();
-      });
-    },
-    { passive: true }
-  );
+  window.addEventListener('resize', scheduleScrollLabels, { passive: true });
   setupPrefs();
   setupThemePicker();
   setupDock();
@@ -6406,6 +6513,18 @@ import { encreSur, paletteChrome, VARIABLES_CHROME } from './contraste.js';
   syncPrefsBadge();
   syncUrl();
   setupCommand();
+
+  // Une ancre peut viser l'intérieur d'un `<details>` replié : les liens
+  // `#doc-…` des arbres de décision menaient à une fiche invisible, et le
+  // navigateur ne déplie rien. On déplie le chemin, puis on y amène la vue
+  // et le focus. Les autres ancres gardent le comportement natif.
+  function revelerAncre() {
+    var id = decodeURIComponent(location.hash.slice(1));
+    var cible = id && document.getElementById(id);
+    if (cible && cible.closest('details:not([open])')) focusDestination(cible);
+  }
+  window.addEventListener('hashchange', revelerAncre);
+  revelerAncre();
   applyFocusFromUrl();
 
   /* Recherche unifiée. Ctrl+K (⌘K) et « / » y amènent le curseur.

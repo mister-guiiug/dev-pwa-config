@@ -489,7 +489,9 @@ html[data-inspect='on'] .sr-inspect-hot {
   font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
-.sr-news[hidden] {
+/* Affiché seulement si le script en ligne l'a décidé, AVANT le premier rendu
+   (voir index.html) : le ruban ne pousse plus la page après coup. */
+html:not([data-news='on']) .sr-news {
   display: none;
 }
 
@@ -1797,6 +1799,22 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border-radius: var(--ds-radius);
   box-shadow: var(--ds-shadow);
   padding: var(--spacing-fluid-lg);
+}
+
+/*
+ * Rendu à la demande. La page fait 41 800 px de haut sur ordinateur, 88
+ * écrans sur téléphone, et 7 900 nœuds : hors de l'écran, une section n'est
+ * ni mise en page ni peinte. `auto` retient la dernière taille rendue, pour
+ * que la barre de défilement et les ancres ne sautent pas.
+ *
+ * Sauf « Composants » : `content-visibility` contient la peinture, donc
+ * piège les descendants `position: fixed` dans la section. Le voile de la
+ * démo ConfirmDialog et la barre d'onglets y vivent. Sauf aussi le héros,
+ * toujours à l'écran au chargement.
+ */
+.sr-section:not(#composants, .sr-hero) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1600px;
 }
 
 .sr-section > h2 {
@@ -3611,6 +3629,14 @@ span[data-dwc='family-app-icon'] {
  * en style INLINE sur `<html>`, ce qu'aucun sélecteur ne peut surclasser.
  * ────────────────────────────────────────────────────────────────────────── */
 @media print {
+  /* Tout s'imprime : rien n'est sauté hors écran sur le papier. Même
+     sélecteur que la règle d'écran : à spécificité égale, celle-ci vient
+     après et l'emporte (un simple `.sr-section` perdait contre l'identifiant
+     du `:not()`). */
+  .sr-section:not(#composants, .sr-hero) {
+    content-visibility: visible;
+  }
+
   @page {
     margin: 1.5cm;
   }

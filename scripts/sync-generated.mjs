@@ -52,6 +52,11 @@ import { FAMILY_THEMES } from '../themes.js';
 import { SUBPATHS } from './adopt-plan.mjs';
 import { EQUIVALENTS } from './adoption-equivalents.mjs';
 import { avecEmpreintesCsp } from './showroom-csp.mjs';
+import {
+  accesDisque,
+  avecVersionsHtml,
+  empreintesDuDossier,
+} from './showroom-cache.mjs';
 import { estPointDEntree } from './entree.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -543,11 +548,21 @@ async function main() {
   );
   writeFileSync(readme, await format(updated, readme));
 
+  // Empreintes de cache : les modules d'abord (leurs imports en portent),
+  // puis la page qui les charge. Toutes les copies ci-dessus sont déjà
+  // écrites : ce qui est empreint, c'est ce qui sera servi.
+  const versionDe = await empreintesDuDossier(
+    accesDisque((chemin, contenu) => format(contenu, chemin))
+  );
+
   // L'empreinte CSP se calcule APRÈS Prettier : il reformate aussi le script
   // en ligne, et le navigateur hache le texte tel qu'il est servi.
   const index = at('showroom/index.html');
   const formate = await format(
-    withJsonLd(readFileSync(index, 'utf8'), appsJsonLd()),
+    avecVersionsHtml(
+      withJsonLd(readFileSync(index, 'utf8'), appsJsonLd()),
+      versionDe
+    ),
     index
   );
   writeFileSync(index, avecEmpreintesCsp(formate));

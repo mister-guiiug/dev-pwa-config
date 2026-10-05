@@ -164,14 +164,20 @@ test('chaque fiche du catalogue a son emplacement dans la page', () => {
 
 test('le catalogue est chargé avant le script qui le lit', () => {
   const cat = INDEX_HTML.indexOf('catalogue.js');
-  const main = INDEX_HTML.indexOf('showroom.js"');
+  // `?v=<empreinte>` suit le nom depuis le lot E (cohérence du cache).
+  const main = INDEX_HTML.search(/src="showroom\.js(\?v=[0-9a-f]+)?"/);
   assert.ok(cat !== -1, 'catalogue.js non référencé par index.html');
   assert.ok(cat < main, 'showroom.js lirait un catalogue non défini');
 
-  // Tout ce qui est engendré doit l'être à CHAQUE changement de langue.
-  const generated = SHOWROOM_JS.slice(
+  // Tout ce qui est engendré doit l'être au chargement (renderGenerated) ET
+  // à CHAQUE changement de langue, qui ne rejoue que le texte (retranslate).
+  const chargement = SHOWROOM_JS.slice(
     SHOWROOM_JS.indexOf('function renderGenerated'),
     SHOWROOM_JS.indexOf('setupSheet();')
+  );
+  const langue = SHOWROOM_JS.slice(
+    SHOWROOM_JS.indexOf('function retranslate'),
+    SHOWROOM_JS.indexOf('function renderGenerated')
   );
   for (const fn of [
     'renderComponentDocs()',
@@ -180,9 +186,10 @@ test('le catalogue est chargé avant le script qui le lit', () => {
     'renderCatalogueFilters()',
     'renderCatalogueIndex()',
   ]) {
+    assert.ok(chargement.includes(fn), `${fn} hors de renderGenerated`);
     assert.ok(
-      generated.includes(fn),
-      `${fn} hors de renderGenerated : le bloc resterait en français`
+      langue.includes(fn),
+      `${fn} hors de retranslate : le bloc resterait en français`
     );
   }
 });

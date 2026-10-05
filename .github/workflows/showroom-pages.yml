@@ -26,6 +26,8 @@ on:
       - 'themes.js'
       - 'scripts/showroom-imports.mjs'
       - 'scripts/showroom-csp.mjs'
+      - 'scripts/showroom-cache.mjs'
+      - 'test/showroom-cache.test.mjs'
       - '.github/workflows/showroom-pages.yml'
   workflow_dispatch:
 
@@ -70,7 +72,7 @@ jobs:
           node --test test/showroom.test.mjs test/components-css.test.mjs
           test/showroom-i18n.test.mjs test/apps-catalog.test.mjs
           test/showroom-resolution.test.mjs test/showroom-csp.test.mjs
-          test/showroom-chrome.test.mjs
+          test/showroom-chrome.test.mjs test/showroom-cache.test.mjs
 
       # LE RELEVÉ A LIEU ICI, ET N'EST PAS COMMITÉ. Il l'était, par un push
       # direct sur `main` depuis `showroom-metrics.yml` — que le ruleset
@@ -90,9 +92,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/fetch-metrics.mjs
 
+      # Le relevé vient de changer `metrics.js` : son empreinte de cache dans
+      # `index.html` doit suivre, sinon un navigateur garderait dix minutes
+      # l'ancien relevé sous la même URL. Sans dépendance (Node seul).
+      - name: Empreintes de cache du relevé
+        run: node scripts/showroom-cache.mjs --write
+
       # Le fichier part dans l'artefact : il doit rester lisible par la page.
       - name: Vérifier le fichier produit
-        run: node --test test/showroom-metrics.test.mjs
+        run: >-
+          node --test test/showroom-metrics.test.mjs
+          test/showroom-cache.test.mjs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

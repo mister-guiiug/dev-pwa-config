@@ -1,5 +1,13 @@
 <!doctype html>
-<html lang="fr" data-app="generic" data-theme="light">
+<!-- `data-news-id` : la vague de nouveautés en cours, seule source pour le
+     script en ligne (qui décide l'affichage du ruban) et pour showroom.js.
+     L'avancer réaffiche le ruban aux visiteurs déjà venus. -->
+<html
+  lang="fr"
+  data-app="generic"
+  data-theme="light"
+  data-news-id="wave4-2026-10-04"
+>
   <head>
     <meta charset="utf-8" />
     <meta
@@ -16,7 +24,7 @@
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src https://mister-guiiug.github.io/dev-pwa-config/ 'sha256-MOpJY7iy2zr8km34eN38FArgZGrzw37j820nBx4S4V8='; style-src https://mister-guiiug.github.io/dev-pwa-config/ 'unsafe-inline'; style-src-elem https://mister-guiiug.github.io/dev-pwa-config/; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+      content="default-src 'none'; script-src https://mister-guiiug.github.io/dev-pwa-config/ 'sha256-MUMpxjoqntc6TQyueODux2/x3US967QsFrpYuqM5NJ8='; style-src https://mister-guiiug.github.io/dev-pwa-config/ 'unsafe-inline'; style-src-elem https://mister-guiiug.github.io/dev-pwa-config/; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
     />
     <!--
       HORS INDEX (29/09/2026) : le showroom est une vitrine TECHNIQUE du socle,
@@ -37,12 +45,12 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f2937'/%3E%3Cpath d='M9 22h14M9 16h14M9 10h14' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="preset.css" />
+    <link rel="stylesheet" href="preset.css?v=d7328ade6f" />
     <!-- Habillage OPT-IN des composants, servi TEL QUEL depuis le paquet :
          la démo ci-dessous est donc littéralement ce que reçoit une app qui
          importe `@mister-guiiug/dev-pwa-config/components.css`. -->
-    <link rel="stylesheet" href="components.css" />
-    <link rel="stylesheet" href="showroom.css" />
+    <link rel="stylesheet" href="components.css?v=7a1a905fa4" />
+    <link rel="stylesheet" href="showroom.css?v=6aa65b04a9" />
     <script>
       // Anti-FOUC : restaure thème d'app + schéma avant le premier rendu.
       // Même contrat que `useTheme` du paquet (light | dark | system →
@@ -77,6 +85,26 @@
               window.matchMedia('(prefers-color-scheme: dark)').matches);
           root.setAttribute('data-theme', dark ? 'dark' : 'light');
           root.style.colorScheme = dark ? 'dark' : 'light';
+          // Ruban « Nouveautés » : décidé ICI, avant le premier rendu. Posé
+          // après coup par le module, il poussait toute la page vers le bas
+          // (Lighthouse, CLS 0,73 sur ordinateur). Et seulement pour qui est
+          // déjà venu : « depuis votre dernière visite » était faux à la
+          // première.
+          var newsId = root.getAttribute('data-news-id');
+          var dejaVenu = false;
+          for (var i = 0; i < localStorage.length; i++) {
+            if (String(localStorage.key(i)).indexOf('dwc_showroom_') === 0) {
+              dejaVenu = true;
+              break;
+            }
+          }
+          if (
+            newsId &&
+            dejaVenu &&
+            localStorage.getItem('dwc_showroom_news') !== newsId
+          ) {
+            root.setAttribute('data-news', 'on');
+          }
         } catch (e) {
           /* stockage indisponible : on garde les valeurs du markup */
         }
@@ -438,13 +466,18 @@
     <div
       class="sr-news"
       id="sr-news"
-      hidden
       role="region"
       aria-labelledby="sr-news-title"
     >
       <p class="sr-news-body">
-        <strong id="sr-news-title"></strong>
-        <span id="sr-news-items"></span>
+        <!-- Texte déjà là au premier rendu : le module n'y touche que pour
+             une autre langue, sans rien déplacer en français. -->
+        <strong id="sr-news-title">Nouveautés showroom</strong>
+        <span id="sr-news-items"
+          >depuis votre dernière visite : scènes enregistrées, mode
+          présentation, recettes, checklist d’adoption, export CSS du thème,
+          viewport jumeau</span
+        >
       </p>
       <button
         type="button"
@@ -4018,21 +4051,26 @@
       </form>
     </dialog>
 
-    <script src="themes.js"></script>
+    <!-- Données en `defer` : rien ne bloque l'analyse ni le premier rendu
+         (Lighthouse les comptait parmi les ressources bloquantes). Un script
+         `defer` s'exécute dans l'ordre du document, et le module
+         `showroom.js`, différé lui aussi, vient après : il les trouve
+         chargés. -->
+    <script defer src="themes.js?v=fd847136fb"></script>
     <!-- Miroir engendré de `apps-catalog.js` (`npm run sync`). -->
-    <script src="apps.js"></script>
+    <script defer src="apps.js?v=66b63efcaa"></script>
     <!-- Relevé nocturne de l'état des dépôts (workflow `showroom-metrics.yml`).
          Vide tant qu'il n'est pas passé : la vitrine n'affiche alors aucune
          mesure, et c'est un état valide, pas une panne. -->
-    <script src="metrics.js"></script>
+    <script defer src="metrics.js?v=f8c3ba94a6"></script>
     <!-- Relevé local d'adoption (symbole → N apps). Engendré par
          `node scripts/measure-adoption.mjs --write` ; vide tant qu'il n'a pas
          tourné — la carte d'adoption reste alors masquée. -->
-    <script src="adoption.js"></script>
-    <script src="snippets.js"></script>
-    <script src="catalogue.js"></script>
-    <script src="screenshots.js"></script>
-    <script src="i18n.js"></script>
-    <script type="module" src="showroom.js"></script>
+    <script defer src="adoption.js?v=587e9b4718"></script>
+    <script defer src="snippets.js?v=803dc31ffb"></script>
+    <script defer src="catalogue.js?v=ad9c72d9fd"></script>
+    <script defer src="screenshots.js?v=e85c95abb4"></script>
+    <script defer src="i18n.js?v=6417cc3e0e"></script>
+    <script type="module" src="showroom.js?v=e472849d08"></script>
   </body>
 </html>

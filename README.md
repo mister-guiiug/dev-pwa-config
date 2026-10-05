@@ -477,8 +477,12 @@ palettes), la copie `showroom/components.css` et les morceaux publiés
 `components/*.css` (tous deux tirés de `components.css`), la copie
 `showroom/command.js` (la recherche Ctrl+K du paquet), le bloc JSON-LD du
 `<head>` de la page (vingt `SoftwareApplication`, lisibles sans exécuter le
-script) et les tableaux « Projets consommateurs » et « Adoption réelle »
-ci-dessus. La CI relance `npm run sync` et refuse le moindre écart ;
+script), les tableaux « Projets consommateurs » et « Adoption réelle »
+ci-dessus, et deux choses que la page ne peut pas tenir à la main :
+l'empreinte CSP de son script en ligne, et un `?v=<empreinte du contenu>` sur
+chaque fichier qu'elle charge (Pages sert dix minutes en cache, sous un nom
+fixe : sans empreinte, une page neuve pouvait tourner avec un script ancien).
+La CI relance `npm run sync` et refuse le moindre écart ;
 `test/apps-catalog.test.mjs` compare en outre le catalogue à ses dérivés, et
 vérifie que les comptes annoncés par la section « Stack » (« 9 apps » Supabase,
 « 3 apps » Firebase, « 5 apps » local-first) collent toujours au champ `backend`.

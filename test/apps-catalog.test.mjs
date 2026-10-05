@@ -333,8 +333,9 @@ test('le showroom charge le miroir avant showroom.js', () => {
     new URL('../showroom/index.html', import.meta.url),
     'utf8'
   );
-  const miroir = html.indexOf('apps.js"');
-  const main = html.indexOf('showroom.js"');
+  // `?v=<empreinte>` suit chaque nom depuis la cohérence du cache.
+  const miroir = html.search(/src="apps\.js(\?v=[0-9a-f]+)?"/);
+  const main = html.search(/src="showroom\.js(\?v=[0-9a-f]+)?"/);
   assert.ok(miroir !== -1, 'showroom/apps.js n’est pas chargé');
   assert.ok(miroir < main, 'showroom.js lirait un catalogue non défini');
 });

@@ -334,7 +334,7 @@ test('index.html charge les ressources du showroom', () => {
   }
   // `env(safe-area-inset-*)` ne renvoie autre chose que 0 qu'avec viewport-fit.
   assert.match(INDEX_HTML, /viewport-fit=cover/);
-  assert.match(INDEX_HTML, /<html lang="fr"/);
+  assert.match(INDEX_HTML, /<html\s+lang="fr"/);
 });
 
 /* ── Bac à sable ─────────────────────────────────────────────────────────── */
@@ -449,16 +449,23 @@ test('la page rend le bac à sable et l’audit de contraste forcé', () => {
   ])
     assert.match(INDEX_HTML, new RegExp(`id="${id}"`), `#${id} absent du HTML`);
 
-  // Tout ce qui est engendré doit l'être à CHAQUE changement de langue.
-  const generated = SHOWROOM_JS.slice(
+  // Tout ce qui est engendré doit l'être au chargement ET à CHAQUE
+  // changement de langue (retranslate, qui ne rejoue que le texte).
+  const chargement = SHOWROOM_JS.slice(
     SHOWROOM_JS.indexOf('function renderGenerated'),
     SHOWROOM_JS.indexOf('setupSheet();')
   );
-  for (const fn of ['renderPlayground()', 'renderForcedColors()'])
+  const langue = SHOWROOM_JS.slice(
+    SHOWROOM_JS.indexOf('function retranslate'),
+    SHOWROOM_JS.indexOf('function renderGenerated')
+  );
+  for (const fn of ['renderPlayground()', 'renderForcedColors()']) {
+    assert.ok(chargement.includes(fn), `${fn} hors de renderGenerated`);
     assert.ok(
-      generated.includes(fn),
-      `${fn} hors de renderGenerated : le bloc resterait en français`
+      langue.includes(fn),
+      `${fn} hors de retranslate : le bloc resterait en français`
     );
+  }
 });
 
 test('la feuille d’impression rend le showroom lisible sur papier', () => {
@@ -482,6 +489,25 @@ test('la feuille d’impression rend le showroom lisible sur papier', () => {
   // CSS ne défait — d'où l'ouverture temporaire au moment d'imprimer.
   assert.match(SHOWROOM_JS, /addEventListener\('beforeprint'/);
   assert.match(SHOWROOM_JS, /addEventListener\('afterprint'/);
+});
+
+test('le rendu à la demande épargne les voiles fixes et se coupe à l’impression', () => {
+  // `content-visibility` contient la peinture : un descendant `position:
+  // fixed` (voile de ConfirmDialog, barre d'onglets) serait piégé dans sa
+  // section. Et le papier doit tout recevoir.
+  const ecran = /([^{}]+)\{\s*content-visibility:\s*auto;/.exec(SHOWROOM_CSS);
+  assert.ok(ecran, 'plus de content-visibility: auto sur les sections ?');
+  const selecteur = ecran[1].trim();
+  assert.match(selecteur, /#composants/, 'Composants doit être épargnée');
+  const print = SHOWROOM_CSS.slice(SHOWROOM_CSS.indexOf('@media print'));
+  assert.ok(
+    print
+      .replace(/\s+/g, ' ')
+      .includes(
+        `${selecteur.replace(/\s+/g, ' ')} { content-visibility: visible;`
+      ),
+    'l’impression doit rendre visible chaque section, avec le même sélecteur'
+  );
 });
 
 test('le showroom est hors index : une vitrine technique, pas une page de destination', () => {

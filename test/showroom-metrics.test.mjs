@@ -64,8 +64,9 @@ test('le showroom charge le relevé avant showroom.js', () => {
     new URL('../showroom/index.html', import.meta.url),
     'utf8'
   );
-  const metrics = html.indexOf('metrics.js"');
-  const main = html.indexOf('showroom.js"');
+  // `?v=<empreinte>` suit chaque nom depuis la cohérence du cache.
+  const metrics = html.search(/src="metrics\.js(\?v=[0-9a-f]+)?"/);
+  const main = html.search(/src="showroom\.js(\?v=[0-9a-f]+)?"/);
   assert.ok(metrics !== -1, 'metrics.js n’est pas chargé par la page');
   assert.ok(metrics < main, 'showroom.js lirait un relevé non défini');
 });

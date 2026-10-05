@@ -114,7 +114,7 @@ test('le sélecteur de langue propose exactement les langues connues', () => {
 
 test('index.html charge i18n.js avant showroom.js', () => {
   const i18n = HTML.indexOf('i18n.js');
-  const main = HTML.indexOf('showroom.js"');
+  const main = HTML.search(/src="showroom\.js(\?v=[0-9a-f]+)?"/);
   assert.ok(i18n !== -1 && main !== -1);
   assert.ok(i18n < main, 'showroom.js lirait un dictionnaire non défini');
 });
