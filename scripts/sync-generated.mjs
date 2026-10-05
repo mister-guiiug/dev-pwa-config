@@ -51,6 +51,7 @@ import {
 import { FAMILY_THEMES } from '../themes.js';
 import { SUBPATHS } from './adopt-plan.mjs';
 import { EQUIVALENTS } from './adoption-equivalents.mjs';
+import { avecEmpreintesCsp } from './showroom-csp.mjs';
 import { estPointDEntree } from './entree.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -542,11 +543,14 @@ async function main() {
   );
   writeFileSync(readme, await format(updated, readme));
 
+  // L'empreinte CSP se calcule APRÈS Prettier : il reformate aussi le script
+  // en ligne, et le navigateur hache le texte tel qu'il est servi.
   const index = at('showroom/index.html');
-  writeFileSync(
-    index,
-    await format(withJsonLd(readFileSync(index, 'utf8'), appsJsonLd()), index)
+  const formate = await format(
+    withJsonLd(readFileSync(index, 'utf8'), appsJsonLd()),
+    index
   );
+  writeFileSync(index, avecEmpreintesCsp(formate));
 
   console.log(
     `showroom/components.css, showroom/command.js, ` +

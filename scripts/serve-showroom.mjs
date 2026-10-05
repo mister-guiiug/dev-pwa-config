@@ -19,6 +19,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { politiquePour } from './showroom-csp.mjs';
 
 const ROOT = fileURLToPath(new URL('../showroom/', import.meta.url));
 const PORT = Number(process.argv[2]) || 5220;
@@ -53,7 +54,15 @@ const server = createServer(async (req, res) => {
   }
 
   try {
-    const body = await readFile(target);
+    let body = await readFile(target);
+    // La CSP n'autorise que l'adresse publiée : servie d'ici, la page n'aurait
+    // plus un seul script. On la tourne vers cette adresse-ci, chemin compris,
+    // pour garder la même restriction au dossier qu'en production.
+    if (extname(target) === '.html') {
+      body = Buffer.from(
+        politiquePour(String(body), `http://127.0.0.1:${PORT}${PREFIXE}`)
+      );
+    }
     res.writeHead(200, {
       'content-type': TYPES[extname(target)] ?? 'application/octet-stream',
       // Page de doc éditée en continu : jamais de cache.

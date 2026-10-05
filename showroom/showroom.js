@@ -3,8 +3,10 @@
  *
  * Trois responsabilités :
  *   1. bascule de thème (app) + de schéma (clair/sombre/système), avec le même
- *      contrat que le hook `useTheme` du paquet : `light | dark | system`
- *      persisté sous `dwc_theme`, attribut `data-theme` posé sur <html> ;
+ *      contrat que le hook `useTheme` du paquet : `light | dark | system`,
+ *      attribut `data-theme` posé sur <html>. Le choix est rangé sous
+ *      `dwc_showroom_scheme`, pas sous `dwc_theme` : cette clé est celle de
+ *      toute la famille, sur la même origine ;
  *   2. mesure EN DIRECT des tokens fluides (clamp), des safe-areas et du
  *      breakpoint courant — rien n'est recopié à la main ;
  *   3. génération de la palette et de la démo `FamilyApps`.
@@ -20,7 +22,11 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
   var root = document.documentElement;
   var themes = globalThis.SHOWROOM_THEMES || [];
   var APP_KEY = 'dwc_showroom_app';
-  var SCHEME_KEY = 'dwc_theme';
+  // Clé PROPRE au showroom. `dwc_theme` est la clé famille de `useTheme` : les
+  // apps la lisent sur la même origine, et un essai du sombre ici changeait
+  // leur thème. Aucune reprise de la valeur famille : le showroom part de
+  // « système » tant qu'on n'y a rien choisi.
+  var SCHEME_KEY = 'dwc_showroom_scheme';
   var LANG_KEY = 'dwc_showroom_lang';
   var DENSITY_KEY = 'dwc_showroom_density';
   var PAIR_A_KEY = 'dwc_showroom_pair_a';
@@ -5186,6 +5192,18 @@ import { attachCommandCombobox, filterCommandItems } from './command.js';
   }
 
   setupSheet();
+
+  // Les formulaires des démos (LoginForm, MfaChallenge) ne doivent rien
+  // envoyer. Ils le disaient par `onsubmit="return false;"`, un gestionnaire
+  // en ligne que la CSP refuse : la page aurait alors tenté une soumission,
+  // refusée à son tour par `form-action 'none'`. Un seul écouteur délégué.
+  // Les `<form method="dialog">` de la page, eux, gardent leur fermeture.
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (form instanceof HTMLFormElement && form.closest('.sr-demo-stage')) {
+      event.preventDefault();
+    }
+  });
 
   // Langue : préférence stockée, sinon celle du navigateur, sinon français.
   // Même forme que le schéma : deux radios, le code langue en icône.

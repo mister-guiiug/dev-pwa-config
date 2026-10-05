@@ -1,8 +1,9 @@
 # Publication du showroom du design system sur GitHub Pages.
 #
 # Site 100 % statique : `showroom/` est publié TEL QUEL, sans build ni
-# dépendance. Les ressources y sont référencées en chemins relatifs, le site
-# fonctionne donc aussi bien à la racine que sous /dev-pwa-config/.
+# dépendance. Sa CSP (en <meta>) n'autorise les scripts et les feuilles que
+# sous l'adresse ci-dessous : servie ailleurs, la page n'a plus de script.
+# `npm run showroom` tourne la politique vers son adresse locale.
 #
 # → https://mister-guiiug.github.io/dev-pwa-config/
 name: Deploy showroom
@@ -20,7 +21,9 @@ on:
       - 'test/showroom-i18n.test.mjs'
       - 'test/apps-catalog.test.mjs'
       - 'test/showroom-resolution.test.mjs'
+      - 'test/showroom-csp.test.mjs'
       - 'scripts/showroom-imports.mjs'
+      - 'scripts/showroom-csp.mjs'
       - '.github/workflows/showroom-pages.yml'
   workflow_dispatch:
 
@@ -56,12 +59,13 @@ jobs:
       #
       # `showroom-resolution` vérifie que tout ce que la page charge est DANS
       # `showroom/`, le seul dossier téléversé : un import qui en sort marche
-      # depuis le dépôt et casse la page publiée.
+      # depuis le dépôt et casse la page publiée. `showroom-csp` vérifie la
+      # politique de sécurité et l'empreinte du script en ligne.
       - name: Parité preset / components / catalogue ↔ showroom
         run: >-
           node --test test/showroom.test.mjs test/components-css.test.mjs
           test/showroom-i18n.test.mjs test/apps-catalog.test.mjs
-          test/showroom-resolution.test.mjs
+          test/showroom-resolution.test.mjs test/showroom-csp.test.mjs
 
       # LE RELEVÉ A LIEU ICI, ET N'EST PAS COMMITÉ. Il l'était, par un push
       # direct sur `main` depuis `showroom-metrics.yml` — que le ruleset

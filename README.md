@@ -441,6 +441,17 @@ et sa copie de `command.js`), que Chromium et Firefox refusent en `file://`.
 Ouvert d'un double-clic, `index.html` n'affiche que son texte et ses styles,
 sans rien de ce que le script engendre (vitrine, catalogue, palettes).
 
+La page porte une **Content-Security-Policy** en `<meta>` (Pages n'accepte pas
+d'en-têtes) : scripts et feuilles seulement sous
+`https://mister-guiiug.github.io/dev-pwa-config/`, aucune requête réseau
+(`connect-src 'none'`), ni `<base>`, ni envoi de formulaire, ni plugin. Le
+showroom partage son origine avec toutes les apps : une injection de script ici
+lirait leur `localStorage`. L'empreinte du script en ligne est écrite par
+`npm run sync` et vérifiée par `test/showroom-csp.test.mjs` ; `npm run showroom`
+tourne la politique vers son adresse locale. Pour la même raison d'origine
+partagée, le choix clair / sombre est rangé sous `dwc_showroom_scheme`, et non
+sous `dwc_theme`, la clé que lisent les apps.
+
 Le preset n'expose **aucune couleur** : c'est la part variable, propriété de
 chaque app. Le thème « Générique » du showroom est donc volontairement
 monochrome ; les palettes des applications sont relevées dans `themes.js`
