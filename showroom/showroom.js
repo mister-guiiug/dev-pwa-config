@@ -1,6 +1,5 @@
 /*
- * Pilotage du showroom — script classique (pas de module) pour rester ouvrable
- * en `file://` sans serveur.
+ * Pilotage du showroom — module ESM (serveur local ou pages hébergées).
  *
  * Trois responsabilités :
  *   1. bascule de thème (app) + de schéma (clair/sombre/système), avec le même
@@ -10,6 +9,8 @@
  *      breakpoint courant — rien n'est recopié à la main ;
  *   3. génération de la palette et de la démo `FamilyApps`.
  */
+import { attachCommandCombobox, filterCommandItems } from '../command.js';
+
 (function () {
   'use strict';
 
@@ -5990,8 +5991,6 @@
     var input = document.getElementById('sr-cmd');
     var list = document.getElementById('sr-cmd-list');
     if (!input || !list) return;
-    var hits = [];
-    var active = -1;
 
     function kinds() {
       return {
@@ -6056,82 +6055,7 @@
       return out;
     }
 
-    function close() {
-      hits = [];
-      active = -1;
-      list.hidden = true;
-      list.textContent = '';
-      input.setAttribute('aria-expanded', 'false');
-      input.removeAttribute('aria-activedescendant');
-    }
-
-    function render() {
-      var labels = kinds();
-      list.textContent = '';
-      if (!hits.length) {
-        var empty = document.createElement('li');
-        empty.className = 'sr-cmd-empty';
-        empty.setAttribute('role', 'presentation');
-        empty.textContent = t('ui.cmd.empty', 'Aucun résultat');
-        list.appendChild(empty);
-        list.hidden = false;
-        input.setAttribute('aria-expanded', 'true');
-        input.removeAttribute('aria-activedescendant');
-        return;
-      }
-      hits.forEach(function (hit, i) {
-        var li = document.createElement('li');
-        li.id = 'sr-cmd-hit-' + i;
-        li.setAttribute('role', 'option');
-        li.setAttribute('aria-selected', String(i === active));
-        var kind = document.createElement('span');
-        kind.className = 'sr-cmd-kind';
-        kind.textContent = labels[hit.kind] || hit.kind;
-        var name = document.createElement('span');
-        name.textContent = hit.label;
-        li.appendChild(kind);
-        li.appendChild(name);
-        li.addEventListener('mousedown', function (e) {
-          e.preventDefault();
-          go(hit);
-        });
-        list.appendChild(li);
-      });
-      list.hidden = false;
-      input.setAttribute('aria-expanded', 'true');
-      if (active >= 0)
-        input.setAttribute('aria-activedescendant', 'sr-cmd-hit-' + active);
-      else input.removeAttribute('aria-activedescendant');
-    }
-
-    function search(q) {
-      var term = q.trim().toLowerCase();
-      if (!term) {
-        close();
-        return;
-      }
-      hits = index()
-        .filter(function (item) {
-          var hay = item.search || item.label.toLowerCase();
-          return hay.indexOf(term) !== -1;
-        })
-        .slice(0, 7);
-      hits.unshift({
-        kind: 'filter',
-        label: t('ui.cmd.filterApps', 'Apps contenant « {q} »').replace(
-          '{q}',
-          q.trim()
-        ),
-        filter: q.trim(),
-        href: '#apps',
-      });
-      active = 0;
-      render();
-    }
-
     function go(hit) {
-      close();
-      input.value = '';
       if (hit.copy) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(hit.copy).catch(function () {});
@@ -6165,49 +6089,42 @@
       }
     }
 
-    input.addEventListener('input', function () {
-      search(input.value);
-    });
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowDown' && hits.length) {
-        e.preventDefault();
-        active = Math.min(hits.length - 1, active + 1);
-        render();
-      } else if (e.key === 'ArrowUp' && hits.length) {
-        e.preventDefault();
-        active = Math.max(0, active - 1);
-        render();
-      } else if (e.key === 'Enter' && hits[active]) {
-        e.preventDefault();
-        go(hits[active]);
-      } else if (e.key === 'Escape') {
-        close();
-        input.blur();
-      }
-    });
-    input.addEventListener('blur', function () {
-      setTimeout(close, 120);
-    });
-    document.addEventListener('keydown', function (e) {
-      var mod = e.ctrlKey || e.metaKey;
-      if (mod && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        input.focus();
-        input.select();
-        return;
-      }
-      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
-      var tag = (e.target && e.target.tagName) || '';
-      if (
-        tag === 'INPUT' ||
-        tag === 'TEXTAREA' ||
-        tag === 'SELECT' ||
-        (e.target && e.target.isContentEditable)
-      )
-        return;
-      e.preventDefault();
-      input.focus();
-      input.select();
+    attachCommandCombobox({
+      input: input,
+      list: list,
+      idPrefix: 'sr-cmd-hit',
+      emptyLabel: t('ui.cmd.empty', 'Aucun résultat'),
+      emptyClass: 'sr-cmd-empty',
+      getItems: function (query) {
+        var term = query.trim();
+        var hits = filterCommandItems(index(), query, { limit: 7 });
+        hits.unshift({
+          kind: 'filter',
+          label: t('ui.cmd.filterApps', 'Apps contenant « {q} »').replace(
+            '{q}',
+            term
+          ),
+          filter: term,
+          href: '#apps',
+        });
+        return hits;
+      },
+      renderItem: function (hit, i, selected) {
+        var labels = kinds();
+        var li = document.createElement('li');
+        li.id = 'sr-cmd-hit-' + i;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', String(selected));
+        var kind = document.createElement('span');
+        kind.className = 'sr-cmd-kind';
+        kind.textContent = labels[hit.kind] || hit.kind;
+        var name = document.createElement('span');
+        name.textContent = hit.label;
+        li.appendChild(kind);
+        li.appendChild(name);
+        return li;
+      },
+      onSelect: go,
     });
   }
 })();
