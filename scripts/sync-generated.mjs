@@ -4,14 +4,21 @@
  *
  *   npm run sync
  *
- * Quatre dérivés du catalogue, chacun pour une raison technique — et une copie
- * n'est acceptable que si elle est ENGENDRÉE et VÉRIFIÉE :
+ * Chaque dérivé existe pour une raison technique, et une copie n'est
+ * acceptable que si elle est ENGENDRÉE et VÉRIFIÉE :
  *
  *   showroom/components.css   le showroom montre littéralement ce que reçoit
  *                             une app consommatrice → copie octet pour octet ;
- *   showroom/apps.js          la page est statique et chargeable en `file://`,
- *                             donc incapable d'`import` un module ES → le
- *                             catalogue lui est projeté sur `globalThis` ;
+ *   showroom/command.js       la recherche Ctrl+K du showroom est celle du
+ *                             paquet. L'artefact Pages ne contient QUE
+ *                             `showroom/` : importer `../command.js` visait la
+ *                             racine de l'origine, donc la copie du hub, et
+ *                             rien d'autre ne marchait sans elle. Copie octet
+ *                             pour octet, importée en `./command.js` ;
+ *   showroom/apps.js          la page ne charge que des fichiers de son propre
+ *                             dossier, le seul publié : elle ne peut pas
+ *                             importer `../apps-catalog.js` → le catalogue lui
+ *                             est projeté sur `globalThis` ;
  *   showroom/index.html       le bloc JSON-LD des seize apps, en dur dans le
  *                             `<head>` : un moteur doit le lire sans exécuter
  *                             le script ;
@@ -73,9 +80,10 @@ const HEADER = `/*
  * Source : \`apps-catalog.js\` à la racine du paquet.
  * Régénérer : \`npm run sync\`.
  *
- * Le showroom ne peut pas \`import\` le catalogue (page statique, \`file://\`) :
- * il en lit ce miroir, posé sur \`globalThis\` comme \`themes.js\` et
- * \`screenshots.js\`. \`test/apps-catalog.test.mjs\` vérifie qu'il ne dérive pas.
+ * Le showroom ne charge que des fichiers de son dossier, le seul que publie
+ * Pages : il ne peut pas importer le catalogue, il en lit ce miroir, posé sur
+ * \`globalThis\` comme \`themes.js\` et \`screenshots.js\`.
+ * \`test/apps-catalog.test.mjs\` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_APPS = `;
 
@@ -85,8 +93,9 @@ const THEMES_HEADER = `/*
  * Source : \`themes.js\` à la racine du paquet (avec ses commentaires de relevé).
  * Régénérer : \`npm run sync\`.
  *
- * Le showroom ne peut pas \`import\` le module (page statique, \`file://\`) : il en
- * lit ce miroir. \`test/themes.test.mjs\` vérifie qu'il ne dérive pas.
+ * Le showroom ne charge que des fichiers de son dossier, le seul que publie
+ * Pages : il ne peut pas importer le module, il en lit ce miroir.
+ * \`test/themes.test.mjs\` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_THEMES = `;
 
@@ -504,6 +513,7 @@ async function format(source, filepath) {
 
 async function main() {
   copyFileSync(at('components.css'), at('showroom/components.css'));
+  copyFileSync(at('command.js'), at('showroom/command.js'));
 
   const entier = readFileSync(at('components.css'), 'utf8');
   mkdirSync(at('components'), { recursive: true });
@@ -539,7 +549,8 @@ async function main() {
   );
 
   console.log(
-    `showroom/components.css, components/*.css (${morceaux.length}), ` +
+    `showroom/components.css, showroom/command.js, ` +
+      `components/*.css (${morceaux.length}), ` +
       `showroom/apps.js, showroom/themes.js, le JSON-LD et le tableau du ` +
       `README régénérés (${FAMILY_APPS.length} apps, ` +
       `${FAMILY_THEMES.length} thèmes, ${CONFIG_SUBPATHS.length} sous-chemins).`

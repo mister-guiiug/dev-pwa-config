@@ -4,9 +4,10 @@
  * Source : `apps-catalog.js` à la racine du paquet.
  * Régénérer : `npm run sync`.
  *
- * Le showroom ne peut pas `import` le catalogue (page statique, `file://`) :
- * il en lit ce miroir, posé sur `globalThis` comme `themes.js` et
- * `screenshots.js`. `test/apps-catalog.test.mjs` vérifie qu'il ne dérive pas.
+ * Le showroom ne charge que des fichiers de son dossier, le seul que publie
+ * Pages : il ne peut pas importer le catalogue, il en lit ce miroir, posé sur
+ * `globalThis` comme `themes.js` et `screenshots.js`.
+ * `test/apps-catalog.test.mjs` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_APPS = {
   owner: 'mister-guiiug',

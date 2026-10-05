@@ -19,13 +19,15 @@ on:
       - 'test/components-css.test.mjs'
       - 'test/showroom-i18n.test.mjs'
       - 'test/apps-catalog.test.mjs'
+      - 'test/showroom-resolution.test.mjs'
+      - 'scripts/showroom-imports.mjs'
       - '.github/workflows/showroom-pages.yml'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Aucun droit par défaut : chaque job déclare les siens. `build` exécute du
+# code du dépôt et appelle l'API (relevé des dépôts) ; il n'a pas à pouvoir
+# publier sur Pages ni à obtenir un jeton OIDC. Seul `deploy` en a besoin.
+permissions: {}
 
 # Une seule publication à la fois ; on ne coupe pas un déploiement en cours.
 concurrency:
@@ -36,6 +38,8 @@ jobs:
   build:
     name: Vérifier la parité puis empaqueter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -49,10 +53,15 @@ jobs:
       # copies de `components.css` et du catalogue famille : on refuse de
       # publier une page qui aurait dérivé de ces sources de vérité. Aucune
       # dépendance à installer (node:test + modules natifs uniquement).
+      #
+      # `showroom-resolution` vérifie que tout ce que la page charge est DANS
+      # `showroom/`, le seul dossier téléversé : un import qui en sort marche
+      # depuis le dépôt et casse la page publiée.
       - name: Parité preset / components / catalogue ↔ showroom
         run: >-
           node --test test/showroom.test.mjs test/components-css.test.mjs
           test/showroom-i18n.test.mjs test/apps-catalog.test.mjs
+          test/showroom-resolution.test.mjs
 
       # LE RELEVÉ A LIEU ICI, ET N'EST PAS COMMITÉ. Il l'était, par un push
       # direct sur `main` depuis `showroom-metrics.yml` — que le ruleset
@@ -63,9 +72,10 @@ jobs:
       #
       # Produire le fichier au moment de publier supprime le besoin d'écrire
       # sur une branche protégée : ce qui part dans l'artefact est frais par
-      # construction. Le `metrics.js` du dépôt reste la version hors ligne,
-      # pour que la page s'ouvre en `file://` — c'est la promesse qui interdit
-      # d'appeler l'API depuis le navigateur.
+      # construction. Le `metrics.js` du dépôt reste la version que lit une
+      # copie locale (`npm run showroom`). La page ne fait aucune requête
+      # réseau : c'est la promesse qui interdit d'appeler l'API depuis le
+      # navigateur.
       - name: Relever l'état des dépôts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,6 +94,9 @@ jobs:
     name: Déployer
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

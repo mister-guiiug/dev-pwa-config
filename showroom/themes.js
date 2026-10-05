@@ -4,8 +4,9 @@
  * Source : `themes.js` à la racine du paquet (avec ses commentaires de relevé).
  * Régénérer : `npm run sync`.
  *
- * Le showroom ne peut pas `import` le module (page statique, `file://`) : il en
- * lit ce miroir. `test/themes.test.mjs` vérifie qu'il ne dérive pas.
+ * Le showroom ne charge que des fichiers de son dossier, le seul que publie
+ * Pages : il ne peut pas importer le module, il en lit ce miroir.
+ * `test/themes.test.mjs` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_THEMES = [
   {

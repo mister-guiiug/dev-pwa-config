@@ -435,8 +435,11 @@ réellement :
 npm run showroom
 ```
 
-→ <http://127.0.0.1:5220>. Le fichier `showroom/index.html` s'ouvre aussi
-directement dans un navigateur (double-clic), sans serveur.
+→ <http://127.0.0.1:5220/dev-pwa-config/>, sous le même chemin que sur Pages.
+**Un serveur est nécessaire** : la page charge des modules ES (`showroom.js`
+et sa copie de `command.js`), que Chromium et Firefox refusent en `file://`.
+Ouvert d'un double-clic, `index.html` n'affiche que son texte et ses styles,
+sans rien de ce que le script engendre (vitrine, catalogue, palettes).
 
 Le preset n'expose **aucune couleur** : c'est la part variable, propriété de
 chaque app. Le thème « Générique » du showroom est donc volontairement
@@ -448,9 +451,10 @@ monochrome ; les palettes des applications sont relevées dans `themes.js`
 > `test/showroom.test.mjs` compare les deux fichiers token par token — une
 > modification du preset non répercutée fait échouer la CI, pas le navigateur.
 
-Même raison pour le catalogue : chargeable en `file://`, la page ne peut pas
-`import` un module ES. `showroom/apps.js` (`globalThis.SHOWROOM_APPS`) et
-`showroom/components.css` sont donc **engendrés** depuis la racine :
+Même raison pour le catalogue : la page ne charge que des fichiers de son
+dossier, le seul que publie Pages. `showroom/apps.js`
+(`globalThis.SHOWROOM_APPS`), `showroom/components.css` et
+`showroom/command.js` sont donc **engendrés** depuis la racine :
 
 ```bash
 npm run sync   # scripts/sync-generated.mjs
@@ -459,7 +463,8 @@ npm run sync   # scripts/sync-generated.mjs
 `npm run sync` régénère **tout** ce que le dépôt tient en double :
 `showroom/apps.js` et `showroom/themes.js` (miroirs du catalogue et des
 palettes), la copie `showroom/components.css` et les morceaux publiés
-`components/*.css` (tous deux tirés de `components.css`), le bloc JSON-LD du
+`components/*.css` (tous deux tirés de `components.css`), la copie
+`showroom/command.js` (la recherche Ctrl+K du paquet), le bloc JSON-LD du
 `<head>` de la page (vingt `SoftwareApplication`, lisibles sans exécuter le
 script) et les tableaux « Projets consommateurs » et « Adoption réelle »
 ci-dessus. La CI relance `npm run sync` et refuse le moindre écart ;
@@ -483,8 +488,8 @@ requête — le relevé est posé sur `globalThis` par un `<script src>`, comme
 `themes.js`. Un fichier vide est un état valide : la vitrine n'affiche alors
 simplement aucune mesure.
 
-Le `showroom/metrics.js` du dépôt sert la lecture **hors ligne**, quand la page
-s'ouvre en `file://` ou depuis un clone. Il n'est plus rafraîchi
+Le `showroom/metrics.js` du dépôt sert la lecture **locale**, depuis un clone
+(`npm run showroom`). Il n'est plus rafraîchi
 automatiquement, et la vitrine affiche la date de son relevé pour que personne
 ne la prenne pour celle du jour.
 

@@ -18,6 +18,13 @@
       name="description"
       content="Showroom statique du design system partagé des PWA miss-* / mister-* : tokens du preset Tailwind, composants React non stylés, et bascule de thème vers l'univers visuel de chaque application."
     />
+    <!-- L'icône est DANS la page : sans elle, le navigateur demande
+         /favicon.ico à la racine de l'origine, c'est-à-dire à un autre dépôt
+         (le hub), et la page ne charge plus seulement son propre dossier. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f2937'/%3E%3Cpath d='M9 22h14M9 16h14M9 10h14' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
     <link rel="stylesheet" href="preset.css" />
     <!-- Habillage OPT-IN des composants, servi TEL QUEL depuis le paquet :
          la démo ci-dessous est donc littéralement ce que reçoit une app qui

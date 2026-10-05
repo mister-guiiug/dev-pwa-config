@@ -8,8 +8,11 @@
  *   2. mesure EN DIRECT des tokens fluides (clamp), des safe-areas et du
  *      breakpoint courant — rien n'est recopié à la main ;
  *   3. génération de la palette et de la démo `FamilyApps`.
+ *
+ * Tout import reste DANS `showroom/` : c'est le seul dossier que publie Pages.
+ * `./command.js` est la copie octet pour octet que pose `npm run sync`.
  */
-import { attachCommandCombobox, filterCommandItems } from '../command.js';
+import { attachCommandCombobox, filterCommandItems } from './command.js';
 
 (function () {
   'use strict';

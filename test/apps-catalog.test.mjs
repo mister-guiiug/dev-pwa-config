@@ -314,8 +314,8 @@ test('countBy regroupe les valeurs absentes sous la clé vide', () => {
 /* ── Miroir du showroom ────────────────────────────────────────────────── */
 
 /*
- * Le showroom est statique et chargeable en `file://` : il ne peut pas
- * `import` le catalogue, il en lit une copie. Une copie non vérifiée ment tôt
+ * Le showroom ne charge que des fichiers de son dossier, le seul publié : il
+ * ne peut pas importer le catalogue, il en lit une copie. Une copie non vérifiée ment tôt
  * ou tard — `npm run sync` la régénère.
  */
 test('showroom/apps.js est le miroir exact du catalogue', async () => {

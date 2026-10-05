@@ -6,7 +6,7 @@
  * apps clonés à côté de celui-ci — ce que la CI n'a pas.
  *
  * Chargé par un `<script src>` classique, comme `metrics.js` : la page ne fait
- * AUCUNE requête réseau et s'ouvre en `file://`.
+ * AUCUNE requête réseau.
  *
  * `measured: 0` = le relevé n'a jamais tourné. La vitrine n'affiche alors
  * simplement aucun taux d'adoption.
