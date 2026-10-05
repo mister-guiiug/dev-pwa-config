@@ -135,3 +135,33 @@ test('chaque nom accessible traduisible a sa traduction', () => {
   // Et la page les lit vraiment.
   assert.match(JS, /data-i18n-aria/);
 });
+
+test('les comptes de la prose sont calculés, jamais écrits à la main', () => {
+  // « Seize dépôts publics, dont quinze » et « un adoptant sur seize » :
+  // écrits en toutes lettres, en français et en anglais, faux depuis des
+  // semaines. Le texte porte désormais des `<span data-count>` que la page
+  // remplit depuis le catalogue.
+  const blocs = ['apps.p1', 'apps.note'];
+  const enFrancais = cle =>
+    new RegExp(
+      String.raw`data-i18n="${cle.replace('.', '[.]')}"[^>]*>([\s\S]*?)</p>`
+    ).exec(HTML)?.[1] ?? '';
+  for (const cle of blocs) {
+    for (const [langue, texte] of [
+      ['fr', enFrancais(cle)],
+      ...Object.entries(DICTS).map(([l, d]) => [l, d[cle] ?? '']),
+    ]) {
+      assert.match(
+        texte,
+        /data-count="/,
+        `${cle} (${langue}) sans compte calculé`
+      );
+      assert.doesNotMatch(
+        texte,
+        /\b(seize|quinze|sixteen|fifteen|single adopter|un adoptant)\b/i,
+        `${cle} (${langue}) écrit encore un compte en toutes lettres`
+      );
+    }
+  }
+  assert.match(JS, /function fillCounts/);
+});

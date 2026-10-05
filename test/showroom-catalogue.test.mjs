@@ -45,8 +45,12 @@ test('tout export du barrel est catalogué, ou nommément exclu', async () => {
     'ces exports ne sont documentés nulle part dans le showroom — les ajouter au catalogue, ou les inscrire dans EXCLUS avec leur raison'
   );
 
-  // L'inverse : une entrée qui prétend couvrir un export disparu.
-  const connus = new Set(exports);
+  // L'inverse : une entrée qui prétend couvrir un export disparu (du baril
+  // ou d'un sous-chemin `react/*`).
+  const connus = new Set([
+    ...exports,
+    ...exportsDesSousChemins().map(e => e.nom),
+  ]);
   const fantomes = [...couverts].filter(
     name => !connus.has(name) && !(name in EXCLUS)
   );
@@ -54,6 +58,106 @@ test('tout export du barrel est catalogué, ou nommément exclu', async () => {
     fantomes,
     [],
     'le catalogue documente des exports qui n’existent plus'
+  );
+});
+
+/* ── Les sous-chemins react/* hors baril ───────────────────────────────── */
+
+/**
+ * Composants (`PascalCase`) et hooks (`use…`) des sous-chemins `./react/*`
+ * déclarés dans package.json. Les constantes et utilitaires d'un sous-chemin
+ * n'ont pas de fiche : ce sont des détails d'API, que docs/EXPORTS.md liste.
+ *
+ * Lus dans le source plutôt qu'importés : plusieurs sous-chemins importent un
+ * module virtuel de Vite (`virtual:pwa-register/react`) ou une peer
+ * facultative, qu'un import sous Node ferait échouer.
+ */
+function exportsDesSousChemins() {
+  const pkg = JSON.parse(read('package.json'));
+  return Object.entries(pkg.exports)
+    .filter(([cle]) => cle.startsWith('./react/'))
+    .flatMap(([cle, cible]) => {
+      const fichier = typeof cible === 'string' ? cible : cible.default;
+      const source = read(fichier.replace(/^\.\//, ''));
+      const declares = [
+        ...source.matchAll(/export (?:async )?(?:function|const|class) (\w+)/g),
+      ].map(m => m[1]);
+      return declares
+        .filter(nom => /^[A-Z][a-z]/.test(nom) || /^use[A-Z]/.test(nom))
+        .map(nom => ({ nom, sousChemin: cle }));
+    });
+}
+
+// Composants et hooks des sous-chemins SANS fiche, chacun avec sa raison.
+// La liste ne peut que raccourcir : un nom qui reçoit une fiche doit en
+// sortir (le test le dit), et un export nouveau sans fiche ni ligne ici fait
+// échouer. Relevé du 05/10/2026 : la garde ne lisait que `react/index.js`.
+const SANS_FICHE = {
+  useEscape:
+    'react/a11y : rouage de Sheet et ConfirmDialog, montré à travers eux',
+  useScrollLock:
+    'react/a11y : rouage de Sheet et ConfirmDialog, montré à travers eux',
+  useFocusTrap:
+    'react/a11y : rouage de Sheet et ConfirmDialog, montré à travers eux',
+  AnnouncerProvider:
+    'react/a11y : région d’annonce sans rendu visible, pas encore de fiche',
+  useAnnouncer:
+    'react/a11y : région d’annonce sans rendu visible, pas encore de fiche',
+  VisuallyHidden:
+    'react/a11y : utilitaire de masquage (.dwc-sr-only de tokens.css), pas encore de fiche',
+  SkipLink:
+    'react/a11y : la page a son propre lien d’évitement ; fiche à écrire',
+  useUpdateCheck: 'react/app-updates : rouage de AppUpdates, qui a sa fiche',
+  useConsentChoice:
+    'mesure d’audience, promue en 09/2026 : habillée par components.css, pas encore de démo ni de fiche',
+  ConsentBanner:
+    'mesure d’audience, promue en 09/2026 : habillée par components.css, pas encore de démo ni de fiche',
+  ConsentSettings:
+    'mesure d’audience, promue en 09/2026 : habillée par components.css, pas encore de démo ni de fiche',
+  ConsentSection:
+    'mesure d’audience, promue en 09/2026 : habillée par components.css, pas encore de démo ni de fiche',
+  PrivacyNotice:
+    'mesure d’audience, promue en 09/2026 : habillée par components.css, pas encore de démo ni de fiche',
+  RiveAnimation:
+    'react/rive : runtime chargé à la demande (environ 100 ko et du WASM) ; une démo enfreindrait « aucune requête réseau »',
+  useQrScanner:
+    'react/use-qr-scanner : demande la caméra et une peer facultative (qr-scanner), rien à montrer sans elles',
+  useAuth:
+    'session Supabase : LoginForm et MfaChallenge sont présentés, le raccord useAuth pas encore',
+  AuthGate:
+    'session Supabase : LoginForm et MfaChallenge sont présentés, la garde AuthGate pas encore',
+  useRouteBreadcrumbs:
+    'observabilité : sans rendu, pas encore de fiche dans la section Hooks',
+  usePageViews:
+    'mesure GA4 : sans rendu, pas encore de fiche dans la section Hooks',
+};
+
+test('tout composant et tout hook des sous-chemins react/* est catalogué, ou nommément sans fiche', async () => {
+  const baril = new Set(Object.keys(await import('../react/index.js')));
+  const couverts = new Set([
+    ...CATALOGUE.components.flatMap(c => c.covers ?? []),
+    ...CATALOGUE.hooks.flatMap(h => h.covers ?? []),
+  ]);
+  const vus = exportsDesSousChemins().filter(e => !baril.has(e.nom));
+  assert.ok(vus.length > 10, 'sous-chemins suspicieusement vides');
+
+  const manquants = vus
+    .filter(e => !couverts.has(e.nom) && !(e.nom in SANS_FICHE))
+    .map(e => `${e.sousChemin} : ${e.nom}`);
+  assert.deepEqual(
+    manquants,
+    [],
+    'export de sous-chemin sans fiche : l’ajouter au catalogue, ou à SANS_FICHE avec sa raison'
+  );
+
+  const noms = new Set(vus.map(e => e.nom));
+  const perimes = Object.keys(SANS_FICHE).filter(
+    nom => couverts.has(nom) || !noms.has(nom)
+  );
+  assert.deepEqual(
+    perimes,
+    [],
+    'ces noms ont une fiche désormais, ou n’existent plus : les retirer de SANS_FICHE'
   );
 });
 

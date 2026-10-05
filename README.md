@@ -38,9 +38,9 @@ générateur), [`AMELIORATIONS.md`](AMELIORATIONS.md), [`VALEUR.md`](VALEUR.md)
 Tableau **engendré** depuis `apps-catalog.js` (`npm run sync`) : la colonne
 « Sous-chemins consommés » est un RELEVÉ — les `import` et les `extends` trouvés
 dans le code de chaque dépôt —, pas une intention. Deux choses s'y lisent tout
-de suite : `components.css` est repris par **dix-huit dépôts sur vingt**, et
-vingt et un sous-chemins n'ont qu'un seul adoptant, dont dix pour le seul
-`mister-settle`.
+de suite : la part des dépôts qui reprennent `components.css`, et les
+sous-chemins qui n'ont qu'un seul adoptant. Les comptes sont dans le tableau, et
+nulle part ailleurs : écrits en toutes lettres ici, ils avaient vieilli.
 
 ⚠️ **Ce tableau compte des sous-chemins, pas des composants.** Une app qui
 importe `FamilyApps` depuis le baril `react` n'y fait pas apparaître
@@ -408,7 +408,8 @@ réellement :
     La grille est **engendrée depuis `apps-catalog.js`** — le fichier qu'importent
     les apps pour s'afficher les unes les autres. Le filtre **Consomme** répond à
     la question qu'un design system doit se poser en premier : qui utilise
-    vraiment quoi ? (`components.css` : dix-huit dépôts sur vingt) ;
+    vraiment quoi ? (la vitrine calcule le compte de `components.css` depuis le
+    catalogue, au rendu) ;
 - un **catalogue cherchable** de tout ce que le paquet exporte — composants et
   hooks —, dont `test/showroom-catalogue.test.mjs` vérifie qu'il ne laisse
   échapper aucun export de `react/index.js` ;
@@ -475,9 +476,8 @@ npm run sync   # scripts/sync-generated.mjs
 `showroom/apps.js` et `showroom/themes.js` (miroirs du catalogue et des
 palettes), la copie `showroom/components.css` et les morceaux publiés
 `components/*.css` (tous deux tirés de `components.css`), la copie
-`showroom/command.js` (la recherche Ctrl+K du paquet), le bloc JSON-LD du
-`<head>` de la page (vingt `SoftwareApplication`, lisibles sans exécuter le
-script), les tableaux « Projets consommateurs » et « Adoption réelle »
+`showroom/command.js` (la recherche Ctrl+K du paquet), les tableaux « Projets
+consommateurs » et « Adoption réelle »
 ci-dessus, et deux choses que la page ne peut pas tenir à la main :
 l'empreinte CSP de son script en ligne, et un `?v=<empreinte du contenu>` sur
 chaque fichier qu'elle charge (Pages sert dix minutes en cache, sous un nom

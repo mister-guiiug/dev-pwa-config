@@ -444,35 +444,6 @@ test('le tableau du README est celui qu’engendre le catalogue', async () => {
   );
 });
 
-/*
- * Le showroom est une page unique : sans données structurées, il n'expose
- * qu'un titre aux moteurs, pour seize applications décrites. Le bloc est
- * ENGENDRÉ dans le `<head>` plutôt qu'injecté en JS — sinon un moteur qui
- * n'exécute pas le script ne le voit pas.
- */
-test('le JSON-LD de la vitrine décrit les seize apps', async () => {
-  const { appsJsonLd, JSONLD_START, JSONLD_END } =
-    await import('../scripts/sync-generated.mjs');
-  const html = readFileSync(
-    new URL('../showroom/index.html', import.meta.url),
-    'utf8'
-  );
-  const start = html.indexOf(JSONLD_START);
-  const end = html.indexOf(JSONLD_END);
-  assert.ok(start !== -1 && end > start, 'marqueurs du bloc JSON-LD absents');
-
-  const bloc = html.slice(start + JSONLD_START.length, end);
-  const json = bloc.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
-  );
-  assert.ok(json, 'balise application/ld+json absente du bloc engendré');
-  assert.deepEqual(
-    JSON.parse(json[1]),
-    appsJsonLd(),
-    'JSON-LD périmé : lancer `npm run sync`'
-  );
-});
-
 /* ── Une catégorie sans libellé est une catégorie invisible ────────────── */
 
 /**

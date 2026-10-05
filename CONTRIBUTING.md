@@ -31,10 +31,10 @@ est sans appel : quatre exports sur vingt-deux sont réellement importés, et
 douze apps sur seize gardent leurs doublons locaux. Toute promotion s'accompagne
 d'un plan de migration, même court, même différé — écrit dans la PR.
 
-**3. Ce qui est en double est ENGENDRÉ, et VÉRIFIÉ.** Six fichiers de ce dépôt
+**3. Ce qui est en double est ENGENDRÉ, et VÉRIFIÉ.** Cinq fichiers de ce dépôt
 répètent une information qui vit ailleurs : les copies du showroom
 (`components.css`, `command.js`), le miroir du catalogue, celui des palettes,
-le bloc JSON-LD, le tableau du README. Tous sont
+le tableau du README. Tous sont
 produits par `npm run sync`, et un test compare chacun à sa source. Une copie
 non engendrée finit toujours par diverger — c'est déjà arrivé, sur la
 persistance de `miss-uwh`.

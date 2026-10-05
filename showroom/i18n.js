@@ -201,9 +201,9 @@ globalThis.SHOWROOM_I18N = {
     /* ── Vitrine des dépôts ───────────────────────────────────────────── */
     'apps.h21': 'The family’s applications',
     'apps.p1':
-      'Sixteen public repositories, <strong>fifteen</strong> of which consume this package — the desktop application imports none of it, and the “subpaths” field is what revealed it. This grid is not a list kept by hand in the page: it is generated from <code>apps-catalog.js</code> — the very file the applications import to show one another. Anything wrong here would be wrong in their footers.',
+      '<span data-count="apps">21</span> public repositories, <strong><span data-count="consumers">21</span></strong> of which consume this package: the “subpaths” field, surveyed in each app’s code, says so. This grid is not a list kept by hand in the page: it is generated from <code>apps-catalog.js</code> — the very file the applications import to show one another. Anything wrong here would be wrong in their footers.',
     'apps.note':
-      '<strong>Domain and maturity are editorial</strong>, entered by hand: they state an intent, not a published version. <strong>Persistence</strong> and <strong>subpaths</strong> are <strong>surveyed</strong> in each app’s code — the real <code>import</code>s and <code>extends</code>, not an intention — and left blank where they were not: a filter that says “not surveyed” beats invented data. The <em>Consumes</em> filter therefore answers the first question a design system should ask itself: who actually uses what? <code>components.css</code> has a single adopter out of sixteen. The badges are painted with each application’s real primary colour, never with a remote icon: this showroom makes no network request.',
+      '<strong>Domain and maturity are editorial</strong>, entered by hand: they state an intent, not a published version. <strong>Persistence</strong> and <strong>subpaths</strong> are <strong>surveyed</strong> in each app’s code — the real <code>import</code>s and <code>extends</code>, not an intention — and left blank where they were not: a filter that says “not surveyed” beats invented data. The <em>Consumes</em> filter therefore answers the first question a design system should ask itself: who actually uses what? <code>components.css</code>: <span data-count="components-css">19</span> adopters out of <span data-count="apps">21</span>. The badges are painted with each application’s real primary colour, never with a remote icon: this showroom makes no network request.',
     'ui.apps.searchViaCmd':
       'Unified search at the top of the page (<kbd>Ctrl</kbd><kbd>K</kbd>)',
     'ui.apps.filtered': 'Filtered view',
@@ -272,7 +272,7 @@ globalThis.SHOWROOM_I18N = {
     /* ── Catalogue ────────────────────────────────────────────────────── */
     'catalogue.h21': 'Catalogue',
     'catalogue.p1':
-      'Everything the package exports, on one grid. A test compares this list against the real exports of <code>react/index.js</code>: whatever is not here is either covered by another entry or explicitly excluded — that is how the nine hooks, missing from their own showcase, were spotted.',
+      'Everything the package exports, on one grid. A test compares this list against the real exports of <code>react/index.js</code>: whatever is not here is either covered by another entry or explicitly excluded — that is how the nine hooks, missing from their own showcase, were spotted. Components and hooks of the <code>react/*</code> subpaths outside the barrel are held the same way: those without an entry yet are named in the test, with their reason.',
     'ui.cat.search': 'Search',
     'ui.cat.filterLegend': 'Filter by category',
 

@@ -124,6 +124,33 @@ import {
     if (cmdInput) cmdInput.placeholder = t('ui.cmd.placeholder', 'Rechercher…');
     var dockLabel = document.querySelector('.sr-dock-label');
     if (dockLabel) dockLabel.textContent = t('topbar.themeLabel', 'Habiller');
+    fillCounts();
+  }
+
+  /**
+   * Les comptes de la prose, calculés depuis le catalogue (`apps.js`).
+   * « Seize dépôts, dont quinze » et « un adoptant sur seize » étaient écrits
+   * à la main, en français comme en anglais, et faux depuis des semaines :
+   * 21 apps, toutes consommatrices, 19 adoptants de `components.css` (le
+   * champ que lit le filtre « Consomme » juste à côté). Le texte porte des
+   * `<span data-count>` ; on les remplit ici, à chaque langue.
+   */
+  function fillCounts() {
+    var apps = (globalThis.SHOWROOM_APPS || {}).apps || [];
+    var counts = {
+      apps: apps.length,
+      consumers: apps.filter(function (a) {
+        return (a.configs || []).length > 0;
+      }).length,
+      'components-css': apps.filter(function (a) {
+        return (a.configs || []).indexOf('components.css') !== -1;
+      }).length,
+    };
+    document.querySelectorAll('[data-count]').forEach(function (el) {
+      var valeur = counts[el.dataset.count];
+      if (valeur === undefined) return;
+      if (el.textContent !== String(valeur)) el.textContent = String(valeur);
+    });
   }
 
   // Rôle sémantique → variable CSS + libellé. `on` désigne la couleur sur
@@ -2184,7 +2211,7 @@ import {
    *
    * La grille ci-dessous les rassemble, et elle est ENGENDRÉE depuis le miroir
    * de `apps-catalog.js` (`showroom/apps.js`, produit par
-   * `npm run showroom:sync`) : le même catalogue qu'importent les apps pour
+   * `npm run sync`) : le même catalogue qu'importent les apps pour
    * s'afficher les unes les autres. Une entrée fausse ici est fausse en
    * production, ce qui est exactement la propriété recherchée.
    * ────────────────────────────────────────────────────────────────────── */

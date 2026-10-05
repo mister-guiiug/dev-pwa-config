@@ -31,6 +31,9 @@
       pas une page de destination. L'audit SEO l'a trouvé indexable, sans
       canonique ni plan de site, en concurrence avec le hub et les pages des
       apps pour leurs propres noms. Il reste lié et ouvert à tous.
+      Conséquence (05/10/2026) : plus de bloc JSON-LD des apps ici. Il pesait
+      13,7 Ko et une étape de `npm run sync` pour une page qu'aucun moteur
+      n'indexe ; les apps et le hub portent leurs propres données.
     -->
     <meta name="robots" content="noindex" />
     <title>Showroom — @mister-guiiug/dev-pwa-config</title>
@@ -110,354 +113,6 @@
         }
       })();
     </script>
-    <!-- APPS-JSONLD:DÉBUT — engendré par `npm run sync` -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "ItemList",
-        "name": "Applications miss-* / mister-*",
-        "numberOfItems": 21,
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Carbook",
-              "description": "Comparatif collaboratif de véhicules, en temps réel.",
-              "url": "https://mister-guiiug.github.io/miss-carbook/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-carbook",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Contraction",
-              "description": "Chronomètre de contractions et alertes maternité.",
-              "url": "https://mister-guiiug.github.io/miss-contraction/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-contraction",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Genius",
-              "description": "Simulateur de moyennes scolaires (notes, scénarios, objectifs).",
-              "url": "https://mister-guiiug.github.io/miss-genius/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-genius",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 4,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss UWH",
-              "description": "Bilan comptable de saison pour club de hockey subaquatique.",
-              "url": "https://mister-guiiug.github.io/miss-uwh/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-uwh",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 5,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister CIM10",
-              "description": "Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).",
-              "url": "https://mister-guiiug.github.io/mister-cim10/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-cim10",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 6,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Footcoach",
-              "description": "Gestion d'équipes de foot : compositions, statistiques, entraînements.",
-              "url": "https://mister-guiiug.github.io/mister-footcoach/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-footcoach",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 7,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Puzzle",
-              "description": "Suivi collaboratif de progression de puzzle en temps réel.",
-              "url": "https://mister-guiiug.github.io/mister-puzzle/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-puzzle",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 8,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Ticket",
-              "description": "Télécommande PWA pour l'application desktop Miss Ticket.",
-              "url": "https://mister-guiiug.github.io/miss-ticket-pwa/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-ticket-pwa",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 9,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Doc",
-              "description": "Planning de gardes de médecins synchronisé : vue mensuelle, compteurs week-end et heures.",
-              "url": "https://mister-guiiug.github.io/mister-doc/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-doc",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 10,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss LookHouse",
-              "description": "Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.",
-              "url": "https://mister-guiiug.github.io/miss-lookhouse/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-lookhouse",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 11,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Badminton",
-              "description": "Suivi de scores et statistiques de badminton.",
-              "url": "https://mister-guiiug.github.io/miss-badminton/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-badminton",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 12,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Dice",
-              "description": "Lanceur de dé à 6 faces, 100 % hors ligne, installable.",
-              "url": "https://mister-guiiug.github.io/miss-dice/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-dice",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 13,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Supaboss",
-              "description": "Pilotage multi-comptes Supabase Free : pause/restore, quotas, démos.",
-              "url": "https://mister-guiiug.github.io/miss-supaboss/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-supaboss",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 14,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Supatool",
-              "description": "Migration d'un projet Supabase vers un autre : structure, données et fichiers.",
-              "url": "https://mister-guiiug.github.io/miss-supatool/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-supatool",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 15,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Mölkky",
-              "description": "Compteur de scores pour parties de Mölkky (multi-appareils).",
-              "url": "https://mister-guiiug.github.io/mister-molkky/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-molkky",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 16,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Qowa",
-              "description": "Quiz interactif en temps réel : l'animateur pilote, les joueurs répondent.",
-              "url": "https://mister-guiiug.github.io/mister-qowa/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-qowa",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 17,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister FamilyMap",
-              "description": "Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.",
-              "url": "https://mister-guiiug.github.io/mister-family-map/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-family-map",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 18,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister & Miss Koh",
-              "description": "Suivi de Koh-Lanta : candidats, épisodes, épreuves, conseils et votes. Indépendant, non officiel.",
-              "url": "https://mister-guiiug.github.io/mister-miss-koh/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-miss-koh",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 19,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Quota",
-              "description": "Suivi de consommation des services IA (application desktop).",
-              "url": "https://github.com/mister-guiiug/mister-quota",
-              "applicationCategory": "DesktopApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-quota",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 20,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Settle",
-              "description": "Partage de dépenses entre proches : qui a payé, qui doit combien, remboursements suggérés — sans paiement.",
-              "url": "https://mister-guiiug.github.io/mister-settle/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-settle",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 21,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Devises",
-              "description": "Convertisseur de devises visuel : billets et pièces dessinés, conversion dans les deux sens, historique des taux et carnet annoté.",
-              "url": "https://mister-guiiug.github.io/miss-devises/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-devises",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          }
-        ]
-      }
-    </script>
-    <!-- APPS-JSONLD:FIN -->
   </head>
 
   <body>
@@ -1110,10 +765,11 @@
           Les applications de la famille
         </h2>
         <p data-i18n="apps.p1">
-          Seize dépôts publics, dont <strong>quinze</strong> consomment ce
-          paquet — l’application desktop n’en importe rien, et c’est le champ «
-          sous-chemins » qui l’a révélé. Cette grille n’est pas une liste tenue
-          à la main dans la page : elle est engendrée depuis
+          <span data-count="apps">21</span> dépôts publics, dont
+          <strong><span data-count="consumers">21</span></strong> consomment ce
+          paquet : c’est le champ « sous-chemins », relevé dans le code de
+          chaque app, qui le dit. Cette grille n’est pas une liste tenue à la
+          main dans la page : elle est engendrée depuis
           <code>apps-catalog.js</code> — le fichier qu’importent les
           applications elles-mêmes pour s’afficher les unes les autres. Ce qui
           serait faux ici serait faux dans leurs pieds de page.
@@ -1271,10 +927,11 @@
           qui affiche « non relevé » vaut mieux qu’une donnée inventée. Le
           filtre <em>Consomme</em> répond ainsi à la question qu’un design
           system doit se poser en premier : qui utilise vraiment quoi ?
-          <code>components.css</code> n’a qu’un adoptant sur seize. Les
-          pastilles sont peintes avec la primaire réelle de chaque application,
-          jamais avec une icône distante : le showroom ne fait aucune requête
-          réseau.
+          <code>components.css</code> :
+          <span data-count="components-css">19</span> adoptants sur
+          <span data-count="apps">21</span>. Les pastilles sont peintes avec la
+          primaire réelle de chaque application, jamais avec une icône distante
+          : le showroom ne fait aucune requête réseau.
         </p>
       </section>
 
@@ -1290,7 +947,9 @@
           liste aux exports réels de <code>react/index.js</code> : ce qui n’est
           pas ici est soit couvert par une autre fiche, soit nommément exclu —
           c’est ainsi que les neuf hooks, absents de leur propre vitrine, ont
-          été repérés.
+          été repérés. Les composants et hooks des sous-chemins
+          <code>react/*</code> hors baril sont tenus de la même façon : ceux qui
+          n’ont pas encore de fiche sont nommés dans le test, avec leur raison.
         </p>
 
         <div class="sr-cat-controls">
@@ -4070,7 +3729,7 @@
     <script defer src="snippets.js?v=803dc31ffb"></script>
     <script defer src="catalogue.js?v=ad9c72d9fd"></script>
     <script defer src="screenshots.js?v=e85c95abb4"></script>
-    <script defer src="i18n.js?v=6417cc3e0e"></script>
-    <script type="module" src="showroom.js?v=e472849d08"></script>
+    <script defer src="i18n.js?v=e6a89a3432"></script>
+    <script type="module" src="showroom.js?v=3fbaa21e97"></script>
   </body>
 </html>

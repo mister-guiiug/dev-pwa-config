@@ -19,9 +19,11 @@
  *                             dossier, le seul publié : elle ne peut pas
  *                             importer `../apps-catalog.js` → le catalogue lui
  *                             est projeté sur `globalThis` ;
- *   showroom/index.html       le bloc JSON-LD des seize apps, en dur dans le
- *                             `<head>` : un moteur doit le lire sans exécuter
- *                             le script ;
+ *   showroom/index.html       l'empreinte CSP de son script en ligne et les
+ *                             `?v=<empreinte>` de cache de ses ressources.
+ *                             (Le bloc JSON-LD des apps en a été retiré le
+ *                             05/10/2026 : la page est hors index depuis le
+ *                             29/09, aucun moteur ne le lisait) ;
  *   showroom/themes.js        même raison que `apps.js` : les seize palettes
  *                             sont désormais un module publié (`themes.js`),
  *                             la page en lit un miroir sur `globalThis` ;
@@ -325,62 +327,6 @@ export function withAdoptionTable(markdown, table) {
   );
 }
 
-/* ── Données structurées de la vitrine ──────────────────────────────────── */
-
-export const JSONLD_START =
-  '<!-- APPS-JSONLD:DÉBUT — engendré par `npm run sync` -->';
-export const JSONLD_END = '<!-- APPS-JSONLD:FIN -->';
-
-/**
- * `ItemList` schema.org des seize dépôts, posée en dur dans le `<head>`.
- *
- * ENGENDRÉE plutôt qu'injectée en JS : le showroom est une page unique qui
- * n'exposait qu'un seul titre aux moteurs. Seize applications décrites, c'est
- * seize chances d'être trouvé — mais seulement si le balisage est là avant
- * l'exécution du script.
- */
-export function appsJsonLd(apps = FAMILY_APPS) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: 'Applications miss-* / mister-*',
-    numberOfItems: apps.length,
-    itemListElement: apps.map((a, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      item: {
-        '@type': 'SoftwareApplication',
-        name: a.name,
-        description: a.description,
-        url: a.appUrl,
-        applicationCategory:
-          a.platform === 'desktop' ? 'DesktopApplication' : 'WebApplication',
-        codeRepository: a.repoUrl,
-        author: { '@type': 'Person', name: GITHUB_OWNER },
-      },
-    })),
-  };
-}
-
-/** Remplace le bloc entre marqueurs ; échoue plutôt que d'écrire à côté. */
-export function withJsonLd(html, json) {
-  const start = html.indexOf(JSONLD_START);
-  const end = html.indexOf(JSONLD_END);
-  if (start === -1 || end === -1 || end < start) {
-    throw new Error(
-      `Marqueurs ${JSONLD_START} / ${JSONLD_END} introuvables dans index.html`
-    );
-  }
-  const script =
-    '\n    <script type="application/ld+json">\n' +
-    JSON.stringify(json, null, 2)
-      .split('\n')
-      .map(line => '      ' + line)
-      .join('\n') +
-    '\n    </script>\n    ';
-  return html.slice(0, start + JSONLD_START.length) + script + html.slice(end);
-}
-
 /* ── Le CSS des composants, en morceaux ─────────────────────────────────── */
 
 /**
@@ -559,10 +505,7 @@ async function main() {
   // en ligne, et le navigateur hache le texte tel qu'il est servi.
   const index = at('showroom/index.html');
   const formate = await format(
-    avecVersionsHtml(
-      withJsonLd(readFileSync(index, 'utf8'), appsJsonLd()),
-      versionDe
-    ),
+    avecVersionsHtml(readFileSync(index, 'utf8'), versionDe),
     index
   );
   writeFileSync(index, avecEmpreintesCsp(formate));
@@ -570,7 +513,8 @@ async function main() {
   console.log(
     `showroom/components.css, showroom/command.js, ` +
       `components/*.css (${morceaux.length}), ` +
-      `showroom/apps.js, showroom/themes.js, le JSON-LD et le tableau du ` +
+      `showroom/apps.js, showroom/themes.js, les empreintes de la page et ` +
+      `le tableau du ` +
       `README régénérés (${FAMILY_APPS.length} apps, ` +
       `${FAMILY_THEMES.length} thèmes, ${CONFIG_SUBPATHS.length} sous-chemins).`
   );

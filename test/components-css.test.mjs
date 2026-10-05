@@ -584,7 +584,7 @@ test('la copie du showroom est identique à l’octet', () => {
   assert.equal(
     read('showroom/components.css'),
     RAW,
-    'showroom/components.css a dérivé — relancer `npm run showroom:sync`'
+    'showroom/components.css a dérivé : relancer `npm run sync`'
   );
 });
 
