@@ -8,6 +8,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {
+  codeDuShowroom,
+  sourceDeFonction,
+} from '../scripts/showroom-modules.mjs';
 
 const read = name =>
   readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
@@ -16,7 +20,8 @@ const PRESET = stripComments(read('tailwind-preset.css'));
 const MIRROR = stripComments(read('showroom/preset.css'));
 const SHOWROOM_CSS = stripComments(read('showroom/showroom.css'));
 const INDEX_HTML = read('showroom/index.html');
-const SHOWROOM_JS = read('showroom/showroom.js');
+// Le code de la page : showroom.js et les modules qu'il importe.
+const SHOWROOM_JS = codeDuShowroom();
 
 /* ── Micro-analyseur CSS (suffisant pour ces deux fichiers) ─────────────── */
 
@@ -348,9 +353,13 @@ const PG_SOURCE = SHOWROOM_JS.slice(
   SHOWROOM_JS.indexOf('function plusIcon')
 );
 
-/** Découpe la source par composant, sur les marqueurs `id: 'Nom'`. */
+/**
+ * Découpe la source par composant, sur les marqueurs `id: 'Nom'` des entrées
+ * du tableau (quatre espaces : `PG_COMPONENTS` est au premier niveau de
+ * bac-a-sable.js).
+ */
 function playgroundSpecs() {
-  const marks = [...PG_SOURCE.matchAll(/\n {6}id: '(\w+)',/g)];
+  const marks = [...PG_SOURCE.matchAll(/\n {4}id: '(\w+)',/g)];
   return marks.map((mark, i) => ({
     id: mark[1],
     body: PG_SOURCE.slice(
@@ -451,14 +460,8 @@ test('la page rend le bac à sable et l’audit de contraste forcé', () => {
 
   // Tout ce qui est engendré doit l'être au chargement ET à CHAQUE
   // changement de langue (retranslate, qui ne rejoue que le texte).
-  const chargement = SHOWROOM_JS.slice(
-    SHOWROOM_JS.indexOf('function renderGenerated'),
-    SHOWROOM_JS.indexOf('setupSheet();')
-  );
-  const langue = SHOWROOM_JS.slice(
-    SHOWROOM_JS.indexOf('function retranslate'),
-    SHOWROOM_JS.indexOf('function renderGenerated')
-  );
+  const chargement = sourceDeFonction('renderGenerated');
+  const langue = sourceDeFonction('retranslate');
   for (const fn of ['renderPlayground()', 'renderForcedColors()']) {
     assert.ok(chargement.includes(fn), `${fn} hors de renderGenerated`);
     assert.ok(

@@ -459,7 +459,8 @@ test('chaque catégorie du catalogue porte ses libellés', async () => {
   const read = name =>
     readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 
-  const showroom = read('showroom/showroom.js');
+  const { codeDuShowroom } = await import('../scripts/showroom-modules.mjs');
+  const showroom = codeDuShowroom();
   const startFr = showroom.indexOf('var CATEGORY_FR = {');
   assert.notEqual(startFr, -1, 'CATEGORY_FR introuvable dans la vitrine');
   const tableFr = showroom.slice(startFr, showroom.indexOf('};', startFr));

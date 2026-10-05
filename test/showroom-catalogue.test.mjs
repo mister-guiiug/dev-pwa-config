@@ -13,6 +13,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {
+  codeDuShowroom,
+  sourceDeFonction,
+} from '../scripts/showroom-modules.mjs';
 
 const read = name =>
   readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
@@ -21,7 +25,8 @@ await import('../showroom/catalogue.js');
 const CATALOGUE = globalThis.SHOWROOM_CATALOGUE;
 
 const INDEX_HTML = read('showroom/index.html');
-const SHOWROOM_JS = read('showroom/showroom.js');
+// Le code de la page : showroom.js et les modules qu'il importe.
+const SHOWROOM_JS = codeDuShowroom();
 
 // Exports que le catalogue ne documente PAS, et pourquoi. Une liste vide est
 // l'état sain ; y ajouter une ligne est une décision, pas un oubli.
@@ -275,14 +280,8 @@ test('le catalogue est chargé avant le script qui le lit', () => {
 
   // Tout ce qui est engendré doit l'être au chargement (renderGenerated) ET
   // à CHAQUE changement de langue, qui ne rejoue que le texte (retranslate).
-  const chargement = SHOWROOM_JS.slice(
-    SHOWROOM_JS.indexOf('function renderGenerated'),
-    SHOWROOM_JS.indexOf('setupSheet();')
-  );
-  const langue = SHOWROOM_JS.slice(
-    SHOWROOM_JS.indexOf('function retranslate'),
-    SHOWROOM_JS.indexOf('function renderGenerated')
-  );
+  const chargement = sourceDeFonction('renderGenerated');
+  const langue = sourceDeFonction('retranslate');
   for (const fn of [
     'renderComponentDocs()',
     'renderDecisions()',

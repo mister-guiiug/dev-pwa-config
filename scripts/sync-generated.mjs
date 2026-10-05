@@ -71,7 +71,7 @@ import { estPointDEntree } from './entree.mjs';
 const root = new URL('../', import.meta.url);
 const at = path => fileURLToPath(new URL(path, root));
 
-/** Projection sérialisable du catalogue, telle que la lit `showroom.js`. */
+/** Projection sérialisable du catalogue, telle que la lit le showroom. */
 export function showroomAppsData() {
   return {
     owner: GITHUB_OWNER,
@@ -114,7 +114,7 @@ const THEMES_HEADER = `/*
  */
 globalThis.SHOWROOM_THEMES = `;
 
-/** Miroir sérialisable des palettes, tel que le lit `showroom.js`. */
+/** Miroir sérialisable des palettes, tel que le lit le showroom. */
 export function showroomThemesFile() {
   const data = JSON.parse(JSON.stringify(FAMILY_THEMES));
   return `${THEMES_HEADER}${JSON.stringify(data, null, 2)};\n`;

@@ -15,6 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { FAMILY_THEMES } from '../themes.js';
+import { codeDuShowroom } from '../scripts/showroom-modules.mjs';
 import {
   SEUIL_TEXTE,
   SEUIL_UI,
@@ -225,9 +226,5 @@ test('chaque encre du chrome a un repli CSS et une valeur posée par la page', (
       `${variable} sans repli dans :root`
     );
   }
-  const js = readFileSync(
-    new URL('../showroom/showroom.js', import.meta.url),
-    'utf8'
-  );
-  assert.match(js, /paletteChrome\(paletteOf\(theme, scheme\)\)/);
+  assert.match(codeDuShowroom(), /paletteChrome\(paletteOf\(theme, scheme\)\)/);
 });

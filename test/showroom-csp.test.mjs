@@ -17,6 +17,7 @@ import {
   scriptsEnLigne,
 } from '../scripts/showroom-csp.mjs';
 import { jetons } from '../scripts/showroom-imports.mjs';
+import { codeDuShowroom } from '../scripts/showroom-modules.mjs';
 
 const DOSSIER = new URL('../showroom/', import.meta.url);
 const lire = nom => readFileSync(new URL(nom, DOSSIER), 'utf8');
@@ -125,7 +126,7 @@ test('le showroom n’écrit plus la clé famille `dwc_theme`', () => {
     const cles = jetons(source).filter(j => j.type === 'str');
     assert.ok(!cles.some(j => j.value === 'dwc_theme'));
   }
-  assert.match(lire('showroom.js'), /'dwc_showroom_scheme'/);
+  assert.match(codeDuShowroom(), /'dwc_showroom_scheme'/);
   assert.match(scriptsEnLigne(HTML)[0], /'dwc_showroom_scheme'/);
 });
 

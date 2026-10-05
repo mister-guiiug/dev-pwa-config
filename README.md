@@ -444,8 +444,11 @@ npm run showroom
 ```
 
 → <http://127.0.0.1:5220/dev-pwa-config/>, sous le même chemin que sur Pages.
-**Un serveur est nécessaire** : la page charge des modules ES (`showroom.js`
-et sa copie de `command.js`), que Chromium et Firefox refusent en `file://`.
+**Un serveur est nécessaire** : la page charge des modules ES (`showroom.js`,
+les modules qu'il importe et la copie de `command.js`), que Chromium et
+Firefox refusent en `file://`. `showroom.js` n'est que l'amorçage : chaque
+partie de la page a son module (`vitrine.js`, `habillage.js`, `scenes.js`,
+`recherche.js`…), et l'état qu'elles partagent vit dans `etat.js`.
 Ouvert d'un double-clic, `index.html` n'affiche que son texte et ses styles,
 sans rien de ce que le script engendre (vitrine, catalogue, palettes).
 

@@ -7,12 +7,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { codeDuShowroom } from '../scripts/showroom-modules.mjs';
 
 const read = name =>
   readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 
 const HTML = read('showroom/index.html');
-const JS = read('showroom/showroom.js');
+// Le code de la page : showroom.js et les modules qu'il importe.
+const JS = codeDuShowroom();
 
 await import('../showroom/i18n.js');
 const DICTS = globalThis.SHOWROOM_I18N;
