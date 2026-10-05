@@ -13,7 +13,7 @@
  * production, ce qui est exactement la propriété recherchée.
  */
 
-import { encreSur } from './contraste.js?v=286644156b';
+import { encreSur } from './contraste.js?v=6e61faad7f';
 import {
   etat,
   paramOr,

@@ -5,7 +5,7 @@
  * la galerie et l'habillage.
  */
 
-import { paletteChrome, VARIABLES_CHROME } from './contraste.js?v=286644156b';
+import { paletteChrome, VARIABLES_CHROME } from './contraste.js?v=6e61faad7f';
 import { root } from './etat.js?v=542f37cc5d';
 import { ROLES } from './communs.js?v=0f95ffd5f1';
 

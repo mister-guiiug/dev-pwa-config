@@ -152,10 +152,14 @@ export function fondsDuChrome(p) {
     ...bases,
     p.primarySoft,
     ...bases.map(base => melanger(p.text, base, code)),
-    // Bandeaux et cellules teintés : danger, avertissement, information.
-    melanger(p.danger, p.surface, 0.1),
-    melanger(p.warning, p.surface, 0.1),
-    melanger(p.info, p.surface, 0.1),
+    // Bandeaux et cellules teintés : danger, avertissement, information, sur
+    // chaque base. Sous `sm`, une ligne de tableau devient une carte en
+    // `surface-2`, et la cellule « KO » de la campagne de contraste y pose
+    // sa teinte : mesurée à 4,38:1 sur téléphone, dans cinq thèmes clairs,
+    // quand seule la surface était comptée (06/10/2026).
+    ...[p.danger, p.warning, p.info].flatMap(teinte =>
+      bases.map(base => melanger(teinte, base, 0.1))
+    ),
     // Puces actives et survols teintés par la primaire.
     melanger(p.primary, p.surface, 0.12),
     melanger(p.primary, p.surface, 0.18),

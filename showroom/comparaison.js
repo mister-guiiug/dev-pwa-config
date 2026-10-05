@@ -24,7 +24,7 @@ import {
   paintPalette,
   paletteForTheme,
   readGenericPalettes,
-} from './palettes.js?v=cf070637d3';
+} from './palettes.js?v=039110034f';
 
 export function renderCompare() {
   var host = document.getElementById('compare');

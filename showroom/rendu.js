@@ -39,23 +39,23 @@ import {
   renderAppSort,
   renderAppViewToggle,
   renderMetricsDate,
-} from './vitrine.js?v=32fd06c619';
+} from './vitrine.js?v=54052755aa';
 import { renderPlayground } from './bac-a-sable.js?v=7c50e94346';
 import { renderForcedColors } from './contraste-force.js?v=3b736cf205';
-import { setupPairCompare } from './comparaison.js?v=a3ca09a590';
+import { setupPairCompare } from './comparaison.js?v=2363526b8e';
 import {
   renderDemoCurrent,
   renderDemoStage,
   setupContrastCampaign,
   setupDemoSplit,
-} from './galerie.js?v=2095bea587';
+} from './galerie.js?v=bfef374c24';
 import {
   applyTheme,
   fillThemeSelect,
   renderRecent,
   renderThemeDependents,
   renderThemeGrid,
-} from './habillage.js?v=fa63e171e2';
+} from './habillage.js?v=e4fa1699ed';
 import { renderChecklist } from './checklist.js?v=b999ff683c';
 import { renderFamilyApps } from './famille.js?v=ee51f606b4';
 

@@ -41,8 +41,8 @@ import { measure } from './mesures.js?v=773565962c';
 import { setupConfirmDemo, setupSheet } from './modales.js?v=45ebf95b5b';
 import { renderCatalogueIndex } from './fiches.js?v=7a128b2142';
 import { scheduleScrollLabels } from './tableaux.js?v=ab72120a8e';
-import { renderAppGrid, renderViewChip } from './vitrine.js?v=32fd06c619';
-import { applyFocusFromUrl } from './comparaison.js?v=a3ca09a590';
+import { renderAppGrid, renderViewChip } from './vitrine.js?v=54052755aa';
+import { applyFocusFromUrl } from './comparaison.js?v=2363526b8e';
 import {
   applyScheme,
   applyTheme,
@@ -55,14 +55,14 @@ import {
   setupSectionFocus,
   setupThemePicker,
   syncSchemeInputs,
-} from './habillage.js?v=fa63e171e2';
+} from './habillage.js?v=e4fa1699ed';
 import { setupPresent, setupTour } from './visite.js?v=40c5633821';
-import { setupExportCss, setupExportReview } from './exports.js?v=9bf90ecd4e';
+import { setupExportCss, setupExportReview } from './exports.js?v=72c5e83ed3';
 import { setupRecipes } from './recettes.js?v=5aff704b0a';
 import { setupChecklist } from './checklist.js?v=b999ff683c';
-import { renderGenerated, retranslate } from './rendu.js?v=0736a30e7d';
-import { setupScenes } from './scenes.js?v=6890973361';
-import { setupCommand } from './recherche.js?v=e7e4ce8c2a';
+import { renderGenerated, retranslate } from './rendu.js?v=4844f1dd33';
+import { setupScenes } from './scenes.js?v=ff8c72683d';
+import { setupCommand } from './recherche.js?v=06a532c55c';
 
 var select = document.getElementById('theme-app');
 etat.currentScheme = paramOr('scheme', read(SCHEME_KEY, 'system'));

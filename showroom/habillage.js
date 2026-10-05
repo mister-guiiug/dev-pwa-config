@@ -5,7 +5,7 @@
  * nouveautés).
  */
 
-import { paletteChrome, VARIABLES_CHROME } from './contraste.js?v=286644156b';
+import { paletteChrome, VARIABLES_CHROME } from './contraste.js?v=6e61faad7f';
 import {
   APP_KEY,
   etat,
@@ -32,14 +32,14 @@ import {
   paletteForTheme,
   paletteOf,
   readGenericPalettes,
-} from './palettes.js?v=cf070637d3';
+} from './palettes.js?v=039110034f';
 import { labelTableCells } from './tableaux.js?v=ab72120a8e';
-import { APPS, syncAppGrid } from './vitrine.js?v=32fd06c619';
+import { APPS, syncAppGrid } from './vitrine.js?v=54052755aa';
 import {
   renderCompare,
   renderPairCompare,
-} from './comparaison.js?v=a3ca09a590';
-import { renderDemoCurrent, renderDemoStage } from './galerie.js?v=2095bea587';
+} from './comparaison.js?v=2363526b8e';
+import { renderDemoCurrent, renderDemoStage } from './galerie.js?v=bfef374c24';
 
 /**
  * Habille la page : couleurs, puis tout ce qui en dépend (textes du thème,

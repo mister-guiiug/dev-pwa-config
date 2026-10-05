@@ -13,7 +13,7 @@ import {
   paletteForTheme,
   paletteOf,
   schemeForTheme,
-} from './palettes.js?v=cf070637d3';
+} from './palettes.js?v=039110034f';
 
 export function setupDemoSplit() {
   document.querySelectorAll('.sr-demo').forEach(function (demo) {
