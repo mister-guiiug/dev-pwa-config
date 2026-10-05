@@ -5430,7 +5430,7 @@ import {
       link.dataset.dwc = 'family-app';
       // Comme le composant : le nom accessible est le texte de la carte, et
       // l'ouverture dans un nouvel onglet passe en description (WCAG 2.5.3).
-      link.title = t('ui.newTab', 'Ouvre un nouvel onglet');
+      link.title = t('ui.opensInNewTab', 'Ouvre un nouvel onglet');
 
       // Chemin de repli du composant : initiale du nom quand l'icône distante
       // n'est pas chargée (le showroom reste hors ligne).

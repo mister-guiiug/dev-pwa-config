@@ -9,6 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  clesAmbigues,
   empreinteTexte,
   empreintesAJour,
   lireEmpreintes,
@@ -79,5 +80,25 @@ test('les replis du code sont lus comme des chaînes, pas comme du texte', () =>
       ['a', 'Un repli'],
       ['d', 'Premier'],
     ]
+  );
+});
+
+test('une clé ne porte qu’un seul français', () => {
+  // L'empreinte suit UN français par clé : si la même clé sert deux textes,
+  // l'anglais n'en traduit qu'un, et lequel compte dépendait jusqu'ici de
+  // l'ordre des fichiers.
+  assert.deepEqual(
+    clesAmbigues(),
+    [],
+    'une clé par texte : donner une clé propre au second français'
+  );
+  assert.deepEqual(
+    clesAmbigues(
+      new Map([
+        ['a', new Set(['nouvel onglet'])],
+        ['b', new Set(['nouvel onglet', 'Ouvre un nouvel onglet'])],
+      ])
+    ),
+    ['b : « nouvel onglet » / « Ouvre un nouvel onglet »']
   );
 });

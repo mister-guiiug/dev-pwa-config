@@ -61,10 +61,9 @@ export function empreinteTexte(texte) {
     .slice(0, 12);
 }
 
-/** Les replis français littéraux des appels `t('clé', 'repli')`. */
-export function replisDuCode(source) {
+/** Chaque appel `t('clé', 'repli')` à repli littéral, dans l'ordre du source. */
+function* appelsT(source) {
   const t = jetons(source);
-  const out = new Map();
   for (let k = 0; k + 4 < t.length; k += 1) {
     const [nom, ouvre, cle, virgule, repli] = t.slice(k, k + 5);
     if (
@@ -80,10 +79,63 @@ export function replisDuCode(source) {
       // Un repli concaténé (`'a' + x`) n'est pas un texte fixe : on l'ignore.
       const suite = t[k + 5];
       if (suite?.type === 'punct' && suite.value === '+') continue;
-      if (!out.has(cle.value)) out.set(cle.value, repli.value);
+      yield [cle.value, repli.value];
     }
   }
+}
+
+/** Les replis français littéraux des appels `t('clé', 'repli')`. */
+export function replisDuCode(source) {
+  const out = new Map();
+  for (const [cle, repli] of appelsT(source)) {
+    if (!out.has(cle)) out.set(cle, repli);
+  }
   return out;
+}
+
+/** Les modules du showroom, hors fichiers de données. */
+const modules = () =>
+  readdirSync(DOSSIER).filter(n => n.endsWith('.js') && !DONNEES.has(n));
+
+/**
+ * Tous les français d'une même clé, partout où elle sert : contenu des
+ * `data-i18n`, `aria-label` des `data-i18n-aria`, replis des modules.
+ *
+ * Une clé n'a qu'une traduction. Deux français différents sous la même clé,
+ * et l'anglais en dit au moins un de travers : relevé le 06/10/2026,
+ * `ui.newTab` valait « nouvel onglet » entre parenthèses dans trois noms
+ * accessibles, et « Ouvre un nouvel onglet » dans le titre d'un lien ; son
+ * anglais, réécrit pour le second, faisait lire « (Opens in a new tab) » aux
+ * trois premiers.
+ *
+ * @returns {Map<string, Set<string>>} clé → textes normalisés
+ */
+export function variantesFrancaises() {
+  const variantes = new Map();
+  const ajouter = (cle, texte) => {
+    if (!variantes.has(cle)) variantes.set(cle, new Set());
+    variantes.get(cle).add(normaliser(texte));
+  };
+  const doc = new JSDOM(readFileSync(new URL('index.html', DOSSIER), 'utf8'))
+    .window.document;
+  for (const el of doc.querySelectorAll('[data-i18n]')) {
+    ajouter(el.dataset.i18n, el.innerHTML);
+  }
+  for (const el of doc.querySelectorAll('[data-i18n-aria]')) {
+    ajouter(el.dataset.i18nAria, el.getAttribute('aria-label') ?? '');
+  }
+  for (const nom of modules()) {
+    const code = readFileSync(new URL(nom, DOSSIER), 'utf8');
+    for (const [cle, repli] of appelsT(code)) ajouter(cle, repli);
+  }
+  return variantes;
+}
+
+/** Les clés qui portent plus d'un français, avec leurs textes. */
+export function clesAmbigues(variantes = variantesFrancaises()) {
+  return [...variantes]
+    .filter(([, textes]) => textes.size > 1)
+    .map(([cle, textes]) => `${cle} : « ${[...textes].join(' » / « ')} »`);
 }
 
 /**
@@ -109,9 +161,7 @@ export function sourcesFrancaises() {
   const sources = sourcesDuHtml(
     readFileSync(new URL('index.html', DOSSIER), 'utf8')
   );
-  for (const nom of readdirSync(DOSSIER).filter(
-    n => n.endsWith('.js') && !DONNEES.has(n)
-  )) {
+  for (const nom of modules()) {
     const code = readFileSync(new URL(nom, DOSSIER), 'utf8');
     for (const [cle, repli] of replisDuCode(code)) {
       if (!sources.has(cle)) sources.set(cle, repli);
