@@ -35,8 +35,10 @@ export interface FamilyApp {
   id: string;
   /** Nom d'affichage (ex. `Miss Dice`). */
   name: string;
-  /** Description courte, une phrase. */
+  /** Description courte, une phrase, en français (langue de référence). */
   description: string;
+  /** La même, en anglais : OBLIGATOIRE, le hub la sert telle quelle sur sa page anglaise. */
+  descriptionEn: string;
   /** Maturité éditoriale, OBLIGATOIRE. */
   maturity: Maturity;
   /** Domaine d'usage éditorial. */

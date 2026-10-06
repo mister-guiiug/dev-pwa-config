@@ -237,6 +237,7 @@ globalThis.SHOWROOM_APPS = {
       id: 'miss-carbook',
       name: 'Miss Carbook',
       description: 'Comparatif collaboratif de véhicules, en temps réel.',
+      descriptionEn: 'Collaborative vehicle comparison, in real time.',
       maturity: 'alpha',
       category: 'outils',
       backend: 'supabase',
@@ -278,6 +279,7 @@ globalThis.SHOWROOM_APPS = {
       id: 'miss-contraction',
       name: 'Miss Contraction',
       description: 'Chronomètre de contractions et alertes maternité.',
+      descriptionEn: 'Contraction timer and maternity alerts.',
       maturity: 'stable',
       category: 'sante',
       backend: 'local',
@@ -310,6 +312,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Miss Genius',
       description:
         'Simulateur de moyennes scolaires (notes, scénarios, objectifs).',
+      descriptionEn:
+        'School grade average simulator (marks, scenarios, goals).',
       maturity: 'stable',
       category: 'education',
       backend: 'local',
@@ -356,6 +360,7 @@ globalThis.SHOWROOM_APPS = {
       name: 'Miss UWH',
       description:
         'Bilan comptable de saison pour club de hockey subaquatique.',
+      descriptionEn: 'Season accounting for an underwater hockey club.',
       maturity: 'stable',
       category: 'sport',
       backend: 'supabase',
@@ -406,6 +411,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister CIM10',
       description:
         'Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).',
+      descriptionEn:
+        'ICD-10 coding helper in the browser (TXT/CSV/PDF export).',
       maturity: 'stable',
       category: 'sante',
       backend: 'local',
@@ -443,6 +450,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister Footcoach',
       description:
         "Gestion d'équipes de foot : compositions, statistiques, entraînements.",
+      descriptionEn:
+        'Football team management: line-ups, stats, training sessions.',
       maturity: 'alpha',
       category: 'sport',
       backend: 'supabase',
@@ -488,6 +497,7 @@ globalThis.SHOWROOM_APPS = {
       id: 'mister-puzzle',
       name: 'Mister Puzzle',
       description: 'Suivi collaboratif de progression de puzzle en temps réel.',
+      descriptionEn: 'Collaborative real-time jigsaw progress tracking.',
       maturity: 'stable',
       category: 'jeux',
       backend: 'firebase',
@@ -522,6 +532,7 @@ globalThis.SHOWROOM_APPS = {
       id: 'miss-ticket-pwa',
       name: 'Miss Ticket',
       description: "Télécommande PWA pour l'application desktop Miss Ticket.",
+      descriptionEn: 'PWA remote for the Miss Ticket desktop app.',
       maturity: 'alpha',
       category: 'outils',
       backend: 'firebase',
@@ -557,6 +568,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister Doc',
       description:
         'Planning de gardes de médecins synchronisé : vue mensuelle, compteurs week-end et heures.',
+      descriptionEn:
+        'Synced medical on-call roster: monthly view, weekend and hour counters.',
       maturity: 'stable',
       category: 'sante',
       backend: 'supabase',
@@ -603,6 +616,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Miss LookHouse',
       description:
         'Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.',
+      descriptionEn:
+        'Property watch: multi-source, de-dupe, price history, explainable scoring.',
       maturity: 'beta',
       category: 'outils',
       backend: 'supabase',
@@ -639,6 +654,7 @@ globalThis.SHOWROOM_APPS = {
       id: 'miss-badminton',
       name: 'Miss Badminton',
       description: 'Suivi de scores et statistiques de badminton.',
+      descriptionEn: 'Badminton score tracking and statistics.',
       maturity: 'stable',
       category: 'sport',
       backend: 'local',
@@ -676,6 +692,7 @@ globalThis.SHOWROOM_APPS = {
       id: 'miss-dice',
       name: 'Miss Dice',
       description: 'Lanceur de dé à 6 faces, 100 % hors ligne, installable.',
+      descriptionEn: 'Six-sided dice roller, fully offline, installable.',
       maturity: 'stable',
       category: 'jeux',
       backend: 'local',
@@ -708,6 +725,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Miss Supaboss',
       description:
         'Pilotage multi-comptes Supabase Free : pause/restore, quotas, démos.',
+      descriptionEn:
+        'Multi-account Supabase Free control: pause/restore, quotas, demos.',
       maturity: 'beta',
       category: 'dev',
       backend: 'api',
@@ -751,6 +770,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Miss Supatool',
       description:
         "Migration d'un projet Supabase vers un autre : structure, données et fichiers.",
+      descriptionEn:
+        'Migrate a Supabase project to another: schema, data and files.',
       maturity: 'beta',
       category: 'dev',
       backend: 'api',
@@ -796,6 +817,7 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister Mölkky',
       description:
         'Compteur de scores pour parties de Mölkky (multi-appareils).',
+      descriptionEn: 'Score counter for Mölkky games (multi-device).',
       maturity: 'stable',
       category: 'jeux',
       backend: 'supabase',
@@ -843,6 +865,7 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister Qowa',
       description:
         "Quiz interactif en temps réel : l'animateur pilote, les joueurs répondent.",
+      descriptionEn: 'Live interactive quiz: the host drives, players answer.',
       maturity: 'stable',
       category: 'jeux',
       backend: 'firebase',
@@ -877,6 +900,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister FamilyMap',
       description:
         'Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.',
+      descriptionEn:
+        'Family outing ideas: collaborative map, calendar and field notes.',
       maturity: 'beta',
       category: 'loisirs',
       backend: 'supabase',
@@ -923,6 +948,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister & Miss Koh',
       description:
         'Suivi de Koh-Lanta : candidats, épisodes, épreuves, conseils et votes. Indépendant, non officiel.',
+      descriptionEn:
+        'Adventure-season tracker: castaways, episodes, challenges, councils and votes. Unofficial.',
       maturity: 'beta',
       category: 'loisirs',
       backend: 'supabase',
@@ -973,6 +1000,7 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister Quota',
       description:
         'Suivi de consommation des services IA (application desktop).',
+      descriptionEn: 'AI service usage tracker (desktop app).',
       maturity: 'alpha',
       category: 'dev',
       platform: 'desktop',
@@ -994,6 +1022,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Mister Settle',
       description:
         'Partage de dépenses entre proches : qui a payé, qui doit combien, remboursements suggérés — sans paiement.',
+      descriptionEn:
+        'Split expenses with friends: who paid, who owes what, suggested reimbursements — no payments.',
       maturity: 'alpha',
       category: 'outils',
       backend: 'supabase',
@@ -1068,6 +1098,8 @@ globalThis.SHOWROOM_APPS = {
       name: 'Miss Devises',
       description:
         'Convertisseur de devises visuel : billets et pièces dessinés, conversion dans les deux sens, historique des taux et carnet annoté.',
+      descriptionEn:
+        'Visual currency converter: drawn banknotes and coins, two-way conversion, rate history and an annotated notebook.',
       maturity: 'alpha',
       category: 'outils',
       backend: 'local',

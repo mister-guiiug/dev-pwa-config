@@ -15,7 +15,11 @@
 //
 // `category` et `backend` sont des identifiants ASCII stables : les libellés
 // affichés vivent côté présentation, ce qui les rend traduisibles. Le `name` et
-// la `description` restent en français, langue de référence de la famille.
+// la `description` restent en français, langue de référence de la famille ;
+// `descriptionEn` en est la traduction, OBLIGATOIRE : le hub sert une page
+// anglaise, et une app sans elle y paraissait en français. Elle vivait dans le
+// hub (`scripts/descriptions-en.mjs`), loin de l'entrée qu'elle traduit : une
+// app ajoutée ici n'y laissait qu'un avertissement de construction.
 
 export const GITHUB_OWNER = 'mister-guiiug';
 
@@ -912,6 +916,7 @@ function app(id, name, description, maturity, overrides = {}) {
     id,
     name,
     description,
+    descriptionEn: overrides.descriptionEn,
     maturity,
     category: overrides.category,
     backend: overrides.backend,
@@ -944,6 +949,7 @@ export const FAMILY_APPS = [
     'Comparatif collaboratif de véhicules, en temps réel.',
     'alpha',
     {
+      descriptionEn: 'Collaborative vehicle comparison, in real time.',
       category: 'outils',
       backend: 'supabase',
     }
@@ -954,6 +960,7 @@ export const FAMILY_APPS = [
     'Chronomètre de contractions et alertes maternité.',
     'stable',
     {
+      descriptionEn: 'Contraction timer and maternity alerts.',
       icon: 'icon.svg',
       category: 'sante',
       backend: 'local',
@@ -965,6 +972,8 @@ export const FAMILY_APPS = [
     'Simulateur de moyennes scolaires (notes, scénarios, objectifs).',
     'stable',
     {
+      descriptionEn:
+        'School grade average simulator (marks, scenarios, goals).',
       icon: 'icons/icon-192.png',
       category: 'education',
       backend: 'local',
@@ -976,6 +985,7 @@ export const FAMILY_APPS = [
     'Bilan comptable de saison pour club de hockey subaquatique.',
     'stable',
     {
+      descriptionEn: 'Season accounting for an underwater hockey club.',
       icon: 'icons/icon-192.png',
       category: 'sport',
       backend: 'supabase',
@@ -987,6 +997,8 @@ export const FAMILY_APPS = [
     'Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).',
     'stable',
     {
+      descriptionEn:
+        'ICD-10 coding helper in the browser (TXT/CSV/PDF export).',
       category: 'sante',
       backend: 'local',
     }
@@ -997,6 +1009,8 @@ export const FAMILY_APPS = [
     "Gestion d'équipes de foot : compositions, statistiques, entraînements.",
     'alpha',
     {
+      descriptionEn:
+        'Football team management: line-ups, stats, training sessions.',
       icon: 'logo.svg',
       category: 'sport',
       backend: 'supabase',
@@ -1008,6 +1022,7 @@ export const FAMILY_APPS = [
     'Suivi collaboratif de progression de puzzle en temps réel.',
     'stable',
     {
+      descriptionEn: 'Collaborative real-time jigsaw progress tracking.',
       category: 'jeux',
       backend: 'firebase',
     }
@@ -1018,6 +1033,7 @@ export const FAMILY_APPS = [
     "Télécommande PWA pour l'application desktop Miss Ticket.",
     'alpha',
     {
+      descriptionEn: 'PWA remote for the Miss Ticket desktop app.',
       category: 'outils',
       backend: 'firebase',
       // Ce que la PWA fait de son côté. Son README le dit : le desktop ne se
@@ -1031,6 +1047,8 @@ export const FAMILY_APPS = [
     'Planning de gardes de médecins synchronisé : vue mensuelle, compteurs week-end et heures.',
     'stable',
     {
+      descriptionEn:
+        'Synced medical on-call roster: monthly view, weekend and hour counters.',
       category: 'sante',
       backend: 'supabase',
     }
@@ -1041,6 +1059,8 @@ export const FAMILY_APPS = [
     'Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.',
     'beta',
     {
+      descriptionEn:
+        'Property watch: multi-source, de-dupe, price history, explainable scoring.',
       category: 'outils',
       backend: 'supabase',
     }
@@ -1051,6 +1071,7 @@ export const FAMILY_APPS = [
     'Suivi de scores et statistiques de badminton.',
     'stable',
     {
+      descriptionEn: 'Badminton score tracking and statistics.',
       category: 'sport',
       backend: 'local',
     }
@@ -1061,6 +1082,7 @@ export const FAMILY_APPS = [
     'Lanceur de dé à 6 faces, 100 % hors ligne, installable.',
     'stable',
     {
+      descriptionEn: 'Six-sided dice roller, fully offline, installable.',
       category: 'jeux',
       backend: 'local',
     }
@@ -1073,6 +1095,8 @@ export const FAMILY_APPS = [
     // Pilote d'AUTRES comptes Supabase via un backend Node et un jeton
     // personnel : aucun client Supabase côté navigateur, d'où `api`.
     {
+      descriptionEn:
+        'Multi-account Supabase Free control: pause/restore, quotas, demos.',
       category: 'dev',
       backend: 'api',
       // L'anglais couvre toute l'interface ; seuls les libellés de `shared/`
@@ -1088,6 +1112,8 @@ export const FAMILY_APPS = [
     // TIERS en HTTP nu (PostgREST, API Storage) et à un relais pour l'API de
     // management. Aucun `@supabase/supabase-js` dans le paquet, d'où `api`.
     {
+      descriptionEn:
+        'Migrate a Supabase project to another: schema, data and files.',
       category: 'dev',
       backend: 'api',
     }
@@ -1106,6 +1132,7 @@ export const FAMILY_APPS = [
     // Rien ne mesurait ce poids : un budget de bundle ne voit pas ce qui part
     // chez le voisin.
     {
+      descriptionEn: 'Score counter for Mölkky games (multi-device).',
       icon: 'icons/icon-192.png',
       category: 'jeux',
       backend: 'supabase',
@@ -1119,6 +1146,7 @@ export const FAMILY_APPS = [
     // Pas de `favicon.svg` à la racine (404 vérifié en prod) : l'icône vit
     // dans `icons/`, et le SVG reste net à toute taille.
     {
+      descriptionEn: 'Live interactive quiz: the host drives, players answer.',
       icon: 'icons/icon.svg',
       category: 'jeux',
       backend: 'firebase',
@@ -1133,6 +1161,8 @@ export const FAMILY_APPS = [
     // ni un outil ni un jeu, et `outils` n'était qu'un pis-aller assumé à
     // l'ajout de l'app.
     {
+      descriptionEn:
+        'Family outing ideas: collaborative map, calendar and field notes.',
       category: 'loisirs',
       backend: 'supabase',
     }
@@ -1147,6 +1177,8 @@ export const FAMILY_APPS = [
     // cherche — et garde « non officiel » : l'app n'a aucun lien avec TF1 ni
     // la production, et sa donnée vient de Wikipédia, source collaborative.
     {
+      descriptionEn:
+        'Adventure-season tracker: castaways, episodes, challenges, councils and votes. Unofficial.',
       category: 'loisirs',
       backend: 'supabase',
     }
@@ -1160,6 +1192,7 @@ export const FAMILY_APPS = [
     // et pas d'icône web. `backend` volontairement absent : la section
     // « Stack » ne relève la persistance que des quinze apps web.
     {
+      descriptionEn: 'AI service usage tracker (desktop app).',
       appUrl: repoUrl('mister-quota'),
       iconUrl: null,
       category: 'dev',
@@ -1174,6 +1207,8 @@ export const FAMILY_APPS = [
     // `outils` : compter à plusieurs est un outil. Aucun paiement dans l'app,
     // et la description le dit : l'argent circule ailleurs, entre les gens.
     {
+      descriptionEn:
+        'Split expenses with friends: who paid, who owes what, suggested reimbursements — no payments.',
       category: 'outils',
       backend: 'supabase',
     }
@@ -1187,6 +1222,8 @@ export const FAMILY_APPS = [
     // fonde pas. `local` : sans compte ni serveur, les taux viennent d'API
     // publiques lues par l'appareil (ADR 0013 de l'app).
     {
+      descriptionEn:
+        'Visual currency converter: drawn banknotes and coins, two-way conversion, rate history and an annotated notebook.',
       category: 'outils',
       backend: 'local',
     }
