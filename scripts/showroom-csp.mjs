@@ -30,11 +30,16 @@ const META_CSP =
  * Le contenu des `<script>` en ligne qui S'EXÉCUTENT. Un bloc de données
  * (`application/ld+json`) n'est pas un script pour la CSP.
  *
+ * La balise fermante se lit comme le navigateur la lit : `</script >` et
+ * `</SCRIPT>` ferment aussi l'élément. Sinon l'expression courrait jusqu'à
+ * la fermante suivante : l'empreinte ne serait pas celle du script, que la
+ * CSP bloquerait (CodeQL js/bad-tag-filter).
+ *
  * @param {string} html
  * @returns {string[]}
  */
 export function scriptsEnLigne(html) {
-  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)]
     .filter(([, attributs]) => {
       if (/\ssrc=/.test(attributs)) return false;
       const type = /\stype="([^"]*)"/.exec(attributs)?.[1];

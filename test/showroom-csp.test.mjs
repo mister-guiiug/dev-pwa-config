@@ -80,6 +80,17 @@ test('chaque script en ligne a son empreinte, et aucune n’est périmée', () =
   );
 });
 
+test('un script se ferme comme le navigateur le ferme', () => {
+  // `</script >` et `</SCRIPT>` ferment l'élément pour l'analyseur HTML.
+  // Lus comme du texte, le corps courait jusqu'à la fermante suivante.
+  const page =
+    '<script>un()</script >' +
+    '<SCRIPT>deux()</SCRIPT>' +
+    '<script type="application/ld+json">{}</script>' +
+    '<script>trois()</script\n>';
+  assert.deepEqual(scriptsEnLigne(page), ['un()', 'deux()', 'trois()']);
+});
+
 test('aucun gestionnaire en ligne ni URL javascript: dans la page', () => {
   assert.doesNotMatch(HTML, /<[a-z][^>]*\son[a-z]+\s*=/i);
   assert.doesNotMatch(HTML, /href="\s*javascript:/i);
