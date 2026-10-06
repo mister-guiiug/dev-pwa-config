@@ -1,5 +1,20 @@
 # Changelog
 
+## 6.25.0
+
+### Minor Changes
+
+- 29af9c6: `command` : la recherche Ctrl+K des pages HTML du parc devient un sous-chemin publié (`@mister-guiiug/dev-pwa-config/command`, types dans `command.d.ts`). Raccourcis Ctrl/Cmd+K et « / », combobox ARIA (`aria-activedescendant`, flèches, Échap), filtrage sans diacritiques, aucune dépendance et aucun accès au DOM au chargement. Promu de la mécanique que portaient déjà trois pages : le showroom, parc-dashboard et le hub.
+  
+  Le module est entré avec #441, fusionnée sans changeset : ni la 6.24.0 ni l'étiquette `v6` ne le contiennent. Cette version le livre. Le hub (`mister-guiiug.github.io`) en dépend déjà : son build copie `command.js` à la racine du site. Le showroom, lui, en embarque désormais sa propre copie engendrée (`showroom/command.js`) au lieu d'importer `../command.js`, qui sur Pages visait la copie du hub.
+
+### Patch Changes
+
+- 6527b3e: `FamilyApps` : le nom accessible d'une carte est désormais son texte visible (nom, maturité, description). Un `aria-label` court, le nom et la maturité suivis de « nouvel onglet », le remplaçait : la description visible manquait au nom (WCAG 2.5.3, relevé par Lighthouse sur le showroom), et ce libellé restait en français dans toutes les langues. L'ouverture dans un nouvel onglet passe en description, par `title`, traduite dans les sept langues (nouveau libellé `apps.newTab`). Aucun changement visuel.
+- 96e6fb1: `Sparkline` ne fait plus avertir React. Le trait passait `'stroke-width'`, `'stroke-linecap'` et `'stroke-linejoin'` en kebab-case : le SVG rendu était juste, mais React signalait chaque attribut à chaque rendu (« Invalid DOM property `stroke-width`. Did you mean `strokeWidth`? »), soit trois erreurs par graphique dans la console des apps qui l'affichent. Les props passent en `strokeWidth`, `strokeLinecap` et `strokeLinejoin`, qui rendent exactement les mêmes attributs. Un test vérifie que le rendu se fait sans aucun avertissement.
+  
+  Rien à changer dans les apps : la montée suffit.
+
 ## 6.24.0
 
 ### Minor Changes
