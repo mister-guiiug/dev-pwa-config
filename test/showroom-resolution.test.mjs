@@ -244,13 +244,21 @@ test('le job de publication ne lance que du code sans dépendance', () => {
     new URL('.github/workflows/showroom-pages.yml', RACINE),
     'utf8'
   );
+  // Depuis le 06/10/2026, le job installe le minifieur (`npm ci`) juste avant
+  // de minifier : ce qui tourne AVANT doit toujours se passer de dépendance,
+  // puisqu'on y vérifie les sources sans rien installer.
+  const commandes = commandesDuWorkflow(yaml);
+  const installation = commandes.findIndex(c => /\bnpm ci\b/.test(c));
+  assert.ok(installation > 0, 'étape `npm ci` du job introuvable');
   const lances = [
     ...new Set(
-      commandesDuWorkflow(yaml).flatMap(commande =>
-        [
-          ...commande.matchAll(/(?:^|\s)((?:test|scripts)\/[\w.-]+\.m?js)/g),
-        ].map(m => m[1])
-      )
+      commandes
+        .slice(0, installation)
+        .flatMap(commande =>
+          [
+            ...commande.matchAll(/(?:^|\s)((?:test|scripts)\/[\w.-]+\.m?js)/g),
+          ].map(m => m[1])
+        )
     ),
   ];
   assert.ok(

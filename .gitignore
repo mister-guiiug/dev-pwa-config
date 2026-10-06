@@ -16,3 +16,7 @@ node_modules
 # le publier fait de même. Un demi-mégaoctet d'archive attendait donc le
 # prochain `git add -A`.
 *.tgz
+
+# La copie minifiée du showroom, telle qu’elle part à la publication
+# (`node scripts/minify-showroom.mjs _site`) : produite, jamais versionnée.
+_site/

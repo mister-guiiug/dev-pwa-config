@@ -7,6 +7,9 @@
  *   npm run showroom            → http://127.0.0.1:5220/dev-pwa-config/
  *   npm run showroom -- 5300    → port explicite
  *
+ * `SHOWROOM_DIR=_site npm run showroom` sert un autre dossier : la copie
+ * minifiée que produit `scripts/minify-showroom.mjs`, telle qu'elle partira.
+ *
  * POURQUOI LE PRÉFIXE. Servie à la racine, la page ne voyait pas ce qui sort
  * de son dossier : `../command.js` y retombait sur `showroom/command.js`. Sur
  * Pages, le même chemin vise la racine de l'origine, que publie un autre
@@ -17,11 +20,13 @@
  */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { extname, join, normalize, sep } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { politiquePour } from './showroom-csp.mjs';
 
-const ROOT = fileURLToPath(new URL('../showroom/', import.meta.url));
+const ROOT = process.env.SHOWROOM_DIR
+  ? resolve(process.env.SHOWROOM_DIR) + sep
+  : fileURLToPath(new URL('../showroom/', import.meta.url));
 const PORT = Number(process.argv[2]) || 5220;
 const PREFIXE = '/dev-pwa-config/';
 

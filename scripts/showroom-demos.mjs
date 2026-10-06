@@ -41,6 +41,9 @@ import {
   SyncStatusBadge,
   ThemeProvider,
   ThemeToggle,
+  Sparkline,
+  BarChart,
+  Gauge,
 } from '../react/index.js';
 
 const rien = () => {};
@@ -136,6 +139,33 @@ export const DEMOS = {
         h(SyncStatusBadge, { status: 'offline' }),
         h(SyncStatusBadge, { status: 'error' })
       ),
+  },
+
+  // Écrite à la main jusqu'au 06/10/2026 : le composant faisait avertir React
+  // (props SVG en kebab-case), et le texte lu de la démo n'était déjà plus
+  // celui qu'il rend. BarChart, annoncé par le titre, n'y figurait pas.
+  Sparkline: {
+    rendre: () =>
+      h(
+        'div',
+        { className: 'sr-row' },
+        h(Sparkline, {
+          values: [4, 12, 8, 22, 18, 28],
+          label: 'trafic',
+          unit: 'vues',
+        }),
+        h(BarChart, {
+          values: [3, 7, 5, 9, 4],
+          label: 'sessions par jour',
+          unit: 'sessions',
+        }),
+        h(Gauge, { value: 30, max: 60, label: 'quota', unit: 'Go' })
+      ),
+    annotations: [
+      ['[data-dwc="sparkline-text"]', 'data-i18n', 'composants.spark1'],
+      ['[data-dwc="bars-text"]', 'data-i18n', 'composants.bars1'],
+      ['[data-dwc="gauge"]', 'data-i18n-aria', 'composants.aria.gauge'],
+    ],
   },
 
   BottomNav: {
@@ -349,10 +379,16 @@ export function avecDemos(html) {
 export function signature(html) {
   const doc = new JSDOM(`<div id="hote">${html}</div>`).window.document;
   const valeur = (nom, v) =>
+    // Prettier, qui passe sur la page après `sync`, réécrit aussi les nombres
+    // d'un style : `width:50.00%` y devient `width: 50%`. Sans ramener les
+    // décimales à leur forme courte, une démo au style décimal (Gauge,
+    // BarChart) paraîtrait périmée à jamais.
     nom === 'style'
       ? v
           .replace(/\s*([:;])\s*/g, '$1')
           .replace(/;$/, '')
+          .replace(/(\d)\.(\d*?)0+(?!\d)/g, '$1.$2')
+          .replace(/(\d)\.(?!\d)/g, '$1')
           .trim()
       : v.replace(/\s+/g, ' ').trim();
   const lire = noeud => {

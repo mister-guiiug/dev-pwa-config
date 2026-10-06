@@ -61,10 +61,6 @@ const A_LA_MAIN = {
     'son contenu dépend de beforeinstallprompt et de la plateforme : vide au rendu serveur',
   ShareButton:
     'la démo montre l’état « Lien copié », qui n’existe qu’après un clic',
-  // Le texte lu de la démo (« de 4 à 28 vues ») n'est déjà plus celui que
-  // rend Sparkline (« 6 points, de 4 vues à 28 vues, minimum… »).
-  'Sparkline · BarChart · Gauge':
-    'react/sparkline.js passe stroke-width en kebab-case : React avertit à chaque rendu ; corriger le composant, puis engendrer',
   UpdatePromptBanner:
     'importe virtual:pwa-register/react, un module de Vite qui n’existe pas sous Node',
   Toast: 'les notifications vivent dans l’état du fournisseur ToastProvider',

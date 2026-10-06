@@ -62,9 +62,9 @@ export function Sparkline(props) {
               points: toPolyline(segment),
               fill: 'none',
               stroke: 'currentColor',
-              'stroke-width': 1.5,
-              'stroke-linecap': 'round',
-              'stroke-linejoin': 'round',
+              strokeWidth: 1.5,
+              strokeLinecap: 'round',
+              strokeLinejoin: 'round',
             })
       ),
       showLast && chart.last

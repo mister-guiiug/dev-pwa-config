@@ -14,9 +14,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { JSDOM, VirtualConsole } from 'jsdom';
 
-const DOSSIER = new URL('../showroom/', import.meta.url);
+// `SHOWROOM_DIR` fait tourner le même test sur un autre dossier : le job de
+// publication s'en sert pour éprouver la sortie MINIFIÉE avant de la
+// téléverser (`scripts/minify-showroom.mjs`).
+const DOSSIER = process.env.SHOWROOM_DIR
+  ? pathToFileURL(`${resolve(process.env.SHOWROOM_DIR)}/`)
+  : new URL('../showroom/', import.meta.url);
 const ADRESSE =
   'https://mister-guiiug.github.io/dev-pwa-config/?app=generic&scheme=light&lang=fr';
 

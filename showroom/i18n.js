@@ -398,7 +398,10 @@ globalThis.SHOWROOM_I18N = {
     'composants.h412': 'Sparkline · BarChart · Gauge',
     'composants.p412':
       'The plot is <code>aria-hidden</code>: the data is spelled out in text next to it. A chart that says nothing says nothing to anyone.',
-    'composants.spark1': 'traffic: from 4 to 28 views, rising',
+    'composants.spark1':
+      'traffic: 6 points, from 4 views to 28 views, minimum 4 views, maximum 28 views, rising.',
+    'composants.bars1':
+      'sessions per day: 5 points, from 3 sessions to 4 sessions, minimum 3 sessions, maximum 9 sessions, rising.',
     'composants.summary19': 'CSS selectors',
     'composants.p21':
       'Native share, clipboard fallback. Cancelling shows nothing: dismissing the share sheet is not a failure.',
@@ -833,6 +836,7 @@ globalThis.SHOWROOM_I18N = {
     'composants.aria.installNative': 'Example: install prompt, native button',
     'composants.aria.installIos': 'Example: install prompt, iPhone and Safari',
     'composants.aria.bottomNav': 'Example: tab bar',
+    'composants.aria.gauge': 'quota',
     'composants.aria.familyApps': 'Example: our other apps',
     'composants.confirmOpen': 'Delete the game…',
     'composants.confirmTitle': 'Delete the game?',
