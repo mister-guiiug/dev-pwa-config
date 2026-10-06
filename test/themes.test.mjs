@@ -201,16 +201,38 @@ test('la couleur de marque reste distinguable de son fond (3:1)', () => {
     if (theme.usesCssDefaults) continue;
     for (const scheme of theme.schemes) {
       const palette = theme[scheme];
-      for (const [fg, bg] of [
-        ['primary', 'surface'],
-        ['primaryContrast', 'primary'],
-      ]) {
-        const ratio = contrast(palette[fg], palette[bg]);
-        assert.ok(
-          ratio >= 3,
-          `${theme.id}/${scheme} ${fg} sur ${bg} : ${ratio.toFixed(2)}:1`
-        );
-      }
+      const ratio = contrast(palette.primary, palette.surface);
+      assert.ok(
+        ratio >= 3,
+        `${theme.id}/${scheme} primary sur surface : ${ratio.toFixed(2)}:1`
+      );
+    }
+  }
+});
+
+/*
+ * L'ENCRE POSÉE SUR LA PRIMAIRE EST DU TEXTE : libellé du bouton primaire,
+ * bouton de confirmation de `ConfirmDialog`, initiale de repli de l'icône
+ * famille, pastille de la barre basse. Elle doit donc tenir 4,5:1, pas 3:1.
+ *
+ * Le seuil de 3:1 a laissé le catalogue décrire, jusqu'au 07/10/2026, six
+ * palettes que leurs apps avaient déjà corrigées : du blanc sur #0d9488
+ * (mister-doc, 3,7:1), #16a34a (mister-footcoach, 3,3:1), #f43f5e
+ * (miss-ticket-pwa, 3,7:1), #0f9d63 (miss-supaboss, 3,5:1). Le showroom,
+ * qui peint ces palettes, les montrait sous le seuil ; un essai du détecteur
+ * Impeccable l'a relevé. Les valeurs viennent du pont `--dwc-*` de chaque
+ * app, mesuré en ligne.
+ */
+test('l’encre de la primaire tient 4,5:1 : c’est du texte', () => {
+  for (const theme of FAMILY_THEMES) {
+    if (theme.usesCssDefaults) continue;
+    for (const scheme of theme.schemes) {
+      const palette = theme[scheme];
+      const ratio = contrast(palette.primaryContrast, palette.primary);
+      assert.ok(
+        ratio >= 4.5,
+        `${theme.id}/${scheme} primaryContrast sur primary : ${ratio.toFixed(2)}:1`
+      );
     }
   }
 });
