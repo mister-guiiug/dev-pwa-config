@@ -1,7 +1,10 @@
 # Publication du showroom du design system sur GitHub Pages.
 #
-# Site 100 % statique : `showroom/` est publié TEL QUEL, sans build ni
-# dépendance. Sa CSP (en <meta>) n'autorise les scripts et les feuilles que
+# Site 100 % statique : `showroom/` est publié sans build, mais MINIFIÉ.
+# `scripts/minify-showroom.mjs` en écrit une copie dans `_site/`, que le test
+# de fumée éprouve avant le téléversement (06/10/2026). Tout ce qui précède
+# la minification tourne sans dépendance, sur les SOURCES.
+# Sa CSP (en <meta>) n'autorise les scripts et les feuilles que
 # sous l'adresse ci-dessous : servie ailleurs, la page n'a plus de script.
 # `npm run showroom` tourne la politique vers son adresse locale.
 #
@@ -28,6 +31,8 @@ on:
       - 'scripts/showroom-csp.mjs'
       - 'scripts/showroom-cache.mjs'
       - 'test/showroom-cache.test.mjs'
+      - 'scripts/minify-showroom.mjs'
+      - 'test/showroom-fumee.test.mjs'
       - '.github/workflows/showroom-pages.yml'
   workflow_dispatch:
 
@@ -55,6 +60,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '26.10.0'
+          cache: npm
 
       # Le showroom rejoue `tailwind-preset.css` en CSS natif et embarque des
       # copies de `components.css` et du catalogue famille : on refuse de
@@ -104,10 +110,29 @@ jobs:
           node --test test/showroom-metrics.test.mjs
           test/showroom-cache.test.mjs
 
+      # LA MINIFICATION, ET PAS AVANT : les étapes qui précèdent vérifient les
+      # SOURCES sans aucune dépendance (`test/showroom-resolution.test.mjs` le
+      # garde). La copie minifiée ne perd que des blancs, des commentaires et
+      # des noms internes : 194,6 Ko de JS et de CSS gzippés deviennent 123,1
+      # (-37 %, mesuré le 06/10/2026). `index.html` n'est pas touché : sa CSP
+      # porte l'empreinte de son script en ligne.
+      - name: Installer le minifieur
+        run: npm ci --no-audit --no-fund --ignore-scripts
+
+      - name: Minifier vers _site
+        run: node scripts/minify-showroom.mjs _site
+
+      # Ce qui part est ce qui a été éprouvé : la page MINIFIÉE démarre, rend
+      # ses apps, ses fiches et ses thèmes, et change de langue.
+      - name: La page minifiée démarre
+        env:
+          SHOWROOM_DIR: _site
+        run: node --test test/showroom-fumee.test.mjs
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: showroom
+          path: _site
 
   deploy:
     name: Déployer
