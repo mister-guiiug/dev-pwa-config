@@ -34,7 +34,7 @@ const META_CSP =
  * @returns {string[]}
  */
 export function scriptsEnLigne(html) {
-  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)]
+  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
     .filter(([, attributs]) => {
       if (/\ssrc=/.test(attributs)) return false;
       const type = /\stype="([^"]*)"/.exec(attributs)?.[1];
