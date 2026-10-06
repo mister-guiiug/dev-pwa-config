@@ -6,7 +6,7 @@
  * `showroom-metrics.yml`.
  *
  * Chargé par un `<script src>` classique, comme `themes.js` : la page ne
- * fait toujours AUCUNE requête réseau et s'ouvre en `file://`.
+ * fait toujours AUCUNE requête réseau.
  *
  * `repos` vide = le workflow n'est jamais passé, ou aucun dépôt n'a répondu.
  * La vitrine n'affiche alors simplement aucune mesure.

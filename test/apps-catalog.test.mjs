@@ -314,8 +314,8 @@ test('countBy regroupe les valeurs absentes sous la clé vide', () => {
 /* ── Miroir du showroom ────────────────────────────────────────────────── */
 
 /*
- * Le showroom est statique et chargeable en `file://` : il ne peut pas
- * `import` le catalogue, il en lit une copie. Une copie non vérifiée ment tôt
+ * Le showroom ne charge que des fichiers de son dossier, le seul publié : il
+ * ne peut pas importer le catalogue, il en lit une copie. Une copie non vérifiée ment tôt
  * ou tard — `npm run sync` la régénère.
  */
 test('showroom/apps.js est le miroir exact du catalogue', async () => {
@@ -333,8 +333,9 @@ test('le showroom charge le miroir avant showroom.js', () => {
     new URL('../showroom/index.html', import.meta.url),
     'utf8'
   );
-  const miroir = html.indexOf('apps.js"');
-  const main = html.indexOf('showroom.js"');
+  // `?v=<empreinte>` suit chaque nom depuis la cohérence du cache.
+  const miroir = html.search(/src="apps\.js(\?v=[0-9a-f]+)?"/);
+  const main = html.search(/src="showroom\.js(\?v=[0-9a-f]+)?"/);
   assert.ok(miroir !== -1, 'showroom/apps.js n’est pas chargé');
   assert.ok(miroir < main, 'showroom.js lirait un catalogue non défini');
 });
@@ -443,35 +444,6 @@ test('le tableau du README est celui qu’engendre le catalogue', async () => {
   );
 });
 
-/*
- * Le showroom est une page unique : sans données structurées, il n'expose
- * qu'un titre aux moteurs, pour seize applications décrites. Le bloc est
- * ENGENDRÉ dans le `<head>` plutôt qu'injecté en JS — sinon un moteur qui
- * n'exécute pas le script ne le voit pas.
- */
-test('le JSON-LD de la vitrine décrit les seize apps', async () => {
-  const { appsJsonLd, JSONLD_START, JSONLD_END } =
-    await import('../scripts/sync-generated.mjs');
-  const html = readFileSync(
-    new URL('../showroom/index.html', import.meta.url),
-    'utf8'
-  );
-  const start = html.indexOf(JSONLD_START);
-  const end = html.indexOf(JSONLD_END);
-  assert.ok(start !== -1 && end > start, 'marqueurs du bloc JSON-LD absents');
-
-  const bloc = html.slice(start + JSONLD_START.length, end);
-  const json = bloc.match(
-    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
-  );
-  assert.ok(json, 'balise application/ld+json absente du bloc engendré');
-  assert.deepEqual(
-    JSON.parse(json[1]),
-    appsJsonLd(),
-    'JSON-LD périmé : lancer `npm run sync`'
-  );
-});
-
 /* ── Une catégorie sans libellé est une catégorie invisible ────────────── */
 
 /**
@@ -487,7 +459,8 @@ test('chaque catégorie du catalogue porte ses libellés', async () => {
   const read = name =>
     readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 
-  const showroom = read('showroom/showroom.js');
+  const { codeDuShowroom } = await import('../scripts/showroom-modules.mjs');
+  const showroom = codeDuShowroom();
   const startFr = showroom.indexOf('var CATEGORY_FR = {');
   assert.notEqual(startFr, -1, 'CATEGORY_FR introuvable dans la vitrine');
   const tableFr = showroom.slice(startFr, showroom.indexOf('};', startFr));

@@ -1,8 +1,9 @@
 # Publication du showroom du design system sur GitHub Pages.
 #
 # Site 100 % statique : `showroom/` est publié TEL QUEL, sans build ni
-# dépendance. Les ressources y sont référencées en chemins relatifs, le site
-# fonctionne donc aussi bien à la racine que sous /dev-pwa-config/.
+# dépendance. Sa CSP (en <meta>) n'autorise les scripts et les feuilles que
+# sous l'adresse ci-dessous : servie ailleurs, la page n'a plus de script.
+# `npm run showroom` tourne la politique vers son adresse locale.
 #
 # → https://mister-guiiug.github.io/dev-pwa-config/
 name: Deploy showroom
@@ -19,13 +20,21 @@ on:
       - 'test/components-css.test.mjs'
       - 'test/showroom-i18n.test.mjs'
       - 'test/apps-catalog.test.mjs'
+      - 'test/showroom-resolution.test.mjs'
+      - 'test/showroom-csp.test.mjs'
+      - 'test/showroom-chrome.test.mjs'
+      - 'themes.js'
+      - 'scripts/showroom-imports.mjs'
+      - 'scripts/showroom-csp.mjs'
+      - 'scripts/showroom-cache.mjs'
+      - 'test/showroom-cache.test.mjs'
       - '.github/workflows/showroom-pages.yml'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Aucun droit par défaut : chaque job déclare les siens. `build` exécute du
+# code du dépôt et appelle l'API (relevé des dépôts) ; il n'a pas à pouvoir
+# publier sur Pages ni à obtenir un jeton OIDC. Seul `deploy` en a besoin.
+permissions: {}
 
 # Une seule publication à la fois ; on ne coupe pas un déploiement en cours.
 concurrency:
@@ -36,6 +45,8 @@ jobs:
   build:
     name: Vérifier la parité puis empaqueter
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -49,10 +60,19 @@ jobs:
       # copies de `components.css` et du catalogue famille : on refuse de
       # publier une page qui aurait dérivé de ces sources de vérité. Aucune
       # dépendance à installer (node:test + modules natifs uniquement).
+      #
+      # `showroom-resolution` vérifie que tout ce que la page charge est DANS
+      # `showroom/`, le seul dossier téléversé : un import qui en sort marche
+      # depuis le dépôt et casse la page publiée. `showroom-csp` vérifie la
+      # politique de sécurité et l'empreinte du script en ligne.
+      # `showroom-chrome` vérifie que le texte de la page tient 4,5:1 dans
+      # chacun des habillages.
       - name: Parité preset / components / catalogue ↔ showroom
         run: >-
           node --test test/showroom.test.mjs test/components-css.test.mjs
           test/showroom-i18n.test.mjs test/apps-catalog.test.mjs
+          test/showroom-resolution.test.mjs test/showroom-csp.test.mjs
+          test/showroom-chrome.test.mjs test/showroom-cache.test.mjs
 
       # LE RELEVÉ A LIEU ICI, ET N'EST PAS COMMITÉ. Il l'était, par un push
       # direct sur `main` depuis `showroom-metrics.yml` — que le ruleset
@@ -63,17 +83,26 @@ jobs:
       #
       # Produire le fichier au moment de publier supprime le besoin d'écrire
       # sur une branche protégée : ce qui part dans l'artefact est frais par
-      # construction. Le `metrics.js` du dépôt reste la version hors ligne,
-      # pour que la page s'ouvre en `file://` — c'est la promesse qui interdit
-      # d'appeler l'API depuis le navigateur.
+      # construction. Le `metrics.js` du dépôt reste la version que lit une
+      # copie locale (`npm run showroom`). La page ne fait aucune requête
+      # réseau : c'est la promesse qui interdit d'appeler l'API depuis le
+      # navigateur.
       - name: Relever l'état des dépôts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/fetch-metrics.mjs
 
+      # Le relevé vient de changer `metrics.js` : son empreinte de cache dans
+      # `index.html` doit suivre, sinon un navigateur garderait dix minutes
+      # l'ancien relevé sous la même URL. Sans dépendance (Node seul).
+      - name: Empreintes de cache du relevé
+        run: node scripts/showroom-cache.mjs --write
+
       # Le fichier part dans l'artefact : il doit rester lisible par la page.
       - name: Vérifier le fichier produit
-        run: node --test test/showroom-metrics.test.mjs
+        run: >-
+          node --test test/showroom-metrics.test.mjs
+          test/showroom-cache.test.mjs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
@@ -84,6 +113,9 @@ jobs:
     name: Déployer
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

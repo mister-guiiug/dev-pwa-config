@@ -6,8 +6,8 @@
 # archivé.
 #
 # Le relevé a lieu en CI et non dans la page : le showroom ne fait aucune
-# requête réseau, c'est ce qui lui permet de s'ouvrir en `file://` sans clé
-# d'API. Il ne lit donc qu'un fichier statique et daté.
+# requête réseau, ni clé d'API ni traceur. Il ne lit donc qu'un fichier
+# statique et daté.
 #
 # CE WORKFLOW NE COMMITE PLUS RIEN, ET C'EST LA CORRECTION D'UNE PANNE. Il
 # poussait `showroom/metrics.js` directement sur `main` ; le ruleset « Protect
@@ -45,7 +45,12 @@ jobs:
     name: Relever et republier si besoin
     runs-on: ubuntu-latest
     steps:
+      # Le job détient `actions: write` : son jeton n'a rien à faire dans
+      # `.git/config`, où tout script lancé ensuite pourrait le relire. Le
+      # seul usage du jeton, `gh workflow run`, le reçoit par `GH_TOKEN`.
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:

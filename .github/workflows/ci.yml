@@ -53,7 +53,7 @@ jobs:
             git --no-pager diff --stat
             exit 1
           fi
-          echo "✅ showroom, JSON-LD et tableau du README alignés sur leurs sources"
+          echo "✅ showroom et tableaux du README alignés sur leurs sources"
 
       - name: Verify TS configs parse
         run: |

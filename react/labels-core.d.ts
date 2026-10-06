@@ -56,6 +56,8 @@ export interface LabelGroups {
     source: string;
     sponsor: string;
     otherApps: string;
+    /** Description d'une carte de `FamilyApps` : elle ouvre un nouvel onglet. */
+    newTab: string;
   };
   /** Noms des catégories du catalogue, pour `FamilyApps groupBy`. */
   categories: Record<Category, string>;

@@ -71,6 +71,7 @@ const labels = {
     source: 'Broncode',
     sponsor: 'Trakteer me op een koffie',
     otherApps: 'Onze andere apps',
+    newTab: 'Opent in een nieuw tabblad',
   },
   categories: {
     sante: 'Gezondheid',

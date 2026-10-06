@@ -89,6 +89,7 @@ const labels = {
     source: 'Code source',
     sponsor: 'M’offrir un café',
     otherApps: 'Nos autres applications',
+    newTab: 'Ouvre un nouvel onglet',
   },
   categories: {
     sante: 'Santé',

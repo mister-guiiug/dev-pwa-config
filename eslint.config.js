@@ -19,6 +19,27 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 
 import base from './eslint-base.js';
 
+// Les fichiers de DONNÉES du showroom : `<script src>` classiques qui posent un
+// objet sur `globalThis`, chargeables tels quels par `node:test`. Tout autre
+// `showroom/*.js` est un module ES, chargé par `showroom.js` ou par la page.
+const DONNEES_SHOWROOM = [
+  'showroom/adoption.js',
+  'showroom/catalogue.js',
+  'showroom/i18n.js',
+  'showroom/screenshots.js',
+  'showroom/snippets.js',
+];
+
+const GLOBAUX_SHOWROOM = {
+  SHOWROOM_APPS: 'readonly',
+  SHOWROOM_THEMES: 'readonly',
+  SHOWROOM_METRICS: 'readonly',
+  SHOWROOM_SCREENSHOTS: 'readonly',
+  SHOWROOM_SNIPPETS: 'readonly',
+  SHOWROOM_CATALOGUE: 'readonly',
+  SHOWROOM_I18N: 'readonly',
+};
+
 export default defineConfig([
   ...base,
   globalIgnores([
@@ -49,38 +70,21 @@ export default defineConfig([
     },
   },
   {
-    // Miroirs / i18n du showroom : `<script src>` classiques posés sur
-    // `globalThis`. `showroom.js` est un module ESM (Ctrl+K via `command.js`).
-    files: ['showroom/*.js'],
-    ignores: ['showroom/showroom.js'],
+    // Données du showroom : `<script src>` classiques posés sur `globalThis`.
+    files: DONNEES_SHOWROOM,
     languageOptions: {
       sourceType: 'script',
-      globals: {
-        ...globals.browser,
-        SHOWROOM_APPS: 'readonly',
-        SHOWROOM_THEMES: 'readonly',
-        SHOWROOM_METRICS: 'readonly',
-        SHOWROOM_SCREENSHOTS: 'readonly',
-        SHOWROOM_SNIPPETS: 'readonly',
-        SHOWROOM_CATALOGUE: 'readonly',
-        SHOWROOM_I18N: 'readonly',
-      },
+      globals: { ...globals.browser, ...GLOBAUX_SHOWROOM },
     },
   },
   {
-    files: ['showroom/showroom.js'],
+    // Modules ES du showroom : `showroom.js`, la copie de `command.js`, et ce
+    // qu'ils importent. Tout reste dans `showroom/`, seul dossier publié.
+    files: ['showroom/*.js'],
+    ignores: DONNEES_SHOWROOM,
     languageOptions: {
       sourceType: 'module',
-      globals: {
-        ...globals.browser,
-        SHOWROOM_APPS: 'readonly',
-        SHOWROOM_THEMES: 'readonly',
-        SHOWROOM_METRICS: 'readonly',
-        SHOWROOM_SCREENSHOTS: 'readonly',
-        SHOWROOM_SNIPPETS: 'readonly',
-        SHOWROOM_CATALOGUE: 'readonly',
-        SHOWROOM_I18N: 'readonly',
-      },
+      globals: { ...globals.browser, ...GLOBAUX_SHOWROOM },
     },
   },
 ]);

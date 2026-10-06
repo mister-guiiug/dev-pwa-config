@@ -7,17 +7,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { codeDuShowroom } from '../scripts/showroom-modules.mjs';
 
 const read = name =>
   readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 
 const HTML = read('showroom/index.html');
-const JS = read('showroom/showroom.js');
+// Le code de la page : showroom.js et les modules qu'il importe.
+const JS = codeDuShowroom();
 
 await import('../showroom/i18n.js');
 const DICTS = globalThis.SHOWROOM_I18N;
 
 const docKeys = [...HTML.matchAll(/data-i18n="([^"]+)"/g)].map(m => m[1]);
+// Noms accessibles traduisibles : `data-i18n-aria` porte la clé, `aria-label`
+// le français. L'attribut existait sans que rien ne le lise ni ne le vérifie.
+const ariaKeys = [...HTML.matchAll(/data-i18n-aria="([^"]+)"/g)].map(m => m[1]);
 // Clés utilisées par le code généré : `t('clé', 'repli français')`.
 const codeKeys = [...JS.matchAll(/\bt\(\s*'([\w.-]+)'/g)].map(m => m[1]);
 // Clés construites dynamiquement (`t('ui.role.' + role[0], …)`) : on les
@@ -76,7 +81,7 @@ test('chaque bloc du document est traduit dans toutes les langues', () => {
 });
 
 test('aucune clé orpheline dans les dictionnaires', () => {
-  const known = new Set([...docKeys, ...codeKeys]);
+  const known = new Set([...docKeys, ...ariaKeys, ...codeKeys]);
   for (const [lang, dict] of Object.entries(DICTS)) {
     const orphans = Object.keys(dict).filter(
       key => !known.has(key) && !DYNAMIC_PREFIXES.some(p => key.startsWith(p))
@@ -111,7 +116,54 @@ test('le sélecteur de langue propose exactement les langues connues', () => {
 
 test('index.html charge i18n.js avant showroom.js', () => {
   const i18n = HTML.indexOf('i18n.js');
-  const main = HTML.indexOf('showroom.js"');
+  const main = HTML.search(/src="showroom\.js(\?v=[0-9a-f]+)?"/);
   assert.ok(i18n !== -1 && main !== -1);
   assert.ok(i18n < main, 'showroom.js lirait un dictionnaire non défini');
+});
+
+test('chaque nom accessible traduisible a sa traduction', () => {
+  assert.ok(
+    ariaKeys.length >= 4,
+    'aucun data-i18n-aria relevé : motif changé ?'
+  );
+  for (const [lang, dict] of Object.entries(DICTS)) {
+    const missing = ariaKeys.filter(key => dict[key] === undefined);
+    assert.deepEqual(
+      missing,
+      [],
+      `aria-label non traduits en ${lang} : ils resteraient en français`
+    );
+  }
+  // Et la page les lit vraiment.
+  assert.match(JS, /data-i18n-aria/);
+});
+
+test('les comptes de la prose sont calculés, jamais écrits à la main', () => {
+  // « Seize dépôts publics, dont quinze » et « un adoptant sur seize » :
+  // écrits en toutes lettres, en français et en anglais, faux depuis des
+  // semaines. Le texte porte désormais des `<span data-count>` que la page
+  // remplit depuis le catalogue.
+  const blocs = ['apps.p1', 'apps.note'];
+  const enFrancais = cle =>
+    new RegExp(
+      String.raw`data-i18n="${cle.replace('.', '[.]')}"[^>]*>([\s\S]*?)</p>`
+    ).exec(HTML)?.[1] ?? '';
+  for (const cle of blocs) {
+    for (const [langue, texte] of [
+      ['fr', enFrancais(cle)],
+      ...Object.entries(DICTS).map(([l, d]) => [l, d[cle] ?? '']),
+    ]) {
+      assert.match(
+        texte,
+        /data-count="/,
+        `${cle} (${langue}) sans compte calculé`
+      );
+      assert.doesNotMatch(
+        texte,
+        /\b(seize|quinze|sixteen|fifteen|single adopter|un adoptant)\b/i,
+        `${cle} (${langue}) écrit encore un compte en toutes lettres`
+      );
+    }
+  }
+  assert.match(JS, /function fillCounts/);
 });

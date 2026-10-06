@@ -12,11 +12,10 @@
  * elles se relèvent, ou elles mentent.
  *
  * POURQUOI UN FICHIER, ET NON UN APPEL DEPUIS LA PAGE. Le showroom ne fait
- * aucune requête réseau, et cette promesse n'est pas négociable : elle garantit
- * qu'il s'ouvre en `file://`, sans clé d'API et sans traceur. Le relevé a donc
- * lieu en CI, et le résultat est posé sur `globalThis` par un `<script src>`
- * classique — comme `themes.js` et `apps.js`. Pas de `fetch`, donc pas de
- * requête : la page s'ouvre toujours en `file://`. Le fichier est daté, pour
+ * aucune requête réseau, et cette promesse n'est pas négociable : ni clé d'API
+ * ni traceur dans la page. Le relevé a donc lieu en CI, et le résultat est
+ * posé sur `globalThis` par un `<script src>` classique, comme `themes.js` et
+ * `apps.js`. Pas de `fetch`, donc pas de requête. Le fichier est daté, pour
  * que le lecteur sache de quand il parle.
  *
  * QUAND CE SCRIPT TOURNE. Au moment de PUBLIER, dans `showroom-pages.yml` : le
@@ -90,7 +89,7 @@ export function renderMetrics(data) {
  * \`showroom-metrics.yml\`.
  *
  * Chargé par un \`<script src>\` classique, comme \`themes.js\` : la page ne
- * fait toujours AUCUNE requête réseau et s'ouvre en \`file://\`.
+ * fait toujours AUCUNE requête réseau.
  *
  * \`repos\` vide = le workflow n'est jamais passé, ou aucun dépôt n'a répondu.
  * La vitrine n'affiche alors simplement aucune mesure.

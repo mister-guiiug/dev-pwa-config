@@ -4,17 +4,29 @@
  *
  *   npm run sync
  *
- * Quatre dérivés du catalogue, chacun pour une raison technique — et une copie
- * n'est acceptable que si elle est ENGENDRÉE et VÉRIFIÉE :
+ * Chaque dérivé existe pour une raison technique, et une copie n'est
+ * acceptable que si elle est ENGENDRÉE et VÉRIFIÉE :
  *
  *   showroom/components.css   le showroom montre littéralement ce que reçoit
  *                             une app consommatrice → copie octet pour octet ;
- *   showroom/apps.js          la page est statique et chargeable en `file://`,
- *                             donc incapable d'`import` un module ES → le
- *                             catalogue lui est projeté sur `globalThis` ;
- *   showroom/index.html       le bloc JSON-LD des seize apps, en dur dans le
- *                             `<head>` : un moteur doit le lire sans exécuter
- *                             le script ;
+ *   showroom/command.js       la recherche Ctrl+K du showroom est celle du
+ *                             paquet. L'artefact Pages ne contient QUE
+ *                             `showroom/` : importer `../command.js` visait la
+ *                             racine de l'origine, donc la copie du hub, et
+ *                             rien d'autre ne marchait sans elle. Copie octet
+ *                             pour octet, importée en `./command.js` ;
+ *   showroom/apps.js          la page ne charge que des fichiers de son propre
+ *                             dossier, le seul publié : elle ne peut pas
+ *                             importer `../apps-catalog.js` → le catalogue lui
+ *                             est projeté sur `globalThis` ;
+ *   showroom/index.html       l'empreinte CSP de son script en ligne, les
+ *                             `?v=<empreinte>` de cache de ses ressources, et
+ *                             les démos rendues par les vrais composants de
+ *                             `react/` (`scripts/showroom-demos.mjs`) : écrites
+ *                             à la main, deux avaient dérivé sans que rien le
+ *                             dise. (Le bloc JSON-LD des apps en a été retiré le
+ *                             05/10/2026 : la page est hors index depuis le
+ *                             29/09, aucun moteur ne le lisait) ;
  *   showroom/themes.js        même raison que `apps.js` : les seize palettes
  *                             sont désormais un module publié (`themes.js`),
  *                             la page en lit un miroir sur `globalThis` ;
@@ -44,12 +56,22 @@ import {
 import { FAMILY_THEMES } from '../themes.js';
 import { SUBPATHS } from './adopt-plan.mjs';
 import { EQUIVALENTS } from './adoption-equivalents.mjs';
+import { avecEmpreintesCsp } from './showroom-csp.mjs';
+import {
+  accesDisque,
+  avecVersionsHtml,
+  empreintesDuDossier,
+} from './showroom-cache.mjs';
 import { estPointDEntree } from './entree.mjs';
+// Les démos (react, react-dom, jsdom) et les empreintes de traduction (jsdom)
+// sont importées DANS `main()`, comme Prettier : des tests importent ce module
+// pour ses fonctions, et le job de publication du showroom les rejoue sans
+// rien installer.
 
 const root = new URL('../', import.meta.url);
 const at = path => fileURLToPath(new URL(path, root));
 
-/** Projection sérialisable du catalogue, telle que la lit `showroom.js`. */
+/** Projection sérialisable du catalogue, telle que la lit le showroom. */
 export function showroomAppsData() {
   return {
     owner: GITHUB_OWNER,
@@ -73,9 +95,10 @@ const HEADER = `/*
  * Source : \`apps-catalog.js\` à la racine du paquet.
  * Régénérer : \`npm run sync\`.
  *
- * Le showroom ne peut pas \`import\` le catalogue (page statique, \`file://\`) :
- * il en lit ce miroir, posé sur \`globalThis\` comme \`themes.js\` et
- * \`screenshots.js\`. \`test/apps-catalog.test.mjs\` vérifie qu'il ne dérive pas.
+ * Le showroom ne charge que des fichiers de son dossier, le seul que publie
+ * Pages : il ne peut pas importer le catalogue, il en lit ce miroir, posé sur
+ * \`globalThis\` comme \`themes.js\` et \`screenshots.js\`.
+ * \`test/apps-catalog.test.mjs\` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_APPS = `;
 
@@ -85,12 +108,13 @@ const THEMES_HEADER = `/*
  * Source : \`themes.js\` à la racine du paquet (avec ses commentaires de relevé).
  * Régénérer : \`npm run sync\`.
  *
- * Le showroom ne peut pas \`import\` le module (page statique, \`file://\`) : il en
- * lit ce miroir. \`test/themes.test.mjs\` vérifie qu'il ne dérive pas.
+ * Le showroom ne charge que des fichiers de son dossier, le seul que publie
+ * Pages : il ne peut pas importer le module, il en lit ce miroir.
+ * \`test/themes.test.mjs\` vérifie qu'il ne dérive pas.
  */
 globalThis.SHOWROOM_THEMES = `;
 
-/** Miroir sérialisable des palettes, tel que le lit `showroom.js`. */
+/** Miroir sérialisable des palettes, tel que le lit le showroom. */
 export function showroomThemesFile() {
   const data = JSON.parse(JSON.stringify(FAMILY_THEMES));
   return `${THEMES_HEADER}${JSON.stringify(data, null, 2)};\n`;
@@ -310,62 +334,6 @@ export function withAdoptionTable(markdown, table) {
   );
 }
 
-/* ── Données structurées de la vitrine ──────────────────────────────────── */
-
-export const JSONLD_START =
-  '<!-- APPS-JSONLD:DÉBUT — engendré par `npm run sync` -->';
-export const JSONLD_END = '<!-- APPS-JSONLD:FIN -->';
-
-/**
- * `ItemList` schema.org des seize dépôts, posée en dur dans le `<head>`.
- *
- * ENGENDRÉE plutôt qu'injectée en JS : le showroom est une page unique qui
- * n'exposait qu'un seul titre aux moteurs. Seize applications décrites, c'est
- * seize chances d'être trouvé — mais seulement si le balisage est là avant
- * l'exécution du script.
- */
-export function appsJsonLd(apps = FAMILY_APPS) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    name: 'Applications miss-* / mister-*',
-    numberOfItems: apps.length,
-    itemListElement: apps.map((a, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      item: {
-        '@type': 'SoftwareApplication',
-        name: a.name,
-        description: a.description,
-        url: a.appUrl,
-        applicationCategory:
-          a.platform === 'desktop' ? 'DesktopApplication' : 'WebApplication',
-        codeRepository: a.repoUrl,
-        author: { '@type': 'Person', name: GITHUB_OWNER },
-      },
-    })),
-  };
-}
-
-/** Remplace le bloc entre marqueurs ; échoue plutôt que d'écrire à côté. */
-export function withJsonLd(html, json) {
-  const start = html.indexOf(JSONLD_START);
-  const end = html.indexOf(JSONLD_END);
-  if (start === -1 || end === -1 || end < start) {
-    throw new Error(
-      `Marqueurs ${JSONLD_START} / ${JSONLD_END} introuvables dans index.html`
-    );
-  }
-  const script =
-    '\n    <script type="application/ld+json">\n' +
-    JSON.stringify(json, null, 2)
-      .split('\n')
-      .map(line => '      ' + line)
-      .join('\n') +
-    '\n    </script>\n    ';
-  return html.slice(0, start + JSONLD_START.length) + script + html.slice(end);
-}
-
 /* ── Le CSS des composants, en morceaux ─────────────────────────────────── */
 
 /**
@@ -504,6 +472,7 @@ async function format(source, filepath) {
 
 async function main() {
   copyFileSync(at('components.css'), at('showroom/components.css'));
+  copyFileSync(at('command.js'), at('showroom/command.js'));
 
   const entier = readFileSync(at('components.css'), 'utf8');
   mkdirSync(at('components'), { recursive: true });
@@ -532,15 +501,54 @@ async function main() {
   );
   writeFileSync(readme, await format(updated, readme));
 
-  const index = at('showroom/index.html');
-  writeFileSync(
-    index,
-    await format(withJsonLd(readFileSync(index, 'utf8'), appsJsonLd()), index)
+  // Empreintes de cache : les modules d'abord (leurs imports en portent),
+  // puis la page qui les charge. Toutes les copies ci-dessus sont déjà
+  // écrites : ce qui est empreint, c'est ce qui sera servi.
+  const versionDe = await empreintesDuDossier(
+    accesDisque((chemin, contenu) => format(contenu, chemin))
   );
 
+  // Les démos d'abord, rendues par `react/` entre leurs marqueurs ; puis les
+  // `?v=`. L'empreinte CSP se calcule APRÈS Prettier : il reformate aussi le
+  // script en ligne, et le navigateur hache le texte tel qu'il est servi.
+  const { avecDemos, DEMOS } = await import('./showroom-demos.mjs');
+  const index = at('showroom/index.html');
+  const formate = await format(
+    avecVersionsHtml(avecDemos(readFileSync(index, 'utf8')), versionDe),
+    index
+  );
+  writeFileSync(index, avecEmpreintesCsp(formate));
+
+  // Empreintes du français que traduit chaque clé anglaise : une clé nouvelle
+  // reçoit la sienne, une clé disparue la perd, et une empreinte devenue
+  // fausse est SIGNALÉE, jamais remise à jour en silence. Après relecture de
+  // l'anglais : `npm run sync -- --traductions-revues`.
+  const { FICHIER_EMPREINTES, empreintesAJour, lireEmpreintes } =
+    await import('./showroom-i18n.mjs');
+  await import('../showroom/i18n.js');
+  const { empreintes, aRelire } = empreintesAJour(
+    globalThis.SHOWROOM_I18N,
+    lireEmpreintes(),
+    { revues: process.argv.includes('--traductions-revues') }
+  );
+  const fichierEmpreintes = fileURLToPath(FICHIER_EMPREINTES);
+  writeFileSync(
+    fichierEmpreintes,
+    await format(JSON.stringify(empreintes, null, 2) + '\n', fichierEmpreintes)
+  );
+  if (aRelire.length) {
+    console.warn(
+      `Traductions à relire, leur français a changé : ${aRelire.join(', ')}.\n` +
+        "Une fois l'anglais revu : npm run sync -- --traductions-revues"
+    );
+  }
+
+  const nombreDemos = Object.keys(DEMOS).length;
   console.log(
-    `showroom/components.css, components/*.css (${morceaux.length}), ` +
-      `showroom/apps.js, showroom/themes.js, le JSON-LD et le tableau du ` +
+    `showroom/components.css, showroom/command.js, ` +
+      `components/*.css (${morceaux.length}), ` +
+      `showroom/apps.js, showroom/themes.js, les démos (${nombreDemos}) et ` +
+      `les empreintes de la page, le tableau du ` +
       `README régénérés (${FAMILY_APPS.length} apps, ` +
       `${FAMILY_THEMES.length} thèmes, ${CONFIG_SUBPATHS.length} sous-chemins).`
   );

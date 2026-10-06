@@ -71,6 +71,7 @@ const labels = {
     source: 'Quellcode',
     sponsor: 'Spendier mir einen Kaffee',
     otherApps: 'Unsere anderen Apps',
+    newTab: 'Öffnet in einem neuen Tab',
   },
   categories: {
     sante: 'Gesundheit',

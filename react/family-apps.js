@@ -45,7 +45,7 @@ function groupeDeplie(memorise, valeur) {
 // Carte d'une application : icône (ou initiale en repli si l'icône échoue),
 // nom + badge de maturité, description, flèche « lien externe ». Le lien entier
 // est cliquable.
-function AppCard({ item, maturityLabels }) {
+function AppCard({ item, maturityLabels, newTabLabel }) {
   const [iconFailed, setIconFailed] = useState(false);
 
   const icon =
@@ -71,7 +71,12 @@ function AppCard({ item, maturityLabels }) {
       href: item.appUrl,
       ...EXT,
       'data-dwc': 'family-app',
-      'aria-label': `${item.name} (${maturityLabels[item.maturity]}) — nouvel onglet`,
+      // Le nom accessible est le TEXTE de la carte : nom, maturité,
+      // description. Un `aria-label` plus court (« nom (maturité) » suivi de
+      // l'onglet) remplaçait ce texte : la description visible manquait au nom
+      // (WCAG 2.5.3), et le libellé était en français dans toutes les langues.
+      // L'ouverture dans un nouvel onglet passe en description, par `title`.
+      title: newTabLabel,
     },
     icon,
     h(
@@ -252,6 +257,7 @@ export function FamilyApps(props) {
   // `{app}` est remplacé par le nom : un lecteur d'écran qui parcourt la grille
   // entend seize fois « Code source » sans cela.
   const repoLabel = labels.repo ?? appsDictionary.repo;
+  const newTabLabel = appsDictionary.newTab;
 
   // Réutilise le helper si on travaille sur le catalogue par défaut, sinon
   // filtre la liste fournie.
@@ -307,7 +313,7 @@ export function FamilyApps(props) {
         'data-platform': item.platform,
         'data-with-repo': showRepoLinks ? '' : undefined,
       },
-      h(AppCard, { item, maturityLabels }),
+      h(AppCard, { item, maturityLabels, newTabLabel }),
       showRepoLinks
         ? h(
             'a',

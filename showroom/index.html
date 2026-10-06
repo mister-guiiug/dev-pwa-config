@@ -1,5 +1,13 @@
 <!doctype html>
-<html lang="fr" data-app="generic" data-theme="light">
+<!-- `data-news-id` : la vague de nouveautés en cours, seule source pour le
+     script en ligne (qui décide l'affichage du ruban) et pour showroom.js.
+     L'avancer réaffiche le ruban aux visiteurs déjà venus. -->
+<html
+  lang="fr"
+  data-app="generic"
+  data-theme="light"
+  data-news-id="wave4-2026-10-04"
+>
   <head>
     <meta charset="utf-8" />
     <meta
@@ -7,10 +15,25 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <!--
+      CSP en <meta>, Pages n'acceptant pas d'en-têtes : voir
+      scripts/showroom-csp.mjs. Elle doit précéder tout script et toute feuille.
+      Les empreintes de script-src sont écrites par `npm run sync`.
+      style-src-attr garde 'unsafe-inline' : les démos reproduisent le DOM réel
+      des composants, attributs style compris (largeur d'une jauge, etc.).
+      Une balise <style> injectée, elle, reste refusée par style-src-elem.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src https://mister-guiiug.github.io/dev-pwa-config/ 'sha256-MUMpxjoqntc6TQyueODux2/x3US967QsFrpYuqM5NJ8='; style-src https://mister-guiiug.github.io/dev-pwa-config/ 'unsafe-inline'; style-src-elem https://mister-guiiug.github.io/dev-pwa-config/; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'"
+    />
+    <!--
       HORS INDEX (29/09/2026) : le showroom est une vitrine TECHNIQUE du socle,
       pas une page de destination. L'audit SEO l'a trouvé indexable, sans
       canonique ni plan de site, en concurrence avec le hub et les pages des
       apps pour leurs propres noms. Il reste lié et ouvert à tous.
+      Conséquence (05/10/2026) : plus de bloc JSON-LD des apps ici. Il pesait
+      13,7 Ko et une étape de `npm run sync` pour une page qu'aucun moteur
+      n'indexe ; les apps et le hub portent leurs propres données.
     -->
     <meta name="robots" content="noindex" />
     <title>Showroom — @mister-guiiug/dev-pwa-config</title>
@@ -18,16 +41,26 @@
       name="description"
       content="Showroom statique du design system partagé des PWA miss-* / mister-* : tokens du preset Tailwind, composants React non stylés, et bascule de thème vers l'univers visuel de chaque application."
     />
-    <link rel="stylesheet" href="preset.css" />
+    <!-- L'icône est DANS la page : sans elle, le navigateur demande
+         /favicon.ico à la racine de l'origine, c'est-à-dire à un autre dépôt
+         (le hub), et la page ne charge plus seulement son propre dossier. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f2937'/%3E%3Cpath d='M9 22h14M9 16h14M9 10h14' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="preset.css?v=d7328ade6f" />
     <!-- Habillage OPT-IN des composants, servi TEL QUEL depuis le paquet :
          la démo ci-dessous est donc littéralement ce que reçoit une app qui
          importe `@mister-guiiug/dev-pwa-config/components.css`. -->
-    <link rel="stylesheet" href="components.css" />
-    <link rel="stylesheet" href="showroom.css" />
+    <link rel="stylesheet" href="components.css?v=7a1a905fa4" />
+    <link rel="stylesheet" href="showroom.css?v=24773897cb" />
     <script>
       // Anti-FOUC : restaure thème d'app + schéma avant le premier rendu.
       // Même contrat que `useTheme` du paquet (light | dark | system →
-      // attribut `data-theme` sur <html>).
+      // attribut `data-theme` sur <html>), mais sous une clé PROPRE au
+      // showroom : `dwc_theme` est celle de toute la famille, sur la même
+      // origine, et un essai ici ne doit pas changer le thème des apps.
+      // Toute retouche de ce script change son empreinte CSP : `npm run sync`.
       //
       // L'URL prime sur le stockage : un lien partagé doit montrer ce qu'il
       // promet, même si le destinataire avait déjà visité la page.
@@ -43,7 +76,7 @@
             params.get('app') || localStorage.getItem('dwc_showroom_app');
           var scheme =
             params.get('scheme') ||
-            localStorage.getItem('dwc_theme') ||
+            localStorage.getItem('dwc_showroom_scheme') ||
             'system';
           var lang =
             params.get('lang') || localStorage.getItem('dwc_showroom_lang');
@@ -55,359 +88,31 @@
               window.matchMedia('(prefers-color-scheme: dark)').matches);
           root.setAttribute('data-theme', dark ? 'dark' : 'light');
           root.style.colorScheme = dark ? 'dark' : 'light';
+          // Ruban « Nouveautés » : décidé ICI, avant le premier rendu. Posé
+          // après coup par le module, il poussait toute la page vers le bas
+          // (Lighthouse, CLS 0,73 sur ordinateur). Et seulement pour qui est
+          // déjà venu : « depuis votre dernière visite » était faux à la
+          // première.
+          var newsId = root.getAttribute('data-news-id');
+          var dejaVenu = false;
+          for (var i = 0; i < localStorage.length; i++) {
+            if (String(localStorage.key(i)).indexOf('dwc_showroom_') === 0) {
+              dejaVenu = true;
+              break;
+            }
+          }
+          if (
+            newsId &&
+            dejaVenu &&
+            localStorage.getItem('dwc_showroom_news') !== newsId
+          ) {
+            root.setAttribute('data-news', 'on');
+          }
         } catch (e) {
           /* stockage indisponible : on garde les valeurs du markup */
         }
       })();
     </script>
-    <!-- APPS-JSONLD:DÉBUT — engendré par `npm run sync` -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "ItemList",
-        "name": "Applications miss-* / mister-*",
-        "numberOfItems": 21,
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Carbook",
-              "description": "Comparatif collaboratif de véhicules, en temps réel.",
-              "url": "https://mister-guiiug.github.io/miss-carbook/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-carbook",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Contraction",
-              "description": "Chronomètre de contractions et alertes maternité.",
-              "url": "https://mister-guiiug.github.io/miss-contraction/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-contraction",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Genius",
-              "description": "Simulateur de moyennes scolaires (notes, scénarios, objectifs).",
-              "url": "https://mister-guiiug.github.io/miss-genius/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-genius",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 4,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss UWH",
-              "description": "Bilan comptable de saison pour club de hockey subaquatique.",
-              "url": "https://mister-guiiug.github.io/miss-uwh/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-uwh",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 5,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister CIM10",
-              "description": "Aide à la cotation CIM-10 dans le navigateur (export TXT/CSV/PDF).",
-              "url": "https://mister-guiiug.github.io/mister-cim10/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-cim10",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 6,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Footcoach",
-              "description": "Gestion d'équipes de foot : compositions, statistiques, entraînements.",
-              "url": "https://mister-guiiug.github.io/mister-footcoach/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-footcoach",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 7,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Puzzle",
-              "description": "Suivi collaboratif de progression de puzzle en temps réel.",
-              "url": "https://mister-guiiug.github.io/mister-puzzle/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-puzzle",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 8,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Ticket",
-              "description": "Télécommande PWA pour l'application desktop Miss Ticket.",
-              "url": "https://mister-guiiug.github.io/miss-ticket-pwa/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-ticket-pwa",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 9,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Doc",
-              "description": "Planning de gardes de médecins synchronisé : vue mensuelle, compteurs week-end et heures.",
-              "url": "https://mister-guiiug.github.io/mister-doc/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-doc",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 10,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss LookHouse",
-              "description": "Veille immobilière : multi-sources, anti-doublons, historique des prix, scoring explicable.",
-              "url": "https://mister-guiiug.github.io/miss-lookhouse/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-lookhouse",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 11,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Badminton",
-              "description": "Suivi de scores et statistiques de badminton.",
-              "url": "https://mister-guiiug.github.io/miss-badminton/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-badminton",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 12,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Dice",
-              "description": "Lanceur de dé à 6 faces, 100 % hors ligne, installable.",
-              "url": "https://mister-guiiug.github.io/miss-dice/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-dice",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 13,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Supaboss",
-              "description": "Pilotage multi-comptes Supabase Free : pause/restore, quotas, démos.",
-              "url": "https://mister-guiiug.github.io/miss-supaboss/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-supaboss",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 14,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Supatool",
-              "description": "Migration d'un projet Supabase vers un autre : structure, données et fichiers.",
-              "url": "https://mister-guiiug.github.io/miss-supatool/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-supatool",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 15,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Mölkky",
-              "description": "Compteur de scores pour parties de Mölkky (multi-appareils).",
-              "url": "https://mister-guiiug.github.io/mister-molkky/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-molkky",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 16,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Qowa",
-              "description": "Quiz interactif en temps réel : l'animateur pilote, les joueurs répondent.",
-              "url": "https://mister-guiiug.github.io/mister-qowa/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-qowa",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 17,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister FamilyMap",
-              "description": "Idées de sorties en famille : carte collaborative, agenda et retours d’expérience.",
-              "url": "https://mister-guiiug.github.io/mister-family-map/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-family-map",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 18,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister & Miss Koh",
-              "description": "Suivi de Koh-Lanta : candidats, épisodes, épreuves, conseils et votes. Indépendant, non officiel.",
-              "url": "https://mister-guiiug.github.io/mister-miss-koh/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-miss-koh",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 19,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Quota",
-              "description": "Suivi de consommation des services IA (application desktop).",
-              "url": "https://github.com/mister-guiiug/mister-quota",
-              "applicationCategory": "DesktopApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-quota",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 20,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Mister Settle",
-              "description": "Partage de dépenses entre proches : qui a payé, qui doit combien, remboursements suggérés — sans paiement.",
-              "url": "https://mister-guiiug.github.io/mister-settle/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/mister-settle",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          },
-          {
-            "@type": "ListItem",
-            "position": 21,
-            "item": {
-              "@type": "SoftwareApplication",
-              "name": "Miss Devises",
-              "description": "Convertisseur de devises visuel : billets et pièces dessinés, conversion dans les deux sens, historique des taux et carnet annoté.",
-              "url": "https://mister-guiiug.github.io/miss-devises/",
-              "applicationCategory": "WebApplication",
-              "codeRepository": "https://github.com/mister-guiiug/miss-devises",
-              "author": {
-                "@type": "Person",
-                "name": "mister-guiiug"
-              }
-            }
-          }
-        ]
-      }
-    </script>
-    <!-- APPS-JSONLD:FIN -->
   </head>
 
   <body>
@@ -416,13 +121,20 @@
     <div
       class="sr-news"
       id="sr-news"
-      hidden
       role="region"
       aria-labelledby="sr-news-title"
     >
       <p class="sr-news-body">
-        <strong id="sr-news-title"></strong>
-        <span id="sr-news-items"></span>
+        <!-- Texte déjà là au premier rendu : le module n'y touche que pour
+             une autre langue, sans rien déplacer en français. -->
+        <strong id="sr-news-title" data-i18n="ui.news.title"
+          >Nouveautés showroom</strong
+        >
+        <span id="sr-news-items" data-i18n="ui.news.body"
+          >depuis votre dernière visite : scènes enregistrées, mode
+          présentation, recettes, checklist d’adoption, export CSS du thème,
+          viewport jumeau</span
+        >
       </p>
       <button
         type="button"
@@ -447,7 +159,7 @@
         </div>
 
         <!-- Job principal : endosser une application (grille visuelle). -->
-        <div class="sr-theme-primary">
+        <div class="sr-theme-primary" id="sr-theme-row">
           <span id="theme-app-label" data-i18n="topbar.themeLabel"
             >Habiller</span
           >
@@ -475,7 +187,15 @@
                 aria-labelledby="theme-app-label"
               ></div>
             </details>
-            <select id="theme-app" class="sr-visually-hidden" tabindex="-1">
+            <!-- Miroir programmatique de la grille : hors du parcours clavier ET
+                 de l'arbre d'accessibilité (un second sélecteur sans nom, que
+                 la grille visible double déjà). -->
+            <select
+              id="theme-app"
+              class="sr-visually-hidden"
+              tabindex="-1"
+              aria-hidden="true"
+            >
               <option value="generic">Générique — preset seul</option>
             </select>
             <a
@@ -523,19 +243,40 @@
           <ul class="sr-cmd-list" id="sr-cmd-list" role="listbox" hidden></ul>
         </label>
 
+        <!-- Petit écran, en-tête replié au défilement : ce bouton redéploie
+             les rangées « Habiller » et recherche (voir setupCompactHeader). -->
+        <button
+          type="button"
+          class="sr-topbar-expand"
+          id="sr-topbar-expand"
+          aria-controls="sr-theme-row sr-cmd"
+          aria-expanded="true"
+          hidden
+        >
+          <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <span class="sr-visually-hidden" data-i18n="ui.topbar.expand"
+            >Afficher la recherche et l’habillage</span
+          >
+        </button>
+
         <!-- Clair/sombre + langue regroupés : une icône, un panneau. -->
         <details class="sr-prefs" id="sr-prefs">
+          <!-- Un globe et le code de la langue courante, visibles : l'ancien
+               soleil se confondait avec celui du schéma « Clair », et rien ne
+               disait qu'on change de langue ici. -->
           <summary class="sr-prefs-summary">
             <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-              />
+              <circle cx="12" cy="12" r="9" />
+              <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
             </svg>
             <span class="sr-prefs-badge" id="sr-prefs-badge" hidden></span>
             <span class="sr-visually-hidden" data-i18n="ui.prefs.summary"
               >Préférences</span
             >
+            <span class="sr-prefs-lang" id="sr-prefs-lang">FR</span>
           </summary>
           <div class="sr-prefs-panel">
             <fieldset class="sr-control">
@@ -967,7 +708,7 @@
           aria-label="Recettes"
         ></div>
         <p class="sr-recipe-meta" id="sr-recipe-meta"></p>
-        <h2 class="sr-recipe-title" id="sr-recipe-title"></h2>
+        <h2 class="sr-recipe-title" id="sr-recipe-title">Recette</h2>
         <p class="sr-recipe-body" id="sr-recipe-body"></p>
         <p class="sr-recipe-actions">
           <button
@@ -998,7 +739,7 @@
         aria-labelledby="sr-tour-title"
       >
         <ol class="sr-tour-steps" id="sr-tour-steps"></ol>
-        <h2 class="sr-tour-title" id="sr-tour-title"></h2>
+        <h2 class="sr-tour-title" id="sr-tour-title">Parcours guidé</h2>
         <p class="sr-tour-body" id="sr-tour-body"></p>
         <p class="sr-tour-actions">
           <button
@@ -1026,10 +767,11 @@
           Les applications de la famille
         </h2>
         <p data-i18n="apps.p1">
-          Seize dépôts publics, dont <strong>quinze</strong> consomment ce
-          paquet — l’application desktop n’en importe rien, et c’est le champ «
-          sous-chemins » qui l’a révélé. Cette grille n’est pas une liste tenue
-          à la main dans la page : elle est engendrée depuis
+          <span data-count="apps">21</span> dépôts publics, dont
+          <strong><span data-count="consumers">21</span></strong> consomment ce
+          paquet : c’est le champ « sous-chemins », relevé dans le code de
+          chaque app, qui le dit. Cette grille n’est pas une liste tenue à la
+          main dans la page : elle est engendrée depuis
           <code>apps-catalog.js</code> — le fichier qu’importent les
           applications elles-mêmes pour s’afficher les unes les autres. Ce qui
           serait faux ici serait faux dans leurs pieds de page.
@@ -1187,10 +929,11 @@
           qui affiche « non relevé » vaut mieux qu’une donnée inventée. Le
           filtre <em>Consomme</em> répond ainsi à la question qu’un design
           system doit se poser en premier : qui utilise vraiment quoi ?
-          <code>components.css</code> n’a qu’un adoptant sur seize. Les
-          pastilles sont peintes avec la primaire réelle de chaque application,
-          jamais avec une icône distante : le showroom ne fait aucune requête
-          réseau.
+          <code>components.css</code> :
+          <span data-count="components-css">19</span> adoptants sur
+          <span data-count="apps">21</span>. Les pastilles sont peintes avec la
+          primaire réelle de chaque application, jamais avec une icône distante
+          : le showroom ne fait aucune requête réseau.
         </p>
       </section>
 
@@ -1206,7 +949,9 @@
           liste aux exports réels de <code>react/index.js</code> : ce qui n’est
           pas ici est soit couvert par une autre fiche, soit nommément exclu —
           c’est ainsi que les neuf hooks, absents de leur propre vitrine, ont
-          été repérés.
+          été repérés. Les composants et hooks des sous-chemins
+          <code>react/*</code> hors baril sont tenus de la même façon : ceux qui
+          n’ont pas encore de fiche sont nommés dans le test, avec leur raison.
         </p>
 
         <div class="sr-cat-controls">
@@ -1359,7 +1104,10 @@
             <tbody>
               <tr>
                 <th scope="row"><code>--font-sans</code></th>
-                <td style="font-family: var(--font-sans)">
+                <td
+                  style="font-family: var(--font-sans)"
+                  data-i18n="fondations.fontSans"
+                >
                   Interface système — 0123456789
                 </td>
               </tr>
@@ -1477,7 +1225,7 @@
 
         <h3 class="sr-subtitle" data-i18n="fondations.h35">Safe-areas iOS</h3>
         <div class="sr-safe-demo py-safe px-safe">
-          <div>
+          <div data-i18n="fondations.safeDemo">
             Zone de contenu à l’intérieur des
             <code>env(safe-area-inset-*)</code>. Utilitaires :
             <code>pt-safe</code>, <code>pb-safe</code>, <code>px-safe</code>,
@@ -1489,8 +1237,10 @@
           <table class="sr-table">
             <thead>
               <tr>
-                <th scope="col">Inset</th>
-                <th scope="col">Valeur mesurée</th>
+                <th scope="col" data-i18n="fondations.safeInset">Inset</th>
+                <th scope="col" data-i18n="fondations.safeValue">
+                  Valeur mesurée
+                </th>
               </tr>
             </thead>
             <tbody id="safe-areas">
@@ -1532,11 +1282,12 @@
               type="button"
               class="sr-btn sr-btn--ghost"
               style="min-height: 1.75rem; padding: 0.1rem 0.4rem"
+              data-i18n="fondations.tooSmall"
             >
               Trop petit
             </button>
           </span>
-          <span class="sr-note" style="margin: 0"
+          <span class="sr-note" style="margin: 0" data-i18n="fondations.dashed"
             >Le pointillé rouge matérialise le minimum de 2,75 rem.</span
           >
         </div>
@@ -1875,7 +1626,9 @@
         </p>
         <div data-snippet="Sheet"></div>
 
-        <h3 class="sr-subtitle">SegmentedControl — onglets « pilule »</h3>
+        <h3 class="sr-subtitle" data-i18n="primitives.h3segmented">
+          SegmentedControl — onglets « pilule »
+        </h3>
         <div
           data-dwc="segmented"
           role="tablist"
@@ -1953,10 +1706,11 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h41">EmptyState</h4>
+            <h3 data-i18n="composants.h41">EmptyState</h3>
             <p data-i18n="composants.p2">État vide avec action suivante.</p>
           </div>
           <div class="sr-demo-stage">
+            <!-- DÉMO:EmptyState:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
             <div data-dwc="empty-state" role="note">
               <div data-dwc="empty-state-icon" aria-hidden="true">
                 <svg
@@ -1969,8 +1723,8 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <path d="M3 7l9-4 9 4v10l-9 4-9-4V7z" />
-                  <path d="M3 7l9 4 9-4M12 11v10" />
+                  <path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"></path>
+                  <path d="M3 7l9 4 9-4M12 11v10"></path>
                 </svg>
               </div>
               <p data-dwc="empty-state-title" data-i18n="composants.p3">
@@ -1983,6 +1737,7 @@
                 <button type="button" class="sr-btn">Créer une entrée</button>
               </div>
             </div>
+            <!-- DÉMO:EmptyState:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary1">Sélecteurs CSS</summary>
@@ -2001,7 +1756,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h42">ErrorBanner</h4>
+            <h3 data-i18n="composants.h42">ErrorBanner</h3>
             <p data-i18n="composants.p5">
               Erreur récupérable. <code>severity</code> distingue le temporaire
               du permanent ; <code>role</code> passe de <code>alert</code> à
@@ -2009,34 +1764,33 @@
             </p>
           </div>
           <div class="sr-demo-stage">
-            <div data-dwc="error-banner" data-severity="error" role="alert">
+            <!-- DÉMO:ErrorBanner:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
+            <div role="alert" data-dwc="error-banner" data-severity="error">
               <span data-dwc="error-banner-message"
                 >Impossible d’enregistrer la saison.</span
-              >
-              <button type="button" data-dwc="error-banner-retry">
-                Réessayer
-              </button>
-              <button
+              ><button type="button" data-dwc="error-banner-retry">
+                Réessayer</button
+              ><button
                 type="button"
-                data-dwc="error-banner-dismiss"
                 aria-label="Fermer"
+                data-dwc="error-banner-dismiss"
               >
                 ×
               </button>
             </div>
-            <div data-dwc="error-banner" data-severity="warning" role="status">
+            <div role="status" data-dwc="error-banner" data-severity="warning">
               <span data-dwc="error-banner-message"
                 >Connexion instable : les données peuvent être en retard.</span
-              >
-              <button type="button" data-dwc="error-banner-retry">
+              ><button type="button" data-dwc="error-banner-retry">
                 Réessayer
               </button>
             </div>
-            <div data-dwc="error-banner" data-severity="info" role="status">
+            <div role="status" data-dwc="error-banner" data-severity="info">
               <span data-dwc="error-banner-message"
                 >Sauvegarde locale effectuée.</span
               >
             </div>
+            <!-- DÉMO:ErrorBanner:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary2">Sélecteurs CSS</summary>
@@ -2058,27 +1812,26 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h43">SyncStatusBadge</h4>
+            <h3 data-i18n="composants.h43">SyncStatusBadge</h3>
             <p data-i18n="composants.p6">
               État de synchronisation. Le compteur n’apparaît que sur
               <code>pending</code>.
             </p>
           </div>
           <div class="sr-demo-stage">
+            <!-- DÉMO:SyncStatusBadge:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
             <div class="sr-row">
-              <span data-dwc="sync-status" data-status="synced" role="status"
+              <span role="status" data-dwc="sync-status" data-status="synced"
                 >Synchronisé</span
-              >
-              <span data-dwc="sync-status" data-status="pending" role="status"
+              ><span role="status" data-dwc="sync-status" data-status="pending"
                 >En attente (3)</span
-              >
-              <span data-dwc="sync-status" data-status="offline" role="status"
+              ><span role="status" data-dwc="sync-status" data-status="offline"
                 >Hors ligne</span
-              >
-              <span data-dwc="sync-status" data-status="error" role="status"
+              ><span role="status" data-dwc="sync-status" data-status="error"
                 >Erreur</span
               >
             </div>
+            <!-- DÉMO:SyncStatusBadge:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary3">Sélecteurs CSS</summary>
@@ -2101,7 +1854,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h44">ErrorBoundary</h4>
+            <h3 data-i18n="composants.h44">ErrorBoundary</h3>
             <p data-i18n="composants.p7">
               UI de repli par défaut (évite l’écran blanc). Le bouton «
               sauvegarde » n’apparaît que si <code>onDownloadBackup</code> est
@@ -2137,7 +1890,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h45">PwaInstallPrompt</h4>
+            <h3 data-i18n="composants.h45">PwaInstallPrompt</h3>
             <p data-i18n="composants.p9">
               Bannière passive (<code>role="region"</code>, pas
               <code>dialog</code> : elle ne piège pas le focus). Deux visages :
@@ -2150,7 +1903,8 @@
               data-dwc="pwa-install-prompt"
               data-method="prompt"
               role="region"
-              aria-label="Installer l’application"
+              aria-label="Exemple : invite d’installation, bouton natif"
+              data-i18n-aria="composants.aria.installNative"
             >
               <p data-dwc="pwa-install-title" data-i18n="composants.p10">
                 Installer l’application
@@ -2169,7 +1923,8 @@
               data-method="instructions"
               data-platform="ios"
               role="region"
-              aria-label="Installer l’application"
+              aria-label="Exemple : invite d’installation, iPhone et Safari"
+              data-i18n-aria="composants.aria.installIos"
             >
               <p data-dwc="pwa-install-title" data-i18n="composants.p10b">
                 Installer l’application
@@ -2200,7 +1955,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h411">ShareButton</h4>
+            <h3 data-i18n="composants.h411">ShareButton</h3>
             <p data-i18n="composants.p21">
               Partage natif, repli presse-papiers. L’annulation n’affiche
               rien&nbsp;: fermer la feuille de partage n’est pas un échec.
@@ -2234,7 +1989,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h412">Sparkline · BarChart · Gauge</h4>
+            <h3 data-i18n="composants.h412">Sparkline · BarChart · Gauge</h3>
             <p data-i18n="composants.p412">
               Le tracé est <code>aria-hidden</code>&nbsp;: la donnée est dite en
               toutes lettres dans un texte à côté. Un graphique qui ne dit rien
@@ -2302,7 +2057,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h46">UpdatePromptBanner</h4>
+            <h3 data-i18n="composants.h46">UpdatePromptBanner</h3>
             <p data-i18n="composants.p12">
               <code>registerSW</code> est reçu en prop, plus importé en dur : le
               module a rejoint le barrel. Le bouton
@@ -2338,22 +2093,69 @@
         </article>
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h49">ConfirmDialog</h4>
+            <h3 data-i18n="composants.h49">ConfirmDialog</h3>
             <p data-i18n="composants.p16">
               Sept apps sur seize en avaient un, tous différents. Le focus
               s’ouvre sur <em>Annuler</em> — jamais sur la confirmation.
             </p>
           </div>
+          <!-- Le VRAI balisage du composant (racine, voile, panneau
+               alertdialog), fermé tant qu'on ne l'ouvre pas : son h2 n'entre
+               dans le plan de la page qu'avec la boîte de dialogue. -->
           <div class="sr-demo-stage">
-            <div data-dwc="confirm-panel">
-              <h2 data-dwc="confirm-title">Supprimer la partie&nbsp;?</h2>
-              <div data-dwc="confirm-body">Cette action est définitive.</div>
-              <div data-dwc="confirm-actions">
-                <button type="button" data-dwc="confirm-cancel">Annuler</button>
-                <button type="button" data-dwc="confirm-confirm">
-                  Supprimer
-                </button>
+            <button
+              type="button"
+              class="sr-btn"
+              id="confirm-demo-open"
+              aria-haspopup="dialog"
+              data-i18n="composants.confirmOpen"
+            >
+              Supprimer la partie…
+            </button>
+            <div id="confirm-demo" hidden>
+              <!-- DÉMO:ConfirmDialog:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
+              <div data-dwc="confirm" data-destructive="">
+                <div data-dwc="confirm-backdrop" aria-hidden="true"></div>
+                <div
+                  role="alertdialog"
+                  aria-modal="true"
+                  aria-labelledby="_demo-confirmdialog-R_0_"
+                  aria-describedby="_demo-confirmdialog-R_0_-body"
+                  tabindex="-1"
+                  data-dwc="confirm-panel"
+                >
+                  <h2
+                    id="_demo-confirmdialog-R_0_"
+                    data-dwc="confirm-title"
+                    data-i18n="composants.confirmTitle"
+                  >
+                    Supprimer la partie&nbsp;?
+                  </h2>
+                  <div
+                    id="_demo-confirmdialog-R_0_-body"
+                    data-dwc="confirm-body"
+                    data-i18n="composants.confirmBody"
+                  >
+                    Cette action est définitive.
+                  </div>
+                  <div data-dwc="confirm-actions">
+                    <button
+                      type="button"
+                      data-dwc="confirm-cancel"
+                      data-i18n="composants.confirmCancel"
+                    >
+                      Annuler</button
+                    ><button
+                      type="button"
+                      data-dwc="confirm-confirm"
+                      data-i18n="composants.confirmOk"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
               </div>
+              <!-- DÉMO:ConfirmDialog:FIN -->
             </div>
           </div>
           <details>
@@ -2375,7 +2177,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h50">Toast</h4>
+            <h3 data-i18n="composants.h50">Toast</h3>
             <p data-i18n="composants.p17">
               Deux régions vivantes montées en permanence, et aucun rôle sur le
               message : c’est ce qui évite la double annonce constatée dans deux
@@ -2435,7 +2237,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h51">BottomNav</h4>
+            <h3 data-i18n="composants.h51">BottomNav</h3>
             <p data-i18n="composants.p18">
               Sept apps sur seize en ont une. L’onglet courant n’est jamais
               distingué par la seule couleur : <code>aria-current</code>, un
@@ -2443,15 +2245,22 @@
             </p>
           </div>
           <div class="sr-demo-stage">
-            <nav data-dwc="bottom-nav" aria-label="Navigation d’exemple">
-              <a href="#composants" data-dwc="bottom-nav-item" data-current
+            <!-- DÉMO:BottomNav:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
+            <nav
+              aria-label="Exemple : barre d’onglets"
+              data-dwc="bottom-nav"
+              data-i18n-aria="composants.aria.bottomNav"
+            >
+              <a
+                href="#composants"
+                aria-current="page"
+                data-dwc="bottom-nav-item"
+                data-current=""
                 ><span data-dwc="bottom-nav-label">Accueil</span
                 ><span data-dwc="bottom-nav-sr">Page actuelle</span></a
-              >
-              <a href="#composants" data-dwc="bottom-nav-item"
+              ><a href="#composants-historique" data-dwc="bottom-nav-item"
                 ><span data-dwc="bottom-nav-label">Historique</span></a
-              >
-              <a href="#composants" data-dwc="bottom-nav-item"
+              ><a href="#composants-reglages" data-dwc="bottom-nav-item"
                 ><span data-dwc="bottom-nav-label">Réglages</span
                 ><span data-dwc="bottom-nav-badge"
                   ><span aria-hidden="true">3</span
@@ -2459,6 +2268,7 @@
                 ></a
               >
             </nav>
+            <!-- DÉMO:BottomNav:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary11">Sélecteurs CSS</summary>
@@ -2479,7 +2289,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h53">AppHeader</h4>
+            <h3 data-i18n="composants.h53">AppHeader</h3>
             <p data-i18n="composants.p22">
               Neuf apps ont un en-tête. Le titre EST le <code>h1</code> de la
               page ; le retour est un lien quand il a une destination, un bouton
@@ -2487,56 +2297,59 @@
             </p>
           </div>
           <div class="sr-demo-stage">
-            <header data-dwc="app-header" style="position: relative">
+            <!-- DÉMO:AppHeader:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
+            <header data-dwc="app-header">
               <div data-dwc="app-header-row">
                 <a
                   href="#composants"
                   data-dwc="app-header-back"
                   aria-label="Retour"
-                >
-                  <svg
+                  ><svg
                     width="20"
                     height="20"
                     viewBox="0 0 24 24"
+                    aria-hidden="true"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    aria-hidden="true"
                   >
-                    <path d="m15 18-6-6 6-6" />
-                  </svg>
-                </a>
-                <p data-dwc="app-header-title" style="font-size: 1.125rem">
-                  Trésorerie
-                </p>
+                    <path d="m15 18-6-6 6-6"></path></svg
+                ></a>
+                <h4 data-dwc="app-header-title">Trésorerie</h4>
                 <div data-dwc="app-header-actions">
                   <button
+                    aria-label="Thème"
                     type="button"
                     data-dwc="button"
                     data-variant="ghost"
                     data-size="sm"
-                    aria-label="Thème"
+                    data-icon-only=""
                   >
-                    <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
                     </svg>
                   </button>
                 </div>
               </div>
               <div data-dwc="app-header-extra">
-                <p
-                  style="
-                    margin: 0;
-                    font-size: 0.85rem;
-                    color: var(--dwc-text-soft);
-                  "
-                >
+                <p class="sr-note" style="margin: 0">
                   Saison 2025 – 2026 · 128 adhérents
                 </p>
               </div>
             </header>
+            <!-- DÉMO:AppHeader:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary15">Sélecteurs CSS</summary>
@@ -2557,7 +2370,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h57">AppShell</h4>
+            <h3 data-i18n="composants.h57">AppShell</h3>
             <p data-i18n="composants.p26">
               La coquille assemblée : lien d’évitement, en-tête, contenu borné,
               barre basse. Le pied de page n’y est PAS — Accueil et À propos
@@ -2628,7 +2441,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h54">PageContainer</h4>
+            <h3 data-i18n="composants.h54">PageContainer</h3>
             <p data-i18n="composants.p23">
               Centré, borné à un palier de largeur, zones sûres iOS comprises —
               celle du bas surtout, sans laquelle le dernier bouton d’une vue
@@ -2636,15 +2449,18 @@
             </p>
           </div>
           <div class="sr-demo-stage">
+            <!-- DÉMO:PageContainer:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
             <div
+              style="outline: 1px dashed var(--dwc-border)"
               data-dwc="page-container"
               data-width="sm"
-              style="outline: 1px dashed var(--dwc-border)"
             >
               <p style="margin: 0">
-                <code>width="sm"</code> — 28 rem, centré, marges sûres.
+                <code>width=&quot;sm&quot;</code> — 28 rem, centré, marges
+                sûres.
               </p>
             </div>
+            <!-- DÉMO:PageContainer:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary16">Sélecteurs CSS</summary>
@@ -2666,7 +2482,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h55">LoginForm</h4>
+            <h3 data-i18n="composants.h55">LoginForm</h3>
             <p data-i18n="composants.p24">
               Quatre apps avaient le même écran : deux champs, un bouton, une
               erreur traduite. Le formulaire est présentationnel — l’appelant
@@ -2676,58 +2492,60 @@
             </p>
           </div>
           <div class="sr-demo-stage">
-            <form
-              data-dwc="login-form"
-              data-mode="signin"
-              onsubmit="return false;"
-              style="max-width: 24rem"
-            >
-              <p
-                data-dwc="login-form-title"
-                style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem"
+            <!-- DÉMO:LoginForm:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
+            <div style="max-width: 24rem">
+              <form
+                data-dwc="login-form"
+                aria-labelledby="_demo-loginform-R_0_"
+                data-mode="signin"
               >
-                Connexion
-              </p>
-              <div data-dwc="field">
-                <label data-dwc="field-label" for="lf-email"
-                  >Adresse e-mail</label
+                <h4 id="_demo-loginform-R_0_" data-dwc="login-form-title">
+                  Connexion
+                </h4>
+                <div data-dwc="field">
+                  <label for="_demo-loginform-R_5_" data-dwc="field-label"
+                    >Adresse e-mail</label
+                  ><input
+                    type="email"
+                    inputmode="email"
+                    autocomplete="username"
+                    required=""
+                    id="_demo-loginform-R_5_"
+                    data-dwc="field-control"
+                    name="email"
+                    value="tresorier@club.fr"
+                  />
+                </div>
+                <div data-dwc="field">
+                  <label for="_demo-loginform-R_7_" data-dwc="field-label"
+                    >Mot de passe</label
+                  ><input
+                    type="password"
+                    autocomplete="current-password"
+                    required=""
+                    id="_demo-loginform-R_7_"
+                    data-dwc="field-control"
+                    name="password"
+                  />
+                </div>
+                <p role="alert" data-dwc="login-form-error">
+                  Identifiants invalides.
+                </p>
+                <button
+                  type="submit"
+                  data-dwc="button"
+                  data-variant="primary"
+                  data-size="md"
+                  data-block=""
                 >
-                <input
-                  data-dwc="field-control"
-                  id="lf-email"
-                  type="email"
-                  autocomplete="username"
-                  value="tresorier@club.fr"
-                />
-              </div>
-              <div data-dwc="field">
-                <label data-dwc="field-label" for="lf-password"
-                  >Mot de passe</label
-                >
-                <input
-                  data-dwc="field-control"
-                  id="lf-password"
-                  type="password"
-                  autocomplete="current-password"
-                  value="••••••••"
-                />
-              </div>
-              <p role="alert" data-dwc="login-form-error">
-                Identifiants invalides.
-              </p>
-              <button
-                type="submit"
-                data-dwc="button"
-                data-variant="primary"
-                data-size="md"
-                data-block
-              >
-                Se connecter
-              </button>
-              <div data-dwc="login-form-footer">
-                <a href="#composants">Mot de passe oublié ?</a>
-              </div>
-            </form>
+                  Se connecter
+                </button>
+                <div data-dwc="login-form-footer">
+                  <a href="#composants">Mot de passe oublié ?</a>
+                </div>
+              </form>
+            </div>
+            <!-- DÉMO:LoginForm:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary17">Sélecteurs CSS</summary>
@@ -2749,7 +2567,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h56">MfaChallenge</h4>
+            <h3 data-i18n="composants.h56">MfaChallenge</h3>
             <p data-i18n="composants.p25">
               L’étape TOTP au login, promue de mister-doc et miss-uwh : clavier
               numérique, code reçu proposé par le système, voie de secours et
@@ -2757,67 +2575,66 @@
             </p>
           </div>
           <div class="sr-demo-stage">
-            <form
-              data-dwc="mfa-challenge"
-              data-mode="totp"
-              onsubmit="return false;"
-              style="max-width: 24rem"
-            >
-              <p
-                data-dwc="mfa-challenge-title"
-                style="
-                  font-size: 1.25rem;
-                  font-weight: 700;
-                  margin: 0 0 0.25rem;
-                "
+            <!-- DÉMO:MfaChallenge:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
+            <div style="max-width: 24rem">
+              <form
+                data-dwc="mfa-challenge"
+                aria-labelledby="_demo-mfachallenge-R_0_"
+                data-mode="totp"
               >
-                Vérification en deux étapes
-              </p>
-              <p data-dwc="mfa-challenge-hint">
-                Saisissez le code de votre application d’authentification.
-              </p>
-              <div data-dwc="field">
-                <label data-dwc="field-label" for="mfa-code"
-                  >Code à 6 chiffres</label
+                <h4 id="_demo-mfachallenge-R_0_" data-dwc="mfa-challenge-title">
+                  Vérification en deux étapes
+                </h4>
+                <p data-dwc="mfa-challenge-hint">
+                  Saisissez le code de votre application d’authentification.
+                </p>
+                <div data-dwc="field">
+                  <label for="_demo-mfachallenge-R_7_" data-dwc="field-label"
+                    >Code à 6 chiffres</label
+                  ><input
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    required=""
+                    minlength="6"
+                    maxlength="6"
+                    pattern="[0-9]*"
+                    id="_demo-mfachallenge-R_7_"
+                    data-dwc="field-control"
+                    name="totp"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  data-dwc="button"
+                  data-variant="primary"
+                  data-size="md"
+                  data-block=""
                 >
-                <input
-                  data-dwc="field-control"
-                  id="mfa-code"
-                  inputmode="numeric"
-                  autocomplete="one-time-code"
-                  minlength="6"
-                  maxlength="6"
-                  value="123456"
-                />
-              </div>
-              <button
-                type="submit"
-                data-dwc="button"
-                data-variant="primary"
-                data-size="md"
-                data-block
-              >
-                Vérifier
-              </button>
-              <button
-                type="button"
-                data-dwc="button"
-                data-variant="ghost"
-                data-size="md"
-                data-block
-              >
-                Utiliser un code de secours
-              </button>
-              <button
-                type="button"
-                data-dwc="button"
-                data-variant="secondary"
-                data-size="md"
-                data-block
-              >
-                Se déconnecter
-              </button>
-            </form>
+                  Vérifier</button
+                ><button
+                  data-action="switch"
+                  type="button"
+                  data-dwc="button"
+                  data-variant="ghost"
+                  data-size="md"
+                  data-block=""
+                >
+                  Utiliser un code de secours</button
+                ><button
+                  data-action="sign-out"
+                  type="button"
+                  data-dwc="button"
+                  data-variant="secondary"
+                  data-size="md"
+                  data-block=""
+                >
+                  Se déconnecter
+                </button>
+              </form>
+            </div>
+            <!-- DÉMO:MfaChallenge:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary18">Sélecteurs CSS</summary>
@@ -2846,7 +2663,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h52">ThemeToggle</h4>
+            <h3 data-i18n="composants.h52">ThemeToggle</h3>
             <p data-i18n="composants.p19">
               Cinq apps en ont un. Celui-ci parcourt les <em>trois</em> états de
               <code>useTheme</code> : une bascule à deux états interdit de
@@ -2854,31 +2671,50 @@
             </p>
           </div>
           <div class="sr-demo-stage">
+            <!-- DÉMO:ThemeToggle:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
             <button
               type="button"
+              aria-label="Thème : système. Activer le thème clair."
               data-dwc="theme-toggle"
               data-theme-state="system"
-              aria-label="Thème : système. Activer le thème clair."
             >
-              <span data-dwc="theme-toggle-icon" aria-hidden="true">
-                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="2" y="4" width="20" height="13" rx="2" />
-                  <path d="M8 21h8M12 17v4" />
-                </svg>
-              </span>
-            </button>
-            <button
+              <span data-dwc="theme-toggle-icon" aria-hidden="true"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="2" y="4" width="20" height="13" rx="2"></rect>
+                  <path d="M8 21h8M12 17v4"></path></svg
+              ></span></button
+            ><button
               type="button"
+              aria-label="Thème : sombre. Activer le thème système."
               data-dwc="theme-toggle"
               data-theme-state="dark"
-              aria-label="Thème : sombre. Activer le thème système."
             >
-              <span data-dwc="theme-toggle-icon" aria-hidden="true">
-                <svg class="sr-ico" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                </svg>
-              </span>
+              <span data-dwc="theme-toggle-icon" aria-hidden="true"
+                ><svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg
+              ></span>
             </button>
+            <!-- DÉMO:ThemeToggle:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary12">Sélecteurs CSS</summary>
@@ -2898,31 +2734,44 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h58">ChromePrefs</h4>
+            <h3 data-i18n="composants.h58">ChromePrefs</h3>
             <p data-i18n="composants.p27">
               Groupe accessible thème + langue (ou densités) : une seule
               étiquette pour ce que le hub et plusieurs apps juxtaposent déjà.
             </p>
           </div>
           <div class="sr-demo-stage">
-            <div data-dwc="chrome-prefs" role="group" aria-label="Apparence">
+            <!-- DÉMO:ChromePrefs:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
+            <div role="group" aria-label="Apparence" data-dwc="chrome-prefs">
               <button
                 type="button"
+                aria-label="Thème : système. Activer le thème clair."
                 data-dwc="theme-toggle"
-                data-theme-state="dark"
-                aria-label="Thème sombre, passer en clair"
+                data-theme-state="system"
               >
-                <span data-dwc="theme-toggle-icon" aria-hidden="true">☾</span>
-              </button>
-              <button
+                <span data-dwc="theme-toggle-icon" aria-hidden="true"
+                  ><svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="2" y="4" width="20" height="13" rx="2"></rect>
+                    <path d="M8 21h8M12 17v4"></path></svg
+                ></span></button
+              ><button
                 type="button"
                 data-dwc="button"
                 data-variant="ghost"
                 data-size="sm"
               >
-                FR
-              </button>
-              <button
+                FR</button
+              ><button
                 type="button"
                 data-dwc="button"
                 data-variant="outline"
@@ -2931,6 +2780,7 @@
                 EN
               </button>
             </div>
+            <!-- DÉMO:ChromePrefs:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary21">Sélecteurs CSS</summary>
@@ -2945,20 +2795,20 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h47">AppFooter</h4>
+            <h3 data-i18n="composants.h47">AppFooter</h3>
             <p data-i18n="composants.p13">
               Lien code source + lien sponsor, ouverture sécurisée.
             </p>
           </div>
           <div class="sr-demo-stage">
+            <!-- DÉMO:AppFooter:DÉBUT, engendrée par npm run sync depuis react/ : ne pas éditer -->
             <footer data-dwc="app-footer">
               <a
                 href="https://github.com/mister-guiiug/dev-pwa-config"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-dwc="footer-source"
-              >
-                <svg
+                ><svg
                   width="16"
                   height="16"
                   viewBox="0 0 16 16"
@@ -2967,17 +2817,14 @@
                 >
                   <path
                     d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
-                  />
-                </svg>
-                <span>Code source</span>
-              </a>
-              <a
+                  ></path></svg
+                ><span>Code source</span></a
+              ><a
                 href="https://buymeacoffee.com/mister.guiiug"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-dwc="footer-sponsor"
-              >
-                <svg
+                ><svg
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
@@ -2988,15 +2835,15 @@
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 >
-                  <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                  <line x1="6" y1="1" x2="6" y2="4" />
-                  <line x1="10" y1="1" x2="10" y2="4" />
-                  <line x1="14" y1="1" x2="14" y2="4" />
-                </svg>
-                <span>M’offrir un café</span>
-              </a>
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                  <line x1="6" y1="1" x2="6" y2="4"></line>
+                  <line x1="10" y1="1" x2="10" y2="4"></line>
+                  <line x1="14" y1="1" x2="14" y2="4"></line></svg
+                ><span>M’offrir un café</span></a
+              >
             </footer>
+            <!-- DÉMO:AppFooter:FIN -->
           </div>
           <details>
             <summary data-i18n="composants.summary7">Sélecteurs CSS</summary>
@@ -3013,7 +2860,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h59">FamilyAbout</h4>
+            <h3 data-i18n="composants.h59">FamilyAbout</h3>
             <p data-i18n="composants.p28">
               L’écran À propos famille : installation, intro métier, grille des
               sœurs (<code>showSource={false}</code>), pied de page. Promu du
@@ -3046,7 +2893,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h410">AppVersion</h4>
+            <h3 data-i18n="composants.h410">AppVersion</h3>
             <p data-i18n="composants.p20">
               Le numéro de version, injecté au build par
               <code>vite-version</code>&nbsp;: ce qui tourne, ce qui vient
@@ -3096,7 +2943,7 @@
 
         <article class="sr-demo">
           <div class="sr-demo-head">
-            <h4 data-i18n="composants.h48">FamilyApps</h4>
+            <h3 data-i18n="composants.h48">FamilyApps</h3>
             <p data-i18n="composants.p14">
               Grille « nos autres applications », alimentée par
               <code>apps-catalog.js</code>, avec badge de maturité.
@@ -3105,7 +2952,8 @@
           <div class="sr-demo-stage">
             <section
               data-dwc="family-apps"
-              aria-label="Nos autres applications"
+              aria-label="Exemple : nos autres applications"
+              data-i18n-aria="composants.aria.familyApps"
             >
               <div data-dwc="family-links">
                 <a
@@ -3203,11 +3051,14 @@
         </p>
         <ul class="sr-hook-list" id="hooks-list"></ul>
         <p class="sr-note" data-i18n="hooks.p2">
-          <code>useTheme</code> mérite une mention à part : c’est le contrat que
-          reproduit le sélecteur en haut de cette page -
-          <code>light | dark | system</code> persisté sous
-          <code>dwc_theme</code>, attribut <code>data-theme</code> posé sur
-          <code>&lt;html&gt;</code>.
+          <code>useTheme</code> mérite une mention à part : le sélecteur en haut
+          de cette page rejoue son contrat,
+          <code>light | dark | system</code> et attribut
+          <code>data-theme</code> posé sur <code>&lt;html&gt;</code>. Il range
+          pourtant son choix sous sa propre clé,
+          <code>dwc_showroom_scheme</code>, et non sous <code>dwc_theme</code> :
+          les applications partagent cette clé sur la même origine, et essayer
+          le sombre ici ne doit pas changer leur thème.
         </p>
       </section>
 
@@ -3831,7 +3682,13 @@
     </div>
 
     <!-- Dock mobile : Habiller reste à portée sans remonter le header. -->
-    <div class="sr-dock" id="sr-dock">
+    <div
+      class="sr-dock"
+      id="sr-dock"
+      role="region"
+      aria-label="Habiller la page"
+      data-i18n-aria="ui.dock.region"
+    >
       <label class="sr-dock-label" for="theme-app-dock">Habiller</label>
       <select id="theme-app-dock" aria-labelledby="theme-app-label"></select>
       <a
@@ -3899,21 +3756,26 @@
       </form>
     </dialog>
 
-    <script src="themes.js"></script>
+    <!-- Données en `defer` : rien ne bloque l'analyse ni le premier rendu
+         (Lighthouse les comptait parmi les ressources bloquantes). Un script
+         `defer` s'exécute dans l'ordre du document, et le module
+         `showroom.js`, différé lui aussi, vient après : il les trouve
+         chargés. -->
+    <script defer src="themes.js?v=fd847136fb"></script>
     <!-- Miroir engendré de `apps-catalog.js` (`npm run sync`). -->
-    <script src="apps.js"></script>
+    <script defer src="apps.js?v=66b63efcaa"></script>
     <!-- Relevé nocturne de l'état des dépôts (workflow `showroom-metrics.yml`).
          Vide tant qu'il n'est pas passé : la vitrine n'affiche alors aucune
          mesure, et c'est un état valide, pas une panne. -->
-    <script src="metrics.js"></script>
+    <script defer src="metrics.js?v=f8c3ba94a6"></script>
     <!-- Relevé local d'adoption (symbole → N apps). Engendré par
          `node scripts/measure-adoption.mjs --write` ; vide tant qu'il n'a pas
          tourné — la carte d'adoption reste alors masquée. -->
-    <script src="adoption.js"></script>
-    <script src="snippets.js"></script>
-    <script src="catalogue.js"></script>
-    <script src="screenshots.js"></script>
-    <script src="i18n.js"></script>
-    <script type="module" src="showroom.js"></script>
+    <script defer src="adoption.js?v=587e9b4718"></script>
+    <script defer src="snippets.js?v=803dc31ffb"></script>
+    <script defer src="catalogue.js?v=ad9c72d9fd"></script>
+    <script defer src="screenshots.js?v=e85c95abb4"></script>
+    <script defer src="i18n.js?v=9ea3c41751"></script>
+    <script type="module" src="showroom.js?v=d6bf93f20a"></script>
   </body>
 </html>

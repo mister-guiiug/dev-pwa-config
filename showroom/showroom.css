@@ -36,6 +36,24 @@
   color-scheme: light;
 
   /*
+   * Encres du CHROME. « Habiller » repeint la page avec la palette d'une app,
+   * mais le texte de la page doit rester lisible : `showroom.js` dérive ces
+   * encres de la palette habillée (`contraste.js`) pour qu'elles tiennent
+   * 4,5:1 sur chaque fond du chrome, et 3:1 pour les contours et le focus.
+   * Les démos, elles, gardent les couleurs réelles de l'app. Les replis
+   * ci-dessous sont la palette elle-même.
+   */
+  --sr-ink-soft: var(--ds-text-soft);
+  --sr-ink-link: var(--ds-primary);
+  --sr-ink-success: var(--ds-success);
+  --sr-ink-warning: var(--ds-warning);
+  --sr-ink-danger: var(--ds-danger);
+  --sr-fill: var(--ds-primary);
+  --sr-on-fill: var(--ds-primary-contrast);
+  --sr-ui-border: var(--ds-text-soft);
+  --sr-focus: var(--ds-info);
+
+  /*
    * Le CONTRAT de `components.css` : l'app branche ses propres couleurs sur les
    * variables `--dwc-*`, et les composants du paquet suivent. Ici on les mappe
    * sur les rôles du showroom — c'est pour cette raison que basculer de thème
@@ -91,8 +109,23 @@
 }
 
 /* ── Socle ───────────────────────────────────────────────────────────────── */
+/*
+ * Lisibilité : le texte « xs » du preset descend à 11,2 px sous 750 px de
+ * large, et le chrome l'emploie partout (relevé Lighthouse sur téléphone :
+ * 64 % du texte sous 12 px). Le jeton n'est pas redéfini ici (le miroir du
+ * preset l'interdit) : chaque emploi du chrome est borné à 12 px,
+ * `max(0.75rem, var(--text-fluid-xs))`. Les démos gardent le jeton nu.
+ */
 * {
   box-sizing: border-box;
+}
+
+/* L'en-tête est collant : toute destination (ancre, recherche Ctrl+K, focus
+   clavier qui fait défiler) s'arrête SOUS lui. `--sr-header` est sa hauteur
+   mesurée par `showroom.js`. Seules les sections avaient une marge : une
+   fiche `#doc-*` ou une carte `#app-*` finissait cachée sous l'en-tête. */
+html {
+  scroll-padding-top: calc(var(--sr-header, 8.75rem) + 0.75rem);
 }
 
 body {
@@ -118,11 +151,13 @@ a {
   color: inherit;
 }
 
+/* Jamais sous 12 px : à 0,875 em d'un texte « xs », le code tombait à
+   9,8 px sur téléphone (Lighthouse, lisibilité mobile). */
 code,
 kbd,
 samp {
   font-family: var(--font-mono);
-  font-size: 0.875em;
+  font-size: max(0.75rem, 0.875em);
   background: var(--sr-code-bg);
   border-radius: 0.35rem;
   padding: 0.1em 0.35em;
@@ -135,12 +170,22 @@ pre {
   border: 1px solid var(--ds-border);
   border-radius: var(--ds-radius);
   padding: var(--spacing-fluid-md);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 pre code {
   background: none;
   padding: 0;
+}
+
+/* `hidden` l'emporte sur l'habillage. Ce que le script masque par l'attribut
+   restait affiché dès qu'une règle posait un `display` : la puce de section
+   et celle de la vue de la vitrine, vides, prenaient une ligne de l'en-tête
+   sur téléphone, et le lien « Ouvrir l'app », sans adresse sous le thème
+   générique, restait visible sur ordinateur (relevé le 06/10/2026, déjà
+   présent avant les lots de l'audit). */
+[hidden] {
+  display: none !important;
 }
 
 .sr-visually-hidden {
@@ -159,8 +204,8 @@ pre code {
   left: 0.5rem;
   top: -4rem;
   z-index: 20;
-  background: var(--ds-primary);
-  color: var(--ds-primary-contrast);
+  background: var(--sr-fill);
+  color: var(--sr-on-fill);
   padding: 0.6rem 1rem;
   border-radius: var(--ds-radius);
   text-decoration: none;
@@ -213,8 +258,8 @@ pre code {
 .sr-brand-pkg {
   max-width: 100%;
   overflow: hidden;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -237,7 +282,7 @@ pre code {
   border: 1px solid var(--ds-border);
   border-radius: calc(var(--ds-radius) * 0.7);
   color: var(--ds-text);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -245,7 +290,7 @@ pre code {
 
 .sr-theme-open:hover {
   border-color: var(--ds-primary);
-  color: var(--ds-primary);
+  color: var(--sr-ink-link);
 }
 
 .sr-theme-picker {
@@ -317,7 +362,7 @@ pre code {
   background: var(--ds-bg);
   color: var(--ds-text);
   font: inherit;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -349,7 +394,7 @@ pre code {
   align-items: center;
   gap: 0.45rem;
   min-height: 2.25rem;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   color: var(--ds-text);
   cursor: pointer;
 }
@@ -364,7 +409,7 @@ pre code {
   border-radius: 999px;
   background: var(--ds-primary-soft);
   color: var(--ds-text);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
 }
 
@@ -376,7 +421,7 @@ pre code {
   background: var(--ds-surface);
   color: var(--ds-text);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -390,7 +435,7 @@ html[data-inspect='on'] {
 }
 
 html[data-inspect='on'] .sr-inspect-hot {
-  outline: 2px solid var(--ds-info, var(--ds-primary));
+  outline: 2px solid var(--sr-focus);
   outline-offset: 2px;
 }
 
@@ -404,7 +449,7 @@ html[data-inspect='on'] .sr-inspect-hot {
   border-radius: 0.55rem;
   background: var(--ds-surface);
   color: var(--ds-text);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   box-shadow: 0 0.35rem 1rem color-mix(in srgb, var(--ds-text) 14%, transparent);
   pointer-events: none;
 }
@@ -418,7 +463,7 @@ html[data-inspect='on'] .sr-inspect-hot {
   align-items: center;
   gap: 0.35rem;
   margin-top: 0.2rem;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-inspect-dot {
@@ -451,10 +496,12 @@ html[data-inspect='on'] .sr-inspect-hot {
   border-bottom: 1px solid
     color-mix(in srgb, var(--ds-info) 35%, var(--ds-border));
   background: color-mix(in srgb, var(--ds-info) 10%, var(--ds-surface));
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
-.sr-news[hidden] {
+/* Affiché seulement si le script en ligne l'a décidé, AVANT le premier rendu
+   (voir index.html) : le ruban ne pousse plus la page après coup. */
+html:not([data-news='on']) .sr-news {
   display: none;
 }
 
@@ -485,7 +532,7 @@ html[data-inspect='on'] .sr-inspect-hot {
   background: var(--ds-surface);
   color: var(--ds-text);
   font: inherit;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
   cursor: pointer;
 }
@@ -536,8 +583,8 @@ html[data-inspect='on'] .sr-inspect-hot {
   padding: 0.1rem 0.5rem;
   border: 1px solid var(--ds-border);
   border-radius: 999px;
-  color: var(--ds-text-soft);
-  font-size: 0.7rem;
+  color: var(--sr-ink-soft);
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -548,7 +595,7 @@ html[data-inspect='on'] .sr-inspect-hot {
 }
 
 .sr-tour-steps li.done {
-  color: var(--ds-success);
+  color: var(--sr-ink-success);
 }
 
 .sr-tour-title {
@@ -559,7 +606,7 @@ html[data-inspect='on'] .sr-inspect-hot {
 .sr-tour-body {
   margin: 0 0 0.65rem;
   font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-tour-actions {
@@ -570,12 +617,12 @@ html[data-inspect='on'] .sr-inspect-hot {
 }
 
 .sr-campaign .sr-cell-ok {
-  color: var(--ds-success);
+  color: var(--sr-ink-success);
   font-weight: 700;
 }
 
 .sr-campaign .sr-cell-ko {
-  color: var(--ds-danger);
+  color: var(--sr-ink-danger);
   font-weight: 700;
   background: color-mix(in srgb, var(--ds-danger) 10%, transparent);
 }
@@ -672,7 +719,7 @@ html[data-present='on'] .sr-section[data-present-current] {
   flex: 1 1 12rem;
   min-height: 2.25rem;
   padding: 0.35rem 0.65rem;
-  border: 1px solid var(--ds-border);
+  border: 1px solid var(--sr-ui-border);
   border-radius: 0.5rem;
   background: var(--ds-bg);
   color: var(--ds-text);
@@ -722,8 +769,8 @@ html[data-present='on'] .sr-section[data-present-current] {
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   background: var(--ds-surface-2);
-  color: var(--ds-text-soft);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-scene-actions {
@@ -762,9 +809,9 @@ html[data-present='on'] .sr-section[data-present-current] {
   border: 1px solid var(--ds-border);
   border-radius: 999px;
   background: var(--ds-bg);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   font: inherit;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
   cursor: pointer;
 }
@@ -777,8 +824,8 @@ html[data-present='on'] .sr-section[data-present-current] {
 
 .sr-recipe-meta {
   margin: 0 0 0.25rem;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-recipe-title {
@@ -789,7 +836,7 @@ html[data-present='on'] .sr-section[data-present-current] {
 .sr-recipe-body {
   margin: 0 0 0.65rem;
   font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-recipe-actions {
@@ -836,20 +883,20 @@ html[data-present='on'] .sr-section[data-present-current] {
 }
 
 .sr-check-ok {
-  color: var(--ds-success);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-success);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 700;
 }
 
 .sr-check-kept {
-  color: var(--ds-warning);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-warning);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 700;
 }
 
 .sr-check-ko {
-  color: var(--ds-danger);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-danger);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 700;
 }
 
@@ -884,9 +931,9 @@ html[data-present='on'] .sr-section[data-present-current] {
   padding: 0.4rem 0.65rem;
   border-bottom: 1px solid var(--ds-border);
   background: var(--ds-surface-2);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-viewport-scale {
@@ -916,16 +963,16 @@ html[data-present='on'] .sr-section[data-present-current] {
 }
 
 .sr-viewport-scale .sr-vp-px {
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   font-variant-numeric: tabular-nums;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-dock-label {
   flex: 0 0 auto;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-dock select {
@@ -986,8 +1033,8 @@ html[data-present='on'] .sr-section[data-present-current] {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0.2rem;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-cheat-list dd {
@@ -1006,16 +1053,25 @@ html[data-present='on'] .sr-section[data-present-current] {
   border-radius: 0.3rem;
   background: var(--ds-bg);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
 }
 
 .sr-diff-same {
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
+/* Le dock « Habiller » du pouce n'apparaît qu'avec l'en-tête replié : il
+   REMPLACE alors la rangée « Habiller » de l'en-tête. Toujours affiché, il
+   doublait cette rangée en haut de page et recouvrait le premier écran
+   (axe : target-size sur les boutons du héros). */
 @media (max-width: 40rem) {
-  .sr-dock {
+  html[data-header-compact] .sr-dock {
     display: flex;
+  }
+
+  /* Un focus clavier ne finit pas sous le dock. */
+  html[data-header-compact] {
+    scroll-padding-bottom: 4.5rem;
   }
 
   .sr-theme-open:not(.sr-dock .sr-theme-open) {
@@ -1056,8 +1112,8 @@ html[data-present='on'] .sr-section[data-present-current] {
 .sr-toc-group-label {
   margin: 0;
   padding: 0 0.15rem;
-  color: var(--ds-text-soft);
-  font-size: 0.65rem;
+  color: var(--sr-ink-soft);
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1087,8 +1143,8 @@ html[data-present='on'] .sr-section[data-present-current] {
 .sr-theme-note-cta {
   display: inline-block;
   margin-top: 0.35rem;
-  color: var(--ds-primary);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-link);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
 }
 
@@ -1117,7 +1173,7 @@ html[data-present='on'] .sr-section[data-present-current] {
   border-radius: 999px;
   background: var(--ds-primary-soft);
   color: var(--ds-text);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
 }
 
@@ -1129,7 +1185,7 @@ html[data-present='on'] .sr-section[data-present-current] {
   background: var(--ds-surface);
   color: var(--ds-text);
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -1193,8 +1249,8 @@ html[data-density='compact'] .sr-cat-controls {
 }
 
 .sr-apps-search-hint {
-  color: var(--ds-text-soft);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-apps-search-hint kbd {
@@ -1213,9 +1269,9 @@ html[data-density='compact'] .sr-cat-controls {
 
 .sr-theme-primary > label,
 .sr-theme-primary > #theme-app-label {
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-theme-primary-row {
@@ -1266,17 +1322,20 @@ html[data-density='compact'] .sr-cat-controls {
   gap: 0.15rem 0.65rem;
 }
 
+/* 24 px de large au moins : « Parc » en mesurait 23 (WCAG 2.5.8). */
 .sr-sites a {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
   min-height: 1.75rem;
   padding: 0.05rem 0;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: none;
-  color: var(--ds-text-soft);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 500;
   text-decoration: none;
 }
@@ -1313,14 +1372,14 @@ html[data-density='compact'] .sr-cat-controls {
   background: var(--ds-surface);
   color: var(--ds-text);
   font: inherit;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
   cursor: pointer;
 }
 
 .sr-sommaire-toggle[aria-expanded='true'] {
   border-color: var(--ds-primary);
-  color: var(--ds-primary);
+  color: var(--sr-ink-link);
 }
 
 /* Préférences regroupées (schéma + langue). */
@@ -1336,14 +1395,46 @@ html[data-density='compact'] .sr-cat-controls {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   padding: 0.35rem;
   border: 1px solid var(--ds-border);
   border-radius: calc(var(--ds-radius) * 0.7);
   background: var(--ds-surface);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   cursor: pointer;
+}
+
+/* Redéploie l'en-tête replié : même gabarit que les préférences, 44 px. */
+.sr-topbar-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.35rem;
+  border: 1px solid var(--ds-border);
+  border-radius: calc(var(--ds-radius) * 0.7);
+  background: var(--ds-surface);
+  color: var(--sr-ink-soft);
+  cursor: pointer;
+}
+
+.sr-topbar-expand[hidden] {
+  display: none;
+}
+
+.sr-topbar-expand[aria-expanded='true'] {
+  border-color: var(--ds-primary);
+  color: var(--sr-ink-link);
+}
+
+/* Le code de la langue courante, à côté du globe. */
+.sr-prefs-lang {
+  margin-left: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .sr-prefs-summary::-webkit-details-marker {
@@ -1352,7 +1443,7 @@ html[data-density='compact'] .sr-cat-controls {
 
 .sr-prefs[open] .sr-prefs-summary {
   border-color: var(--ds-primary);
-  color: var(--ds-primary);
+  color: var(--sr-ink-link);
 }
 
 .sr-prefs-panel {
@@ -1375,9 +1466,9 @@ html[data-density='compact'] .sr-cat-controls {
 .sr-prefs-panel legend {
   margin: 0 0 0.35rem;
   padding: 0;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-cmd {
@@ -1392,7 +1483,7 @@ html[data-density='compact'] .sr-cat-controls {
   width: 100%;
   min-height: 2.25rem;
   padding: 0.35rem 4.6rem 0.35rem 0.75rem;
-  border: 1px solid var(--ds-border);
+  border: 1px solid var(--sr-ui-border);
   border-radius: 999px;
   background: var(--ds-surface);
   color: var(--ds-text);
@@ -1405,10 +1496,13 @@ html[data-density='compact'] .sr-cat-controls {
   appearance: none;
 }
 
+/* Le focus se voit : contour de 2 px à 3:1 au moins (`--sr-focus`), et non
+   un simple filet d'un pixel qui change de teinte. */
 .sr-cmd:focus-within input {
   padding-right: 0.75rem;
   border-color: var(--ds-primary);
-  outline: none;
+  outline: 2px solid var(--sr-focus);
+  outline-offset: 2px;
 }
 
 .sr-cmd-kbd {
@@ -1432,9 +1526,9 @@ html[data-density='compact'] .sr-cat-controls {
   border-bottom-width: 2px;
   border-radius: 0.3rem;
   background: var(--ds-bg);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   font-family: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 
@@ -1484,19 +1578,19 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-cmd-kind {
   flex: 0 0 auto;
-  color: var(--ds-text-soft);
-  font-size: var(--text-fluid-xs);
+  color: var(--sr-ink-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-cmd-empty {
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   cursor: default;
 }
 
 @media (max-width: 40rem) {
   .sr-topbar-inner {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
     column-gap: 0.5rem;
   }
@@ -1506,11 +1600,23 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
     grid-row: 1;
   }
 
-  .sr-prefs {
+  .sr-topbar-expand {
     grid-column: 2;
+    grid-row: 1;
+  }
+
+  .sr-prefs {
+    grid-column: 3;
     grid-row: 1;
     margin-left: 0;
     justify-self: end;
+  }
+
+  /* Replié au défilement (voir setupCompactHeader) : la marque, le bouton
+     qui redéploie, les préférences, le sommaire. Rien d'autre. */
+  .sr-topbar[data-compact] .sr-theme-primary,
+  .sr-topbar[data-compact] .sr-cmd {
+    display: none;
   }
 
   .sr-theme-primary {
@@ -1551,16 +1657,18 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   }
 }
 
-@media (max-width: 23.5rem) {
-  .sr-brand,
-  .sr-prefs {
-    grid-column: 1 / -1;
-  }
-
-  .sr-prefs {
-    justify-self: start;
+/* Téléphone en paysage : l'en-tête n'a pas la grille du portrait, mais il
+   occupait 184 px sur 375 de haut (49 %). Il se replie de la même façon. */
+@media (max-height: 31.25rem) {
+  .sr-topbar[data-compact] .sr-theme-primary,
+  .sr-topbar[data-compact] .sr-cmd {
+    display: none;
   }
 }
+
+/* Sous 23,5 rem, la marque et les préférences étaient toutes deux posées en
+   rangée 1 sur toute la largeur : elles se recouvraient (375 px, un iPhone).
+   La grille à trois colonnes tient : la marque s'abrège, les boutons non. */
 
 .sr-hero h1 {
   margin: 0 0 0.65rem;
@@ -1575,8 +1683,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-control select {
@@ -1584,7 +1692,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   font-size: var(--text-fluid-sm);
   color: var(--ds-text);
   background: var(--ds-surface);
-  border: 1px solid var(--ds-border);
+  border: 1px solid var(--sr-ui-border);
   border-radius: calc(var(--ds-radius) * 0.7);
   padding: 0.45rem 0.6rem;
   min-height: 2.75rem;
@@ -1613,8 +1721,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   cursor: pointer;
   user-select: none;
 }
@@ -1641,7 +1749,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   align-items: center;
   justify-content: center;
   stroke: none;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -1654,8 +1762,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-segmented input:checked + label {
-  background: var(--ds-primary);
-  color: var(--ds-primary-contrast);
+  background: var(--sr-fill);
+  color: var(--sr-on-fill);
 }
 
 .sr-segmented input:focus-visible + label {
@@ -1674,11 +1782,11 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   display: inline-block;
   margin-bottom: var(--spacing-fluid-sm);
   font-family: var(--font-mono);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   border: 1px dashed var(--ds-border);
   border-radius: 999px;
   padding: 0.3rem 0.65rem;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   white-space: nowrap;
 }
 
@@ -1701,7 +1809,22 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border-radius: var(--ds-radius);
   box-shadow: var(--ds-shadow);
   padding: var(--spacing-fluid-lg);
-  scroll-margin-top: calc(var(--sr-header, 8.75rem) + 0.75rem);
+}
+
+/*
+ * Rendu à la demande. La page fait 41 800 px de haut sur ordinateur, 88
+ * écrans sur téléphone, et 7 900 nœuds : hors de l'écran, une section n'est
+ * ni mise en page ni peinte. `auto` retient la dernière taille rendue, pour
+ * que la barre de défilement et les ancres ne sautent pas.
+ *
+ * Sauf « Composants » : `content-visibility` contient la peinture, donc
+ * piège les descendants `position: fixed` dans la section. Le voile de la
+ * démo ConfirmDialog et la barre d'onglets y vivent. Sauf aussi le héros,
+ * toujours à l'écran au chargement.
+ */
+.sr-section:not(#composants, .sr-hero) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1600px;
 }
 
 .sr-section > h2 {
@@ -1711,7 +1834,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-section > h2 + p {
   margin: 0 0 var(--spacing-fluid-md);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   font-size: var(--text-fluid-sm);
   max-width: 60ch;
 }
@@ -1754,7 +1877,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border: 1px solid var(--ds-border);
   border-radius: 999px;
   background: var(--ds-surface);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   text-decoration: none;
 }
 
@@ -1765,7 +1888,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-toc a[aria-current='location'] {
   background: var(--ds-primary-soft);
-  color: var(--ds-primary);
+  color: var(--sr-ink-link);
   font-weight: 600;
 }
 
@@ -1807,8 +1930,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-note {
   margin: var(--spacing-fluid-sm) 0 0;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   max-width: 70ch;
 }
 
@@ -1854,10 +1977,10 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-table thead th {
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   background: var(--ds-surface-2);
   white-space: nowrap;
 }
@@ -1893,10 +2016,10 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-hook-sig-label,
 .sr-hook-dont-label {
   display: block;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-hook-sig-label {
@@ -1909,7 +2032,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font-family: var(--font-mono);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   line-height: 1.5;
 }
 
@@ -1923,8 +2046,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-computed {
   font-family: var(--font-mono);
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   white-space: nowrap;
 }
 
@@ -1968,8 +2091,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-bp-list span {
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 /* ── Démos safe-area / cible tactile / focus ─────────────────────────────── */
@@ -1984,7 +2107,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   background: var(--ds-primary-soft);
   border-radius: calc(var(--ds-radius) * 0.6);
   padding: var(--spacing-fluid-sm);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   height: 100%;
 }
 
@@ -2040,19 +2163,19 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-swatch-meta strong {
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-swatch-meta code {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   background: none;
   padding: 0;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-swatch-meta span {
-  font-size: 0.72rem;
-  color: var(--ds-text-soft);
+  font-size: 0.75rem;
+  color: var(--sr-ink-soft);
 }
 
 /* ── Fiches de démonstration de composant ────────────────────────────────── */
@@ -2116,7 +2239,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border-bottom: 1px solid var(--ds-border);
 }
 
-.sr-demo-head h4 {
+.sr-demo-head h3 {
   margin: 0;
   font-family: var(--ds-font-display);
   font-size: var(--text-fluid-base);
@@ -2125,8 +2248,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-demo-head p {
   margin: 0;
   flex: 1 1 18rem;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-demo-stage {
@@ -2141,7 +2264,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-demo details {
   border-top: 1px solid var(--ds-border);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-demo summary {
@@ -2150,7 +2273,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-demo details > div {
@@ -2172,13 +2295,25 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   padding: 0.5rem 1rem;
   border-radius: calc(var(--ds-radius) * 0.7);
   border: 1px solid transparent;
-  background: var(--ds-primary);
-  color: var(--ds-primary-contrast);
+  background: var(--sr-fill);
+  color: var(--sr-on-fill);
   cursor: pointer;
 }
 
+/* Le code posé SUR le remplissage n'en reprend pas le calque : sur un plein
+   sombre, le voile de texte éclaircissait le fond sous l'encre claire
+   (3,9:1 relevé sur miss-dice en sombre). */
+.sr-btn code {
+  background: none;
+  color: inherit;
+}
+
+/* Le survol ne repeint pas le fond : `brightness(1.08)` éclaircissait le
+   plein sous une encre claire, et faisait tomber son contraste (même cause
+   que la correction du socle sur le bandeau de mise à jour). */
 .sr-btn:hover {
-  filter: brightness(1.08);
+  box-shadow: inset 0 0 0 2px
+    color-mix(in srgb, var(--sr-on-fill) 45%, transparent);
 }
 
 .sr-btn:disabled {
@@ -2206,8 +2341,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-field {
   display: grid;
   gap: 0.3rem;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   min-width: 14rem;
 }
 
@@ -2217,7 +2352,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   font-size: var(--text-fluid-sm);
   color: var(--ds-text);
   background: var(--ds-surface-2);
-  border: 1px solid var(--ds-border);
+  border: 1px solid var(--sr-ui-border);
   border-radius: calc(var(--ds-radius) * 0.7);
   padding: 0.5rem 0.6rem;
   min-height: 2.75rem;
@@ -2246,11 +2381,18 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-card p {
   margin: 0 0 var(--spacing-fluid-sm);
   font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 /* ── Copie au presse-papier ──────────────────────────────────────────────── */
+/* 24 px au moins (WCAG 2.5.8) : ils mesuraient 28 × 23. */
 .sr-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  vertical-align: middle;
   font: inherit;
   font-size: 0.8em;
   line-height: 1;
@@ -2259,7 +2401,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border: 1px solid transparent;
   border-radius: 0.4rem;
   background: transparent;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   cursor: pointer;
   /* Reste discret jusqu'au survol ou au focus : quatorze boutons visibles en
      permanence encombreraient plus qu'ils n'aideraient. */
@@ -2279,16 +2421,21 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-copy[data-state='ok'] {
-  color: var(--ds-success);
+  color: var(--sr-ink-success);
 }
 
 .sr-copy[data-state='ko'] {
-  color: var(--ds-danger);
+  color: var(--sr-ink-danger);
 }
 
-/* Sur écran tactile il n'y a pas de survol : les boutons restent visibles. */
-@media (hover: none) {
+/* Sur écran tactile il n'y a pas de survol : les boutons restent visibles,
+   et prennent la taille d'un doigt, celle que la page prescrit (44 px). Un
+   portable tactile annonce souvent un survol : le pointeur grossier compte
+   aussi. */
+@media (hover: none), (pointer: coarse) {
   .sr-copy {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     opacity: 1;
   }
 }
@@ -2300,10 +2447,10 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-snippet-head {
   margin: 0 0 0.35rem;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 /* ── Contrôles a11y : pastilles et lignes localisables ───────────────────── */
@@ -2322,16 +2469,28 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   margin-left: 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.85em;
-  color: var(--ds-text-soft);
-}
-
-.sr-row-locatable {
-  cursor: pointer;
+  color: var(--sr-ink-soft);
 }
 
 .sr-row-locatable:hover,
-.sr-row-locatable:focus-visible {
+.sr-row-locatable:focus-within {
   background: var(--ds-surface-2);
+}
+
+/* Le bouton qui montre l'élément mesuré : 24 px au moins. */
+.sr-locate {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--sr-ui-border);
+  border-radius: 0.4rem;
+  background: var(--ds-surface);
+  color: var(--sr-ink-link);
+  font: inherit;
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  cursor: pointer;
 }
 
 /* Mise en évidence temporaire de l'élément mesuré. */
@@ -2369,7 +2528,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   align-items: center;
   gap: 0.4rem;
   padding: 0.15rem 0;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-compare-line code {
@@ -2401,7 +2560,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   align-items: center;
   gap: 0.4rem;
   margin: 0 0 0.35rem;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2418,7 +2577,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-a11y-note {
   margin: 0.5rem 0 0;
   font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-a11y-note strong {
@@ -2456,10 +2615,10 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-branch-when {
   margin: 0;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 /* La recommandation EST le lien : « lequel » et « comment » ne doivent pas
@@ -2472,12 +2631,15 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
    l'app ; ici c'est du chrome de showroom, et il doit rester lisible. On
    mélange donc la primaire à la couleur de texte : la teinte survit, le
    contraste devient tenable — exactement ce que `components.css` fait pour
-   l'encre des pastilles. */
+   l'encre des pastilles.
+
+   Ce mélange fixe (55 %) est devenu la règle de tout le chrome, mesurée et
+   non plus forfaitaire : `--sr-ink-link` (voir `contraste.js`). */
 .sr-branch-use {
   font-family: var(--font-mono);
   font-size: var(--text-fluid-sm);
   font-weight: 600;
-  color: color-mix(in srgb, var(--ds-primary) 55%, var(--ds-text));
+  color: var(--sr-ink-link);
   text-decoration: none;
   overflow-wrap: anywhere;
   min-height: 2.75rem;
@@ -2493,7 +2655,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-branch-why {
   margin: 0;
   font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 /* ── Index cherchable ────────────────────────────────────────────────────── */
@@ -2517,7 +2679,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   padding: 0.4rem 0.7rem;
   color: var(--ds-text);
   background: var(--ds-surface);
-  border: 1px solid var(--ds-border);
+  border: 1px solid var(--sr-ui-border);
   border-radius: calc(var(--ds-radius) * 0.6);
 }
 
@@ -2529,7 +2691,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-cat-filter {
   font: inherit;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -2550,8 +2712,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-cat-count {
   margin: 0 0 var(--spacing-fluid-sm);
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-cat-grid {
@@ -2608,8 +2770,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-cat-meta {
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 /* ── Vitrine des dépôts ──────────────────────────────────────────────────── *
@@ -2631,9 +2793,9 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-facet-label {
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
   min-width: 6.5rem;
 }
 
@@ -2707,8 +2869,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-app-desc {
   margin: 0;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-app-meta {
@@ -2720,20 +2882,20 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-app-tag {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   border: 1px solid var(--ds-border);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 /* La persistance est l'axe technique de la vitrine : elle mérite d'être lue
    avant le domaine, qui n'est qu'éditorial. */
 .sr-app-tag[data-facet='backend'] {
   border-color: var(--ds-primary);
-  color: var(--ds-primary);
+  color: var(--sr-ink-link);
 }
 
 /* Poussée en bas de la carte : sur une ligne de la grille, les descriptions
@@ -2750,7 +2912,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-app-link {
   font: inherit;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   display: inline-flex;
   align-items: center;
   /* Cible tactile : trois commandes côte à côte dans une carte, c'est
@@ -2768,13 +2930,13 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-app-link:hover,
 .sr-app-link:focus-visible {
   border-color: var(--ds-primary);
-  color: var(--ds-primary);
+  color: var(--sr-ink-link);
 }
 
 .sr-app-link[aria-pressed='true'] {
   border-color: var(--ds-primary);
   background: var(--ds-primary-soft);
-  color: var(--ds-primary);
+  color: var(--sr-ink-link);
   font-weight: 600;
 }
 
@@ -2796,10 +2958,18 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 /* Ancre par carte : discrète au repos, visible dès qu'on survole ou qu'on
    l'atteint au clavier — jamais absente du parcours de tabulation. */
+/* Le « # » est une cible : 24 px au moins (WCAG 2.5.8), 44 sous un doigt.
+   Il mesurait 7 × 16 px. Visible au survol, au focus, et toujours au
+   toucher, où le survol n'existe pas. */
 .sr-app-anchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
   font-family: var(--font-mono);
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   text-decoration: none;
   opacity: 0;
 }
@@ -2807,6 +2977,14 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-app:hover .sr-app-anchor,
 .sr-app-anchor:focus-visible {
   opacity: 1;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .sr-app-anchor {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    opacity: 1;
+  }
 }
 
 /* Cible d'une ancre : on souligne la carte atteinte, sinon rien ne dit
@@ -2822,8 +3000,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2833,18 +3011,18 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-app-metrics [data-metric='archived'] {
-  color: var(--ds-warning);
+  color: var(--sr-ink-warning);
   font-weight: 600;
 }
 
 .sr-metrics-date {
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-app-configs {
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 .sr-app-configs summary {
@@ -2864,14 +3042,14 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 }
 
 .sr-app-configs code {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .sr-app-nodep {
   margin: 0;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-style: italic;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-app-empty {
@@ -2884,7 +3062,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border: 1px dashed var(--ds-border);
   border-radius: calc(var(--ds-radius) * 0.7);
   font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 /* ── Bac à sable ─────────────────────────────────────────────────────────── */
@@ -2933,7 +3111,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-pg-controls .sr-control--bool label {
   font-family: var(--font-mono);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-pg-controls input[type='checkbox'] {
@@ -2969,10 +3147,10 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-pg-head {
   margin: 0 0 0.6rem;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 /* Le bloc doit garder sa hauteur quand on coche `block` ou `lg` : sinon la
@@ -2991,8 +3169,8 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-pg-note {
   margin: 0.4rem 0 0;
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
   border-left: 2px solid var(--ds-primary);
   padding-left: 0.6rem;
 }
@@ -3014,7 +3192,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   border-radius: calc(var(--ds-radius) * 0.7);
   border: 1px solid var(--ds-border);
   background: var(--ds-surface-2);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-fc-state[data-active='yes'] {
@@ -3040,7 +3218,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-fc-head {
   margin: 0;
   padding: 0.45rem 0.75rem;
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 700;
   background: var(--ds-surface-2);
   border-bottom: 1px solid var(--ds-border);
@@ -3203,10 +3381,10 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
   .sr-table:not(.sr-table--matrix) :is(td, th)[data-label]::before {
     content: attr(data-label);
     display: block;
-    font-size: var(--text-fluid-xs);
+    font-size: max(0.75rem, var(--text-fluid-xs));
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: var(--ds-text-soft);
+    color: var(--sr-ink-soft);
   }
 
   /* Un `clamp(…)` ou un sélecteur long ne doit pas élargir la carte. */
@@ -3229,7 +3407,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 .sr-demo-current {
   margin: 0 0 var(--spacing-fluid-md);
   font-size: var(--text-fluid-sm);
-  color: var(--ds-text-soft);
+  color: var(--sr-ink-soft);
 }
 
 .sr-demo-stage-app {
@@ -3273,7 +3451,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-gallery-tile:hover,
 .sr-gallery-tile:focus-visible {
-  outline: 2px solid var(--ds-primary);
+  outline: 2px solid var(--sr-focus);
   outline-offset: 2px;
 }
 
@@ -3291,13 +3469,13 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-gallery-name {
   font-family: var(--ds-font-display, inherit);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
   font-weight: 600;
   line-height: 1.3;
 }
 
 .sr-gallery-flag {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ds-text-soft);
@@ -3331,7 +3509,7 @@ html[data-mod='meta'] .sr-cmd-kbd [data-mod='meta'] {
 
 .sr-gallery-ink-soft {
   color: var(--ds-text-soft);
-  font-size: var(--text-fluid-xs);
+  font-size: max(0.75rem, var(--text-fluid-xs));
 }
 
 .sr-gallery-sample {
@@ -3431,8 +3609,8 @@ span[data-dwc='family-app-icon'] {
     var(--spacing-fluid-lg) + max(env(safe-area-inset-bottom), 0px)
   );
   border-top: 1px solid var(--ds-border);
-  font-size: var(--text-fluid-xs);
-  color: var(--ds-text-soft);
+  font-size: max(0.75rem, var(--text-fluid-xs));
+  color: var(--sr-ink-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3461,6 +3639,14 @@ span[data-dwc='family-app-icon'] {
  * en style INLINE sur `<html>`, ce qu'aucun sélecteur ne peut surclasser.
  * ────────────────────────────────────────────────────────────────────────── */
 @media print {
+  /* Tout s'imprime : rien n'est sauté hors écran sur le papier. Même
+     sélecteur que la règle d'écran : à spécificité égale, celle-ci vient
+     après et l'emporte (un simple `.sr-section` perdait contre l'identifiant
+     du `:not()`). */
+  .sr-section:not(#composants, .sr-hero) {
+    content-visibility: visible;
+  }
+
   @page {
     margin: 1.5cm;
   }
@@ -3587,7 +3773,7 @@ span[data-dwc='family-app-icon'] {
   a[href^='http']::after {
     content: ' (' attr(href) ')';
     font-size: 0.85em;
-    color: var(--ds-text-soft);
+    color: var(--sr-ink-soft);
     word-break: break-all;
   }
 

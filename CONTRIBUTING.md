@@ -10,7 +10,7 @@ règles qui suivent existent pour ça, pas par formalisme.
 ```bash
 npm install
 npm run validate   # format + lint + types + tests — ce que la CI exécute
-npm run showroom   # la vitrine, sur http://localhost:4173
+npm run showroom   # la vitrine, sur http://127.0.0.1:5220/dev-pwa-config/
 ```
 
 Node 26.10.0 (`.nvmrc`), que la CI installe partout. Le paquet publié, lui,
@@ -32,11 +32,14 @@ douze apps sur seize gardent leurs doublons locaux. Toute promotion s'accompagne
 d'un plan de migration, même court, même différé — écrit dans la PR.
 
 **3. Ce qui est en double est ENGENDRÉ, et VÉRIFIÉ.** Cinq fichiers de ce dépôt
-répètent une information qui vit ailleurs : la copie du showroom, le miroir du
-catalogue, celui des palettes, le bloc JSON-LD, le tableau du README. Tous sont
+répètent une information qui vit ailleurs : les copies du showroom
+(`components.css`, `command.js`), le miroir du catalogue, celui des palettes,
+le tableau du README. Tous sont
 produits par `npm run sync`, et un test compare chacun à sa source. Une copie
 non engendrée finit toujours par diverger — c'est déjà arrivé, sur la
-persistance de `miss-uwh`.
+persistance de `miss-uwh`. Les démos du showroom aussi répètent quelque chose :
+le DOM des composants. Celles qui le peuvent sont rendues par `react/` au même
+`npm run sync`.
 
 **4. Un correctif s'accompagne du test qui échouait.** Écrire d'abord le test
 qui reproduit le défaut, le voir rouge, puis corriger. La perte d'écriture de la

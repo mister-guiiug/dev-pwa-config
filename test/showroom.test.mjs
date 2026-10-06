@@ -8,6 +8,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {
+  codeDuShowroom,
+  sourceDeFonction,
+} from '../scripts/showroom-modules.mjs';
 
 const read = name =>
   readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
@@ -16,7 +20,8 @@ const PRESET = stripComments(read('tailwind-preset.css'));
 const MIRROR = stripComments(read('showroom/preset.css'));
 const SHOWROOM_CSS = stripComments(read('showroom/showroom.css'));
 const INDEX_HTML = read('showroom/index.html');
-const SHOWROOM_JS = read('showroom/showroom.js');
+// Le code de la page : showroom.js et les modules qu'il importe.
+const SHOWROOM_JS = codeDuShowroom();
 
 /* ── Micro-analyseur CSS (suffisant pour ces deux fichiers) ─────────────── */
 
@@ -334,7 +339,7 @@ test('index.html charge les ressources du showroom', () => {
   }
   // `env(safe-area-inset-*)` ne renvoie autre chose que 0 qu'avec viewport-fit.
   assert.match(INDEX_HTML, /viewport-fit=cover/);
-  assert.match(INDEX_HTML, /<html lang="fr"/);
+  assert.match(INDEX_HTML, /<html\s+lang="fr"/);
 });
 
 /* ── Bac à sable ─────────────────────────────────────────────────────────── */
@@ -348,9 +353,13 @@ const PG_SOURCE = SHOWROOM_JS.slice(
   SHOWROOM_JS.indexOf('function plusIcon')
 );
 
-/** Découpe la source par composant, sur les marqueurs `id: 'Nom'`. */
+/**
+ * Découpe la source par composant, sur les marqueurs `id: 'Nom'` des entrées
+ * du tableau (quatre espaces : `PG_COMPONENTS` est au premier niveau de
+ * bac-a-sable.js).
+ */
 function playgroundSpecs() {
-  const marks = [...PG_SOURCE.matchAll(/\n {6}id: '(\w+)',/g)];
+  const marks = [...PG_SOURCE.matchAll(/\n {4}id: '(\w+)',/g)];
   return marks.map((mark, i) => ({
     id: mark[1],
     body: PG_SOURCE.slice(
@@ -449,16 +458,17 @@ test('la page rend le bac à sable et l’audit de contraste forcé', () => {
   ])
     assert.match(INDEX_HTML, new RegExp(`id="${id}"`), `#${id} absent du HTML`);
 
-  // Tout ce qui est engendré doit l'être à CHAQUE changement de langue.
-  const generated = SHOWROOM_JS.slice(
-    SHOWROOM_JS.indexOf('function renderGenerated'),
-    SHOWROOM_JS.indexOf('setupSheet();')
-  );
-  for (const fn of ['renderPlayground()', 'renderForcedColors()'])
+  // Tout ce qui est engendré doit l'être au chargement ET à CHAQUE
+  // changement de langue (retranslate, qui ne rejoue que le texte).
+  const chargement = sourceDeFonction('renderGenerated');
+  const langue = sourceDeFonction('retranslate');
+  for (const fn of ['renderPlayground()', 'renderForcedColors()']) {
+    assert.ok(chargement.includes(fn), `${fn} hors de renderGenerated`);
     assert.ok(
-      generated.includes(fn),
-      `${fn} hors de renderGenerated : le bloc resterait en français`
+      langue.includes(fn),
+      `${fn} hors de retranslate : le bloc resterait en français`
     );
+  }
 });
 
 test('la feuille d’impression rend le showroom lisible sur papier', () => {
@@ -482,6 +492,25 @@ test('la feuille d’impression rend le showroom lisible sur papier', () => {
   // CSS ne défait — d'où l'ouverture temporaire au moment d'imprimer.
   assert.match(SHOWROOM_JS, /addEventListener\('beforeprint'/);
   assert.match(SHOWROOM_JS, /addEventListener\('afterprint'/);
+});
+
+test('le rendu à la demande épargne les voiles fixes et se coupe à l’impression', () => {
+  // `content-visibility` contient la peinture : un descendant `position:
+  // fixed` (voile de ConfirmDialog, barre d'onglets) serait piégé dans sa
+  // section. Et le papier doit tout recevoir.
+  const ecran = /([^{}]+)\{\s*content-visibility:\s*auto;/.exec(SHOWROOM_CSS);
+  assert.ok(ecran, 'plus de content-visibility: auto sur les sections ?');
+  const selecteur = ecran[1].trim();
+  assert.match(selecteur, /#composants/, 'Composants doit être épargnée');
+  const print = SHOWROOM_CSS.slice(SHOWROOM_CSS.indexOf('@media print'));
+  assert.ok(
+    print
+      .replace(/\s+/g, ' ')
+      .includes(
+        `${selecteur.replace(/\s+/g, ' ')} { content-visibility: visible;`
+      ),
+    'l’impression doit rendre visible chaque section, avec le même sélecteur'
+  );
 });
 
 test('le showroom est hors index : une vitrine technique, pas une page de destination', () => {

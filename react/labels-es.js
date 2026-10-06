@@ -71,6 +71,7 @@ const labels = {
     source: 'Código fuente',
     sponsor: 'Invítame a un café',
     otherApps: 'Nuestras otras aplicaciones',
+    newTab: 'Se abre en una pestaña nueva',
   },
   categories: {
     sante: 'Salud',

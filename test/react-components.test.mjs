@@ -591,3 +591,41 @@ test('FamilyApps groupBy : une facette inconnue est rendue, jamais avalée', asy
   assert.deepEqual(ordre, ['jeux', 'archeologie', 'autres']);
   assert.match(html, /family-app-group-name">archeologie</);
 });
+
+test('FamilyApps : le nom d’une carte contient son texte visible (WCAG 2.5.3)', async t => {
+  const deps = await loadDeps();
+  if (!deps) {
+    t.skip('react / react-dom non installés (peers optionnels)');
+    return;
+  }
+  const { createElement: h, renderToStaticMarkup } = deps;
+  const { FamilyApps } = await import('../react/family-apps.js');
+  const { LabelsProvider } = await import('../react/labels-core.js');
+  const { FAMILY_APPS } = await import('../apps-catalog.js');
+  const { default: en } = await import('../react/labels-en.js');
+
+  // Un `aria-label` court (le nom, la maturité, puis « nouvel onglet »)
+  // REMPLAÇAIT le texte de la carte : la description visible manquait au nom
+  // accessible, et le libellé restait français dans toutes les langues.
+  const app = FAMILY_APPS[0];
+  const html = renderToStaticMarkup(h(FamilyApps, { currentAppId: 'aucune' }));
+  const carte = new RegExp(`<a[^>]*href="${app.appUrl}"[^>]*>`).exec(html)?.[0];
+  assert.ok(carte, 'carte de la première app introuvable');
+  assert.doesNotMatch(
+    carte,
+    /aria-label=/,
+    'le nom vient du texte de la carte'
+  );
+  assert.match(carte, /title="Ouvre un nouvel onglet"/);
+  assert.ok(html.includes(app.description), 'description dans la carte');
+
+  const anglais = renderToStaticMarkup(
+    h(
+      LabelsProvider,
+      { locale: 'en', dictionary: en },
+      h(FamilyApps, { currentAppId: 'aucune' })
+    )
+  );
+  assert.match(anglais, /title="Opens in a new tab"/);
+  assert.doesNotMatch(anglais, /nouvel onglet/);
+});

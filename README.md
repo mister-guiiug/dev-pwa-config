@@ -38,9 +38,9 @@ générateur), [`AMELIORATIONS.md`](AMELIORATIONS.md), [`VALEUR.md`](VALEUR.md)
 Tableau **engendré** depuis `apps-catalog.js` (`npm run sync`) : la colonne
 « Sous-chemins consommés » est un RELEVÉ — les `import` et les `extends` trouvés
 dans le code de chaque dépôt —, pas une intention. Deux choses s'y lisent tout
-de suite : `components.css` est repris par **dix-huit dépôts sur vingt**, et
-vingt et un sous-chemins n'ont qu'un seul adoptant, dont dix pour le seul
-`mister-settle`.
+de suite : la part des dépôts qui reprennent `components.css`, et les
+sous-chemins qui n'ont qu'un seul adoptant. Les comptes sont dans le tableau, et
+nulle part ailleurs : écrits en toutes lettres ici, ils avaient vieilli.
 
 ⚠️ **Ce tableau compte des sous-chemins, pas des composants.** Une app qui
 importe `FamilyApps` depuis le baril `react` n'y fait pas apparaître
@@ -408,7 +408,8 @@ réellement :
     La grille est **engendrée depuis `apps-catalog.js`** — le fichier qu'importent
     les apps pour s'afficher les unes les autres. Le filtre **Consomme** répond à
     la question qu'un design system doit se poser en premier : qui utilise
-    vraiment quoi ? (`components.css` : dix-huit dépôts sur vingt) ;
+    vraiment quoi ? (la vitrine calcule le compte de `components.css` depuis le
+    catalogue, au rendu) ;
 - un **catalogue cherchable** de tout ce que le paquet exporte — composants et
   hooks —, dont `test/showroom-catalogue.test.mjs` vérifie qu'il ne laisse
   échapper aucun export de `react/index.js` ;
@@ -430,13 +431,37 @@ réellement :
 - une bascule **français / anglais**. Le français est le HTML lui-même, capturé
   au chargement ; `showroom/i18n.js` ne porte que les autres langues, et
   `test/showroom-i18n.test.mjs` refuse qu'un bloc reste sans traduction.
+  `test/showroom-i18n-empreintes.test.mjs` refuse qu'une traduction survive à
+  un changement du français : chaque clé anglaise garde l'empreinte du
+  français qu'elle traduit (`test/showroom-i18n-empreintes.json`). Ce second
+  test lit la page avec jsdom ; le job de publication, qui n'installe rien,
+  rejoue le premier seulement. `npm run sync` signale une empreinte
+  périmée sans la réécrire ; une fois l'anglais relu,
+  `npm run sync -- --traductions-revues` l'acquitte.
 
 ```bash
 npm run showroom
 ```
 
-→ <http://127.0.0.1:5220>. Le fichier `showroom/index.html` s'ouvre aussi
-directement dans un navigateur (double-clic), sans serveur.
+→ <http://127.0.0.1:5220/dev-pwa-config/>, sous le même chemin que sur Pages.
+**Un serveur est nécessaire** : la page charge des modules ES (`showroom.js`,
+les modules qu'il importe et la copie de `command.js`), que Chromium et
+Firefox refusent en `file://`. `showroom.js` n'est que l'amorçage : chaque
+partie de la page a son module (`vitrine.js`, `habillage.js`, `scenes.js`,
+`recherche.js`…), et l'état qu'elles partagent vit dans `etat.js`.
+Ouvert d'un double-clic, `index.html` n'affiche que son texte et ses styles,
+sans rien de ce que le script engendre (vitrine, catalogue, palettes).
+
+La page porte une **Content-Security-Policy** en `<meta>` (Pages n'accepte pas
+d'en-têtes) : scripts et feuilles seulement sous
+`https://mister-guiiug.github.io/dev-pwa-config/`, aucune requête réseau
+(`connect-src 'none'`), ni `<base>`, ni envoi de formulaire, ni plugin. Le
+showroom partage son origine avec toutes les apps : une injection de script ici
+lirait leur `localStorage`. L'empreinte du script en ligne est écrite par
+`npm run sync` et vérifiée par `test/showroom-csp.test.mjs` ; `npm run showroom`
+tourne la politique vers son adresse locale. Pour la même raison d'origine
+partagée, le choix clair / sombre est rangé sous `dwc_showroom_scheme`, et non
+sous `dwc_theme`, la clé que lisent les apps.
 
 Le preset n'expose **aucune couleur** : c'est la part variable, propriété de
 chaque app. Le thème « Générique » du showroom est donc volontairement
@@ -448,9 +473,10 @@ monochrome ; les palettes des applications sont relevées dans `themes.js`
 > `test/showroom.test.mjs` compare les deux fichiers token par token — une
 > modification du preset non répercutée fait échouer la CI, pas le navigateur.
 
-Même raison pour le catalogue : chargeable en `file://`, la page ne peut pas
-`import` un module ES. `showroom/apps.js` (`globalThis.SHOWROOM_APPS`) et
-`showroom/components.css` sont donc **engendrés** depuis la racine :
+Même raison pour le catalogue : la page ne charge que des fichiers de son
+dossier, le seul que publie Pages. `showroom/apps.js`
+(`globalThis.SHOWROOM_APPS`), `showroom/components.css` et
+`showroom/command.js` sont donc **engendrés** depuis la racine :
 
 ```bash
 npm run sync   # scripts/sync-generated.mjs
@@ -459,10 +485,20 @@ npm run sync   # scripts/sync-generated.mjs
 `npm run sync` régénère **tout** ce que le dépôt tient en double :
 `showroom/apps.js` et `showroom/themes.js` (miroirs du catalogue et des
 palettes), la copie `showroom/components.css` et les morceaux publiés
-`components/*.css` (tous deux tirés de `components.css`), le bloc JSON-LD du
-`<head>` de la page (vingt `SoftwareApplication`, lisibles sans exécuter le
-script) et les tableaux « Projets consommateurs » et « Adoption réelle »
-ci-dessus. La CI relance `npm run sync` et refuse le moindre écart ;
+`components/*.css` (tous deux tirés de `components.css`), la copie
+`showroom/command.js` (la recherche Ctrl+K du paquet), les tableaux « Projets
+consommateurs » et « Adoption réelle »
+ci-dessus, et trois choses que la page ne peut pas tenir à la main :
+l'empreinte CSP de son script en ligne, un `?v=<empreinte du contenu>` sur
+chaque fichier qu'elle charge (Pages sert dix minutes en cache, sous un nom
+fixe : sans empreinte, une page neuve pouvait tourner avec un script ancien),
+et ses démos de composants, rendues par les vrais composants de `react/`
+(`scripts/showroom-demos.mjs`). Écrites à la main, la barre d'onglets avait
+perdu son `aria-current` et l'en-tête son `h1`, sans que rien le dise ;
+`test/showroom-demos.test.mjs` refuse désormais une démo périmée, et tient la
+liste de celles encore écrites à la main, chacune avec sa raison : elle ne peut
+que raccourcir.
+La CI relance `npm run sync` et refuse le moindre écart ;
 `test/apps-catalog.test.mjs` compare en outre le catalogue à ses dérivés, et
 vérifie que les comptes annoncés par la section « Stack » (« 9 apps » Supabase,
 « 3 apps » Firebase, « 5 apps » local-first) collent toujours au champ `backend`.
@@ -483,8 +519,8 @@ requête — le relevé est posé sur `globalThis` par un `<script src>`, comme
 `themes.js`. Un fichier vide est un état valide : la vitrine n'affiche alors
 simplement aucune mesure.
 
-Le `showroom/metrics.js` du dépôt sert la lecture **hors ligne**, quand la page
-s'ouvre en `file://` ou depuis un clone. Il n'est plus rafraîchi
+Le `showroom/metrics.js` du dépôt sert la lecture **locale**, depuis un clone
+(`npm run showroom`). Il n'est plus rafraîchi
 automatiquement, et la vitrine affiche la date de son relevé pour que personne
 ne la prenne pour celle du jour.
 

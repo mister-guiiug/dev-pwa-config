@@ -65,9 +65,8 @@ globalThis.SHOWROOM_I18N = {
     'ui.compare.hiddenSame': '{n} identical roles hidden',
     'ui.news.ok': 'OK',
     'ui.news.title': 'Showroom updates',
-    'ui.news.since': 'since your last visit:',
-    'ui.news.list':
-      'saved scenes, presentation mode, recipes, adoption checklist, theme CSS export, twin viewport',
+    'ui.news.body':
+      'since your last visit: saved scenes, presentation mode, recipes, adoption checklist, theme CSS export, twin viewport',
     'ui.recent.legend': 'Recent dressings',
     'ui.export.cta': 'Export for review',
     'ui.export.done': 'Image ready',
@@ -201,9 +200,9 @@ globalThis.SHOWROOM_I18N = {
     /* ── Vitrine des dépôts ───────────────────────────────────────────── */
     'apps.h21': 'The family’s applications',
     'apps.p1':
-      'Sixteen public repositories, <strong>fifteen</strong> of which consume this package — the desktop application imports none of it, and the “subpaths” field is what revealed it. This grid is not a list kept by hand in the page: it is generated from <code>apps-catalog.js</code> — the very file the applications import to show one another. Anything wrong here would be wrong in their footers.',
+      '<span data-count="apps">21</span> public repositories, <strong><span data-count="consumers">21</span></strong> of which consume this package: the “subpaths” field, surveyed in each app’s code, says so. This grid is not a list kept by hand in the page: it is generated from <code>apps-catalog.js</code> — the very file the applications import to show one another. Anything wrong here would be wrong in their footers.',
     'apps.note':
-      '<strong>Domain and maturity are editorial</strong>, entered by hand: they state an intent, not a published version. <strong>Persistence</strong> and <strong>subpaths</strong> are <strong>surveyed</strong> in each app’s code — the real <code>import</code>s and <code>extends</code>, not an intention — and left blank where they were not: a filter that says “not surveyed” beats invented data. The <em>Consumes</em> filter therefore answers the first question a design system should ask itself: who actually uses what? <code>components.css</code> has a single adopter out of sixteen. The badges are painted with each application’s real primary colour, never with a remote icon: this showroom makes no network request.',
+      '<strong>Domain and maturity are editorial</strong>, entered by hand: they state an intent, not a published version. <strong>Persistence</strong> and <strong>subpaths</strong> are <strong>surveyed</strong> in each app’s code — the real <code>import</code>s and <code>extends</code>, not an intention — and left blank where they were not: a filter that says “not surveyed” beats invented data. The <em>Consumes</em> filter therefore answers the first question a design system should ask itself: who actually uses what? <code>components.css</code>: <span data-count="components-css">19</span> adopters out of <span data-count="apps">21</span>. The badges are painted with each application’s real primary colour, never with a remote icon: this showroom makes no network request.',
     'ui.apps.searchViaCmd':
       'Unified search at the top of the page (<kbd>Ctrl</kbd><kbd>K</kbd>)',
     'ui.apps.filtered': 'Filtered view',
@@ -272,7 +271,7 @@ globalThis.SHOWROOM_I18N = {
     /* ── Catalogue ────────────────────────────────────────────────────── */
     'catalogue.h21': 'Catalogue',
     'catalogue.p1':
-      'Everything the package exports, on one grid. A test compares this list against the real exports of <code>react/index.js</code>: whatever is not here is either covered by another entry or explicitly excluded — that is how the nine hooks, missing from their own showcase, were spotted.',
+      'Everything the package exports, on one grid. A test compares this list against the real exports of <code>react/index.js</code>: whatever is not here is either covered by another entry or explicitly excluded — that is how the nine hooks, missing from their own showcase, were spotted. Components and hooks of the <code>react/*</code> subpaths outside the barrel are held the same way: those without an entry yet are named in the test, with their reason.',
     'ui.cat.search': 'Search',
     'ui.cat.filterLegend': 'Filter by category',
 
@@ -287,7 +286,7 @@ globalThis.SHOWROOM_I18N = {
       'Nine barrel exports - close to half the package’s React surface - and not one of them appeared here until now. They have no demo: a hook is not something you look at. They have a signature, a sentence, and the pitfall that comes with it.',
     'hooks.caption': 'Hooks and utilities exported by the package',
     'hooks.p2':
-      '<code>useTheme</code> deserves a separate mention: it is the contract the switcher at the top of this page reproduces - <code>light | dark | system</code> persisted under <code>dwc_theme</code>, <code>data-theme</code> set on <code>&lt;html&gt;</code>.',
+      '<code>useTheme</code> deserves a separate mention: the switcher at the top of this page replays its contract, <code>light | dark | system</code> and a <code>data-theme</code> attribute set on <code>&lt;html&gt;</code>. Yet it stores its choice under its own key, <code>dwc_showroom_scheme</code>, not under <code>dwc_theme</code>: the applications share that key on the same origin, and trying dark mode here must not change their theme.',
 
     /* ── Foundations ──────────────────────────────────────────────────── */
     'fondations.h21': 'Foundations',
@@ -524,7 +523,6 @@ globalThis.SHOWROOM_I18N = {
       'Each tile is painted with an application’s real palette, in the current colour scheme. A click dresses the whole page — the same gesture as <em>Dress the page</em> on a <a href="#apps">showcase</a> card. The large preview then shows the shared components in that universe. Same page, same CSS: only the thirteen contract variables change.',
     'demo.galleryTitle': 'Every palette',
     'ui.demo.current': 'Preview dressed by {app}.',
-    'ui.demo.dress': 'Dress the page with {app}',
     'ui.demo.darkOnly': 'Dark only',
     'ui.demo.sample': 'Text',
     'ui.demo.generic': 'Generic preview: no application selected.',
@@ -661,6 +659,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.maturity.beta': 'Beta',
     'ui.maturity.stable': 'Stable',
     'ui.newTab': 'new tab',
+    'ui.opensInNewTab': 'Opens in a new tab',
     'ui.font.none': 'Display — system stack (no dedicated font)',
     'ui.font.some': 'Display —',
     'ui.hint.darkOnly': 'dark-only app: the light scheme is disabled',
@@ -700,8 +699,8 @@ globalThis.SHOWROOM_I18N = {
     'ui.a11y.mutedOnSurface': 'Muted text on surface',
     'ui.a11y.suggestText': 'text',
     'ui.a11y.suggestBg': 'background',
-    'ui.a11y.copyFix': 'Copy the suggested colour',
-    'ui.a11y.locate': 'Locate on the page',
+    'ui.a11y.locate': 'Locate',
+    'ui.a11y.locateFor': 'Locate on the page: {label}',
     /* ── Catalogue, pièges, hooks ─────────────────────────────────────── */
     'ui.pitfalls': 'Pitfalls',
     'ui.a11yNote': 'Accessibility',
@@ -774,12 +773,10 @@ globalThis.SHOWROOM_I18N = {
       'Primary and soft text collapse onto the SAME system ink: telling the active tab apart by colour stops working.',
     'ui.fc.toast': 'Saved',
     'ui.fc.theme': 'Theme: dark',
-    'ui.fc.nav': 'Main navigation',
     'ui.fc.tab.home': 'Home',
     'ui.fc.tab.settings': 'Settings',
 
     'ui.usage': 'Usage',
-    'ui.copySnippet': 'Copy the snippet',
     'ui.copyToken': 'Copy',
     'ui.copied': 'Copied',
     'ui.copyFailed': 'Copy unavailable — select the text',
@@ -820,5 +817,38 @@ globalThis.SHOWROOM_I18N = {
       'Near-black zinc neutrals and raspberry pink, one single scale.',
     'theme.mister-quota.tagline':
       'Cold slate and sky blue — desktop application, dark-only.',
+
+    /* ── Lots A à F de l’audit du showroom (05/10/2026) ──────────────── */
+    'ui.topbar.expand': 'Show search and dressing',
+    'ui.fc.navOn': 'Example: tab bar, with fixes',
+    'ui.fc.navOff': 'Example: tab bar, without fixes',
+    'ui.demo.dressPrefix': 'Dress the page with',
+    'ui.copySnippetOf': 'Copy the {name} snippet',
+    'ui.a11y.copyFixFor': 'Copy the suggested colour for {label}',
+    'ui.copyTokenIn': 'Copy {value} ({token}, {panel})',
+    'ui.table.scroll': 'Scrollable table: {name}',
+    'ui.present.region': 'Presentation mode',
+    'ui.recipe.rail': 'Recipes',
+    'ui.viewport.legend': 'Twin viewport',
+    'composants.aria.installNative': 'Example: install prompt, native button',
+    'composants.aria.installIos': 'Example: install prompt, iPhone and Safari',
+    'composants.aria.bottomNav': 'Example: tab bar',
+    'composants.aria.familyApps': 'Example: our other apps',
+    'composants.confirmOpen': 'Delete the game…',
+    'composants.confirmTitle': 'Delete the game?',
+    'composants.confirmBody': 'This cannot be undone.',
+    'composants.confirmCancel': 'Cancel',
+    'composants.confirmOk': 'Delete',
+    'fondations.safeDemo':
+      'Content area inside <code>env(safe-area-inset-*)</code>. Utilities: <code>pt-safe</code>, <code>pb-safe</code>, <code>px-safe</code>, <code>py-safe</code>, <code>top-safe</code>, <code>bottom-safe-3</code>…',
+    'fondations.safeInset': 'Inset',
+    'fondations.safeValue': 'Measured value',
+    'fondations.tooSmall': 'Too small',
+    'fondations.dashed': 'The red dashed line marks the 2.75 rem minimum.',
+    'fondations.fontSans': 'System interface, 0123456789',
+    'ui.code.scroll': 'Scrollable code: {name}',
+    'ui.code.scrollPg': 'Scrollable playground code: {name}',
+    'ui.dock.region': 'Dress the page',
+    'primitives.h3segmented': 'SegmentedControl, “pill” tabs',
   },
 };
