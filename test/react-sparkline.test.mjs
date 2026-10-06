@@ -50,6 +50,27 @@ test('Sparkline : une série trouée donne PLUSIEURS traits, jamais un seul', ()
   );
 });
 
+test('Sparkline : des props SVG que React connaît, aucun avertissement au rendu', () => {
+  // Jusqu'au 06/10/2026, le trait passait `'stroke-width'`, `'stroke-linecap'`
+  // et `'stroke-linejoin'` en kebab-case : le HTML sortait juste, mais React
+  // avertissait à chaque rendu (« Invalid DOM property `stroke-width`. Did you
+  // mean `strokeWidth`? »), trois lignes rouges par graphique dans la console
+  // des apps. Les noms React rendent les mêmes attributs, sans bruit.
+  const erreurs = [];
+  const avant = console.error;
+  console.error = (...args) => erreurs.push(args.join(' '));
+  let html;
+  try {
+    html = renderToStaticMarkup(h(Sparkline, { values: [1, 4, 2, 8] }));
+  } finally {
+    console.error = avant;
+  }
+  assert.deepEqual(erreurs, [], 'React ne doit rien signaler');
+  assert.match(html, /stroke-width="1.5"/);
+  assert.match(html, /stroke-linecap="round"/);
+  assert.match(html, /stroke-linejoin="round"/);
+});
+
 test('Sparkline : le dernier point est marqué, et on peut le refuser', () => {
   const avec = renderToStaticMarkup(h(Sparkline, { values: [1, 2, 3] }));
   const sans = renderToStaticMarkup(
