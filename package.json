@@ -904,15 +904,15 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "fake-indexeddb": "^6.2.5",
     "globals": "^17.13.0",
-    "jsdom": "^30.1.1",
+    "jsdom": "^30.1.2",
     "leaflet": "^1.9.4",
     "lightningcss": "^1.33.0",
     "prettier": "3.9.9",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "rolldown": "~1.2.5",
+    "rolldown": "~1.2.12",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.0"
+    "typescript-eslint": "^8.71.1"
   },
   "overrides": {
     "eslint-plugin-jsx-a11y": {
