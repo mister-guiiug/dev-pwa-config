@@ -35,6 +35,17 @@ test('chaque entrée a tous les champs requis et bien typés', () => {
       a.description && typeof a.description === 'string',
       `${a.id}: description`
     );
+    // La traduction vit à côté de ce qu'elle traduit : le hub la sert sur sa
+    // page anglaise, et sa construction échoue sans elle.
+    assert.ok(
+      a.descriptionEn && typeof a.descriptionEn === 'string',
+      `${a.id}: descriptionEn`
+    );
+    assert.notEqual(
+      a.descriptionEn,
+      a.description,
+      `${a.id}: descriptionEn traduite`
+    );
     assert.match(a.repoUrl, /^https:\/\//, `${a.id}: repoUrl https`);
     assert.match(a.appUrl, /^https:\/\//, `${a.id}: appUrl https`);
     assert.ok(
