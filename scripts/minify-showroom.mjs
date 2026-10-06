@@ -37,11 +37,10 @@
  * lightningcss, en devDependencies. Non publié (absent de `files`).
  */
 import {
-  cpSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -122,37 +121,40 @@ export function minifierCss(nom, code) {
 export function minifierShowroom(sortie) {
   const cible = resolve(sortie);
   rmSync(cible, { recursive: true, force: true });
-  cpSync(SOURCE, cible, { recursive: true });
   const classiques = scriptsClassiques(
-    readFileSync(join(cible, 'index.html'), 'utf8')
+    readFileSync(join(SOURCE, 'index.html'), 'utf8')
   );
   let fichiers = 0;
   let avant = 0;
   let apres = 0;
+  // Chaque fichier est LU dans `showroom/` et ÉCRIT dans la sortie : jamais
+  // de copie réécrite sur place, ni de contrôle séparé du type d'une entrée
+  // (le `Dirent` le donne), donc rien qui puisse changer entre deux appels.
   const parcourir = dossier => {
-    for (const nom of readdirSync(dossier)) {
-      const chemin = join(dossier, nom);
-      if (statSync(chemin).isDirectory()) {
-        parcourir(chemin);
+    mkdirSync(join(cible, dossier), { recursive: true });
+    for (const entree of readdirSync(join(SOURCE, dossier), {
+      withFileTypes: true,
+    })) {
+      const relatif = dossier ? `${dossier}/${entree.name}` : entree.name;
+      if (entree.isDirectory()) {
+        parcourir(relatif);
         continue;
       }
-      const relatif = chemin.slice(cible.length + 1).replaceAll('\\', '/');
-      let minifie;
-      const code = readFileSync(chemin, 'utf8');
-      if (nom.endsWith('.js')) {
-        minifie = minifierJs(relatif, code, {
-          module: !classiques.has(relatif),
-        });
-      } else if (nom.endsWith('.css')) {
-        minifie = minifierCss(relatif, code);
-      } else continue;
-      avant += gzipSync(code).length;
-      apres += gzipSync(minifie).length;
-      writeFileSync(chemin, minifie);
-      fichiers += 1;
+      const contenu = readFileSync(join(SOURCE, relatif));
+      let produit = contenu;
+      if (/\.(js|css)$/.test(entree.name)) {
+        const code = contenu.toString('utf8');
+        produit = entree.name.endsWith('.js')
+          ? minifierJs(relatif, code, { module: !classiques.has(relatif) })
+          : minifierCss(relatif, code);
+        avant += gzipSync(code).length;
+        apres += gzipSync(produit).length;
+        fichiers += 1;
+      }
+      writeFileSync(join(cible, relatif), produit);
     }
   };
-  parcourir(cible);
+  parcourir('');
   return { fichiers, avant, apres };
 }
 
