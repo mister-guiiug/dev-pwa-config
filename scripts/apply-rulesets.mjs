@@ -239,36 +239,48 @@ const CHECKS = {
   'vscode-sops-diff': ['build'],
   'mister-claude-skills': ['validate'],
 
-  // AUCUN check : ce dépôt ne porte que des fichiers communautaires, il n'a
-  // pas de CI et n'en aura pas. Le ruleset y garde tout son sens — PR
-  // obligatoire, pas de `push --force`, pas de suppression — mais exiger un
-  // contexte y gèlerait chaque PR pour toujours.
-  '.github': [],
+  /**
+   * LES TROIS DÉPÔTS SANS APPLICATION EXIGENT LA GARDE « SIGNATURES IA ».
+   *
+   * Ils étaient déclarés `[]` : PR obligatoire, mais aucun contrôle — un
+   * ruleset que le tableau de bord classe « actif mais incomplet », à raison.
+   * `.github` (fichiers communautaires par défaut) et `mister-guiiug` (README
+   * de profil) n'avaient aucune CI. Ils ont reçu le workflow
+   * `no-ai-attribution.yml` de la racine, qui relit les commits et les
+   * fichiers de chaque PR : la règle 1 d'AGENTS.md vaut pour tout le compte,
+   * et ne se vérifiait que dans miss-contraction et la racine. Le job tourne
+   * sur toute PR, sans filtre de chemin : exiger son nom ne peut rien geler.
+   */
+  '.github': ["Commits et fichiers sans signature d'assistant"],
 
   /**
-   * UN JOB EXISTE, MAIS IL N'EST PAS EXIGÉ — c'est un choix, pas un oubli.
-   *
    * `mister-guiiug.github.io` sert la racine de l'origine : `robots.txt`,
    * `sitemap.xml` et la page qui lie les applications, engendrés AU MOMENT DE
    * PUBLIER par son workflow `pages.yml` (rien n'est commité). Sur une PR, le
-   * job « Construire le site » tourne comme simple vérification.
+   * job « Construire le site » tourne comme vérification : les tests (CSP,
+   * service worker, plans de site), puis la construction complète.
    *
-   * L'EXIGER RENDRAIT UNE PR DE LA PAGE D'ACCUEIL OTAGE DE VINGT AUTRES SITES :
-   * ce job lit le catalogue sur le réseau et SONDE chaque application — une
-   * seule en panne, et il échoue. C'est voulu au moment de publier (rien n'est
-   * déployé, Pages garde la version précédente), pas pour bloquer une
-   * relecture. Lui laisser le défaut le faisait en outre REFUSER par le garde,
-   * puisqu'il ne rapporte pas le contexte des applications.
+   * IL N'ÉTAIT PAS EXIGÉ, parce qu'une seule application en panne le faisait
+   * échouer : une PR de la page d'accueil aurait été otage de vingt autres
+   * sites. Ce n'est plus vrai depuis la racine #32 — une application qui ne
+   * répond pas donne une publication partielle, sa carte marquée « Non
+   * vérifiée » ; seul `HUB_STRICT=1`, que le workflow ne pose pas, rétablit
+   * l'échec. Restent les pannes du réseau (API GitHub, socle injoignables) :
+   * le contournement admin, en mode `pull_request`, existe pour ce cas.
+   *
+   * Deux contextes, tous deux sans matrice ni filtre de chemin.
    */
-  'mister-guiiug.github.io': [],
+  'mister-guiiug.github.io': [
+    'Construire le site',
+    "Commits et fichiers sans signature d'assistant",
+  ],
 
   /**
-   * AUCUNE CI, ET RIEN À VÉRIFIER. `mister-guiiug` est le dépôt du README de
-   * PROFIL — GitHub affiche son `README.md` sur la page du compte. Un seul
-   * fichier de texte, sans build : lui laisser le défaut le ferait REFUSER par
-   * le garde (contexte jamais rapporté), comme la racine avant elle.
+   * `mister-guiiug` est le dépôt du README de PROFIL — GitHub affiche son
+   * `README.md` sur la page du compte. Pas de build : seule la garde
+   * « Signatures IA » s'y exécute (voir `.github` ci-dessus).
    */
-  'mister-guiiug': [],
+  'mister-guiiug': ["Commits et fichiers sans signature d'assistant"],
 
   /**
    * Ops : CI locale `ci.yml` → check-run « Règles du relevé ». Pas le défaut
@@ -522,8 +534,8 @@ if (AUDIT) {
         const exiges = (regle?.parameters?.required_status_checks ?? []).map(
           c => c.context
         );
-        // Un ruleset sans check exigé ne peut pas geler : `.github` est dans
-        // ce cas, délibérément.
+        // Un ruleset sans check exigé ne peut pas geler : `parc-dashboard`
+        // (AUTO_PUBLIE) est dans ce cas, délibérément.
         if (!exiges.length) continue;
 
         vus ??= checksObserves(repo);
