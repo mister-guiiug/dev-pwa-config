@@ -1135,11 +1135,11 @@ Renovate : treize `renovate.json` étendaient un préréglage dans un dépôt
 `.github` qui n'existe pas, et l'application Mend n'était pas installée. Depuis,
 tout vit ici :
 
-| Fichier                          | Rôle                                                                                                                                                                          |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `renovate/default.json`          | Le PRÉRÉGLAGE : `config:recommended`, tableau de bord, samedi avant 7 h (Paris), mineures et patchs npm groupés, actions groupées, le socle dans une PR à part, sans attendre |
-| `renovate/self-hosted.json`      | QUELS dépôts : tous ceux du compte qui portent un `renovate.json`, sauf `miss-ticket` ; `mister-family-map` compris                                                           |
-| `.github/workflows/renovate.yml` | QUAND : le samedi 04:00 UTC (dans la fenêtre du préréglage), ou à la main avec `dry-run`. Muet sans le secret                                                                 |
+| Fichier                          | Rôle                                                                                                                                                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `renovate/default.json`          | Le PRÉRÉGLAGE : `config:recommended`, tableau de bord, samedi avant 7 h (Paris), mineures et patchs groupés sauf les ruptures, actions groupées, le socle dans une PR à part, sans attendre ; jamais `engines` |
+| `renovate/self-hosted.json`      | QUELS dépôts : tous ceux du compte qui portent un `renovate.json`, sauf `miss-ticket` ; `mister-family-map` compris                                                                                            |
+| `.github/workflows/renovate.yml` | QUAND : le samedi 04:00 UTC (dans la fenêtre du préréglage), ou à la main avec `dry-run`. Muet sans le secret                                                                                                  |
 
 Une app étend le préréglage en une ligne :
 
