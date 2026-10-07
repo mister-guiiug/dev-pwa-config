@@ -15,14 +15,15 @@
       "schedule": ["at any time"]
     },
     {
-      "description": "Mineur + patch npm groupés en une PR (moins de bruit).",
+      "description": "Mineur + patch npm groupés en une PR (moins de bruit). Jamais une rupture (matchIsBreaking) : une mise à jour qui casse doit pouvoir échouer seule, sans retenir les autres.",
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["minor", "patch"],
+      "matchIsBreaking": false,
       "matchPackageNames": ["!@mister-guiiug/dev-pwa-config"],
       "groupName": "npm (mineur & patch)"
     },
     {
-      "description": "Les autres écosystèmes du compte, groupés comme npm. Le préréglage servait quatre dépôts hors PWA sans jamais les nommer : cargo (mister-commitia), nuget (mister-gphotos), et le reste par anticipation. Sans cette règle, chaque mise à jour mineure y arrive en PR séparée.",
+      "description": "Les autres écosystèmes du compte, groupés comme npm. Le préréglage servait quatre dépôts hors PWA sans jamais les nommer : cargo (mister-commitia), nuget (mister-gphotos), et le reste par anticipation. Sans cette règle, chaque mise à jour mineure y arrive en PR séparée. Les ruptures en sortent (matchIsBreaking: false) : pour Cargo, la mineure d'une crate 0.x EN EST UNE. Le tableau du 04/10/2026 de mister-commitia mettait sha2 0.10 → 0.11, base64 0.22 → 0.23 et reqwest 0.12 → 0.13 dans le même lot que serde ou tokio : une seule qui ne compile pas, et tout le lot restait rouge. Seules, elles échouent ou passent chacune pour elle-même. Option apparue dans Renovate 44.115.0 (24/09/2026) ; le workflow tire l'image 44.",
       "matchManagers": [
         "cargo",
         "nuget",
@@ -33,6 +34,7 @@
         "gomod"
       ],
       "matchUpdateTypes": ["minor", "patch"],
+      "matchIsBreaking": false,
       "groupName": "dépendances (mineur & patch)"
     },
     {
@@ -57,6 +59,16 @@
       "description": "Actions GitHub groupées ; le pin SHA (lighthouse-ci-action) est maintenu à jour.",
       "matchManagers": ["github-actions"],
       "groupName": "github-actions"
+    },
+    {
+      "description": "`engines` n'est pas une dépendance : c'est une PROMESSE, le plancher sur lequel on s'engage à tourner. Avec rangeStrategy « bump », Renovate le relevait à chaque version sortie. Le tableau du 04/10/2026 proposait `>=22` → `>=24.21.0` pour le socle (une bibliothèque : ses consommateurs encore en Node 22 seraient sortis de la plage), le générateur, et `engines.vscode` ^1.90 → ^1.140 pour vscode-sops-diff (les VS Code plus anciens et les dérivés, qui suivent avec retard, n'auraient plus pu l'installer). Le plancher se relève à la main, quand la stack cible change.",
+      "matchDepTypes": ["engines"],
+      "enabled": false
+    },
+    {
+      "description": "Les types de l'API VS Code décrivent le plancher `engines.vscode` : `vsce` refuse de packager une extension dont `@types/vscode` dépasse `engines.vscode`. Ils bougent avec lui, à la main (vscode-sops-diff).",
+      "matchPackageNames": ["@types/vscode"],
+      "enabled": false
     }
   ]
 }

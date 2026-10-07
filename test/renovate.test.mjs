@@ -160,6 +160,61 @@ test('les deux règles TypeScript ne se recouvrent JAMAIS', () => {
   for (const nom of a) assert.ok(!b.has(nom), `${nom} est visé deux fois`);
 });
 
+/*
+ * UNE RUPTURE NE VOYAGE JAMAIS EN GROUPE.
+ *
+ * Le tableau du 04/10/2026 de mister-commitia rangeait dans « dépendances
+ * (mineur & patch) » trois mises à jour que Cargo tient pour incompatibles :
+ * sha2 0.10 → 0.11, base64 0.22 → 0.23, reqwest 0.12 → 0.13. Pour Renovate,
+ * ce sont des « minor » ; pour Cargo, la mineure d'une crate 0.x EST une
+ * rupture. Une seule qui ne compile pas, et tout le lot restait rouge, serde et
+ * tokio compris. `matchIsBreaking` (Renovate 44.115.0) laisse chaque versioning
+ * dire ce qui casse : hors du groupe, chacune échoue ou passe pour elle-même.
+ */
+test('les ruptures sortent des groupes « mineur & patch »', () => {
+  const preset = json('../renovate/default.json');
+  for (const nom of ['npm (mineur & patch)', 'dépendances (mineur & patch)']) {
+    const groupe = preset.packageRules.find(r => r.groupName === nom);
+    assert.ok(groupe, `le groupe ${nom} existe`);
+    assert.equal(
+      groupe.matchIsBreaking,
+      false,
+      `${nom} : une rupture doit pouvoir échouer seule`
+    );
+  }
+});
+
+/*
+ * `engines` EST UNE PROMESSE, PAS UNE DÉPENDANCE.
+ *
+ * Avec `rangeStrategy: bump`, Renovate relevait le plancher à chaque version
+ * sortie : `>=22` → `>=24.21.0` pour le socle et le générateur, et
+ * `engines.vscode` ^1.90 → ^1.140 pour vscode-sops-diff (tableaux du
+ * 04/10/2026). Pour une bibliothèque, c'est exclure ses consommateurs. Et
+ * `@types/vscode` ne peut pas dépasser `engines.vscode` sans que `vsce` refuse
+ * de packager : il reste avec lui.
+ */
+test('engines n’est jamais relevé par Renovate, ni @types/vscode avec lui', () => {
+  const preset = json('../renovate/default.json');
+  const engines = preset.packageRules.find(r =>
+    r.matchDepTypes?.includes('engines')
+  );
+  assert.ok(engines, 'le refus est ÉCRIT, pas repris à chaque PR');
+  assert.equal(engines.enabled, false);
+  assert.equal(
+    engines.matchManagers,
+    undefined,
+    'tout `engines`, quel que soit le gestionnaire'
+  );
+
+  const types = preset.packageRules.find(r =>
+    r.matchPackageNames?.includes('@types/vscode')
+  );
+  assert.ok(types, '@types/vscode suit engines.vscode');
+  assert.equal(types.enabled, false);
+  assert.match(types.description, /vsce/);
+});
+
 test('le socle étend son propre préréglage — le même que les apps', () => {
   const config = json('../renovate.json');
   assert.deepEqual(config.extends, [PRESET]);
