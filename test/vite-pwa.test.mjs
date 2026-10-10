@@ -220,7 +220,9 @@ test('scope, start_url et id suivent le chemin de base', () => {
   const manifest = pwaManifest({ id: 'mister-puzzle' });
   assert.equal(manifest.scope, '/mister-puzzle/');
   assert.equal(manifest.start_url, '/mister-puzzle/');
-  assert.equal(manifest.id, '/mister-puzzle/');
+  // `id` ABSOLU : même forme que le hub, identité stable si le chemin du
+  // manifeste change. Relatif, Chrome le résolvait déjà ainsi en production.
+  assert.equal(manifest.id, 'https://mister-guiiug.github.io/mister-puzzle/');
 });
 
 test('les raccourcis sont préfixés par le chemin de base', () => {

@@ -3,7 +3,9 @@
  * SONDER LES SITES PUBLIÉS : ce que chaque app promet vraiment à un
  * navigateur, mesuré sur `https://mister-guiiug.github.io/<app>/`.
  *
- *   node scripts/probe-sites.mjs [app…]            # défaut : le catalogue
+ *   node scripts/probe-sites.mjs [app…]            # défaut : hub + catalogue
+ *   node scripts/probe-sites.mjs --hub             # manifeste du hub seulement
+ *   node scripts/probe-sites.mjs --hub --strict    # exit 1 si portée mauvaise
  *   node scripts/probe-sites.mjs --json > relevé.json
  *   node scripts/probe-sites.mjs --seo [app…]      # ce qu'un moteur en lit
  *
@@ -54,11 +56,37 @@ import {
   isAppShell,
   jsonLdTypes,
   manifestSummary,
+  problemePorteeHubPublie,
   resolveUrl,
   servedContentWords,
 } from './site-readers.mjs';
 
 const ORIGIN = `https://${GITHUB_OWNER}.github.io`;
+
+/**
+ * Sonde le MANIFESTE DU HUB : sa portée ne doit couvrir aucune app Pages.
+ * C'est la garde live du bug Android « déjà installée » (hub scope « / »).
+ */
+export async function probeHub(fetchImpl = fetch) {
+  const url = `${ORIGIN}/manifest.webmanifest`;
+  let httpStatus;
+  let manifest = null;
+  try {
+    const res = await fetchImpl(url, { redirect: 'follow' });
+    httpStatus = res.status;
+    if (res.ok) manifest = manifestSummary(await res.text());
+  } catch {
+    httpStatus = 0;
+  }
+  const appIds = FAMILY_APPS.filter(a => a.appUrl === pagesUrl(a.id)).map(
+    a => a.id
+  );
+  const probleme = problemePorteeHubPublie(manifest ?? {}, {
+    origin: ORIGIN,
+    appIds,
+  });
+  return { url, status: httpStatus, manifest, probleme, appIds };
+}
 
 async function status(url, fetchImpl) {
   try {
@@ -244,14 +272,53 @@ function line(r) {
 export async function run(args = []) {
   const json = args.includes('--json');
   const seo = args.includes('--seo');
+  const strict = args.includes('--strict');
+  const hubSeul = args.includes('--hub');
   const demandees = args.filter(a => !a.startsWith('--'));
-  const apps = demandees.length
-    ? demandees
-    : // Une app sans site Pages (mister-quota, Electron) pointe ailleurs.
-      FAMILY_APPS.filter(app => app.appUrl === pagesUrl(app.id)).map(
-        app => app.id
-      );
+  const apps = hubSeul
+    ? []
+    : demandees.length
+      ? demandees
+      : // Une app sans site Pages (mister-quota, Electron) pointe ailleurs.
+        FAMILY_APPS.filter(app => app.appUrl === pagesUrl(app.id)).map(
+          app => app.id
+        );
   const results = [];
+  let echec = false;
+
+  // Par défaut (et avec `--hub`), on sonde le manifeste du catalogue : une
+  // portée « / » en production est une régression silencieuse pour Android.
+  if (hubSeul || (!demandees.length && !seo)) {
+    try {
+      const hub = await probeHub(fetch);
+      results.push({ app: '(hub)', ...hub });
+      if (!json) {
+        if (hub.probleme) {
+          console.log(
+            `(hub)`.padEnd(18),
+            `FAIL ${hub.probleme.code} : ${hub.probleme.detail}` +
+              (hub.probleme.apps ? ` [${hub.probleme.apps.join(', ')}]` : '')
+          );
+          echec = true;
+        } else if (hub.status !== 200 || !hub.manifest) {
+          console.log(`(hub)`.padEnd(18), `FAIL manifeste HTTP ${hub.status}`);
+          echec = true;
+        } else {
+          console.log(
+            `(hub)`.padEnd(18),
+            `ok scope=${hub.manifest.scope} id=${hub.manifest.id ?? '-'}`
+          );
+        }
+      } else if (hub.probleme || hub.status !== 200) {
+        echec = true;
+      }
+    } catch (error) {
+      echec = true;
+      if (!json)
+        console.log(`(hub)`.padEnd(18), `injoignable : ${error.message}`);
+    }
+  }
+
   for (const app of apps) {
     try {
       const r = await probe(app, fetch, { seo });
@@ -263,6 +330,7 @@ export async function run(args = []) {
     }
   }
   if (json) console.log(JSON.stringify(results, null, 2));
+  if (strict && echec) process.exit(1);
 }
 
 if (estPointDEntree(import.meta.url)) {

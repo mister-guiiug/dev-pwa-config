@@ -34,9 +34,23 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { appById } from './apps-catalog.js';
+import process from 'node:process';
+import { appById, FAMILY_ORIGIN } from './apps-catalog.js';
 import { themeById } from './themes.js';
 import { VERSION_MANIFEST } from './version.js';
+
+/**
+ * Origine publique du manifeste (`id` absolu). Même variable que le SEO
+ * (`VITE_PUBLIC_SITE_ORIGIN`) : en local on peut pointer ailleurs ; en Pages
+ * c'est l'origine de la famille. L'`id` absolu aligne les apps sur le hub et
+ * évite qu'un changement de chemin du manifeste crée une seconde WebAPK.
+ */
+function siteOrigin() {
+  return (process.env.VITE_PUBLIC_SITE_ORIGIN || FAMILY_ORIGIN).replace(
+    /\/$/,
+    ''
+  );
+}
 
 /**
  * Les deux couleurs du manifeste, lues dans une feuille de style.
@@ -254,7 +268,9 @@ export function pwaManifest(options = {}) {
   const resolvedDescription = description ?? fiche?.description;
 
   return {
-    id: base,
+    // ABSOLU : même forme que le hub (`https://…/`). `scope` / `start_url`
+    // restent des chemins — c'est ce que Chrome résout pour le pathPrefix.
+    id: `${siteOrigin()}${base}`,
     name: resolvedName,
     short_name: resolvedShortName,
     description: resolvedDescription,

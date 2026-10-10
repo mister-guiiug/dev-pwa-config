@@ -3,13 +3,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  dansPorteeManifeste,
   htmlMarkers,
   initialScripts,
   isAppShell,
   manifestSummary,
+  problemePorteeHubPublie,
   resolveUrl,
 } from '../scripts/site-readers.mjs';
-import { probe } from '../scripts/probe-sites.mjs';
+import { probe, probeHub } from '../scripts/probe-sites.mjs';
 
 const HTML = `<!doctype html>
 <html lang="fr">
@@ -64,7 +66,8 @@ test('manifestSummary : 512, maskable, id, lang — et « any » n’est pas un 
   const ok = manifestSummary({
     name: 'Miss X',
     lang: 'fr',
-    id: '/x/',
+    id: 'https://o.github.io/x/',
+    scope: '/x/',
     display: 'standalone',
     start_url: '/x/',
     icons: [
@@ -82,6 +85,8 @@ test('manifestSummary : 512, maskable, id, lang — et « any » n’est pas un 
   assert.equal(ok.hasPng, true);
   assert.equal(ok.maskable, true);
   assert.equal(ok.hasId, true);
+  assert.equal(ok.idAbsolu, true);
+  assert.equal(ok.scope, '/x/');
   assert.equal(ok.screenshots, 1);
   assert.equal(ok.shortcuts, 0);
 
@@ -99,8 +104,50 @@ test('manifestSummary : 512, maskable, id, lang — et « any » n’est pas un 
   assert.equal(svg.hasPng, false);
   assert.equal(svg.maskable, true);
   assert.equal(svg.hasId, false);
+  assert.equal(svg.idAbsolu, false);
 
   assert.equal(manifestSummary('pas du json'), null);
+});
+
+test('problemePorteeHubPublie refuse scope « / » et un préfixe d’app', () => {
+  const origin = 'https://mister-guiiug.github.io';
+  const appIds = ['mister-settle', 'miss-contraction'];
+  assert.equal(
+    problemePorteeHubPublie(
+      { scope: `${origin}/index.html` },
+      { origin, appIds }
+    ),
+    null
+  );
+  assert.equal(
+    problemePorteeHubPublie({ scope: '/' }, { origin, appIds })?.code,
+    'scope-racine'
+  );
+  assert.ok(
+    dansPorteeManifeste(`${origin}/mister-settle/`, `${origin}/mister-`, origin)
+  );
+  const apps = problemePorteeHubPublie(
+    { scope: `${origin}/mister-` },
+    { origin, appIds }
+  );
+  assert.equal(apps?.code, 'scope-apps');
+  assert.deepEqual(apps.apps, ['mister-settle']);
+});
+
+test('probeHub échoue si le manifeste publié a une portée racine', async () => {
+  const fetchImpl = async () => ({
+    ok: true,
+    status: 200,
+    text: async () =>
+      JSON.stringify({
+        id: 'https://mister-guiiug.github.io/',
+        scope: 'https://mister-guiiug.github.io/',
+        start_url: 'https://mister-guiiug.github.io/index.html',
+      }),
+  });
+  const hub = await probeHub(fetchImpl);
+  assert.equal(hub.status, 200);
+  assert.equal(hub.probleme?.code, 'scope-racine');
 });
 
 test('resolveUrl : la racine de l’origine n’est pas la racine du site', () => {
