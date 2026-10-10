@@ -69,14 +69,14 @@ const ORIGIN = `https://${GITHUB_OWNER}.github.io`;
  */
 export async function probeHub(fetchImpl = fetch) {
   const url = `${ORIGIN}/manifest.webmanifest`;
-  let status = 0;
+  let httpStatus = 0;
   let manifest = null;
   try {
     const res = await fetchImpl(url, { redirect: 'follow' });
-    status = res.status;
+    httpStatus = res.status;
     if (res.ok) manifest = manifestSummary(await res.text());
   } catch {
-    status = 0;
+    httpStatus = 0;
   }
   const appIds = FAMILY_APPS.filter(a => a.appUrl === pagesUrl(a.id)).map(
     a => a.id
@@ -85,7 +85,7 @@ export async function probeHub(fetchImpl = fetch) {
     origin: ORIGIN,
     appIds,
   });
-  return { url, status, manifest, probleme, appIds };
+  return { url, status: httpStatus, manifest, probleme, appIds };
 }
 
 async function status(url, fetchImpl) {
