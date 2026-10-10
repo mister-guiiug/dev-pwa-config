@@ -69,7 +69,7 @@ const ORIGIN = `https://${GITHUB_OWNER}.github.io`;
  */
 export async function probeHub(fetchImpl = fetch) {
   const url = `${ORIGIN}/manifest.webmanifest`;
-  let httpStatus = 0;
+  let httpStatus;
   let manifest = null;
   try {
     const res = await fetchImpl(url, { redirect: 'follow' });
