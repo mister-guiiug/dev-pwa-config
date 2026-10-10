@@ -1991,6 +1991,12 @@ export function reglesBuild(ctx, api) {
             'manifeste sans id : changer start_url créerait une seconde app installée',
             'id: basePath (pwaManifest le pose)'
           );
+        } else if (!ms.idAbsolu) {
+          dette(
+            'manifest-id-absolu',
+            `manifeste id relatif « ${ms.id} » : le hub et pwaManifest posent une URL absolue`,
+            'id: https://mister-guiiug.github.io/<app>/ (pwaManifest)'
+          );
         }
         if (
           ms.lang &&
@@ -2184,6 +2190,7 @@ export const CATALOGUE = [
   { id: 'manifest-png', famille: 'build', niveau: 'dette' },
   { id: 'manifest-maskable', famille: 'build', niveau: 'dette' },
   { id: 'manifest-id', famille: 'build', niveau: 'dette' },
+  { id: 'manifest-id-absolu', famille: 'build', niveau: 'dette' },
   { id: 'manifest-lang', famille: 'build', niveau: 'défaut' },
   { id: 'manifest-screenshots', famille: 'build', niveau: 'dette' },
   { id: 'version-manifest', famille: 'build', niveau: 'dette' },

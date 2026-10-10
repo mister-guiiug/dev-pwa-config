@@ -18,7 +18,8 @@ export interface PwaOptions {
   /**
    * Identifiant du dépôt (`miss-uwh`). Sert de base au `basePath` et permet de
    * LIRE `theme_color` / `background_color` dans `themes.js` au lieu de les
-   * recopier.
+   * recopier. Le manifeste pose `id` en URL absolue
+   * (`https://mister-guiiug.github.io/<id>/`), alignée sur le hub.
    */
   id?: string;
   name?: string;

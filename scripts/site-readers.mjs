@@ -307,12 +307,17 @@ export function manifestSummary(json) {
   }
   if (!m || typeof m !== 'object') return null;
   const icons = Array.isArray(m.icons) ? m.icons : [];
+  const id = typeof m.id === 'string' && m.id.length > 0 ? m.id : null;
   return {
     name: m.name ?? null,
     lang: m.lang ?? null,
     display: m.display ?? null,
     startUrl: m.start_url ?? null,
-    hasId: typeof m.id === 'string' && m.id.length > 0,
+    scope: typeof m.scope === 'string' ? m.scope : null,
+    id,
+    hasId: id != null,
+    /** `id` déjà résolu en URL absolue (forme du hub et de `pwaManifest`). */
+    idAbsolu: id != null && /^https?:\/\//i.test(id),
     icons: icons.length,
     has512: icons.some(i => String(i.sizes ?? '').includes('512')),
     // `sizes: any` : un vectoriel qui couvre toutes les tailles pour Chrome.
@@ -323,6 +328,59 @@ export function manifestSummary(json) {
     screenshots: Array.isArray(m.screenshots) ? m.screenshots.length : 0,
     shortcuts: Array.isArray(m.shortcuts) ? m.shortcuts.length : 0,
   };
+}
+
+/**
+ * Une URL est dans la portée d'un manifeste (même origine, préfixe de chemin).
+ * C'est le critère d'Android / Chrome pour « déjà installée ».
+ */
+export function dansPorteeManifeste(url, scope, baseOrigin) {
+  try {
+    const u = new URL(url, baseOrigin);
+    const p = new URL(scope, baseOrigin || u.origin);
+    return u.origin === p.origin && u.pathname.startsWith(p.pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Le manifeste du HUB ne doit ni valoir « / », ni préfixer une app du catalogue.
+ * Sinon, sur Android, aucune app n'est plus installable dès que le hub l'est.
+ *
+ * @param {{ scope?: string|null }} manifeste  résumé ou objet brut
+ * @param {{ origin: string, appIds: string[] }} opts
+ * @returns {null | { code: string, detail: string, apps?: string[] }}
+ */
+export function problemePorteeHubPublie(manifeste, { origin, appIds }) {
+  const scope = manifeste?.scope;
+  if (typeof scope !== 'string' || !scope) {
+    return { code: 'scope-absent', detail: 'manifeste du hub sans scope' };
+  }
+  let chemin;
+  try {
+    chemin = new URL(scope, origin).pathname;
+  } catch {
+    return { code: 'scope-invalide', detail: `scope illisible : ${scope}` };
+  }
+  if (chemin === '/' || chemin === '') {
+    return {
+      code: 'scope-racine',
+      detail: `scope « ${scope} » couvre toute l'origine`,
+    };
+  }
+  const base = origin.replace(/\/$/, '');
+  const couvertes = appIds.filter(id =>
+    dansPorteeManifeste(`${base}/${id}/`, scope, origin)
+  );
+  if (couvertes.length) {
+    return {
+      code: 'scope-apps',
+      detail: `scope « ${scope} » couvre ${couvertes.length} app(s)`,
+      apps: couvertes,
+    };
+  }
+  return null;
 }
 
 /** Résout un lien relatif à un site. */

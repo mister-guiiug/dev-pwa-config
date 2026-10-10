@@ -453,7 +453,7 @@ export function HomeScreen() { return <AppFooter repoUrl={REPO_URL} issues />; }
       'dist/index.html': html,
       'dist/version.json': { version: '1.0.0' },
       'dist/manifest.webmanifest': {
-        id: '/miss-x/',
+        id: 'https://mister-guiiug.github.io/miss-x/',
         lang: 'fr',
         icons: [
           { src: 'i-192.png', sizes: '192x192', type: 'image/png' },
