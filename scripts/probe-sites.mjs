@@ -301,10 +301,7 @@ export async function run(args = []) {
           );
           echec = true;
         } else if (hub.status !== 200 || !hub.manifest) {
-          console.log(
-            `(hub)`.padEnd(18),
-            `FAIL manifeste HTTP ${hub.status}`
-          );
+          console.log(`(hub)`.padEnd(18), `FAIL manifeste HTTP ${hub.status}`);
           echec = true;
         } else {
           console.log(
@@ -317,7 +314,8 @@ export async function run(args = []) {
       }
     } catch (error) {
       echec = true;
-      if (!json) console.log(`(hub)`.padEnd(18), `injoignable : ${error.message}`);
+      if (!json)
+        console.log(`(hub)`.padEnd(18), `injoignable : ${error.message}`);
     }
   }
 

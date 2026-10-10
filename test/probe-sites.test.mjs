@@ -124,11 +124,7 @@ test('problemePorteeHubPublie refuse scope « / » et un préfixe d’app', () =
     'scope-racine'
   );
   assert.ok(
-    dansPorteeManifeste(
-      `${origin}/mister-settle/`,
-      `${origin}/mister-`,
-      origin
-    )
+    dansPorteeManifeste(`${origin}/mister-settle/`, `${origin}/mister-`, origin)
   );
   const apps = problemePorteeHubPublie(
     { scope: `${origin}/mister-` },
