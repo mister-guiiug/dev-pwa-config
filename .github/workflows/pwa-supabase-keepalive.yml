@@ -2,13 +2,13 @@
 #
 # Fait une vraie requête DB (SELECT REST sur une petite table `keep_alive`) avec
 # l'anon key → réinitialise le compteur d'inactivité (pause Free à 7 j). À
-# appeler via un caller planifié (cron ~tous les 3 jours), un par PROJET Supabase.
+# appeler via un caller planifié (cron quotidien), un par PROJET Supabase.
 #
 # Usage côté consumer (.github/workflows/supabase-keepalive.yml) :
 #
 # name: Supabase keep-alive
 # on:
-#   schedule: [{ cron: '17 4 */3 * *' }]
+#   schedule: [{ cron: '17 4 * * *' }]
 #   workflow_dispatch:
 # jobs:
 #   keepalive:
