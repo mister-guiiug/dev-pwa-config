@@ -796,7 +796,7 @@ rien ne prévient : la table dit ce qui est éprouvé.
 | `@commitlint/cli`                 | `^19.0.0 \|\| ^20.0.0 \|\| ^21.0.0` | le hook `commit-msg`                                                                                     |
 | `@commitlint/config-conventional` | `^19.0.0 \|\| ^20.0.0 \|\| ^21.0.0` | `commitlint`                                                                                             |
 | `@playwright/test`                | `^1.49.0`                           | `playwright-base`, `playwright-a11y`, `playwright-entree`, et les bins `pwa-screenshots`, `pwa-og-image` |
-| `@rive-app/react-canvas`          | `^4.0.0`                            | `react/rive`                                                                                             |
+| `@rive-app/react-canvas`          | `^4.36.0`                           | `react/rive`                                                                                             |
 | `@sentry/react`                   | `^10.75.2 \|\| ^11.0.0`             | `react/observability`, par son `loader`                                                                  |
 | `@supabase/supabase-js`           | `^2.0.0`                            | `supabase-client`                                                                                        |
 | `@tanstack/react-query`           | `^5.0.0`                            | `react/query-client`                                                                                     |

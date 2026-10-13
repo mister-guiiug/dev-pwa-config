@@ -1,11 +1,73 @@
-import { Component, createElement as h, lazy, Suspense, useMemo } from 'react';
+import {
+  Component,
+  createElement as h,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useReducedMotion } from './use-media-query.js';
 
-// Chargé à la demande : le runtime Rive (~100 ko + WASM) reste hors du bundle
-// initial des apps qui n'affichent pas d'animation au premier rendu.
-// `Rive` est l'export NOMMÉ du paquet ; on le privilégie au `default` (souvent
-// non-composant dans l'espace de noms ESM) avant tout repli.
-const pick = mod => ({ default: mod.Rive ?? mod.default });
+/**
+ * LE COMPOSANT EST CONSTRUIT SUR `useRive`, PAS PRIS DANS L'ESPACE DE NOMS.
+ *
+ * Le paquet React de Rive est du CommonJS qui recopie sur ses exports TOUT le
+ * moteur canvas — y compris la classe `Rive` du moteur, qui n'est pas un
+ * composant. Selon le bundler, `mod.Rive` désigne cette classe (pré-bundle
+ * esbuild, qui copie les clés énumérables) ou n'existe pas (Rollup, qui ne voit
+ * que les exports statiques), et `mod.default` est tantôt le composant, tantôt
+ * l'objet des exports. `useRive`, lui, est un export statique
+ * (`exports.useRive = …`) que tous les bundlers voient — et c'est le seul point
+ * d'entrée qui accepte `onLoad` et `onLoadError` : le composant `Rive` du
+ * paquet ne les transmet pas au moteur (ils finiraient en attributs du
+ * `<canvas>`).
+ *
+ * Un `loader` qui ne fournit qu'un composant (un lecteur maison, un test) reste
+ * accepté tel quel, sans signal de chargement.
+ */
+function pick(mod) {
+  const useRive = mod.useRive ?? mod.default?.useRive;
+  if (typeof useRive !== 'function') {
+    return { default: mod.Rive ?? mod.default };
+  }
+
+  function RiveSignalee({
+    src,
+    stateMachines,
+    artboard,
+    animations,
+    autoplay,
+    onLoad,
+    onLoadError,
+  }) {
+    // UNE machine se nomme au SINGULIER : le moteur a déprécié `stateMachines`
+    // (2.43) au profit de `stateMachine`, qu'il connaît depuis 2.42 — d'où la
+    // peer `^4.36.0`. Plusieurs machines gardent le pluriel, seul à les jouer.
+    const une = Array.isArray(stateMachines)
+      ? stateMachines.length === 1
+        ? stateMachines[0]
+        : undefined
+      : stateMachines;
+    const { RiveComponent } = useRive({
+      src,
+      artboard,
+      autoplay,
+      ...(une !== undefined
+        ? { stateMachine: une }
+        : stateMachines?.length
+          ? { stateMachines }
+          : {}),
+      ...(animations !== undefined ? { animations } : {}),
+      onLoad,
+      onLoadError,
+    });
+    return h(RiveComponent);
+  }
+  return { default: RiveSignalee };
+}
 
 /**
  * LE RUNTIME S'INJECTE. Trois apps déclarent Rive, et **deux runtimes
@@ -99,8 +161,14 @@ class RiveBoundary extends Component {
 
 /**
  * Wrapper Rive aligné sur les standards famille :
- *  - **repli garanti** : runtime absent, `src` introuvable ou rendu qui jette
- *    → le `fallback` s'affiche, l'écran ne disparaît pas (voir `RiveBoundary`) ;
+ *  - **repli garanti** : runtime absent, rendu qui jette, ET fichier `.riv`
+ *    introuvable ou corrompu → le `fallback` s'affiche, l'écran ne disparaît
+ *    pas. Ce dernier cas, le moteur ne le LÈVE pas : il émet `onLoadError` et
+ *    laisse une toile vide. miss-badminton lisait pour cela les quatre premiers
+ *    octets du fichier avant de monter le composant, mister-miss-koh appelait
+ *    `useRive` elle-même — les deux contournements que ce module rend inutiles ;
+ *  - **signal de chargement** : `onLoad` quand l'animation est prête, pour
+ *    qu'une app sache quand elle peut retirer ce qu'elle montrait à la place ;
  *  - **lazy** : le runtime Rive est chargé à la demande (code-split) ;
  *  - **prefers-reduced-motion** : si l'utilisateur réduit les animations et
  *    qu'un `fallback` est fourni, on rend le fallback statique sans charger Rive ;
@@ -114,6 +182,7 @@ class RiveBoundary extends Component {
  *   animations?: string|string[], ariaLabel?: string, fallback?: import('react').ReactNode,
  *   className?: string, respectReducedMotion?: boolean, autoplay?: boolean,
  *   loader?: () => Promise<Record<string, unknown>>,
+ *   onLoad?: () => void,
  *   onError?: (error: unknown) => void }} props
  */
 export function RiveAnimation(props) {
@@ -128,17 +197,39 @@ export function RiveAnimation(props) {
     respectReducedMotion = true,
     autoplay = true,
     loader,
+    onLoad,
     onError,
   } = props;
 
   const reduced = useReducedMotion();
   const LazyRive = useMemo(() => lazyFor(loader), [loader]);
+  // Le `src` dont le fichier a échoué : un `src` neuf réessaie de lui-même.
+  const [echoue, setEchoue] = useState(null);
+
+  // Le moteur garde les rappels qu'il a reçus à sa création : on lui passe
+  // des fonctions STABLES, qui appellent les derniers rappels de l'app.
+  const rappels = useRef({ onLoad, onError });
+  useEffect(() => {
+    rappels.current = { onLoad, onError };
+  });
+  const surChargement = useCallback(() => rappels.current.onLoad?.(), []);
+  const surErreur = useCallback(
+    evenement => {
+      setEchoue(src);
+      rappels.current.onError?.(evenement?.data ?? evenement);
+    },
+    [src]
+  );
+
   const a11y = ariaLabel
     ? { role: 'img', 'aria-label': ariaLabel }
     : { 'aria-hidden': 'true' };
 
   // Mouvement réduit + fallback dispo → on n'embarque même pas le runtime.
   if (respectReducedMotion && reduced && fallback) {
+    return h('div', { className, ...a11y }, fallback);
+  }
+  if (echoue === src) {
     return h('div', { className, ...a11y }, fallback);
   }
 
@@ -154,11 +245,16 @@ export function RiveAnimation(props) {
         Suspense,
         { fallback },
         h(LazyRive, {
+          // Le moteur ne recharge pas un `src` qui change sous lui : un
+          // fichier neuf, c'est une instance neuve.
+          key: src,
           src,
           stateMachines,
           artboard,
           animations,
           autoplay: shouldAutoplay,
+          onLoad: surChargement,
+          onLoadError: surErreur,
         })
       )
     )
