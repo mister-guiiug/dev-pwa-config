@@ -425,3 +425,101 @@ test('le runtime Rive s’injecte, et le lazy est mémorisé par loader', async 
     dom.restore();
   }
 });
+
+/**
+ * Un faux runtime qui expose `useRive`, comme les vrais paquets : il retient
+ * les paramètres reçus et déclenche, un tour plus tard, le rappel que le test
+ * demande — chargement réussi ou fichier refusé.
+ */
+function fauxRuntime(issue) {
+  const recus = [];
+  function useRive(params) {
+    recus.push(params);
+    return {
+      RiveComponent: () => {
+        const declenche = () =>
+          issue === 'ok'
+            ? params.onLoad?.()
+            : params.onLoadError?.({ data: 'Problem loading file' });
+        setTimeout(declenche, 0);
+        return h('canvas', { 'data-rive': issue });
+      },
+    };
+  }
+  return { recus, loader: () => Promise.resolve({ useRive }) };
+}
+
+test('Rive : le chargement se SIGNALE (onLoad)', async () => {
+  // mister-miss-koh appelait `useRive` elle-même pour le savoir : le composant
+  // du paquet ne disait pas quand l'animation était prête.
+  const dom = setupDom();
+  try {
+    const { loader } = fauxRuntime('ok');
+    let charge = 0;
+    const { RiveAnimation } = await import('../react/rive.js');
+    const view = await mount(
+      h(RiveAnimation, { src: 'ok.riv', loader, onLoad: () => charge++ })
+    );
+    await view.act(() => new Promise(r => setTimeout(r, 30)));
+    assert.ok(view.container.querySelector('[data-rive="ok"]'));
+    assert.equal(charge, 1);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('Rive : un fichier refusé rend le REPLI et prévient l’app', async () => {
+  // Le moteur ne LÈVE pas un `.riv` absent ou corrompu : il émet
+  // `onLoadError` et garde une toile vide. miss-badminton lisait les quatre
+  // premiers octets du fichier pour s'en prémunir.
+  const dom = setupDom();
+  try {
+    const { loader } = fauxRuntime('refus');
+    const erreurs = [];
+    const { RiveAnimation } = await import('../react/rive.js');
+    const view = await mount(
+      h(RiveAnimation, {
+        src: 'absent.riv',
+        loader,
+        fallback: h('span', { 'data-repli': '' }),
+        onError: e => erreurs.push(e),
+      })
+    );
+    await view.act(() => new Promise(r => setTimeout(r, 30)));
+    assert.ok(view.container.querySelector('[data-repli]'), 'pas de repli');
+    assert.equal(view.container.querySelector('canvas'), null);
+    assert.deepEqual(erreurs, ['Problem loading file']);
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('Rive : UNE state machine part au singulier, plusieurs au pluriel', async () => {
+  // Le moteur a déprécié `stateMachines` (2.43) : le passer pour une seule
+  // machine affichait un avertissement à chaque montage.
+  const dom = setupDom();
+  try {
+    const { recus, loader } = fauxRuntime('ok');
+    const { RiveAnimation } = await import('../react/rive.js');
+    const une = await mount(
+      h(RiveAnimation, { src: 'a.riv', loader, stateMachines: 'main' })
+    );
+    await une.act(() => new Promise(r => setTimeout(r, 20)));
+    const deux = await mount(
+      h(RiveAnimation, { src: 'b.riv', loader, stateMachines: ['a', 'b'] })
+    );
+    await deux.act(() => new Promise(r => setTimeout(r, 20)));
+    const [p1] = recus.filter(p => p.src === 'a.riv');
+    const [p2] = recus.filter(p => p.src === 'b.riv');
+    assert.equal(p1.stateMachine, 'main');
+    assert.equal('stateMachines' in p1, false);
+    assert.deepEqual(p2.stateMachines, ['a', 'b']);
+    assert.equal('stateMachine' in p2, false);
+    await une.unmount();
+    await deux.unmount();
+  } finally {
+    dom.restore();
+  }
+});

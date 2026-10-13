@@ -1045,14 +1045,40 @@ Conventions : `.riv` dans `public/animations/`, toujours prévoir un `fallback`
 statique, `ariaLabel` uniquement si l'animation porte du sens (sinon
 décorative).
 
-**Le repli est le cas nominal, pas l'exception.** `find -name '*.riv'` renvoie
-**zéro fichier** sur les seize dépôts, alors que trois apps déclarent un
-runtime Rive — miss-badminton et mister-molkky (`@rive-app/react-canvas`),
-miss-genius (`@rive-app/react-webgl2`) — et pointent vers des dossiers vides.
-Le `fallback` s'affiche donc dans quatre situations : pendant le chargement, si
-l'utilisateur réduit les animations, si le runtime n'est pas installé, et si le
-fichier ou le rendu échoue. `onError` permet de remonter le troisième et le
-quatrième cas plutôt que de les découvrir sur un écran vide :
+**Le repli est le cas nominal, pas l'exception.** Le `fallback` s'affiche
+dans quatre situations : pendant le chargement du runtime, si l'utilisateur
+réduit les animations, si le runtime n'est pas installé, et si le fichier ou le
+rendu échoue. `onError` permet de remonter le troisième et le quatrième cas
+plutôt que de les découvrir sur un écran vide.
+
+**Un fichier refusé est un échec comme un autre.** Le moteur ne LÈVE pas un
+`.riv` absent ou corrompu : il émet `onLoadError` et garde une toile vide. Le
+composant l'écoute, rend le repli et appelle `onError` — miss-badminton lisait
+pour cela les quatre premiers octets du fichier avant de monter le composant.
+
+**Le chargement se signale** (`onLoad`) : le moment où l'app peut retirer ce
+qu'elle montrait à la place, ou annuler un délai de garde. mister-miss-koh
+appelait `useRive` elle-même pour le savoir. Le composant est d'ailleurs
+construit sur `useRive` (export statique de tous les paquets `@rive-app/react-*`)
+plutôt que pris dans l'espace de noms, où `Rive` désigne selon le bundler la
+classe du moteur canvas et non le composant React.
+
+**Une state machine se nomme au singulier.** `stateMachines="main"` part au
+moteur en `stateMachine` (le pluriel est déprécié depuis le moteur 2.43, qui
+l'annonce en console à chaque montage) ; d'où la peer `^4.36.0`. Plusieurs
+machines gardent le pluriel.
+
+```tsx
+<RiveAnimation
+  src="/animations/lever.riv"
+  stateMachines="main"
+  fallback={<SoleilStatique />}
+  onLoad={() => setPret(true)}
+  onError={error => recordError(error, { animation: 'lever' })}
+/>
+```
+
+Pour un autre moteur, `loader` :
 
 ```tsx
 <RiveAnimation
