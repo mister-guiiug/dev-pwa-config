@@ -70,15 +70,46 @@ function bustedUrl(base) {
  * si l'on peut tout retélécharger juste après.
  *
  * `navigator.onLine` ne suffit pas : il vaut `true` sur un Wi-Fi sans accès.
- * Une requête `HEAD` vers la page courante, hors cache HTTP, le prouve. Le
- * worker ne la sert pas (Workbox ne route que les `GET`) : elle va au réseau.
- * Toute réponse de NOTRE origine compte, un 404 compris (une route d'app
- * monopage n'existe pas sur le serveur). Une réponse venue d'ailleurs, celle
- * d'un portail captif, ne compte pas.
+ * Deux sondes courent ensemble, et une seule réponse suffit.
+ *
+ * 1. Une requête `HEAD` vers la page courante, hors cache HTTP. Le worker ne
+ *    la sert pas (Workbox ne route que les `GET`) : elle va au réseau. Toute
+ *    réponse de NOTRE origine compte, un 404 compris (une route d'app monopage
+ *    n'existe pas sur le serveur). Une réponse venue d'ailleurs, celle d'un
+ *    portail captif, ne compte pas.
+ * 2. `registration.update()`, qui retélécharge le script du worker.
+ *
+ * POURQUOI LA SECONDE. La première passe par le `connect-src` de la page.
+ * miss-devises n'y met pas `'self'` : en 6.28.0, sa requête était refusée,
+ * l'app se croyait hors connexion même en ligne, et « Forcer la mise à jour »
+ * ne purgeait plus jamais (relevé le 26/10/2026 par son e2e). Le
+ * téléchargement du worker, lui, est fait par le navigateur et ne relève pas
+ * de la CSP de la page. Sans réseau, il échoue comme la requête.
+ *
+ * @param {number} timeoutMs
+ * @param {{ update?: () => Promise<unknown> } | undefined} registration
  */
-async function networkReachable(timeoutMs) {
+async function networkReachable(timeoutMs, registration) {
   const nav = globalThis.navigator;
   if (nav && nav.onLine === false) return false;
+  const sondes = [headReachable(timeoutMs)];
+  if (typeof registration?.update === 'function') {
+    sondes.push(
+      withTimeout(
+        Promise.resolve(registration.update()).then(
+          () => true,
+          () => false
+        ),
+        timeoutMs
+      ).then(Boolean)
+    );
+  }
+  const resultats = await Promise.all(sondes);
+  return resultats.some(Boolean);
+}
+
+/** La première sonde de `networkReachable` : `HEAD` vers la page courante. */
+async function headReachable(timeoutMs) {
   const here = globalThis.location?.href;
   if (typeof globalThis.fetch !== 'function' || !here) return false;
   try {
@@ -461,7 +492,10 @@ export async function applyUpdate(options = {}) {
   // La sonde du réseau court EN MÊME TEMPS : en ligne, elle ne retarde pas la
   // purge, que la minuterie de secours talonne.
   const [reachable, { scope, foreign }] = await Promise.all([
-    networkReachable(probeTimeoutMs),
+    withTimeout(
+      Promise.resolve(sw.getRegistration?.()).catch(() => undefined),
+      timeoutMs
+    ).then(registration => networkReachable(probeTimeoutMs, registration)),
     readScopes(sw, timeoutMs),
   ]);
 
