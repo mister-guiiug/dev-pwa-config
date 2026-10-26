@@ -1,4 +1,5 @@
 {
+  "//": "vitest-setup.js et vitest-setup.d.ts sont exclus tant que @testing-library/jest-dom n'a pas de version compatible avec vitest 5 : ils importent '@testing-library/jest-dom/vitest', qui augmente Assertion<T> quand vitest 5 déclare Assertion<R, T>, d'où trois TS2428 dans node_modules sous skipLibCheck false. Les rendre au contrôle quand jest-dom publiera le support de vitest 5 (testing-library/jest-dom#742).",
   "compilerOptions": {
     "target": "ES2023",
     "module": "ESNext",
@@ -24,6 +25,8 @@
     "showroom",
     "templates",
     "prettier.config.js",
-    "eslint.config.js"
+    "eslint.config.js",
+    "vitest-setup.js",
+    "vitest-setup.d.ts"
   ]
 }
