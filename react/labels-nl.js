@@ -46,6 +46,8 @@ const labels = {
     force: 'Update forceren',
     forceHint:
       'Wist de cache van de app en laadt opnieuw. Je gegevens blijven bewaard.',
+    forceOffline:
+      'Je bent offline: de update wacht tot het netwerk terug is. De app blijft werken.',
     offlineReady: 'De app werkt nu ook offline.',
     offlineReadyOk: 'OK',
   },

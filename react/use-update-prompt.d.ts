@@ -70,6 +70,11 @@ export interface UseUpdatePrompt {
   visible: boolean;
   /** Vrai pendant l'application d'une mise à jour. */
   updating: boolean;
+  /**
+   * Vrai quand la dernière tentative a été refusée faute de réseau : rien n'a
+   * été purgé, la page n'a pas rechargé. Remis à faux à la tentative suivante.
+   */
+  offline: boolean;
   /** Active le worker en attente, purge en dernier recours, puis recharge. */
   update: () => Promise<ApplyUpdateResult>;
   /** Purge d'emblée : le bouton « Forcer la mise à jour » des réglages. */

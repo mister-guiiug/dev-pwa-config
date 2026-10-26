@@ -18,6 +18,10 @@ import { useLabels } from './labels-core.js';
  * c'est-à-dire précisément quand `needRefresh` est faux et que le bandeau
  * n'existe pas. Il ne demande donc pas `registerSW`.
  *
+ * HORS CONNEXION, IL LE DIT. La purge est refusée sans réseau (voir
+ * `sw-update.js`) : le bouton affiche alors `forceOffline` dans un
+ * `role="status"`, sans quoi l'appui ne produirait rien de visible.
+ *
  * Non stylé : cibler `[data-dwc="update-button"]`.
  *
  * @param {{ label?: string, updatingLabel?: string, hint?: string,
@@ -28,7 +32,7 @@ function Button_(props) {
   const { label, updatingLabel, hint, showHint = false, className } = props;
 
   const labels = useLabels('update');
-  const { updating, forceUpdate } = props;
+  const { updating, offline, forceUpdate } = props;
   const text = updating
     ? (updatingLabel ?? labels.updating)
     : (label ?? labels.force);
@@ -49,21 +53,32 @@ function Button_(props) {
     text
   );
 
-  if (!showHint) return button;
+  const status = offline
+    ? h(
+        'p',
+        { 'data-dwc': 'update-button-offline', role: 'status' },
+        labels.forceOffline
+      )
+    : null;
+
+  if (!showHint && !status) return button;
   return h(
     'div',
     { 'data-dwc': 'update-button-group' },
     button,
-    h('p', { 'data-dwc': 'update-button-hint' }, hint ?? labels.forceHint)
+    showHint
+      ? h('p', { 'data-dwc': 'update-button-hint' }, hint ?? labels.forceHint)
+      : null,
+    status
   );
 }
 
 /** Autonome : c'est CE composant qui monte le hook, et lui seul. */
 function StandaloneUpdateButton(props) {
-  const { updating, forceUpdate } = useUpdatePrompt({
+  const { updating, offline, forceUpdate } = useUpdatePrompt({
     updateOptions: props.updateOptions,
   });
-  return h(Button_, { ...props, updating, forceUpdate });
+  return h(Button_, { ...props, updating, offline, forceUpdate });
 }
 
 /**
@@ -83,6 +98,7 @@ export function UpdateButton(props = {}) {
   return h(Button_, {
     ...props,
     updating: shared.updating,
+    offline: shared.offline,
     forceUpdate: shared.forceUpdate,
   });
 }

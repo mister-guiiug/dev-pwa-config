@@ -1433,7 +1433,8 @@
     gap: 0.35rem;
   }
 
-  [data-dwc='update-button-hint'] {
+  [data-dwc='update-button-hint'],
+  [data-dwc='update-button-offline'] {
     margin: 0;
     font-size: var(--text-fluid-xs, 0.8rem);
     color: var(--dwc-text-soft, GrayText);

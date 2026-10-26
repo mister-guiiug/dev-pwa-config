@@ -45,6 +45,8 @@ const labels = {
     ignore: 'Dismiss',
     force: 'Force update',
     forceHint: 'Clears the app cache and reloads. Your data is kept.',
+    forceOffline:
+      'You’re offline: the update will wait for the network. The app still works.',
     offlineReady: 'The app now works offline.',
     offlineReadyOk: 'OK',
   },

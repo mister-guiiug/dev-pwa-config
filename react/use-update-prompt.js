@@ -210,6 +210,7 @@ export function useUpdatePrompt(options = {}) {
   const [offlineReady, setOfflineReady] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [snoozedUntil, setSnoozedUntil] = useState(() =>
     snoozeHours > 0 ? readSnooze(snoozeKey) : 0
   );
@@ -252,8 +253,20 @@ export function useUpdatePrompt(options = {}) {
 
   const run = useCallback(async extra => {
     setUpdating(true);
+    setOffline(false);
     try {
-      return await applyUpdate({ ...updateOptionsRef.current, ...extra });
+      // HORS CONNEXION, LA PAGE NE BOUGE PAS. `applyUpdate` ne purge plus sans
+      // réseau ; recharger n'apprendrait rien à l'utilisateur, qui verrait la
+      // même page sans savoir pourquoi rien n'a changé. Le bouton le dit
+      // (`offline`). Une app peut rétablir le rechargement par
+      // `updateOptions`.
+      const result = await applyUpdate({
+        reloadWhenOffline: false,
+        ...updateOptionsRef.current,
+        ...extra,
+      });
+      if (result === 'offline') setOffline(true);
+      return result;
     } finally {
       // La page se décharge normalement avant d'arriver ici. Si elle est
       // toujours là (navigation ignorée), le bouton doit redevenir cliquable.
@@ -281,6 +294,7 @@ export function useUpdatePrompt(options = {}) {
     offlineReady,
     visible,
     updating,
+    offline,
     update,
     forceUpdate,
     dismiss,

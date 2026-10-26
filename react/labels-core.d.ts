@@ -35,6 +35,8 @@ export interface LabelGroups {
     ignore: string;
     force: string;
     forceHint: string;
+    /** Rendu par `UpdateButton` quand la purge a été refusée faute de réseau. */
+    forceOffline: string;
     /** Message « prêt hors ligne », rendu par le bandeau sur `showOfflineReady`. */
     offlineReady: string;
     offlineReadyOk: string;
