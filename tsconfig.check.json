@@ -10,7 +10,10 @@
     "strict": true,
     "skipLibCheck": false,
     "jsx": "react-jsx",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@testing-library/jest-dom/vitest": ["./types/jest-dom-vitest.d.ts"]
+    }
   },
   "include": [
     "*.js",
