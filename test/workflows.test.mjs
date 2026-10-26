@@ -331,3 +331,52 @@ test('le 404.html du déploiement reçoit noindex, sans canonique ni robots cont
     /if \[ -f "\$BUILD_DIR\/404\.html" \]; then\n\s+node --input-type=module -e "\$NOINDEX_JS"/
   );
 });
+
+/*
+ * LE KEEP-ALIVE DIT POURQUOI IL ÉCHOUE. Relevé sur mister-settle, rouge chaque
+ * jour du 18 au 26/10/2026 : le projet Supabase n'existait plus dans le DNS,
+ * curl sortait en 6, et `bash -e` arrêtait l'étape sur « exit code 6 », sans
+ * un mot de la cause. Le script est joué tel que la CI le joue, `curl`
+ * remplacé par une fonction qui rend le code HTTP et le code de sortie voulus.
+ */
+function pingKeepAlive(httpCode, rc) {
+  const script = blocLitteral(read('pwa-supabase-keepalive.yml'), 'run');
+  const faux = `curl() { printf '%s' '${httpCode}'; return ${rc}; }\n`;
+  return spawnSync('bash', ['-e', '-c', faux + script], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      URL: 'https://abcdefghijklmnopqrst.supabase.co',
+      KEY: 'cle-anon',
+      TABLE: 'keep_alive',
+    },
+    timeout: 20_000,
+  });
+}
+
+test('keep-alive : un projet absent du DNS est nommé tel, pas « exit code 6 »', () => {
+  const r = pingKeepAlive('000', 6);
+  assert.equal(r.status, 1, r.stderr);
+  assert.match(r.stdout, /::error::Projet Supabase introuvable/);
+  assert.match(r.stdout, /restaurer depuis le tableau de bord Supabase/);
+  // L'adresse vient d'un secret : le message ne la recopie pas.
+  assert.doesNotMatch(r.stdout, /abcdefghijklmnopqrst/);
+});
+
+test('keep-alive : les autres échecs réseau, une table absente, et le succès', () => {
+  const reseau = pingKeepAlive('000', 7);
+  assert.equal(reseau.status, 1);
+  assert.match(
+    reseau.stdout,
+    /::error::Projet Supabase injoignable \(curl, code 7\)/
+  );
+
+  const table = pingKeepAlive('404', 0);
+  assert.equal(table.status, 1);
+  assert.match(table.stdout, /HTTP 404/);
+  assert.match(table.stdout, /Vérifier la table 'keep_alive'/);
+
+  const ok = pingKeepAlive('200', 0);
+  assert.equal(ok.status, 0, ok.stdout + ok.stderr);
+  assert.match(ok.stdout, /::notice::Supabase keep-alive OK/);
+});

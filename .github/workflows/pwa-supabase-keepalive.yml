@@ -54,10 +54,25 @@ jobs:
             echo "::error::VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY manquants."
             exit 1
           fi
+          # Le code de sortie de curl est relevé, pas subi : sous `bash -e`, un
+          # échec réseau arrêtait l'étape sur un simple « exit code 6 », sans
+          # rien dire de la cause.
+          rc=0
           code=$(curl -sS -o /dev/null -w '%{http_code}' \
             "${URL%/}/rest/v1/${TABLE}?select=id&limit=1" \
             -H "apikey: ${KEY}" \
-            -H "Authorization: Bearer ${KEY}")
+            -H "Authorization: Bearer ${KEY}") || rc=$?
+          # 6 = l'hôte n'existe pas dans le DNS. Relevé sur mister-settle :
+          # rouge chaque jour du 18 au 26/10/2026, et le journal ne le disait
+          # pas. Un projet gratuit en pause, ou supprimé, n'a plus d'adresse.
+          if [ "$rc" = 6 ]; then
+            echo "::error::Projet Supabase introuvable : l'adresse de VITE_SUPABASE_URL n'existe plus dans le DNS. Projet en pause : le restaurer depuis le tableau de bord Supabase. Projet supprimé : en créer un, puis mettre à jour VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY."
+            exit 1
+          fi
+          if [ "$rc" != 0 ]; then
+            echo "::error::Projet Supabase injoignable (curl, code ${rc}). Si l'échec se répète, vérifier l'état du projet dans le tableau de bord Supabase."
+            exit 1
+          fi
           echo "HTTP ${code}"
           if [ "$code" != "200" ]; then
             echo "::error::keep-alive a échoué (HTTP ${code}). Vérifier la table '${TABLE}' et sa policy anon."
