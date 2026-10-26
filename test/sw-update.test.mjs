@@ -43,6 +43,9 @@ function fakeServiceWorker(options = {}) {
     // `false` retire NOTRE registration : l'app n'a pas (ou plus) de worker,
     // mais les voisines en ont.
     inscrite = true,
+    // Le réseau vu par `update()`, qui retélécharge le script du worker :
+    // voir `fakeReseau`. Seule la CSP de la page (`'csp'`) le laisse passer.
+    reseau = 'en-ligne',
   } = options;
   const listeners = new Set();
   const journal = [];
@@ -61,7 +64,9 @@ function fakeServiceWorker(options = {}) {
       : null,
     update() {
       journal.push('update');
-      return Promise.resolve();
+      return reseau === 'en-ligne' || reseau === 'csp'
+        ? Promise.resolve()
+        : Promise.reject(new TypeError('Failed to update a ServiceWorker'));
     },
     unregister() {
       journal.push('unregister');
@@ -114,12 +119,14 @@ function fakeCaches(names = ['workbox-precache', 'donnees-app']) {
  * `'en-ligne'` : l'origine répond ; `'sonde'` : la requête échoue alors que
  * `navigator.onLine` dit vrai (un Wi-Fi sans accès) ; `'navigateur'` :
  * `navigator.onLine` dit faux ; `'portail'` : un portail captif répond à la
- * place de l'origine.
+ * place de l'origine ; `'csp'` : en ligne, mais le `connect-src` de la page
+ * refuse la requête vers l'origine (miss-devises).
  */
 function fakeReseau(etat, journal) {
   return async (url, init) => {
     journal.push(`sonde:${init?.method ?? 'GET'}`);
-    if (etat === 'sonde') throw new TypeError('Failed to fetch');
+    if (etat === 'sonde' || etat === 'csp')
+      throw new TypeError('Failed to fetch');
     if (etat === 'portail') return { url: 'https://portail.example/login' };
     return { url };
   };
@@ -1755,6 +1762,28 @@ test('la portée du hub ne protège plus le précache de l’app', async () => {
       [...env.caches.remaining],
       ['hub-v7-https://exemple.test/']
     );
+  } finally {
+    env.restore();
+  }
+});
+
+test('une CSP sans « self » ne fait pas croire à une coupure', async () => {
+  // LE DÉFAUT DE LA 6.28.0, relevé le 26/10/2026 par l'e2e de miss-devises : son
+  // `connect-src` ne liste pas `'self'`, la requête HEAD était refusée, et
+  // « Forcer la mise à jour » ne purgeait plus jamais, même en ligne. Le
+  // téléchargement du worker par `update()` ne relève pas de cette CSP.
+  const env = setupSw({ reseau: 'csp' });
+  try {
+    const cibles = [];
+    const result = await applyUpdate({
+      hard: true,
+      navigate: cible => cibles.push(cible),
+    });
+    assert.equal(result, 'purged');
+    assert.ok(env.journal.includes('sonde:HEAD'));
+    assert.ok(env.journal.includes('update'), 'la seconde sonde n’a pas couru');
+    assert.ok(env.journal.includes('unregister'));
+    assert.match(cibles[0], /[?&]_t=/);
   } finally {
     env.restore();
   }

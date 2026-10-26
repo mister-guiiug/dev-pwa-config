@@ -441,8 +441,11 @@ rien faire : c'est le « bouton mort » constaté sur mobile, que
 
 **Jamais de purge hors connexion.** Purger sans réseau désinscrivait le worker
 et laissait l'app impossible à recharger jusqu'au retour du réseau (signalé le
-26/10/2026 sur toutes les apps). La purge n'a donc lieu que si l'origine
-répond à une requête `HEAD`. Sinon, `applyUpdate` rend `'offline'` et recharge
+26/10/2026 sur toutes les apps). La purge n'a donc lieu que si le réseau
+répond à l'une de deux sondes : une requête `HEAD` vers la page, ou
+`registration.update()`. La seconde ne relève pas du `connect-src` de la
+page : sans elle, une app qui n'y met pas `'self'` (miss-devises) se croyait
+hors connexion en permanence. Sinon, `applyUpdate` rend `'offline'` et recharge
 la page telle quelle, servie par le worker intact. `reloadWhenOffline: false`
 lui demande de ne pas recharger : c'est ce que font `useUpdatePrompt` et
 `UpdateButton`, qui affichent alors `update.forceOffline`.
