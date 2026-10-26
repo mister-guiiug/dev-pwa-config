@@ -328,6 +328,22 @@ export function cspPlugin(options = {}) {
           ? ["'self'", "'unsafe-inline'", ...scripts].join(' ')
           : ["'self'", ...scripts, ...hashes].join(' ');
 
+        // `'self'` TOUJOURS EN `connect-src`. Une liste passée par l'app
+        // REMPLACE le défaut : miss-devises (26/10/2026) ne le reprenait pas.
+        // La sonde du réseau de `sw-update` (une requête HEAD vers la page,
+        // avant de purger) et la websocket du rechargement à chaud de Vite
+        // étaient refusées : « Forcer la mise à jour » ne purgeait plus, même
+        // en ligne. `'self'` ne s'ouvre qu'à l'origine qui sert déjà l'app.
+        const connexions = connectSrc.filter(source => source !== "'none'");
+        if (!connexions.includes("'self'")) {
+          connexions.unshift("'self'");
+          console.warn(
+            `[dwc-csp] connectSrc sans 'self' : ajouté. sw-update sonde la ` +
+              `page avant de purger, et le rechargement à chaud de Vite ouvre ` +
+              `une websocket vers l'origine ; sans 'self', la CSP les refuse.`
+          );
+        }
+
         /** @type {Record<string, string>} */
         const directives = {
           'default-src': "'self'",
@@ -339,7 +355,7 @@ export function cspPlugin(options = {}) {
           'font-src': fontSrc.join(' '),
           'connect-src': [
             ...new Set([
-              ...withAnalytics(connectSrc, ANALYTICS_HOSTS.connect),
+              ...withAnalytics(connexions, ANALYTICS_HOSTS.connect),
               ...(hoteSentry ? [hoteSentry] : []),
             ]),
           ].join(' '),

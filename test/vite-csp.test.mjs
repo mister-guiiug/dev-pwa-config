@@ -91,6 +91,42 @@ test('connectSrc + extraDirectives are honored', () => {
   assert.match(out, /media-src 'self' blob:/);
 });
 
+test("connect-src garde toujours 'self', et le dit quand l'app l'avait omis", () => {
+  // miss-devises, 26/10/2026 : sa liste remplaçait le défaut sans reprendre
+  // `'self'`. La sonde du réseau de `sw-update` (une requête HEAD vers la page)
+  // et la websocket du rechargement à chaud de Vite étaient refusées : « Forcer
+  // la mise à jour » ne purgeait plus, même en ligne.
+  const warnings = [];
+  const original = console.warn;
+  console.warn = message => warnings.push(String(message));
+  try {
+    const sans = render(HTML, { connectSrc: ['https://api.frankfurter.dev'] });
+    assert.deepEqual(sourcesOf(sans, 'connect-src'), [
+      "'self'",
+      'https://api.frankfurter.dev',
+    ]);
+    assert.equal(warnings.length, 1, 'l’ajout doit être signalé, une fois');
+    assert.match(warnings[0], /'self'/);
+    assert.match(warnings[0], /sw-update/);
+
+    // 'none' ne se mêle pas à une source : il cède la place à 'self'.
+    const aucun = render(HTML, { connectSrc: ["'none'"] });
+    assert.deepEqual(sourcesOf(aucun, 'connect-src'), ["'self'"]);
+
+    warnings.length = 0;
+    const avec = render(HTML, {
+      connectSrc: ['https://x.supabase.co', "'self'"],
+    });
+    assert.deepEqual(sourcesOf(avec, 'connect-src'), [
+      'https://x.supabase.co',
+      "'self'",
+    ]);
+    assert.equal(warnings.length, 0, 'rien à dire quand il y est déjà');
+  } finally {
+    console.warn = original;
+  }
+});
+
 test('ignores <script src> and typed scripts (only bare <script> hashed)', () => {
   const html =
     '<head><meta charset="UTF-8" /><script type="application/ld+json">{"@context":"x"}</script><script src="/main.js"></script></head>';

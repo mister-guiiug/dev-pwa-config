@@ -8,7 +8,13 @@ export interface CspOptions {
    * aux hash SHA-256 des scripts inline.
    */
   dev?: boolean;
-  /** Directive `connect-src` (hôtes backend). Défaut : `["'self'"]`. */
+  /**
+   * Directive `connect-src` (hôtes backend). Défaut : `["'self'"]`.
+   *
+   * `'self'` est TOUJOURS ajouté s'il manque, avec un avertissement au build :
+   * `sw-update` sonde la page avant de purger, et le rechargement à chaud de
+   * Vite ouvre une websocket vers l'origine.
+   */
   connectSrc?: string[];
   /**
    * Directive `img-src`. Défaut : `["'self'", 'data:', 'blob:']`.
