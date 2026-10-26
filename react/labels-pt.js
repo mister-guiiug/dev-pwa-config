@@ -46,6 +46,8 @@ const labels = {
     force: 'Forçar a atualização',
     forceHint:
       'Limpa a cache da aplicação e recarrega. Os seus dados são conservados.',
+    forceOffline:
+      'Sem ligação: a atualização vai esperar pelo regresso da rede. A aplicação continua a funcionar.',
     offlineReady: 'A aplicação já funciona sem ligação.',
     offlineReadyOk: 'OK',
   },

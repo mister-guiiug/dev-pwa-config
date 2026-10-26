@@ -46,6 +46,8 @@ const labels = {
     force: 'Forza l’aggiornamento',
     forceHint:
       'Svuota la cache dell’app e ricarica. I tuoi dati vengono conservati.',
+    forceOffline:
+      'Sei offline: l’aggiornamento attenderà il ritorno della rete. L’app continua a funzionare.',
     offlineReady: 'L’app ora funziona anche offline.',
     offlineReadyOk: 'OK',
   },

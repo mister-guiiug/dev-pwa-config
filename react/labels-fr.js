@@ -64,6 +64,8 @@ const labels = {
     force: 'Forcer la mise à jour',
     forceHint:
       'Vide le cache de l’application et recharge. Vos données sont conservées.',
+    forceOffline:
+      'Hors connexion : la mise à jour attendra le retour du réseau. L’application reste utilisable.',
     offlineReady: 'L’application fonctionne maintenant hors ligne.',
     offlineReadyOk: 'OK',
   },

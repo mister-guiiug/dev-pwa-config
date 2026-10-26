@@ -108,23 +108,49 @@ function fakeCaches(names = ['workbox-precache', 'donnees-app']) {
   };
 }
 
+/**
+ * Le réseau tel que la sonde de `applyUpdate` le voit.
+ *
+ * `'en-ligne'` : l'origine répond ; `'sonde'` : la requête échoue alors que
+ * `navigator.onLine` dit vrai (un Wi-Fi sans accès) ; `'navigateur'` :
+ * `navigator.onLine` dit faux ; `'portail'` : un portail captif répond à la
+ * place de l'origine.
+ */
+function fakeReseau(etat, journal) {
+  return async (url, init) => {
+    journal.push(`sonde:${init?.method ?? 'GET'}`);
+    if (etat === 'sonde') throw new TypeError('Failed to fetch');
+    if (etat === 'portail') return { url: 'https://portail.example/login' };
+    return { url };
+  };
+}
+
 /** Installe un DOM plus un faux service worker, et rend de quoi tout retirer. */
 function setupSw(options = {}) {
   // `url` traverse jusqu'à jsdom : c'est elle qui décide si la page courante
   // est une route profonde ou la racine de l'app.
-  const dom = setupDom(options.url ? { url: options.url } : {});
+  const reseau = options.reseau ?? 'en-ligne';
+  const dom = setupDom({
+    ...(options.url ? { url: options.url } : {}),
+    online: reseau !== 'navigateur',
+  });
   const { journal, sw } = fakeServiceWorker(options);
   const store = fakeCaches(options.cacheNames);
   Object.defineProperty(globalThis.navigator, 'serviceWorker', {
     value: sw,
     configurable: true,
   });
+  // Le vrai `fetch` de Node partirait vers `exemple.test` : la sonde doit
+  // rester dans le test.
+  const fetchAvant = globalThis.fetch;
+  globalThis.fetch = fakeReseau(reseau, journal);
   globalThis.caches = store.caches;
   return {
     journal,
     caches: store,
     restore() {
       delete globalThis.caches;
+      globalThis.fetch = fetchAvant;
       dom.restore();
     },
   };
@@ -1568,5 +1594,168 @@ test('une portée illisible ne protège pas : le doute désinscrit', async () =>
     ]);
   } finally {
     dom.restore();
+  }
+});
+
+/* ── Hors connexion, pas de purge ────────────────────────────────────────── */
+
+/*
+ * LE DÉFAUT, SIGNALÉ EN USAGE le 26/10/2026 sur toutes les apps : réseau
+ * coupé, Réglages, « Recharger l'application ». `update()` échouait sans bruit,
+ * aucun worker n'attendait, et la purge partait : worker désinscrit, caches
+ * vidés, puis navigation vers une URL que plus rien ne savait servir. Reproduit
+ * sur miss-dice en ligne : après le clic, plus aucun worker sur l'origine, et
+ * une page d'erreur réseau jusqu'au retour du réseau.
+ */
+test('hors connexion, la purge n’a pas lieu : worker et caches restent', async () => {
+  const url = 'https://exemple.test/miss-dice/regles-du-421.html';
+  const env = setupSw({
+    url,
+    scope: 'https://exemple.test/miss-dice/',
+    reseau: 'navigateur',
+  });
+  try {
+    const cibles = [];
+    const result = await applyUpdate({
+      hard: true,
+      navigate: cible => cibles.push(cible),
+    });
+    assert.equal(result, 'offline');
+    assert.ok(
+      !env.journal.includes('unregister'),
+      'le worker a été désinscrit'
+    );
+    assert.equal(env.caches.remaining.size, 2, 'un cache a été vidé');
+    // L'adresse telle quelle : avec `?_t=`, une page de contenu ne serait plus
+    // reconnue du précache et partirait au réseau.
+    assert.deepEqual(cibles, [url]);
+  } finally {
+    env.restore();
+  }
+});
+
+test('un Wi-Fi sans accès compte comme hors connexion', async () => {
+  // `navigator.onLine` dit vrai ; seule la sonde sait.
+  const env = setupSw({ reseau: 'sonde' });
+  try {
+    const result = await applyUpdate({ hard: true, navigate: () => true });
+    assert.equal(result, 'offline');
+    assert.ok(
+      env.journal.includes('sonde:HEAD'),
+      'la sonde n’a pas été lancée'
+    );
+    assert.ok(!env.journal.includes('unregister'));
+  } finally {
+    env.restore();
+  }
+});
+
+test('un portail captif ne vaut pas le réseau', async () => {
+  const env = setupSw({ reseau: 'portail' });
+  try {
+    const result = await applyUpdate({ hard: true, navigate: () => true });
+    assert.equal(result, 'offline');
+    assert.equal(env.caches.remaining.size, 2);
+  } finally {
+    env.restore();
+  }
+});
+
+test('reloadWhenOffline: false — la page ne bouge pas, même après le filet', async () => {
+  const env = setupSw({ reseau: 'navigateur' });
+  try {
+    const cibles = [];
+    const result = await applyUpdate({
+      hard: true,
+      safetyMs: 20,
+      reloadWhenOffline: false,
+      navigate: cible => cibles.push(cible),
+    });
+    await new Promise(resolve => setTimeout(resolve, 60));
+    assert.equal(result, 'offline');
+    assert.deepEqual(cibles, [], 'la minuterie de secours a rechargé');
+  } finally {
+    env.restore();
+  }
+});
+
+test('hors connexion, un worker qui attend s’active quand même', async () => {
+  // Le chemin propre n'a pas besoin du réseau : le nouveau worker et son
+  // précache sont déjà téléchargés.
+  const env = setupSw({ waiting: true, reseau: 'navigateur' });
+  try {
+    const result = await applyUpdate({ navigate: () => true });
+    assert.equal(result, 'activated');
+  } finally {
+    env.restore();
+  }
+});
+
+test('le bouton dit qu’il est hors connexion, et la page reste', async () => {
+  const env = setupSw({ waiting: false, reseau: 'navigateur' });
+  try {
+    const view = await mount(h(UpdateButton, {}));
+    assert.doesNotMatch(view.container.innerHTML, /role="status"/);
+    await view.act(async () => {
+      view.container.querySelector('[data-dwc="update-button"]').click();
+      await new Promise(resolve => setTimeout(resolve, 50));
+    });
+    const statut = view.container.querySelector('[role="status"]');
+    assert.ok(statut, 'aucun message hors connexion');
+    assert.match(statut.textContent, /^Hors connexion/);
+    assert.ok(!env.journal.includes('unregister'));
+    await view.unmount();
+  } finally {
+    env.restore();
+  }
+});
+
+/* ── Le worker du hub, à la racine, n'est pas le nôtre ───────────────────── */
+
+/*
+ * Le hub de la famille sert `/sw.js`, de portée `/` : il couvre CHAQUE page de
+ * l'origine. « Couvre la page » suffisait à le prendre pour celui de l'app ;
+ * relevé le 26/10/2026 sur miss-dice : après « Recharger l'application »,
+ * l'origine n'avait plus aucun worker, ni le cache du hub.
+ */
+test('le worker du hub, à la racine, survit à la purge d’une app', async () => {
+  const env = setupSw({
+    url: 'https://exemple.test/miss-dice/reglages',
+    scope: 'https://exemple.test/miss-dice/',
+    voisines: ['https://exemple.test/'],
+  });
+  try {
+    assert.equal(await unregisterServiceWorkers(), 1);
+    assert.deepEqual(
+      env.journal.filter(l => l.startsWith('unregister-voisine')),
+      [],
+      'le worker du hub a été désinscrit'
+    );
+  } finally {
+    env.restore();
+  }
+});
+
+test('la portée du hub ne protège plus le précache de l’app', async () => {
+  // « Contient la portée » trouvait celle du hub, `https://exemple.test/`,
+  // dans tous les noms de Workbox : l'app n'effaçait plus son propre précache.
+  // Le cache du hub, lui, finit par sa portée et survit.
+  const env = setupSw({
+    url: 'https://exemple.test/miss-dice/reglages',
+    scope: 'https://exemple.test/miss-dice/',
+    voisines: ['https://exemple.test/'],
+    cacheNames: [
+      'workbox-precache-v2-https://exemple.test/miss-dice/',
+      'hub-v7-https://exemple.test/',
+    ],
+  });
+  try {
+    await applyUpdate({ hard: true, navigate: () => true });
+    assert.deepEqual(
+      [...env.caches.remaining],
+      ['hub-v7-https://exemple.test/']
+    );
+  } finally {
+    env.restore();
   }
 });

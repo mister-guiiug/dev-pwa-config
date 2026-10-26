@@ -439,6 +439,19 @@ rien faire : c'est le « bouton mort » constaté sur mobile, que
 `updateServiceWorker(true)` provoque à lui seul. `localStorage`,
 `sessionStorage` et IndexedDB ne sont jamais touchés.
 
+**Jamais de purge hors connexion.** Purger sans réseau désinscrivait le worker
+et laissait l'app impossible à recharger jusqu'au retour du réseau (signalé le
+26/10/2026 sur toutes les apps). La purge n'a donc lieu que si l'origine
+répond à une requête `HEAD`. Sinon, `applyUpdate` rend `'offline'` et recharge
+la page telle quelle, servie par le worker intact. `reloadWhenOffline: false`
+lui demande de ne pas recharger : c'est ce que font `useUpdatePrompt` et
+`UpdateButton`, qui affichent alors `update.forceOffline`.
+
+**Seul le worker qui contrôle la page tombe.** Le hub sert un worker de portée
+`/`, qui couvre toutes les pages de l'origine : la purge d'une app ne le
+désinscrit plus. Un cache dont le nom finit par la portée d'un autre worker est
+épargné, comme ceux de Workbox (`workbox-precache-v2-<portée>`).
+
 ```ts
 import { applyUpdate } from '@mister-guiiug/dev-pwa-config/sw-update';
 

@@ -13,14 +13,26 @@ export interface ApplyUpdateOptions {
   reloadTo?: string;
   /** Point d'injection de la navigation ; utilisé par les tests. */
   navigate?: (target: string) => boolean;
+  /**
+   * Plafond de la sonde réseau qui conditionne la purge (défaut 800 ms). Sans
+   * réponse de l'origine dans ce délai, l'app est tenue pour hors connexion.
+   */
+  probeTimeoutMs?: number;
+  /**
+   * Hors connexion, recharger la page telle quelle (défaut `true`) ; `false`
+   * ne recharge pas et rend `'offline'`, pour que l'interface le dise. Dans
+   * les deux cas, ni worker ni cache n'est touché.
+   */
+  reloadWhenOffline?: boolean;
 }
 
 /** Chemin réellement emprunté par `applyUpdate`. */
-export type ApplyUpdateResult = 'activated' | 'purged' | 'none';
+export type ApplyUpdateResult = 'activated' | 'purged' | 'offline' | 'none';
 
 /**
  * Applique la mise à jour disponible, puis recharge : activation du worker en
- * attente si possible, purge du Cache Storage sinon. Ne touche jamais à
+ * attente si possible, purge du Cache Storage sinon — mais jamais hors
+ * connexion, où plus rien ne pourrait retélécharger l'app. Ne touche jamais à
  * `localStorage`, `sessionStorage` ni IndexedDB.
  */
 export declare function applyUpdate(
@@ -31,7 +43,9 @@ export declare function applyUpdate(
 export declare function hardNavigate(target: string): boolean;
 
 /**
- * Désinscrit tous les service workers et rend le nombre de workers tombés.
+ * Désinscrit le service worker qui contrôle la page (portée la plus précise
+ * qui la couvre) et rend le nombre de workers tombés. Ceux des apps voisines,
+ * et celui d'un site parent comme le hub à la racine, restent en place.
  *
  * Ne recharge pas, ne touche à aucun cache : c'est la désinscription **de
  * développement** que cinq apps portaient à la main, pour qu'un worker resté

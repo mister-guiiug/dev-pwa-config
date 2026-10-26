@@ -60,6 +60,40 @@ function bustedUrl(base) {
 }
 
 /**
+ * Le réseau répond-il ? C'est la condition de la purge.
+ *
+ * HORS CONNEXION, LA PURGE TUAIT L'APP. Signalé en usage le 26/10/2026 sur
+ * toutes les apps : réseau coupé, Réglages, « Recharger l'application ».
+ * `update()` échoue sans bruit, aucun worker n'attend, et la purge part :
+ * worker désinscrit, caches vidés, puis navigation vers une URL que plus rien
+ * ne sait servir. L'app ne revient qu'avec le réseau. Purger n'a de sens que
+ * si l'on peut tout retélécharger juste après.
+ *
+ * `navigator.onLine` ne suffit pas : il vaut `true` sur un Wi-Fi sans accès.
+ * Une requête `HEAD` vers la page courante, hors cache HTTP, le prouve. Le
+ * worker ne la sert pas (Workbox ne route que les `GET`) : elle va au réseau.
+ * Toute réponse de NOTRE origine compte, un 404 compris (une route d'app
+ * monopage n'existe pas sur le serveur). Une réponse venue d'ailleurs, celle
+ * d'un portail captif, ne compte pas.
+ */
+async function networkReachable(timeoutMs) {
+  const nav = globalThis.navigator;
+  if (nav && nav.onLine === false) return false;
+  const here = globalThis.location?.href;
+  if (typeof globalThis.fetch !== 'function' || !here) return false;
+  try {
+    const response = await withTimeout(
+      globalThis.fetch(here, { method: 'HEAD', cache: 'no-store' }),
+      timeoutMs
+    );
+    if (!response) return false;
+    return new URL(response.url || here).origin === new URL(here).origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Les portées inscrites sur l'origine, triées en « la nôtre » et « les autres ».
  *
  * UNE ORIGINE, SEIZE APPS. `getRegistrations()` et `caches.keys()` portent sur
@@ -117,7 +151,7 @@ async function readScopes(sw, timeoutMs) {
 }
 
 /**
- * Cette registration est-elle la NÔTRE, c'est-à-dire pas celle d'une voisine ?
+ * Les registrations qui sont les NÔTRES, c'est-à-dire pas celles d'une voisine.
  *
  * LE DOUTE PROFITE À LA DÉSINSCRIPTION. Une portée illisible — absente, vide,
  * d'un type inattendu — ne prouve pas qu'on a affaire à une autre app ; elle
@@ -126,12 +160,34 @@ async function readScopes(sw, timeoutMs) {
  * bouton « Forcer » qui ne force rien.
  *
  * On n'épargne donc QUE ce qu'on peut prouver étranger : une portée bien
- * formée qui ne couvre pas la page courante. Une voisine en a toujours une.
+ * formée qui ne couvre pas la page courante, ou qui la couvre de plus loin
+ * qu'une autre. Une voisine en a toujours une.
+ *
+ * LA PORTÉE LA PLUS PRÉCISE, PAS TOUTES CELLES QUI COUVRENT. Le hub de la
+ * famille sert `/sw.js`, de portée `/` : il couvre CHAQUE page de l'origine.
+ * « Couvre la page » suffisait à le prendre pour le nôtre, et réinitialiser
+ * une app désinscrivait aussi le worker du hub. Seule la portée la plus
+ * longue contrôle la page ; une portée plus courte qui la couvre appartient à
+ * un site parent.
+ *
+ * @param {unknown[]} registrations
  */
-function estNotre(registration) {
-  const scope = registration?.scope;
-  if (typeof scope !== 'string' || scope === '') return true;
-  return (globalThis.location?.href ?? '').startsWith(scope);
+function lesNotres(registrations) {
+  const here = globalThis.location?.href ?? '';
+  const lisible = registration => {
+    const scope = registration?.scope;
+    return typeof scope === 'string' && scope !== '';
+  };
+  const couvrantes = registrations.filter(
+    registration => lisible(registration) && here.startsWith(registration.scope)
+  );
+  const plusPrecise = Math.max(0, ...couvrantes.map(r => r.scope.length));
+  return registrations.filter(
+    registration =>
+      !lisible(registration) ||
+      (couvrantes.includes(registration) &&
+        registration.scope.length === plusPrecise)
+  );
 }
 
 /**
@@ -212,8 +268,9 @@ function awaitControllerChange(ms) {
  * 01/09/2026 : « tous les service workers » voulait dire **ceux de toute
  * l'origine**. Les seize apps de la famille partagent
  * `mister-guiiug.github.io` : réinitialiser miss-dice emportait la capacité
- * hors ligne des quinze autres, sans que rien ne le dise. Seules les
- * registrations qui COUVRENT LA PAGE COURANTE sont désinscrites.
+ * hors ligne des quinze autres, sans que rien ne le dise. Seule la
+ * registration qui CONTRÔLE LA PAGE COURANTE est désinscrite : celle dont la
+ * portée la couvre de plus près (voir `lesNotres`).
  *
  * Le repli de développement n'y perd rien : un worker resté d'une session
  * précédente y a la même portée que la page (même origine, même base). Un
@@ -245,7 +302,7 @@ export async function unregisterServiceWorkers(options = {}) {
     if (!registrations?.length) return 0;
     // Les nôtres seulement : celles des apps voisines de la même origine ne
     // nous regardent pas, et les désinscrire les casse en silence.
-    const miennes = registrations.filter(estNotre);
+    const miennes = lesNotres(registrations);
     if (!miennes.length) return 0;
     const results = await withTimeout(
       Promise.all(
@@ -272,7 +329,13 @@ export async function unregisterServiceWorkers(options = {}) {
  * des quinze autres apps de la famille. Workbox nomme les siens
  * `workbox-precache-v2-<portée>` — sa propre routine de nettoyage filtre
  * d'ailleurs sur `self.registration.scope`. On épargne donc tout cache dont le
- * nom porte la portée d'une voisine.
+ * nom FINIT par la portée d'une voisine.
+ *
+ * « Finit par », et non plus « contient » : la portée du hub, `/`, est le
+ * début de toutes les autres. « Contient » la trouvait dans chaque nom de
+ * Workbox, et la purge d'une app n'effaçait plus son propre précache dès que le
+ * visiteur était passé par le catalogue. Un worker qui veut survivre à la purge
+ * d'une voisine termine le nom de ses caches par sa portée, comme Workbox.
  *
  * Le filtre est négatif à dessein : un cache que l'app a créé elle-même sous un
  * nom quelconque (`donnees-app`) ne porte aucune portée, et reste purgé comme
@@ -284,7 +347,7 @@ async function purge(keepCache, timeoutMs, foreign = []) {
   if (store?.keys) {
     try {
       const keys = await store.keys();
-      const estVoisin = key => foreign.some(scope => key.includes(scope));
+      const estVoisin = key => foreign.some(scope => key.endsWith(scope));
       await Promise.all(
         keys
           .filter(key => !keepCache(key) && !estVoisin(key))
@@ -304,7 +367,11 @@ async function purge(keepCache, timeoutMs, foreign = []) {
  *      `controllerchange` avant de recharger. Le cache reste, l'app reste
  *      utilisable hors ligne pendant l'opération ;
  *   2. **purge** — aucun worker n'attend (ou `hard: true`) : désinscription et
- *      vidage du Cache Storage, puis navigation vers une URL anti-cache.
+ *      vidage du Cache Storage, puis navigation vers une URL anti-cache ;
+ *   3. **hors connexion** — la purge n'a lieu que si le réseau répond (voir
+ *      `networkReachable`). Sinon, worker et caches restent en place, et la
+ *      page se recharge telle quelle (`reloadWhenOffline`, par défaut) ou ne
+ *      bouge pas, pour que l'interface le dise.
  *
  * @param {{
  *   hard?: boolean,
@@ -314,10 +381,12 @@ async function purge(keepCache, timeoutMs, foreign = []) {
  *   keepCache?: (name: string) => boolean,
  *   reloadTo?: string,
  *   navigate?: (target: string) => boolean,
+ *   probeTimeoutMs?: number,
+ *   reloadWhenOffline?: boolean,
  * }} [options]
- * @returns {Promise<'activated'|'purged'|'none'>} Le chemin emprunté. La page
- *   se décharge normalement juste après : la valeur sert aux tests et aux
- *   journaux.
+ * @returns {Promise<'activated'|'purged'|'offline'|'none'>} Le chemin
+ *   emprunté. La page se décharge normalement juste après, sauf hors connexion
+ *   avec `reloadWhenOffline: false` : c'est alors à l'appelant de le dire.
  */
 export async function applyUpdate(options = {}) {
   const {
@@ -328,6 +397,8 @@ export async function applyUpdate(options = {}) {
     keepCache = () => false,
     reloadTo,
     navigate = hardNavigate,
+    probeTimeoutMs = 800,
+    reloadWhenOffline = true,
   } = options;
 
   // `let` : sur le chemin de la purge, la cible devient la portée du worker —
@@ -386,7 +457,26 @@ export async function applyUpdate(options = {}) {
   // à lire. La nôtre décide où revenir ; celles des voisines, ce qu'il ne faut
   // pas effacer. `reloadTo` reste souverain quand l'app a imposé sa
   // destination — mais les voisines restent protégées dans tous les cas.
-  const { scope, foreign } = await readScopes(sw, timeoutMs);
+  //
+  // La sonde du réseau court EN MÊME TEMPS : en ligne, elle ne retarde pas la
+  // purge, que la minuterie de secours talonne.
+  const [reachable, { scope, foreign }] = await Promise.all([
+    networkReachable(probeTimeoutMs),
+    readScopes(sw, timeoutMs),
+  ]);
+
+  if (!reachable) {
+    if (!reloadWhenOffline) {
+      clearTimeout(safety);
+      return 'offline';
+    }
+    // L'adresse telle quelle, sans anti-cache : le worker, intact, la sert.
+    // Avec `?_t=`, une page de contenu (`regles.html`) ne serait plus
+    // reconnue du précache, et partirait au réseau.
+    target = reloadTo ?? globalThis.location?.href ?? target;
+    return finish('offline');
+  }
+
   if (!reloadTo && scope) target = bustedUrl(scope);
 
   await withTimeout(purge(keepCache, timeoutMs, foreign), timeoutMs);

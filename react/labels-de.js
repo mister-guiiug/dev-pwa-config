@@ -46,6 +46,8 @@ const labels = {
     force: 'Aktualisierung erzwingen',
     forceHint:
       'Leert den Cache der App und lädt neu. Deine Daten bleiben erhalten.',
+    forceOffline:
+      'Offline: Die Aktualisierung wartet, bis das Netz zurück ist. Die App funktioniert weiter.',
     offlineReady: 'Die App funktioniert jetzt auch offline.',
     offlineReadyOk: 'OK',
   },
