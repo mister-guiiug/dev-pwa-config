@@ -138,7 +138,7 @@ function write(root, rel, content) {
  * @returns {string | null} chemin écrit, ou null si non corrigeable
  */
 export function applyFix(root, id, ctx = {}) {
-  const node = ctx.nodeVersion ?? '26.10.0';
+  const node = ctx.nodeVersion ?? '26.13.0';
   const preset =
     ctx.preset ?? 'github>mister-guiiug/dev-pwa-config//renovate/default';
 

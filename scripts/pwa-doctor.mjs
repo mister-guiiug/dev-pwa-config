@@ -1057,7 +1057,7 @@ export function reglesDepot(ctx, api) {
     // majeur périmé jusqu'à ce qu'un dépôt passe au suivant. Le test
     // `pwa-doctor` compare donc ce conseil au `.nvmrc` du dépôt : les deux
     // montent ensemble ou la CI rougit.
-    dette('nvmrc', 'pas de .nvmrc', 'écrire « 26.10.0 »');
+    dette('nvmrc', 'pas de .nvmrc', 'écrire « 26.13.0 »');
   }
   const attributes = readText(root, '.gitattributes') ?? '';
   if (!/eol=lf/.test(attributes)) {
@@ -2368,7 +2368,7 @@ export async function run(args = []) {
   if (doFix) {
     const candidates = report.findings.filter(f => FIXABLE.has(f.id));
     const { written } = applyFixes(root, candidates, {
-      nodeVersion: '26.10.0',
+      nodeVersion: '26.13.0',
       preset: PRESET,
     });
     if (written.length) {
