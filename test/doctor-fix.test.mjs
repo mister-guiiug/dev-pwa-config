@@ -79,8 +79,8 @@ test('applyFix pose .editorconfig et .nvmrc', () => {
   const root = mkdtempSync(join(tmpdir(), 'dwc-fix-'));
   try {
     assert.equal(applyFix(root, 'editorconfig'), '.editorconfig');
-    assert.equal(applyFix(root, 'nvmrc', { nodeVersion: '26.10.0' }), '.nvmrc');
-    assert.match(readFileSync(join(root, '.nvmrc'), 'utf8'), /26\.10\.0/);
+    assert.equal(applyFix(root, 'nvmrc', { nodeVersion: '26.13.0' }), '.nvmrc');
+    assert.match(readFileSync(join(root, '.nvmrc'), 'utf8'), /26\.13\.0/);
     assert.match(
       readFileSync(join(root, '.editorconfig'), 'utf8'),
       /root = true/
@@ -105,7 +105,7 @@ test('pwa-doctor --fix réduit les dettes figées', async () => {
     const code = await run(['--dir', root, '--fix', '--no-github']);
     assert.ok(typeof code === 'number');
     assert.ok(readFileSync(join(root, '.editorconfig'), 'utf8').length > 0);
-    assert.ok(readFileSync(join(root, '.nvmrc'), 'utf8').includes('26.10'));
+    assert.ok(readFileSync(join(root, '.nvmrc'), 'utf8').includes('26.13'));
     const after = diagnose(root);
     assert.ok(!after.findings.some(f => f.id === 'editorconfig'));
     assert.ok(!after.findings.some(f => f.id === 'nvmrc'));

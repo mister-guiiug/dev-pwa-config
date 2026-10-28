@@ -13,7 +13,7 @@ npm run validate   # format + lint + types + tests — ce que la CI exécute
 npm run showroom   # la vitrine, sur http://127.0.0.1:5220/dev-pwa-config/
 ```
 
-Node 26.10.0 (`.nvmrc`), que la CI installe partout. Le paquet publié, lui,
+Node 26.13.0 (`.nvmrc`), que la CI installe partout. Le paquet publié, lui,
 promet toujours `engines: >=22` : c'est un plancher de compatibilité, pas la
 version sur laquelle on développe, et le relever serait une rupture.
 
