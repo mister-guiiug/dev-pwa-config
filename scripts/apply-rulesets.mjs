@@ -238,6 +238,13 @@ const CHECKS = {
   'mister-gphotos': ['build-and-test'],
   'vscode-sops-diff': ['build'],
   'mister-claude-skills': ['validate'],
+  // Le serveur MCP du parc, en Python, hébergé sur Prefect Horizon. Deux jobs
+  // sans matrice ni filtre de chemin, relevés sur sa PR #1 : sa CI, et la garde
+  // des signatures copiée du dépôt `.github`. Apostrophe DROITE (U+0027).
+  'mister-parc-mcp': [
+    'Lint, tests et inspection',
+    "Commits et fichiers sans signature d'assistant",
+  ],
 
   /**
    * LES TROIS DÉPÔTS SANS APPLICATION EXIGENT LA GARDE « SIGNATURES IA ».
