@@ -952,7 +952,7 @@ globalThis.SHOWROOM_APPS = {
         'Suivi de Koh-Lanta : candidats, épisodes, épreuves, conseils et votes. Indépendant, non officiel.',
       descriptionEn:
         'Adventure-season tracker: castaways, episodes, challenges, councils and votes. Unofficial.',
-      maturity: 'beta',
+      maturity: 'stable',
       category: 'loisirs',
       backend: 'supabase',
       platform: 'web',
