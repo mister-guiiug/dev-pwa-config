@@ -275,6 +275,17 @@ export const APP_SEO = Object.freeze(
           'Thème stand : teal profond et or, lisible en plein jour',
         ],
       },
+      'miss-holi-voyage': {
+        languages: ['fr', 'en'],
+        features: [
+          'Profil du foyer et contraintes de voyage partagés',
+          'Questions IA pour cadrer dates, budget et rythme',
+          'Comparaison de vols et d’itinéraires',
+          'Style hub ou roadtrip selon le groupe',
+          'Shortlist d’excursions à trancher ensemble',
+          'Décisions partagées sans quitter le carnet',
+        ],
+      },
     }).map(([id, s]) => [id, gele(s)])
   )
 );

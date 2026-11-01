@@ -20,7 +20,7 @@
 globalThis.SHOWROOM_ADOPTION = {
   generatedAt: '2026-10-01T19:04:51.241Z',
   measured: 21,
-  total: 22,
+  total: 23,
   apps: {
     'miss-badminton': {
       symbols: [
