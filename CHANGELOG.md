@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.28.3
+
+### Patch Changes
+
+- Catalogue : `miss-holi-voyage` remonte en `loisirs` (avec family-map et miss-koh), après le passage temporaire en `outils`.
+
 ## 6.28.2
 
 ### Patch Changes
