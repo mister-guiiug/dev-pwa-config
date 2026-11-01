@@ -1,5 +1,13 @@
 # Changelog
 
+## 6.28.2
+
+### Patch Changes
+
+- Catalogue : miss-supaboss, mister-miss-koh et miss-devises en stable ; mister-settle en beta ; miss-arcade confirmée jeux/alpha ; miss-holi-voyage en outils/alpha. Compagnons (thèmes, SEO) pour arcade et holi-voyage.
+- 6439ca5: `cspPlugin` garde toujours `'self'` en `connect-src`, et le dit au build quand l'app l'avait omis. Une liste `connectSrc` remplace le défaut : miss-devises ne reprenait pas `'self'`, la sonde de `sw-update` (requête `HEAD` vers la page) et la websocket du rechargement à chaud de Vite étaient refusées par la CSP. « Forcer la mise à jour » ne purgeait plus, même en ligne (corrigé côté sonde par la 6.28.1 ; ceci ferme la porte côté politique). `'none'` cède la place à `'self'`.
+- 70b1383: Node 26.13.0 par défaut, au lieu de 26.10.0 : l'action `setup-pwa`, les cinq workflows réutilisables (`pwa-ci`, `pwa-deploy`, `pwa-lighthouse`, `pwa-worker-deploy`, `npm-publish`), le gabarit `.nvmrc` et le conseil `nvmrc` de `pwa-doctor`. Node 26.13.0 embarque npm 11.20.0. Les apps qui n'écrivent pas `node-version` passent à 26.13.0 dès que l'étiquette `v6` avance, sans rien changer chez elles.
+
 ## 6.28.1
 
 ### Patch Changes

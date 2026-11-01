@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-pwa-config",
-  "version": "6.28.1",
+  "version": "6.28.2",
   "private": false,
   "engines": {
     "node": ">=22"
