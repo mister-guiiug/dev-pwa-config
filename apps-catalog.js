@@ -1288,11 +1288,13 @@ export const FAMILY_APPS = [
     'mister-miss-koh',
     'Mister & Miss Koh',
     'Suivi de Koh-Lanta : candidats, épisodes, épreuves, conseils et votes. Indépendant, non officiel.',
-    'beta',
+    'stable',
     // `loisirs`, comme `mister-family-map` : accompagner une émission n'est ni
     // un jeu ni un outil. La description NOMME Koh-Lanta — c'est ce qu'on
     // cherche — et garde « non officiel » : l'app n'a aucun lien avec TF1 ni
     // la production, et sa donnée vient de Wikipédia, source collaborative.
+    // Stable depuis 01/11/2026 : saison publiée, 38 migrations, pipeline
+    // Wikipédia, suites pgTAP et site en prod à jour.
     {
       descriptionEn:
         'Adventure-season tracker: castaways, episodes, challenges, councils and votes. Unofficial.',
