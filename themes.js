@@ -960,6 +960,53 @@ export const FAMILY_THEMES = [
       danger: '#f2b8b5',
     },
   },
+
+  {
+    id: 'miss-arcade',
+    name: 'Miss Arcade',
+    tagline:
+      'Teal profond et or de stand : tactile, lisible, sans le violet par défaut.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    // Relevée dans son `src/index.css` le 01/11/2026. L'or (`--arcade-gold`)
+    // sert d'accent ; `info` n'est pas peint — repli des jetons du socle.
+    // La primaire peinte vaut `#1f8a70` (4,26:1 sur blanc) : on retient
+    // `#1d8068` pour tenir l'encre à 4,5:1 — même teal, un cran plus sombre.
+    radius: '0.875rem',
+    light: {
+      bg: '#eef3f1',
+      surface: '#ffffff',
+      surface2: '#e2ebe7',
+      text: '#14201c',
+      textSoft: '#4f635c',
+      border: '#c9d6d0',
+      primary: '#1d8068',
+      primaryContrast: '#ffffff',
+      primarySoft: '#d5efe8',
+      accent: '#c9a227',
+      info: '#1a5fb4',
+      success: '#1b6b3a',
+      warning: '#8a5a00',
+      danger: '#b3261e',
+    },
+    dark: {
+      bg: '#0f1115',
+      surface: '#171b22',
+      surface2: '#1f242d',
+      text: '#e8ecf2',
+      textSoft: '#a3adbb',
+      border: '#2c333d',
+      primary: '#5ec4a8',
+      primaryContrast: '#0f1115',
+      primarySoft: '#1e3330',
+      accent: '#e0c15a',
+      info: '#86b6f0',
+      success: '#7fd6a0',
+      warning: '#e8c07d',
+      danger: '#f2b8b5',
+    },
+  },
 ];
 
 /** Thème d'une app par son identifiant de dépôt. */

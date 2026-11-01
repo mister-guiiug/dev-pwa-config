@@ -560,7 +560,7 @@ globalThis.SHOWROOM_I18N = {
       'Realtime Database for low-latency live data (puzzle, qowa), Firestore for structured data (miss-ticket, qowa), Auth, Storage, Cloud Functions.',
     'stack.db.local.name': 'Local-first',
     'stack.db.local.apps':
-      '6 apps — badminton, contraction, devises, dice, genius, cim10',
+      '7 apps — badminton, contraction, devises, dice, genius, cim10, arcade',
     'stack.db.local.features':
       '<code>localStorage</code> / IndexedDB only. No account, no data leaving the phone — often the right call, and the best GDPR answer.',
     'stack.db.notes':

@@ -1147,9 +1147,11 @@ export const FAMILY_APPS = [
     'miss-supaboss',
     'Miss Supaboss',
     'Pilotage multi-comptes Supabase Free : pause/restore, quotas, démos.',
-    'beta',
+    'stable',
     // Pilote d'AUTRES comptes Supabase via un backend Node et un jeton
     // personnel : aucun client Supabase côté navigateur, d'où `api`.
+    // Stable depuis 01/11/2026 : coffre obligatoire, proxy allowlist,
+    // org/health/keep-alive, budgets CI = prod.
     {
       descriptionEn:
         'Multi-account Supabase Free control: pause/restore, quotas, demos.',

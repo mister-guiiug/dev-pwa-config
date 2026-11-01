@@ -264,6 +264,17 @@ export const APP_SEO = Object.freeze(
           'Taux de la BCE ou de marché, hors ligne avec le dernier connu',
         ],
       },
+      'miss-arcade': {
+        languages: ['fr', 'en'],
+        features: [
+          'Bandit manchot tactile pour stand et point de vente',
+          'Roue de la fortune avec lots pondérés',
+          'Messages personnalisés affichés après le tirage',
+          'Formulaire de leads après la partie',
+          'Fonctionne hors ligne, installable en PWA',
+          'Thème stand : teal profond et or, lisible en plein jour',
+        ],
+      },
     }).map(([id, s]) => [id, gele(s)])
   )
 );
