@@ -80,8 +80,9 @@ const PALETTES = FAMILY_THEMES.flatMap(theme =>
 );
 
 test('toutes les palettes sont lues, et complètes', () => {
-  // 22 thèmes, dont deux sombres seulement (qowa, quota).
-  assert.equal(PALETTES.length, 42);
+  // Une entrée par schéma annoncé (qowa et quota n'ont que le sombre).
+  const attendu = FAMILY_THEMES.reduce((n, t) => n + t.schemes.length, 0);
+  assert.equal(PALETTES.length, attendu);
   for (const [nom, palette] of PALETTES) {
     for (const role of Object.keys(ROLES_CSS)) {
       assert.match(
