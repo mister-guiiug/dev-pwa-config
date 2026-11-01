@@ -1007,6 +1007,50 @@ export const FAMILY_THEMES = [
       danger: '#f2b8b5',
     },
   },
+  {
+    id: 'miss-holi-voyage',
+    name: 'Miss Holi Voyage',
+    tagline:
+      'Carnet papier et sarcelle voyage : encre profonde, filets, ambiance solaire.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: "'Literata Variable', Literata, Georgia, serif",
+    // Relevée dans son `src/index.css` le 01/11/2026 (thème ambiance / défaut).
+    // Les thèmes album/instrument et les phases solaires restent hors catalogue.
+    radius: '0.35rem',
+    light: {
+      bg: '#f4efe6',
+      surface: '#faf7f1',
+      surface2: '#ebe6dc',
+      text: '#0a1620',
+      textSoft: '#4a5560',
+      border: '#c8c0b4',
+      primary: '#0b6e6e',
+      primaryContrast: '#faf7f1',
+      primarySoft: '#dce8e4',
+      accent: '#0b6e6e',
+      info: '#1a5fb4',
+      success: '#1b6b3a',
+      warning: '#8a5a00',
+      danger: '#9b2c2c',
+    },
+    dark: {
+      bg: '#12151a',
+      surface: '#1a1e24',
+      surface2: '#232830',
+      text: '#ece7df',
+      textSoft: '#9a948a',
+      border: '#3a4048',
+      primary: '#3dccc7',
+      primaryContrast: '#12151a',
+      primarySoft: '#1e3334',
+      accent: '#3dccc7',
+      info: '#86b6f0',
+      success: '#7fd6a0',
+      warning: '#e8c07d',
+      danger: '#f2b8b5',
+    },
+  },
 ];
 
 /** Thème d'une app par son identifiant de dépôt. */
