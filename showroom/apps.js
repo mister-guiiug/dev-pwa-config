@@ -1026,7 +1026,7 @@ globalThis.SHOWROOM_APPS = {
         'Partage de dépenses entre proches : qui a payé, qui doit combien, remboursements suggérés — sans paiement.',
       descriptionEn:
         'Split expenses with friends: who paid, who owes what, suggested reimbursements — no payments.',
-      maturity: 'alpha',
+      maturity: 'beta',
       category: 'outils',
       backend: 'supabase',
       platform: 'web',
@@ -1102,7 +1102,7 @@ globalThis.SHOWROOM_APPS = {
         'Convertisseur de devises visuel : billets et pièces dessinés, conversion dans les deux sens, historique des taux et carnet annoté.',
       descriptionEn:
         'Visual currency converter: drawn banknotes and coins, two-way conversion, rate history and an annotated notebook.',
-      maturity: 'alpha',
+      maturity: 'stable',
       category: 'outils',
       backend: 'local',
       platform: 'web',
