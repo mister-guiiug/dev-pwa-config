@@ -1356,6 +1356,8 @@ export const FAMILY_APPS = [
     'Miss Arcade',
     'Jeux tactiles pour stand et point de vente : bandit manchot et roue, lots pondérés, messages personnalisés, formulaire leads, hors ligne.',
     'alpha',
+    // `jeux` : bandit et roue de stand, pas un outil métier. Alpha : le métier
+    // de l'accueil d'exemple reste à remplacer.
     {
       descriptionEn:
         'Touch games for booths and stores: slot machine and prize wheel, weighted prizes, custom messages, lead form, offline.',
@@ -1368,10 +1370,13 @@ export const FAMILY_APPS = [
     'Miss Holi Voyage',
     'Agent de préparation de voyage en famille : profil du foyer, questions IA, vols, hub ou roadtrip, shortlist d’excursions.',
     'alpha',
+    // `outils` : préparer un voyage est un outil, comme miss-devises — pas
+    // `loisirs` (sorties / émission). Alpha : le parcours IA et les décisions
+    // partagées se consolident encore.
     {
       descriptionEn:
         'Family trip prep agent: household profile, AI questions, flights, hub or roadtrip, excursion shortlist.',
-      category: 'loisirs',
+      category: 'outils',
       backend: 'supabase',
     }
   ),
