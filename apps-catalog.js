@@ -1370,13 +1370,13 @@ export const FAMILY_APPS = [
     'Miss Holi Voyage',
     'Agent de préparation de voyage en famille : profil du foyer, questions IA, vols, hub ou roadtrip, shortlist d’excursions.',
     'alpha',
-    // `outils` : préparer un voyage est un outil, comme miss-devises — pas
-    // `loisirs` (sorties / émission). Alpha : le parcours IA et les décisions
-    // partagées se consolident encore.
+    // `loisirs`, comme family-map et miss-koh : préparer / vivre un voyage
+    // en famille n’est ni un outil métier ni un jeu. Alpha : le parcours IA
+    // et les décisions partagées se consolident encore.
     {
       descriptionEn:
         'Family trip prep agent: household profile, AI questions, flights, hub or roadtrip, excursion shortlist.',
-      category: 'outils',
+      category: 'loisirs',
       backend: 'supabase',
     }
   ),

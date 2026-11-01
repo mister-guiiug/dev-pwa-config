@@ -1241,7 +1241,7 @@ globalThis.SHOWROOM_APPS = {
       descriptionEn:
         'Family trip prep agent: household profile, AI questions, flights, hub or roadtrip, excursion shortlist.',
       maturity: 'alpha',
-      category: 'outils',
+      category: 'loisirs',
       backend: 'supabase',
       platform: 'web',
       configs: [
