@@ -1322,9 +1322,11 @@ export const FAMILY_APPS = [
     'mister-settle',
     'Mister Settle',
     'Partage de dépenses entre proches : qui a payé, qui doit combien, remboursements suggérés — sans paiement.',
-    'alpha',
+    'beta',
     // `outils` : compter à plusieurs est un outil. Aucun paiement dans l'app,
     // et la description le dit : l'argent circule ailleurs, entre les gens.
+    // Bêta depuis 01/11/2026 : espaces, répartitions et soldes en prod, CI et
+    // suites Supabase vertes — encore en consolidation avant stable.
     {
       descriptionEn:
         'Split expenses with friends: who paid, who owes what, suggested reimbursements — no payments.',
@@ -1336,10 +1338,12 @@ export const FAMILY_APPS = [
     'miss-devises',
     'Miss Devises',
     'Convertisseur de devises visuel : billets et pièces dessinés, conversion dans les deux sens, historique des taux et carnet annoté.',
-    'alpha',
+    'stable',
     // `outils` : il n'y a pas de catégorie « voyage », et une app seule ne la
     // fonde pas. `local` : sans compte ni serveur, les taux viennent d'API
     // publiques lues par l'appareil (ADR 0013 de l'app).
+    // Stable depuis 01/11/2026 : conversion visuelle, historique et carnet
+    // hors ligne, site en prod à jour, CI et Lighthouse verts.
     {
       descriptionEn:
         'Visual currency converter: drawn banknotes and coins, two-way conversion, rate history and an annotated notebook.',
