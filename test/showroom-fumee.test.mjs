@@ -139,14 +139,18 @@ test('la page démarre sans erreur', () => {
 
 test('la vitrine rend une carte par application du catalogue', () => {
   const attendu = globalThis.SHOWROOM_APPS.apps.length;
+  assert.ok(attendu > 0, 'catalogue vide');
   assert.equal(compter('#apps-grid > li'), attendu);
-  assert.equal(attendu, 21, 'le catalogue a changé : ajuster ce repère');
 });
 
 test('le catalogue rend ses fiches, et la grille ses thèmes', () => {
   assert.equal(compter('#cat-grid > li'), 62);
   assert.equal(compter('#theme-grid > *'), globalThis.SHOWROOM_THEMES.length);
-  assert.equal(globalThis.SHOWROOM_THEMES.length, 22);
+  // Une palette par app + le thème générique.
+  assert.equal(
+    globalThis.SHOWROOM_THEMES.length,
+    globalThis.SHOWROOM_APPS.apps.length + 1
+  );
 });
 
 test('les comptes de la prose sont remplis depuis le catalogue', () => {
@@ -170,8 +174,9 @@ test('la bascule de langue traduit la page, et revient', () => {
   assert.equal(doc.documentElement.lang, 'en');
   assert.notEqual(titre(), francais, 'le titre est resté en français');
   // Les cartes sont toujours là, et les descriptions françaises sont dites.
-  assert.equal(compter('#apps-grid > li'), 21);
-  assert.ok(compter('.sr-app-desc[lang="fr"]') >= 21);
+  const n = globalThis.SHOWROOM_APPS.apps.length;
+  assert.equal(compter('#apps-grid > li'), n);
+  assert.ok(compter('.sr-app-desc[lang="fr"]') >= n);
 
   const fr = doc.getElementById('lang-fr');
   fr.checked = true;
