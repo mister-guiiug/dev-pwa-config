@@ -268,9 +268,11 @@ test('le job indexnow : après le déploiement, jamais bloquant, la clé du cata
   assert.match(indexnow, new RegExp(`CLE: ${INDEXNOW_KEY}\\n`));
   assert.match(indexnow, /HOTE: mister-guiiug\.github\.io\n/);
   const script = blocLitteral(indexnow, 'INDEXNOW_JS');
-  // Le point d'entrée comparé en entier : un seul appel, vers IndexNow.
+  // Les points d'entrée comparés en entier : le relais IndexNow, et Bing en direct.
   const points = [...script.matchAll(/fetch\('([^']+)'/g)].map(m => m[1]);
-  assert.deepEqual(points, ['https://api.indexnow.org/indexnow']);
+  assert.deepEqual(points, ['https://api.indexnow.org/indexnow', 'https://www.bing.com/indexnow']);
+  // Chaque réponse sort en annotation, lisible sans ouvrir le journal.
+  assert.match(script, /::notice::IndexNow \(\$\{point\}\) : HTTP/);
   assert.match(script, /keyLocation/);
   // Une entrée n'entre jamais dans le script : elle passe par env:.
   assert.doesNotMatch(script, /\$\{\{/);
