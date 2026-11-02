@@ -369,15 +369,30 @@ jobs:
               console.log('::warning::aucune URL joignable en 200 : rien n’est signalé.');
               process.exit(0);
             }
-            const r = await fetch('https://api.indexnow.org/indexnow', {
+            // Deux points d'entrée : le relais api.indexnow.org perdait des
+            // envois quand plusieurs apps signalaient à quelques secondes
+            // d'écart (un seul arrivait chez Bing). Un doublon est sans effet.
+            const options = {
               method: 'POST',
               headers: { 'Content-Type': 'application/json; charset=utf-8' },
               body: JSON.stringify({ host: hote, key: cle, keyLocation: cleUrl, urlList: liste }),
-            });
-            // 200 : reçu ; 202 : reçu, clé en cours de vérification.
-            console.log(`IndexNow : HTTP ${r.status} ${await r.text()} — ${liste.length} URL.`);
-            if (r.status !== 200 && r.status !== 202)
-              console.log(`::warning::IndexNow a répondu ${r.status}.`);
+            };
+            const reponses = [
+              ['api.indexnow.org', await fetch('https://api.indexnow.org/indexnow', options).catch(e => e)],
+              ['www.bing.com', await fetch('https://www.bing.com/indexnow', options).catch(e => e)],
+            ];
+            console.log(`::notice::IndexNow : ${liste.length} URL envoyées : ${liste.join(' ')}`);
+            for (const [point, r] of reponses) {
+              if (r instanceof Error) {
+                console.log(`::warning::IndexNow (${point}) injoignable : ${r.message}`);
+                continue;
+              }
+              const texte = (await r.text()).replace(/\s+/g, ' ').slice(0, 200);
+              // 200 : reçu ; 202 : reçu, clé en cours de vérification.
+              console.log(`::notice::IndexNow (${point}) : HTTP ${r.status}${texte ? ` ${texte}` : ''}`);
+              if (r.status !== 200 && r.status !== 202)
+                console.log(`::warning::IndexNow (${point}) a répondu ${r.status}.`);
+            }
         run: node --input-type=module -e "$INDEXNOW_JS"
 
   # Déploiement optionnel des règles Firebase (Firestore/Realtime DB), avec auth
