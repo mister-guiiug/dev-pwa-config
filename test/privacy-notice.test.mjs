@@ -293,3 +293,149 @@ test('`policy` se déplie après les actions, sans ajouter de décision', async 
   await unmount();
   dom.restore();
 });
+
+// ── Les mentions lues dans l'environnement ────────────────────────────────
+
+const ENV = {
+  VITE_POSTHOG_KEY: CLE,
+  VITE_PRIVACY_CONTROLLER: 'Exploitant de test',
+  VITE_PRIVACY_CONTACT: 'droits@exemple.test',
+  VITE_PRIVACY_RETENTION_MONTHS: '12',
+  VITE_PRIVACY_ERROR_BASIS: 'Fondement de test',
+  VITE_SENTRY_DSN: 'https://abc123@o1.ingest.de.sentry.io/2',
+};
+
+test("les mentions viennent de l'environnement quand aucune prop ne les donne", async () => {
+  // C'est la forme que vingt apps adoptent : les quatre mentions sont des
+  // variables du dépôt, et recopier dans chacune la lecture, la conversion de
+  // la durée et le garde sur la clé ferait vingt copies d'une même logique.
+  const dom = prepare();
+  const { container, unmount } = await mount(h(PrivacyNotice, { env: ENV }));
+
+  const t = texte(container);
+  assert.ok(!t.includes(fr.privacy.missing), 'aucune mention ne doit manquer');
+  for (const valeur of [
+    'Exploitant de test',
+    'droits@exemple.test',
+    'Fondement de test',
+  ]) {
+    assert.ok(t.includes(valeur), `« ${valeur} » doit être affiché`);
+  }
+  assert.match(t, /\b12\b/);
+  assert.ok(t.includes(fr.privacy.errors), 'le DSN arme la section erreurs');
+
+  await unmount();
+  dom.restore();
+});
+
+test("une prop l'emporte sur la variable", async () => {
+  const dom = prepare();
+  const { container, unmount } = await mount(
+    h(PrivacyNotice, { env: ENV, controller: 'Autre exploitant' })
+  );
+
+  const t = texte(container);
+  assert.ok(t.includes('Autre exploitant'));
+  assert.ok(!t.includes('Exploitant de test'));
+
+  await unmount();
+  dom.restore();
+});
+
+test('une durée posée vide reste une mention manquante, jamais « 0 mois »', async () => {
+  // `Number('')` vaut 0 : sans garde, une variable déclarée mais laissée vide
+  // annoncerait une conservation nulle, c'est-à-dire un chiffre plausible.
+  const dom = prepare();
+  const { container, unmount } = await mount(
+    h(PrivacyNotice, { env: { ...ENV, VITE_PRIVACY_RETENTION_MONTHS: '' } })
+  );
+
+  const t = texte(container);
+  assert.ok(!/\b0\b/.test(t), 'aucun « 0 » ne doit apparaître');
+  assert.equal(t.split(fr.privacy.missing).length - 1, 1);
+
+  await unmount();
+  dom.restore();
+});
+
+test("sans clé acceptée, la mesure d'audience n'est pas décrite", async () => {
+  // Une clé absente ou mal formée ne mesure rien : `initAnalytics` la refuse
+  // par la même règle. Décrire la mesure serait annoncer ce qui n'a pas lieu.
+  for (const cle of [undefined, '', 'phc_trop_courte']) {
+    const dom = prepare();
+    const { container, unmount } = await mount(
+      h(PrivacyNotice, { env: { ...ENV, VITE_POSTHOG_KEY: cle } })
+    );
+
+    const t = texte(container);
+    assert.ok(!t.includes(fr.privacy.what), `clé ${cle} : mesure décrite`);
+    assert.ok(!t.includes('PostHog'), `clé ${cle} : PostHog nommé`);
+    // Les erreurs, elles, partent quand même : elles restent dites.
+    assert.ok(t.includes(fr.privacy.errors), `clé ${cle} : erreurs tues`);
+    assert.ok(t.includes('Exploitant de test'), 'le responsable reste dit');
+
+    await unmount();
+    dom.restore();
+  }
+});
+
+test("sans clé ni DSN, il n'y a rien à dire : le panneau ne rend rien", async () => {
+  const dom = prepare();
+  const { container, unmount } = await mount(
+    h(PrivacyNotice, {
+      env: {
+        VITE_PRIVACY_CONTROLLER: 'Exploitant de test',
+        VITE_PRIVACY_CONTACT: 'droits@exemple.test',
+      },
+    })
+  );
+  assert.equal(container.querySelector('[data-dwc="privacy-notice"]'), null);
+  await unmount();
+
+  // Hors de Vite, et sans `env`, le socle ne trouve aucune variable : même
+  // silence, et non un panneau tout en marqueurs.
+  const { container: nu, unmount: demonter } = await mount(h(PrivacyNotice));
+  assert.equal(nu.querySelector('[data-dwc="privacy-notice"]'), null);
+  await demonter();
+  dom.restore();
+});
+
+test("la clé lue dans l'environnement n'ajoute pas de bouton", async () => {
+  // Les apps qui montent `ConsentSection` à côté ont déjà l'endroit où revenir
+  // sur son choix : un `ConsentSettings` de plus en ferait deux. Seule une clé
+  // passée en prop arme la sortie du panneau (test précédent : « un choix
+  // fait, la sortie est dans le panneau »).
+  const dom = prepare('granted');
+  const { container, unmount } = await mount(h(PrivacyNotice, { env: ENV }));
+
+  assert.equal(container.querySelectorAll('button').length, 0);
+
+  await unmount();
+  dom.restore();
+});
+
+test("le niveau et la classe du titre suivent l'écran qui l'accueille", async () => {
+  const dom = prepare();
+  const { container, rerender, unmount } = await mount(
+    h(PrivacyNotice, {
+      env: ENV,
+      headingLevel: 3,
+      titleClassName: 'section-title',
+    })
+  );
+
+  const titre = container.querySelector('[data-dwc="privacy-notice-title"]');
+  assert.equal(titre.tagName, 'H3');
+  assert.equal(titre.className, 'section-title');
+
+  // Un niveau hors de 2 à 6 retombe sur le défaut, plutôt que de rendre une
+  // balise inexistante.
+  await rerender(h(PrivacyNotice, { env: ENV, headingLevel: 9 }));
+  assert.equal(
+    container.querySelector('[data-dwc="privacy-notice-title"]').tagName,
+    'H2'
+  );
+
+  await unmount();
+  dom.restore();
+});

@@ -24,6 +24,10 @@
     flex-direction: column;
     gap: 0.75rem;
     font-size: var(--text-fluid-sm, 0.9rem);
+    /* Le panneau est son propre conteneur : voir la liste, plus bas. Sa
+       largeur vient donc de son parent, jamais de son contenu ; dans une
+       rangée flex qui le dimensionnerait au contenu, lui donner une largeur. */
+    container-type: inline-size;
   }
 
   [data-dwc='privacy-notice-title'] {
@@ -42,8 +46,14 @@
    * Deux colonnes dès qu'il y a la place, une seule en dessous : un terme de
    * six mots et sa description de trente ne tiennent pas côte à côte sur un
    * téléphone.
+   *
+   * LA PLACE EST CELLE DU PANNEAU, PAS DE L'ÉCRAN. Mesuré sur miss-contraction
+   * le 04/11/2026 : un `@media (min-width: 32rem)` passait à deux colonnes sur
+   * un écran de bureau alors que la carte « À propos » plafonnait à 470 px, et
+   * les descriptions tenaient dans 195 px à côté de termes de 224. Les écrans
+   * de réglages du parc sont presque tous des colonnes étroites.
    */
-  @media (min-width: 32rem) {
+  @container (min-width: 36rem) {
     [data-dwc='privacy-notice-list'] {
       grid-template-columns: minmax(8rem, 14rem) 1fr;
     }
