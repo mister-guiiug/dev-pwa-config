@@ -336,7 +336,6 @@ doctrine : **rien ne s'exécute à l'import** — ni lecture bloquante, ni SDK, 
 import { createSupabaseClientFactory } from '@mister-guiiug/dev-pwa-config/supabase-client';
 
 export const supabase = createSupabaseClientFactory({
-  env: import.meta.env,
   auth: { flowType: 'pkce' }, // fusionné sur persistSession + autoRefreshToken
   correlated: true, // X-Correlation-Id + X-Session-Id sur chaque requête
 });
@@ -344,6 +343,14 @@ export const supabase = createSupabaseClientFactory({
 // …plus tard, au premier usage réel :
 const client = await supabase.getClient();
 ```
+
+**`env` est facultatif.** Sans lui, la fabrique lit l'environnement Vite du bundle :
+Vite substitue `import.meta.env` aussi dans les dépendances, en build comme en
+développement (mesuré le 04/11/2026). La fabrique lisait `{}` jusqu'à la 6.28.4, et
+trois applications nées du squelette, qui ne passait pas `env`, ont affiché
+« configuration manquante » en production. Passer `env: import.meta.env` reste
+utile dans les tests de l'app : Vitest exécute le socle sans Vite, et `vi.stubEnv`
+agit sur le `import.meta.env` de l'app.
 
 | Décision                         | Pourquoi                                                                                                                                               |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
