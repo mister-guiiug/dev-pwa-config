@@ -75,15 +75,41 @@ export function supabaseConfig(env = {}, options = {}) {
 }
 
 /**
+ * L'ENVIRONNEMENT VITE, LU PAR LE SOCLE LUI-MÊME quand l'app ne passe pas `env`.
+ *
+ * La fabrique lisait `{}` par défaut, sur une croyance : Vite ne remplacerait
+ * `import.meta.env` que dans le code de l'application. C'est faux, mesuré le
+ * 04/11/2026 sur Vite 8 : en build, une dépendance reçoit l'objet complet
+ * (`BASE_URL`, `MODE`, `PROD`… et les `VITE_*`) ; en développement, Vite
+ * l'injecte en tête du module pré-assemblé. La croyance a coûté trois fois la
+ * même panne aux apps nées du squelette, qui ne passait pas `env` : mister-settle
+ * (07/09), miss-holi-voyage, puis miss-arcade, dont la page Compte affichait en
+ * production « configuration manquante » au clic sur « Recevoir un lien »,
+ * alors que l'adresse du projet était dans le bundle.
+ *
+ * Hors de Vite (Node, les tests du socle, et Vitest, qui exécute les
+ * dépendances sans les passer par Vite), `import.meta.env` n'existe pas : on
+ * rend `{}`, et `missing()` nomme les deux variables, comme avant. C'est pour
+ * ces tests-là qu'une app garde intérêt à passer `env: import.meta.env` :
+ * `vi.stubEnv` agit sur le sien.
+ */
+function envVite() {
+  return (typeof import.meta !== 'undefined' && import.meta.env) || {};
+}
+
+/**
  * La fabrique : configuration lue tout de suite, client créé au premier appel.
  *
  *   // src/lib/supabase.ts — l'intégralité du fichier qu'une app garde
  *   export const supabase = createSupabaseClientFactory({
- *     env: import.meta.env,
  *     auth: { flowType: 'pkce' },
  *     correlated: true,
  *   });
  *   // …puis : const client = await supabase.getClient();
+ *
+ * `env` est FACULTATIF : sans lui, la fabrique lit l'environnement Vite du
+ * bundle (voir `envVite`). Le passer (`env: import.meta.env`) reste utile aux
+ * tests de l'app, et c'est le moyen de lire un autre environnement.
  *
  * `getClient()` REJETTE quand la configuration manque, avec les variables en
  * clair dans le message — mais tard, dans un contexte qu'une ErrorBoundary
@@ -120,7 +146,7 @@ export function supabaseConfig(env = {}, options = {}) {
  */
 export function createSupabaseClientFactory(options = {}) {
   const {
-    env = {},
+    env = envVite(),
     urlKey,
     anonKeyKey,
     auth = {},

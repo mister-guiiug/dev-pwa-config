@@ -30,7 +30,12 @@ export declare function supabaseConfig(
 ): SupabaseConfig;
 
 export interface SupabaseClientFactoryOptions extends SupabaseEnvKeys {
-  /** `import.meta.env` de l'app. */
+  /**
+   * L'environnement à lire. Par défaut : celui de Vite, dans le bundle de l'app
+   * (`import.meta.env`, que Vite substitue aussi dans les dépendances) ; `{}`
+   * hors de Vite, en Node et sous Vitest. Le passer reste utile aux tests de
+   * l'app, où `vi.stubEnv` agit sur le `import.meta.env` de l'app.
+   */
   env?: Record<string, unknown>;
   /**
    * Fusionné sur `{ persistSession: true, autoRefreshToken: true }` — l'union
