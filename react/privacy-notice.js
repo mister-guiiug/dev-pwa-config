@@ -2,6 +2,7 @@ import { createElement as h, Fragment } from 'react';
 import { useLabels } from './labels-core.js';
 import { isDev } from './dev-mode.js';
 import { ConsentSettings } from './consent-banner.js';
+import { parsePosthogKey } from '../analytics.js';
 
 /**
  * CE QUE LA MESURE D'AUDIENCE FAIT, DIT AU VISITEUR.
@@ -110,32 +111,81 @@ export const MARQUEUR_MOTIF =
 let prevenu = false;
 
 /**
+ * L'ENVIRONNEMENT VITE, LU PAR LE SOCLE LUI-MÊME.
+ *
+ * Vite remplace `import.meta.env` jusque dans les dépendances, en build comme
+ * en développement (mesuré le 04/11/2026, voir `supabase-client.js`) : le
+ * panneau peut donc trouver seul les mentions que le dépôt pose en variables.
+ * Hors de Vite (Node, et Vitest, qui exécute le socle sans le passer par
+ * Vite), il n'y a rien : on rend `{}`. C'est pour ces tests-là qu'une app
+ * passe `env: import.meta.env`, sur lequel `vi.stubEnv` agit.
+ */
+function envVite() {
+  return (typeof import.meta !== 'undefined' && import.meta.env) || {};
+}
+
+/**
+ * `Number('')` vaut 0 : une variable posée vide annoncerait « 0 mois » au lieu
+ * de la mention manquante.
+ */
+function mois(valeur) {
+  if (typeof valeur === 'number') return valeur;
+  if (typeof valeur !== 'string' || !valeur.trim()) return undefined;
+  const n = Number(valeur);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
  * @param {{ controller?: import('react').ReactNode,
  *   contact?: string, retentionMonths?: number,
  *   sentryDsn?: string, errorBasis?: import('react').ReactNode,
  *   posthogKey?: string, posthogHost?: string, loader?: () => Promise<unknown>,
- *   scope?: string,
- *   className?: string, settingsClassName?: string,
+ *   scope?: string, env?: Record<string, unknown>,
+ *   headingLevel?: 2|3|4|5|6,
+ *   className?: string, titleClassName?: string, settingsClassName?: string,
  *   title?: import('react').ReactNode }} props
  */
 export function PrivacyNotice(props = {}) {
   const {
-    controller,
-    contact,
-    retentionMonths,
-    sentryDsn,
-    errorBasis,
     posthogKey,
     posthogHost,
     loader,
     gtmContainerId,
     scope,
+    env = envVite(),
+    headingLevel,
     className,
+    titleClassName,
     settingsClassName,
     title,
   } = props;
+  // UNE PROP L'EMPORTE TOUJOURS sur la variable : c'est ce qui laisse une app
+  // afficher autre chose que ce que son dépôt déclare (une politique traduite,
+  // une page d'essai), et ce qui garde intacts les panneaux montés à la main.
+  const controller = props.controller ?? env.VITE_PRIVACY_CONTROLLER;
+  const contact = props.contact ?? env.VITE_PRIVACY_CONTACT;
+  const retentionMonths = mois(
+    props.retentionMonths ?? env.VITE_PRIVACY_RETENTION_MONTHS
+  );
+  const sentryDsn = props.sentryDsn ?? env.VITE_SENTRY_DSN;
+  const errorBasis = props.errorBasis ?? env.VITE_PRIVACY_ERROR_BASIS;
 
   const labels = useLabels('privacy');
+
+  // LA MESURE D'AUDIENCE NE SE DÉCRIT QUE SI ELLE A LIEU, et elle n'a lieu que
+  // si le socle accepte la clé : `parsePosthogKey` est la règle même
+  // d'`initAnalytics`. Une clé absente ou mal formée ne mesure rien, le bandeau
+  // ne pose pas la question, `ConsentSection` ne rend rien ; le panneau
+  // décrirait une mesure qui n'existe pas. Même règle que la section erreurs,
+  // qui attend un DSN.
+  //
+  // La clé lue dans l'environnement ne sert QU'À CE CONSTAT. Seule une clé
+  // passée en prop arme la sortie (`ConsentSettings`, plus bas) : les apps qui
+  // montent déjà `ConsentSection` à côté n'ont pas à recevoir un second bouton.
+  const mesure = Boolean(
+    parsePosthogKey(posthogKey ?? /** @type {string} */ (env.VITE_POSTHOG_KEY))
+  );
+  if (!mesure && !sentryDsn) return null;
 
   // Un avertissement UNE FOIS, pas à chaque rendu : ce composant vit dans un
   // pied de page, il se rend à chaque navigation.
@@ -151,18 +201,28 @@ export function PrivacyNotice(props = {}) {
     );
   }
 
+  const niveau = [2, 3, 4, 5, 6].includes(Number(headingLevel))
+    ? Number(headingLevel)
+    : 2;
   const absent = labels.missing;
   const lignes = [
-    [labels.what, labels.whatText],
-    [labels.basis, labels.basisText],
-    [labels.recipient, labels.recipientText],
-    [
-      labels.retention,
-      Number.isFinite(retentionMonths)
-        ? labels.retentionText.replaceAll('{months}', String(retentionMonths))
-        : absent,
-    ],
-    [labels.stored, labels.storedText],
+    ...(mesure
+      ? [
+          [labels.what, labels.whatText],
+          [labels.basis, labels.basisText],
+          [labels.recipient, labels.recipientText],
+          [
+            labels.retention,
+            Number.isFinite(retentionMonths)
+              ? labels.retentionText.replaceAll(
+                  '{months}',
+                  String(retentionMonths)
+                )
+              : absent,
+          ],
+          [labels.stored, labels.storedText],
+        ]
+      : []),
     // LA SECTION « ERREURS » NE S'AFFICHE QUE S'IL Y A UN DSN — même règle que
     // le bandeau, qui ne pose pas la question sans identifiant de mesure :
     // annoncer un envoi qui n'a pas lieu est une information fausse, au même
@@ -190,7 +250,14 @@ export function PrivacyNotice(props = {}) {
       'data-dwc': 'privacy-notice',
       className,
     },
-    h('h2', { 'data-dwc': 'privacy-notice-title' }, title ?? labels.title),
+    // Le niveau suit l'écran qui l'accueille, comme `ConsentSection` : posé
+    // dans un écran de réglages dont les sections sont en `h3`, un `h2` fixe
+    // en ferait un frère du titre de l'écran.
+    h(
+      `h${niveau}`,
+      { 'data-dwc': 'privacy-notice-title', className: titleClassName },
+      title ?? labels.title
+    ),
     h(
       'dl',
       { 'data-dwc': 'privacy-notice-list' },
