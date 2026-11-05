@@ -29,6 +29,13 @@ export declare function supabaseConfig(
   options?: SupabaseEnvKeys
 ): SupabaseConfig;
 
+/**
+ * La case `localStorage` où `@supabase/supabase-js` range la session d'un
+ * projet (`sb-<premier label de l'hôte>-auth-token`), sans charger le SDK.
+ * `null` sans URL ou avec une URL illisible.
+ */
+export declare function supabaseStorageKey(url: unknown): string | null;
+
 export interface SupabaseClientFactoryOptions extends SupabaseEnvKeys {
   /**
    * L'environnement à lire. Par défaut : celui de Vite, dans le bundle de l'app
@@ -68,6 +75,14 @@ export interface SupabaseClientFactory<C = unknown> {
   isConfigured(): boolean;
   /** Les variables manquantes — vide quand tout est là. */
   missing(): string[];
+  /**
+   * La case `localStorage` où le client range sa session, SANS charger le
+   * SDK : celle de `auth.storageKey` si l'app l'impose, sinon celle que le SDK
+   * dériverait de l'URL — et que la fabrique lui passe explicitement. `null`
+   * sans URL. À donner, comme `auth.storageKey`, à l'enveloppe passée à
+   * `supabaseAuthAdapter` quand le SDK est chargé à la demande.
+   */
+  storageKey(): string | null;
   /**
    * Le client, créé au premier appel puis partagé — c'est la promesse qui est
    * gardée, deux appels concurrents ne créent qu'un client. Rejette quand la
