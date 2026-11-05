@@ -101,6 +101,17 @@ test('slugify retire les diacritiques ET les tirets de bord', () => {
   assert.equal(slugify(''), '');
 });
 
+test('slugify rogne les bords sans expression régulière, même quand il ne reste que des tirets', () => {
+  // Le rognage par `slice` compte sur la réduction de toute suite de
+  // séparateurs à un seul tiret : ces cas la mettent à l'épreuve.
+  assert.equal(slugify('-'), '');
+  assert.equal(slugify('---'), '');
+  assert.equal(slugify('?!'), '');
+  assert.equal(slugify('--a--'), 'a');
+  assert.equal(slugify('a - - b'), 'a-b');
+  assert.equal(slugify(`${'-'.repeat(50_000)}x${'-'.repeat(50_000)}y`), 'x-y');
+});
+
 test('truncate et capitalize gèrent les bords', () => {
   assert.equal(truncate('abcdefghij', 6), 'abcde…');
   assert.equal(truncate('court', 80), 'court');
