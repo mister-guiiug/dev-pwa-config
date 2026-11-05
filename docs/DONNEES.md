@@ -657,6 +657,18 @@ promeut ce câblage en **port + adaptateurs**, comme `realtime/` et `push/` :
 | `/react/use-auth`      | le hook (`useSyncExternalStore`) — deux composants, un client, aucun Provider          |
 | `/react/auth-gate`     | la garde non stylée `loading`/`fallback`/`mfa`/`children` (généralise uwh + lookhouse) |
 
+**Deux gestes que cinq apps réécrivaient** (6.32.0) :
+
+- **`readSupabaseSession(client, { timeoutMs })`** rend `{ session, fromStorage }`
+  sans jamais attendre le réseau plus de `timeoutMs` (5 s) : hors ligne, le
+  stockage ; en ligne, `getSession()` borné, puis le stockage. C'est la lecture
+  de l'adaptateur, exportée pour les contextes d'auth écrits à la main et les
+  « qui suis-je » des backends.
+- **`ignoreOfflineSignOut(session, client)`** (`auth/stored-session`) dit qu'un
+  évènement sans session vient du silence du réseau : hors ligne, la session de
+  ce projet encore rangée. Une vraie déconnexion efface d'abord la session, et
+  passe. L'adaptateur l'applique lui-même à `onAuthStateChange`.
+
 Bout en bout :
 
 ```tsx
@@ -668,6 +680,8 @@ import { useAuth } from '@mister-guiiug/dev-pwa-config/react/use-auth';
 import { AuthGate } from '@mister-guiiug/dev-pwa-config/react/auth-gate';
 
 const supabase = createClient(url, anonKey); // LE client de l'app — jamais un second
+// Hors ligne, un « pas de session » alors que la session est encore rangée
+// (renouvellement abandonné) n'atteint pas l'app : ignoreOfflineSignOut.
 const adapter = supabaseAuthAdapter({ client: supabase });
 const auth = createAuthClient({
   adapter,

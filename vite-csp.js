@@ -27,7 +27,7 @@
  *       react(), tailwindcss(), pwaSeoPlugin({ ... }),
  *       cspPlugin({
  *         dev: command === 'serve',
- *         connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
+ *         connectSrc: ["'self'", 'https://api.exemple.fr'],
  *       }),
  *       VitePWA({ ... }),
  *     ],
@@ -185,6 +185,12 @@ function avecOrigineFamille(sources) {
   return [...new Set([...sources, FAMILY_ORIGIN])];
 }
 
+/** Ajoute une origine à une liste, sauf si elle vaut `'none'` (qui reste seul). */
+function avecOrigine(sources, origine) {
+  if (!origine || sources.includes("'none'")) return sources;
+  return [...new Set([...sources, origine])];
+}
+
 /** Directives qu'un navigateur ignore dans une CSP posée par `<meta>`. */
 const META_IGNORED = ['frame-ancestors', 'report-uri', 'sandbox'];
 
@@ -265,6 +271,36 @@ export function cspPlugin(options = {}) {
     }
   };
 
+  /**
+   * LE PROJET SUPABASE, LU DANS `VITE_SUPABASE_URL` QUE VITE A DÉJÀ RÉSOLUE —
+   * le même raisonnement que le DSN de Sentry ci-dessus.
+   *
+   * PROMU DE DOUZE APPS. Dix passaient la même paire de jokers
+   * (`https://*.supabase.co`, `wss://*.supabase.co`) dans `connectSrc`, souvent
+   * dans `imgSrc` ; le squelette lisait déjà l'origine exacte dans
+   * l'environnement. La variable EST la déclaration : posée, l'app parle à ce
+   * projet ; absente (app locale, fork), rien n'est ajouté.
+   *
+   * L'ORIGINE EXACTE, PAS UN JOKER. `*.supabase.co` ouvrait la politique à
+   * TOUS les projets Supabase du monde ; l'URL nomme le nôtre. Elle s'ajoute à
+   * `connect-src` (PostgREST, Auth, Storage, Edge Functions), avec sa
+   * websocket (`wss://`, le temps réel), et à `img-src` (images du Storage).
+   */
+  let originesSupabase = null;
+  const lireOriginesSupabase = url => {
+    if (!url) return null;
+    try {
+      const u = new URL(url);
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+      return {
+        http: u.origin,
+        ws: `${u.protocol === 'https:' ? 'wss' : 'ws'}://${u.host}`,
+      };
+    } catch {
+      return null;
+    }
+  };
+
   /** Le vrai zod, résolu une seule fois — chaîne vide si l'app n'en a pas. */
   let zodReel = '';
 
@@ -312,6 +348,7 @@ export function cspPlugin(options = {}) {
     },
     configResolved(config) {
       hoteSentry = origineDuDsn(config?.env?.VITE_SENTRY_DSN);
+      originesSupabase = lireOriginesSupabase(config?.env?.VITE_SUPABASE_URL);
     },
     transformIndexHtml: {
       order: 'post',
@@ -349,14 +386,18 @@ export function cspPlugin(options = {}) {
           'default-src': "'self'",
           'script-src': scriptSrcValue,
           'style-src': styleSrc.join(' '),
-          'img-src': avecOrigineFamille(
-            withAnalytics(imgSrc, ANALYTICS_HOSTS.img)
+          'img-src': avecOrigine(
+            avecOrigineFamille(withAnalytics(imgSrc, ANALYTICS_HOSTS.img)),
+            originesSupabase?.http
           ).join(' '),
           'font-src': fontSrc.join(' '),
           'connect-src': [
             ...new Set([
               ...withAnalytics(connexions, ANALYTICS_HOSTS.connect),
               ...(hoteSentry ? [hoteSentry] : []),
+              ...(originesSupabase
+                ? [originesSupabase.http, originesSupabase.ws]
+                : []),
             ]),
           ].join(' '),
           'frame-src': withAnalytics(frameSrc, ANALYTICS_HOSTS.frame).join(' '),

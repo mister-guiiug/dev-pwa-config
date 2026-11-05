@@ -13,5 +13,16 @@ export declare function storedSupabaseSession(client?: {
   auth: object;
 }): object | null;
 
+/**
+ * `true` quand un évènement d'auth SANS session est à ignorer : navigateur hors
+ * ligne et session de ce projet encore rangée — le renouvellement du jeton a
+ * échoué, personne n'a été déconnecté. Une vraie déconnexion efface d'abord
+ * la session, et passe.
+ */
+export declare function ignoreOfflineSignOut(
+  session: unknown,
+  client?: { auth: object }
+): boolean;
+
 /** `navigator.onLine === false` — jamais `!onLine`, qui vaudrait hors navigateur. */
 export declare function navigateurHorsLigne(): boolean;

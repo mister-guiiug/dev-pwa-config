@@ -53,6 +53,11 @@ export interface PwaOptions {
   apiOrigins?: Array<string | RegExp>;
   /** Règles Workbox supplémentaires, ajoutées après celles par défaut. */
   runtimeCaching?: unknown[];
+  /**
+   * Met en cache les polices Google (`googleFontsCaching`). Défaut : `true` —
+   * une app qui n'en charge pas ne paie que deux règles inertes.
+   */
+  googleFonts?: boolean;
   /** Surcharges profondes du manifest. */
   manifest?: Record<string, unknown>;
   /** Surcharges profondes des options Workbox. */
@@ -73,6 +78,40 @@ export declare function pwaManifest(
  * place du fichier. `pwaWorkbox` la pose d'office.
  */
 export declare const NAVIGATE_FALLBACK_DENY_FILES: RegExp;
+
+/**
+ * Le nom du morceau Sentry. Les trois options qui suivent se lisent ensemble :
+ * nom fixe (`sentryChunkFileNames`), hors des préchargements
+ * (`withoutSentryPreload`), hors du précache (`sentryGlobIgnores`). Et React
+ * doit rester dehors (`sentryChunkGroups`).
+ */
+export declare const SENTRY_CHUNK: 'sentry';
+/** `assets/sentry.js` — sans empreinte, l'URL survit aux déploiements. */
+export declare const SENTRY_CHUNK_FILE: 'assets/sentry.js';
+/** `build.rollupOptions.output.chunkFileNames`. */
+export declare function sentryChunkFileNames(chunk: { name?: string }): string;
+/** `build.modulePreload.resolveDependencies`. */
+export declare function withoutSentryPreload(
+  fichier: string,
+  deps: string[]
+): string[];
+/** `workbox.globIgnores` : `sentry.js` et `sentry-*.js`. Liste neuve. */
+export declare function sentryGlobIgnores(): string[];
+/**
+ * `build.rollupOptions.output.codeSplitting.groups` : `react` (priorité 1)
+ * puis `sentry`. Objets neufs.
+ */
+export declare function sentryChunkGroups(): Array<{
+  name: string;
+  test: RegExp;
+  priority?: number;
+}>;
+/**
+ * Les deux règles Workbox des polices Google (feuille en
+ * `StaleWhileRevalidate`, fichiers en `CacheFirst` un an). Règles neuves, à
+ * étaler dans `workbox.runtimeCaching`.
+ */
+export declare function googleFontsCaching(): Array<Record<string, unknown>>;
 
 /**
  * Options Workbox par défaut (sans mise en cache d'API). Les fichiers

@@ -74,7 +74,24 @@ export interface SupabaseAuthAdapterOptions {
   sessionTimeoutMs?: number;
 }
 
-/** Adaptateur Supabase Auth v2 pour `createAuthClient` (`auth/index`). */
+/**
+ * La session, sans jamais dépendre du réseau pour l'obtenir : hors ligne, le
+ * stockage ; en ligne, `auth.getSession()` borné à `timeoutMs` (défaut
+ * 5 000 ms), puis le stockage ; un appel qui lève, le stockage.
+ * `fromStorage` dit que la session vient de l'appareil, pas encore renouvelée.
+ */
+export declare function readSupabaseSession(
+  client: { auth: object },
+  options?: { timeoutMs?: number }
+): Promise<{ session: object | null; fromStorage: boolean }>;
+
+/**
+ * Adaptateur Supabase Auth v2 pour `createAuthClient` (`auth/index`).
+ *
+ * Hors ligne, un évènement sans session alors que celle de ce projet est
+ * encore rangée est IGNORÉ (`ignoreOfflineSignOut`) : c'est le renouvellement
+ * du jeton qui a échoué, pas une déconnexion.
+ */
 export declare function supabaseAuthAdapter(
   options: SupabaseAuthAdapterOptions
 ): SupabaseAuthAdapter;
