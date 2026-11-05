@@ -15,6 +15,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  SENTRY_CHUNK,
+  SENTRY_CHUNK_FILE,
+  sentryChunkFileNames,
+  withoutSentryPreload,
+  sentryGlobIgnores,
+  sentryChunkGroups,
+  googleFontsCaching,
   NAVIGATE_FALLBACK_DENY_FILES,
   manifestScreenshots,
   paletteFromCss,
@@ -245,10 +252,19 @@ test('les raccourcis sont préfixés par le chemin de base', () => {
 test('aucune mise en cache d’API par défaut', () => {
   // Défaut délibéré : une réponse authentifiée mise en cache expose les données
   // d'un utilisateur au suivant sur un appareil partagé. C'est une décision à
-  // écrire app par app, pas un réglage à hériter.
+  // écrire app par app, pas un réglage à hériter. Les images et les polices
+  // Google ne sont pas des réponses d'API : publiques, versionnées.
   const workbox = pwaWorkbox({ id: 'miss-uwh' });
   const cacheNames = workbox.runtimeCaching.map(rule => rule.options.cacheName);
-  assert.deepEqual(cacheNames, ['dwc-images']);
+  assert.deepEqual(cacheNames, [
+    'dwc-images',
+    'google-fonts-stylesheets',
+    'google-fonts-webfonts',
+  ]);
+  assert.ok(
+    workbox.runtimeCaching.every(rule => rule.handler !== 'NetworkFirst'),
+    'aucune règle d’API'
+  );
 });
 
 test('apiOrigins produit une règle NetworkFirst, jamais CacheFirst', () => {
@@ -364,4 +380,78 @@ test('le module ne dépend pas de vite-plugin-pwa', async () => {
   );
   assert.doesNotMatch(source, /from 'vite-plugin-pwa'/);
   assert.doesNotMatch(source, /from 'vite'/);
+});
+
+/* ── Le morceau Sentry et les polices Google (promus en 6.32.0) ─────────── */
+
+test('le morceau Sentry garde un nom fixe ; les autres, leur empreinte', () => {
+  assert.equal(SENTRY_CHUNK, 'sentry');
+  assert.equal(sentryChunkFileNames({ name: 'sentry' }), SENTRY_CHUNK_FILE);
+  assert.equal(SENTRY_CHUNK_FILE, 'assets/sentry.js');
+  assert.equal(
+    sentryChunkFileNames({ name: 'vendor' }),
+    'assets/[name]-[hash].js'
+  );
+  assert.equal(sentryChunkFileNames({}), 'assets/[name]-[hash].js');
+});
+
+test('le morceau Sentry sort des préchargements, sous ses deux formes', () => {
+  const deps = [
+    'assets/react-vendor-abc.js',
+    'assets/sentry.js',
+    'assets/sentry-EYLFX1f0.js',
+    'assets/sentry-like-vendor-x.js',
+    'assets/mysentry.js',
+  ];
+  assert.deepEqual(withoutSentryPreload('index.js', deps), [
+    'assets/react-vendor-abc.js',
+    'assets/mysentry.js',
+  ]);
+});
+
+test('le morceau Sentry sort du précache, et chaque appel rend une liste neuve', () => {
+  assert.deepEqual(sentryGlobIgnores(), ['**/sentry.js', '**/sentry-*.js']);
+  assert.notEqual(sentryGlobIgnores(), sentryGlobIgnores());
+  const workbox = pwaWorkbox({ id: 'miss-uwh' });
+  for (const motif of sentryGlobIgnores()) {
+    assert.ok(workbox.globIgnores.includes(motif), motif);
+  }
+  // Les défauts d'avant restent : version.json hors du précache.
+  assert.ok(workbox.globIgnores.includes('**/version.json'));
+});
+
+test('React passe avant Sentry : il ne part pas dans sentry.js', () => {
+  // Rolldown capture les dépendances d'un groupe : `@sentry/react` importe
+  // `react`. Le groupe `react`, de priorité plus haute, le prend le premier.
+  const [react, sentry] = sentryChunkGroups();
+  assert.equal(react.name, 'react');
+  assert.equal(sentry.name, SENTRY_CHUNK);
+  assert.ok((react.priority ?? 0) > (sentry.priority ?? 0));
+  assert.ok(react.test.test('/app/node_modules/react/index.js'));
+  assert.ok(react.test.test('C:\\app\\node_modules\\react\\index.js'));
+  assert.ok(!react.test.test('/app/node_modules/react-dom/index.js'));
+  assert.ok(sentry.test.test('/app/node_modules/@sentry/react/index.js'));
+  assert.notEqual(sentryChunkGroups()[0], sentryChunkGroups()[0]);
+});
+
+test('les polices Google : feuille revalidée, fichiers un an en cache', () => {
+  const [feuille, fichiers] = googleFontsCaching();
+  assert.equal(feuille.handler, 'StaleWhileRevalidate');
+  assert.ok(
+    feuille.urlPattern.test('https://fonts.googleapis.com/css2?family=Inter')
+  );
+  assert.equal(fichiers.handler, 'CacheFirst');
+  assert.ok(
+    fichiers.urlPattern.test('https://fonts.gstatic.com/s/inter/v13/a.woff2')
+  );
+  assert.equal(fichiers.options.expiration.maxAgeSeconds, 60 * 60 * 24 * 365);
+  // Le statut 0 : une feuille chargée sans `crossorigin` est opaque.
+  assert.deepEqual(feuille.options.cacheableResponse.statuses, [0, 200]);
+  assert.notEqual(googleFontsCaching()[0], googleFontsCaching()[0]);
+});
+
+test('`googleFonts: false` retire les polices des défauts', () => {
+  const workbox = pwaWorkbox({ id: 'miss-uwh', googleFonts: false });
+  const cacheNames = workbox.runtimeCaching.map(rule => rule.options.cacheName);
+  assert.deepEqual(cacheNames, ['dwc-images']);
 });

@@ -628,6 +628,44 @@ Trois défauts méritent d'être expliqués, parce qu'on pourrait les « amélio
   parc. Une `navigateFallbackDenylist` passée dans `workbox` **s'ajoute** à la
   règle au lieu de la remplacer.
 
+- **Les polices Google sont mises en cache** (`googleFontsCaching()`,
+  `googleFonts: false` pour s'en passer) : la feuille revalidée derrière, les
+  fichiers un an. Sans elles, une app rouverte hors ligne retombait sur les
+  polices système (audit du 05/11/2026). Promu de six apps.
+- **Le morceau Sentry est hors du précache** (`sentryGlobIgnores()`).
+
+**Le morceau Sentry** (6.32.0, promu de dix-huit apps). Trois options qui se
+lisent ensemble, et une quatrième sans laquelle l'app ne démarre plus hors
+ligne :
+
+```ts
+import {
+  sentryChunkFileNames,
+  sentryChunkGroups,
+  sentryGlobIgnores,
+  withoutSentryPreload,
+} from '@mister-guiiug/dev-pwa-config/vite-pwa';
+
+build: {
+  // 2. hors des préchargements de l'entrée
+  modulePreload: { resolveDependencies: withoutSentryPreload },
+  rollupOptions: {
+    output: {
+      // 4. React d'abord : sans ce groupe, `@sentry/react` l'entraîne dans sentry.js
+      codeSplitting: { groups: sentryChunkGroups() },
+      // 1. un nom sans empreinte : l'URL survit aux déploiements
+      chunkFileNames: sentryChunkFileNames,
+    },
+  },
+},
+// …
+VitePWA({ workbox: { globIgnores: sentryGlobIgnores() } }) // 3. hors du précache
+```
+
+Une app qui découpe par `manualChunks` garde sa fonction : elle y range React
+à part (`react-vendor`) et rend `SENTRY_CHUNK` pour `@sentry/`.
+`pwa-doctor` tient l'invariant (`entree-hors-precache`).
+
 Une app qui écrit son `VitePWA()` sans `pwaBaseOptions` pose la règle
 elle-même, en tête de sa propre liste :
 
@@ -662,13 +700,20 @@ export default defineConfig(({ command }) => ({
     pwaSeoPlugin({ siteName: 'Mister Puzzle' }),
     cspPlugin({
       dev: command === 'serve',
-      connectSrc: ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'],
       analytics: true, // ← si l'app mesure (ConsentBanner, PostHog)
     }),
     VitePWA({ ... }),
   ],
 }));
 ```
+
+**Le projet Supabase se déclare par l'environnement, pas par une option**
+(6.32.0). Comme le DSN de Sentry, `VITE_SUPABASE_URL` résolue par Vite **est** la
+déclaration : le plugin ajoute l'origine **exacte** du projet à `connect-src`,
+avec sa websocket (`wss://`, le temps réel), et à `img-src` (le Storage). Douze
+apps l'écrivaient à la main, dix avec des jokers (`https://*.supabase.co`) qui
+ouvraient la politique à tous les projets Supabase du monde. Sans la variable,
+rien n'est ajouté.
 
 `cspPlugin` doit venir **après** `pwaSeoPlugin` : il hashe le HTML final, donc
 les scripts inline injectés en amont (le script anti-FOUC de `themeBoot`). Les

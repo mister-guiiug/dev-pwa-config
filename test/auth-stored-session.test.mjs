@@ -3,6 +3,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  ignoreOfflineSignOut,
   navigateurHorsLigne,
   storedSupabaseSession,
 } from '../auth/stored-session.js';
@@ -168,5 +169,43 @@ test('« hors ligne » n’est affirmé que sur `onLine === false`', () => {
     assert.equal(navigateurHorsLigne(), false);
   } finally {
     if (original) Object.defineProperty(globalThis, 'navigator', original);
+  }
+});
+
+/* ── Le silence du réseau n'est pas une déconnexion (6.32.0) ────────────── */
+
+test('ignoreOfflineSignOut : hors ligne, session de ce projet encore rangée → ignoré', () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const reseau = onLine =>
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { onLine },
+    });
+  try {
+    poser(fauxStockage({ [CASE]: sessionDe('u-moi') }));
+    reseau(false);
+    assert.equal(ignoreOfflineSignOut(null, client(CASE)), true);
+
+    // Une session portée par l'évènement : rien à ignorer.
+    assert.equal(
+      ignoreOfflineSignOut({ user: { id: 'u-moi' } }, client(CASE)),
+      false
+    );
+
+    // En ligne : l'évènement dit vrai.
+    reseau(true);
+    assert.equal(ignoreOfflineSignOut(null, client(CASE)), false);
+
+    // Vraie déconnexion : Supabase a effacé la session AVANT d'émettre.
+    reseau(false);
+    poser(fauxStockage({}));
+    assert.equal(ignoreOfflineSignOut(null, client(CASE)), false);
+
+    // La session d'une AUTRE app ne retient pas une vraie déconnexion.
+    poser(fauxStockage({ [SOEUR]: sessionDe('u-soeur') }));
+    assert.equal(ignoreOfflineSignOut(null, client(CASE)), false);
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'navigator', original);
+    else delete globalThis.navigator;
   }
 });

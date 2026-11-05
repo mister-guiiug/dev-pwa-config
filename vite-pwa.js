@@ -317,6 +317,128 @@ export function pwaManifest(options = {}) {
 export const NAVIGATE_FALLBACK_DENY_FILES = /^[^?]*\/[^/?]+\.[^/?]+(?:\?.*)?$/;
 
 /**
+ * LE MORCEAU SENTRY : UN NOM FIXE, HORS DES PRÉCHARGEMENTS, HORS DU PRÉCACHE.
+ *
+ * PROMU DE DIX-HUIT APPS, qui recopiaient les mêmes trois options et les mêmes
+ * commentaires. Les trois se lisent ensemble ou pas du tout :
+ *
+ *  1. **Un nom fixe** (`sentryChunkFileNames`). Le morceau est exclu du
+ *     précache ; avec une empreinte (`sentry-EYLFX1f0.js`), la coquille
+ *     précachée d'avant une mise à jour demande une URL que le déploiement
+ *     suivant a supprimée. Mesuré sur mister-qowa le 22/09/2026 : HTTP 404,
+ *     « Échec du chargement pour le module », et `initSentry` avale l'échec —
+ *     l'app rapporte ses erreurs à personne, sans le dire. GitHub Pages répond
+ *     `max-age=600` sur tout fichier : l'empreinte ne faisait rien gagner.
+ *  2. **Hors des préchargements** (`withoutSentryPreload`, pour
+ *     `build.modulePreload.resolveDependencies`). Nommer un morceau le fait
+ *     entrer dans les `modulepreload` de l'entrée : 435,4 kB préchargés au
+ *     lieu de 280,1 sur miss-ticket-pwa, le 16/09/2026.
+ *  3. **Hors du précache** (`sentryGlobIgnores()`, pour `workbox.globIgnores`).
+ *     `globPatterns` ramasse tout le JS émis : +464 KiB téléchargés par chaque
+ *     visiteur, DSN posé ou non. Rapporter une erreur demande le réseau ;
+ *     l'avoir hors ligne ne sert à rien.
+ *
+ * ET REACT DOIT RESTER DEHORS (`sentryChunkGroups()`). Rolldown traduit un
+ * groupe de morceau en `codeSplitting` dont `includeDependenciesRecursively`
+ * vaut `true` : `@sentry/react` importe `react`, et React partait dans
+ * `sentry.js`. L'entrée commençait par `import{n}from"./sentry.js"`, fichier
+ * hors du précache : mister-qowa, mister-settle et miss-ticket-pwa ne
+ * démarraient plus hors ligne (constaté le 05/11/2026). Le groupe `react`, de
+ * priorité plus haute, le prend le premier. Une app qui range déjà React à part
+ * (`manualChunks` → `react-vendor`) y échappe. `pwa-doctor` tient l'invariant
+ * (`entree-hors-precache`, 6.30.0).
+ */
+export const SENTRY_CHUNK = 'sentry';
+
+/** Le fichier du morceau Sentry, sans empreinte. */
+export const SENTRY_CHUNK_FILE = 'assets/sentry.js';
+
+/** `sentry.js` et `sentry-<empreinte>.js`, les deux formes qu'il a portées. */
+const SENTRY_FILE_RE = /(^|\/)sentry(-[\w-]+)?\.js$/;
+
+/**
+ * `build.rollupOptions.output.chunkFileNames` : le morceau `sentry` sans
+ * empreinte, les autres avec.
+ *
+ * @param {{ name?: string }} chunk
+ */
+export function sentryChunkFileNames(chunk) {
+  return chunk?.name === SENTRY_CHUNK
+    ? SENTRY_CHUNK_FILE
+    : 'assets/[name]-[hash].js';
+}
+
+/**
+ * `build.modulePreload.resolveDependencies` : retire le morceau Sentry des
+ * préchargements de l'entrée.
+ *
+ * @param {string} _fichier
+ * @param {string[]} deps
+ */
+export function withoutSentryPreload(_fichier, deps) {
+  return deps.filter(dep => !SENTRY_FILE_RE.test(dep));
+}
+
+/**
+ * `workbox.globIgnores` : le morceau Sentry hors du précache. Les deux formes,
+ * pour qu'un retour de l'empreinte ne rende pas la règle muette en silence.
+ * Une liste neuve à chaque appel : Workbox et ses plugins la reçoivent telle
+ * quelle.
+ */
+export function sentryGlobIgnores() {
+  return ['**/sentry.js', '**/sentry-*.js'];
+}
+
+/**
+ * `build.rollupOptions.output.codeSplitting.groups` : React d'abord (priorité
+ * 1), puis Sentry. Des objets neufs à chaque appel.
+ */
+export function sentryChunkGroups() {
+  return [
+    { name: 'react', test: /[\\/]node_modules[\\/]react[\\/]/, priority: 1 },
+    { name: SENTRY_CHUNK, test: /[\\/]node_modules[\\/]@sentry[\\/]/ },
+  ];
+}
+
+/**
+ * LES POLICES GOOGLE, HORS LIGNE AUSSI. PROMU DE SIX APPS (miss-contraction,
+ * miss-genius, miss-uwh, mister-cim10, mister-qowa, mister-settle), dont les
+ * copies divergeaient déjà — mister-cim10 portait le nom de cache de qowa.
+ *
+ * Sans cache, une app rouverte hors ligne retombait sur les polices système
+ * (audit hors ligne du 05/11/2026). La feuille (`fonts.googleapis.com`) change
+ * quand Google la révise : servie du cache, revalidée derrière. Les fichiers
+ * (`fonts.gstatic.com`) ont une URL versionnée : cache d'abord, un an. Le
+ * statut 0 couvre les réponses opaques. Ce sont les noms et réglages de la
+ * recette `googleFontsCache` de Workbox.
+ *
+ * Des règles neuves à chaque appel, à étaler dans `workbox.runtimeCaching`.
+ * La CSP de l'app doit déjà autoriser les deux origines (`styleSrc`,
+ * `fontSrc`) : c'est elle qui charge les polices.
+ */
+export function googleFontsCaching() {
+  return [
+    {
+      urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+      handler: 'StaleWhileRevalidate',
+      options: {
+        cacheName: 'google-fonts-stylesheets',
+        cacheableResponse: { statuses: [0, 200] },
+      },
+    },
+    {
+      urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'google-fonts-webfonts',
+        expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
+        cacheableResponse: { statuses: [0, 200] },
+      },
+    },
+  ];
+}
+
+/**
  * Options Workbox par défaut.
  *
  * LES FICHIERS ÉCHAPPENT AU REPLI DE NAVIGATION (`NAVIGATE_FALLBACK_DENY_FILES`),
@@ -330,6 +452,12 @@ export const NAVIGATE_FALLBACK_DENY_FILES = /^[^?]*\/[^/?]+\.[^/?]+(?:\?.*)?$/;
  * précédent sur un appareil partagé. Les origines à mettre en cache sont donc
  * une décision explicite (`apiOrigins`), pas un réglage hérité.
  *
+ * LES POLICES GOOGLE, ELLES, LE SONT (`googleFontsCaching`, `googleFonts:
+ * false` pour s'en passer) : publiques, versionnées, et sans elles l'app
+ * rouverte hors ligne change de visage. Une app qui n'en charge pas ne paie
+ * que deux règles inertes. LE MORCEAU SENTRY est hors du précache
+ * (`sentryGlobIgnores`).
+ *
  * @param {import('./vite-pwa.js').PwaOptions} options
  */
 export function pwaWorkbox(options = {}) {
@@ -338,6 +466,7 @@ export function pwaWorkbox(options = {}) {
     id,
     apiOrigins = [],
     runtimeCaching = [],
+    googleFonts = true,
     workbox: overrides = {},
   } = options;
   const base = normalizeBasePath(basePath ?? (id ? `/${id}/` : '/'));
@@ -375,11 +504,20 @@ export function pwaWorkbox(options = {}) {
     // qui l'a précaché — c'est-à-dire l'inverse de ce qu'on lui demande. La
     // valeur par défaut de workbox (`node_modules`) est reconduite, la
     // remplacer la ferait tomber.
-    globIgnores: ['**/node_modules/**/*', `**/${VERSION_MANIFEST}`],
+    globIgnores: [
+      '**/node_modules/**/*',
+      `**/${VERSION_MANIFEST}`,
+      ...sentryGlobIgnores(),
+    ],
     navigateFallback: `${base}index.html`,
     cleanupOutdatedCaches: true,
     maximumFileSizeToCacheInBytes: 4_000_000,
-    runtimeCaching: [imageRule, ...apiRules, ...runtimeCaching],
+    runtimeCaching: [
+      imageRule,
+      ...(googleFonts ? googleFontsCaching() : []),
+      ...apiRules,
+      ...runtimeCaching,
+    ],
     ...overrides,
     navigateFallbackDenylist: [
       NAVIGATE_FALLBACK_DENY_FILES,

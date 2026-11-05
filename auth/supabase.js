@@ -32,6 +32,7 @@
  */
 import { assuranceLevelFromSession, mfaChallengeNeeded } from './mfa.js';
 import {
+  ignoreOfflineSignOut,
   navigateurHorsLigne,
   storedSupabaseSession,
 } from './stored-session.js';
@@ -66,6 +67,53 @@ const toError = error =>
     : null;
 
 /**
+ * LA SESSION, SANS JAMAIS DÉPENDRE DU RÉSEAU POUR L'OBTENIR — et d'où elle
+ * vient.
+ *
+ * PROMU DE CINQ APPS (miss-holi-voyage, miss-uwh, mister-doc, mister-miss-koh,
+ * mister-settle), qui réécrivaient chacune ces trois chemins, avec leur
+ * `TROP_LONG` ; l'adaptateur ci-dessous les avait déjà, sans les exporter.
+ *
+ *   1. le navigateur se dit hors ligne → on lit le stockage, point ;
+ *   2. sinon on demande à Supabase, mais l'attente est BORNÉE — un réseau
+ *      présent-mais-mort coûtait une demi-minute de sablier ;
+ *   3. l'appel lève → le stockage, comme au premier chemin.
+ *
+ * `fromStorage` dit que la session vient de l'appareil, pas encore
+ * renouvelée : une app y lit « ne rien demander au serveur maintenant » (les
+ * rôles en cache, le niveau d'assurance calculé sur place).
+ *
+ * @param {{ auth: object }} client Le client Supabase de l'app.
+ * @param {{ timeoutMs?: number }} [options]
+ * @returns {Promise<{ session: object | null, fromStorage: boolean }>}
+ */
+export async function readSupabaseSession(client, options = {}) {
+  const { timeoutMs = ATTENTE_SESSION_MS } = options ?? {};
+  const auth = /** @type {any} */ (client)?.auth;
+  const rangee = () => ({
+    session: storedSupabaseSession(client),
+    fromStorage: true,
+  });
+  if (navigateurHorsLigne() || !auth?.getSession) return rangee();
+  let minuteur;
+  try {
+    const issue = await Promise.race([
+      auth.getSession().then(r => r?.data?.session ?? null),
+      new Promise(resoudre => {
+        minuteur = setTimeout(() => resoudre(TROP_LONG), timeoutMs);
+      }),
+    ]);
+    return issue === TROP_LONG
+      ? rangee()
+      : { session: issue, fromStorage: false };
+  } catch {
+    return rangee();
+  } finally {
+    clearTimeout(minuteur);
+  }
+}
+
+/**
  * @param {{ client: { auth: object } }} options Le client Supabase de l'app.
  */
 export function supabaseAuthAdapter(options) {
@@ -91,32 +139,27 @@ export function supabaseAuthAdapter(options) {
    * Le stockage est lu AVEC LE CLIENT : la case de CE projet, pas la première
    * `sb-*` venue — la famille partage une origine, donc un `localStorage`.
    */
-  const lireSession = async () => {
-    if (navigateurHorsLigne()) return storedSupabaseSession(client);
-    let minuteur;
-    try {
-      const issue = await Promise.race([
-        auth.getSession().then(r => r?.data?.session ?? null),
-        new Promise(resoudre => {
-          minuteur = setTimeout(() => resoudre(TROP_LONG), sessionTimeoutMs);
-        }),
-      ]);
-      return issue === TROP_LONG ? storedSupabaseSession(client) : issue;
-    } catch {
-      return storedSupabaseSession(client);
-    } finally {
-      clearTimeout(minuteur);
-    }
-  };
+  const lireSession = async () =>
+    (await readSupabaseSession(client, { timeoutMs: sessionTimeoutMs }))
+      .session;
 
   return {
     getSession: lireSession,
 
-    /** Câble `onAuthStateChange` et rend le désabonnement. */
+    /**
+     * Câble `onAuthStateChange` et rend le désabonnement.
+     *
+     * LE SILENCE DU RÉSEAU N'EST PAS UNE DÉCONNEXION (`ignoreOfflineSignOut`) :
+     * hors ligne, un évènement sans session alors que celle de ce projet est
+     * encore rangée vient du renouvellement abandonné, pas d'une déconnexion.
+     * Il n'atteint pas l'app. Une vraie déconnexion efface d'abord la session,
+     * et passe.
+     */
     onAuthStateChange(callback) {
-      const { data } = auth.onAuthStateChange((event, session) =>
-        callback(event, session ?? null)
-      );
+      const { data } = auth.onAuthStateChange((event, session) => {
+        if (ignoreOfflineSignOut(session, client)) return;
+        callback(event, session ?? null);
+      });
       return () => data?.subscription?.unsubscribe?.();
     },
 

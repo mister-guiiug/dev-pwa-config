@@ -119,6 +119,35 @@ export function storedSupabaseSession(client) {
 }
 
 /**
+ * UN « PAS DE SESSION » VENU DU SILENCE DU RÉSEAU, À IGNORER ?
+ *
+ * PROMU DE QUATRE APPS (mister-doc, miss-uwh, miss-lookhouse,
+ * miss-holi-voyage), qui écrivaient la même garde autour de
+ * `onAuthStateChange` ; lookhouse la disait « la garde que le socle n'a pas ».
+ *
+ * Supabase s'abonne en émettant l'état initial, et cet état passe par le
+ * renouvellement du jeton. Hors ligne il n'aboutit pas : au bout d'une
+ * demi-minute, la bibliothèque annonce « pas de session ». Mesuré sur mister-doc
+ * après la correction de l'amorçage : ouverte à 3 s, ÉJECTÉE sur l'écran de
+ * connexion avant 30.
+ *
+ * LA DISTINCTION TIENT AU STOCKAGE. Lors d'une vraie déconnexion — geste,
+ * jeton révoqué —, Supabase EFFACE la session AVANT d'émettre `SIGNED_OUT`. Si
+ * elle est encore rangée, il n'a déconnecté personne : il a renoncé à joindre
+ * le serveur. Une déconnexion demandée sans réseau reste donc honorée.
+ *
+ * `true` quand l'évènement est à ignorer : pas de session, navigateur hors
+ * ligne, et la session de CE projet encore rangée (avec le client, voir
+ * `storedSupabaseSession`).
+ *
+ * @param {unknown} session La session que l'évènement porte.
+ * @param {{ auth: object }} [client] Le client Supabase de l'app.
+ */
+export function ignoreOfflineSignOut(session, client) {
+  return !session && navigateurHorsLigne() && !!storedSupabaseSession(client);
+}
+
+/**
  * Le navigateur affirme-t-il être HORS LIGNE ?
  *
  * `=== false` et non `!onLine` : hors navigateur (Node, tests) la propriété

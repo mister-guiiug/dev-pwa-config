@@ -3,7 +3,7 @@
 // `data.session`, abonnement dans `data.subscription`.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { supabaseAuthAdapter } from '../auth/supabase.js';
+import { readSupabaseSession, supabaseAuthAdapter } from '../auth/supabase.js';
 
 /** Un client Supabase factice, méthode par méthode, appels journalisés. */
 function fakeClient(auth = {}) {
@@ -517,4 +517,147 @@ test('l’adaptateur nourrit la machine d’état du port sans adaptation', asyn
   await new Promise(resolve => setTimeout(resolve, 0));
   // Facteur vérifié, session encore aal1 : le défi TOTP barre l'accès.
   assert.equal(auth.getSnapshot().status, AUTH_STATUS.needsMfa);
+});
+
+/* ── Le silence du réseau, et la session sans attendre (6.32.0) ─────────── */
+
+/** Un client dont on peut déclencher `onAuthStateChange` à la main. */
+function clientEmetteur() {
+  const ecouteurs = [];
+  const { client } = fakeClient({
+    onAuthStateChange: cb => {
+      ecouteurs.push(cb);
+      return { data: { subscription: { unsubscribe: () => {} } } };
+    },
+  });
+  client.auth.storageKey = 'sb-projetdetest-auth-token';
+  return { client, emet: (e, s) => ecouteurs.forEach(cb => cb(e, s)) };
+}
+
+test('onAuthStateChange : hors ligne, un « pas de session » avec la session rangée est ignoré', () => {
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(false);
+  try {
+    const { client, emet } = clientEmetteur();
+    const recus = [];
+    supabaseAuthAdapter({ client }).onAuthStateChange((e, s) =>
+      recus.push([e, s])
+    );
+    emet('SIGNED_OUT', null);
+    assert.deepEqual(
+      recus,
+      [],
+      'le renouvellement abandonné n’éjecte personne'
+    );
+
+    emet('TOKEN_REFRESHED', SESSION_RANGEE);
+    assert.deepEqual(recus, [['TOKEN_REFRESHED', SESSION_RANGEE]]);
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
+test('onAuthStateChange : une vraie déconnexion (stockage vidé) passe, même hors ligne', () => {
+  const rendreReseau = avecReseau(false);
+  try {
+    const { client, emet } = clientEmetteur();
+    const recus = [];
+    supabaseAuthAdapter({ client }).onAuthStateChange((e, s) =>
+      recus.push([e, s])
+    );
+    emet('SIGNED_OUT', null);
+    assert.deepEqual(recus, [['SIGNED_OUT', null]]);
+  } finally {
+    rendreReseau();
+  }
+});
+
+test('onAuthStateChange : en ligne, un « pas de session » passe toujours', () => {
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(true);
+  try {
+    const { client, emet } = clientEmetteur();
+    const recus = [];
+    supabaseAuthAdapter({ client }).onAuthStateChange((e, s) =>
+      recus.push([e, s])
+    );
+    emet('SIGNED_OUT', null);
+    assert.deepEqual(recus, [['SIGNED_OUT', null]]);
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
+test('readSupabaseSession : hors ligne, le stockage, sans rien demander', async () => {
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(false);
+  try {
+    const { client, calls } = fakeClient({
+      getSession: async () => ({
+        data: { session: { user: { id: 'reseau' } } },
+      }),
+    });
+    assert.deepEqual(await readSupabaseSession(client), {
+      session: SESSION_RANGEE,
+      fromStorage: true,
+    });
+    assert.deepEqual(calls, []);
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
+test('readSupabaseSession : en ligne, la réponse de Supabase', async () => {
+  const rendreReseau = avecReseau(true);
+  try {
+    const enLigne = { user: { id: 'reseau' } };
+    const { client } = fakeClient({
+      getSession: async () => ({ data: { session: enLigne } }),
+    });
+    assert.deepEqual(await readSupabaseSession(client), {
+      session: enLigne,
+      fromStorage: false,
+    });
+  } finally {
+    rendreReseau();
+  }
+});
+
+test('readSupabaseSession : l’attente est bornée, puis le stockage', async () => {
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(true);
+  try {
+    const { client } = fakeClient({ getSession: () => new Promise(() => {}) });
+    const debut = Date.now();
+    assert.deepEqual(await readSupabaseSession(client, { timeoutMs: 20 }), {
+      session: SESSION_RANGEE,
+      fromStorage: true,
+    });
+    assert.ok(Date.now() - debut < 1000);
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
+});
+
+test('readSupabaseSession : un appel qui lève retombe sur le stockage', async () => {
+  const rendreStockage = avecStockage(SESSION_RANGEE);
+  const rendreReseau = avecReseau(true);
+  try {
+    const { client } = fakeClient({
+      getSession: async () => {
+        throw new Error('réseau');
+      },
+    });
+    assert.deepEqual(await readSupabaseSession(client), {
+      session: SESSION_RANGEE,
+      fromStorage: true,
+    });
+  } finally {
+    rendreStockage();
+    rendreReseau();
+  }
 });

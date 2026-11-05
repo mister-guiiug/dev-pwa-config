@@ -512,3 +512,64 @@ test('zod : le module d’amorce coupe la sonde sans rien retirer à zod', () =>
     'l’appel doit suivre les réexports'
   );
 });
+
+/* ── Le projet Supabase, lu dans VITE_SUPABASE_URL (6.32.0) ──────────────── */
+
+test('VITE_SUPABASE_URL ouvre connect-src et img-src à l’origine EXACTE du projet', () => {
+  const csp = rendreAvecEnv({
+    VITE_SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co',
+  });
+  const connexions = sourcesOf(csp, 'connect-src');
+  assert.ok(connexions.includes('https://abcdefghijklmnop.supabase.co'));
+  assert.ok(connexions.includes('wss://abcdefghijklmnop.supabase.co'));
+  assert.ok(
+    sourcesOf(csp, 'img-src').includes('https://abcdefghijklmnop.supabase.co')
+  );
+  // Pas de joker : la politique ne s'ouvre qu'à ce projet.
+  assert.ok(!csp.includes('*.supabase.co'));
+});
+
+test('sans VITE_SUPABASE_URL, ou illisible, la politique ne bouge pas', () => {
+  const temoin = rendreAvecEnv({});
+  for (const env of [
+    { VITE_SUPABASE_URL: '' },
+    { VITE_SUPABASE_URL: 'pas-une-url' },
+    { VITE_SUPABASE_URL: 'ftp://exemple.fr' },
+  ]) {
+    assert.equal(rendreAvecEnv(env), temoin);
+  }
+});
+
+test('un Supabase local en http ouvre la websocket en ws://', () => {
+  const csp = rendreAvecEnv({ VITE_SUPABASE_URL: 'http://127.0.0.1:54321' });
+  const connexions = sourcesOf(csp, 'connect-src');
+  assert.ok(connexions.includes('http://127.0.0.1:54321'));
+  assert.ok(connexions.includes('ws://127.0.0.1:54321'));
+});
+
+test('img-src fermé (`none`) le reste, même avec un projet Supabase', () => {
+  const csp = rendreAvecEnv(
+    { VITE_SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co' },
+    { imgSrc: ["'none'"] }
+  );
+  assert.deepEqual(sourcesOf(csp, 'img-src'), ["'none'"]);
+});
+
+test('les jokers que l’app passe encore restent, sans doublon', () => {
+  const csp = rendreAvecEnv(
+    { VITE_SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co' },
+    {
+      connectSrc: [
+        "'self'",
+        'https://*.supabase.co',
+        'https://abcdefghijklmnop.supabase.co',
+      ],
+    }
+  );
+  const connexions = sourcesOf(csp, 'connect-src');
+  assert.equal(
+    connexions.filter(s => s === 'https://abcdefghijklmnop.supabase.co').length,
+    1
+  );
+  assert.ok(connexions.includes('https://*.supabase.co'));
+});
