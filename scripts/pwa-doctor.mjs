@@ -29,8 +29,10 @@
  *      doit rester sous le site), les icônes PNG 192/512 et maskable, `id`,
  *      la langue du manifeste égale à celle de la page, l'icône iOS, le
  *      `theme-color` par schéma, la CSP, Open Graph, la canonique,
- *      `version.json`, et le `404.html` quand l'app route par chemin sans
- *      passer par `pwa-deploy.yml`, qui le pose au déploiement.
+ *      `version.json`, le `404.html` quand l'app route par chemin sans
+ *      passer par `pwa-deploy.yml`, qui le pose au déploiement, et le
+ *      précache : tout morceau que la page importe STATIQUEMENT doit y être,
+ *      sans quoi l'app ne démarre plus hors ligne.
  *
  * TROIS VERDICTS, parce qu'ils ne se traitent pas pareil :
  *
@@ -154,6 +156,146 @@ function jsDuBuild(root) {
   } catch {
     return [];
   }
+}
+
+const LIAISONS = String.raw`(?:\{[^{}]{0,4000}\}|\*\s*as\s+[\w$]+)`;
+const IMPORT_STATIQUE = new RegExp(
+  String.raw`(?<![\w$.'"\x60])(?:import\s*(?:(?:[\w$]+(?:\s*,\s*${LIAISONS})?|${LIAISONS})\s*from\s*)?|export\s*(?:\{[^{}]{0,4000}\}|\*(?:\s*as\s+[\w$]+)?)\s*from\s*)(["'])([^"'\r\n]{1,500})\1`,
+  'g'
+);
+
+/**
+ * LES IMPORTS STATIQUES d'un module ES émis par le build : `import … from`,
+ * `import "…"` et `export … from`, minifiés (`import{n}from"./sentry.js"`) ou
+ * non. JAMAIS `import()` : un import dynamique part à la demande, et son échec
+ * se rattrape ; un import statique bloque l'évaluation du module qui le porte,
+ * et l'échec de l'un fait tomber toute la chaîne jusqu'à l'entrée.
+ *
+ * La distinction se lit sans analyseur : le spécificateur d'un import statique
+ * est un littéral entre guillemets droits, rien d'autre — et `import(`,
+ * `import.meta`, `x.import(` ou le mot `"import"` dans une chaîne n'ont pas la
+ * forme. Les quantificateurs sont BORNÉS : le texte vient d'un build, mais un
+ * motif polynomial sur 500 kB minifiés reste une mauvaise idée.
+ *
+ * Rend les spécificateurs tels qu'écrits, nus compris (`posthog-js`) : c'est la
+ * résolution, pas la lecture, qui décide de ce qui désigne un fichier du build.
+ *
+ * @param {string} code
+ * @returns {string[]}
+ */
+export function importsStatiques(code) {
+  return [...String(code).matchAll(IMPORT_STATIQUE)].map(m => m[2]);
+}
+
+/**
+ * Un lien du build ramené à un chemin SOUS `dist/` — `assets/sentry.js` —, ou
+ * `null` s'il ne désigne pas un fichier du build : spécificateur nu, URL d'une
+ * autre origine. `depuis` est le fichier qui porte le lien ; `prefixe` le chemin
+ * du site (`/miss-x/`), que Vite met devant les liens absolus.
+ */
+function versDist(href, depuis, prefixe = '/') {
+  if (!/^(?:\.{1,2}\/|\/(?!\/))/.test(href)) return null;
+  let chemin = new URL(href.split(/[?#]/)[0], `http://dist.invalid/${depuis}`)
+    .pathname;
+  if (href.startsWith('/') && prefixe !== '/' && chemin.startsWith(prefixe)) {
+    chemin = chemin.slice(prefixe.length - 1);
+  }
+  try {
+    return decodeURIComponent(chemin.slice(1));
+  } catch {
+    return chemin.slice(1);
+  }
+}
+
+/**
+ * LE MANIFESTE DE PRÉCACHE du build : les NOMS de fichier que le service
+ * worker inscrit. Lu dans `sw.js` (ou `service-worker.js`) et dans les scripts
+ * qu'il charge — `importScripts(…)`, ou le `define(["./workbox-…"])` de
+ * `generateSW` —, parce que rien n'oblige le manifeste à vivre dans le premier.
+ *
+ * Le manifeste s'écrit minifié (`url:"…"`) ou développé (`"url": "…"`). On
+ * n'accepte que des valeurs qui RESSEMBLENT à un fichier servi : le code de
+ * Workbox porte lui aussi des littéraux `url:`.
+ *
+ * @returns {Set<string> | null} `null` sans service worker ; un ensemble vide
+ *   quand le worker existe mais que son manifeste ne se lit pas.
+ */
+function precacheDuBuild(root, prefixe) {
+  const nom = ['sw.js', 'service-worker.js'].find(n =>
+    exists(root, join('dist', n))
+  );
+  if (!nom) return null;
+  const sw = readText(root, join('dist', nom)) ?? '';
+  const textes = [sw];
+  for (const m of sw.matchAll(
+    /(?:importScripts\s*\(|define\s*\(\s*\[)([^)\]]{0,2000})/g
+  )) {
+    for (const s of m[1].matchAll(/["']([^"']+)["']/g)) {
+      const dep = s[1].endsWith('.js') ? s[1] : `${s[1]}.js`;
+      const rel = versDist(/^[./]/.test(dep) ? dep : `./${dep}`, nom, prefixe);
+      const texte = rel && readText(root, join('dist', rel));
+      if (texte) textes.push(texte);
+    }
+  }
+  const urls = new Set();
+  for (const texte of textes) {
+    for (const m of texte.matchAll(
+      /["']?url["']?\s*:\s*["']([^"']+\.(?:js|css|html|svg|png|webp|woff2|webmanifest|ico|json))["']/g
+    )) {
+      urls.add(m[1].split('/').pop());
+    }
+  }
+  return urls;
+}
+
+/**
+ * Ce que l'app charge POUR DÉMARRER et que le précache n'a pas.
+ *
+ * La fermeture des imports STATIQUES depuis les racines d'`index.html` — le
+ * `<script type="module">` et ses `modulepreload` —, lue fichier par fichier
+ * dans `dist/`. Chaque manquant vient avec sa chaîne la plus courte depuis la
+ * page : c'est elle qui dit pourquoi un morceau qu'on croyait facultatif ne
+ * l'est pas.
+ *
+ * @param {string} root
+ * @param {string[]} racines Les liens de la page (`htmlMarkers().scripts`).
+ * @param {Set<string>} precache Les noms précachés.
+ * @param {string} prefixe Le chemin du site.
+ * @returns {Array<{ fichier: string, chaine: string[] }>}
+ */
+function demarrageHorsPrecache(root, racines, precache, prefixe) {
+  const parent = new Map();
+  const file = [];
+  // Un lien qui ne désigne pas un FICHIER du build n'est pas suivi : ce
+  // contrôle juge ce qui manque au précache, pas ce qui manque au build.
+  const estFichier = rel => {
+    try {
+      return statSync(join(root, 'dist', rel)).isFile();
+    } catch {
+      return false;
+    }
+  };
+  const retenir = (rel, de) => {
+    if (!rel || parent.has(rel) || !estFichier(rel)) return;
+    parent.set(rel, de);
+    file.push(rel);
+  };
+  for (const href of racines) retenir(versDist(href, 'index.html', prefixe));
+  for (let i = 0; i < file.length; i++) {
+    const rel = file[i];
+    const code = readText(root, join('dist', rel)) ?? '';
+    for (const spec of importsStatiques(code)) {
+      retenir(versDist(spec, rel, prefixe), rel);
+    }
+  }
+  const chaine = rel => {
+    const out = [];
+    for (let r = rel; r; r = parent.get(r)) out.unshift(basename(r));
+    return ['index.html', ...out];
+  };
+  return file
+    .filter(rel => !precache.has(basename(rel)))
+    .map(rel => ({ fichier: rel, chaine: chaine(rel) }));
 }
 
 /** Les fichiers source sous `roots`, lus. */
@@ -2049,30 +2191,62 @@ export function reglesBuild(ctx, api) {
      * précache il n'y a pas de coquille périmée, donc aucun ancien nom à
      * demander. L'invariant est vide, pas contourné.
      */
-    const sw =
-      readText(root, 'dist/sw.js') ?? readText(root, 'dist/service-worker.js');
-    if (sw) {
-      // Le manifeste s'écrit minifié (`url:"…"`) ou développé (`"url": "…"`).
-      // On n'accepte que des valeurs qui RESSEMBLENT à un fichier servi : le
-      // code de Workbox porte lui aussi des littéraux `url:`.
-      const precache = new Set(
-        [
-          ...sw.matchAll(
-            /["']?url["']?\s*:\s*["']([^"']+\.(?:js|css|html|svg|png|webp|woff2|webmanifest|ico|json))["']/g
-          ),
-        ].map(m => m[1].split('/').pop())
+    const precache = precacheDuBuild(root, prefix);
+    if (precache?.size) {
+      const fugaces = jsDuBuild(root).filter(
+        f => !precache.has(f) && EMPREINTE_VITE.test(f)
       );
-      const fugaces = precache.size
-        ? jsDuBuild(root).filter(
-            f => !precache.has(f) && EMPREINTE_VITE.test(f)
-          )
-        : [];
       if (fugaces.length) {
         const liste = fugaces.slice(0, 3).join(', ');
         defaut(
           'chunk-hors-precache',
           `${fugaces.length} morceau(x) hors précache portent une empreinte de contenu (${liste}${fugaces.length > 3 ? ', …' : ''}) : leur URL meurt au déploiement suivant, et la coquille précachée la demandera encore`,
           'un nom STABLE via `chunkFileNames` (ex. `assets/sentry.js`), et le motif de `globIgnores` mis d’accord — sinon le morceau rentre dans le précache'
+        );
+      }
+
+      /*
+       * CE QUI FAIT DÉMARRER L'APP DOIT ÊTRE PRÉCACHÉ.
+       *
+       * Relevé le 05/11/2026 en rechargeant la production hors ligne : trois
+       * apps ne démarraient plus (mister-qowa, mister-settle, miss-ticket-pwa).
+       * Toutes trois nomment leur morceau Sentry `assets/sentry.js` et
+       * l'excluent du précache — le remède de `chunk-hors-precache`, que
+       * quinze autres portent sans dommage. Chez elles, Rolldown y avait
+       * rangé React : l'entrée commençait par `import{n}from"./sentry.js"`, le
+       * fichier manquait hors ligne, l'import statique échouait, rien ne
+       * montait. Ni ce docteur, ni le budget, ni les e2e ne l'ont vu.
+       *
+       * Le contrôle suit les IMPORTS STATIQUES depuis la page (le script
+       * d'entrée et ses `modulepreload`), de fichier en fichier dans `dist/`,
+       * et cherche chaque morceau atteint dans le manifeste. Les `import()`
+       * n'en sont pas : c'est par eux que Sentry DOIT arriver, et ce qu'ils
+       * chargent peut légitimement rester hors précache.
+       *
+       * Il lit les artefacts, pas la configuration : quel module Rolldown range
+       * dans quel morceau ne se décide pas dans `vite.config.ts`, et change
+       * avec un import ajouté n'importe où. Les quinze apps saines au relevé
+       * ne le sont que tant qu'il en reste ainsi.
+       *
+       * Sans service worker, rien n'est servi hors ligne, donc aucun démarrage
+       * hors ligne à casser : le contrôle se tait, comme le précédent. Il se
+       * tait aussi quand le manifeste ne se lit pas : il ne sait pas.
+       */
+      const manquants = demarrageHorsPrecache(
+        root,
+        m.scripts ?? [],
+        precache,
+        prefix
+      );
+      if (manquants.length) {
+        const liste = manquants
+          .slice(0, 3)
+          .map(({ fichier, chaine }) => `${fichier} (${chaine.join(' → ')})`)
+          .join(', ');
+        defaut(
+          'entree-hors-precache',
+          `${manquants.length} morceau(x) importé(s) STATIQUEMENT au démarrage manque(nt) au précache : ${liste}${manquants.length > 3 ? ', …' : ''} — hors ligne, l’import échoue et l’app ne démarre pas`,
+          'exclu par `globIgnores` ? Le remettre au précache, ou défaire le regroupement (`manualChunks` / `advancedChunks`) qui y range du code de l’entrée : un morceau hors précache ne doit être atteint que par `import()`'
         );
       }
     }
@@ -2195,6 +2369,7 @@ export const CATALOGUE = [
   { id: 'manifest-screenshots', famille: 'build', niveau: 'dette' },
   { id: 'version-manifest', famille: 'build', niveau: 'dette' },
   { id: 'chunk-hors-precache', famille: 'build', niveau: 'défaut' },
+  { id: 'entree-hors-precache', famille: 'build', niveau: 'défaut' },
   { id: 'spa-404', famille: 'build', niveau: 'défaut' },
 ];
 
