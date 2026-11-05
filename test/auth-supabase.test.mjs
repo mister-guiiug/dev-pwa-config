@@ -115,6 +115,38 @@ test('getSession : hors ligne, on lit le stockage sans rien demander', async () 
   }
 });
 
+test('getSession : hors ligne, la session de CE projet, pas celle d’une sœur', async () => {
+  // La famille partage une origine, donc un `localStorage`. La sœur est rangée
+  // la première : une lecture par motif l'aurait rendue.
+  const SIENNE = 'sb-projetdetest-auth-token';
+  const cases = {
+    'sb-uneautreapp-auth-token': JSON.stringify({
+      ...SESSION_RANGEE,
+      user: { id: 'soeur' },
+    }),
+    [SIENNE]: JSON.stringify(SESSION_RANGEE),
+  };
+  globalThis.localStorage = {
+    length: 2,
+    key: i => Object.keys(cases)[i] ?? null,
+    getItem: k => cases[k] ?? null,
+  };
+  const rendreReseau = avecReseau(false);
+  try {
+    const { client } = fakeClient({});
+    client.auth.storageKey = SIENNE;
+    const adapter = supabaseAuthAdapter({ client });
+    assert.deepEqual(await adapter.getSession(), SESSION_RANGEE);
+
+    // Sa case vide : personne, même si la sœur a sa session à côté.
+    delete cases[SIENNE];
+    assert.equal(await adapter.getSession(), null);
+  } finally {
+    delete globalThis.localStorage;
+    rendreReseau();
+  }
+});
+
 test('getSession : l’attente est BORNÉE quand le réseau ment', async () => {
   // `navigator.onLine` est vrai derrière un portail captif comme sur un Wi-Fi
   // qui ne route rien : l'appel part et ne revient jamais.

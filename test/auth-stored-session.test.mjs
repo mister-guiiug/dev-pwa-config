@@ -87,6 +87,47 @@ test('un contenu illisible ou incomplet rend null, sans lever', () => {
   assert.equal(storedSupabaseSession(), null);
 });
 
+/*
+ * UNE ORIGINE, UN STOCKAGE, PLUSIEURS APPS. Toute la famille est servie depuis
+ * `mister-guiiug.github.io` : sur un appareil qui sert à deux apps Supabase,
+ * deux cases `sb-*-auth-token` cohabitent. Relevé le 05/11/2026.
+ */
+const SOEUR = 'sb-uneautreappdelafamille-auth-token';
+const sessionDe = id =>
+  JSON.stringify({ ...session(9_999_999_999), user: { id } });
+const client = storageKey => ({ auth: { storageKey } });
+
+test('avec le client, c’est la session de CE projet, pas celle d’une sœur', () => {
+  // La sœur est rangée la première : c'est elle qu'une lecture par motif rend.
+  poser(
+    fauxStockage({ [SOEUR]: sessionDe('u-soeur'), [CASE]: sessionDe('u-moi') })
+  );
+  assert.equal(storedSupabaseSession(client(CASE))?.user.id, 'u-moi');
+});
+
+test('avec le client, sa case vide rend null — même si une sœur a la sienne', () => {
+  // Hors ligne, c'est ce qui distingue « déconnecté » de « une autre app est
+  // connectée » : sans cela, une vraie déconnexion passait pour un
+  // renouvellement de jeton abandonné, et l'écran s'ouvrait sous un autre.
+  poser(fauxStockage({ [SOEUR]: sessionDe('u-soeur') }));
+  assert.equal(storedSupabaseSession(client(CASE)), null);
+});
+
+test('un `storageKey` explicite est suivi, même hors du motif `sb-*`', () => {
+  poser(fauxStockage({ 'supabase-auth': sessionDe('u-moi') }));
+  assert.equal(
+    storedSupabaseSession(client('supabase-auth'))?.user.id,
+    'u-moi'
+  );
+});
+
+test('un client qui ne dit pas sa case retombe sur la lecture par motif', () => {
+  // Les clients simulés des tests d'apps n'ont pas de `storageKey`.
+  poser(fauxStockage({ [CASE]: sessionDe('u-moi') }));
+  assert.equal(storedSupabaseSession({ auth: {} })?.user.id, 'u-moi');
+  assert.equal(storedSupabaseSession(client(''))?.user.id, 'u-moi');
+});
+
 test('sans stockage du tout (Node, worker), rend null', () => {
   delete globalThis.localStorage;
   assert.equal(storedSupabaseSession(), null);
