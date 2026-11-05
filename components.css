@@ -773,9 +773,17 @@
     gap: 0.75rem;
     font-size: var(--text-fluid-sm, 0.9rem);
     /* Le panneau est son propre conteneur : voir la liste, plus bas. Sa
-       largeur vient donc de son parent, jamais de son contenu ; dans une
-       rangée flex qui le dimensionnerait au contenu, lui donner une largeur. */
+       largeur ne vient donc plus de son contenu, et un parent qui ajuste ses
+       enfants à leur contenu le réduit à RIEN. Mesuré sur mister-puzzle le
+       05/11/2026 : dans un pied de page `flex-col items-center`, 0 px de
+       large, le texte débordant sur une colonne de 140 px, quand la section
+       voisine, mêmes classes, en faisait 343. Il prend donc toute la place
+       offerte, marges déduites (`stretch`, et `100 %` là où le mot manque) ;
+       un `max-width` d'app le borne toujours. */
     container-type: inline-size;
+    box-sizing: border-box;
+    inline-size: 100%;
+    inline-size: stretch;
   }
 
   [data-dwc='privacy-notice-title'] {

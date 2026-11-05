@@ -202,6 +202,29 @@ test('un `display` d’auteur ne neutralise pas l’attribut hidden', () => {
   );
 });
 
+test('un conteneur de requêtes porte sa largeur, au lieu de la tenir du contenu', () => {
+  // `container-type: inline-size` retire au contenu toute part dans la largeur
+  // de la boîte : un parent qui ajuste ses enfants à leur contenu (flex
+  // centré, rangée flex, `fit-content`) la réduit alors à zéro. C'est arrivé
+  // au panneau « Vos données » dans le pied de page de mister-puzzle, le
+  // 05/11/2026 : 0 px, et le texte qui débordait.
+  const regles = [...CSS.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+  const conteneurs = regles.filter(([, , corps]) =>
+    /container-type\s*:\s*(inline-)?size/.test(corps)
+  );
+  assert.ok(
+    conteneurs.length > 0,
+    'plus aucun conteneur : le test ne garde rien'
+  );
+  for (const [, selecteur, corps] of conteneurs) {
+    assert.match(
+      corps,
+      /(^|[\s;])(inline-size|width)\s*:/,
+      `${selecteur.trim()} : conteneur sans largeur propre`
+    );
+  }
+});
+
 /** Corps d'un bloc `@media <query>` de premier niveau, accolades équilibrées. */
 function mediaBody(query) {
   const start = CSS.indexOf(`@media ${query}`);
