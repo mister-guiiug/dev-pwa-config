@@ -354,7 +354,10 @@ export function slugify(text) {
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .replace(/[^a-z0-9]+/g, '-');
-  return slug.slice(slug.startsWith('-') ? 1 : 0, slug.endsWith('-') ? -1 : undefined);
+  return slug.slice(
+    slug.startsWith('-') ? 1 : 0,
+    slug.endsWith('-') ? -1 : undefined
+  );
 }
 
 /**
