@@ -78,7 +78,11 @@ seconde, sur un dépôt :
    sous le site, PNG 192/512 et maskable, `id`, la langue du manifeste égale à
    celle de la page, l'icône iOS, `theme-color` par schéma, CSP, Open Graph,
    canonique, `version.json`, `404.html` quand l'app route par chemin sans
-   passer par `pwa-deploy.yml` (qui le pose au déploiement) ;
+   passer par `pwa-deploy.yml` (qui le pose au déploiement), et le précache :
+   un morceau hors précache ne porte pas d'empreinte (`chunk-hors-precache`),
+   et aucun morceau que la page importe STATIQUEMENT, de proche en proche, ne
+   manque au précache (`entree-hors-precache` : s'il manque, l'app ne démarre
+   plus hors ligne) ;
 4. **le seul réglage de dépôt qui se voit à l'écran** — une app qui affiche
    « Signaler un problème » (`<AppFooter … issues>`, ou `issueReportUrl` dans
    un pied de page maison) sur un dépôt dont les issues sont **désactivées** :
@@ -112,7 +116,7 @@ opt-in en 4.x et `true` par défaut à la prochaine majeure.
 
 #### Les contrôles sont nommés (4.10.0)
 
-`pwa-doctor --regles` liste les **65 contrôles**, groupés en quatre familles
+`pwa-doctor --regles` liste les **77 contrôles**, groupés en quatre familles
 (dépôt, workflows, source, build), avec leur identifiant et leur niveau. C'est
 ce qu'il faut pour écrire un refus motivé sans deviner un identifiant, et pour
 savoir ce que l'outil regarde sans lire son code :
