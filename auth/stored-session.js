@@ -16,11 +16,21 @@
  * le jeton. Trois demi-minutes en enfilade, au bout desquelles on lit des
  * données qu'on avait dès la première milliseconde.
  *
- * LE NOM DE CASE EST RECONNU, PAS RECALCULÉ. `@supabase/supabase-js` le
- * construit depuis l'URL du projet (`sb-<ref>-auth-token`). Reproduire la
- * formule, ce serait s'engager à la suivre à chaque version pour un gain nul ;
- * et imposer `storageKey` aux apps déconnecterait d'un coup tous ceux dont la
- * session est rangée sous l'ancien nom.
+ * LE NOM DE CASE EST LU SUR LE CLIENT, PAS RECALCULÉ. `@supabase/supabase-js`
+ * le construit depuis l'URL du projet (`sb-<ref>-auth-token`), sauf `storageKey`
+ * explicite, et le range dans `client.auth.storageKey`. Reproduire la formule,
+ * ce serait s'engager à la suivre à chaque version ; imposer `storageKey` aux
+ * apps déconnecterait d'un coup tous ceux dont la session est rangée sous
+ * l'ancien nom. Le lire, c'est prendre la réponse du SDK lui-même.
+ *
+ * SANS CLIENT, LE NOM EST SEULEMENT RECONNU — ET C'EST AMBIGU. Toute la famille
+ * est servie depuis une seule origine, donc un seul `localStorage` : sur un
+ * appareil qui sert à deux apps Supabase du parc, il y a deux cases
+ * `sb-*-auth-token`, et la première venue peut être celle de la sœur. Relevé
+ * le 05/11/2026 (audit hors ligne) : hors ligne, une app pouvait ouvrir son
+ * écran sous l'utilisateur d'une autre, ou ignorer une vraie déconnexion parce
+ * qu'une autre app avait encore une session. La lecture par motif reste pour
+ * les appels sans argument, faute de mieux ; passez le client.
  */
 
 const NOM_DE_CASE = /^sb-[a-z0-9]+-auth-token$/;
@@ -45,10 +55,41 @@ function estUneSession(valeur) {
 }
 
 /**
+ * La case où le client range sa session, ou `null` s'il ne la dit pas (client
+ * simulé, SDK d'une autre forme). `storageKey` est `protected` dans les types
+ * de `@supabase/auth-js`, mais c'est une propriété ordinaire à l'exécution.
+ *
+ * @param {unknown} client
+ */
+function caseDuClient(client) {
+  const nom = /** @type {any} */ (client)?.auth?.storageKey;
+  return typeof nom === 'string' && nom.length > 0 ? nom : null;
+}
+
+/**
+ * La session sous ce nom, ou `null` — absente, illisible ou incomplète.
+ *
+ * @param {Storage} stockage
+ * @param {string} nom
+ */
+function lireCase(stockage, nom) {
+  const brut = stockage.getItem(nom);
+  if (!brut) return null;
+  const valeur = JSON.parse(brut);
+  return estUneSession(valeur) ? valeur : null;
+}
+
+/**
  * La session rangée sur cet appareil, ou `null`. **Best-effort** : navigation
  * privée, stockage refusé, contenu illisible, environnement sans
  * `localStorage` (Node, worker) — tout rend `null`, comme une absence de
  * session.
+ *
+ * AVEC LE CLIENT, C'EST LA SESSION DE CE PROJET, et seulement elle : sa case
+ * vide, la réponse est `null`, même si une sœur a la sienne à côté. Sans
+ * client — ou avec un client qui ne dit pas sa case —, la première case
+ * `sb-*-auth-token` qui contient une session : ambigu sur une origine
+ * partagée (voir l'en-tête).
  *
  * PÉRIMÉE OU NON, ELLE EST RENDUE. C'est délibéré : hors ligne, un jeton
  * d'accès expiré ne dit rien de l'utilisateur — il dit qu'une heure a passé.
@@ -56,19 +97,20 @@ function estUneSession(valeur) {
  * corrigera l'état ; si le jeton de rafraîchissement a été révoqué entretemps,
  * Supabase émettra `SIGNED_OUT` et la porte se refermera d'elle-même.
  *
+ * @param {{ auth: object }} [client] Le client Supabase de l'app.
  * @returns {object | null}
  */
-export function storedSupabaseSession() {
+export function storedSupabaseSession(client) {
   try {
     const stockage = globalThis.localStorage;
     if (!stockage) return null;
+    const sienne = caseDuClient(client);
+    if (sienne) return lireCase(stockage, sienne);
     for (let i = 0; i < stockage.length; i++) {
       const nom = stockage.key(i);
       if (!nom || !NOM_DE_CASE.test(nom)) continue;
-      const brut = stockage.getItem(nom);
-      if (!brut) continue;
-      const valeur = JSON.parse(brut);
-      if (estUneSession(valeur)) return valeur;
+      const valeur = lireCase(stockage, nom);
+      if (valeur) return valeur;
     }
     return null;
   } catch {

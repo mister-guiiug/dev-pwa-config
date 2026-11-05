@@ -87,9 +87,12 @@ export function supabaseAuthAdapter(options) {
    *
    * Une session illisible reste une session absente : les cinq apps relevées
    * lisent `data.session` sans regarder l'erreur.
+   *
+   * Le stockage est lu AVEC LE CLIENT : la case de CE projet, pas la première
+   * `sb-*` venue — la famille partage une origine, donc un `localStorage`.
    */
   const lireSession = async () => {
-    if (navigateurHorsLigne()) return storedSupabaseSession();
+    if (navigateurHorsLigne()) return storedSupabaseSession(client);
     let minuteur;
     try {
       const issue = await Promise.race([
@@ -98,9 +101,9 @@ export function supabaseAuthAdapter(options) {
           minuteur = setTimeout(() => resoudre(TROP_LONG), sessionTimeoutMs);
         }),
       ]);
-      return issue === TROP_LONG ? storedSupabaseSession() : issue;
+      return issue === TROP_LONG ? storedSupabaseSession(client) : issue;
     } catch {
-      return storedSupabaseSession();
+      return storedSupabaseSession(client);
     } finally {
       clearTimeout(minuteur);
     }
