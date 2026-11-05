@@ -364,6 +364,27 @@ Le client obtenu s'**injecte** ensuite tel quel dans `realtime/supabase`
 (descente) et dans le `process` d'une file `sync-queue` (montée) : une app n'a
 besoin que d'un client.
 
+**La case de session se connaît avant le SDK** (6.31.0). Toute la famille est
+servie depuis une seule origine, donc un seul `localStorage`. `storageKey()` rend
+la case où le client range sa session (`sb-<ref>-auth-token`, ou
+`auth.storageKey` si l'app l'impose), et la fabrique la passe explicitement à
+`createClient` : le nom annoncé et le nom écrit sont le même par construction.
+Une app qui charge le SDK à la demande la donne à l'enveloppe passée à
+`supabaseAuthAdapter` : hors ligne, l'adaptateur lit la session sans appeler le
+SDK, et sans ce nom il prendrait la première case `sb-*` venue, peut-être celle
+d'une autre app.
+
+```ts
+auth: new Proxy({}, {
+  get(_cible, methode) {
+    if (methode === 'storageKey') return supabase.storageKey();
+    return async (...args) => { /* … le vrai client, à la demande … */ };
+  },
+}),
+```
+
+Sans fabrique sous la main, `supabaseStorageKey(url)` fait le même calcul.
+
 ### File d'écritures hors-ligne (`/sync-queue`)
 
 Le chemin **montant** de la synchronisation — `realtime/` est le descendant.

@@ -75,6 +75,36 @@ export function supabaseConfig(env = {}, options = {}) {
 }
 
 /**
+ * LA CASE OÙ LE SDK RANGE LA SESSION D'UN PROJET, sans charger le SDK.
+ *
+ * `@supabase/supabase-js` la nomme `sb-<premier label de l'hôte>-auth-token`
+ * (« defaultStorageKey » de `SupabaseClient`, relu dans la 2.118.0), sauf
+ * `auth.storageKey` explicite. Toute la famille est servie depuis une seule
+ * origine, donc un seul `localStorage` : c'est ce nom qui distingue la session
+ * de CE projet de celle d'une autre app (`storedSupabaseSession(client)`,
+ * 6.30.0).
+ *
+ * PROMU DE TROIS APPS. miss-holi-voyage (`src/backend/session.ts`),
+ * miss-lookhouse et mister-settle (`src/backend/caseDeSession.ts`) le
+ * recalculaient : leur SDK est chargé à la demande, et au démarrage hors ligne
+ * il n'est pas là pour dire sa case. Chacune confrontait sa formule au SDK
+ * installé, pour qu'une montée qui la changerait se voie.
+ *
+ * `null` sans URL, ou avec une URL illisible : il n'y a pas de case à lire.
+ *
+ * @param {unknown} url L'URL du projet (`VITE_SUPABASE_URL`).
+ * @returns {string | null}
+ */
+export function supabaseStorageKey(url) {
+  if (typeof url !== 'string' || !url.trim()) return null;
+  try {
+    return `sb-${new URL(url).hostname.split('.')[0]}-auth-token`;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * L'ENVIRONNEMENT VITE, LU PAR LE SOCLE LUI-MÊME quand l'app ne passe pas `env`.
  *
  * La fabrique lisait `{}` par défaut, sur une croyance : Vite ne remplacerait
@@ -158,6 +188,23 @@ export function createSupabaseClientFactory(options = {}) {
 
   const config = supabaseConfig(env, { urlKey, anonKeyKey });
 
+  /**
+   * LA CASE DE SESSION, CONNUE AVANT LE SDK. Celle que l'app impose
+   * (`auth.storageKey`, sinon `clientOptions.auth.storageKey`), sinon celle
+   * que le SDK dériverait de l'URL.
+   *
+   * ELLE EST PASSÉE AU CLIENT, pas seulement annoncée : `create()` la donne à
+   * `createClient`. Le nom annoncé et le nom écrit sont donc le même par
+   * construction, quoi que fasse une version future du SDK — et c'est
+   * aujourd'hui exactement son défaut : aucune session rangée ne change de
+   * case, personne n'est déconnecté.
+   */
+  const caseExplicite = [
+    auth?.storageKey,
+    clientOptions?.auth?.storageKey,
+  ].find(v => typeof v === 'string' && v.length > 0);
+  const caseDeSession = caseExplicite ?? supabaseStorageKey(config.url);
+
   /** @type {Promise<unknown> | null} */
   let pending = null;
 
@@ -190,6 +237,7 @@ export function createSupabaseClientFactory(options = {}) {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        ...(caseDeSession ? { storageKey: caseDeSession } : {}),
         ...clientOptions.auth,
         ...auth,
       },
@@ -204,6 +252,14 @@ export function createSupabaseClientFactory(options = {}) {
     isConfigured: () => config.missing.length === 0,
     /** Les variables manquantes — vide quand tout est là. */
     missing: () => [...config.missing],
+    /**
+     * La case `localStorage` où le client range sa session, SANS charger le
+     * SDK — `null` sans URL. À donner, comme `auth.storageKey`, à l'enveloppe
+     * passée à `supabaseAuthAdapter` : hors ligne, le socle lit la session
+     * sans appeler le SDK, et sans ce nom il prendrait la première case
+     * `sb-*` d'un `localStorage` que toute la famille partage.
+     */
+    storageKey: () => caseDeSession,
     /** Le client, créé au premier appel puis partagé. */
     getClient() {
       if (!pending) {

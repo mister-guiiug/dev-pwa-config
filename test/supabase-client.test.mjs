@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import {
   SUPABASE_ENV_KEYS,
   supabaseConfig,
+  supabaseStorageKey,
   createSupabaseClientFactory,
 } from '../supabase-client.js';
 
@@ -202,6 +203,68 @@ test('`clientOptions` passe le reste, `auth` garde le dernier mot', async () => 
     false,
     '`auth` gagne sur clientOptions'
   );
+});
+
+/* ── La case de session ────────────────────────────────────────────────── */
+
+/*
+ * Toute la famille est servie depuis une seule origine : la case de session
+ * est ce qui distingue la session de CE projet de celle d'une autre app. Une
+ * app au SDK chargé à la demande doit la connaître AVANT le SDK, pour la
+ * donner à `supabaseAuthAdapter` (hors ligne, il lit sans rien appeler).
+ */
+
+test('la case de session suit la formule du SDK', () => {
+  assert.equal(
+    supabaseStorageKey('https://abcdefghijklmnop.supabase.co'),
+    'sb-abcdefghijklmnop-auth-token'
+  );
+  // Un domaine personnalisé : le premier label de l'hôte, comme le SDK.
+  assert.equal(
+    supabaseStorageKey('https://api.exemple.fr'),
+    'sb-api-auth-token'
+  );
+  assert.equal(supabaseStorageKey(''), null);
+  assert.equal(supabaseStorageKey('pas une url'), null);
+  assert.equal(supabaseStorageKey(undefined), null);
+});
+
+test('`storageKey()` est connue SANS charger le SDK', () => {
+  const sdk = fakeSdk();
+  const factory = createSupabaseClientFactory({ env: ENV, loader: sdk.loader });
+  assert.equal(factory.storageKey(), 'sb-exemple-auth-token');
+  assert.equal(sdk.loads, 0);
+});
+
+test('sans URL, pas de case', () => {
+  const factory = createSupabaseClientFactory({ env: {} });
+  assert.equal(factory.storageKey(), null);
+});
+
+test('la case annoncée est celle que reçoit le client', async () => {
+  // Passée explicitement à `createClient` : le nom annoncé et le nom écrit
+  // sont le même par construction, quoi que fasse une version future du SDK.
+  const sdk = fakeSdk();
+  const factory = createSupabaseClientFactory({ env: ENV, loader: sdk.loader });
+  const { options } = await factory.getClient();
+  assert.equal(options.auth.storageKey, factory.storageKey());
+});
+
+test('une case imposée par l’app l’emporte, annoncée comme écrite', async () => {
+  for (const options of [
+    { auth: { storageKey: 'ma-case' } },
+    { clientOptions: { auth: { storageKey: 'ma-case' } } },
+  ]) {
+    const sdk = fakeSdk();
+    const factory = createSupabaseClientFactory({
+      env: ENV,
+      loader: sdk.loader,
+      ...options,
+    });
+    assert.equal(factory.storageKey(), 'ma-case');
+    const client = await factory.getClient();
+    assert.equal(client.options.auth.storageKey, 'ma-case');
+  }
 });
 
 /* ── Le fetch injecté, corrélé ou non ──────────────────────────────────── */
