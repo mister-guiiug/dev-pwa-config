@@ -1,5 +1,29 @@
 # Changelog
 
+## 6.30.0
+
+### Minor Changes
+
+- 6f57b66: `pwa-doctor` : nouveau contrôle **`entree-hors-precache`** (famille « build », niveau **défaut**). Il signale tout morceau JS que la page importe STATIQUEMENT au démarrage et que le service worker ne précache pas : hors ligne, ce fichier manque, l'import échoue et l'app ne démarre pas.
+  
+  Relevé le 05/11/2026 en rechargeant la production hors ligne : mister-qowa, mister-settle et miss-ticket-pwa ne démarraient plus. Dix-huit apps publiées nomment leur morceau Sentry `assets/sentry.js` et l'excluent du précache (`globIgnores`). Chez ces trois-là, Rolldown y avait rangé React, et l'entrée commençait par `import{n}from"./sentry.js"`. Ni le docteur, ni le budget, ni les e2e ne l'avaient vu.
+  
+  - **Ce qui est lu** : `dist/` après le build. On part du `<script type="module">` d'`index.html` et de ses `modulepreload`, on suit les imports statiques de fichier en fichier (`import … from`, `import "…"`, `export … from`, minifiés ou non), et on cherche chaque morceau atteint dans le manifeste Workbox de `sw.js` ou des scripts qu'il charge.
+  - **Ce qui n'est pas suivi** : les `import()`. C'est par eux que Sentry doit arriver, et ce qu'ils chargent peut rester hors précache.
+  - **Le message** nomme le fichier et la chaîne d'import qui l'amène au démarrage (`index.html → index-….js → sentry.js`). La piste : le motif `globIgnores` qui l'exclut, ou le regroupement (`manualChunks` / `advancedChunks`) qui y range du code de l'entrée.
+  - **Sans service worker**, ou quand son manifeste ne se lit pas, le contrôle ne dit rien. Il obéit à `pwaDoctor.refus` comme les autres.
+  
+  **Les apps concernées passent au rouge.** C'est un défaut : il fait échouer `pwa-doctor`, avec ou sans `--strict`, partout où il tourne (`run-doctor: true` de `pwa-ci.yml`, `postbuild`). Vérifié sur la production des 22 apps publiées avec un service worker : les trois apps ci-dessus sont signalées, et aucune autre. Les quinze autres apps qui excluent `sentry.js` ne le chargent que par `import()`. Elles restent saines tant que Rolldown n'y range rien d'autre, et c'est ce que le contrôle surveille désormais.
+  
+  `chunk-hors-precache` lit le même manifeste, désormais aussi dans les scripts que charge le worker.
+- c233451: `auth/stored-session` : `storedSupabaseSession(client)` lit la session de **ce** projet, et plus la première case `sb-*-auth-token` venue.
+  
+  Toute la famille est servie depuis `mister-guiiug.github.io`, donc avec un seul `localStorage`. Sur un appareil qui sert à deux apps Supabase du parc, deux cases cohabitent, et la lecture par motif pouvait rendre celle de l'autre app. Relevé le 05/11/2026 par l'audit hors ligne : hors ligne, une app pouvait ouvrir son écran sous l'utilisateur d'une autre. Une vraie déconnexion pouvait aussi passer pour un renouvellement de jeton abandonné, parce qu'une autre app avait encore sa session.
+  
+  - **Avec le client**, le nom de case est celui que le SDK a choisi, lu dans `client.auth.storageKey` : ni recalculé depuis l'URL, ni imposé. Un `storageKey` explicite est suivi. Si cette case est vide, la réponse est `null`, même quand une autre app a sa session à côté.
+  - **`supabaseAuthAdapter`** passe son client. Les apps qui s'en servent sont corrigées en montant le socle, sans changer de code.
+  - **Sans argument**, ou avec un client qui ne dit pas sa case (client simulé de test), la lecture par motif reste, ambiguë comme avant. Les appels directs sont à migrer : `storedSupabaseSession()` devient `storedSupabaseSession(supabase)`. Ils sont relevés dans miss-uwh et mister-doc (`AuthContext.tsx`), miss-lookhouse (`auth/index.ts`) et mister-settle (`sessionUserId.ts`).
+
 ## 6.29.1
 
 ### Patch Changes
