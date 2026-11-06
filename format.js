@@ -340,15 +340,24 @@ export function capitalize(text) {
  * s'appuyaient sur `[^\w-]` pour les faire disparaître au passage, ce qui
  * marchait par effet de bord. Les tirets de bord sont rognés — « Bonjour ! »
  * donnait « bonjour- » dans les copies.
+ *
+ * Le rognage se fait par `slice`, pas par `/^-+|-+$/` : CodeQL classe cette
+ * expression en ReDoS polynomial (`js/polynomial-redos`), sur une suite de
+ * tirets qui ne finit pas la chaîne. Elle ne l'était pas ici, la ligne d'avant
+ * réduisant déjà toute suite de séparateurs à UN tiret ; c'est aussi ce qui
+ * permet de n'en retirer qu'un de chaque côté.
  */
 export function slugify(text) {
-  return String(text ?? '')
+  const slug = String(text ?? '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, '-');
+  return slug.slice(
+    slug.startsWith('-') ? 1 : 0,
+    slug.endsWith('-') ? -1 : undefined
+  );
 }
 
 /**
