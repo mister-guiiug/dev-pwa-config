@@ -111,7 +111,15 @@ export declare function sentryChunkGroups(): Array<{
  * `StaleWhileRevalidate`, fichiers en `CacheFirst` un an). Règles neuves, à
  * étaler dans `workbox.runtimeCaching`.
  */
-export declare function googleFontsCaching(): Array<Record<string, unknown>>;
+export declare function googleFontsCaching(): Array<{
+  urlPattern: RegExp;
+  handler: 'StaleWhileRevalidate' | 'CacheFirst';
+  options: {
+    cacheName: string;
+    expiration?: { maxEntries: number; maxAgeSeconds: number };
+    cacheableResponse: { statuses: number[] };
+  };
+}>;
 
 /**
  * Options Workbox par défaut (sans mise en cache d'API). Les fichiers
