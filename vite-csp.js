@@ -153,7 +153,13 @@ function memeChemin(a, b) {
  */
 function zodPropreA(importeur, zodReel) {
   if (!importeur || importeur.startsWith('\0')) return '';
-  const sien = zodVuDepuis(importeur.replace(/[?#].*$/, ''));
+  // La requête de Vite (`?used`, `#…`) coupée au premier signe, en un seul
+  // passage : `replace(/[?#].*$/)` relancerait `.*$` depuis chaque `#`
+  // (CodeQL, js/polynomial-redos).
+  const coupe = importeur.search(/[?#]/);
+  const sien = zodVuDepuis(
+    coupe === -1 ? importeur : importeur.slice(0, coupe)
+  );
   return sien && !memeChemin(sien, zodReel) ? sien : '';
 }
 
