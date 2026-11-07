@@ -207,8 +207,8 @@ export default defineConfig({
 Options : `siteName` (le nom pour `og:site_name` d'une app **hors catalogue** —
 le nom du catalogue l'emporte), `sitemap` (défaut `true`), `robots` (défaut
 **`false`**, voir plus bas), `outDir`, `changefreq`, `basePath`, `logoPath`,
-`iconQuery`, `llms` (opt-in : `true` = auto catalogue, une chaîne = ce texte,
-omis = rien), `themeBoot`, `themeColor`, `extraReplacements`, `jsonLd`,
+`iconQuery`, `llms` (défaut `true` = catalogue et pages de contenu, une
+chaîne = ce texte, `false` = rien), `themeBoot`, `themeColor`, `extraReplacements`, `jsonLd`,
 `routes`, `servedContent`, `contentPages`, `ogImage`.
 
 Variables d'environnement lues au build : `VITE_BASE_PATH`,
@@ -452,8 +452,13 @@ contenu, `en` quand il y a des pages anglaises, ou un dossier du build
   lu qu'à la racine d'une origine, et c'est `mister-guiiug.github.io` qui
   déclare les plans de site de tout le parc. `robots: true` pour une app
   servie à la racine d'un domaine.
-- **`llms.txt`** reste opt-in (`llms: true` ou une chaîne) : Google ne s'en
-  sert pas.
+- **`llms.txt`** est écrit par défaut depuis le 07/11/2026, au format
+  [llmstxt.org](https://llmstxt.org) : le nom et la description de l'app, son
+  adresse, son dépôt, et chaque page de contenu avec sa description. Google ne
+  s'en sert pas et la convention est inégalement lue, mais le fichier ne coûte
+  rien, échappe au repli du worker, et la racine comme les vingt-trois sites
+  répondaient 404 (audits SEO/GEO du 28/09 et du 06/11). `llms: false` le
+  coupe, une chaîne le remplace.
 
 #### Ce que le docteur en vérifie
 
@@ -772,6 +777,33 @@ test('@a11y accueil sans violation WCAG A/AA', async ({ page }) => {
   await expectNoA11yViolations(page, AxeBuilder, expect);
 });
 ```
+
+**L'accueil ne suffit pas.** `expectNoA11yViolationsOn` passe axe sur une
+liste de routes ou d'états, dans l'ordre, et ne conclut qu'après les avoir
+tous audités : le rapport nomme chaque écran fautif. Une étape est un chemin,
+ou un objet `{ path?, setup?, name?, options? }` — `setup(page)` fait les gestes
+qui mènent à l'état (ouvrir une feuille, remplir un champ). `ready(page)`, dans
+les options, attend l'écran réel après chaque navigation.
+
+```ts
+import { expectNoA11yViolationsOn } from '@mister-guiiug/dev-pwa-config/playwright-a11y';
+
+test('@a11y les écrans de l’app sans violation WCAG A/AA', async ({ page }) => {
+  await expectNoA11yViolationsOn(page, AxeBuilder, expect, [
+    '/',
+    '/reglages',
+    {
+      name: 'feuille « Ajouter »',
+      path: '/',
+      setup: p => p.getByRole('button', { name: 'Ajouter' }).click(),
+    },
+  ]);
+});
+```
+
+`pwa-doctor` porte une dette `a11y-accueil-seul` quand la spec d'accessibilité
+n'ouvre que l'accueil, sans aucun geste qui change d'état. Un `goto` sur une
+variable ou un chemin construit le fait taire : il ne devine pas les valeurs.
 
 ### Garde de l'écran d'entrée — `playwright-entree`
 
