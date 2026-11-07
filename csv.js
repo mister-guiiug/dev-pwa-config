@@ -89,10 +89,13 @@ export const DIALECTS = {
 const FORMULA_START = /^[=+\-@\t\r]/;
 
 /**
- * Un nombre écrit en texte (« -12 », « +3,5 ») commence par une amorce mais ne
- * calcule rien : le préfixer le ferait lire « '-12 » dans le tableur.
+ * Un nombre NÉGATIF écrit en texte (« -12 », « -0,5 ») commence par une amorce
+ * mais ne calcule rien : le préfixer le ferait lire « '-12 » dans le tableur.
+ * Le « + » n'a pas cette exception : « +33612345678 » est un téléphone, et
+ * sans apostrophe Excel en ferait un nombre, sans son « + » (relevé en
+ * migrant miss-arcade, 07/11/2026).
  */
-const PLAIN_NUMBER = /^[+-]?\d+(?:[.,]\d+)?$/;
+const NEGATIVE_NUMBER = /^-\d+(?:[.,]\d+)?$/;
 
 /** Le BOM UTF-8, en tête de fichier. */
 export const UTF8_BOM = '﻿';
@@ -135,7 +138,7 @@ export function escapeField(value, options = {}) {
     if (
       neutralizeFormulas &&
       FORMULA_START.test(text) &&
-      !PLAIN_NUMBER.test(text)
+      !NEGATIVE_NUMBER.test(text)
     ) {
       text = `'${text}`;
     }
