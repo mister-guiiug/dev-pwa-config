@@ -18,7 +18,8 @@
  *
  *   1. LE DÉPÔT — les fichiers que le gabarit attend (`.editorconfig`,
  *      `.nvmrc`, `.gitattributes` en LF, `renovate.json` sur le préréglage du
- *      socle, `.lighthouserc.json`, une spec a11y, un `bundleBudget`), et les
+ *      socle, `.lighthouserc.json`, une spec a11y qui ne s'arrête pas à
+ *      l'accueil, un `bundleBudget`), et les
  *      TROIS LIENS DE LA FAMILLE — code source, soutien, signalement — sur
  *      l'accueil ET sur À propos / Réglages, et nulle part ailleurs ;
  *   2. LES WORKFLOWS — lighthouse, `cleanup-runs`, le keep-alive Supabase si
@@ -816,6 +817,60 @@ export function specJouee(text, filtre) {
   return titres.some(t => filtre.test(t));
 }
 
+/* ── L'accessibilité au-delà de l'accueil ──────────────────────────────────
+ *
+ * Le gabarit `e2e/a11y.spec.ts` ne visite que `/`, et c'est ce que le parc a
+ * copié : au relevé du 07/11/2026, la spec de neuf apps n'auditait que
+ * l'accueil. Les écrans qui portent les formulaires, les feuilles et les
+ * tableaux — là où vivent les défauts de nom accessible et de contraste —
+ * n'étaient jamais passés à axe.
+ */
+
+/**
+ * Les gestes qui changent l'état de la page : une spec qui en fait un audite
+ * autre chose que l'accueil qu'elle a ouvert (un formulaire, une feuille), et
+ * le contrôle se tait. Trois apps atteignent ainsi leurs écrans sans jamais
+ * quitter `/` (carbook, cim10, qowa).
+ */
+const GESTES_PLAYWRIGHT =
+  /\.(?:click|dblclick|tap|fill|type|press|pressSequentially|check|uncheck|selectOption|setInputFiles|hover|dragTo|dispatchEvent)\s*\(/;
+
+/** Vrai pour un argument de `goto` qui désigne l'accueil, ÉCRIT EN TOUTES LETTRES. */
+function cibleAccueil(argument, appId) {
+  const m = /^(['"`])([^'"`$\\]*)\1$/.exec(argument.trim());
+  if (!m) return false;
+  const accueils = new Set(['', '/', '.', './']);
+  // La base de l'app, quand la spec l'écrit (`page.goto('/miss-uwh/')`).
+  if (appId) {
+    accueils.add(`/${appId}`);
+    accueils.add(`/${appId}/`);
+  }
+  return accueils.has(m[2]);
+}
+
+/**
+ * Vrai si les specs d'accessibilité n'auditent QUE l'accueil : au moins un
+ * `goto`, tous vers l'accueil écrit en toutes lettres, aucun geste qui change
+ * d'état, et pas l'aide multi-écrans du socle.
+ *
+ * TOUT CE QUI NE SE LIT PAS SE TAIT. Un `goto(route)` sur une variable, un
+ * chemin construit (`${…}`), une constante (`ROUTES.HOME`) : le contrôle ne
+ * devine pas la valeur, et ne dit rien. Une boucle sur une liste de routes —
+ * la forme de bac-sable et family-map — passe donc sans bruit. Commentaires
+ * retirés : l'exemple en commentaire du gabarit ne compte pas.
+ *
+ * @param {string[]} textes Le texte des specs d'accessibilité.
+ * @param {string} [appId] Le nom du paquet, pour reconnaître `/<app>/`.
+ */
+export function auditeAccueilSeul(textes, appId = '') {
+  const source = textes.map(t => sansCommentaires.source(t)).join('\n');
+  if (/\b(?:expectNoA11yViolationsOn|analyzeA11yOn)\b/.test(source))
+    return false;
+  if (GESTES_PLAYWRIGHT.test(source)) return false;
+  const cibles = [...source.matchAll(/\.goto\(\s*([^,)]*)/g)].map(m => m[1]);
+  return cibles.length > 0 && cibles.every(c => cibleAccueil(c, String(appId)));
+}
+
 /* ── Le référencement : pages, JSON-LD écrit à la main, titre ──────────── */
 
 /**
@@ -1248,11 +1303,23 @@ export function reglesDepot(ctx, api) {
     );
   }
   if (playwright) {
-    if (!specs.some(f => /a11y|accessib/i.test(basename(f.rel)))) {
+    const specsA11y = specs.filter(f => /a11y|accessib/i.test(basename(f.rel)));
+    if (!specsA11y.length) {
       dette(
         'a11y-spec',
         'Playwright est là, la spec a11y (axe-core) non',
         'copier e2e/a11y.spec.ts du gabarit (playwright-a11y du socle)'
+      );
+    } else if (
+      auditeAccueilSeul(
+        specsA11y.map(f => f.text),
+        pkg.name
+      )
+    ) {
+      dette(
+        'a11y-accueil-seul',
+        `la spec a11y n'audite que l'accueil (${specsA11y.map(f => f.rel).join(', ')}) : formulaires, feuilles et réglages ne passent jamais par axe`,
+        "expectNoA11yViolationsOn(page, AxeBuilder, expect, ['/reglages', …]) de playwright-a11y — un chemin, ou un état atteint par des gestes"
       );
     }
   }
@@ -2334,6 +2401,7 @@ export const CATALOGUE = [
   { id: 'renovate-local', famille: 'dépôt', niveau: 'info' },
   { id: 'lighthouserc', famille: 'dépôt', niveau: 'dette' },
   { id: 'a11y-spec', famille: 'dépôt', niveau: 'dette' },
+  { id: 'a11y-accueil-seul', famille: 'dépôt', niveau: 'dette' },
   { id: 'bundle-budget', famille: 'dépôt', niveau: 'dette' },
   { id: 'engines', famille: 'dépôt', niveau: 'info' },
   { id: 'dev-port', famille: 'dépôt', niveau: 'info' },
