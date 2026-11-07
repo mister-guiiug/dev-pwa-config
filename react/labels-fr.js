@@ -210,6 +210,32 @@ const labels = {
       'Accès, rectification, effacement, opposition : écrivez à {contact}.',
     missing: '[À compléter]',
   },
+  backup: {
+    title: 'Sauvegarde',
+    description:
+      'Vos données restent sur cet appareil. Exportez-les dans un fichier pour les garder, ou pour changer d’appareil.',
+    last: 'Dernière sauvegarde : {date}.',
+    never: 'Aucune sauvegarde pour l’instant.',
+    due: 'Pensez à exporter une sauvegarde.',
+    export: 'Exporter une sauvegarde',
+    import: 'Importer un fichier',
+    importConfirm:
+      'Remplacer les données de cet appareil par celles du fichier ?',
+    importConfirmLabel: 'Remplacer',
+    exported: 'Sauvegarde exportée.',
+    imported: 'Données importées.',
+    importFailed: 'Import impossible : {reason}',
+    unreadable: 'le fichier est illisible',
+    persisted:
+      'Le navigateur garde ces données : il ne les effacera pas pour faire de la place.',
+    notPersisted:
+      'Le navigateur peut effacer ces données s’il manque de place, ou après une longue absence.',
+    persist: 'Lui demander de les garder',
+    persistRefused:
+      'Le navigateur a refusé : exportez régulièrement une sauvegarde.',
+    sharedOrigin:
+      'Attention : « Effacer les données du site » dans le navigateur efface aussi celles des autres applications de la famille.',
+  },
 };
 
 export default labels;

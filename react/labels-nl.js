@@ -174,6 +174,31 @@ const labels = {
       'Inzage, rectificatie, wissing, bezwaar: schrijf naar {contact}.',
     missing: '[Aan te vullen]',
   },
+  backup: {
+    title: 'Back-up',
+    description:
+      'Je gegevens blijven op dit apparaat. Exporteer ze naar een bestand om ze te bewaren of om van apparaat te wisselen.',
+    last: 'Laatste back-up: {date}.',
+    never: 'Nog geen back-up.',
+    due: 'Denk eraan een back-up te exporteren.',
+    export: 'Back-up exporteren',
+    import: 'Bestand importeren',
+    importConfirm:
+      'De gegevens op dit apparaat vervangen door die van het bestand?',
+    importConfirmLabel: 'Vervangen',
+    exported: 'Back-up geëxporteerd.',
+    imported: 'Gegevens geïmporteerd.',
+    importFailed: 'Importeren mislukt: {reason}',
+    unreadable: 'het bestand is onleesbaar',
+    persisted:
+      'De browser bewaart deze gegevens: hij wist ze niet om ruimte vrij te maken.',
+    notPersisted:
+      'De browser kan deze gegevens wissen bij ruimtegebrek of na lange afwezigheid.',
+    persist: 'Vragen ze te bewaren',
+    persistRefused: 'De browser weigerde: exporteer regelmatig een back-up.',
+    sharedOrigin:
+      'Let op: „Sitegegevens wissen” in de browser wist ook die van de andere apps van de familie.',
+  },
 };
 
 export default labels;

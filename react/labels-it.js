@@ -172,6 +172,31 @@ const labels = {
       'Accesso, rettifica, cancellazione, opposizione: scriva a {contact}.',
     missing: '[Da completare]',
   },
+  backup: {
+    title: 'Backup',
+    description:
+      'I tuoi dati restano su questo dispositivo. Esportali in un file per conservarli o per cambiare dispositivo.',
+    last: 'Ultimo backup: {date}.',
+    never: 'Ancora nessun backup.',
+    due: 'Ricordati di esportare un backup.',
+    export: 'Esporta un backup',
+    import: 'Importa un file',
+    importConfirm:
+      'Sostituire i dati di questo dispositivo con quelli del file?',
+    importConfirmLabel: 'Sostituisci',
+    exported: 'Backup esportato.',
+    imported: 'Dati importati.',
+    importFailed: 'Importazione non riuscita: {reason}',
+    unreadable: 'il file non è leggibile',
+    persisted:
+      'Il browser conserva questi dati: non li cancellerà per liberare spazio.',
+    notPersisted:
+      'Il browser può cancellare questi dati se manca spazio o dopo una lunga assenza.',
+    persist: 'Chiedergli di conservarli',
+    persistRefused: 'Il browser ha rifiutato: esporta regolarmente un backup.',
+    sharedOrigin:
+      'Attenzione: «Cancella dati del sito» nel browser cancella anche quelli delle altre app della famiglia.',
+  },
 };
 
 export default labels;

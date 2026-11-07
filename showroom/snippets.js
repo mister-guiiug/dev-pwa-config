@@ -158,6 +158,19 @@ import { recordError } from '@mister-guiiug/dev-pwa-config/react/observability';
 <PwaInstallPrompt cadence={{ snoozeDays: 7, maxPrompts: 5 }} />
 <PwaInstallPrompt cadence={false} />`,
 
+  BackupCard: `import { BackupCard } from '@mister-guiiug/dev-pwa-config/react';
+import { createBackup, restoreBackup } from '@mister-guiiug/dev-pwa-config/backup';
+
+{/* Dans l'écran Réglages. Exporter, importer après confirmation, la date de
+    la dernière sauvegarde, un rappel tous les 7 jours, et le stockage
+    persistant demandé sur un geste. */}
+<BackupCard
+  app="miss-genius"
+  exportData={() => createBackup(store, { app: 'miss-genius' })}
+  importData={data => restoreBackup(store, data, { replace: true })}
+  hasData={notes.length > 0}
+/>`,
+
   UpdatePromptBanner: `// Import par sous-chemin : couplé à virtual:pwa-register/react, hors barrel.
 import { UpdatePromptBanner } from '@mister-guiiug/dev-pwa-config/react/update-prompt-banner';
 

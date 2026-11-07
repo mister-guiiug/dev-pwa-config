@@ -388,6 +388,7 @@ export const MORCEAUX_CSS = {
   ThemeToggle: 'theme-toggle',
   SegmentedControl: 'segmented-control',
   ConnectionBanner: 'connection-banner',
+  BackupCard: 'backup-card',
 };
 
 const sansCommentaires = css => css.replace(/\/\*[\s\S]*?\*\//g, '');

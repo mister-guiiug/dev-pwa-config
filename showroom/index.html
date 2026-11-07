@@ -52,7 +52,7 @@
     <!-- Habillage OPT-IN des composants, servi TEL QUEL depuis le paquet :
          la démo ci-dessous est donc littéralement ce que reçoit une app qui
          importe `@mister-guiiug/dev-pwa-config/components.css`. -->
-    <link rel="stylesheet" href="components.css?v=e070bd613e" />
+    <link rel="stylesheet" href="components.css?v=c2a248056f" />
     <link rel="stylesheet" href="showroom.css?v=24773897cb" />
     <script>
       // Anti-FOUC : restaure thème d'app + schéma avant le premier rendu.
@@ -1949,6 +1949,16 @@
                 <li><code>[data-method="prompt|instructions"]</code></li>
                 <li><code>[data-platform="ios|safari|generic"]</code></li>
               </ul>
+              <div data-snippet="BackupCard"></div>
+              <ul class="sr-selectors">
+                <li><code>[data-dwc="backup-card"]</code></li>
+                <li><code>[data-dwc="backup-card-last"]</code></li>
+                <li><code>[data-dwc="backup-card-due"]</code></li>
+                <li><code>[data-dwc="backup-card-persist"]</code></li>
+                <li><code>[data-dwc="backup-card-shared"]</code></li>
+                <li><code>[data-dwc="backup-card-actions"]</code></li>
+                <li><code>[data-dwc="backup-card-status"]</code></li>
+              </ul>
             </div>
           </details>
         </article>
@@ -3788,8 +3798,8 @@
          `node scripts/measure-adoption.mjs --write` ; vide tant qu'il n'a pas
          tourné — la carte d'adoption reste alors masquée. -->
     <script defer src="adoption.js?v=755ac53251"></script>
-    <script defer src="snippets.js?v=c7fe101952"></script>
-    <script defer src="catalogue.js?v=b9125fc837"></script>
+    <script defer src="snippets.js?v=cb92430cdb"></script>
+    <script defer src="catalogue.js?v=26630e93cf"></script>
     <script defer src="screenshots.js?v=e85c95abb4"></script>
     <script defer src="i18n.js?v=95ae23bf35"></script>
     <script type="module" src="showroom.js?v=d6bf93f20a"></script>

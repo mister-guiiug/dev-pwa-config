@@ -1547,6 +1547,44 @@ test('deux informations : un budget sans plafond initial, localStorage sans maga
   );
 });
 
+test('un défaut : vider tout le stockage, c’est vider la famille d’applications', async () => {
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/reglages.tsx': [
+        'export const effacer = () => {',
+        '  localStorage.clear();',
+        '  location.reload();',
+        '};',
+      ].join('\n'),
+      'src/session.ts': 'export const fin = () => sessionStorage.clear();',
+      // Un test a le droit de vider son jsdom, un commentaire n'efface rien.
+      'src/reglages.test.tsx': 'beforeEach(() => localStorage.clear());',
+      'src/note.ts': '// jamais localStorage.clear() ici\nexport const n = 1;',
+    },
+    root => {
+      const f = diagnose(root).findings.find(x => x.id === 'stockage-clear');
+      assert.ok(f, 'le défaut manque');
+      assert.equal(f.level, 'défaut');
+      assert.match(f.message, /src\/reglages\.tsx, src\/session\.ts/);
+      assert.doesNotMatch(f.message, /reglages\.test|note\.ts/);
+    }
+  );
+  await repo(
+    {
+      'package.json': { name: 'miss-x' },
+      'src/reglages.tsx':
+        "import { createStore } from '@mister-guiiug/dev-pwa-config/storage';\nexport const effacer = () => createStore('mm_').clear();",
+    },
+    root => {
+      assert.ok(
+        !ids(diagnose(root)).includes('stockage-clear'),
+        'le clear() d’un Store préfixé ne touche que l’app'
+      );
+    }
+  );
+});
+
 /* ── « Signaler un problème » mène-t-il quelque part ? ─────────────────────
  *
  * `miss-supatool` affichait le lien le 06/09/2026 et

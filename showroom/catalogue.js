@@ -666,6 +666,27 @@ globalThis.SHOWROOM_CATALOGUE = {
         en: '`role="status"`: its appearance is announced without interrupting — being offline is a state, not an alert.',
       },
     },
+    {
+      id: 'BackupCard',
+      category: 'pwa',
+      covers: ['BackupCard', 'useBackupReminder'],
+      donts: {
+        fr: [
+          'Ne pas écrire « Tout effacer » avec `localStorage.clear()` : l’origine est partagée, et mister-molkky effaçait ainsi les données de toutes les applications sœurs (07/11/2026). `pwa-doctor` le relève en défaut, `stockage-clear`.',
+          'Ne pas demander le stockage persistant au chargement : Firefox affiche une invite, qui arrive alors sans raison. La carte le demande sur un geste, `useInstallPrompt` à l’installation.',
+          'Ne pas laisser le rappel sur une application vide : sans `hasData`, la carte pousse à exporter un fichier qui ne contient rien.',
+        ],
+        en: [
+          'Don’t write “Erase everything” with `localStorage.clear()`: the origin is shared, and mister-molkky wiped every sister app’s data that way (07/11/2026). `pwa-doctor` flags it as a defect, `stockage-clear`.',
+          'Don’t request persistent storage on load: Firefox shows a prompt, which then arrives for no reason. The card asks on a gesture, `useInstallPrompt` on install.',
+          'Don’t leave the reminder on an empty app: without `hasData`, the card urges exporting a file that holds nothing.',
+        ],
+      },
+      a11y: {
+        fr: 'Une `<section>` nommée par son titre (`headingLevel` pour l’ordre de la page). Le résultat d’un geste est annoncé par une région `role="status"` montée en permanence, jamais masquée. L’import passe par `ConfirmDialog` : il remplace des données.',
+        en: 'A `<section>` named by its heading (`headingLevel` fits the page outline). The outcome of a gesture is announced by an always-mounted, never-hidden `role="status"` region. Import goes through `ConfirmDialog`: it replaces data.',
+      },
+    },
   ],
 
   /* ── Hooks et utilitaires ──────────────────────────────────────────────── *

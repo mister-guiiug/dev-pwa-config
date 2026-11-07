@@ -172,6 +172,32 @@ const labels = {
       'Acceso, rectificación, supresión, oposición: escriba a {contact}.',
     missing: '[Por completar]',
   },
+  backup: {
+    title: 'Copia de seguridad',
+    description:
+      'Tus datos se quedan en este dispositivo. Expórtalos a un archivo para conservarlos o para cambiar de dispositivo.',
+    last: 'Última copia: {date}.',
+    never: 'Todavía no hay ninguna copia.',
+    due: 'Recuerda exportar una copia de seguridad.',
+    export: 'Exportar una copia',
+    import: 'Importar un archivo',
+    importConfirm:
+      '¿Reemplazar los datos de este dispositivo por los del archivo?',
+    importConfirmLabel: 'Reemplazar',
+    exported: 'Copia exportada.',
+    imported: 'Datos importados.',
+    importFailed: 'No se pudo importar: {reason}',
+    unreadable: 'el archivo es ilegible',
+    persisted:
+      'El navegador conserva estos datos: no los borrará para liberar espacio.',
+    notPersisted:
+      'El navegador puede borrar estos datos si falta espacio o tras una larga ausencia.',
+    persist: 'Pedirle que los conserve',
+    persistRefused:
+      'El navegador lo rechazó: exporta una copia con regularidad.',
+    sharedOrigin:
+      'Atención: «Borrar datos del sitio» en el navegador también borra los de las demás aplicaciones de la familia.',
+  },
 };
 
 export default labels;
