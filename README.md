@@ -1066,6 +1066,16 @@ jobs:
 
 > **Repli SPA.** Après le build, le workflow copie `index.html` en `404.html` s'il manque : GitHub Pages n'a pas de repli SPA, et sans ce fichier rafraîchir un lien profond sert sa page « File not found » — quatre apps de la famille étaient dans ce cas le 02/09/2026. Un déploiement écrit à la main obtient la même chose avec `spaFallbackPlugin()` de `vite-pwa-base`.
 
+> ⚠️ **Ne PAS déclarer `concurrency: pages` au niveau du caller.** Le reusable `pwa-deploy.yml` déclare déjà `concurrency: { group: pages, cancel-in-progress: true }`. Le répéter côté caller provoque le message `Canceling since a deadlock was detected for concurrency group: 'pages' between a top level workflow and 'deploy'` et le job ne démarre jamais. Cette règle vaut pour toutes les paires caller / reusable qui partagent un groupe de concurrence (`pages`, `supabase-migrate`, `cleanup-runs-…`).
+
+> **Cas avancé** (migrations Supabase, règles Firebase, variables nombreuses) : les réutilisables les couvrent. Les migrations passent par `pwa-supabase-migrate.yml`, les règles Firebase par `firebase-project` et `firebase-only`, les variables par `build-env` et `required-env`, et le gabarit `templates/github-workflows/deploy.yml` est un appelant prêt à copier. Écrit à la main, un déploiement Pages se prive de `required-env` et du chemin de base automatique (le repli `404.html` s'obtient alors par `spaFallbackPlugin()`), et `pwa-doctor` le relève (`wf-deploy-maison`). Un workflow maison qui garde l'installation du socle appelle la composite action `setup-pwa` :
+>
+> ```yaml
+> - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6
+>   with:
+>     github-token: ${{ secrets.GITHUB_TOKEN }}
+> ```
+
 #### Vérification après déploiement
 
 **Un déploiement vert ne disait pas que l'app marche.** Relevé le 07/11/2026 :
@@ -1121,16 +1131,6 @@ backend factice : elles visent la production.
 
 Vérifié avant d'en faire le défaut : la vérification, jouée le 07/11/2026 sur
 les vingt-trois apps publiées, les trouve toutes vertes, sans un avertissement.
-
-> ⚠️ **Ne PAS déclarer `concurrency: pages` au niveau du caller.** Le reusable `pwa-deploy.yml` déclare déjà `concurrency: { group: pages, cancel-in-progress: true }`. Le répéter côté caller provoque le message `Canceling since a deadlock was detected for concurrency group: 'pages' between a top level workflow and 'deploy'` et le job ne démarre jamais. Cette règle vaut pour toutes les paires caller / reusable qui partagent un groupe de concurrence (`pages`, `supabase-migrate`, `cleanup-runs-…`).
-
-> **Cas avancé** (migrations Supabase, règles Firebase, variables nombreuses) : les réutilisables les couvrent. Les migrations passent par `pwa-supabase-migrate.yml`, les règles Firebase par `firebase-project` et `firebase-only`, les variables par `build-env` et `required-env`, et le gabarit `templates/github-workflows/deploy.yml` est un appelant prêt à copier. Écrit à la main, un déploiement Pages se prive de `required-env` et du chemin de base automatique (le repli `404.html` s'obtient alors par `spaFallbackPlugin()`), et `pwa-doctor` le relève (`wf-deploy-maison`). Un workflow maison qui garde l'installation du socle appelle la composite action `setup-pwa` :
->
-> ```yaml
-> - uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6
->   with:
->     github-token: ${{ secrets.GITHUB_TOKEN }}
-> ```
 
 ### Reusable workflow publish
 
