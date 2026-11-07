@@ -58,6 +58,11 @@ jobs:
       required-env: |
         VITE_SUPABASE_URL
         VITE_SUPABASE_ANON_KEY
+      # Après le déploiement, le site EN LIGNE est vérifié, sans rien à écrire :
+      # React monte, aucune violation CSP, aucune requête de même origine en
+      # échec — sinon le run rougit. Préciser ce qui doit paraître, au besoin
+      # (README § « Vérification après déploiement ») :
+      # verify-selector: 'main h1'
     # Nommés un par un. Ne garder que ceux que le réutilisable déclare et que
     # cette app utilise vraiment — ici, rien tant que `firebase-project` n'est
     # pas passé.

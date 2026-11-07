@@ -13,6 +13,12 @@ on:
 jobs:
   keepalive:
     uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v6
+    # Facultatif : lire aussi le chemin d'un vrai visiteur anonyme — rouge sur
+    # 401/403, ce que le ping de `keep_alive` ne voit pas (README § « Sonde
+    # anonyme »).
+    # with:
+    #   anon-probe: 'rest/v1/<table>?select=id&limit=1'
+    #   anon-probe-nonempty: true
     # Nommés, pas hérités : le workflow déclare exactement ces deux secrets.
     # `inherit` lui donnerait accès à tout le trousseau du dépôt.
     secrets:

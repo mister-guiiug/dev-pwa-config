@@ -258,10 +258,12 @@ test('le job indexnow : après le déploiement, jamais bloquant, la clé du cata
   const deploy = read('pwa-deploy.yml');
   assert.match(deploy, /^ {6}indexnow:\n(?: {8}.*\n)*? {8}default: true/m);
   const indexnow = job(deploy, 'indexnow');
-  assert.match(indexnow, /needs: \[build, deploy\]/);
+  // Après la vérification en ligne (07/11/2026) : cf.
+  // `pwa-deploy-verification.test.mjs` pour la condition entière.
+  assert.match(indexnow, /needs: \[build, deploy, verifier\]/);
   assert.match(indexnow, /continue-on-error: true/);
   assert.match(indexnow, /permissions: \{\}/);
-  assert.match(indexnow, /if: \$\{\{ inputs\.indexnow && /);
+  assert.match(indexnow, /&& inputs\.indexnow && /);
   assert.match(indexnow, /github\.repository_owner == 'mister-guiiug'/);
   assert.match(indexnow, /seo-changed != '\[\]'/);
   // La copie de la clé PUBLIQUE est celle du catalogue.
@@ -384,4 +386,165 @@ test('keep-alive : les autres échecs réseau, une table absente, et le succès'
   const ok = pingKeepAlive('200', 0);
   assert.equal(ok.status, 0, ok.stdout + ok.stderr);
   assert.match(ok.stdout, /::notice::Supabase keep-alive OK/);
+});
+
+/*
+ * LA SONDE ANONYME DU KEEP-ALIVE (07/11/2026). Pendant trois jours, le jeu
+ * public de miss-arcade a répondu 401 à tout visiteur anonyme — une politique
+ * RLS appelait une fonction que `anon` ne peut pas exécuter — et le keep-alive
+ * est resté vert : il ne lit que `keep_alive`. `anon-probe` lit en plus le
+ * chemin d'un vrai visiteur. Le script est joué tel que la CI le joue, `curl`
+ * remplacé par une fonction qui écrit le corps voulu dans le fichier `-o`.
+ */
+function sondeAnonyme({
+  sonde,
+  code = '200',
+  corps = '[]',
+  rc = 0,
+  nonVide = false,
+}) {
+  const source = read('pwa-supabase-keepalive.yml');
+  const script = blocLitteral(
+    source.slice(source.indexOf('- name: Sonde anonyme')),
+    'run'
+  );
+  const dossier = mkdtempSync(join(tmpdir(), 'dwc-sonde-anon-'));
+  try {
+    const appels = join(dossier, 'appels.txt');
+    const faux = [
+      'curl() {',
+      '  local sortie="" precedent=""',
+      '  for arg in "$@"; do',
+      '    [ "$precedent" = "-o" ] && sortie="$arg"',
+      '    case "$arg" in https://*) printf "%s\n" "$arg" >> "$APPELS" ;; esac',
+      '    precedent="$arg"',
+      '  done',
+      '  printf "%s" "$CORPS_FAUX" > "$sortie"',
+      `  printf '%s' '${code}'`,
+      `  return ${rc}`,
+      '}',
+      '',
+    ].join('\n');
+    const r = spawnSync('bash', ['-e', '-c', faux + script], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        URL: 'https://abcdefghijklmnopqrst.supabase.co/',
+        KEY: 'cle-anon',
+        SONDE: sonde,
+        NON_VIDE: String(nonVide),
+        CORPS_FAUX: corps,
+        APPELS: appels,
+        RUNNER_TEMP: dossier,
+      },
+      timeout: 20_000,
+    });
+    let urls = [];
+    try {
+      urls = readFileSync(appels, 'utf8').split('\n').filter(Boolean);
+    } catch {
+      urls = [];
+    }
+    return { ...r, urls };
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+}
+
+test('keep-alive : la sonde anonyme est optionnelle, et sans effet sans son entrée', () => {
+  const source = read('pwa-supabase-keepalive.yml');
+  assert.match(source, /^ {6}anon-probe:\n(?: {8}.*\n)*? {8}default: ''\n/m);
+  assert.match(
+    source,
+    /^ {6}anon-probe-nonempty:\n(?: {8}.*\n)*? {8}default: false\n/m
+  );
+  const etape = source.slice(source.indexOf('- name: Sonde anonyme'));
+  assert.match(etape, /if: \$\{\{ inputs\.anon-probe != '' \}\}/);
+  // APRÈS le ping, qui nomme déjà un projet absent ou en pause.
+  assert.ok(
+    source.indexOf('- name: Sonde anonyme') > source.indexOf('keep-alive OK')
+  );
+  // L'entrée n'entre jamais dans le script.
+  assert.doesNotMatch(blocLitteral(etape, 'run'), /\$\{\{/);
+  assert.match(etape, /SONDE: \$\{\{ inputs\.anon-probe \}\}/);
+});
+
+test('keep-alive : un 401 anonyme fait échouer, avec la cause dite par PostgREST', () => {
+  const r = sondeAnonyme({
+    sonde: '/rest/v1/tenants?select=id&slug=eq.demo&limit=1',
+    code: '401',
+    corps:
+      '{"code":"42501","details":null,"hint":null,"message":"permission denied for function is_super_admin"}',
+  });
+  assert.equal(r.status, 1, r.stdout + r.stderr);
+  assert.match(
+    r.stdout,
+    /::error::Sonde anonyme refusée \(HTTP 401\) : un visiteur anonyme ne peut pas lire « rest\/v1\/tenants »/
+  );
+  assert.match(r.stdout, /permission denied for function is_super_admin/);
+  // L'URL du projet, sans double barre, et le filtre tel quel.
+  assert.deepEqual(r.urls, [
+    'https://abcdefghijklmnopqrst.supabase.co/rest/v1/tenants?select=id&slug=eq.demo&limit=1',
+  ]);
+  assert.doesNotMatch(r.stdout, /abcdefghijklmnopqrst|cle-anon/);
+
+  const interdit = sondeAnonyme({
+    sonde: 'rest/v1/t',
+    code: '403',
+    corps: '{}',
+  });
+  assert.equal(interdit.status, 1);
+  assert.match(interdit.stdout, /refusée \(HTTP 403\)/);
+
+  const autre = sondeAnonyme({
+    sonde: 'rest/v1/t',
+    code: '500',
+    corps: 'oups',
+  });
+  assert.equal(autre.status, 1);
+  assert.match(
+    autre.stdout,
+    /::error::Sonde anonyme : HTTP 500 sur « rest\/v1\/t »/
+  );
+
+  const reseau = sondeAnonyme({ sonde: 'rest/v1/t', code: '000', rc: 6 });
+  assert.equal(reseau.status, 1);
+  assert.match(reseau.stdout, /projet injoignable \(curl, code 6\)/);
+});
+
+test('keep-alive : une réponse vide n’échoue que si anon-probe-nonempty', () => {
+  const vide = sondeAnonyme({ sonde: 'rest/v1/t?select=id', corps: ' [ ]\n' });
+  assert.equal(vide.status, 0, vide.stdout + vide.stderr);
+  assert.match(vide.stdout, /::notice::Sonde anonyme OK \(rest\/v1\/t → 200\)/);
+
+  const exigee = sondeAnonyme({
+    sonde: 'rest/v1/t?select=id',
+    corps: '[]',
+    nonVide: true,
+  });
+  assert.equal(exigee.status, 1);
+  assert.match(exigee.stdout, /répond 200 mais VIDE/);
+
+  const pleine = sondeAnonyme({
+    sonde: 'rest/v1/t?select=id',
+    corps: '[{"id":1}]',
+    nonVide: true,
+  });
+  assert.equal(pleine.status, 0, pleine.stdout + pleine.stderr);
+});
+
+test('keep-alive : la sonde ne lit que sous rest/v1/, sans espace', () => {
+  for (const sonde of [
+    'auth/v1/user',
+    'rest/v1/',
+    'https://x.test/rest/v1/t',
+  ]) {
+    const r = sondeAnonyme({ sonde });
+    assert.equal(r.status, 1, sonde);
+    assert.match(r.stdout, /doit commencer par « rest\/v1\/ »/);
+    assert.deepEqual(r.urls, [], `${sonde} : curl appelé`);
+  }
+  const espace = sondeAnonyme({ sonde: 'rest/v1/t?select=a b' });
+  assert.equal(espace.status, 1);
+  assert.match(espace.stdout, /ne doit pas contenir d'espace/);
 });

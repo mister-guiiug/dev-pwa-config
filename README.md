@@ -988,12 +988,12 @@ Hébergés dans [`.github/workflows/`](.github/workflows/) — utilisables par t
 | Workflow                     | Rôle                                                                                                                                                                                                                                              | Exemple d'appel                                                                                                                                                                                          |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pwa-ci.yml`                 | Lockfile · Format · Lint · Type · Test · Build · audit npm de production (actif par défaut, seuil `high`) (+ docteur et E2E optionnels)                                                                                                           | voir [Utilisation](#reusable-workflow-ci)                                                                                                                                                                |
-| `pwa-deploy.yml`             | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto et repli SPA `404.html`)                                                                                                                                                             | voir [Utilisation](#reusable-workflow-deploy)                                                                                                                                                            |
+| `pwa-deploy.yml`             | Build + déploiement GitHub Pages (avec `VITE_BASE_PATH` auto et repli SPA `404.html`), puis **vérification du site en ligne**, active par défaut : React monte, sans violation CSP ni requête de même origine en échec                            | voir [Utilisation](#reusable-workflow-deploy)                                                                                                                                                            |
 | `npm-publish.yml`            | Publication npm sur GitHub Packages avec `--provenance`                                                                                                                                                                                           | voir [Utilisation](#reusable-workflow-publish)                                                                                                                                                           |
 | `pwa-lighthouse.yml`         | Build + Lighthouse CI (perf/a11y/bp/seo) sur PR                                                                                                                                                                                                   | `uses: …/pwa-lighthouse.yml@v6` depuis un caller à `pull-requests: write` (requiert `.lighthouserc.json`, cf. template)                                                                                  |
 | `pwa-supabase-migrate.yml`   | `supabase link` + `db push` (+ Edge Functions en option), sans annulation d'un run en cours ; quatre copies en une                                                                                                                                | `uses: …/pwa-supabase-migrate.yml@v6` avec trois secrets : `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID` (ce dernier en `vars`) (cf. en-tête, [PARAMETRAGE.md](PARAMETRAGE.md)) |
 | `pwa-supabase-test.yml`      | Tests pgTAP sur une pile Supabase JETABLE du runner : migrations depuis zéro, aucun secret ; promu de miss-lookhouse, seule app à le faire. Complément du bin `pwa-pgtap`, qui joue les mêmes fichiers contre la base liée                        | `uses: …/pwa-supabase-test.yml@v6` depuis un caller sur `supabase/**` (cf. en-tête du fichier ; exige `supabase/config.toml`)                                                                            |
-| `pwa-supabase-keepalive.yml` | Ping REST quotidien pour qu'un projet Free ne s'endorme pas ; **à poser avec la migration** : le 02/09/2026 aucune app ne l'appelait, et `miss-carbook` dormait                                                                                   | `uses: …/pwa-supabase-keepalive.yml@v6` depuis un caller `schedule` (cf. en-tête du fichier)                                                                                                             |
+| `pwa-supabase-keepalive.yml` | Ping REST quotidien pour qu'un projet Free ne s'endorme pas ; **à poser avec la migration** : le 02/09/2026 aucune app ne l'appelait, et `miss-carbook` dormait. En option, `anon-probe` lit aussi le chemin d'un vrai visiteur anonyme           | `uses: …/pwa-supabase-keepalive.yml@v6` depuis un caller `schedule` (cf. en-tête du fichier)                                                                                                             |
 | `pwa-supabase-backup.yml`    | `pg_dump` hebdomadaire **chiffré** (AES-256) d’une base Supabase, en artefact du run ; échoue sans phrase de passe plutôt que de publier un dump en clair                                                                                         | `uses: …/pwa-supabase-backup.yml@v6` avec `SUPABASE_DB_URL` et `BACKUP_PASSPHRASE` (cf. [Sauvegarde Supabase](#sauvegarde-supabase-chiffrée))                                                            |
 | `pwa-vice.yml`               | Audit de sécurité [VICE](https://github.com/Webba-Creative-Technologies/vice) en second avis NON bloquant — secrets, `.env`, RLS des migrations, XSS/`eval`, workflows ; constats dans l'onglet Security, sans badge commité ni commentaire de PR | `uses: …/pwa-vice.yml@v6` depuis un caller à `security-events: write` (cf. en-tête du fichier)                                                                                                           |
 | `pwa-worker-deploy.yml`      | `wrangler deploy` d'un Cloudflare Worker, sans échec quand le secret manque ; deux copies en une                                                                                                                                                  | `uses: …/pwa-worker-deploy.yml@v6` avec `working-directory`                                                                                                                                              |
@@ -1075,6 +1075,62 @@ jobs:
 >   with:
 >     github-token: ${{ secrets.GITHUB_TOKEN }}
 > ```
+
+#### Vérification après déploiement
+
+**Un déploiement vert ne disait pas que l'app marche.** Relevé le 07/11/2026 :
+le jeu public de miss-arcade est resté cassé trois jours, trois apps ne
+démarraient plus hors ligne depuis des semaines, le hub a bloqué l'installation
+de vingt apps pendant six jours — et chaque fois, c'est un audit ou le hasard
+qui l'a vu. Le job `verifier` regarde donc, après chaque déploiement, ce qu'un
+visiteur reçoit :
+
+1. il attend que `<page_url>version.json` porte le commit déployé
+   (`versionPlugin`), `verify-timeout` minutes au plus (10). Une app sans
+   `version.json` est visitée quand même, avec un avertissement ;
+2. il ouvre la page dans Chromium, contexte vierge, **service worker bloqué**,
+   cache du CDN contourné, et exige :
+   - **que React ait monté** : le contenu servi aux robots
+     (`[data-dwc="served-content"]`) a disparu, et une racine React a rendu un
+     élément — ou, si `verify-selector` est renseigné, ce sélecteur est
+     visible ;
+   - **aucune violation CSP** appliquée (le mode report-only ne compte pas) ;
+   - **aucune requête de même origine en échec** (≥ 400).
+
+Un échec rend le run rouge, et GitHub prévient. Le détail est dans le résumé du
+run et dans l'artefact `verification-apres-deploiement` (capture, rapport
+JSON). La visite est **en lecture seule** : l'analytique, la création de session
+et toute écriture vers un tiers sont bloquées. Les exceptions non rattrapées
+sortent en avertissements, sans rendre rouge. IndexNow ne signale qu'un
+déploiement vérifié (ou dont la vérification est éteinte).
+
+**Ce qu'elle ne voit pas**, et c'est délibéré : un démarrage **hors ligne**
+(le service worker est bloqué pour visiter le build déployé, pas un précache),
+la portée d'un manifeste qui empêche l'installation (`probe-sites --hub`), et
+une donnée qu'un backend refuse à un visiteur anonyme — un 401 de Supabase
+n'est pas une requête de même origine. Ce dernier cas est celui de la sonde
+anonyme du keep-alive (`anon-probe`, ci-dessous), ou d'une spec `verify-e2e`.
+
+```yaml
+with:
+  verify-selector: 'main h1' # facultatif : ce qui doit paraître une fois l'app montée
+  # verify: false             # éteint toute la vérification
+  # verify-e2e: true          # joue aussi les e2e @critical contre la production
+```
+
+**`verify-e2e`** (désactivé par défaut) joue en plus les specs `@critical` de
+l'app (`verify-e2e-grep`) contre l'URL publiée, dans Chromium. Les
+`playwright.config.ts` du parc posent `baseURL` en dur sur `localhost` et un
+`webServer` qui construit l'app : le job écrit une configuration qui importe
+celle de l'app, retire son `webServer` et remplace `baseURL` par l'URL publiée
+(exposée aussi en `DWC_PRODUCTION_URL`). Deux conditions, que **les specs
+actuelles du parc ne remplissent pas** : naviguer en **relatif** —
+`page.goto('./')`, `'./reglages'` — puisque `page.goto('/')` vise la racine de
+l'origine, c'est-à-dire le hub ; et rester **sans écriture**, sans dépendre d'un
+backend factice : elles visent la production.
+
+Vérifié avant d'en faire le défaut : la vérification, jouée le 07/11/2026 sur
+les vingt-trois apps publiées, les trouve toutes vertes, sans un avertissement.
 
 ### Reusable workflow publish
 
@@ -1194,7 +1250,12 @@ script, ce que le réutilisable ne fait plus.
   rapport n'est **pas** publié : il reste joint en artefact du run.
 - **`pwa-deploy.yml`** — `build-env` ; déploiement **Firebase optionnel**
   (`firebase-project`, `firebase-only`, secret `FIREBASE_SERVICE_ACCOUNT_KEY`)
-  avec auth intégrée.
+  avec auth intégrée ; **vérification du site en ligne** (`verify`, actif par
+  défaut ; `verify-selector`, `verify-timeout`, `verify-e2e`,
+  `verify-e2e-grep`), cf. [Vérification après déploiement](#vérification-après-déploiement).
+- **`pwa-supabase-keepalive.yml`** — `table` ; **sonde anonyme** optionnelle
+  (`anon-probe`, `anon-probe-nonempty`), cf.
+  [Sonde anonyme](#sonde-anonyme-anon-probe-optionnelle).
 
 ## Supabase keep-alive (anti-pause Free)
 
@@ -1233,6 +1294,36 @@ Le run doit finir vert avec `Supabase keep-alive OK (SELECT keep_alive → 200)`
 
 Note : un cron GitHub est désactivé après 60 j sans commit sur le dépôt (les
 commits Renovate suffisent ; sinon relancer via `workflow_dispatch`).
+
+### Sonde anonyme (`anon-probe`, optionnelle)
+
+**Un keep-alive vert ne dit pas qu'un visiteur lit quelque chose.** Le ping lit
+`keep_alive`, une table faite pour répondre. Pendant trois jours, jusqu'au
+07/11/2026, le jeu public de miss-arcade a renvoyé **401** à tout visiteur
+anonyme — sa politique RLS
+appelait une fonction que le rôle `anon` ne peut pas exécuter, et PostgreSQL
+vérifie ce droit même quand la condition voisine suffit — pendant que son
+keep-alive restait vert chaque matin. La sonde lit, avec la même clé anon, le
+chemin d'un vrai visiteur :
+
+```yaml
+jobs:
+  keepalive:
+    uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-keepalive.yml@v6
+    with:
+      anon-probe: 'rest/v1/tenants?select=id&slug=eq.demo&published=eq.true&limit=1'
+      anon-probe-nonempty: true # la ligne doit exister, pas seulement être lisible
+    secrets:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+```
+
+Le chemin est relatif à l'URL du projet et commence par `rest/v1/` (une table,
+une vue, ou une fonction en GET : `rest/v1/rpc/…`). La sonde échoue sur
+**401/403** en recopiant la cause donnée par PostgREST (« permission denied for
+function … »), sur tout autre code que 200, et sur une réponse **vide** si
+`anon-probe-nonempty` est vrai — une RLS qui filtre tout rend `[]` en 200, sans
+erreur. Sans l'entrée, rien ne change.
 
 ## Sauvegarde Supabase chiffrée
 

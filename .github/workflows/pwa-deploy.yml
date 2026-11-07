@@ -19,6 +19,17 @@
 # ou modifiées. Relevé du 29/09/2026 : chaque publication du hub renvoyait les
 # 41 URL du parc — quinze fois le 27/09 —, et aucun déploiement d'app ne
 # signalait rien.
+#
+# DEPUIS LE 07/11/2026, LE DÉPLOIEMENT SE VÉRIFIE EN LIGNE (job `verifier`).
+# Jusque-là, aucune panne de production n'avait été vue par une machine : le
+# jeu public de miss-arcade est resté cassé trois jours (401 pour tout
+# visiteur anonyme), trois apps ne démarraient plus hors ligne depuis des
+# semaines, et le hub a bloqué l'installation de vingt apps pendant six jours.
+# Chaque fois, c'est un audit ou le hasard qui l'a vu. Le job attend que
+# `version.json` porte le commit déployé, puis ouvre la page dans Chromium et
+# exige trois choses : React a monté, aucune violation CSP, aucune requête de
+# même origine en échec. Un échec rend le run rouge, et GitHub prévient.
+# `verify: false` l'éteint.
 name: Reusable PWA Deploy
 
 on:
@@ -80,6 +91,57 @@ on:
         type: boolean
         required: false
         default: true
+      verify:
+        description: >-
+          Vérifier le site EN LIGNE après le déploiement : attendre que
+          `version.json` porte le commit déployé, puis ouvrir la page dans
+          Chromium, sans service worker, et exiger que React ait monté, sans
+          violation CSP ni requête de même origine en échec (≥ 400). Un échec
+          rend le run rouge. `false` éteint tout le contrôle, e2e compris.
+        type: boolean
+        required: false
+        default: true
+      verify-selector:
+        description: >-
+          Sélecteur CSS qui doit être VISIBLE une fois l'app montée (ex.
+          `main h1`, `[data-testid="accueil"]`). Vide : le bloc servi aux
+          robots (`[data-dwc="served-content"]`) a disparu ET la racine React
+          a rendu au moins un élément. Renseigné, il remplace la seconde
+          condition ; le bloc servi doit toujours avoir disparu.
+        type: string
+        required: false
+        default: ''
+      verify-timeout:
+        description: >-
+          Délai maximal, en minutes, pour que `version.json` porte le commit
+          déployé. Au-delà, le site sert encore autre chose : la vérification
+          échoue.
+        type: number
+        required: false
+        default: 10
+      verify-e2e:
+        description: >-
+          Jouer en plus les e2e de l'app contre l'URL déployée (Chromium, filtre
+          `verify-e2e-grep`). Le `baseURL` de `playwright.config.*` est remplacé
+          par l'URL publiée et son `webServer` retiré. Les specs jouées doivent
+          naviguer en RELATIF (`./`, `./reglages`) et rester sans écriture : elles
+          visent la production. Désactivé par défaut.
+        type: boolean
+        required: false
+        default: false
+      verify-e2e-grep:
+        description: 'Filtre `--grep` des e2e joués contre la production.'
+        type: string
+        required: false
+        default: '@critical'
+      verify-playwright-version:
+        description: >-
+          Version de Playwright qui ouvre le site (la vérification de base ; les
+          e2e prennent celle de l'app).
+        type: string
+        required: false
+        # renovate: datasource=npm depName=playwright
+        default: '1.64.1'
     secrets:
       FIREBASE_SERVICE_ACCOUNT_KEY:
         description: 'JSON du service account Firebase (requis si firebase-project est défini)'
@@ -271,9 +333,465 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      # L'URL publiée (`https://<owner>.github.io/<repo>/`), pour `verifier`.
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # LA VÉRIFICATION APRÈS DÉPLOIEMENT. Trois pannes de production en deux mois,
+  # aucune vue par une machine (cf. l'en-tête). Ce job regarde ce qu'un
+  # visiteur reçoit, une fois le déploiement servi.
+  #
+  #   1. ATTENDRE LE BON BUILD. `deploy-pages` rend la main quand GitHub a
+  #      accepté l'artefact ; le CDN peut servir l'ancien quelques instants.
+  #      `versionPlugin` écrit le commit du build dans `version.json`
+  #      (`GITHUB_SHA`, le même dans tout le run) : on l'interroge jusqu'à le
+  #      lire, `verify-timeout` minutes au plus. Une app sans `version.json`
+  #      est visitée quand même, avec un avertissement : on ne sait pas alors
+  #      quel build est servi.
+  #
+  #   2. OUVRIR LA PAGE, comme un premier visiteur : Chromium, contexte vierge,
+  #      service worker BLOQUÉ (un précache servirait l'ancien build), et une
+  #      requête `?dwc-verification=` qui contourne le cache du CDN. Trois
+  #      exigences :
+  #        - React a monté. Le contenu servi aux robots
+  #          (`[data-dwc="served-content"]`, `pwaSeoPlugin`) vit DANS le point
+  #          de montage, et React le remplace au premier rendu : tant qu'il est
+  #          là, l'app n'a pas démarré — et la page n'est pas blanche pour
+  #          autant, c'est ce qui masquait les pannes. Il faut en plus une
+  #          racine React qui ait rendu un élément, ou le `verify-selector`.
+  #        - Aucune violation CSP appliquée (l'événement
+  #          `securitypolicyviolation`, et la console en second filet ; le mode
+  #          « report-only » ne compte pas). C'est la CSP qui bloquait Supabase
+  #          chez miss-arcade.
+  #        - Aucune requête de même origine en échec (≥ 400) : un morceau
+  #          introuvable, un manifeste ou une icône cassés.
+  #      La visite est EN LECTURE SEULE, comme la sonde du 07/11 qui l'a
+  #      précédée sur vingt-deux apps : l'analytique (PostHog, GA, Sentry), la
+  #      création de session (Firebase Auth, `/auth/v1/signup|token|otp`) et
+  #      toute méthode autre que GET/HEAD/OPTIONS vers un tiers sont bloquées.
+  #      Un déploiement ne crée ni visite, ni compte, ni ligne.
+  #
+  #   3. EN OPTION (`verify-e2e`), les e2e `@critical` de l'app contre l'URL
+  #      publiée. Les `playwright.config.ts` du parc posent `baseURL` en dur
+  #      sur `http://localhost:<port>` et un `webServer` qui construit puis
+  #      sert l'app : rien à surcharger par l'environnement. Le job écrit donc
+  #      une configuration qui importe celle de l'app, retire son `webServer`
+  #      et remplace `baseURL` par l'URL publiée — au niveau global et dans
+  #      chaque projet. LIMITE : `page.goto('/')` vise alors la RACINE de
+  #      l'origine, c'est-à-dire le hub ; les specs jouées ici naviguent en
+  #      relatif (`./`, `./reglages`, `./#/x`), ce qui marche aussi en local.
+  #
+  # Les écarts de moindre portée (exception non rattrapée, requête de même
+  # origine interrompue sans code) sortent en avertissements : visibles, sans
+  # rendre le run rouge.
+  verifier:
+    name: Vérification du site en ligne
+    needs: deploy
+    if: ${{ inputs.verify }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
+    env:
+      # Passées par env:, jamais interpolées dans un script. (`runner.temp`
+      # n'existe pas à ce niveau : SORTIE se pose étape par étape.)
+      URL_SITE: ${{ needs.deploy.outputs.page_url }}
+      SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Attendre que version.json porte le commit déployé
+        env:
+          DELAI_MIN: ${{ inputs.verify-timeout }}
+          # PAS_S : secondes entre deux essais (10), que les tests raccourcissent.
+          ATTENTE_JS: |
+            // `process.exitCode`, jamais `process.exit()` : sortir pendant qu'une
+            // connexion de `fetch` se ferme fait planter Node sous Windows (assertion
+            // libuv), et un test du socle le joue là aussi.
+            process.exitCode = await (async () => {
+              const site = process.env.URL_SITE || '';
+              const sha = process.env.SHA || '';
+              if (!/^https?:\/\//.test(site) || !sha) {
+                console.log('::error::URL publiée ou commit inconnus : rien à vérifier.');
+                return 1;
+              }
+              const base = site.endsWith('/') ? site : `${site}/`;
+              const minutes = Number(process.env.DELAI_MIN) > 0 ? Number(process.env.DELAI_MIN) : 10;
+              const fin = Date.now() + minutes * 60_000;
+              const pas = (Number(process.env.PAS_S) > 0 ? Number(process.env.PAS_S) : 10) * 1000;
+              // Douze 404 de suite : le build servi n'a pas de `version.json` (pas de
+              // `versionPlugin`). Inutile d'attendre la fin du délai.
+              const ABSENT = 12;
+              const pause = ms => new Promise(ok => setTimeout(ok, ms));
+              const sansVersion = "impossible de savoir quel build est servi. La page est visitée quand même.";
+              let absents = 0;
+              let dernier = 'aucune réponse';
+              for (let essai = 1; ; essai += 1) {
+                try {
+                  // La requête contourne le cache du CDN.
+                  const r = await fetch(`${base}version.json?dwc-verification=${sha.slice(0, 12)}-${essai}`, {
+                    signal: AbortSignal.timeout(20_000),
+                  });
+                  const corps = await r.text();
+                  if (r.status === 404) {
+                    absents += 1;
+                    dernier = 'HTTP 404';
+                  } else if (!r.ok) {
+                    absents = 0;
+                    dernier = `HTTP ${r.status}`;
+                  } else {
+                    absents = 0;
+                    let commit = '';
+                    try {
+                      const json = JSON.parse(corps);
+                      if (typeof json?.commit === 'string') commit = json.commit;
+                    } catch {
+                      commit = '';
+                    }
+                    if (commit === sha) {
+                      console.log(`::notice::version.json porte le commit déployé (${sha.slice(0, 7)}), essai ${essai}.`);
+                      return 0;
+                    }
+                    if (!commit) {
+                      console.log(`::warning::version.json ne porte aucun commit : ${sansVersion}`);
+                      return 0;
+                    }
+                    dernier = `commit ${commit.slice(0, 7)}`;
+                  }
+                } catch (e) {
+                  absents = 0;
+                  dernier = `injoignable (${e?.cause?.code || e?.name || 'erreur'})`;
+                }
+                console.log(`  essai ${essai} : ${dernier}`);
+                if (absents >= ABSENT) {
+                  console.log(`::warning::Pas de version.json (l'app n'utilise pas versionPlugin) : ${sansVersion}`);
+                  return 0;
+                }
+                if (Date.now() + pas > fin) break;
+                await pause(pas);
+              }
+              if (dernier === 'HTTP 404') {
+                console.log(`::warning::Pas de version.json à la fin du délai : ${sansVersion}`);
+                return 0;
+              }
+              console.log(`::error title=Vérification après déploiement::Le site ne sert pas le commit déployé (${sha.slice(0, 7)}) après ${minutes} min ; dernière réponse de version.json : ${dernier}.`);
+              return 1;
+            })();
+        run: node --input-type=module -e "$ATTENTE_JS"
+
+      # Playwright s'installe à part, dans le dossier temporaire : la
+      # vérification n'a besoin ni du dépôt ni de ses dépendances, et vaut donc
+      # aussi pour une app sans Playwright. Version épinglée (Renovate la suit).
+      - name: Installer Chromium (Playwright)
+        env:
+          PLAYWRIGHT_VERSION: ${{ inputs.verify-playwright-version }}
+          SORTIE: ${{ runner.temp }}/verification/sortie
+        run: |
+          case "$PLAYWRIGHT_VERSION" in
+            '' | *[!0-9A-Za-z.-]*)
+              echo "::error::verify-playwright-version invalide : « $PLAYWRIGHT_VERSION »."
+              exit 1
+              ;;
+          esac
+          dossier="$RUNNER_TEMP/verification"
+          mkdir -p "$dossier" "$SORTIE"
+          cd "$dossier"
+          echo '{ "private": true }' > package.json
+          npm install --no-save --no-package-lock --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+          ./node_modules/.bin/playwright install --with-deps --only-shell chromium
+
+      - name: Ouvrir le site — React monte, sans violation CSP ni requête en échec
+        working-directory: ${{ runner.temp }}/verification
+        env:
+          SELECTEUR: ${{ inputs.verify-selector }}
+          SORTIE: ${{ runner.temp }}/verification/sortie
+          # MONTAGE_S, OBSERVATION_S : délais en secondes (30 et 5), que les
+          # tests du socle raccourcissent.
+          VERIFIER_JS: |
+            import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+            import { join } from 'node:path';
+            import { chromium } from 'playwright';
+
+            const site = new URL(process.env.URL_SITE);
+            const origine = site.origin;
+            const selecteur = (process.env.SELECTEUR ?? '').trim();
+            const sortie = process.env.SORTIE || '.';
+            const secondes = (nom, defaut) => {
+              const valeur = Number(process.env[nom]);
+              return (process.env[nom] && valeur >= 0 ? valeur : defaut) * 1000;
+            };
+            const MONTAGE = secondes('MONTAGE_S', 30);
+            const OBSERVATION = secondes('OBSERVATION_S', 5);
+            const TITRE = 'Vérification après déploiement';
+            const SERVI = '[data-dwc="served-content"]';
+            mkdirSync(sortie, { recursive: true });
+
+            // Une adresse SANS sa requête : un jeton n'a rien à faire dans un journal
+            // public. Le chemin seul pour la même origine.
+            const court = u => {
+              try {
+                const x = new URL(u);
+                return x.origin === origine ? x.pathname : `${x.origin}${x.pathname}`;
+              } catch {
+                return String(u).slice(0, 120);
+              }
+            };
+            const memeOrigine = u => {
+              try {
+                return new URL(u).origin === origine;
+              } catch {
+                return false;
+              }
+            };
+            const message = e => String(e?.message ?? e).split('\n')[0].slice(0, 200);
+            const annoter = (niveau, texte) =>
+              console.log(`::${niveau} title=${TITRE}::${String(texte).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
+
+            // En lecture seule : ni mesure d'audience, ni session, ni écriture chez un tiers.
+            const ANALYTIQUE = /posthog|google-analytics|googletagmanager|sentry\.io|(^|\.)ingest\./;
+            const SESSION = /identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com|\/auth\/v1\/(signup|token|otp|magiclink)/;
+            const LECTURE = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+            const violations = new Map();
+            const cspConsole = new Set();
+            const echecs = new Set();
+            const avertissements = new Set();
+            const erreurs = [];
+
+            const navigateur = await chromium.launch();
+            try {
+              const contexte = await navigateur.newContext({ serviceWorkers: 'block', locale: 'fr-FR' });
+              await contexte.route('**/*', route => {
+                const requete = route.request();
+                const url = requete.url();
+                if (memeOrigine(url)) return route.continue();
+                let hote = '';
+                try {
+                  hote = new URL(url).hostname;
+                } catch {
+                  return route.continue();
+                }
+                if (ANALYTIQUE.test(hote) || SESSION.test(url) || !LECTURE.has(requete.method()))
+                  return route.abort('blockedbyclient');
+                return route.continue();
+              });
+              await contexte.exposeBinding('__dwcViolationCsp', (_source, v) => {
+                const cle = `${v?.directive} ${v?.bloque}`;
+                if (!violations.has(cle)) violations.set(cle, v);
+              });
+              await contexte.addInitScript(() => {
+                document.addEventListener(
+                  'securitypolicyviolation',
+                  e => {
+                    if (e.disposition === 'report') return;
+                    globalThis.__dwcViolationCsp?.({
+                      directive: e.effectiveDirective || e.violatedDirective,
+                      bloque: e.blockedURI || '',
+                    });
+                  },
+                  true
+                );
+              });
+
+              const page = await contexte.newPage();
+              page.on('console', m => {
+                if (m.type() !== 'error') return;
+                const t = m.text();
+                if (/Content Security Policy/i.test(t) && !/^\s*\[Report Only\]/i.test(t))
+                  cspConsole.add(t.replace(/https?:\/\/[^\s'"]+/g, court).slice(0, 240));
+              });
+              page.on('pageerror', e => avertissements.add(`exception non rattrapée : ${message(e)}`));
+              page.on('response', r => {
+                if (r.status() >= 400 && memeOrigine(r.url())) echecs.add(`HTTP ${r.status()} ${court(r.url())}`);
+              });
+              page.on('requestfailed', r => {
+                const raison = r.failure()?.errorText ?? '';
+                if (/BLOCKED_BY_CLIENT|blockedbyclient|ERR_ABORTED/i.test(raison)) return;
+                if (memeOrigine(r.url())) avertissements.add(`requête de même origine interrompue : ${court(r.url())} (${raison})`);
+              });
+
+              // La requête contourne le cache du CDN, qui servirait l'ancien `index.html`.
+              const visite = new URL(site);
+              visite.searchParams.set('dwc-verification', (process.env.SHA || String(Date.now())).slice(0, 12));
+              let statut = 0;
+              try {
+                const reponse = await page.goto(visite.href, { waitUntil: 'load', timeout: 60_000 });
+                statut = reponse ? reponse.status() : 0;
+                if (!statut || statut >= 400) erreurs.push(`la page répond ${statut ? `HTTP ${statut}` : 'sans réponse'} : ${site.href}`);
+              } catch (e) {
+                erreurs.push(`la page ne s'ouvre pas : ${message(e)}`);
+              }
+
+              if (!erreurs.length) {
+                let monte = false;
+                let raison = '';
+                try {
+                  if (selecteur) {
+                    await page.locator(selecteur).first().waitFor({ state: 'visible', timeout: MONTAGE });
+                    await page.waitForFunction(s => !document.querySelector(s), SERVI, { timeout: MONTAGE });
+                  } else {
+                    await page.waitForFunction(
+                      s => {
+                        if (document.querySelector(s)) return false;
+                        const racine = el => el.childElementCount > 0 && Object.keys(el).some(k => k.startsWith('__reactContainer$'));
+                        return [...document.querySelectorAll('body [id]')].some(racine) || [...document.querySelectorAll('body, body *')].some(racine);
+                      },
+                      SERVI,
+                      { timeout: MONTAGE, polling: 250 }
+                    );
+                  }
+                  monte = true;
+                } catch (e) {
+                  raison = message(e);
+                }
+
+                if (monte) {
+                  // Ce qui part APRÈS le premier rendu : les morceaux paresseux, la
+                  // première lecture d'un backend — c'est là que la CSP mord.
+                  await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+                  await page.waitForTimeout(OBSERVATION);
+                } else {
+                  const etat = await page
+                    .evaluate(s => ({
+                      servi: !!document.querySelector(s),
+                      texte: (document.body?.innerText ?? '').replace(/\s+/g, ' ').trim().slice(0, 160),
+                    }), SERVI)
+                    .catch(() => ({ servi: false, texte: '' }));
+                  const pourquoi = etat.servi
+                    ? 'le contenu servi aux robots est toujours là, React ne l’a pas remplacé'
+                    : selecteur
+                      ? `le sélecteur « ${selecteur} » n'est pas visible`
+                      : 'aucune racine React n’a rendu d’élément';
+                  erreurs.push(`l'app n'a pas monté en ${MONTAGE / 1000} s : ${pourquoi}. ${raison}`.trim());
+                  if (etat.texte) avertissements.add(`texte de la page : « ${etat.texte} »`);
+                }
+              }
+
+              if (erreurs.length || violations.size || cspConsole.size || echecs.size)
+                await page.screenshot({ path: join(sortie, 'page.png') }).catch(() => {});
+            } catch (e) {
+              erreurs.push(`vérification interrompue : ${message(e)}`);
+            } finally {
+              await navigateur.close().catch(() => {});
+            }
+
+            // La console ne sert que de second filet : un worker n'émet pas l'événement
+            // dans la page, mais Chromium y journalise le refus.
+            const csp = violations.size
+              ? [...violations.values()].map(v => `violation CSP (${v?.directive}) : ${/^https?:/.test(v?.bloque) ? court(v.bloque) : v?.bloque || 'inline'}`)
+              : [...cspConsole].map(t => `violation CSP : ${t}`);
+            const toutes = [...erreurs, ...csp, ...[...echecs].map(e => `requête de même origine en échec : ${e}`)];
+            // GitHub n'affiche que dix annotations par étape : les premières, puis le
+            // compte. Le détail complet est dans verification.json.
+            for (const e of toutes.slice(0, 9)) annoter('error', e);
+            if (toutes.length > 9) annoter('error', `… et ${toutes.length - 9} autre(s) écart(s), cf. verification.json.`);
+            for (const a of [...avertissements].slice(0, 9)) annoter('warning', a);
+            writeFileSync(join(sortie, 'verification.json'), `${JSON.stringify({ site: site.href, erreurs: toutes, avertissements: [...avertissements] }, null, 2)}\n`);
+            const bilan = 'React a monté, sans violation CSP ni requête de même origine en échec.';
+            if (process.env.GITHUB_STEP_SUMMARY) {
+              const lignes = [`### ${TITRE}`, '', `Site : ${site.href}`, '', toutes.length ? `**${toutes.length} écart(s) :**` : bilan];
+              for (const e of toutes) lignes.push(`- ${e}`);
+              appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${lignes.join('\n')}\n`);
+            }
+            if (toutes.length) process.exit(1);
+            console.log(`::notice title=${TITRE}::${site.href} : ${bilan}`);
+        run: node --input-type=module -e "$VERIFIER_JS"
+
+      - name: Pièces de la vérification
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-apres-deploiement
+          path: ${{ runner.temp }}/verification/sortie/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # ── En option : les e2e de l'app, contre la production ──────────────
+      - name: E2E — le dépôt
+        if: ${{ inputs.verify-e2e }}
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: E2E — installation
+        if: ${{ inputs.verify-e2e }}
+        uses: mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: E2E — Chromium de l'app
+        if: ${{ inputs.verify-e2e }}
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E — les specs contre le site en ligne
+        if: ${{ inputs.verify-e2e }}
+        env:
+          CI: true
+          E2E_GREP: ${{ inputs.verify-e2e-grep }}
+          # Lue par la configuration écrite ci-dessous ; une spec peut aussi la
+          # lire pour se savoir jouée contre la production.
+          DWC_PRODUCTION_URL: ${{ needs.deploy.outputs.page_url }}
+          CONFIG_PRODUCTION: |
+            // Écrite par pwa-deploy.yml (socle) : la configuration de l'app,
+            // sans son webServer, avec l'URL publiée pour baseURL.
+            import base from '__CONFIG__';
+
+            const baseURL = process.env.DWC_PRODUCTION_URL;
+            const { webServer: _sansServeur, ...reste } = base;
+            const avecUrl = use => ({ ...(use ?? {}), baseURL });
+
+            export default {
+              ...reste,
+              use: avecUrl(reste.use),
+              ...(Array.isArray(reste.projects)
+                ? { projects: reste.projects.map(p => ({ ...p, use: avecUrl(p.use) })) }
+                : {}),
+            };
+        run: |
+          config=''
+          for f in playwright.config.ts playwright.config.mts playwright.config.js playwright.config.mjs; do
+            if [ -f "$f" ]; then
+              config="$f"
+              break
+            fi
+          done
+          if [ -z "$config" ]; then
+            echo "::error::verify-e2e est demandé, mais le dépôt n'a pas de playwright.config.(ts|mts|js|mjs) à sa racine."
+            exit 1
+          fi
+          production="playwright.production.config.${config##*.}"
+          printf '%s\n' "$CONFIG_PRODUCTION" | sed "s#__CONFIG__#./$config#" > "$production"
+          echo "Configuration : $production (importe $config) · baseURL : $DWC_PRODUCTION_URL"
+
+          # Un filtre qui ne trouve rien rend « No tests found » et 0 : un job
+          # vert qui n'aurait rien joué (même garde que pwa-ci.yml).
+          listing=$(npx playwright test --config "$production" --list --grep "$E2E_GREP" --project=chromium 2>&1 || true)
+          total=$(printf '%s\n' "$listing" | sed -n 's/^Total: \([0-9][0-9]*\) tests\{0,1\} in .*/\1/p' | tail -1)
+          if [ -z "$total" ] || [ "$total" = "0" ]; then
+            printf '%s\n' "$listing" | tail -20
+            echo "::error::verify-e2e est demandé, mais aucun test ne correspond à « $E2E_GREP » (projet chromium)."
+            exit 1
+          fi
+          echo "$total test(s) pour « $E2E_GREP » contre $DWC_PRODUCTION_URL."
+          npx playwright test --config "$production" --grep "$E2E_GREP" --project=chromium
+
+      - name: E2E — rapport
+        if: ${{ failure() && inputs.verify-e2e }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-production
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
 
   # INDEXNOW AU DÉPLOIEMENT DE CHAQUE APP. Jusqu'au socle 6.19.0, seul le hub
   # signalait, jusqu'à un jour plus tard, et chaque fois tout le parc : le
@@ -290,9 +808,17 @@ jobs:
   # copie ci-dessous. Rien n'est envoyé hors de `mister-guiiug.github.io`, ni
   # pour une liste vide. Un échec ne fait jamais échouer le déploiement :
   # le job est `continue-on-error`, et le script finit en avertissement.
+  #
+  # APRÈS LA VÉRIFICATION (07/11/2026). On ne signale pas aux moteurs un
+  # déploiement qu'on sait cassé, et un déploiement vérifié est déjà servi par
+  # le CDN : l'attente des 200 ci-dessous devient courte. `!cancelled()` est ce
+  # qui laisse le job partir quand `verifier` est SAUTÉ (`verify: false`) —
+  # sans fonction d'état, un besoin sauté fait sauter le job. Contrepartie
+  # assumée : les URL d'un déploiement rouge ne sont pas signalées, et le
+  # suivant ne signale que ce qu'il change à son tour.
   indexnow:
-    needs: [build, deploy]
-    if: ${{ inputs.indexnow && github.repository_owner == 'mister-guiiug' && needs.build.outputs.seo-changed != '' && needs.build.outputs.seo-changed != '[]' }}
+    needs: [build, deploy, verifier]
+    if: ${{ !cancelled() && needs.deploy.result == 'success' && (needs.verifier.result == 'success' || needs.verifier.result == 'skipped') && inputs.indexnow && github.repository_owner == 'mister-guiiug' && needs.build.outputs.seo-changed != '' && needs.build.outputs.seo-changed != '[]' }}
     runs-on: ubuntu-latest
     continue-on-error: true
     timeout-minutes: 15
