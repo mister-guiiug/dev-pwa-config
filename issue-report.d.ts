@@ -23,8 +23,10 @@ export declare function describeEnvironment(
 
 /**
  * L'écran courant pour une issue PUBLIQUE : chemin et route `#/…` sans les
- * segments opaques (codes, UUID, jetons), noms des paramètres sans leurs
- * valeurs, aucun fragment qui ne soit pas une route. `''` sans fenêtre.
+ * segments opaques (codes, UUID, jetons), noms des paramètres avec leur
+ * valeur seulement quand c'est un mot en minuscules sous un nom qui ne porte
+ * ni secret ni saisie (`?vue=historique`, mais `?invite=…`, `?q=…`, `?id=…`),
+ * aucun fragment qui ne soit pas une route. `''` sans fenêtre.
  */
 export declare function currentRoute(win?: Window | null): string;
 
