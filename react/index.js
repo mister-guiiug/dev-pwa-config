@@ -29,6 +29,7 @@ export {
 export { useOfflineMutationQueue } from './use-offline-queue.js';
 export { retryableQuery, isTransientMessage } from './net.js';
 export { PwaInstallPrompt } from './pwa-install-prompt.js';
+export { BackupCard, useBackupReminder } from './backup-card.js';
 export { AppFooter } from './app-footer.js';
 export { AppHeader } from './app-header.js';
 export { AppShell } from './app-shell.js';

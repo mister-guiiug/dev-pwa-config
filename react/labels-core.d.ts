@@ -13,6 +13,27 @@ export interface LabelGroups {
   };
   toast: { close: string; region: string; undo: string };
   error: { retry: string; close: string };
+  /** La carte de sauvegarde (`react/backup-card`). */
+  backup: {
+    title: string;
+    description: string;
+    last: string;
+    never: string;
+    due: string;
+    export: string;
+    import: string;
+    importConfirm: string;
+    importConfirmLabel: string;
+    exported: string;
+    imported: string;
+    importFailed: string;
+    unreadable: string;
+    persisted: string;
+    notPersisted: string;
+    persist: string;
+    persistRefused: string;
+    sharedOrigin: string;
+  };
   install: {
     title: string;
     description: string;

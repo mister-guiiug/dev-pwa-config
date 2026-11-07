@@ -1,0 +1,166 @@
+# Reusable workflow — sauvegarde hebdomadaire, CHIFFRÉE, d'une base Supabase.
+#
+# POURQUOI. Le keep-alive empêche la pause d'un projet Free ; rien ne protège
+# contre la perte de la base elle-même. Relevé du 07/11/2026 : aucun dépôt du
+# parc ne faisait de `pg_dump`, mister-doc gardait ses « sauvegardes » DANS la
+# même base, et deux pauses avaient déjà eu lieu en octobre malgré le ping.
+# miss-uwh y tient la comptabilité d'un club. Une base perdue sans copie est
+# une perte sans recours.
+#
+# CE N'EST PAS UNE PROMOTION, c'est une invention au sens de CONTRIBUTING.md :
+# demandée par le propriétaire le 07/11/2026, à éprouver sur une app (uwh)
+# avant d'en appeler d'autres.
+#
+# CHIFFRÉE, ET CE N'EST PAS UNE OPTION. Les artefacts d'un dépôt PUBLIC se
+# téléchargent par n'importe quel compte GitHub connecté. Un dump contient des
+# données personnelles (membres, adresses, montants) : il ne sort du runner
+# que chiffré (AES-256, `gpg --symmetric`), avec une phrase de passe que seul
+# le propriétaire connaît. Sans elle, le workflow ÉCHOUE plutôt que de
+# publier un dump en clair ou de réussir sans rien sauvegarder.
+#
+# CE QUI EST SAUVEGARDÉ : les schémas demandés (défaut `public,auth` — les
+# tables de l'app et les comptes auxquels elles renvoient). PAS les fichiers
+# de Storage (seulement leurs métadonnées), pas les Edge Functions (elles
+# sont dans le dépôt).
+#
+# RESTAURER (à la main, poste du propriétaire) :
+#   gpg --decrypt supabase-AAAA-MM-JJ.dump.gpg > base.dump
+#   pg_restore --no-owner --no-privileges --dbname "<URI du projet cible>" base.dump
+#
+# Usage côté consumer (.github/workflows/supabase-backup.yml) :
+#
+#   name: Supabase backup
+#   on:
+#     schedule:
+#       - cron: '23 3 * * 1'   # chaque lundi
+#     workflow_dispatch:
+#   permissions:
+#     contents: read
+#   jobs:
+#     backup:
+#       uses: mister-guiiug/dev-pwa-config/.github/workflows/pwa-supabase-backup.yml@v6
+#       secrets:
+#         # L'URI du Session pooler (IPv4 : les runners n'ont pas d'IPv6 pour
+#         # db.<ref>.supabase.co) — Project Settings → Database → Connection
+#         # string → Session pooler, mot de passe compris.
+#         SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+#         BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+#
+# ⚠ GitHub désactive les workflows planifiés d'un dépôt public après soixante
+# jours sans activité : une sauvegarde qui s'arrête ne prévient pas. Le
+# keep-alive et Renovate entretiennent l'activité ; le tableau de bord du parc
+# est l'endroit où le relever.
+name: Reusable Supabase backup
+
+on:
+  workflow_call:
+    inputs:
+      schemas:
+        description: 'Schémas à sauvegarder, séparés par des virgules'
+        type: string
+        required: false
+        default: 'public,auth'
+      pg-version:
+        description: 'Version du client PostgreSQL (≥ celle du serveur ; Supabase : 15 ou 17)'
+        type: string
+        required: false
+        default: '17'
+      retention-days:
+        description: 'Jours de conservation de l’artefact chiffré'
+        type: number
+        required: false
+        default: 35
+    secrets:
+      SUPABASE_DB_URL:
+        description: 'URI PostgreSQL du Session pooler, mot de passe compris'
+        required: true
+      BACKUP_PASSPHRASE:
+        description: 'Phrase de passe du chiffrement (gardée par le propriétaire, hors de GitHub aussi)'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier les secrets
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          missing=
+          [ -z "$DB_URL" ] && missing="$missing SUPABASE_DB_URL"
+          [ -z "$PASSPHRASE" ] && missing="$missing BACKUP_PASSPHRASE"
+          if [ -n "$missing" ]; then
+            echo "::error::Secret(s) manquant(s) :$missing — Settings → Secrets and variables → Actions. Sans phrase de passe, aucun dump ne sort du runner : il serait lisible par tout compte GitHub."
+            exit 1
+          fi
+          if [ "${#PASSPHRASE}" -lt 20 ]; then
+            echo "::error::BACKUP_PASSPHRASE fait moins de 20 caractères : trop courte pour protéger des données personnelles."
+            exit 1
+          fi
+
+      - name: Client PostgreSQL ${{ inputs.pg-version }}
+        env:
+          PG_VERSION: ${{ inputs.pg-version }}
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq "postgresql-client-${PG_VERSION}"
+          "/usr/lib/postgresql/${PG_VERSION}/bin/pg_dump" --version
+
+      - name: Dump chiffré
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          PG_VERSION: ${{ inputs.pg-version }}
+          SCHEMAS: ${{ inputs.schemas }}
+        run: |
+          set -euo pipefail
+          umask 077
+          jour=$(date -u +%F)
+          args=()
+          IFS=',' read -ra liste <<< "$SCHEMAS"
+          for s in "${liste[@]}"; do
+            s="${s// /}"
+            [ -n "$s" ] && args+=("--schema=$s")
+          done
+          # Le dump ne touche le disque qu'en clair éphémère, puis est
+          # chiffré et effacé avant que quoi que ce soit ne sorte du runner.
+          "/usr/lib/postgresql/${PG_VERSION}/bin/pg_dump" \
+            --format=custom --no-owner --no-privileges "${args[@]}" \
+            --dbname "$DB_URL" --file base.dump
+          taille=$(stat -c %s base.dump)
+          if [ "$taille" -lt 1024 ]; then
+            echo "::error::Le dump ne fait que ${taille} octets : base vide, en pause, ou schémas inexistants ($SCHEMAS)."
+            exit 1
+          fi
+          printf '%s' "$PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "supabase-${jour}.dump.gpg" base.dump
+          shred -u base.dump 2>/dev/null || rm -f base.dump
+          sha256sum "supabase-${jour}.dump.gpg" | tee "supabase-${jour}.sha256"
+          echo "FICHIER=supabase-${jour}" >> "$GITHUB_ENV"
+          {
+            echo "### Sauvegarde Supabase du ${jour}"
+            echo ""
+            echo "- schémas : \`${SCHEMAS}\`"
+            echo "- taille du dump : ${taille} octets, chiffré AES-256"
+            echo "- conservé ${{ inputs.retention-days }} jours, comme artefact du run"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.FICHIER }}
+          path: |
+            ${{ env.FICHIER }}.dump.gpg
+            ${{ env.FICHIER }}.sha256
+          retention-days: ${{ inputs.retention-days }}
+          if-no-files-found: error

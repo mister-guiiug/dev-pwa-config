@@ -86,6 +86,8 @@
     [data-dwc='consent-refuse'],
     [data-dwc='consent-section-action'],
     [data-dwc='pwa-install-actions'] button,
+    [data-dwc='backup-card-actions'] button,
+    [data-dwc='backup-card-persist'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
     [data-dwc='footer-issues'],
@@ -118,7 +120,9 @@
        de pied de page de `consent-settings` : c'est le geste de la section,
        et il doit se voir autant que l'« Accepter » qu'il défait. */
     [data-dwc='consent-section-action'],
-    [data-dwc='pwa-install-actions'] button
+    [data-dwc='pwa-install-actions'] button,
+    [data-dwc='backup-card-actions'] button,
+    [data-dwc='backup-card-persist'] button
   ) {
     font: inherit;
     font-size: 0.875em;
@@ -2631,6 +2635,52 @@
     color: var(--dwc-text, CanvasText);
     font-size: var(--text-fluid-sm, 0.9rem);
     text-align: center;
+  }
+
+  /* ── BackupCard ────────────────────────────────────────────────────────── *
+   * Une section d'écran de réglages, comme `consent-section` : elle vit dans
+   * l'habillage de l'app (carte, titres), on n'y pose que l'ordre de lecture
+   * et des marges nulles. Ses boutons sont sur les règles des « Bases » :
+   * cible tactile, aspect de bouton.
+   * ────────────────────────────────────────────────────────────────────── */
+
+  [data-dwc='backup-card'] {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='backup-card'] > :is(h2, h3, h4, p),
+  [data-dwc='backup-card-last'],
+  [data-dwc='backup-card-persist'] {
+    margin: 0;
+  }
+
+  /* Le rappel se lit d'abord : il est en gras, pas en couleur — une couleur
+     d'alerte aurait sa paire de contraste à tenir dans chaque thème, et le
+     rappel n'est pas une erreur. */
+  [data-dwc='backup-card-due'] {
+    font-weight: 600;
+  }
+
+  [data-dwc='backup-card-persist'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  [data-dwc='backup-card-shared'] {
+    max-width: 60ch;
+    font-size: var(--text-fluid-sm, 0.9rem);
+    color: var(--dwc-text-soft, GrayText);
+  }
+
+  [data-dwc='backup-card-actions'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   /* ── Animations ────────────────────────────────────────────────────────── */

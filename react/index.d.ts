@@ -10,6 +10,7 @@ export * from './sparkline';
 export * from './use-offline-queue';
 export * from './net';
 export * from './pwa-install-prompt';
+export * from './backup-card';
 export * from './app-footer';
 export * from './app-header';
 export * from './app-shell';

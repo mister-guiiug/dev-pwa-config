@@ -994,6 +994,7 @@ Hébergés dans [`.github/workflows/`](.github/workflows/) — utilisables par t
 | `pwa-supabase-migrate.yml`   | `supabase link` + `db push` (+ Edge Functions en option), sans annulation d'un run en cours ; quatre copies en une                                                                                                                                | `uses: …/pwa-supabase-migrate.yml@v6` avec trois secrets : `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID` (ce dernier en `vars`) (cf. en-tête, [PARAMETRAGE.md](PARAMETRAGE.md)) |
 | `pwa-supabase-test.yml`      | Tests pgTAP sur une pile Supabase JETABLE du runner : migrations depuis zéro, aucun secret ; promu de miss-lookhouse, seule app à le faire. Complément du bin `pwa-pgtap`, qui joue les mêmes fichiers contre la base liée                        | `uses: …/pwa-supabase-test.yml@v6` depuis un caller sur `supabase/**` (cf. en-tête du fichier ; exige `supabase/config.toml`)                                                                            |
 | `pwa-supabase-keepalive.yml` | Ping REST quotidien pour qu'un projet Free ne s'endorme pas ; **à poser avec la migration** : le 02/09/2026 aucune app ne l'appelait, et `miss-carbook` dormait                                                                                   | `uses: …/pwa-supabase-keepalive.yml@v6` depuis un caller `schedule` (cf. en-tête du fichier)                                                                                                             |
+| `pwa-supabase-backup.yml`    | `pg_dump` hebdomadaire **chiffré** (AES-256) d’une base Supabase, en artefact du run ; échoue sans phrase de passe plutôt que de publier un dump en clair                                                                                         | `uses: …/pwa-supabase-backup.yml@v6` avec `SUPABASE_DB_URL` et `BACKUP_PASSPHRASE` (cf. [Sauvegarde Supabase](#sauvegarde-supabase-chiffrée))                                                            |
 | `pwa-vice.yml`               | Audit de sécurité [VICE](https://github.com/Webba-Creative-Technologies/vice) en second avis NON bloquant — secrets, `.env`, RLS des migrations, XSS/`eval`, workflows ; constats dans l'onglet Security, sans badge commité ni commentaire de PR | `uses: …/pwa-vice.yml@v6` depuis un caller à `security-events: write` (cf. en-tête du fichier)                                                                                                           |
 | `pwa-worker-deploy.yml`      | `wrangler deploy` d'un Cloudflare Worker, sans échec quand le secret manque ; deux copies en une                                                                                                                                                  | `uses: …/pwa-worker-deploy.yml@v6` avec `working-directory`                                                                                                                                              |
 | `cleanup-runs.yml`           | Élague l'historique Actions du dépôt APPELANT (N runs par workflow) ; douze copies identiques en une                                                                                                                                              | `uses: …/cleanup-runs.yml@v6` depuis un caller `workflow_dispatch` à `permissions: actions: write` (cf. en-tête du fichier)                                                                              |
@@ -1232,6 +1233,34 @@ Le run doit finir vert avec `Supabase keep-alive OK (SELECT keep_alive → 200)`
 
 Note : un cron GitHub est désactivé après 60 j sans commit sur le dépôt (les
 commits Renovate suffisent ; sinon relancer via `workflow_dispatch`).
+
+## Sauvegarde Supabase chiffrée
+
+Le keep-alive empêche la pause ; **rien ne protégeait contre la perte de la
+base elle-même** — au 07/11/2026, aucun dépôt du parc ne faisait de
+`pg_dump`. Le réutilisable
+[`pwa-supabase-backup.yml`](.github/workflows/pwa-supabase-backup.yml) en fait
+un, le chiffre, et le range en artefact du run (35 jours par défaut).
+
+Mise en place, **par le propriétaire** (deux secrets, aucun ne se lit dans le
+dépôt) :
+
+1.  `SUPABASE_DB_URL` : l'URI du **Session pooler** (Project Settings →
+    Database → Connection string), mot de passe compris — le runner n'a pas
+    d'IPv6 pour `db.<ref>.supabase.co`.
+2.  `BACKUP_PASSPHRASE` : au moins 20 caractères, **gardée aussi hors de
+    GitHub** (un secret ne se relit pas : sans copie, les dumps sont perdus).
+3.  Le caller de l'en-tête du fichier, dans `.github/workflows/`, puis un
+    premier `gh workflow run supabase-backup.yml` pour le voir vert.
+
+**Pourquoi chiffré, et pourquoi ce n'est pas une option** : les artefacts d'un
+dépôt public se téléchargent par n'importe quel compte GitHub connecté, et un
+dump contient des données personnelles. Sans phrase de passe, le workflow
+échoue au lieu de sauvegarder en clair.
+
+Restaurer : `gpg --decrypt` puis `pg_restore --no-owner --no-privileges`
+(commandes exactes dans l'en-tête). Ni les fichiers de Storage ni les Edge
+Functions ne sont dans le dump.
 
 ## Personnalisation par projet
 

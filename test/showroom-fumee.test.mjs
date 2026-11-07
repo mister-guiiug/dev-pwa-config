@@ -144,7 +144,7 @@ test('la vitrine rend une carte par application du catalogue', () => {
 });
 
 test('le catalogue rend ses fiches, et la grille ses thèmes', () => {
-  assert.equal(compter('#cat-grid > li'), 62);
+  assert.equal(compter('#cat-grid > li'), 63);
   assert.equal(compter('#theme-grid > *'), globalThis.SHOWROOM_THEMES.length);
   // Une palette par app + le thème générique.
   assert.equal(

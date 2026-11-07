@@ -68,6 +68,56 @@ const history = await idb.get('history', []);
 await idb.setBlob('avatar:j1', file); // les Blob ne passent pas par JSON
 ```
 
+### Ne pas perdre ce que l'utilisateur a saisi (`/react/backup-card`, `/persistent-storage`, `/backup-reminder`)
+
+Les applications partagent l'origine `mister-guiiug.github.io`, donc **un
+seul** `localStorage` et un seul quota. Trois conséquences, relevées le
+07/11/2026 :
+
+- **`localStorage.clear()` efface toute la famille.** Le bouton « Tout
+  effacer » de mister-molkky vidait aussi le journal de contractions et les
+  carnets des sœurs. `pwa-doctor` le relève désormais en **défaut**
+  (`stockage-clear`) : retirer ses seules clés, par le `clear()` du `Store`
+  préfixé ou une boucle sur son préfixe.
+- **Le navigateur peut tout effacer seul.** Sans stockage persistant, les
+  données d'un site sont évinçables, et Safari les efface après sept jours
+  sans visite tant que l'app n'est pas installée. Aucune des vingt-trois ne le
+  demandait. `useInstallPrompt` le demande maintenant à l'installation ;
+  `requestPersistentStorage()` le demande sur un geste (Firefox affiche une
+  invite : jamais au chargement).
+- **Une sauvegarde que personne ne fait ne sauve rien.** Seule
+  miss-contraction rappelait d'exporter. Le rappel est promu : tous les sept
+  jours, une clé `dwc_backup:<app>` par app.
+
+La carte réunit les trois, à poser dans l'écran Réglages :
+
+```tsx
+import { BackupCard } from '@mister-guiiug/dev-pwa-config/react/backup-card';
+import {
+  createBackup,
+  restoreBackup,
+} from '@mister-guiiug/dev-pwa-config/backup';
+
+<BackupCard
+  app="miss-genius"
+  exportData={() => createBackup(store, { app: 'miss-genius' })}
+  importData={data => restoreBackup(store, data, { replace: true })}
+  hasData={notes.length > 0} // pas de rappel sur une app vide
+/>;
+```
+
+`exportData` et `importData` restent à l'app : un magasin préfixé passe par
+`/backup` (identité vérifiée, validation avant la première écriture), une app
+en IndexedDB ou en `versioned-store` y branche son propre export.
+`importData` peut rendre `{ ok: false, problems }` — la carte affiche les
+problèmes et n'a rien écrit. Pour afficher le rappel ailleurs (l'accueil, où
+l'utilisateur passe vraiment) : `useBackupReminder(app)`.
+
+**Côté serveur**, le réutilisable `pwa-supabase-backup.yml` fait un
+`pg_dump` hebdomadaire **chiffré** (les artefacts d'un dépôt public se
+téléchargent par tout compte GitHub) — voir l'en-tête du fichier et
+[le README](../README.md#sauvegarde-supabase-chiffrée).
+
 ### Corrélation, journal et écran de crash (`/correlation`, `/logger`)
 
 Le socle portait déjà quatre canaux d'observabilité — frontière d'erreur,

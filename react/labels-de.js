@@ -174,6 +174,31 @@ const labels = {
       'Auskunft, Berichtigung, Löschung, Widerspruch: schreiben Sie an {contact}.',
     missing: '[Zu ergänzen]',
   },
+  backup: {
+    title: 'Sicherung',
+    description:
+      'Deine Daten bleiben auf diesem Gerät. Exportiere sie in eine Datei, um sie zu behalten oder das Gerät zu wechseln.',
+    last: 'Letzte Sicherung: {date}.',
+    never: 'Noch keine Sicherung.',
+    due: 'Denk daran, eine Sicherung zu exportieren.',
+    export: 'Sicherung exportieren',
+    import: 'Datei importieren',
+    importConfirm: 'Die Daten auf diesem Gerät durch die der Datei ersetzen?',
+    importConfirmLabel: 'Ersetzen',
+    exported: 'Sicherung exportiert.',
+    imported: 'Daten importiert.',
+    importFailed: 'Import nicht möglich: {reason}',
+    unreadable: 'die Datei ist unlesbar',
+    persisted:
+      'Der Browser behält diese Daten: Er löscht sie nicht, um Platz zu schaffen.',
+    notPersisted:
+      'Der Browser kann diese Daten bei Platzmangel oder nach langer Abwesenheit löschen.',
+    persist: 'Ihn bitten, sie zu behalten',
+    persistRefused:
+      'Der Browser hat abgelehnt: Exportiere regelmäßig eine Sicherung.',
+    sharedOrigin:
+      'Achtung: „Websitedaten löschen“ im Browser löscht auch die Daten der anderen Apps der Familie.',
+  },
 };
 
 export default labels;

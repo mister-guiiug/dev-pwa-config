@@ -170,6 +170,30 @@ const labels = {
       'Access, rectification, erasure, objection: write to {contact}.',
     missing: '[To complete]',
   },
+  backup: {
+    title: 'Backup',
+    description:
+      'Your data stays on this device. Export it to a file to keep it, or to move to another device.',
+    last: 'Last backup: {date}.',
+    never: 'No backup yet.',
+    due: 'Remember to export a backup.',
+    export: 'Export a backup',
+    import: 'Import a file',
+    importConfirm: 'Replace the data on this device with the file’s?',
+    importConfirmLabel: 'Replace',
+    exported: 'Backup exported.',
+    imported: 'Data imported.',
+    importFailed: 'Import failed: {reason}',
+    unreadable: 'the file is unreadable',
+    persisted:
+      'The browser keeps this data: it won’t delete it to free up space.',
+    notPersisted:
+      'The browser may delete this data when space runs low, or after a long absence.',
+    persist: 'Ask it to keep it',
+    persistRefused: 'The browser refused: export a backup regularly.',
+    sharedOrigin:
+      'Note: “Clear site data” in the browser also erases the data of the other apps in the family.',
+  },
 };
 
 export default labels;

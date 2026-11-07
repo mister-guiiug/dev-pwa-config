@@ -1960,6 +1960,36 @@ export function reglesSource(ctx, api) {
       'createVersionedStore (versioned-store) — migrations, validation, sauvegarde avant perte'
     );
   }
+  // EFFACER TOUT LE STOCKAGE, C'EST EFFACER LA FAMILLE. Les applications
+  // partagent l'origine `mister-guiiug.github.io`, donc un seul
+  // `localStorage` : le bouton « Effacer toutes les données » de mister-molkky
+  // emportait le journal de contractions, les notes de genius, les jetons de
+  // supaboss, les sessions de toutes les apps et leurs écritures en attente
+  // (relevé du 07/11/2026 ; miss-ticket-pwa avait eu le même). Un défaut : la
+  // perte est sans recours, et elle frappe d'autres applications que celle
+  // qui l'écrit. Les tests ont le droit de vider leur jsdom.
+  const effaceurs = source
+    .filter(
+      f =>
+        !/(^|\/)(e2e|test|tests|__tests__)\/|\.(test|spec)\.[cm]?[jt]sx?$|setupTests|vitest[.-]setup/.test(
+          f.rel
+        )
+    )
+    .flatMap(f =>
+      count(
+        sansCommentaires.source(f.text),
+        /\b(?:local|session)Storage\.clear\(\)/g
+      )
+        ? [f.rel]
+        : []
+    );
+  if (effaceurs.length) {
+    defaut(
+      'stockage-clear',
+      `${effaceurs.join(', ')} : \`localStorage.clear()\` ou \`sessionStorage.clear()\` efface les données de TOUTES les applications de l’origine, pas seulement celles-ci`,
+      'retirer ses seules clés : le `clear()` du `Store` préfixé (storage, versioned-store) ou une boucle sur son préfixe'
+    );
+  }
 }
 
 /**
@@ -2344,6 +2374,7 @@ export const CATALOGUE = [
   { id: 'console', famille: 'source', niveau: 'info' },
   { id: 'main-chunk-budget', famille: 'source', niveau: 'info' },
   { id: 'local-storage-direct', famille: 'source', niveau: 'info' },
+  { id: 'stockage-clear', famille: 'source', niveau: 'défaut' },
   { id: 'no-build', famille: 'build', niveau: 'info' },
   { id: 'html-lang', famille: 'build', niveau: 'défaut' },
   { id: 'viewport', famille: 'build', niveau: 'défaut' },

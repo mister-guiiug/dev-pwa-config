@@ -659,6 +659,10 @@ const SANS_REGLE = new Map([
   ],
   ['sparkline-last', 'un <circle> SVG, peint par son attribut fill'],
   [
+    'backup-card-status',
+    'la région `role="status"` de backup-card : un <p> qui hérite, exprès, et n’est JAMAIS masqué — une région cachée au moment où son texte arrive n’est pas annoncée par tous les lecteurs d’écran',
+  ],
+  [
     'app-shell',
     'coquille : ses enfants (header, page-container, bottom-nav, skip) portent les règles',
   ],

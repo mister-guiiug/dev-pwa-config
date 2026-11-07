@@ -9,6 +9,7 @@ import {
   shouldOfferInstall,
   writeInstallState,
 } from '../install.js';
+import { requestPersistentStorage } from '../persistent-storage.js';
 
 /**
  * Capture `beforeinstallprompt`, sait installer là où il n'existe pas, et dit
@@ -66,6 +67,11 @@ export function useInstallPrompt(options = {}) {
       setDeferredPrompt(e);
     };
     const onInstalled = () => {
+      // L'INSTALLATION EST LE BON MOMENT pour demander que le navigateur garde
+      // les données : l'utilisateur vient de dire qu'il tient à l'app, et
+      // Chromium l'accorde alors sans invite. L'accord vaut pour l'origine,
+      // donc pour toute la famille (voir `persistent-storage.js`).
+      void requestPersistentStorage();
       setInstalled(true);
       setDeferredPrompt(null);
       latched.current = false;

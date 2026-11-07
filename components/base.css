@@ -29,6 +29,8 @@
     [data-dwc='consent-refuse'],
     [data-dwc='consent-section-action'],
     [data-dwc='pwa-install-actions'] button,
+    [data-dwc='backup-card-actions'] button,
+    [data-dwc='backup-card-persist'] button,
     [data-dwc='footer-source'],
     [data-dwc='footer-sponsor'],
     [data-dwc='footer-issues'],
@@ -61,7 +63,9 @@
        de pied de page de `consent-settings` : c'est le geste de la section,
        et il doit se voir autant que l'« Accepter » qu'il défait. */
     [data-dwc='consent-section-action'],
-    [data-dwc='pwa-install-actions'] button
+    [data-dwc='pwa-install-actions'] button,
+    [data-dwc='backup-card-actions'] button,
+    [data-dwc='backup-card-persist'] button
   ) {
     font: inherit;
     font-size: 0.875em;
