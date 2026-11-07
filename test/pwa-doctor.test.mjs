@@ -17,6 +17,7 @@ import { dirname, join, resolve } from 'node:path';
 
 import {
   PRESET,
+  auditeAccueilSeul,
   depotGitHub,
   diagnose,
   faitsDepot,
@@ -1306,6 +1307,116 @@ test('une spec que le filtre e2e ne joue jamais est une dette ; le défaut du r�
       );
     }
   );
+});
+
+/**
+ * `a11y-accueil-seul` — L'ACCESSIBILITÉ AU-DELÀ DE L'ACCUEIL (07/11/2026).
+ *
+ * Le gabarit ne visitait que `/`, et c'est ce que le parc a copié : neuf
+ * specs d'accessibilité n'auditaient que l'accueil. Les formulaires, les
+ * feuilles et les réglages ne passaient jamais par axe.
+ */
+test('une spec a11y qui n’ouvre que l’accueil est une dette ; un second écran la lève', async () => {
+  const fichiers = specA11y => ({
+    'package.json': {
+      name: 'miss-x',
+      devDependencies: { '@playwright/test': '1' },
+    },
+    'e2e/a11y.spec.ts': specA11y,
+  });
+  const accueilSeul = [
+    "test.describe('@a11y accessibilité', () => {",
+    "  test('accueil', async ({ page }) => {",
+    "    await page.goto('/');",
+    '    await expectNoA11yViolations(page, AxeBuilder, expect);',
+    '  });',
+    '});',
+  ].join('\n');
+  await repo(fichiers(accueilSeul), root => {
+    const d = diagnose(root).findings.find(f => f.id === 'a11y-accueil-seul');
+    assert.ok(d, 'la spec n’audite que l’accueil');
+    assert.equal(d.level, 'dette');
+    assert.match(d.message, /e2e\/a11y\.spec\.ts/);
+    assert.match(d.fix, /expectNoA11yViolationsOn/);
+    // Une spec existe : l'autre dette, « pas de spec », ne sort pas.
+    assert.ok(!ids(diagnose(root)).includes('a11y-spec'));
+  });
+  await repo(
+    fichiers(
+      accueilSeul.replace(
+        "await page.goto('/');",
+        "await page.goto('/');\n    await page.goto('/reglages');"
+      )
+    ),
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('a11y-accueil-seul'));
+    }
+  );
+});
+
+test('le gabarit du socle, copié tel quel, porte la dette — son exemple en commentaire ne compte pas', async () => {
+  const gabarit = readFileSync(
+    new URL('../templates/e2e/a11y.spec.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(gabarit, /expectNoA11yViolationsOn/, 'le gabarit montre l’aide');
+  await repo(
+    {
+      'package.json': {
+        name: 'miss-x',
+        devDependencies: { '@playwright/test': '1' },
+      },
+      'e2e/a11y.spec.ts': gabarit,
+    },
+    root => {
+      assert.ok(ids(diagnose(root)).includes('a11y-accueil-seul'));
+    }
+  );
+});
+
+test('auditeAccueilSeul : ce qui se lit accuse, ce qui ne se lit pas se tait', () => {
+  const spec = corps => `test('@a11y x', async ({ page }) => {\n${corps}\n});`;
+  // L'accueil, sous toutes ses écritures — y compris la base de l'app.
+  for (const goto of [
+    "page.goto('/')",
+    'page.goto("")',
+    'page.goto(`./`)',
+    "page.goto('/miss-uwh/')",
+    "page.goto('/miss-uwh', { waitUntil: 'load' })",
+  ]) {
+    assert.equal(auditeAccueilSeul([spec(goto)], 'miss-uwh'), true, goto);
+  }
+  // Un autre écran, un état atteint par un geste, l'aide multi-écrans.
+  for (const corps of [
+    "page.goto('/a-propos')",
+    "page.goto('/?play=yahtzee')",
+    "page.goto('/'); await page.getByRole('button', { name: 'Ajouter' }).click()",
+    "page.goto('/'); await page.keyboard.press('Tab')",
+    "page.goto('/'); await page.getByLabel('Nom').fill('x')",
+    "expectNoA11yViolationsOn(page, AxeBuilder, expect, ['/'])",
+  ]) {
+    assert.equal(auditeAccueilSeul([spec(corps)], 'miss-x'), false, corps);
+  }
+  // Ce que le contrôle ne peut pas lire : il ne devine pas, il se tait.
+  for (const corps of [
+    'page.goto(route)',
+    'page.goto(ROUTES.HOME)',
+    'page.goto(`/${chemin}`)',
+    '',
+  ]) {
+    assert.equal(auditeAccueilSeul([spec(corps)], 'miss-x'), false, corps);
+  }
+  // Plusieurs specs d'accessibilité se lisent ensemble : un second écran dans
+  // l'une suffit.
+  assert.equal(
+    auditeAccueilSeul(
+      [spec("page.goto('/')"), spec("page.goto('/reglages')")],
+      'miss-x'
+    ),
+    false
+  );
+  // Sans nom de paquet, `/miss-uwh/` n'est pas reconnu comme l'accueil.
+  assert.equal(auditeAccueilSeul([spec("page.goto('/miss-uwh/')")]), false);
 });
 
 test('filtreE2e lit ci.yml, ignore les commentaires, tolère un filtre mal formé', () => {

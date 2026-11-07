@@ -73,6 +73,11 @@ const labels = {
     source: 'Code source',
     sponsor: 'M’offrir un café',
     issues: 'Signaler un problème',
+    issuesMail: 'Signaler par e-mail',
+    idea: 'Proposer une idée',
+    mailSubject: 'Signalement : {app}',
+    mailIntro:
+      'Décrivez ce qui était attendu, ce qui arrive, et comment le reproduire :',
   },
   share: {
     label: 'Partager',

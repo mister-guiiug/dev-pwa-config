@@ -99,6 +99,49 @@ export function BugIcon() {
   );
 }
 
+/**
+ * Les deux icônes qui suivent : la boîte et le trait des liens du pied de page.
+ * @param {...import('react').ReactNode} children
+ */
+function lienIcon(...children) {
+  return h(
+    'svg',
+    {
+      width: 16,
+      height: 16,
+      viewBox: '0 0 24 24',
+      'aria-hidden': 'true',
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+    },
+    ...children
+  );
+}
+
+/**
+ * Enveloppe « signaler par e-mail » (16×16) : le signalement sans compte
+ * GitHub d'`AppFooter`. Une enveloppe, pas un insecte : ce qui distingue ce
+ * lien du précédent, c'est le chemin qu'il prend, pas ce qu'il signale.
+ */
+export function MailIcon() {
+  return lienIcon(
+    h('rect', { x: 3, y: 5, width: 18, height: 14, rx: 2 }),
+    h('path', { d: 'm3.5 6.5 8.5 6.5 8.5-6.5' })
+  );
+}
+
+/** Ampoule « proposer une idée » (16×16), le gabarit `feature.yml`. */
+export function IdeaIcon() {
+  return lienIcon(
+    h('path', {
+      d: 'M9 17h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z',
+    })
+  );
+}
+
 /** Croix de fermeture (18×18, contour `currentColor`). */
 export function CloseIcon() {
   return h(

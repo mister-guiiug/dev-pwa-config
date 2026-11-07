@@ -585,20 +585,37 @@ function capturesDuManifeste(dist, indexHtml, homeUrl) {
     .filter(url => /^https?:\/\//.test(url));
 }
 
+/** Une ligne de Markdown : espaces repliés, crochets échappés pour un texte de lien. */
+const ligneMd = texte =>
+  String(texte ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+const texteDeLien = texte => ligneMd(texte).replace(/([[\]\\])/g, '\\$1');
+
 /**
- * Un `llms.txt` minimal, tiré du catalogue et de la page.
+ * Un `llms.txt` tiré du catalogue, de la page et des pages de contenu, au
+ * format de https://llmstxt.org : un titre, un résumé en citation, puis des
+ * sections de liens Markdown `- [titre](url): note`.
  *
- * Activé seulement avec `llms: true` (ou une chaîne fournie). Google Search
- * ne s'en sert pas pour ses fonctions génératives (guide du 15/05/2026) : ce
- * n'est pas un levier SEO/GEO, juste une doc volontaire pour les agents qui
- * le lisent. Défaut du plugin : pas de fichier.
+ * ÉCRIT PAR DÉFAUT DEPUIS LE 07/11/2026 (`llms: true`). Google Search ne s'en
+ * sert pas pour ses fonctions génératives (guide du 15/05/2026), et la
+ * convention reste inégalement lue ; mais le fichier ne coûte rien, ne
+ * s'affiche nulle part, et il était le dernier point P1 ouvert des audits
+ * SEO/GEO du 28/09 et du 06/11 : la racine et les vingt-trois sites
+ * répondaient 404. Il échappe au repli de navigation du worker
+ * (`navigateFallbackDenylist` de `vite-pwa`), et n'entre pas au précache.
+ *
+ * Les pages de contenu y sont listées, chacune avec sa description : ce sont
+ * les seules pages de l'app qu'un agent puisse lire sans exécuter de
+ * JavaScript.
  *
  * `null` sans nom ni description : on n'écrit pas un fichier creux.
  *
- * @param {{ homeUrl: string, html?: string }} opts
+ * @param {{ homeUrl: string, html?: string,
+ *   pages?: Array<{ chemin: string, title: string, description?: string }> }} opts
  * @returns {string | null}
  */
-export function defaultLlmsTxt({ homeUrl, html = '' }) {
+export function defaultLlmsTxt({ homeUrl, html = '', pages = [] }) {
   const id = new URL(homeUrl).pathname.split('/').find(Boolean);
   const fiche = FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
   const name =
@@ -609,14 +626,24 @@ export function defaultLlmsTxt({ homeUrl, html = '' }) {
   const description = metaDe(html, 'description') || fiche?.description || '';
   if (!name || !description) return null;
   const lignes = [
-    `# ${name}`,
+    `# ${ligneMd(name)}`,
     '',
-    `> ${description}`,
+    `> ${ligneMd(description)}`,
     '',
-    '## URL',
-    `- Application : ${homeUrl}`,
+    '## Application',
+    '',
+    `- [${texteDeLien(name)}](${homeUrl})`,
   ];
-  if (fiche?.repoUrl) lignes.push(`- Code source : ${fiche.repoUrl}`);
+  if (fiche?.repoUrl) lignes.push(`- [Code source](${fiche.repoUrl})`);
+  if (pages.length) {
+    lignes.push('', '## Guides', '');
+    for (const page of pages) {
+      const note = ligneMd(page.description);
+      lignes.push(
+        `- [${texteDeLien(page.title)}](${homeUrl}${page.chemin})${note ? `: ${note}` : ''}`
+      );
+    }
+  }
   lignes.push('');
   return lignes.join('\n');
 }
@@ -2428,8 +2455,8 @@ function ecrireExclusif(cible, contenu, message) {
  *   __PWA_ICON_QS__      query-string de cache-busting des icônes
  *
  * Écrits au build dans le dossier de sortie : `sitemap.xml`, `seo-state.json`
- * (voir `seoState`), les pages de contenu (`<slug>.html`, `en/<slug>.html`),
- * les routes (`<path>.html`) et, sur demande, `robots.txt` et `llms.txt`.
+ * (voir `seoState`), `llms.txt`, les pages de contenu (`<slug>.html`,
+ * `en/<slug>.html`), les routes (`<path>.html`) et, sur demande, `robots.txt`.
  * HORS du dossier de sortie : `seo-changed.json` (`PWA_SEO_CHANGED_FILE`).
  *
  * @param {object} [opts]
@@ -2445,10 +2472,10 @@ function ecrireExclusif(cible, contenu, message) {
  * @param {string}  [opts.basePath]        Force le base path (sinon VITE_BASE_PATH).
  * @param {string}  [opts.logoPath]        Chemin du logo (ex. '/logo.svg') → __SEO_LOGO_URL__.
  * @param {string}  [opts.iconQuery='']    Query de cache-busting (ex. '?v=1.0.1') → __PWA_ICON_QS__.
- * @param {string | true | false} [opts.llms=false] Contenu d'un `llms.txt`.
- *   Omis ou `false` : aucun fichier (défaut — Google ne s'en sert pas).
- *   `true` : fichier minimal depuis le catalogue (`defaultLlmsTxt`).
- *   Une chaîne : ce texte, tel quel.
+ * @param {string | true | false} [opts.llms=true] Contenu d'un `llms.txt`.
+ *   Omis ou `true` (défaut depuis le 07/11/2026) : le fichier tiré du
+ *   catalogue, de la page et des pages de contenu (`defaultLlmsTxt`).
+ *   `false` : aucun fichier. Une chaîne : ce texte, tel quel.
  * @param {boolean | import('./theme-boot.js').ThemeBootOptions} [opts.themeBoot]
  *   Le script anti-FOUC, injecté en tête de `<head>`.
  * @param {{ light?: string, dark?: string }} [opts.themeColor] Deux
@@ -2489,7 +2516,7 @@ export function pwaSeoPlugin(opts = {}) {
     basePath,
     logoPath,
     iconQuery = '',
-    llms,
+    llms = true,
     themeBoot,
     themeColor,
     extraReplacements = {},
@@ -2844,12 +2871,17 @@ Sitemap: ${homeUrl}sitemap.xml
 `;
         writeFileSync(join(dist, 'robots.txt'), txt, 'utf8');
       }
-      // Défaut : pas de llms.txt. `true` → auto catalogue ; chaîne → telle quelle.
+      // Défaut : `true`, le fichier tiré du catalogue et des pages écrites
+      // plus haut ; `false` → rien ; une chaîne → telle quelle.
       if (llms === true || typeof llms === 'string') {
         const texte =
           typeof llms === 'string'
             ? llms
-            : defaultLlmsTxt({ homeUrl, html: indexHtml });
+            : defaultLlmsTxt({
+                homeUrl,
+                html: indexHtml,
+                pages: ecrites.pages,
+              });
         if (texte) {
           writeFileSync(join(dist, 'llms.txt'), texte, 'utf8');
         }

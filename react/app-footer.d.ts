@@ -40,8 +40,25 @@ export interface AppFooterProps {
    * `bug.yml` prérempli avec la version, le commit, l'écran courant et le
    * navigateur (`issue-report`). OPT-IN : `true`, ou le gabarit et le libellé.
    * Demande `repoUrl`.
+   *
+   * Il ouvre aussi « Proposer une idée » (gabarit `feature.yml`, retiré par
+   * `idea: false`) et, quand le dépôt déclare une adresse de contact,
+   * « Signaler par e-mail » — pour qui n'a pas de compte GitHub.
    */
-  issues?: boolean | { template?: string; label?: string };
+  issues?: boolean | { template?: string; label?: string; idea?: boolean };
+  /**
+   * L'adresse du signalement par e-mail. Absente : `VITE_PRIVACY_CONTACT`,
+   * lue comme `PrivacyNotice` la lit. `null` retire le lien. Seule une adresse
+   * e-mail le fait apparaître (`emailAddress` d'`issue-report`), et seulement
+   * avec `issues`.
+   */
+  contact?: string | null;
+  /**
+   * L'environnement où lire `VITE_PRIVACY_CONTACT`. Par défaut celui que Vite
+   * substitue ; à passer dans un test (Vitest n'exécute pas le paquet par
+   * Vite).
+   */
+  env?: Record<string, unknown>;
 }
 
 /** Footer famille : lien code source (GitHub) + lien sponsor (café). */

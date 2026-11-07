@@ -1,9 +1,35 @@
-import { useLabels } from './labels-core.js';
+import { DEFAULT_LABELS, useLabels } from './labels-core.js';
 import { createElement as h } from 'react';
 import { Icon } from './icons-context.js';
 import { AppVersion } from './app-version.js';
 import { useSponsorUrl } from './sponsor.js';
-import { currentIssueReportUrl } from '../issue-report.js';
+import {
+  FEATURE_TEMPLATE,
+  currentIssueReportMailto,
+  currentIssueReportUrl,
+  emailAddress,
+  featureRequestUrl,
+} from '../issue-report.js';
+
+/**
+ * L'ENVIRONNEMENT VITE, lu comme `PrivacyNotice` le lit (voir
+ * `privacy-notice.js`) : Vite remplace `import.meta.env` jusque dans les
+ * dépendances, en build comme en développement ; hors de Vite (Node, Vitest),
+ * il n'y a rien et l'on rend `{}`. C'est pour ces tests-là que la prop `env`
+ * existe.
+ */
+function envVite() {
+  return (typeof import.meta !== 'undefined' && import.meta.env) || {};
+}
+
+/** `https://github.com/o/miss-dice/` → `miss-dice` : le nom de l'app au courrier. */
+function nomDuDepot(repoUrl) {
+  const segments = String(repoUrl ?? '')
+    .split(/[?#]/)[0]
+    .split('/')
+    .filter(Boolean);
+  return segments.at(-1) ?? '';
+}
 
 /**
  * Footer famille : lien code source (GitHub) + lien sponsor (Buy Me a Coffee).
@@ -52,10 +78,30 @@ import { currentIssueReportUrl } from '../issue-report.js';
  * La leçon vaut d'être écrite : deux emplacements conçus depuis un tableau de
  * besoins en couvraient trois sur quatre. C'est en migrant qu'on l'a su.
  *
+ * `issues` OUVRE AUSSI DEUX VOIES DE PLUS (07/11/2026). Le lien « Signaler un
+ * problème » mène à `issues/new`, qui exige un compte GitHub : sur tout le
+ * compte, aucune issue n'avait jamais été écrite par un utilisateur des apps,
+ * dont les publics — médecins, trésoriers, parents — n'en ont pas. D'où :
+ *
+ *   « Signaler par e-mail » — le même contexte (app, version, écran,
+ *   navigateur) dans un `mailto:`, adressé au contact que le dépôt déclare
+ *   pour le panneau de confidentialité. Lu comme `PrivacyNotice` le lit : la
+ *   prop `contact` l'emporte, puis `VITE_PRIVACY_CONTACT` ; `null` le retire.
+ *   Sans adresse e-mail valide, le lien n'est pas rendu.
+ *
+ *   « Proposer une idée » — le gabarit `feature.yml` du dépôt `.github` du
+ *   compte. `issues: { idea: false }` le retire ; il ne double jamais un
+ *   signalement déjà pointé sur ce gabarit.
+ *
+ * Le lien GitHub garde son libellé et sa place : les e2e du parc le cherchent
+ * par son nom exact.
+ *
  * @param {{ repoUrl?: string, sponsorUrl?: string|null, sourceLabel?: string,
  *   sponsorLabel?: string, className?: string, children?: import('react').ReactNode,
  *   links?: import('react').ReactNode, after?: import('react').ReactNode,
- *   version?: boolean | import('./app-version.js').AppVersionProps }} props
+ *   version?: boolean | import('./app-version.js').AppVersionProps,
+ *   issues?: boolean | { template?: string, label?: string, idea?: boolean },
+ *   contact?: string | null, env?: Record<string, unknown> }} props
  */
 export function AppFooter(props) {
   const {
@@ -72,12 +118,17 @@ export function AppFooter(props) {
     after,
     version,
     issues,
+    env = envVite(),
   } = props;
 
   const sponsorUrl = useSponsorUrl(sponsorUrlProp);
-  const labels = useLabels('footer');
+  // Sur le français : un dictionnaire d'app écrit avant le 07/11/2026 n'a pas
+  // les quatre clés du courrier et de l'idée, et un lien sans libellé n'a pas
+  // de nom accessible.
+  const labels = { ...DEFAULT_LABELS.footer, ...useLabels('footer') };
 
   const ext = { target: '_blank', rel: 'noopener noreferrer' };
+  const issuesObjet = typeof issues === 'object' && issues ? issues : {};
 
   // Le signalement : `issues/new` du dépôt, gabarit `bug.yml` du compte,
   // champs préremplis avec ce que la page sait (version, commit, écran,
@@ -87,13 +138,34 @@ export function AppFooter(props) {
     issues && repoUrl
       ? {
           repoUrl,
-          ...(typeof issues === 'object' && issues.template
-            ? { template: issues.template }
-            : {}),
+          ...(issuesObjet.template ? { template: issuesObjet.template } : {}),
         }
       : null;
-  const issuesLabel =
-    (typeof issues === 'object' && issues.label) || labels.issues;
+  const issuesLabel = issuesObjet.label || labels.issues;
+
+  // Le courrier : `contact` (prop) puis `VITE_PRIVACY_CONTACT`, comme
+  // `PrivacyNotice` ; `null` le retire. Seulement s'il y a un signalement : une
+  // app sans `issues` n'a pas demandé de canal de retour.
+  const contact =
+    props.contact === null
+      ? ''
+      : emailAddress(props.contact ?? env.VITE_PRIVACY_CONTACT);
+  const mailOptions =
+    issueOptions && contact
+      ? {
+          to: contact,
+          app: nomDuDepot(repoUrl),
+          subject: labels.mailSubject.replaceAll('{app}', nomDuDepot(repoUrl)),
+          intro: labels.mailIntro,
+        }
+      : null;
+  // L'idée : le gabarit `feature.yml`, sauf si le signalement y pointe déjà.
+  const ideaUrl =
+    issueOptions &&
+    issuesObjet.idea !== false &&
+    issueOptions.template !== FEATURE_TEMPLATE
+      ? featureRequestUrl({ repoUrl })
+      : '';
 
   return h(
     'footer',
@@ -131,6 +203,31 @@ export function AppFooter(props) {
           },
           h(Icon, { role: 'issue' }),
           h('span', null, issuesLabel)
+        )
+      : null,
+    // Juste après le lien GitHub : la même démarche, par un autre chemin. Pas
+    // de `target` — un `mailto:` n'ouvre pas d'onglet, il ouvre la messagerie.
+    // Recalculé au clic, comme le lien GitHub : la route a pu changer.
+    mailOptions
+      ? h(
+          'a',
+          {
+            href: currentIssueReportMailto(mailOptions),
+            'data-dwc': 'footer-mail',
+            onClick: event => {
+              event.currentTarget.href = currentIssueReportMailto(mailOptions);
+            },
+          },
+          h(Icon, { role: 'mail' }),
+          h('span', null, labels.issuesMail)
+        )
+      : null,
+    ideaUrl
+      ? h(
+          'a',
+          { href: ideaUrl, ...ext, 'data-dwc': 'footer-idea' },
+          h(Icon, { role: 'idea' }),
+          h('span', null, labels.idea)
         )
       : null,
     version

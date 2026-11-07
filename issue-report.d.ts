@@ -1,6 +1,9 @@
 /** Le gabarit d'anomalie que le dépôt `.github` du compte prête à tous les dépôts. */
 export declare const ISSUE_TEMPLATE: string;
 
+/** Le gabarit d'évolution (`feature.yml`) du même dépôt `.github`. */
+export declare const FEATURE_TEMPLATE: string;
+
 export interface EnvironmentOptions {
   /** Agent utilisateur à décrire (sinon `navigator.userAgent`). */
   userAgent?: string;
@@ -59,4 +62,53 @@ export declare function currentIssueReportUrl(
     IssueReportOptions,
     'repoUrl' | 'template' | 'title' | 'fields'
   >
+): string;
+
+/**
+ * « Proposer une idée » : `issues/new` sur le gabarit `feature.yml`, sans
+ * version ni environnement. `''` sans dépôt.
+ */
+export declare function featureRequestUrl(options?: {
+  repoUrl?: string;
+  title?: string;
+}): string;
+
+/**
+ * L'adresse e-mail d'un contact (`VITE_PRIVACY_CONTACT`), `mailto:` retiré ;
+ * `''` pour tout ce qui n'est pas une adresse (URL, nom, valeur vide).
+ */
+export declare function emailAddress(contact: unknown): string;
+
+export interface IssueReportMailOptions {
+  /** Le destinataire. Sans adresse valide (`emailAddress`) : `''`. */
+  to?: string;
+  /** Le nom de l'application, dans l'objet et le contexte. */
+  app?: string;
+  /** L'objet ; par défaut « Signalement : <app> ». */
+  subject?: string;
+  /** La consigne en tête du corps, dans la langue de l'app. */
+  intro?: string;
+}
+
+/**
+ * Un `mailto:` prérempli : la consigne, deux lignes pour écrire, puis le
+ * contexte du gabarit d'anomalie (application, version, environnement,
+ * écran). Pour qui n'a pas de compte GitHub. `''` sans adresse valide.
+ */
+export declare function issueReportMailto(
+  options?: IssueReportMailOptions & {
+    version?: unknown;
+    commit?: string;
+    buildTime?: string;
+    route?: string;
+    environment?: string;
+  }
+): string;
+
+/**
+ * Le même `mailto:`, rempli à l'instant de l'appel (build, écran,
+ * environnement). À appeler au clic.
+ */
+export declare function currentIssueReportMailto(
+  options?: IssueReportMailOptions
 ): string;

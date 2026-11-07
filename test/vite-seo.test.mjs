@@ -598,7 +598,7 @@ test('les captures du manifeste construit rejoignent le WebApplication', () => {
   }
 });
 
-test('llms.txt : omis = rien ; true = auto ; chaîne conserve', async () => {
+test('llms.txt : omis = auto (défaut du 07/11/2026) ; false = rien ; chaîne conserve', async () => {
   const dossier = mkdtempSync(join(tmpdir(), 'seo-llms-'));
   try {
     writeFileSync(
@@ -606,6 +606,18 @@ test('llms.txt : omis = rien ; true = auto ; chaîne conserve', async () => {
       PAGE.replaceAll('__SEO_LOGO_URL__', 'https://x/logo.svg')
     );
 
+    const coupe = pwaSeoPlugin({
+      basePath: '/miss-dice/',
+      sitemap: false,
+      robots: false,
+      llms: false,
+    });
+    coupe.configResolved({ command: 'build', build: { outDir: dossier } });
+    await coupe.closeBundle();
+    assert.equal(existsSync(join(dossier, 'llms.txt')), false);
+
+    // Le défaut : aucune app ne l'activait, la racine et les vingt-trois
+    // sites répondaient 404 (audits SEO/GEO du 28/09 et du 06/11).
     const defaut = pwaSeoPlugin({
       basePath: '/miss-dice/',
       sitemap: false,
@@ -613,21 +625,16 @@ test('llms.txt : omis = rien ; true = auto ; chaîne conserve', async () => {
     });
     defaut.configResolved({ command: 'build', build: { outDir: dossier } });
     await defaut.closeBundle();
-    assert.equal(existsSync(join(dossier, 'llms.txt')), false);
-
-    const auto = pwaSeoPlugin({
-      basePath: '/miss-dice/',
-      sitemap: false,
-      robots: false,
-      llms: true,
-    });
-    auto.configResolved({ command: 'build', build: { outDir: dossier } });
-    await auto.closeBundle();
     const texte = readFileSync(join(dossier, 'llms.txt'), 'utf8');
     assert.match(texte, /^# Miss Dice/m);
+    // Le format de llmstxt.org : des liens Markdown, pas « libellé : URL ».
     assert.match(
       texte,
-      /Application : https:\/\/mister-guiiug\.github\.io\/miss-dice\//
+      /^- \[Miss Dice\]\(https:\/\/mister-guiiug\.github\.io\/miss-dice\/\)$/m
+    );
+    assert.match(
+      texte,
+      /^- \[Code source\]\(https:\/\/github\.com\/mister-guiiug\/miss-dice\)$/m
     );
 
     rmSync(join(dossier, 'llms.txt'));
@@ -642,6 +649,66 @@ test('llms.txt : omis = rien ; true = auto ; chaîne conserve', async () => {
     assert.equal(readFileSync(join(dossier, 'llms.txt'), 'utf8'), '# Custom\n');
   } finally {
     rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test('defaultLlmsTxt : les pages de contenu en section « Guides », une ligne chacune', () => {
+  const texte = defaultLlmsTxt({
+    homeUrl: 'https://mister-guiiug.github.io/miss-dice/',
+    pages: [
+      {
+        chemin: 'regles-yahtzee.html',
+        title: 'Règles du Yahtzee [complètes]',
+        description: 'Les treize cases,\n  le bonus et les points.',
+      },
+      { chemin: 'en/yahtzee-rules.html', title: 'Yahtzee rules' },
+    ],
+  });
+  assert.match(texte, /^## Guides$/m);
+  // Crochets échappés dans le texte du lien, description repliée sur une ligne.
+  assert.match(
+    texte,
+    /^- \[Règles du Yahtzee \\\[complètes\\\]\]\(https:\/\/mister-guiiug\.github\.io\/miss-dice\/regles-yahtzee\.html\): Les treize cases, le bonus et les points\.$/m
+  );
+  // Sans description, pas de deux-points orphelin.
+  assert.match(
+    texte,
+    /^- \[Yahtzee rules\]\(https:\/\/mister-guiiug\.github\.io\/miss-dice\/en\/yahtzee-rules\.html\)$/m
+  );
+  // Sans page, pas de section vide.
+  assert.doesNotMatch(
+    defaultLlmsTxt({ homeUrl: 'https://mister-guiiug.github.io/miss-dice/' }),
+    /## Guides/
+  );
+});
+
+test('le llms.txt du build liste les pages de contenu écrites', async () => {
+  const dossier = mkdtempSync(join(tmpdir(), 'seo-llms-pages-'));
+  const source = mkdtempSync(join(tmpdir(), 'seo-llms-src-'));
+  try {
+    mkdirSync(join(source, 'pages'), { recursive: true });
+    writeFileSync(
+      join(source, 'pages', 'regles.md'),
+      '---\ntitle: Les règles\ndescription: Comment on joue.\n---\n\n# Les règles\n\nTexte.\n'
+    );
+    const plugin = pwaSeoPlugin({
+      basePath: '/miss-dice/',
+      sitemap: false,
+      contentPages: join(source, 'pages'),
+    });
+    plugin.configResolved({ command: 'build', build: { outDir: dossier } });
+    plugin.buildStart();
+    writeFileSync(join(dossier, 'index.html'), plugin.transformIndexHtml(PAGE));
+    plugin.writeBundle({ dir: dossier });
+    await plugin.closeBundle();
+    const texte = readFileSync(join(dossier, 'llms.txt'), 'utf8');
+    assert.match(
+      texte,
+      /^- \[Les règles\]\(https:\/\/mister-guiiug\.github\.io\/miss-dice\/regles\.html\): Comment on joue\.$/m
+    );
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+    rmSync(source, { recursive: true, force: true });
   }
 });
 

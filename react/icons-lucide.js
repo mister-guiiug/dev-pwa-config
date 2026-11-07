@@ -44,6 +44,8 @@ export const LUCIDE_NAMES = {
   sponsor: 'Coffee',
   external: 'ExternalLink',
   issue: 'Bug',
+  mail: 'Mail',
+  idea: 'Lightbulb',
   back: 'ChevronLeft',
   busy: 'LoaderCircle',
 };

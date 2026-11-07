@@ -55,6 +55,11 @@ const labels = {
     source: 'Quellcode',
     sponsor: 'Spendier mir einen Kaffee',
     issues: 'Ein Problem melden',
+    issuesMail: 'Per E-Mail melden',
+    idea: 'Eine Idee vorschlagen',
+    mailSubject: 'Problemmeldung: {app}',
+    mailIntro:
+      'Beschreibe, was du erwartet hast, was stattdessen passiert und wie es sich nachstellen lässt:',
   },
   share: {
     label: 'Teilen',

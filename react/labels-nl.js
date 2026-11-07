@@ -55,6 +55,11 @@ const labels = {
     source: 'Broncode',
     sponsor: 'Trakteer me op een koffie',
     issues: 'Een probleem melden',
+    issuesMail: 'Per e-mail melden',
+    idea: 'Een idee voorstellen',
+    mailSubject: 'Probleemmelding: {app}',
+    mailIntro:
+      'Beschrijf wat je verwachtte, wat er gebeurt en hoe je het kunt reproduceren:',
   },
   share: {
     label: 'Delen',
