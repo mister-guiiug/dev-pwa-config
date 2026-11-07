@@ -146,3 +146,67 @@ test('les trois dialectes livrés diffèrent bien', () => {
   assert.equal(DIALECTS['excel-fr'].delimiter, ';');
   assert.equal(DIALECTS.unix.newline, '\n');
 });
+
+/* ── Les formules : un export n'exécute rien chez celui qui l'ouvre ────── */
+
+// RELEVÉ PAR miss-arcade (07/11/2026). Les contacts d'un stand sont SAISIS par
+// des visiteurs, puis exportés vers l'Excel de l'organisateur. Une cellule
+// `=HYPERLINK("https://…";"Cliquez")` y devient un lien actif, et
+// `=cmd|' /C calc'!A0` une commande (« CSV injection », OWASP). Le dialecte
+// fait pour un humain sous Excel neutralise donc les quatre amorces de formule
+// et les deux caractères de contrôle qu'Excel saute avant de les lire.
+test('excel-fr : une cellule qui commence par une amorce de formule est neutralisée', () => {
+  const csv = toCsv(
+    [
+      { v: '=HYPERLINK("https://x.test";"ici")' },
+      { v: '+1+cmd' },
+      { v: '-2+3' },
+      { v: '@SUM(A1)' },
+      { v: '\t=1' },
+      { v: '\r=1' },
+    ],
+    { dialect: 'excel-fr', header: false }
+  );
+  const lignes = parseCsv(csv.slice(UTF8_BOM.length), { delimiter: ';' });
+  assert.deepEqual(
+    lignes.map(([cellule]) => cellule),
+    [
+      `'=HYPERLINK("https://x.test";"ici")`,
+      `'+1+cmd`,
+      `'-2+3`,
+      `'@SUM(A1)`,
+      `'\t=1`,
+      `'\r=1`,
+    ]
+  );
+});
+
+test('excel-fr : un nombre écrit en texte n’est pas une formule, il reste intact', () => {
+  // Une saisie « -12 » ou « +3,5 » se lirait sinon « '-12 » dans le tableur :
+  // c'est la seule amorce qu'on laisse passer, parce qu'elle ne calcule rien.
+  const csv = toCsv([{ a: '-12', b: '+3,5', c: '-0.5', d: -4 }], {
+    dialect: 'excel-fr',
+    header: false,
+  });
+  assert.equal(csv, `${UTF8_BOM}-12;+3,5;-0.5;-4`);
+});
+
+test('rfc4180 et unix gardent le texte tel quel : ils sont lus par une machine', () => {
+  // Une machine qui relit `'=1` y lirait une donnée corrompue. Le choix se
+  // fait par dialecte, et l'option force l'un ou l'autre.
+  assert.equal(escapeField('=1+1'), '=1+1');
+  assert.equal(escapeField('=1+1', { dialect: 'unix' }), '=1+1');
+  assert.equal(escapeField('=1+1', { neutralizeFormulas: true }), `'=1+1`);
+  assert.equal(
+    escapeField('=1+1', { dialect: 'excel-fr', neutralizeFormulas: false }),
+    '=1+1'
+  );
+  assert.equal(DIALECTS['excel-fr'].neutralizeFormulas, true);
+  assert.equal(DIALECTS.rfc4180.neutralizeFormulas, false);
+});
+
+test('la neutralisation se combine aux guillemets de RFC 4180', () => {
+  // Une formule qui contient le séparateur est d'abord désarmée, PUIS citée :
+  // l'apostrophe doit se trouver DANS les guillemets pour qu'Excel la lise.
+  assert.equal(escapeField('=A1;B1', { dialect: 'excel-fr' }), `"'=A1;B1"`);
+});

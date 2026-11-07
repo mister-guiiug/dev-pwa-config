@@ -18,7 +18,13 @@ export interface VersionedStoreOptions<T> {
    * `schema.parse` de zod — injectée, le socle ne dépend de rien.
    */
   validate?: (data: unknown) => T;
-  /** L'état initial, quand il n'y a rien — ou rien d'utilisable. */
+  /**
+   * L'état initial, quand il n'y a rien — ou rien d'utilisable. Tiré UNE fois
+   * par magasin (puis de nouveau après `clear()`) et rendu en copie : une
+   * graine aléatoire ou datée ne change pas d'une lecture à l'autre. Stable le
+   * temps de la page seulement : si d'autres données renvoient à ses
+   * identifiants, l'écrire (`save(load())`) à la première lecture.
+   */
   seed?: () => T;
   /** Copie de côté avant chaque migration (`{clé}.backup-v{n}`). Défaut : `true`. */
   backupBeforeMigrate?: boolean;
@@ -37,7 +43,10 @@ export interface VersionedStore<T> {
   save(data: T): boolean;
   /** Efface l'instantané ET ses copies de côté. Le reste du magasin survit. */
   clear(): void;
-  /** L'état courant en JSON indenté, enveloppe comprise. `null` si rien. */
+  /**
+   * L'état courant en JSON indenté, enveloppe comprise. Avec un `seed`, la
+   * graine tant que rien n'est écrit ; sans, `null` s'il n'y a rien.
+   */
   export(): string | null;
   /**
    * Parse, migre, valide — n'écrit QUE si tout a réussi. Lève une erreur

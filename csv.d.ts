@@ -5,6 +5,13 @@ export interface CsvDialect {
   bom: boolean;
   /** Écrire les décimales avec une virgule (ignoré si le séparateur en est une). */
   decimalComma: boolean;
+  /**
+   * Préfixer d'une apostrophe le TEXTE qui commence par `=`, `+`, `-`, `@`, une
+   * tabulation ou un retour chariot, pour qu'un tableur ne l'exécute pas
+   * (« CSV injection »). Un nombre écrit en texte (« -12 ») passe intact.
+   * Vrai pour `excel-fr`, faux pour les dialectes lus par une machine.
+   */
+  neutralizeFormulas: boolean;
 }
 
 export type CsvDialectName = 'rfc4180' | 'excel-fr' | 'unix';

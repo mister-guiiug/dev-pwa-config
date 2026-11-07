@@ -77,7 +77,11 @@ export interface SyncQueue<P = unknown> {
   deadLetters(): SyncQueueEntry<P>[];
   /** Retire une entrée en attente (abandonnée par l'app). */
   remove(id: string): void;
-  /** Draine en série, ordre préservé. Un drain déjà en cours : ne fait rien. */
+  /**
+   * Draine en série, ordre préservé. Pendant un drain, rend la promesse du
+   * drain EN COURS — qui emporte aussi ce qui a été enfilé entre-temps :
+   * `await flush()` veut dire « la file a été poussée ».
+   */
   flush(): Promise<DrainResult>;
   /**
    * Relance les lettres mortes en tête de file, compteurs remis à zéro ; une

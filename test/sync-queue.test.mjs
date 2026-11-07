@@ -217,13 +217,65 @@ test('le drain est SÉRIALISÉ : un second appel ne double pas les envois', asyn
 
   queue.enqueue({ n: 1 });
   const first = queue.flush();
-  const second = await queue.flush(); // pendant que le premier tient la tête
-  assert.deepEqual(second, { done: 0, retried: 0, dead: 0 });
+  const second = queue.flush(); // pendant que le premier tient la tête
+  assert.equal(second, first, 'le second appel rend le drain EN COURS');
   assert.equal(inFlight, 1, 'un seul envoi en vol');
 
   release();
   const result = await first;
   assert.equal(result.done, 1);
+  assert.equal(inFlight, 1, 'toujours un seul envoi');
+});
+
+test('`await flush()` pendant un drain attend que la file soit POUSSÉE', async () => {
+  // RELEVÉ PAR miss-arcade (07/11/2026). Le second appel rendait tout de
+  // suite `{ done: 0 }` : « un drain déjà en cours : ne fait rien ». Or trois
+  // consommateurs lisent `await flush()` comme « la file est vide » : miss-uwh
+  // pousse avant de tirer l'état du serveur, miss-lookhouse écrit
+  // `flush().then(tirerSiDu)`, et le `drained` du squelette était remplacé
+  // par cette promesse vide à chaque écriture. Ils tiraient donc AVANT que
+  // leurs écritures ne soient parties.
+  let release;
+  const gate = new Promise(resolve => {
+    release = resolve;
+  });
+  const sent = [];
+  const queue = createSyncQueue({
+    store: memoryStore(),
+    process: async payload => {
+      await gate;
+      sent.push(payload);
+    },
+    env: {},
+  });
+
+  queue.enqueue({ n: 1 });
+  void queue.flush(); // le drain que déclenche une écriture
+  queue.enqueue({ n: 2 });
+  let settled = false;
+  const waited = queue.flush().then(result => {
+    settled = true;
+    return result;
+  });
+
+  await Promise.resolve();
+  assert.equal(settled, false, 'rien n’est encore parti');
+
+  release();
+  const result = await waited;
+  assert.deepEqual(sent, [{ n: 1 }, { n: 2 }]);
+  assert.equal(result.done, 2);
+  assert.equal(queue.pending(), 0);
+});
+
+test('un drain terminé n’est pas resservi : le suivant repart', async () => {
+  // Une file vide se draine sans attendre : le drain finit avant même que sa
+  // promesse ne soit rendue. Il ne doit pas rester « en cours » pour autant.
+  const { queue, sent } = makeQueue();
+  assert.equal((await queue.flush()).done, 0);
+  queue.enqueue({ n: 1 });
+  assert.equal((await queue.flush()).done, 1);
+  assert.deepEqual(sent, [{ n: 1 }]);
 });
 
 test('hors ligne, le drain s’arrête SANS consommer de tentative', async () => {
@@ -489,6 +541,49 @@ test('quand le stockage refuse, la file continue EN MÉMOIRE', async () => {
   assert.deepEqual(sent, [{ n: 1 }]);
   assert.equal(result.done, 1);
   assert.equal(queue.pending(), 0);
+});
+
+test('une file effacée du stockage ne RESSORT pas de la mémoire', async () => {
+  // RELEVÉ PAR miss-arcade (07/11/2026). Le reflet mémoire servait de valeur
+  // par défaut à CHAQUE lecture : une clé absente rendait la dernière file
+  // connue. Or « Supprimer mes données » efface le stockage par préfixe
+  // (`backup.js`, le compte du squelette) : la file revenait au tour suivant,
+  // et partait vers le serveur — des écritures que l'utilisateur venait
+  // d'effacer. Le reflet ne sert qu'après une écriture REFUSÉE.
+  const store = memoryStore();
+  const { queue, sent } = makeQueue({ store, isOnline: () => false });
+  queue.enqueue({ email: 'visiteur@example.org' });
+  queue.enqueue({ n: 2 });
+  assert.equal(queue.pending(), 2);
+
+  store.clear(); // l'effacement par préfixe, hors de la file
+
+  assert.equal(queue.pending(), 0);
+  assert.deepEqual(queue.list(), []);
+  queue.enqueue({ n: 3 });
+  assert.deepEqual(
+    queue.list().map(entry => entry.payload),
+    [{ n: 3 }],
+    'une nouvelle écriture ne ramène pas les anciennes'
+  );
+  assert.deepEqual(sent, []);
+});
+
+test('les lettres mortes effacées du stockage ne ressortent pas non plus', async () => {
+  const store = memoryStore();
+  const failing = Object.assign(new Error('Forbidden'), { status: 403 });
+  const queue = createSyncQueue({
+    store,
+    process: () => Promise.reject(failing),
+    env: {},
+  });
+  queue.enqueue({ n: 1 });
+  await queue.flush();
+  assert.equal(queue.deadLetters().length, 1);
+
+  store.clear();
+
+  assert.deepEqual(queue.deadLetters(), []);
 });
 
 /* ── start / stop et l’évènement `online` ──────────────────────────────── */
