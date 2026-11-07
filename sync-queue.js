@@ -140,15 +140,22 @@ export function createSyncQueue(options) {
   // `false` — quota, mode privé), on lit le reflet : la valeur stockée est
   // plus vieille que ce que la file sait. Les trois copies perdaient ces
   // écritures-là en silence.
+  //
+  // LE REFLET NE SERT QU'APRÈS UN REFUS, jamais comme valeur par défaut.
+  // Relevé par miss-arcade le 07/11/2026 : une clé ABSENTE rendait la dernière
+  // file connue. Or « Supprimer mes données » efface le stockage par préfixe
+  // (`./backup.js`, le compte du squelette) : la file ressortait de la
+  // mémoire et partait vers le serveur, avec ce que l'utilisateur venait
+  // d'effacer. Une clé absente veut dire une file vide.
   let memoryQueue = [];
   let memoryDead = [];
   let queueStored = true;
   let deadStored = true;
 
   const readQueue = () =>
-    queueStored ? sanitize(store.get(queueKey, memoryQueue)) : memoryQueue;
+    queueStored ? sanitize(store.get(queueKey, [])) : memoryQueue;
   const readDead = () =>
-    deadStored ? sanitize(store.get(deadKey, memoryDead)) : memoryDead;
+    deadStored ? sanitize(store.get(deadKey, [])) : memoryDead;
   const writeQueue = entries => {
     memoryQueue = entries;
     queueStored = store.set(queueKey, entries) !== false;
@@ -162,6 +169,8 @@ export function createSyncQueue(options) {
     safely(onChange, { pending: readQueue().length, dead: readDead().length });
 
   let draining = false;
+  /** La promesse du drain en cours — rendue à qui appelle pendant. */
+  let current = null;
   let timer = null;
   let onOnline = null;
 
@@ -203,11 +212,28 @@ export function createSyncQueue(options) {
    * durable → lettre morte, et la file CONTINUE. Hors ligne, le drain
    * s'interrompt sans consommer de tentative : un réseau coupé n'est pas un
    * échec de l'opération.
+   *
+   * SÉRIALISÉ, ET ATTENDABLE. Un drain à la fois ; un appel pendant le drain
+   * rend la promesse du drain EN COURS, qui relit la file à chaque tour et
+   * emporte donc aussi ce qui a été enfilé entre-temps. Jusqu'au 07/11/2026,
+   * ce second appel rendait tout de suite `{ done: 0 }` : `await flush()` ne
+   * voulait rien dire, alors que miss-uwh, miss-lookhouse et le squelette
+   * s'en servent pour tirer l'état du serveur APRÈS avoir poussé le leur.
    */
-  async function flush() {
-    // Sérialisé : un drain à la fois. Le second appel ne fait rien — c'est le
-    // premier qui détient la tête de file.
-    if (draining) return { done: 0, retried: 0, dead: 0 };
+  function flush() {
+    // `current` n'est nul que si `process` rappelle `flush` d'un trait, avant
+    // le premier `await` du premier drain : jamais deux drains pour autant.
+    if (draining) {
+      return current ?? Promise.resolve({ done: 0, retried: 0, dead: 0 });
+    }
+    // `drain` peut finir sans jamais attendre (file vide, hors ligne) : il
+    // remet alors `draining` à faux AVANT que sa promesse ne soit rangée ici,
+    // et l'appel suivant repart, sans resservir un drain terminé.
+    current = drain();
+    return current;
+  }
+
+  async function drain() {
     draining = true;
     cancelRetry();
     const result = { done: 0, retried: 0, dead: 0 };
