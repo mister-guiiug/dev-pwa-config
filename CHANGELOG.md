@@ -1,5 +1,37 @@
 # Changelog
 
+## 6.33.0
+
+### Minor Changes
+
+- 0a81b6c: `react/app-shell` : nouvelle prop `navNavigate`, transmise au `navigate` de `BottomNav`. Avec des routes paresseuses, react-router navigue dans une transition et le repli de Suspense ne paraît jamais : la barre doit piloter la navigation pour dire qu'elle charge (`pwa-doctor`, `nav-attente`). La coquille ne transmettait pas `navigate` et n'avait aucune prop pour le recevoir. Une app sous `AppShell` n'avait donc que le refus motivé ; miss-arcade a dû y recourir (07/11/2026).
+  
+  `pwa-doctor` reconnaît `navNavigate={…}` comme remède à `nav-attente`, et son conseil le cite.
+  
+  Migration : passer `navNavigate={navigate}` (le `useNavigate()` de react-router) à `<AppShell>`, puis retirer le refus `nav-attente` de `pwaDoctor.refus` s'il y en avait un (miss-arcade).
+- 36dc24e: `csv` : le dialecte `excel-fr` neutralise les formules (option `neutralizeFormulas`). Toute cellule de texte qui commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot reçoit une apostrophe en tête, pour qu'Excel ne l'exécute pas (« CSV injection », OWASP). Relevé par miss-arcade (07/11/2026) : les contacts d'un stand sont saisis par des visiteurs, puis ouverts dans l'Excel de l'organisateur, où une cellule `=HYPERLINK(…)` devenait un lien actif.
+  
+  Un nombre négatif écrit en texte (« -12 », « -0,5 ») passe intact, tout comme les nombres, dates et booléens typés. Le « + » n'a pas cette exception : « +33612345678 » est un téléphone, et sans apostrophe Excel le lirait comme un nombre, sans son « + » (et en notation scientifique au-delà de onze chiffres). `rfc4180` et `unix`, lus par une machine, ne changent pas ; l'option force l'un ou l'autre comportement dans tous les dialectes.
+  
+  Une application qui neutralisait elle-même (miss-arcade, `neutralizeFormula` dans `admin/leads-csv.ts`) peut retirer sa fonction après la montée : une cellule déjà préfixée commence par une apostrophe et n'est pas préfixée deux fois.
+
+### Patch Changes
+
+- b4e27b3: `vite-csp` : un paquet qui porte sa propre copie de zod la reçoit au build, au lieu du zod de l'application. L'alias `/^zod$/` de `cspPlugin` réécrivait TOUT `import … from 'zod'` vers le module `jitless`, qui réexporte le zod de l'app. Sur miss-devises (07/11/2026), CopilotKit, `@ag-ui/client` et `@a2ui/web_core` embarquent zod 3 dans leur `node_modules` et recevaient zod 4. Le copilote plantait au chargement (« Cannot read properties of undefined (reading 'call') »), en production seulement.
+  
+  `resolveId` voit l'importeur du module virtuel. Si Node donnerait à cet importeur un autre zod que celui de l'app, il rend l'entrée ES de cette copie. Le code de l'application, et tout paquet qui partage son zod, gardent le module `jitless`. L'alias reste en place, et le plugin reste sans `enforce: 'pre'`.
+  
+  Une application qui contournait le défaut par un greffon local (miss-devises, `zodDeChaquePaquet`) peut le retirer après la montée.
+- 36dc24e: `react/net` : `isTransientMessage` lit les codes de Node (`ECONNREFUSED`, `ECONNRESET`, `ENOTFOUND`) comme des mots, plus à l'intérieur d'un mot. Relevé par miss-arcade (07/11/2026) : « borne non reconnue », le refus 403 d'un jeton révoqué, contient « econn » (r-econn-ue). Il était classé coupure réseau, donc rejoué sans fin par une file d'envoi qui s'en servait comme `shouldRetry`. « Utilisateur non reconnu » ou « code non reconnu » tombaient dans le même piège.
+- 36dc24e: `sync-queue` : deux corrections relevées par miss-arcade (07/11/2026).
+  
+  **`flush()` pendant un drain rend la promesse du drain en cours**, au lieu de `{ done: 0 }` tout de suite. Ce drain relit la file à chaque tour et emporte aussi ce qui a été enfilé entre-temps : `await flush()` veut désormais dire « la file a été poussée ». C'est ce que lisaient déjà trois consommateurs, à tort jusqu'ici : miss-uwh pousse avant de tirer l'état du serveur, miss-lookhouse écrit `flush().then(tirerSiDu)`, et le `drained` du squelette (et de miss-holi-voyage) était remplacé à chaque écriture par la promesse vide. Il n'y a toujours qu'un drain à la fois.
+  
+  **Une file effacée du stockage ne ressort plus de la mémoire.** Le reflet mémoire servait de valeur par défaut à chaque lecture. Après « Supprimer mes données » (effacement par préfixe), la file revenait donc au tour suivant et partait vers le serveur avec ce que l'utilisateur venait d'effacer. Le reflet ne sert plus qu'après une écriture refusée (quota, mode privé), son seul rôle.
+- 36dc24e: `versioned-store` : la graine (`seed`) est tirée une fois par magasin et rendue en copie, au lieu d'être recalculée à chaque `load()`. Relevé par miss-arcade (07/11/2026) : tant que rien n'était écrit, une graine aux identifiants aléatoires ou datée (`new Date()`) changeait d'une lecture à l'autre. Une administration ouverte puis enregistrée sur un appareil vierge se voyait refuser « modifiée ailleurs ». Vitest ne le voyait pas (deux lectures dans la même milliseconde), l'e2e si.
+  
+  `clear()` oublie la graine tirée : la suivante est neuve. Une graine qui ne se copie pas (fonction, instance de classe) garde l'ancien comportement. La stabilité vaut le temps de la page : si d'autres données renvoient aux identifiants de la graine, l'application l'écrit à la première lecture (`save(load())`).
+
 ## 6.32.2
 
 ### Patch Changes
