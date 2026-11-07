@@ -43,8 +43,9 @@ export interface PwaSeoPluginOptions {
   logoPath?: string;
   iconQuery?: string;
   /**
-   * Contenu d'un `llms.txt`. Omis ou `false` : aucun fichier (défaut).
-   * `true` : fichier minimal depuis le catalogue. Une chaîne : ce texte.
+   * Contenu d'un `llms.txt`. Omis ou `true` (défaut depuis le 07/11/2026) :
+   * le fichier tiré du catalogue, de la page et des pages de contenu.
+   * `false` : aucun fichier. Une chaîne : ce texte.
    */
   llms?: string | boolean;
   /**
@@ -293,10 +294,14 @@ export function webApplicationJsonLd(opts: {
   screenshots?: string[];
 }): { '@context': string; '@graph': Array<Record<string, unknown>> } | null;
 
-/** Un `llms.txt` minimal depuis le catalogue, ou `null` sans matière. */
+/**
+ * Le `llms.txt` (format llmstxt.org) depuis le catalogue, la page et les
+ * pages de contenu, ou `null` sans matière.
+ */
 export function defaultLlmsTxt(opts: {
   homeUrl: string;
   html?: string;
+  pages?: Array<{ chemin: string; title: string; description?: string }>;
 }): string | null;
 
 /** Le bloc `<script type="application/ld+json">`, `<` échappé. */
