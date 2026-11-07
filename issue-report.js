@@ -137,14 +137,20 @@ export function describeEnvironment(options = {}) {
 const MASQUE = '…';
 
 /**
+ * Un mot en minuscules, éventuellement composé : `reglages`,
+ * `miss-holi-voyage`, `en-pause`. Un jeton aléatoire n'a pas cette forme :
+ * il porte des chiffres, des majuscules, un `_`.
+ */
+const motLisible = s => /^[a-zà-ÿ]+(?:-[a-zà-ÿ]+)*$/.test(s);
+
+/**
  * Un segment de chemin qui dit OÙ l'on est, et rien d'autre : un mot en
- * minuscules (`reglages`, `miss-holi-voyage`), ou un segment court (`3`).
+ * minuscules (`motLisible`), ou un segment court (`3`).
  * Tout le reste — un code `K7PQ2M`, un UUID, un jeton hexadécimal ou base64 —
  * est masqué. Liste blanche et non liste noire : un format de jeton qu'on n'a
  * pas prévu reste masqué.
  */
-const segmentLisible = s =>
-  s.length < 6 || /^[a-zà-ÿ]+(?:-[a-zà-ÿ]+)*$/.test(s);
+const segmentLisible = s => s.length < 6 || motLisible(s);
 
 const cheminSansJeton = chemin =>
   chemin
@@ -152,7 +158,22 @@ const cheminSansJeton = chemin =>
     .map(s => (segmentLisible(s) ? s : MASQUE))
     .join('/');
 
-/** `?invite=abc&tab=2` → `?invite=…&tab=…` : les noms aident, les valeurs fuient. */
+/**
+ * Les noms dont la valeur part toujours, même lisible : ceux qui portent un
+ * secret (`invite`, `code`, `pin`, `access_token`) et ceux qui portent un
+ * texte saisi (`q`, `search`, `email`). Masquer à tort ne coûte qu'un mot
+ * dans l'issue : la liste mord large (`code` prend aussi `barcode`).
+ */
+const NOM_SENSIBLE =
+  /token|secret|key|cle|code|pin|pass|auth|sig|session|invit|otp|^q$|query|search|recherche|text|mail|phone|^tel|nom|name/i;
+
+/**
+ * `?vue=historique&invite=9f2c4e&tab=2` → `?vue=historique&invite=…&tab=…`.
+ * Le nom reste ; la valeur aussi quand elle dit où l'on est — un mot en
+ * minuscules (`motLisible`) sous un nom qui ne porte ni secret ni saisie
+ * (`NOM_SENSIBLE`). Un nombre, un identifiant, un texte encodé partent : un
+ * code PIN ou un numéro de dossier n'ont rien à faire dans une issue publique.
+ */
 function requeteSansValeurs(requete) {
   const corps = requete.replace(/^\?/, '');
   if (!corps) return '';
@@ -160,8 +181,12 @@ function requeteSansValeurs(requete) {
     .split('&')
     .filter(Boolean)
     .map(p => {
-      const nom = p.split('=')[0];
-      return /^[A-Za-z_][\w-]{0,30}$/.test(nom) ? `${nom}=${MASQUE}` : MASQUE;
+      const i = p.indexOf('=');
+      const nom = i < 0 ? p : p.slice(0, i);
+      const valeur = i < 0 ? '' : p.slice(i + 1);
+      if (!/^[A-Za-z_][\w-]{0,30}$/.test(nom)) return MASQUE;
+      const garde = !NOM_SENSIBLE.test(nom) && motLisible(valeur);
+      return `${nom}=${garde ? valeur : MASQUE}`;
     });
   return parties.length ? `?${parties.join('&')}` : '';
 }
@@ -180,9 +205,13 @@ function requeteSansValeurs(requete) {
  * ouvrir le dossier à qui lit l'issue.
  *
  * Ce qui est gardé : le chemin, segment par segment s'il est lisible
- * (`segmentLisible`) ; les NOMS des paramètres ; la route d'une app en `#`
- * (`#/notes/3`), passée au même filtre. Un fragment qui n'est pas une route
- * (`#access_token=…`, une ancre) est retiré.
+ * (`segmentLisible`) ; les NOMS des paramètres, et leur valeur quand c'est un
+ * mot (`?vue=historique`, voir `requeteSansValeurs`) ; la route d'une app en
+ * `#` (`#/notes/3`), passée au même filtre. Un fragment qui n'est pas une
+ * route (`#access_token=…`, une ancre) est retiré.
+ *
+ * 6.34.0 retirait TOUTES les valeurs : miss-ticket-pwa, qui range ses écrans
+ * en `?vue=…`, ne disait plus sur lequel on signalait (6.34.1).
  *
  * @param {Window | null} [win]
  */

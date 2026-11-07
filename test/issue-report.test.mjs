@@ -160,7 +160,7 @@ test('currentRoute ne recopie aucun secret de l’adresse dans l’issue publiqu
   const route = (pathname, search = '', hash = '') =>
     currentRoute({ location: { pathname, search, hash } });
 
-  // Requête : les noms restent, les valeurs partent.
+  // Requête : les noms restent, les valeurs opaques partent.
   assert.equal(
     route('/miss-carbook/', '?invite=9f2c4e1a7b&tab=2'),
     '/miss-carbook/?invite=…&tab=…'
@@ -193,6 +193,50 @@ test('currentRoute ne recopie aucun secret de l’adresse dans l’issue publiqu
     route('/miss-arcade/', '', '#/guides/installer-une-borne'),
     '/miss-arcade/#/guides/installer-une-borne'
   );
+});
+
+/*
+ * 6.34.0 retirait toutes les valeurs : miss-ticket-pwa range ses écrans en
+ * `?vue=…`, et ses signalements ne disaient plus lequel. Un mot garde sa
+ * valeur ; un nom qui porte un secret ou une saisie la perd quand même.
+ */
+test('currentRoute garde la valeur d’un paramètre qui dit où l’on est', () => {
+  const route = (search, hash = '') =>
+    currentRoute({ location: { pathname: '/app/', search, hash } });
+
+  // Un mot, composé ou non, sous un nom neutre : gardé.
+  assert.equal(route('?vue=historique'), '/app/?vue=historique');
+  assert.equal(
+    route('?tab=entretiens&filtre=en-pause'),
+    '/app/?tab=entretiens&filtre=en-pause'
+  );
+  assert.equal(
+    route('', '#/projets?statut=archives'),
+    '/app/#/projets?statut=archives'
+  );
+  // Ni nombre, ni identifiant, ni majuscule, ni texte encodé : un code PIN,
+  // un numéro de dossier, un code de partie, une saisie à deux mots.
+  assert.equal(
+    route('?page=2&id=4821&partie=ABCDEF&titre=deux%20mots&t=a+b'),
+    '/app/?page=…&id=…&partie=…&titre=…&t=…'
+  );
+  // Un nom qui porte un secret ou un texte saisi perd sa valeur, même
+  // lisible : `?code=bonjour` est un code, `?q=diabete` une recherche.
+  for (const nom of [
+    'code',
+    'invite',
+    'access_token',
+    'pin',
+    'password',
+    'q',
+    'search',
+    'email',
+    'recherche',
+  ]) {
+    assert.equal(route(`?${nom}=bonjour`), `/app/?${nom}=…`, nom);
+  }
+  // Sans valeur, ou vide : le nom seul ne dit rien de plus.
+  assert.equal(route('?debug&vue='), '/app/?debug=…&vue=…');
 });
 
 test('currentIssueReportUrl lit le build injecté par vite-version, et rien sous Node', () => {
