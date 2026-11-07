@@ -266,9 +266,24 @@ test('emailAddress : une adresse, `mailto:` retiré — tout le reste se tait', 
     'a@b.fr, c@d.fr',
     'a@b.fr?cc=c@d.fr',
     'Nom <a@b.fr>',
+    'a@b@c.fr',
+    'a@.fr',
+    'a@fr.',
+    '@b.fr',
   ]) {
     assert.equal(emailAddress(valeur), '', String(valeur));
   }
+});
+
+test('emailAddress reste linéaire sur l’entrée que CodeQL a construite', () => {
+  // js/polynomial-redos sur le premier motif, d'un seul tenant : « !@!. »
+  // suivi de « !. » répété. Mesuré le 07/11/2026, ce motif-là croissait au
+  // carré — 65 ms à 10 000 répétitions, 262 ms à 20 000 — ; les deux tests
+  // par partie restent linéaires.
+  const piege = `!@!.${'!.'.repeat(50_000)}`;
+  const debut = performance.now();
+  assert.equal(emailAddress(piege), '');
+  assert.ok(performance.now() - debut < 500, 'trop lent : motif ambigu ?');
 });
 
 test('issueReportMailto : objet, consigne, puis le contexte du gabarit', () => {

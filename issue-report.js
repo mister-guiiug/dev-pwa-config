@@ -281,11 +281,25 @@ export function emailAddress(contact) {
   if (adresse.toLowerCase().startsWith('mailto:')) adresse = adresse.slice(7);
   // Une seule arobase, un domaine à point, rien qui sépare deux adresses ni
   // n'ouvre des paramètres : `?`, `&`, `,`, `;`, espaces et chevrons sont exclus.
-  return /^[^\s@<>()[\]",;:?&/\\]+@[^\s@<>()[\]",;:?&/\\]+\.[^\s@<>()[\]",;:?&/\\]+$/.test(
-    adresse
-  )
-    ? adresse
-    : '';
+  //
+  // DEUX TESTS SIMPLES PLUTÔT QU'UN MOTIF D'UN SEUL TENANT. Le motif entier
+  // (`local@domaine.tld`, le point admis des deux côtés du dernier point) est
+  // ambigu : CodeQL l'a relevé en temps polynomial sur une entrée choisie
+  // (js/polynomial-redos). Chaque partie est éprouvée seule, par une classe
+  // de caractères sans alternative, en temps linéaire.
+  const parties = adresse.split('@');
+  if (parties.length !== 2) return '';
+  const [local, domaine] = parties;
+  const permis = /^[^\s<>()[\]",;:?&/\\]+$/;
+  if (!permis.test(local) || !permis.test(domaine)) return '';
+  if (
+    !domaine.includes('.') ||
+    domaine.startsWith('.') ||
+    domaine.endsWith('.')
+  ) {
+    return '';
+  }
+  return adresse;
 }
 
 /**
@@ -327,8 +341,10 @@ export function issueReportMailto(options = {}) {
     '',
     ...(contexte.length ? ['—', ...contexte] : []),
   ].join('\r\n');
+  // L'arobase reste lisible : chaque partie est codée seule, puis rejointe.
+  const [local, domaine] = adresse.split('@');
   return (
-    `mailto:${encodeURIComponent(adresse).replace('%40', '@')}` +
+    `mailto:${encodeURIComponent(local)}@${encodeURIComponent(domaine)}` +
     `?subject=${encodeURIComponent(subject)}` +
     `&body=${encodeURIComponent(corps)}`
   );
