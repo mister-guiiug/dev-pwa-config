@@ -32,6 +32,27 @@ test('ce que les navigateurs disent d’une coupure réseau est transitoire', ()
   }
 });
 
+test('un code d’erreur système se lit comme un MOT, pas dans un mot', () => {
+  // RELEVÉ PAR miss-arcade (07/11/2026) : « borne non reconnue », le refus
+  // d'un jeton de borne révoqué (403), contient « econn » — r-ECONN-ue. Il
+  // était classé coupure réseau, donc rejoué sans fin par la file d'envoi.
+  for (const message of [
+    'borne non reconnue',
+    'Utilisateur non reconnu',
+    'Code de retrait non reconnu',
+  ]) {
+    assert.equal(isTransientMessage(message), false, message);
+  }
+  // Les vrais codes de Node restent reconnus, seuls ou dans une phrase.
+  for (const message of [
+    'connect ECONNREFUSED 127.0.0.1:443',
+    'read ECONNRESET',
+    'ECONNABORTED',
+  ]) {
+    assert.equal(isTransientMessage(message), true, message);
+  }
+});
+
 test('un refus du serveur n’est pas transitoire — réessayer ne changera rien', () => {
   for (const message of [
     'new row violates row-level security policy for table "notes"',

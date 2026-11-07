@@ -36,9 +36,15 @@ export function defaultShouldRetry(error) {
  * (relevé du 20/09/2026). `defaultShouldRetry` ne lit qu'un statut HTTP ;
  * une `TypeError` de `fetch` n'en a pas, et c'est précisément le cas que ce
  * motif classe.
+ *
+ * LES CODES DE NODE SE LISENT COMME DES MOTS (`\beconn`, `\benotfound`).
+ * Relevé par miss-arcade le 07/11/2026 : « borne non reconnue », le refus
+ * d'un jeton révoqué, contient « econn » (r-econn-ue) ; il était classé
+ * coupure, donc rejoué sans fin. `ECONNREFUSED`, `ECONNRESET` et `ENOTFOUND`
+ * arrivent toujours en tête de mot.
  */
 const TRANSIENT =
-  /fetch|network|load failed|timeout|timed?\s?out|offline|connexion|connection|econn|enotfound|socket|abort|too many requests|jwt expired|token.{0,10}expired|service unavailable|bad gateway|gateway time/i;
+  /fetch|network|load failed|timeout|timed?\s?out|offline|connexion|connection|\beconn|\benotfound|socket|abort|too many requests|jwt expired|token.{0,10}expired|service unavailable|bad gateway|gateway time/i;
 
 /**
  * L'erreur (ou son message) décrit-elle un échec transitoire ?
