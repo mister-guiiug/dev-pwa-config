@@ -106,9 +106,17 @@ const ID_ZOD_JITLESS = '\0dwc-zod-jitless';
  * posé.
  */
 function cheminDeZod(racine) {
+  return zodVuDepuis(join(racine, 'package.json'));
+}
+
+/**
+ * Le zod ES que Node donnerait au fichier `fichier` — chaîne vide s'il n'en
+ * voit aucun. `createRequire` remonte les `node_modules` depuis ce fichier,
+ * exactement comme le ferait un `import 'zod'` écrit dedans.
+ */
+function zodVuDepuis(fichier) {
   try {
-    const exige = createRequire(join(racine, 'package.json'));
-    const manifeste = exige.resolve('zod/package.json');
+    const manifeste = createRequire(fichier).resolve('zod/package.json');
     const pkg = JSON.parse(readFileSync(manifeste, 'utf8'));
     const entree = pkg?.exports?.['.']?.import ?? pkg?.module ?? pkg?.main;
     if (typeof entree !== 'string') return '';
@@ -116,6 +124,43 @@ function cheminDeZod(racine) {
   } catch {
     return '';
   }
+}
+
+/** Deux chemins du même fichier — la casse ne compte pas sous Windows. */
+function memeChemin(a, b) {
+  return process.platform === 'win32'
+    ? a.toLowerCase() === b.toLowerCase()
+    : a === b;
+}
+
+/**
+ * L'ALIAS NE VOIT PAS QUI IMPORTE — `resolveId` LE VOIT, ET C'EST LÀ QU'ON TRIE.
+ *
+ * `{ find: /^zod$/ }` réécrit TOUT `import … from 'zod'` du graphe, y compris
+ * celui d'un paquet qui porte SA copie dans `node_modules/<paquet>/node_modules/zod`.
+ * Constaté le 07/11/2026 sur miss-devises : CopilotKit 1.85, `@ag-ui/client`
+ * et `@a2ui/web_core` embarquent zod 3.25 et recevaient le zod 4 de l'app ;
+ * `@a2ui/web_core` appelle `z.ZodType.prototype.describe.call(…)`, absent de
+ * zod 4, et le copilote plantait au chargement (« Cannot read properties of
+ * undefined (reading 'call') »). En PRODUCTION seulement : l'alias n'est posé
+ * qu'au build, le développement ne pouvait pas le montrer.
+ *
+ * Le module virtuel arrive donc ici avec son importeur. Si Node lui donnerait
+ * un AUTRE zod que celui de l'app, on rend cette copie, telle quelle ; sinon
+ * — code de l'application, paquet qui partage son zod — le module jitless.
+ * Une copie de zod 4 imbriquée garde ainsi sa sonde, donc sa ligne de
+ * console : c'est le prix d'une bibliothèque qui marche, et il est faible.
+ */
+function zodPropreA(importeur, zodReel) {
+  if (!importeur || importeur.startsWith('\0')) return '';
+  // La requête de Vite (`?used`, `#…`) coupée au premier signe, en un seul
+  // passage : `replace(/[?#].*$/)` relancerait `.*$` depuis chaque `#`
+  // (CodeQL, js/polynomial-redos).
+  const coupe = importeur.search(/[?#]/);
+  const sien = zodVuDepuis(
+    coupe === -1 ? importeur : importeur.slice(0, coupe)
+  );
+  return sien && !memeChemin(sien, zodReel) ? sien : '';
 }
 
 /**
@@ -328,8 +373,12 @@ export function cspPlugin(options = {}) {
         resolve: { alias: [{ find: /^zod$/, replacement: ID_ZOD_JITLESS }] },
       };
     },
-    resolveId(source) {
-      return source === ID_ZOD_JITLESS ? ID_ZOD_JITLESS : null;
+    resolveId(source, importer) {
+      // Le tri par importeur ne demande pas `'pre'` : aucun plugin de Vite ne
+      // réclame un identifiant en `\0`, le module virtuel arrive jusqu'ici
+      // avec son importeur — mesuré sur le build de miss-devises (Vite 8.3).
+      if (source !== ID_ZOD_JITLESS) return null;
+      return zodPropreA(importer, zodReel) || ID_ZOD_JITLESS;
     },
     load(id) {
       if (id !== ID_ZOD_JITLESS) return null;

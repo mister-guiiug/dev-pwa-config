@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { cspPlugin, ANALYTICS_HOSTS } from '../vite-csp.js';
 import { FAMILY_ORIGIN } from '../apps-catalog.js';
@@ -512,6 +519,119 @@ test('zod : le module d’amorce coupe la sonde sans rien retirer à zod', () =>
     'l’appel doit suivre les réexports'
   );
 });
+
+/*
+ * UN PAQUET QUI PORTE SA COPIE DE ZOD LA GARDE (07/11/2026).
+ *
+ * L'alias réécrit tout `from 'zod'`, sans savoir qui importe. Sur miss-devises,
+ * CopilotKit et A2UI embarquent zod 3 dans leur propre `node_modules` : ils
+ * recevaient le zod 4 de l'app, et le copilote plantait au chargement, en
+ * production seulement. `resolveId` voit l'importeur : il doit rendre à chacun
+ * la copie que Node lui donnerait. Le dépôt factice ci-dessous a la forme du
+ * cas réel — un zod à la racine, un paquet `x` avec le sien, un paquet `y`
+ * sans copie, qui partage donc celui de l'app.
+ */
+function depotFactice() {
+  const racine = mkdtempSync(path.join(tmpdir(), 'dwc-csp-zod-'));
+  const ecrire = (relatif, contenu) => {
+    const fichier = path.join(racine, relatif);
+    mkdirSync(path.dirname(fichier), { recursive: true });
+    writeFileSync(fichier, contenu);
+  };
+  const zod = (dossier, version, entree) => {
+    ecrire(
+      `${dossier}/package.json`,
+      JSON.stringify({
+        name: 'zod',
+        version,
+        type: 'module',
+        exports: {
+          '.': { import: entree, require: './index.cjs' },
+          './package.json': './package.json',
+        },
+      })
+    );
+    ecrire(`${dossier}/${entree}`, 'export const z = {};\n');
+  };
+  ecrire('package.json', JSON.stringify({ name: 'app', type: 'module' }));
+  ecrire('src/main.ts', "import { z } from 'zod';\n");
+  zod('node_modules/zod', '4.6.7', './index.js');
+  zod('node_modules/x/node_modules/zod', '3.25.76', './index.mjs');
+  ecrire('node_modules/x/package.json', JSON.stringify({ name: 'x' }));
+  ecrire('node_modules/x/dist/index.js', "import { z } from 'zod';\n");
+  ecrire('node_modules/y/package.json', JSON.stringify({ name: 'y' }));
+  ecrire('node_modules/y/dist/index.js', "import { z } from 'zod';\n");
+  return racine;
+}
+
+test('zod : un paquet qui porte sa copie la reçoit, l’app garde le module jitless', t => {
+  const racine = depotFactice();
+  t.after(() => rmSync(racine, { recursive: true, force: true }));
+  const plugin = cspPlugin({});
+  plugin.config({ root: racine }, { command: 'build' });
+  const depuis = relatif =>
+    plugin.resolveId(ID_JITLESS, path.join(racine, relatif));
+
+  // Le paquet `x` reçoit SA copie — l'entrée ES de son propre zod, pas le
+  // module d'amorce, qui lui servirait le zod 4 de l'app.
+  const copie = depuis('node_modules/x/dist/index.js');
+  assert.ok(typeof copie === 'string' && copie !== ID_JITLESS, `reçu ${copie}`);
+  assert.equal(
+    path.resolve(copie),
+    path.join(racine, 'node_modules/x/node_modules/zod/index.mjs')
+  );
+
+  // Le code de l'app, et un paquet sans copie, partagent le zod de l'app :
+  // ils gardent le module jitless — c'est tout l'objet de l'alias.
+  assert.equal(depuis('src/main.ts'), ID_JITLESS);
+  assert.equal(depuis('node_modules/y/dist/index.js'), ID_JITLESS);
+});
+
+test('zod : un importeur sans fichier sur le disque garde le module jitless', t => {
+  const racine = depotFactice();
+  t.after(() => rmSync(racine, { recursive: true, force: true }));
+  const plugin = cspPlugin({});
+  plugin.config({ root: racine }, { command: 'build' });
+
+  // Pas d'importeur (une entrée), un module virtuel, une requête Vite collée
+  // au chemin : aucun n'est une raison de quitter le zod de l'app.
+  assert.equal(plugin.resolveId(ID_JITLESS, undefined), ID_JITLESS);
+  assert.equal(
+    plugin.resolveId(ID_JITLESS, '\0vite/preload-helper'),
+    ID_JITLESS
+  );
+  assert.equal(
+    plugin.resolveId(ID_JITLESS, path.join(racine, 'src/main.ts?used')),
+    ID_JITLESS
+  );
+  // Et la requête n'empêche pas non plus le paquet `x` de trouver sa copie.
+  assert.notEqual(
+    plugin.resolveId(
+      ID_JITLESS,
+      path.join(racine, 'node_modules/x/dist/index.js?commonjs-es-import')
+    ),
+    ID_JITLESS
+  );
+});
+
+test(
+  'zod : sous Windows, la casse du chemin ne fait pas croire à une autre copie',
+  { skip: process.platform !== 'win32' && 'chemins sensibles à la casse' },
+  t => {
+    const racine = depotFactice();
+    t.after(() => rmSync(racine, { recursive: true, force: true }));
+    const plugin = cspPlugin({});
+    plugin.config({ root: racine }, { command: 'build' });
+    // Vite peut écrire `d:/…` là où `process.cwd()` rend `D:\…` : le même zod
+    // pris pour un autre perdrait `jitless` dans tout le code de l'app.
+    const inverse = path
+      .join(racine, 'src/main.ts')
+      .replace(/^[a-z]/i, l =>
+        l === l.toUpperCase() ? l.toLowerCase() : l.toUpperCase()
+      );
+    assert.equal(plugin.resolveId(ID_JITLESS, inverse), ID_JITLESS);
+  }
+);
 
 /* ── Le projet Supabase, lu dans VITE_SUPABASE_URL (6.32.0) ──────────────── */
 
