@@ -6,7 +6,9 @@ import {
   CoffeeIcon,
   ExternalLinkIcon,
   GithubIcon,
+  IdeaIcon,
   LoaderIcon,
+  MailIcon,
   MoonIcon,
   SunIcon,
   SystemIcon,
@@ -58,6 +60,10 @@ export const DEFAULT_ICONS = {
    * vérifie pour les neuf rôles.
    */
   issue: BugIcon,
+  // Les deux voies ajoutées au signalement le 07/11/2026 : le courrier, pour
+  // qui n'a pas de compte GitHub, et le gabarit d'évolution.
+  mail: MailIcon,
+  idea: IdeaIcon,
   // Le retour d'`AppHeader` — le huitième rôle, ajouté le 02/09/2026.
   back: BackIcon,
   // « Occupé » — le dixième rôle, ajouté le 20/09/2026 : la pastille de

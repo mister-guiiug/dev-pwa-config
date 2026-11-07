@@ -235,6 +235,7 @@ test('`issues` ajoute un troisième lien, vers le gabarit d’anomalie prérempl
       h(AppFooter, {
         repoUrl: 'https://github.com/mister-guiiug/miss-dice',
         issues: true,
+        env: {},
       })
     );
     const lien = view.container.querySelector('[data-dwc="footer-issues"]');
@@ -249,11 +250,12 @@ test('`issues` ajoute un troisième lien, vers le gabarit d’anomalie prérempl
     // Un lien sortant, sécurisé comme les deux autres.
     assert.equal(lien.getAttribute('rel'), 'noopener noreferrer');
     assert.equal(lien.textContent, 'Signaler un problème');
-    // Après le sponsor, avant le numéro : l'ordre de lecture des trois liens.
+    // Après le sponsor, avant le numéro : l'ordre de lecture des liens. Sans
+    // adresse de contact, le seul ajout du 07/11/2026 est l'idée.
     const footer = view.container.querySelector('[data-dwc="app-footer"]');
     assert.deepEqual(
       [...footer.children].map(el => el.getAttribute('data-dwc')),
-      ['footer-source', 'footer-sponsor', 'footer-issues']
+      ['footer-source', 'footer-sponsor', 'footer-issues', 'footer-idea']
     );
     await view.unmount();
   } finally {
@@ -282,6 +284,235 @@ test('`issues` sans `repoUrl` ne rend rien, et accepte gabarit et libellé', asy
     const lien = view.container.querySelector('[data-dwc="footer-issues"]');
     assert.equal(lien.textContent, 'Une idée ?');
     assert.match(lien.getAttribute('href'), /template=feature\.yml/);
+    // Le signalement pointe déjà sur le gabarit d'évolution : pas de doublon.
+    assert.equal(
+      view.container.querySelector('[data-dwc="footer-idea"]'),
+      null
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+/**
+ * LE SIGNALEMENT SANS COMPTE GITHUB (07/11/2026). Sur tout le compte, aucune
+ * issue n'avait jamais été écrite par un utilisateur des apps : `issues/new`
+ * exige un compte, et leurs publics — médecins, trésoriers, parents — n'en
+ * ont pas. Deux voies s'ajoutent au lien GitHub, qui garde son libellé et sa
+ * place (les e2e du parc le cherchent par son nom exact).
+ */
+const REPO = 'https://github.com/mister-guiiug/miss-genius';
+const paramsDe = href => new URLSearchParams(href.slice(href.indexOf('?') + 1));
+const marqueurs = footer =>
+  [...footer.children].map(el => el.getAttribute('data-dwc'));
+
+test('VITE_PRIVACY_CONTACT ouvre « Signaler par e-mail », juste après le lien GitHub', async () => {
+  const dom = setupDom();
+  try {
+    globalThis.__DWC_BUILD__ = { version: '2.1.0', commit: '0123456789' };
+    const view = await mount(
+      h(AppFooter, {
+        repoUrl: REPO,
+        issues: true,
+        env: { VITE_PRIVACY_CONTACT: 'contact@exemple.fr' },
+      })
+    );
+    const footer = view.container.querySelector('[data-dwc="app-footer"]');
+    assert.deepEqual(marqueurs(footer), [
+      'footer-source',
+      'footer-sponsor',
+      'footer-issues',
+      'footer-mail',
+      'footer-idea',
+    ]);
+    // Le lien GitHub n'a pas bougé d'un mot.
+    assert.equal(
+      footer.querySelector('[data-dwc="footer-issues"]').textContent,
+      'Signaler un problème'
+    );
+    const mail = footer.querySelector('[data-dwc="footer-mail"]');
+    assert.equal(mail.textContent, 'Signaler par e-mail');
+    // Un `mailto:` n'ouvre pas d'onglet : pas de `target`.
+    assert.equal(mail.getAttribute('target'), null);
+    const href = mail.getAttribute('href');
+    assert.match(href, /^mailto:contact@exemple\.fr\?/);
+    const params = paramsDe(href);
+    // Le nom du dépôt sert de nom d'app, dans l'objet et le contexte.
+    assert.equal(params.get('subject'), 'Signalement : miss-genius');
+    assert.match(params.get('body'), /Application : miss-genius/);
+    assert.match(params.get('body'), /Version : v2\.1\.0 \(0123456\)/);
+    await view.unmount();
+  } finally {
+    delete globalThis.__DWC_BUILD__;
+    dom.restore();
+  }
+});
+
+test('le courrier suit la langue de l’app, et relit l’écran au clic', async () => {
+  const dom = setupDom();
+  try {
+    const { LabelsProvider } = await import('../react/labels.js');
+    const view = await mount(
+      h(
+        LabelsProvider,
+        { locale: 'en' },
+        h(AppFooter, {
+          repoUrl: REPO,
+          issues: true,
+          env: { VITE_PRIVACY_CONTACT: 'contact@exemple.fr' },
+        })
+      )
+    );
+    const mail = view.container.querySelector('[data-dwc="footer-mail"]');
+    assert.equal(mail.textContent, 'Report by email');
+    assert.equal(
+      view.container.querySelector('[data-dwc="footer-idea"]').textContent,
+      'Suggest an idea'
+    );
+    const params = paramsDe(mail.getAttribute('href'));
+    assert.equal(params.get('subject'), 'Problem report: miss-genius');
+    assert.match(params.get('body'), /^Describe what you expected/);
+
+    // La route change sans que le pied de page se rende : l'écran est relu
+    // au clic, comme pour le lien GitHub.
+    window.history.pushState({}, '', '/miss-genius/reglages');
+    mail.addEventListener('click', e => e.preventDefault());
+    mail.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    assert.match(
+      paramsDe(mail.getAttribute('href')).get('body'),
+      /Écran : \/miss-genius\/reglages/
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('la prop `contact` l’emporte sur la variable, `null` retire le lien', async () => {
+  const dom = setupDom();
+  try {
+    const env = { VITE_PRIVACY_CONTACT: 'variable@exemple.fr' };
+    const prop = await mount(
+      h(AppFooter, { repoUrl: REPO, issues: true, env, contact: 'prop@x.fr' })
+    );
+    assert.match(
+      prop.container
+        .querySelector('[data-dwc="footer-mail"]')
+        .getAttribute('href'),
+      /^mailto:prop@x\.fr\?/
+    );
+    await prop.unmount();
+
+    const retire = await mount(
+      h(AppFooter, { repoUrl: REPO, issues: true, env, contact: null })
+    );
+    assert.equal(
+      retire.container.querySelector('[data-dwc="footer-mail"]'),
+      null
+    );
+    await retire.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('un contact qui n’est pas une adresse, ou une app sans `issues` : pas de courrier', async () => {
+  const dom = setupDom();
+  try {
+    // Une URL de formulaire est légitime pour le panneau de confidentialité,
+    // pas pour un `mailto:`.
+    const url = await mount(
+      h(AppFooter, {
+        repoUrl: REPO,
+        issues: true,
+        env: { VITE_PRIVACY_CONTACT: 'https://exemple.fr/contact' },
+      })
+    );
+    assert.equal(url.container.querySelector('[data-dwc="footer-mail"]'), null);
+    await url.unmount();
+
+    // Sans `issues`, l'app n'a pas demandé de canal de retour : rien ne
+    // change, ni courrier ni idée.
+    const sans = await mount(
+      h(AppFooter, {
+        repoUrl: REPO,
+        env: { VITE_PRIVACY_CONTACT: 'contact@exemple.fr' },
+      })
+    );
+    assert.deepEqual(
+      marqueurs(sans.container.querySelector('[data-dwc="app-footer"]')),
+      ['footer-source', 'footer-sponsor']
+    );
+    await sans.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('« Proposer une idée » ouvre feature.yml dans un onglet ; `idea: false` le retire', async () => {
+  const dom = setupDom();
+  try {
+    const view = await mount(
+      h(AppFooter, { repoUrl: REPO, issues: true, env: {} })
+    );
+    const idee = view.container.querySelector('[data-dwc="footer-idea"]');
+    assert.equal(idee.textContent, 'Proposer une idée');
+    assert.equal(
+      idee.getAttribute('href'),
+      `${REPO}/issues/new?template=feature.yml`
+    );
+    assert.equal(idee.getAttribute('rel'), 'noopener noreferrer');
+    await view.unmount();
+
+    const sansIdee = await mount(
+      h(AppFooter, { repoUrl: REPO, issues: { idea: false }, env: {} })
+    );
+    assert.equal(
+      sansIdee.container.querySelector('[data-dwc="footer-idea"]'),
+      null
+    );
+    assert.ok(
+      sansIdee.container.querySelector('[data-dwc="footer-issues"]'),
+      'le signalement reste'
+    );
+    await sansIdee.unmount();
+  } finally {
+    dom.restore();
+  }
+});
+
+test('un dictionnaire d’app sans les nouvelles clés retombe sur le français', async () => {
+  const dom = setupDom();
+  try {
+    const { LabelsProvider } = await import('../react/labels-core.js');
+    const ancien = {
+      footer: { source: 'Source', sponsor: 'Café', issues: 'Bug ?' },
+    };
+    const view = await mount(
+      h(
+        LabelsProvider,
+        { dictionary: ancien },
+        h(AppFooter, {
+          repoUrl: REPO,
+          issues: true,
+          env: { VITE_PRIVACY_CONTACT: 'contact@exemple.fr' },
+        })
+      )
+    );
+    assert.equal(
+      view.container.querySelector('[data-dwc="footer-issues"]').textContent,
+      'Bug ?'
+    );
+    // Un lien sans libellé n'aurait pas de nom accessible.
+    assert.equal(
+      view.container.querySelector('[data-dwc="footer-mail"]').textContent,
+      'Signaler par e-mail'
+    );
+    assert.equal(
+      view.container.querySelector('[data-dwc="footer-idea"]').textContent,
+      'Proposer une idée'
+    );
     await view.unmount();
   } finally {
     dom.restore();

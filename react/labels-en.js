@@ -54,6 +54,11 @@ const labels = {
     source: 'Source code',
     sponsor: 'Buy me a coffee',
     issues: 'Report a problem',
+    issuesMail: 'Report by email',
+    idea: 'Suggest an idea',
+    mailSubject: 'Problem report: {app}',
+    mailIntro:
+      'Describe what you expected, what happens instead, and how to reproduce it:',
   },
   share: {
     label: 'Share',

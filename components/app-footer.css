@@ -35,6 +35,8 @@
   [data-dwc='footer-source'],
   [data-dwc='footer-sponsor'],
   [data-dwc='footer-issues'],
+  [data-dwc='footer-mail'],
+  [data-dwc='footer-idea'],
   [data-dwc='family-source'],
   [data-dwc='family-sponsor'] {
     display: inline-flex;
@@ -47,6 +49,8 @@
   [data-dwc='footer-source']:hover,
   [data-dwc='footer-sponsor']:hover,
   [data-dwc='footer-issues']:hover,
+  [data-dwc='footer-mail']:hover,
+  [data-dwc='footer-idea']:hover,
   [data-dwc='family-source']:hover,
   [data-dwc='family-sponsor']:hover {
     color: var(--dwc-primary, CanvasText);
@@ -74,6 +78,12 @@
    *
    * `max-width`, la seule de la feuille : au-delà de 30rem, la règle de base
    * s'applique telle quelle, et il n'y a rien à restaurer.
+   *
+   * DEPUIS LE 07/11/2026, `issues` pose aussi « Proposer une idée » et, avec
+   * une adresse de contact, « Signaler par e-mail ». Quatre ou cinq liens ne
+   * tiennent plus sur une rangée de téléphone : ils en font deux, et c'est
+   * l'idée qui ferme le pied de page — elle prend donc la même règle de repli
+   * que le signalement quand il était le dernier.
    */
   @media (max-width: 30rem) {
     [data-dwc='app-footer'] {
@@ -83,11 +93,14 @@
 
     [data-dwc='app-footer'] > [data-dwc='footer-source'],
     [data-dwc='app-footer'] > [data-dwc='footer-sponsor'],
-    [data-dwc='app-footer'] > [data-dwc='footer-issues'] {
+    [data-dwc='app-footer'] > [data-dwc='footer-issues'],
+    [data-dwc='app-footer'] > [data-dwc='footer-mail'],
+    [data-dwc='app-footer'] > [data-dwc='footer-idea'] {
       gap: 0.25rem;
     }
 
-    [data-dwc='app-footer'] > [data-dwc='footer-issues']:last-child {
+    [data-dwc='app-footer'] > [data-dwc='footer-issues']:last-child,
+    [data-dwc='app-footer'] > [data-dwc='footer-idea']:last-child {
       flex: 1 1 0%;
       max-width: max-content;
     }

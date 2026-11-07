@@ -5,10 +5,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
+  FEATURE_TEMPLATE,
   ISSUE_TEMPLATE,
+  currentIssueReportMailto,
   currentIssueReportUrl,
   currentRoute,
   describeEnvironment,
+  emailAddress,
+  featureRequestUrl,
+  issueReportMailto,
   issueReportUrl,
   versionLine,
 } from '../issue-report.js';
@@ -212,4 +217,115 @@ test('chaque paramètre émis par issue-report a son champ dans le bug.yml du so
     [],
     'paramètres émis sans champ dans le formulaire — perdus en silence'
   );
+});
+
+/**
+ * LE SIGNALEMENT SANS COMPTE GITHUB (07/11/2026). `issues/new` exige un
+ * compte ; aucune issue du compte n'avait jamais été écrite par un
+ * utilisateur des apps. Le `mailto:` porte le même contexte, adressé au
+ * contact que le dépôt déclare pour le panneau de confidentialité.
+ */
+test('« Proposer une idée » vise feature.yml, sans version ni environnement', () => {
+  assert.equal(FEATURE_TEMPLATE, 'feature.yml');
+  assert.equal(
+    featureRequestUrl({
+      repoUrl: 'https://github.com/mister-guiiug/miss-dice/',
+    }),
+    'https://github.com/mister-guiiug/miss-dice/issues/new?template=feature.yml'
+  );
+  assert.equal(featureRequestUrl({}), '');
+});
+
+/**
+ * Le gabarit d'évolution est celui du dépôt `.github` du compte ; le socle en
+ * porte une copie (il a son propre `ISSUE_TEMPLATE/`, et n'hérite donc pas de
+ * celui du compte). Le nom visé doit exister.
+ */
+test('le gabarit visé par featureRequestUrl existe dans le socle', () => {
+  const gabarit = readFileSync(
+    new URL(`../.github/ISSUE_TEMPLATE/${FEATURE_TEMPLATE}`, import.meta.url),
+    'utf8'
+  );
+  assert.match(gabarit, /^body:/m);
+});
+
+test('emailAddress : une adresse, `mailto:` retiré — tout le reste se tait', () => {
+  assert.equal(emailAddress('t4da3r2qk@mozmail.com'), 't4da3r2qk@mozmail.com');
+  assert.equal(emailAddress('  mailto:a.b+c@exemple.fr '), 'a.b+c@exemple.fr');
+  // Ce que `VITE_PRIVACY_CONTACT` pourrait légitimement porter, et qui n'est
+  // pas une adresse : le lien ne doit pas ouvrir un brouillon sans destinataire.
+  for (const valeur of [
+    '',
+    '   ',
+    undefined,
+    null,
+    42,
+    'https://exemple.fr/contact',
+    'Mister GuiiuG',
+    'a@b',
+    'a@b.fr, c@d.fr',
+    'a@b.fr?cc=c@d.fr',
+    'Nom <a@b.fr>',
+  ]) {
+    assert.equal(emailAddress(valeur), '', String(valeur));
+  }
+});
+
+test('issueReportMailto : objet, consigne, puis le contexte du gabarit', () => {
+  const url = issueReportMailto({
+    to: 'contact@exemple.fr',
+    app: 'miss-genius',
+    version: '1.2.0',
+    commit: 'abc1234def',
+    buildTime: '2026-09-06T10:00:00.000Z',
+    route: '/reglages?onglet=notes',
+    environment: 'Chrome 140, Windows, ordinateur',
+  });
+  assert.match(url, /^mailto:contact@exemple\.fr\?subject=/);
+  // `encodeURIComponent`, jamais `+` pour l'espace : la plupart des clients
+  // de messagerie lisent un `+` littéralement (RFC 6068).
+  assert.doesNotMatch(url, /\+/);
+  const params = new URLSearchParams(url.slice(url.indexOf('?') + 1));
+  assert.equal(params.get('subject'), 'Signalement : miss-genius');
+  const corps = params.get('body');
+  assert.ok(
+    corps.startsWith('Décrivez ce qui était attendu'),
+    'la consigne ouvre le courrier'
+  );
+  // Fins de ligne CRLF, et deux lignes vides où écrire avant le contexte.
+  assert.match(corps, /reproduire :\r\n\r\n\r\n—\r\n/);
+  assert.match(corps, /Application : miss-genius\r\n/);
+  assert.match(corps, /Version : v1\.2\.0 \(abc1234\), compilée le 2026-09-06/);
+  assert.match(corps, /Environnement : Chrome 140, Windows, ordinateur/);
+  assert.match(corps, /Écran : \/reglages\?onglet=notes$/);
+});
+
+test('issueReportMailto : objet et consigne traduits, contexte omis s’il manque', () => {
+  const url = issueReportMailto({
+    to: 'mailto:contact@exemple.fr',
+    subject: 'Problem report: miss-dice',
+    intro: 'Describe what you expected:',
+  });
+  const params = new URLSearchParams(url.slice(url.indexOf('?') + 1));
+  assert.equal(params.get('subject'), 'Problem report: miss-dice');
+  assert.equal(params.get('body'), 'Describe what you expected:\r\n\r\n');
+  // Sans adresse valide : pas de lien du tout.
+  assert.equal(issueReportMailto({ to: 'https://exemple.fr' }), '');
+  assert.equal(issueReportMailto({}), '');
+});
+
+test('currentIssueReportMailto lit le build injecté par vite-version', () => {
+  const avant = globalThis[BUILD_INFO_GLOBAL];
+  globalThis[BUILD_INFO_GLOBAL] = { version: '3.4.5', commit: 'fedcba9876' };
+  try {
+    const url = currentIssueReportMailto({ to: 'a@b.fr', app: 'mister-doc' });
+    const corps = new URLSearchParams(url.slice(url.indexOf('?') + 1)).get(
+      'body'
+    );
+    assert.match(corps, /Version : v3\.4\.5 \(fedcba9\)/);
+    // Ni fenêtre ni navigateur sous Node : ni écran ni environnement.
+    assert.doesNotMatch(corps, /Écran|Environnement/);
+  } finally {
+    globalThis[BUILD_INFO_GLOBAL] = avant;
+  }
 });

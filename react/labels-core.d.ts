@@ -62,7 +62,19 @@ export interface LabelGroups {
     offlineReady: string;
     offlineReadyOk: string;
   };
-  footer: { source: string; sponsor: string; issues: string };
+  footer: {
+    source: string;
+    sponsor: string;
+    issues: string;
+    /** Le signalement par courrier, pour qui n'a pas de compte GitHub. */
+    issuesMail: string;
+    /** « Proposer une idée » : le gabarit `feature.yml`. */
+    idea: string;
+    /** Objet du courrier ; `{app}` remplacé par le nom du dépôt. */
+    mailSubject: string;
+    /** La consigne en tête du courrier. */
+    mailIntro: string;
+  };
   share: { label: string; copied: string; failed: string };
   version: {
     label: string;
