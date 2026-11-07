@@ -151,6 +151,50 @@ test('currentRoute rend chemin, requête et fragment — une app en # route dans
   );
 });
 
+/*
+ * Le lien part dans une issue PUBLIQUE. Les cas viennent du parc, relevé du
+ * 07/11/2026 : le jeton d'invitation de miss-carbook en requête, ceux de
+ * mister-settle, mister-miss-koh et miss-holi-voyage dans la route.
+ */
+test('currentRoute ne recopie aucun secret de l’adresse dans l’issue publique', () => {
+  const route = (pathname, search = '', hash = '') =>
+    currentRoute({ location: { pathname, search, hash } });
+
+  // Requête : les noms restent, les valeurs partent.
+  assert.equal(
+    route('/miss-carbook/', '?invite=9f2c4e1a7b&tab=2'),
+    '/miss-carbook/?invite=…&tab=…'
+  );
+  // Jetons dans la route d'une app en # : hexadécimal, base64url, code court.
+  assert.equal(
+    route('/mister-settle/', '', '#/invitation/' + 'a1b2c3d4'.repeat(6)),
+    '/mister-settle/#/invitation/…'
+  );
+  assert.equal(
+    route('/mister-miss-koh/', '', '#/partage/notes/Zx-9_QpL0mNbVc3T'),
+    '/mister-miss-koh/#/partage/notes/…'
+  );
+  assert.equal(
+    route('/miss-holi-voyage/', '', '#/rejoindre/KPQZMWHT'),
+    '/miss-holi-voyage/#/rejoindre/…'
+  );
+  // Un retour d'authentification, ou une ancre : pas une route, retiré.
+  assert.equal(
+    route('/miss-uwh/', '', '#access_token=eyJhbGciOi&type=recovery'),
+    '/miss-uwh/'
+  );
+  // La requête d'une route en # suit la même règle.
+  assert.equal(
+    route('/miss-genius/', '', '#/notes?code=4f9a1c2e7d'),
+    '/miss-genius/#/notes?code=…'
+  );
+  // Ce qui dit où l'on est reste lisible.
+  assert.equal(
+    route('/miss-arcade/', '', '#/guides/installer-une-borne'),
+    '/miss-arcade/#/guides/installer-une-borne'
+  );
+});
+
 test('currentIssueReportUrl lit le build injecté par vite-version, et rien sous Node', () => {
   const avant = globalThis[BUILD_INFO_GLOBAL];
   globalThis[BUILD_INFO_GLOBAL] = {
