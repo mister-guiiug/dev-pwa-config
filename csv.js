@@ -31,6 +31,15 @@
  * CE QUE ÇA N'EST PAS : un tableur. Pas de formules, pas de types, pas de
  * feuilles. Du texte tabulaire qui s'ouvre correctement des deux côtés.
  *
+ * ET UN EXPORT N'EXÉCUTE RIEN CHEZ CELUI QUI L'OUVRE. Relevé par miss-arcade le
+ * 07/11/2026 : ses contacts sont SAISIS par des visiteurs, puis ouverts dans
+ * l'Excel de l'organisateur. Une cellule `=HYPERLINK(…)` y devient un lien
+ * actif (« CSV injection », OWASP). Le dialecte `excel-fr`, fait pour un
+ * humain sous Excel, préfixe donc d'une apostrophe toute cellule de texte qui
+ * commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot
+ * (`neutralizeFormulas`). Les dialectes lus par une machine ne le font pas :
+ * elle y lirait une donnée corrompue.
+ *
  * Les COLONNES viennent de `./columns.js`, partagées avec l'export Markdown et
  * JSON : une déclaration, trois formats, le même contenu.
  */
@@ -52,6 +61,7 @@ export const DIALECTS = {
     newline: '\r\n',
     bom: false,
     decimalComma: false,
+    neutralizeFormulas: false,
   },
   'excel-fr': {
     delimiter: ';',
@@ -59,9 +69,30 @@ export const DIALECTS = {
     // Sans BOM, Excel lit l'UTF-8 comme du Latin-1 : « Café » devient « CafÃ© ».
     bom: true,
     decimalComma: true,
+    // Un humain ouvre ce fichier dans un tableur : une saisie ne doit pas y
+    // devenir une formule.
+    neutralizeFormulas: true,
   },
-  unix: { delimiter: ',', newline: '\n', bom: false, decimalComma: false },
+  unix: {
+    delimiter: ',',
+    newline: '\n',
+    bom: false,
+    decimalComma: false,
+    neutralizeFormulas: false,
+  },
 };
+
+/**
+ * Les amorces qu'un tableur lit comme une formule : `= + - @`, et la tabulation
+ * et le retour chariot qu'Excel saute avant de les lire.
+ */
+const FORMULA_START = /^[=+\-@\t\r]/;
+
+/**
+ * Un nombre écrit en texte (« -12 », « +3,5 ») commence par une amorce mais ne
+ * calcule rien : le préfixer le ferait lire « '-12 » dans le tableur.
+ */
+const PLAIN_NUMBER = /^[+-]?\d+(?:[.,]\d+)?$/;
 
 /** Le BOM UTF-8, en tête de fichier. */
 export const UTF8_BOM = '﻿';
@@ -79,7 +110,8 @@ function resolveDialect(options = {}) {
  * du travail.
  */
 export function escapeField(value, options = {}) {
-  const { delimiter, decimalComma } = resolveDialect(options);
+  const { delimiter, decimalComma, neutralizeFormulas } =
+    resolveDialect(options);
 
   if (value === null || value === undefined) return '';
 
@@ -97,6 +129,16 @@ export function escapeField(value, options = {}) {
     text = value ? 'true' : 'false';
   } else {
     text = String(value);
+    // Seul le TEXTE est désarmé : un nombre, une date ou un booléen typés ne
+    // sont pas des saisies, et l'apostrophe se place AVANT la citation, pour
+    // qu'Excel la lise dans le champ.
+    if (
+      neutralizeFormulas &&
+      FORMULA_START.test(text) &&
+      !PLAIN_NUMBER.test(text)
+    ) {
+      text = `'${text}`;
+    }
   }
 
   const mustQuote =
