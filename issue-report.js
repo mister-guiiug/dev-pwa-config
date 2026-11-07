@@ -133,9 +133,56 @@ export function describeEnvironment(options = {}) {
   return parts.join(', ');
 }
 
+/** Ce qui remplace une valeur retirée de l'adresse. */
+const MASQUE = '…';
+
 /**
- * L'écran courant, tel que l'utilisateur le voit dans la barre d'adresse :
- * chemin, requête et fragment — une app en `#` route dans le fragment.
+ * Un segment de chemin qui dit OÙ l'on est, et rien d'autre : un mot en
+ * minuscules (`reglages`, `miss-holi-voyage`), ou un segment court (`3`).
+ * Tout le reste — un code `K7PQ2M`, un UUID, un jeton hexadécimal ou base64 —
+ * est masqué. Liste blanche et non liste noire : un format de jeton qu'on n'a
+ * pas prévu reste masqué.
+ */
+const segmentLisible = s =>
+  s.length < 6 || /^[a-zà-ÿ]+(?:-[a-zà-ÿ]+)*$/.test(s);
+
+const cheminSansJeton = chemin =>
+  chemin
+    .split('/')
+    .map(s => (segmentLisible(s) ? s : MASQUE))
+    .join('/');
+
+/** `?invite=abc&tab=2` → `?invite=…&tab=…` : les noms aident, les valeurs fuient. */
+function requeteSansValeurs(requete) {
+  const corps = requete.replace(/^\?/, '');
+  if (!corps) return '';
+  const parties = corps
+    .split('&')
+    .filter(Boolean)
+    .map(p => {
+      const nom = p.split('=')[0];
+      return /^[A-Za-z_][\w-]{0,30}$/.test(nom) ? `${nom}=${MASQUE}` : MASQUE;
+    });
+  return parties.length ? `?${parties.join('&')}` : '';
+}
+
+/**
+ * L'écran courant, tel que l'utilisateur le voit dans la barre d'adresse —
+ * MOINS CE QUI POURRAIT ÊTRE UN SECRET. Le lien part dans une issue PUBLIQUE.
+ *
+ * Relevé du 07/11/2026 : la fonction recopiait la requête et le fragment
+ * tels quels. miss-carbook reçoit son jeton d'invitation en `?invite=…`, qui
+ * reste dans l'adresse quand l'acceptation échoue — précisément le moment où
+ * l'on signale un problème ; mister-settle (`#/invitation/<jeton>`),
+ * mister-miss-koh (`#/partage/…/<jeton>`) et miss-holi-voyage
+ * (`#/rejoindre/<code>`) le portent dans le chemin, et un retour
+ * d'authentification peut porter `#access_token=…`. Publier l'un d'eux, c'est
+ * ouvrir le dossier à qui lit l'issue.
+ *
+ * Ce qui est gardé : le chemin, segment par segment s'il est lisible
+ * (`segmentLisible`) ; les NOMS des paramètres ; la route d'une app en `#`
+ * (`#/notes/3`), passée au même filtre. Un fragment qui n'est pas une route
+ * (`#access_token=…`, une ancre) est retiré.
  *
  * @param {Window | null} [win]
  */
@@ -143,7 +190,16 @@ export function currentRoute(win) {
   const w = win === undefined ? globalThis.window : win;
   const loc = w?.location;
   if (!loc) return '';
-  return `${loc.pathname ?? ''}${loc.search ?? ''}${loc.hash ?? ''}`;
+  const hash = loc.hash ?? '';
+  let fragment = '';
+  if (hash.startsWith('#/')) {
+    const i = hash.indexOf('?');
+    fragment =
+      '#' +
+      cheminSansJeton(i < 0 ? hash.slice(1) : hash.slice(1, i)) +
+      (i < 0 ? '' : requeteSansValeurs(hash.slice(i)));
+  }
+  return `${cheminSansJeton(loc.pathname ?? '')}${requeteSansValeurs(loc.search ?? '')}${fragment}`;
 }
 
 /**

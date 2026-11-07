@@ -21,7 +21,11 @@ export declare function describeEnvironment(
   options?: EnvironmentOptions
 ): string;
 
-/** Chemin, requête et fragment de l'écran courant ; `''` sans fenêtre. */
+/**
+ * L'écran courant pour une issue PUBLIQUE : chemin et route `#/…` sans les
+ * segments opaques (codes, UUID, jetons), noms des paramètres sans leurs
+ * valeurs, aucun fragment qui ne soit pas une route. `''` sans fenêtre.
+ */
 export declare function currentRoute(win?: Window | null): string;
 
 /** « v1.2.0 (abc1234), compilée le 2026-09-06 » ; `''` sans information. */
