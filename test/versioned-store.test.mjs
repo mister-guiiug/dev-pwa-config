@@ -232,6 +232,44 @@ test('sans seed, le vide se dit `null` — pas un état inventé', () => {
   assert.equal(vs.export(), null, 'et il n’y a rien à exporter');
 });
 
+test('une graine aléatoire est la MÊME d’une lecture à l’autre', () => {
+  // RELEVÉ PAR miss-arcade (07/11/2026). La graine était recalculée à chaque
+  // `load()` tant que rien n'était écrit : des identifiants tirés au hasard,
+  // un `updatedAt = new Date()`, changeaient d'une lecture à la suivante. Son
+  // administration, ouverte puis enregistrée sur un appareil vierge, se
+  // voyait refuser « modifiée ailleurs » : le jeton relu n'était plus celui
+  // du brouillon. Vitest ne le voyait pas (deux lectures dans la même
+  // milliseconde) ; l'e2e, si.
+  let tirages = 0;
+  const vs = makeStore({
+    seed: () => ({ periodes: [], scores: [], id: `graine-${++tirages}` }),
+  });
+  const premiere = vs.load();
+  const seconde = vs.load();
+  assert.deepEqual(seconde, premiere);
+  assert.equal(seconde.id, 'graine-1');
+  assert.equal(vs.export(), vs.export(), 'l’export non plus ne bouge pas');
+  assert.equal(tirages, 1, 'la graine se tire une fois');
+});
+
+test('la graine rendue est une copie : la modifier ne change pas la suivante', () => {
+  const vs = makeStore();
+  const lue = vs.load();
+  lue.scores.push(42);
+  lue.neuf = false;
+  assert.deepEqual(vs.load(), { periodes: [], scores: [], neuf: true });
+});
+
+test('clear() retire aussi la graine tirée : la suivante est neuve', () => {
+  let tirages = 0;
+  const vs = makeStore({
+    seed: () => ({ periodes: [], scores: [], id: ++tirages }),
+  });
+  assert.equal(vs.load().id, 1);
+  vs.clear();
+  assert.equal(vs.load().id, 2);
+});
+
 test('clear() efface l’instantané ET ses copies, pas le reste du magasin', () => {
   // Vider ses données doit vider ses données : laisser un `backup-v1` lisible
   // trahirait la demande. Mais les autres clés de l'app survivent.

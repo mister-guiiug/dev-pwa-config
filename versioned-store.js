@@ -78,7 +78,27 @@ export function createVersionedStore(options) {
       ? createStore(options.store)
       : options.store;
 
-  const fresh = () => (seed ? seed() : null);
+  /**
+   * La graine, TIRÉE UNE FOIS, rendue en copie. Relevé par miss-arcade le
+   * 07/11/2026 : recalculée à chaque `load()`, une graine aux identifiants
+   * aléatoires ou datée (`new Date()`) changeait d'une lecture à l'autre tant
+   * que rien n'était écrit ; un brouillon relu puis enregistré se croyait
+   * « modifié ailleurs ». La copie empêche qu'une app qui modifie l'objet lu
+   * ne change la graine suivante. Stable le temps de la page, pas au-delà :
+   * si d'autres données renvoient à ses identifiants, l'app l'écrit
+   * (`save(load())`) à la première lecture.
+   */
+  let seeded;
+  const fresh = () => {
+    if (!seed) return null;
+    if (seeded === undefined) seeded = { value: seed() };
+    try {
+      return structuredClone(seeded.value);
+    } catch {
+      // Une graine qui ne se copie pas (fonction, instance) : comme avant.
+      return seed();
+    }
+  };
 
   /**
    * La copie de côté, AVANT toute perte possible. Clé déterministe
@@ -200,6 +220,7 @@ export function createVersionedStore(options) {
      * demande. Le reste du magasin n'est pas touché.
      */
     clear() {
+      seeded = undefined;
       store.remove(key);
       for (const stored of store.keys()) {
         if (stored.startsWith(`${key}.backup-`)) store.remove(stored);
@@ -209,7 +230,8 @@ export function createVersionedStore(options) {
     /**
      * L'état courant — migré, validé — en JSON indenté, enveloppe comprise :
      * le fichier réimporté demain par une app plus récente passera par ses
-     * migrations. `null` s'il n'y a rien à exporter.
+     * migrations. Avec un `seed`, la graine tant que rien n'est écrit ;
+     * sans, `null` s'il n'y a rien à exporter.
      */
     export() {
       const data = load();
