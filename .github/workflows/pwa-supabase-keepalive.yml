@@ -19,6 +19,21 @@
 #
 # Prérequis : secrets VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY dans le dépôt,
 # et la table `keep_alive` appliquée au projet (cf. templates/supabase/keep-alive.sql).
+#
+# LA SONDE ANONYME (07/11/2026, optionnelle). Le ping ne lit que `keep_alive`,
+# une table faite pour répondre. Pendant trois jours, le jeu public de
+# miss-arcade a renvoyé 401 à tout visiteur anonyme (une politique RLS
+# appelait une fonction que `anon` ne peut pas exécuter) — et ce workflow est
+# resté vert chaque matin. `anon-probe` lit en plus, avec la même clé anon, le
+# chemin qu'un vrai visiteur emprunte :
+#
+#     with:
+#       anon-probe: 'rest/v1/tenants?select=id&slug=eq.demo&published=eq.true&limit=1'
+#       anon-probe-nonempty: true   # la ligne doit exister, pas seulement être lisible
+#
+# Échec sur 401/403 (la RLS ou un droit refuse `anon`), sur tout autre code
+# que 200, et sur une réponse vide si `anon-probe-nonempty`. Sans l'entrée,
+# rien ne change.
 name: Reusable Supabase keep-alive
 
 on:
@@ -29,6 +44,21 @@ on:
         type: string
         required: false
         default: 'keep_alive'
+      anon-probe:
+        description: >-
+          Chemin lu comme un visiteur anonyme, relatif à l'URL du projet et sous
+          `rest/v1/` (ex. `rest/v1/tenants?select=id&slug=eq.demo&limit=1`, ou
+          une fonction en GET : `rest/v1/rpc/...`). Vide : pas de sonde.
+        type: string
+        required: false
+        default: ''
+      anon-probe-nonempty:
+        description: >-
+          Exiger une réponse NON VIDE de la sonde anonyme : une RLS qui filtre
+          tout rend `[]` en 200, sans erreur.
+        type: boolean
+        required: false
+        default: false
     secrets:
       VITE_SUPABASE_URL:
         description: 'URL du projet Supabase (https://<ref>.supabase.co)'
@@ -79,3 +109,68 @@ jobs:
             exit 1
           fi
           echo "::notice::Supabase keep-alive OK (SELECT ${TABLE} → 200)."
+
+      # Après le ping : un projet absent ou en pause y est déjà nommé.
+      - name: Sonde anonyme (le chemin d'un vrai visiteur)
+        if: ${{ inputs.anon-probe != '' }}
+        env:
+          URL: ${{ secrets.VITE_SUPABASE_URL }}
+          KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Passées par env:, jamais interpolées dans le script.
+          SONDE: ${{ inputs.anon-probe }}
+          NON_VIDE: ${{ inputs.anon-probe-nonempty }}
+        run: |
+          chemin="${SONDE#/}"
+          # Sous `rest/v1/` seulement : une lecture PostgREST, ce que fait le
+          # client d'un visiteur. Pas d'espace : le chemin part tel quel.
+          case "$chemin" in
+            *[[:space:]]*)
+              echo "::error::anon-probe ne doit pas contenir d'espace : « ${chemin} »."
+              exit 1
+              ;;
+            rest/v1/?*) ;;
+            *)
+              echo "::error::anon-probe doit commencer par « rest/v1/ » : « ${chemin} »."
+              exit 1
+              ;;
+          esac
+          # La ressource sans sa requête, pour les messages.
+          ressource="${chemin%%\?*}"
+          corps="${RUNNER_TEMP:-/tmp}/sonde-anonyme.json"
+          rc=0
+          # -g : les crochets et accolades d'un filtre PostgREST ne sont pas
+          # des motifs de curl.
+          code=$(curl -sS -g -o "$corps" -w '%{http_code}' \
+            "${URL%/}/${chemin}" \
+            -H "apikey: ${KEY}" \
+            -H "Authorization: Bearer ${KEY}" \
+            -H 'Accept: application/json') || rc=$?
+          if [ "$rc" != 0 ]; then
+            echo "::error::Sonde anonyme : projet injoignable (curl, code ${rc})."
+            exit 1
+          fi
+          echo "HTTP ${code} (${ressource})"
+          # Le message de PostgREST dit la cause (« permission denied for
+          # function … ») ; il ne porte ni clé ni donnée.
+          detail="$(head -c 300 "$corps" 2>/dev/null | tr -d '\r\n')"
+          case "$code" in
+            200 | 206) ;;
+            401 | 403)
+              echo "::error::Sonde anonyme refusée (HTTP ${code}) : un visiteur anonyme ne peut pas lire « ${ressource} ». Vérifier la RLS et les droits du rôle anon — une politique qui appelle une fonction que anon ne peut pas exécuter refuse TOUTE la lecture. Réponse : ${detail}"
+              exit 1
+              ;;
+            *)
+              echo "::error::Sonde anonyme : HTTP ${code} sur « ${ressource} ». Réponse : ${detail}"
+              exit 1
+              ;;
+          esac
+          if [ "$NON_VIDE" = "true" ]; then
+            compact="$(tr -d '[:space:]' < "$corps")"
+            case "$compact" in
+              '' | '[]' | '{}' | 'null')
+                echo "::error::Sonde anonyme : « ${ressource} » répond 200 mais VIDE. La RLS filtre tout pour anon, ou la donnée attendue manque (anon-probe-nonempty)."
+                exit 1
+                ;;
+            esac
+          fi
+          echo "::notice::Sonde anonyme OK (${ressource} → ${code})."
