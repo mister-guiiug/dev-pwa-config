@@ -8,7 +8,9 @@ export interface CsvDialect {
   /**
    * Préfixer d'une apostrophe le TEXTE qui commence par `=`, `+`, `-`, `@`, une
    * tabulation ou un retour chariot, pour qu'un tableur ne l'exécute pas
-   * (« CSV injection »). Un nombre écrit en texte (« -12 ») passe intact.
+   * (« CSV injection »). Un nombre NÉGATIF écrit en texte (« -12 ») passe
+   * intact ; un « + » non, car « +33612345678 » est un téléphone qu'Excel
+   * changerait en nombre.
    * Vrai pour `excel-fr`, faux pour les dialectes lus par une machine.
    */
   neutralizeFormulas: boolean;

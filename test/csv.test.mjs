@@ -181,14 +181,29 @@ test('excel-fr : une cellule qui commence par une amorce de formule est neutrali
   );
 });
 
-test('excel-fr : un nombre écrit en texte n’est pas une formule, il reste intact', () => {
-  // Une saisie « -12 » ou « +3,5 » se lirait sinon « '-12 » dans le tableur :
-  // c'est la seule amorce qu'on laisse passer, parce qu'elle ne calcule rien.
-  const csv = toCsv([{ a: '-12', b: '+3,5', c: '-0.5', d: -4 }], {
+test('excel-fr : un nombre négatif écrit en texte reste intact', () => {
+  // Une saisie « -12 » se lirait sinon « '-12 » dans le tableur : c'est la
+  // seule amorce qu'on laisse passer, parce qu'elle ne calcule rien.
+  const csv = toCsv([{ a: '-12', c: '-0.5', e: '-3,25', d: -4 }], {
     dialect: 'excel-fr',
     header: false,
   });
-  assert.equal(csv, `${UTF8_BOM}-12;+3,5;-0.5;-4`);
+  assert.equal(csv, `${UTF8_BOM}-12;-0.5;-3,25;-4`);
+});
+
+test('excel-fr : un téléphone en « + » reste du TEXTE, son « + » compris', () => {
+  // Relevé en migrant miss-arcade : sans apostrophe, Excel lit
+  // « +33612345678 » comme un NOMBRE. Le « + » disparaît, et un numéro de
+  // douze chiffres s'affiche « 4,47912E+11 ». Un téléphone ne commence jamais
+  // par « - » : c'est pourquoi seule cette amorce-là échappe à la règle.
+  const csv = toCsv(
+    [{ a: '+33612345678', b: '+447911123456', c: '+33 6 12 34 56 78' }],
+    { dialect: 'excel-fr', header: false }
+  );
+  assert.equal(
+    csv,
+    `${UTF8_BOM}'+33612345678;'+447911123456;'+33 6 12 34 56 78`
+  );
 });
 
 test('rfc4180 et unix gardent le texte tel quel : ils sont lus par une machine', () => {
