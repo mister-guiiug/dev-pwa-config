@@ -78,6 +78,31 @@ test('le remède du socle éteint les deux : `navigate` sur la barre et un préc
   );
 });
 
+test('sous `AppShell`, `navNavigate` est le même remède', () => {
+  // RELEVÉ PAR miss-arcade (07/11/2026) : la coquille ne transmettait pas
+  // `navigate` à sa barre, et l'app n'avait que le refus motivé. Elle l'a
+  // désormais (`navNavigate`), et le docteur doit la reconnaître : il ne lisait
+  // que `navigate={`.
+  repo(
+    {
+      ...PKG,
+      'src/App.tsx': [
+        "import { lazy } from 'react';",
+        "import { HashRouter, useNavigate } from 'react-router-dom';",
+        "import { AppShell } from '@mister-guiiug/dev-pwa-config/react/app-shell';",
+        "import { useIdlePrefetch } from '@mister-guiiug/dev-pwa-config/react/use-prefetch';",
+        "const loadAdmin = () => import('./AdminScreen');",
+        'const AdminScreen = lazy(loadAdmin);',
+        'function Shell() { useIdlePrefetch(loadAdmin); const navigate = useNavigate(); return <AppShell navItems={[]} navNavigate={navigate} />; }',
+      ].join('\n'),
+    },
+    root => {
+      const ids = dettes(root);
+      assert.ok(!ids.includes('nav-attente'));
+    }
+  );
+});
+
 test('une transition propre au menu et un `requestIdleCallback` maison valent aussi', () => {
   // Les dix corrections du 20/09/2026 ont cette forme : le docteur les
   // reconnaît, il ne réclame pas la barre du socle.

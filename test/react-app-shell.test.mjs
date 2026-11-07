@@ -11,6 +11,7 @@ import { AppShell } from '../react/app-shell.js';
 import { FamilyAbout } from '../react/family-about.js';
 import { ChromePrefs } from '../react/chrome-prefs.js';
 import { LabelsProvider } from '../react/labels.js';
+import { setupDom, mount } from './helpers/dom.mjs';
 
 const render = (component, props, ...children) =>
   renderToStaticMarkup(h(component, props, ...children));
@@ -81,6 +82,51 @@ test('AppShell : `navCurrentPath` désigne l’onglet courant', () => {
   assert.ok(lien('/historique'), 'onglet « Historique » rendu');
   assert.match(lien('/historique'), /aria-current="page"/);
   assert.doesNotMatch(lien('/'), /aria-current/);
+});
+
+test('AppShell : `navNavigate` est transmis à la barre, qui navigue elle-même', async () => {
+  // RELEVÉ PAR miss-arcade (07/11/2026). `pwa-doctor` (`nav-attente`) demande
+  // `<BottomNav navigate={navigate}>` dès que des routes sont paresseuses :
+  // react-router navigue dans une transition et le repli de Suspense ne
+  // paraît jamais. Mais la coquille ne transmettait pas `navigate` et n'avait
+  // aucune prop pour le recevoir : une app sous `AppShell` ne pouvait que
+  // répondre par un refus, ou écrire sa propre barre.
+  const dom = setupDom();
+  try {
+    const allers = [];
+    const view = await mount(
+      h(
+        AppShell,
+        {
+          title: 'T',
+          navItems: [
+            { href: '/', label: 'Accueil', end: true },
+            { href: '/historique', label: 'Historique' },
+          ],
+          navCurrentPath: '/',
+          navNavigate: to => allers.push(to),
+        },
+        'x'
+      )
+    );
+    const lien = view.container.querySelector(
+      '[data-dwc="bottom-nav"] a[href="/historique"]'
+    );
+    const clic = new window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    await view.act(() => lien.dispatchEvent(clic));
+    assert.deepEqual(allers, ['/historique'], 'la barre a navigué elle-même');
+    assert.equal(
+      clic.defaultPrevented,
+      true,
+      'le clic ne recharge pas la page'
+    );
+    await view.unmount();
+  } finally {
+    dom.restore();
+  }
 });
 
 test('AppShell : skipLabel et locale anglaise', () => {

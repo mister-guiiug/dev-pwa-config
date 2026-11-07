@@ -209,6 +209,7 @@ import { Link } from 'react-router-dom';
   title={titles[pathname]}
   navItems={nav}
   navCurrentPath={pathname} /* useLocation().pathname : obligatoire sous un basename */
+  navNavigate={navigate} /* useNavigate() : la barre dit qu'elle charge une route paresseuse */
   linkComponent={Link}
   hrefProp="to"
   beforeMain={<ConnectionBanner />}
