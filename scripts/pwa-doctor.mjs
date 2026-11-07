@@ -1310,17 +1310,28 @@ export function reglesDepot(ctx, api) {
         'Playwright est là, la spec a11y (axe-core) non',
         'copier e2e/a11y.spec.ts du gabarit (playwright-a11y du socle)'
       );
-    } else if (
-      auditeAccueilSeul(
-        specsA11y.map(f => f.text),
-        pkg.name
-      )
-    ) {
-      dette(
-        'a11y-accueil-seul',
-        `la spec a11y n'audite que l'accueil (${specsA11y.map(f => f.rel).join(', ')}) : formulaires, feuilles et réglages ne passent jamais par axe`,
-        "expectNoA11yViolationsOn(page, AxeBuilder, expect, ['/reglages', …]) de playwright-a11y — un chemin, ou un état atteint par des gestes"
+    } else {
+      // Axe se lit partout où il joue, pas seulement dans la spec qui porte
+      // son nom : mister-settle l'audite pas à pas dans `depense-et-solde.spec.ts`
+      // (formulaire, soldes) pendant que `a11y.spec.ts` reste le gabarit.
+      const specsAxe = specs.filter(
+        f =>
+          specsA11y.includes(f) ||
+          /@axe-core\/playwright|\b(?:expectNoA11yViolations|analyzeA11y)\w*\b/.test(
+            sansCommentaires.source(f.text)
+          )
       );
+      if (
+        auditeAccueilSeul(
+          specsAxe.map(f => f.text),
+          pkg.name
+        )
+      )
+        dette(
+          'a11y-accueil-seul',
+          `la spec a11y n'audite que l'accueil (${specsAxe.map(f => f.rel).join(', ')}) : formulaires, feuilles et réglages ne passent jamais par axe`,
+          "expectNoA11yViolationsOn(page, AxeBuilder, expect, ['/reglages', …]) de playwright-a11y — un chemin, ou un état atteint par des gestes"
+        );
     }
   }
   if (!pkg.bundleBudget) {
