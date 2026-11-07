@@ -1354,6 +1354,62 @@ test('une spec a11y qui n’ouvre que l’accueil est une dette ; un second écr
   );
 });
 
+test('axe joué dans une autre spec, après des gestes, lève la dette — l’import seul ne suffit pas', async () => {
+  // Le cas de mister-settle (#135) : `a11y.spec.ts` est resté le gabarit, et
+  // axe audite le formulaire de dépense et les soldes dans une spec voisine.
+  const accueilSeul = [
+    "test.describe('@a11y accessibilité', () => {",
+    "  test('accueil', async ({ page }) => {",
+    "    await page.goto('/');",
+    '    await expectNoA11yViolations(page, AxeBuilder, expect);',
+    '  });',
+    '});',
+  ].join('\n');
+  const voisine = corps =>
+    [
+      "import AxeBuilder from '@axe-core/playwright';",
+      "test('dépense @a11y', async ({ page }) => {",
+      "  await page.goto('/');",
+      corps,
+      '  await expectNoA11yViolations(page, AxeBuilder, expect);',
+      '});',
+    ].join('\n');
+  const fichiers = (nom, texte) => ({
+    'package.json': {
+      name: 'mister-x',
+      devDependencies: { '@playwright/test': '1' },
+    },
+    'e2e/a11y.spec.ts': accueilSeul,
+    [nom]: texte,
+  });
+  await repo(
+    fichiers(
+      'e2e/depense-et-solde.spec.ts',
+      voisine("  await page.getByRole('button', { name: 'Ajouter' }).click();")
+    ),
+    root => {
+      assert.ok(!ids(diagnose(root)).includes('a11y-accueil-seul'));
+    }
+  );
+  // Une voisine qui n'audite elle aussi que l'accueil ne lève rien, et la
+  // dette la nomme.
+  await repo(fichiers('e2e/accueil.spec.ts', voisine('')), root => {
+    const d = diagnose(root).findings.find(f => f.id === 'a11y-accueil-seul');
+    assert.ok(d);
+    assert.match(d.message, /e2e\/accueil\.spec\.ts/);
+  });
+  // Une spec sans axe ne compte pas, même pleine de gestes.
+  await repo(
+    fichiers(
+      'e2e/parcours.spec.ts',
+      "test('x', async ({ page }) => {\n  await page.goto('/');\n  await page.getByRole('button').click();\n});"
+    ),
+    root => {
+      assert.ok(ids(diagnose(root)).includes('a11y-accueil-seul'));
+    }
+  );
+});
+
 test('le gabarit du socle, copié tel quel, porte la dette — son exemple en commentaire ne compte pas', async () => {
   const gabarit = readFileSync(
     new URL('../templates/e2e/a11y.spec.ts', import.meta.url),

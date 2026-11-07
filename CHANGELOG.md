@@ -1,5 +1,73 @@
 # Changelog
 
+## 6.34.0
+
+### Minor Changes
+
+- cc9b754: `playwright-a11y` : `expectNoA11yViolationsOn` et `analyzeA11yOn` passent axe sur une liste de routes ou d'états. Une étape est un chemin (`'/reglages'`) ou `{ path?, setup?, name?, options? }`, où `setup(page)` fait les gestes qui mènent à l'état (ouvrir une feuille, remplir un champ) ; `ready(page)` attend l'écran réel après chaque navigation. Toutes les étapes sont auditées avant de conclure, et le rapport nomme chaque écran fautif. Une liste vide est refusée.
+  
+  `pwa-doctor` : nouvelle dette `a11y-accueil-seul` quand la spec d'accessibilité n'ouvre que l'accueil (`goto('/')`, ou la base de l'app) sans aucun geste qui change d'état. Un `goto` sur une variable ou un chemin construit la fait taire : le contrôle ne devine pas. Axe compte partout où il joue : toute spec qui importe `@axe-core/playwright` ou appelle `expectNoA11yViolations` est lue avec la spec d'accessibilité. mister-settle, par exemple, audite le formulaire de dépense et les soldes dans `depense-et-solde.spec.ts`. Relevé sur `main` le 07/11/2026 : cinq apps la portent (miss-badminton, miss-supaboss, miss-ticket-pwa, miss-uwh, mister-puzzle). miss-carbook, mister-cim10 et mister-qowa ne visitent que `/` mais atteignent leurs écrans par des clics : elles ne la portent pas. Le gabarit `templates/e2e/a11y.spec.ts` montre l'aide en commentaire.
+  
+  Migration : dans chacune des cinq apps, ajouter à `e2e/a11y.spec.ts` un test `expectNoA11yViolationsOn(page, AxeBuilder, expect, [...])` sur ses écrans publics, ou refuser la dette avec sa raison (`pwaDoctor.refus`) — miss-ticket-pwa n'a qu'un écran sans connexion. miss-supaboss joue le docteur en strict (`doctor-strict: true` dans sa CI), et une dette y suffit à échouer : y ajouter les écrans, ou poser le refus, DANS la PR de montée de version, sans quoi elle rougit.
+- af7c42b: `react/backup-card` (nouveau) : `BackupCard`, la carte « Sauvegarde » de l'écran Réglages. Elle exporte ce que l'app lui donne (`exportData`), importe un fichier après confirmation (`importData`, facultatif ; un résultat `{ ok: false, problems }` est affiché et rien n'est écrit), dit de quand date la dernière sauvegarde, rappelle d'en faire une, et propose sur un geste de demander au navigateur de garder les données. `useBackupReminder(app)` affiche le même rappel ailleurs, par exemple à l'accueil.
+  
+  `backup-reminder` (nouveau) : le rappel lui-même, promu de miss-contraction, seule application qui rappelait d'exporter. Tous les sept jours (`BACKUP_REMINDER_DAYS`), tant qu'aucune sauvegarde ni aucun « plus tard » n'est récent, et jamais sur une application vide (`hasData`). L'état vit sous une clé `dwc_backup:<app>` par application, parce que l'origine est partagée.
+  
+  Libellés : nouveau groupe `backup`, dans les sept langues.
+- 482971a: `pwa-deploy.yml` vérifie le site EN LIGNE après chaque déploiement (job `verifier`, actif par défaut). Jusqu'ici, aucune panne de production n'avait été vue par une machine : le jeu public de miss-arcade est resté cassé trois jours, trois apps ne démarraient plus hors ligne depuis des semaines, le hub a bloqué l'installation de vingt apps pendant six jours — chaque fois, un audit ou le hasard.
+  
+  - Le job attend que `<page_url>version.json` porte le commit déployé (`versionPlugin`), `verify-timeout` minutes au plus (10). Sans `version.json`, la page est visitée quand même, avec un avertissement.
+  - Puis Chromium ouvre la page, service worker bloqué, cache du CDN contourné, et exige : que React ait monté (le contenu servi aux robots `[data-dwc="served-content"]` a disparu et une racine React a rendu un élément, ou `verify-selector` est visible), aucune violation CSP appliquée, aucune requête de même origine en échec (≥ 400). Un échec rend le run rouge ; capture et rapport en artefact `verification-apres-deploiement`.
+  - La visite est en lecture seule : analytique, création de session et écritures vers un tiers sont bloquées.
+  - En option, `verify-e2e: true` joue les specs `@critical` (`verify-e2e-grep`) contre l'URL publiée : le `baseURL` de `playwright.config.*` est remplacé, son `webServer` retiré. Les specs doivent naviguer en relatif (`./`) et rester sans écriture.
+  - IndexNow ne signale plus qu'un déploiement vérifié (ou dont la vérification est éteinte).
+  
+  Jouée le 07/11/2026 sur les vingt-trois apps publiées : toutes vertes, sans un avertissement. Migration : aucune — chaque app l'a à la prochaine publication (étiquette `v6`). `verify: false` l'éteint ; `verify-selector` la précise.
+- af7c42b: `pwa-doctor` : nouveau **défaut** `stockage-clear`. Un `localStorage.clear()` ou `sessionStorage.clear()` dans le code de l'app (tests et e2e exclus) efface les données de TOUTES les applications servies depuis `mister-guiiug.github.io`, pas seulement les siennes. Relevé le 07/11/2026 dans mister-molkky : « Tout effacer » vidait aussi le journal de contractions et les carnets des applications sœurs (corrigé par mister-molkky#161).
+  
+  La correction : retirer ses seules clés, par le `clear()` du `Store` préfixé (`storage`, `versioned-store`) ou une boucle sur son préfixe.
+- 482971a: `pwa-supabase-keepalive.yml` : sonde anonyme optionnelle (`anon-probe`). Le ping ne lit que `keep_alive` ; pendant trois jours, jusqu'au 07/11/2026, le jeu public de miss-arcade a renvoyé 401 à tout visiteur anonyme (une politique RLS appelait une fonction que `anon` ne peut pas exécuter), et le keep-alive restait vert.
+  
+  - `anon-probe: 'rest/v1/<table>?select=…'` lit ce chemin avec la même clé anon, après le ping. Rouge sur 401/403, avec la cause recopiée de PostgREST, et sur tout autre code que 200.
+  - `anon-probe-nonempty: true` exige en plus une réponse non vide : une RLS qui filtre tout rend `[]` en 200.
+  - Sans l'entrée, rien ne change.
+  
+  Migration : facultative — poser `anon-probe` dans le caller des apps dont un visiteur anonyme lit des données (miss-arcade d'abord : `rest/v1/tenants?select=id&slug=eq.demo&published=eq.true&limit=1`).
+- cc9b754: `pwaSeoPlugin` : `llms.txt` est écrit par défaut (`llms: true`), au format de llmstxt.org. L'option existait, éteinte, et aucune app ne l'activait : la racine et les vingt-trois sites répondaient 404, dernier point P1 ouvert des audits SEO/GEO du 28/09 et du 06/11. Google ne s'en sert pas et la convention est inégalement lue, mais le fichier ne coûte rien, ne s'affiche nulle part, échappe déjà au repli de navigation du worker et n'entre pas au précache.
+  
+  `defaultLlmsTxt` passe au format de la convention — des liens Markdown (`- [Miss Dice](https://…/miss-dice/)`, `- [Code source](…)`) au lieu de « Application : URL » — et liste les pages de contenu écrites par le build dans une section « Guides », chacune avec sa description : ce sont les seules pages de l'app qu'un agent lise sans exécuter de JavaScript.
+  
+  Migration : aucune. `llms: false` coupe le fichier, une chaîne le remplace, comme avant.
+- af7c42b: Nouveau workflow réutilisable `pwa-supabase-backup.yml` : un `pg_dump` (format custom, schémas `public,auth` par défaut) chiffré en AES-256 avec `gpg --symmetric`, puis rangé en artefact du run (35 jours par défaut). Au 07/11/2026, aucun dépôt du parc ne sauvegardait sa base : le keep-alive empêche la pause, pas la perte.
+  
+  Le chiffrement est obligatoire. Les artefacts d'un dépôt public se téléchargent par n'importe quel compte GitHub connecté, et un dump contient des données personnelles. Le workflow échoue si `SUPABASE_DB_URL` ou `BACKUP_PASSPHRASE` manque, si la phrase de passe fait moins de 20 caractères, ou si le dump fait moins de 1 Ko (base en pause ou schémas inexistants). Il ne réussit jamais sans avoir sauvegardé.
+- cc9b754: `issue-report` et `AppFooter` : signaler sans compte GitHub, et proposer une idée. `issues/new` exige un compte : au relevé du 07/11/2026, aucune issue du compte n'avait jamais été écrite par un utilisateur des applications, dont les publics (médecins, trésoriers, parents) n'en ont pas.
+  
+  - `issue-report` exporte `issueReportMailto` / `currentIssueReportMailto` : un `mailto:` prérempli avec le même contexte que le gabarit d'anomalie (application, version et commit, environnement, écran), une consigne en tête et deux lignes pour écrire. `emailAddress` n'accepte qu'une adresse (`mailto:` retiré) : une URL ou un nom ne produisent aucun lien. `featureRequestUrl` et `FEATURE_TEMPLATE` visent le gabarit `feature.yml` du dépôt `.github` du compte.
+  - `AppFooter issues` ajoute « Signaler par e-mail » juste après « Signaler un problème », adressé à `VITE_PRIVACY_CONTACT` (lu comme `PrivacyNotice` le lit : la prop `contact` l'emporte, `null` retire le lien, `env` sert aux tests), puis « Proposer une idée » (`issues: { idea: false }` le retire ; jamais en double d'un signalement déjà pointé sur `feature.yml`). Le lien GitHub garde son libellé et sa place.
+  - Libellés dans les sept langues (`footer.issuesMail`, `footer.idea`, `footer.mailSubject`, `footer.mailIntro`) ; un dictionnaire d'app qui ne les a pas retombe sur le français. Deux rôles d'icône, `mail` et `idea` (`Mail` et `Lightbulb` chez lucide), et les marqueurs `footer-mail` / `footer-idea` habillés comme `footer-issues`.
+  
+  Rien ne change pour une app sans `issues`. Une app avec `issues` gagne le lien d'idée ; le courrier en plus si son `VITE_PRIVACY_CONTACT` est une adresse — c'est le cas des dix-sept dépôts qui l'ont posé.
+  
+  Migration : aucune pour les huit apps qui montent `AppFooter issues`. Celles qui composent leur propre lien avec `currentIssueReportUrl` (miss-badminton, miss-contraction, miss-dice, mister-puzzle) peuvent ajouter `currentIssueReportMailto({ to: import.meta.env.VITE_PRIVACY_CONTACT, app: '<id>' })` et `featureRequestUrl({ repoUrl })` à côté. Une app sous `lucideIconSet` peut passer `mail: Mail, idea: Lightbulb`.
+- af7c42b: `persistent-storage` (nouveau) : `requestPersistentStorage()`, `isStoragePersisted()`, `storageEstimate()`. Sans stockage persistant, le navigateur peut évincer les données de l'origine pour faire de la place, et Safari les efface après sept jours sans visite tant que l'application n'est pas installée. Les applications du parc partagent l'origine : un effacement les emporte toutes. Au 07/11/2026, aucune ne le demandait.
+  
+  Chaque fonction rend `null` quand l'API manque ou lève ; `requestPersistentStorage()` ne redemande pas ce qui est déjà accordé (Firefox reposerait la question).
+  
+  `react/use-install-prompt` : `useInstallPrompt` demande le stockage persistant quand l'application vient d'être installée (`appinstalled`). Chromium l'accorde alors sans invite. Rien n'est demandé au chargement.
+
+### Patch Changes
+
+- 4a90f32: `issue-report` : `currentRoute()`, donc `currentIssueReportUrl()` et le lien « Signaler un problème » d'`AppFooter`, ne recopie plus de secret de l'adresse dans l'issue, qui est PUBLIQUE. Avant, la requête et le fragment partaient tels quels. Relevé du 07/11/2026 :
+  
+  - miss-carbook garde son jeton d'invitation dans `?invite=…` quand l'acceptation échoue, c'est-à-dire précisément au moment où l'on signale un problème ;
+  - mister-settle (`#/invitation/<jeton>`), mister-miss-koh (`#/partage/…/<jeton>`) et miss-holi-voyage (`#/rejoindre/<code>`) le portent dans la route ;
+  - un retour d'authentification peut porter `#access_token=…`.
+  
+  Ce qui est gardé, segment par segment : un chemin lisible, c'est-à-dire un mot en minuscules ou un segment de moins de 6 caractères. Tout autre segment (code, UUID, jeton) devient `…`. Les paramètres gardent leur nom et perdent leur valeur. La route d'une application en `#` passe au même filtre, et un fragment qui n'est pas une route est retiré.
+  
+  Aucune application n'a de geste à faire : la montée suffit.
+
 ## 6.33.0
 
 ### Minor Changes

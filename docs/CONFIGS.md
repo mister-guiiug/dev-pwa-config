@@ -804,6 +804,9 @@ test('@a11y les écrans de l’app sans violation WCAG A/AA', async ({ page }) =
 `pwa-doctor` porte une dette `a11y-accueil-seul` quand la spec d'accessibilité
 n'ouvre que l'accueil, sans aucun geste qui change d'état. Un `goto` sur une
 variable ou un chemin construit le fait taire : il ne devine pas les valeurs.
+Axe compte partout où il joue : une spec qui importe `@axe-core/playwright` ou
+appelle `expectNoA11yViolations` est lue avec la spec d'accessibilité, quel que
+soit son nom.
 
 ### Garde de l'écran d'entrée — `playwright-entree`
 
