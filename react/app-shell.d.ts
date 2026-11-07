@@ -16,6 +16,12 @@ export type AppShellProps = {
    * `basename` : sans lui, aucun onglet n'est actif une fois déployé.
    */
   navCurrentPath?: string;
+  /**
+   * Transmis au `navigate` de `BottomNav` : la barre pilote la navigation et
+   * dit qu'elle charge pendant qu'un morceau paresseux arrive. Passer le
+   * `useNavigate()` de react-router (`pwa-doctor`, `nav-attente`).
+   */
+  navNavigate?: (href: string) => void;
   navPlacement?: 'static' | 'fixed';
   navLabel?: string;
   width?: 'sm' | 'md' | 'lg' | 'xl' | 'full';

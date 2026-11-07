@@ -26,6 +26,14 @@ import { useLabels } from './labels-core.js';
  * aucune prop pour le recevoir : le squelette et miss-devises étaient touchés
  * en ligne (relevé le 03/10/2026). Passer `useLocation().pathname`.
  *
+ * `navNavigate` EST LE `navigate` DE LA BARRE, transmis tel quel. Avec des
+ * routes paresseuses, react-router navigue dans une transition et le repli de
+ * Suspense ne paraît jamais : c'est la barre qui doit dire qu'elle charge, et
+ * elle ne le peut que si elle pilote la navigation (`pwa-doctor`,
+ * `nav-attente`). La coquille ne le transmettait pas : miss-arcade a dû
+ * répondre par un refus motivé (relevé le 07/11/2026). Passer le
+ * `useNavigate()` de react-router.
+ *
  * @param {{
  *   title?: import('react').ReactNode,
  *   actions?: import('react').ReactNode,
@@ -35,6 +43,7 @@ import { useLabels } from './labels-core.js';
  *   hrefProp?: string,
  *   navItems?: import('./bottom-nav.js').BottomNavItem[],
  *   navCurrentPath?: string,
+ *   navNavigate?: (href: string) => void,
  *   navPlacement?: 'static'|'fixed',
  *   navLabel?: string,
  *   width?: 'sm'|'md'|'lg'|'xl'|'full',
@@ -59,6 +68,7 @@ export function AppShell(props = {}) {
     hrefProp = 'href',
     navItems,
     navCurrentPath,
+    navNavigate,
     navPlacement = 'fixed',
     navLabel,
     width = 'md',
@@ -117,6 +127,7 @@ export function AppShell(props = {}) {
         ? h(BottomNav, {
             items: navItems,
             currentPath: navCurrentPath,
+            navigate: navNavigate,
             linkComponent,
             hrefProp,
             placement: navPlacement,

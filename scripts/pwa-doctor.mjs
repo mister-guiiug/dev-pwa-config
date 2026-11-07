@@ -1491,8 +1491,9 @@ export function reglesSource(ctx, api) {
   //  - `nav-attente` : ces mêmes routes sans AUCUN retour au clic. react-router
   //    7 et 8 naviguent dans une transition, et React 19 garde l'écran courant :
   //    le `<Suspense fallback>` de route ne paraît jamais. Trois remèdes
-  //    reconnus : `navigate` sur la barre du socle, une transition propre au
-  //    menu (`useTransition`), ou une frontière remontée à chaque route
+  //    reconnus : `navigate` sur la barre du socle (`navNavigate` sous
+  //    `AppShell`, depuis le 07/11/2026), une transition propre au menu
+  //    (`useTransition`), ou une frontière remontée à chaque route
   //    (`key={pathname}`) — et `useNavigation` d'un routeur de données.
   //
   // Le couple ne se juge qu'en présence d'un routeur : un `lazy()` sans
@@ -1515,14 +1516,14 @@ export function reglesSource(ctx, api) {
       );
     }
     if (
-      !/useTransition\(|useNavigation\(|\bnavigate=\{|key=\{(?:location\.)?pathname\}/.test(
+      !/useTransition\(|useNavigation\(|\b(?:navigate|navNavigate)=\{|key=\{(?:location\.)?pathname\}/.test(
         srcText
       )
     ) {
       dette(
         'nav-attente',
         'des routes paresseuses sans retour au clic : le routeur navigue dans une transition et le repli de Suspense ne paraît jamais',
-        '<BottomNav navigate={navigate}> (react/bottom-nav), ou une transition propre au menu'
+        '<BottomNav navigate={navigate}> (react/bottom-nav), <AppShell navNavigate={navigate}> (react/app-shell), ou une transition propre au menu'
       );
     }
   }
