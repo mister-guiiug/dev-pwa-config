@@ -62,7 +62,7 @@ const SELF = 'dev-pwa-config';
  * (`Règles du relevé`) est déjà dans `CHECKS` pour le jour où le dépôt
  * sera sous organisation, ou où l'instantané ne poussera plus sur `main`.
  */
-const AUTO_PUBLIE = new Set(['parc-dashboard']);
+const AUTO_PUBLIE = new Set(['parc-dashboard', 'mister-contrib']);
 
 /**
  * Contextes exigés d'un dépôt — UN SEUL ENDROIT.
