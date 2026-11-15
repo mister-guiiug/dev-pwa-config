@@ -392,7 +392,8 @@ export const FAMILY_THEMES = [
   {
     id: 'mister-contrib',
     name: 'Mister Contrib',
-    tagline: 'Bleu pétrole sur gris clair, calendrier de contributions lisible.',
+    tagline:
+      'Bleu pétrole sur gris clair, calendrier de contributions lisible.',
     schemes: ['light', 'dark'],
     attribute: 'data-theme',
     fontDisplay: "system-ui, -apple-system, 'Segoe UI', sans-serif",
