@@ -90,6 +90,17 @@ export const APP_SEO = Object.freeze(
           'Dictée vocale du compte rendu',
         ],
       },
+      'mister-contrib': {
+        languages: ['fr', 'en'],
+        features: [
+          'Calendrier de contributions consolidé sur l’année',
+          'Total anonymisé des contributions et des dépôts',
+          'Relevé automatique depuis plusieurs forges',
+          'Aucune plateforme nommée sur la page publique',
+          'Fraîcheur du relevé affichée sous le titre',
+          'Page installable hors ligne',
+        ],
+      },
       'mister-footcoach': {
         languages: ['fr', 'en'],
         features: [
