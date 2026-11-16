@@ -245,6 +245,14 @@ const CHECKS = {
     'Lint, tests et inspection',
     "Commits et fichiers sans signature d'assistant",
   ],
+  // L'extension Firefox qui masque les prix sur Amazon (ex `mister-sans-prix`).
+  // Même forme que le serveur MCP : sa CI, sans matrice ni apostrophe, et la
+  // garde des signatures copiée de lui. Relevés sur sa PR #2. Apostrophe DROITE
+  // (U+0027) dans le second.
+  'mister-no-price': [
+    'Tests, lint et paquet',
+    "Commits et fichiers sans signature d'assistant",
+  ],
 
   /**
    * LES TROIS DÉPÔTS SANS APPLICATION EXIGENT LA GARDE « SIGNATURES IA ».
