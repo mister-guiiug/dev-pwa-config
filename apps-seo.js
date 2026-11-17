@@ -101,6 +101,17 @@ export const APP_SEO = Object.freeze(
           'Page installable hors ligne',
         ],
       },
+      'mister-uwh-tactic': {
+        languages: ['fr', 'en'],
+        features: [
+          'Terrain tracé selon le règlement international',
+          'Joueurs nommés, orientés, en surface ou au fond',
+          'Arbitres aquatiques, champ de vision et distance',
+          'Phases de jeu en étapes, rejouées en animation',
+          'Vue 3D du bassin, jusqu’à la vue subjective',
+          'Schémas partagés par un simple lien',
+        ],
+      },
       'mister-footcoach': {
         languages: ['fr', 'en'],
         features: [
