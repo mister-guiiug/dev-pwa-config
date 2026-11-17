@@ -433,6 +433,51 @@ export const FAMILY_THEMES = [
   },
 
   {
+    id: 'mister-uwh-tactic',
+    name: 'Mister UWH Tactic',
+    tagline:
+      'Bleu de bassin profond sur gris d’eau claire : le terrain reste la couleur de la piscine.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    // Relevée dans son `src/index.css` le 17/11/2026. Les couleurs du terrain
+    // (`--uwh-water`, `--uwh-line`) sont celles du bassin, hors palette.
+    radius: '0.875rem',
+    light: {
+      bg: '#f5f9fb',
+      surface: '#ffffff',
+      surface2: '#e9f2f6',
+      text: '#10202a',
+      textSoft: '#4f6170',
+      border: '#d3e0e7',
+      primary: '#0b6b85',
+      primaryContrast: '#ffffff',
+      primarySoft: '#d3ecf4',
+      accent: '#0b6b85',
+      success: '#1b6b3a',
+      warning: '#8a5a00',
+      danger: '#b3261e',
+      info: '#1a5fb4',
+    },
+    dark: {
+      bg: '#0c141a',
+      surface: '#132029',
+      surface2: '#1a2b36',
+      text: '#e6f1f6',
+      textSoft: '#9fb3c1',
+      border: '#263a47',
+      primary: '#5cc4e0',
+      primaryContrast: '#0c141a',
+      primarySoft: '#123c4b',
+      accent: '#5cc4e0',
+      success: '#7fd6a0',
+      warning: '#e8c07d',
+      danger: '#f2b8b5',
+      info: '#86b6f0',
+    },
+  },
+
+  {
     id: 'mister-doc',
     name: 'Mister Doc',
     tagline: 'Sarcelle sur slate très sombre, planning de gardes lisible.',
