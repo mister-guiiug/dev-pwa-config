@@ -367,12 +367,14 @@ globalThis.SHOWROOM_CATALOGUE = {
           'Ne pas oublier `linkComponent` / `hrefProp` : sans eux, la barre et le retour restent des `<a href>`, et le routeur ne voit rien.',
           'Ne pas oublier `navCurrentPath` sous un `basename` : sans `useLocation().pathname`, la barre lit le chemin du navigateur, et aucun onglet n’est actif une fois déployé, jamais en développement.',
           'Ne pas oublier `navNavigate` avec des routes paresseuses : sans `useNavigate()`, react-router navigue dans une transition, le repli de Suspense ne paraît jamais et le clic semble sans effet — `pwa-doctor` (`nav-attente`).',
+          'Ne pas réécrire la coquille pour montrer six entrées : au-delà de cinq, la barre replie les suivantes sous « Plus » ; `navMaxVisible={6}` les garde visibles.',
         ],
         en: [
           'Don’t render `<AppFooter>` inside it: the family rule wants it on home and About only — `pwa-doctor` (`liens-famille`) rejects the shell.',
           'Don’t forget `linkComponent` / `hrefProp`: without them the bar and back stay plain `<a href>`, and the router sees nothing.',
           'Don’t forget `navCurrentPath` under a `basename`: without `useLocation().pathname` the bar reads the browser path, and no tab is ever active once deployed, never in development.',
           'Don’t forget `navNavigate` with lazy routes: without `useNavigate()`, react-router navigates inside a transition, the Suspense fallback never shows and the tap seems to do nothing — `pwa-doctor` (`nav-attente`).',
+          'Don’t rewrite the shell to show six entries: beyond five, the bar folds the rest under “More”; `navMaxVisible={6}` keeps them visible.',
         ],
       },
       a11y: {

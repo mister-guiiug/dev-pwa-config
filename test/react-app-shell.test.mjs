@@ -129,6 +129,54 @@ test('AppShell : `navNavigate` est transmis à la barre, qui navigue elle-même'
   }
 });
 
+/*
+ * SIX DESTINATIONS VISIBLES, SANS QUITTER LA COQUILLE. `BottomNav` replie au-
+ * delà de cinq entrées sous « Plus » (`maxVisible`), mais la coquille ne
+ * transmettait pas l'option et n'avait aucune prop pour la recevoir. Trois
+ * apps la contournaient : miss-supatool assemble `AppHeader`,
+ * `PageContainer` et `BottomNav` à la main — la coquille elle-même — pour
+ * passer `maxVisible={6}` ; mister-doc enveloppe sa barre pour la même
+ * valeur ; mister-uwh-tactic rend la sienne dans `beforeMain` (rail de bureau
+ * à six entrées, 18/11/2026).
+ */
+test('AppShell : `navMaxVisible` est transmis à la barre', () => {
+  const navItems = [
+    { href: '/', label: 'Tableau', end: true },
+    { href: '/schemas', label: 'Schémas' },
+    { href: '/notes', label: 'Notes' },
+    { href: '/reglages', label: 'Réglages' },
+    { href: '/compte', label: 'Compte' },
+    { href: '/a-propos', label: 'À propos' },
+  ];
+  const six = render(
+    AppShell,
+    { title: 'T', navItems, navCurrentPath: '/', navMaxVisible: 6 },
+    'x'
+  );
+  assert.doesNotMatch(six, /data-dwc="bottom-nav-more"/, 'rien de replié');
+  assert.doesNotMatch(six, /bottom-nav-drawer-item/);
+  for (const { href } of navItems) {
+    assert.match(
+      six,
+      new RegExp(`<a href="${href}"[^>]*data-dwc="bottom-nav-item"`),
+      `${href} dans la barre`
+    );
+  }
+
+  // Sans la prop, rien ne change : cinq places, dont une pour « Plus ».
+  const parDefaut = render(
+    AppShell,
+    { title: 'T', navItems, navCurrentPath: '/' },
+    'x'
+  );
+  assert.match(parDefaut, /data-dwc="bottom-nav-more"/);
+  assert.match(
+    parDefaut,
+    /<a href="\/a-propos" data-dwc="bottom-nav-drawer-item"/,
+    'la sixième passe dans le tiroir'
+  );
+});
+
 test('AppShell : skipLabel et locale anglaise', () => {
   const html = renderToStaticMarkup(
     h(LabelsProvider, { locale: 'en' }, h(AppShell, { title: 'T' }, 'x'))

@@ -22,6 +22,12 @@ export type AppShellProps = {
    * `useNavigate()` de react-router (`pwa-doctor`, `nav-attente`).
    */
   navNavigate?: (href: string) => void;
+  /**
+   * Transmis au `maxVisible` de `BottomNav` : combien d'entrées restent
+   * visibles avant que les suivantes passent sous « Plus ». Absent, le défaut
+   * de la barre (5) vaut.
+   */
+  navMaxVisible?: number;
   navPlacement?: 'static' | 'fixed';
   navLabel?: string;
   width?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
