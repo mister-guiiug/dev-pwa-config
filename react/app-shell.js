@@ -34,6 +34,14 @@ import { useLabels } from './labels-core.js';
  * répondre par un refus motivé (relevé le 07/11/2026). Passer le
  * `useNavigate()` de react-router.
  *
+ * `navMaxVisible` EST LE `maxVisible` DE LA BARRE, transmis tel quel : au-delà
+ * de cinq entrées, `BottomNav` replie les suivantes sous « Plus ». La coquille
+ * ne le transmettait pas, et trois apps la contournaient pour en montrer six :
+ * miss-supatool assemble `AppHeader`, `PageContainer` et `BottomNav` à la
+ * main, mister-doc enveloppe sa barre, mister-uwh-tactic rend la sienne dans
+ * `beforeMain` (rail de bureau, relevé le 18/11/2026). Absent, le réglage de
+ * la barre vaut.
+ *
  * @param {{
  *   title?: import('react').ReactNode,
  *   actions?: import('react').ReactNode,
@@ -44,6 +52,7 @@ import { useLabels } from './labels-core.js';
  *   navItems?: import('./bottom-nav.js').BottomNavItem[],
  *   navCurrentPath?: string,
  *   navNavigate?: (href: string) => void,
+ *   navMaxVisible?: number,
  *   navPlacement?: 'static'|'fixed',
  *   navLabel?: string,
  *   width?: 'sm'|'md'|'lg'|'xl'|'full',
@@ -69,6 +78,7 @@ export function AppShell(props = {}) {
     navItems,
     navCurrentPath,
     navNavigate,
+    navMaxVisible,
     navPlacement = 'fixed',
     navLabel,
     width = 'md',
@@ -128,6 +138,11 @@ export function AppShell(props = {}) {
             items: navItems,
             currentPath: navCurrentPath,
             navigate: navNavigate,
+            // Absent, la barre garde son défaut : une prop `undefined` ne
+            // doit pas écraser `maxVisible = 5`.
+            ...(navMaxVisible === undefined
+              ? {}
+              : { maxVisible: navMaxVisible }),
             linkComponent,
             hrefProp,
             placement: navPlacement,
