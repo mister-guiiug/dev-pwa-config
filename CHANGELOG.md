@@ -1,5 +1,16 @@
 # Changelog
 
+## 6.35.0
+
+### Minor Changes
+
+- `apps-catalog` : deux applications rejoignent `FAMILY_APPS`, donc la grille « Nos autres applications » de chaque app et le catalogue du hub.
+  
+  - **mister-contrib** (#511), catégorie `dev`, alpha : calendrier de contributions consolidé depuis plusieurs forges, anonymisé. Port 5221.
+  - **mister-uwh-tactic** (#514), catégorie `sport`, alpha, à côté de miss-uwh : tableau tactique de hockey subaquatique, en 2D et en 3D. Port 5222.
+  
+  Les deux étaient inscrites sur `main` mais absentes de toute version publiée : le hub, qui lit le catalogue à la dernière version publiée, les rangeait dans « Dans les coulisses ». Aucune application n'a de geste à faire : la grille se met à jour à la prochaine montée du socle.
+
 ## 6.34.1
 
 ### Patch Changes
