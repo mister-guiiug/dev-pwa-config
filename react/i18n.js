@@ -38,6 +38,20 @@
  * rien ne rappelait, et que personne ne faisait. Il est fait ici, sauf
  * `labels: false`.
  *
+ * CE MODULE EMBARQUE LES SEPT LANGUES DE LIBELLÉS — `react/i18n-lite`, celles
+ * qu'on lui passe. Ici, le provider résout la locale de l'app contre les sept
+ * dictionnaires du paquet : une app qui parle espagnol obtient des boutons
+ * espagnols sans rien déclarer. Le prix est un import STATIQUE de
+ * `./labels.js` : sept dictionnaires dans l'accueil, quelles que soient les
+ * `locales`, et même avec `labels: false` — le bundler ne peut pas retirer ce
+ * qu'une branche pourrait atteindre. Mesuré le 20/11/2026 sur
+ * `mister-uwh-tactic` : environ 48 kB bruts de libellés dans son morceau
+ * `i18n` de 83, pour une app fr et en. `react/i18n-lite` porte la même
+ * fonction, au même contrat, sans cet import ; on lui passe les langues
+ * qu'on parle (`labels: { en }`). L'implémentation vit là-bas, ce module n'y
+ * ajoute que les sept dictionnaires — les deux entrées ne peuvent donc pas
+ * diverger.
+ *
  * UN ROBOT REÇOIT LA LANGUE PAR DÉFAUT. Le 29/09/2026, le test en direct de la
  * Search Console a rendu `miss-contraction` EN ANGLAIS — « Start contraction »,
  * consentement en anglais — alors que la page est française (`lang="fr"`,
@@ -48,152 +62,44 @@
  * que reçoit tout visiteur sans préférence. Une préférence STOCKÉE garde la
  * priorité — elle a été choisie, pas devinée.
  *
- * Composants en `createElement` (pas de JSX) : le package est servi tel quel,
- * sans étape de build. La logique pure de traduction vit dans `i18n-core.js`.
+ * Le provider est écrit en `createElement` (pas de JSX) dans `i18n-lite.js` :
+ * le package est servi tel quel, sans étape de build. La logique pure de
+ * traduction vit dans `i18n-core.js`.
  *
  * @example
- *   // src/i18n/index.ts
+ *   // src/i18n/index.ts — les sept langues de libellés, sans rien déclarer
  *   import { createI18n } from '@mister-guiiug/dev-pwa-config/react/i18n';
  *   import { messages } from './messages';
  *   export const { I18nProvider, useI18n } = createI18n({
  *     messages, locales: ['fr', 'en'], fallbackLocale: 'fr',
  *   });
+ *
+ * @example
+ *   // …ou seulement celles qu'on parle : le français, plus une ligne par langue
+ *   import { createI18n } from '@mister-guiiug/dev-pwa-config/react/i18n-lite';
+ *   import en from '@mister-guiiug/dev-pwa-config/react/labels-en';
+ *   export const { I18nProvider, useI18n } = createI18n({
+ *     messages, locales: ['fr', 'en'], fallbackLocale: 'fr', labels: { en },
+ *   });
  */
-import {
-  createContext,
-  createElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
-import { isCrawlerUserAgent } from '../crawler.js';
-import { createFormatters, setDefaultLocale } from '../format.js';
-import { createTranslator, plural } from './i18n-core.js';
-// LE PROVIDER COMPLET, ET C'EST VOULU. `createI18n` reçoit la locale de
-// l'app et doit la résoudre pour de bon : une app qui parle espagnol passe
-// `locale="es"` et attend des libellés espagnols, pas un repli. C'est donc le
-// provider aux sept langues qui est monté ici — celui de `labels-core` n'en
-// porte qu'une. Une app multilingue paie les sept dictionnaires ; une app qui
-// ne monte que des composants, elle, n'en paie plus aucun.
-import { LabelsProvider } from './labels.js';
+import { LABELS } from './labels.js';
+import { createI18n as createI18nLite } from './i18n-lite.js';
 
 export { createTranslator, plural } from './i18n-core.js';
-
-// Langues écrites de droite à gauche, pour les navigateurs sans
-// `Intl.Locale#textInfo` (Safari < 17). Liste courte et volontairement
-// incomplète : elle n'est qu'un repli.
-const RTL = new Set(['ar', 'fa', 'he', 'ps', 'ur', 'yi']);
-
-/** `'rtl'` ou `'ltr'` pour une étiquette de langue. */
-export function directionOf(tag) {
-  try {
-    const locale = new Intl.Locale(tag);
-    // `getTextInfo()` est la forme normalisée ; `textInfo` la forme d'origine,
-    // encore la seule sur plusieurs navigateurs en service.
-    const info = locale.getTextInfo?.() ?? locale.textInfo;
-    if (info?.direction) return info.direction;
-  } catch {
-    /* étiquette invalide ou API absente : on retombe sur la liste */
-  }
-  return RTL.has(
-    String(tag ?? '')
-      .slice(0, 2)
-      .toLowerCase()
-  )
-    ? 'rtl'
-    : 'ltr';
-}
+export { directionOf } from './i18n-lite.js';
 
 /**
  * @param {import('./i18n.js').I18nConfig<any, string>} config
  * @returns {{ I18nProvider: (props: { children: unknown }) => unknown, useI18n: () => any }}
  */
 export function createI18n(config) {
-  const {
-    messages,
-    locales,
-    fallbackLocale,
-    storageKey = 'dwc_locale',
-    localeTags = {},
-    currency = 'EUR',
-    labels = true,
-  } = config;
-  const known = new Set(locales);
-  const Context = createContext(null);
-
-  // `'fr'` seul est une étiquette BCP-47 valide, et `Intl` la traite déjà comme
-  // `fr-FR`. On ne fabrique donc PAS de région par défaut : `new
-  // Intl.Locale('pt').maximize()` donne `pt-BR`, ce qu'une app portugaise ne
-  // demandait pas. `localeTags` sert à épingler quand la région compte
-  // (`{ en: 'en-GB' }`).
-  const tagOf = locale => localeTags[locale] ?? locale;
-
-  function detectInitialLocale() {
-    if (typeof window === 'undefined') return fallbackLocale;
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored && known.has(stored)) return stored;
-    } catch {
-      /* localStorage indisponible : on ignore */
-    }
-    // Un robot rend la page dans la langue du HTML statique, pas dans celle
-    // qu'il annonce : le moteur de rendu de Google se dit `en-US`.
-    if (isCrawlerUserAgent(window.navigator?.userAgent)) return fallbackLocale;
-    const nav = window.navigator?.language?.slice(0, 2).toLowerCase();
-    if (nav && known.has(nav)) return nav;
-    return fallbackLocale;
-  }
-
-  function I18nProvider(props) {
-    const [locale, setLocaleState] = useState(detectInitialLocale);
-
-    const setLocale = useCallback(next => {
-      setLocaleState(next);
-      try {
-        localStorage.setItem(storageKey, next);
-      } catch {
-        /* localStorage indisponible : on ignore */
-      }
-    }, []);
-
-    const localeTag = tagOf(locale);
-    const dir = directionOf(localeTag);
-
-    useEffect(() => {
-      const root = document.documentElement;
-      root.lang = locale;
-      // `dir` était absent partout : une locale RTL rendait la page en LTR.
-      root.dir = dir;
-      // Le formatage du paquet (`format.js`) suit la langue de l'app sans
-      // qu'aucun appel soit réécrit — c'est tout l'intérêt.
-      setDefaultLocale(localeTag);
-    }, [locale, localeTag, dir]);
-
-    const value = useMemo(() => {
-      const m = messages[locale] ?? messages[fallbackLocale];
-      const t = createTranslator(messages, locale, fallbackLocale);
-      const fmt = {
-        ...createFormatters(localeTag, { currency }),
-        /** Pluriel par `Intl.PluralRules`, pas par un ternaire sur `> 1`. */
-        plural: (count, forms, params) =>
-          plural(count, forms, localeTag, params),
-      };
-      return { locale, localeTag, dir, setLocale, t, m, locales, fmt };
-    }, [locale, localeTag, dir, setLocale]);
-
-    const tree = createElement(Context.Provider, { value }, props.children);
-    return labels ? createElement(LabelsProvider, { locale }, tree) : tree;
-  }
-
-  function useI18n() {
-    const ctx = useContext(Context);
-    if (!ctx) {
-      throw new Error('useI18n doit être utilisé dans son I18nProvider');
-    }
-    return ctx;
-  }
-
-  return { I18nProvider, useI18n };
+  const { labels = true } = config;
+  // `true` (le défaut) : les sept langues du paquet, comme avant. Un objet de
+  // dictionnaires ou `false` passent tels quels — mais les sept langues
+  // restent dans le bundle, puisque ce module les importe : c'est
+  // `react/i18n-lite` qui ne paie que ce qu'on lui passe.
+  return createI18nLite({
+    ...config,
+    labels: labels === true ? LABELS : labels,
+  });
 }

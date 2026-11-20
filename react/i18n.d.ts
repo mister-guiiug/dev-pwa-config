@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import type { I18nPaths } from './i18n-core.js';
+import type { LabelGroups } from './labels-core.js';
 
 export type { I18nPaths } from './i18n-core.js';
 export { createTranslator, plural } from './i18n-core.js';
@@ -33,9 +34,28 @@ export interface I18nConfig<M, L extends string> {
   /**
    * Pose aussi `LabelsProvider` avec la locale courante, pour que les libellés
    * des composants du paquet suivent la langue (défaut `true`).
+   *
+   * - `true` : la locale est résolue contre les sept langues du paquet (fr,
+   *   en, es, de, it, pt, nl) — toutes embarquées, quelles que soient les
+   *   `locales`.
+   * - un objet (`{ en }`, dictionnaires de `react/labels-xx`) : ces langues
+   *   seulement, plus le français. Les sept restent dans le bundle tant que
+   *   `createI18n` vient de `react/i18n` : c'est `react/i18n-lite` qui ne
+   *   paie que ce qu'on lui passe.
+   * - `false` : aucun provider ; les composants restent en français.
    */
-  labels?: boolean;
+  labels?: boolean | LabelDictionaries<L>;
 }
+
+/**
+ * Dictionnaires de libellés des composants, par locale :
+ * `{ en }` avec `import en from '…/react/labels-en'`. Le français n'y figure
+ * pas : il est toujours là. Une étiquette régionale (`pt-BR`) retombe sur sa
+ * langue (`pt`) avant de retomber sur le français.
+ */
+export type LabelDictionaries<L extends string = string> = Partial<
+  Record<L, LabelGroups>
+>;
 
 /** Formateurs déjà liés à la locale courante — voir `format.js`. */
 export interface I18nFormatters {
