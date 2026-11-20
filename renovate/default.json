@@ -1,12 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Préréglage Renovate de la famille mister-guiiug. Les apps l'étendent : github>mister-guiiug/dev-pwa-config//renovate/default.json",
+  "description": "Préréglage Renovate de la famille mister-guiiug. Les apps l'étendent : github>mister-guiiug/dev-pwa-config//renovate/default.json. Créneau : tout le samedi (heure de Paris), et non « before 7am » : le passage auto-hébergé part avec 4 à 7 h de retard sur son cron, et du 05/10 au 14/11/2026 il est arrivé chaque fois après 7 h, n'ouvrant que le socle (« at any time »). prHourlyLimit 0 : il n'y a qu'un ou deux passages par semaine, la limite par défaut (2 PR par heure et par dépôt) en aurait laissé une partie au samedi suivant ; prConcurrentLimit borne déjà le nombre de PR ouvertes.",
   "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
   "timezone": "Europe/Paris",
-  "schedule": ["before 7am on saturday"],
+  "schedule": ["on saturday"],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
   "prConcurrentLimit": 4,
+  "prHourlyLimit": 0,
   "packageRules": [
     {
       "description": "Le socle : une PR à lui seul, dès qu'il sort, jamais groupé avec le reste.",

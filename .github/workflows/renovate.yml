@@ -11,14 +11,22 @@
 # du propriétaire avec `repo`, `workflow` et `read:packages` (le socle est sur
 # GitHub Packages). Sans lui, le workflow le dit et s'arrête : rien ne casse.
 #
-# Le samedi à 04:00 UTC (06:00 CEST / 05:00 CET), dans la fenêtre « before 7am
-# on saturday » du préréglage — sinon Renovate ne ferait rien. `--dry-run`
-# depuis Actions → « Run workflow » pour voir ce qu'il ferait.
+# QUAND. Deux passages le samedi, 04:23 et 14:23 UTC, dans le créneau « on
+# saturday » (heure de Paris) du préréglage. Jusqu'au 20/11/2026, un seul
+# passage à 04:00 visait « before 7am on saturday » : GitHub l'a lancé entre
+# 08:04 et 10:53 UTC dix samedis de suite, HORS du créneau, et Renovate n'a
+# ouvert que le socle (« at any time »). Le reste dormait en « Awaiting
+# Schedule » sur les tableaux, sans un mot au journal. Les minutes évitent
+# l'heure pile, que GitHub étale mal ; le second passage reprend ce que la
+# fusion des PR du matin a débloqué (rebases, PR suivantes sous
+# prConcurrentLimit). `--dry-run` depuis Actions → « Run workflow » pour voir
+# ce qu'il ferait.
 name: Renovate
 
 on:
   schedule:
-    - cron: '0 4 * * 6'
+    - cron: '23 4 * * 6'
+    - cron: '23 14 * * 6'
   workflow_dispatch:
     inputs:
       dry-run:
