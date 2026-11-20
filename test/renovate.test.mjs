@@ -15,12 +15,16 @@ const json = path => JSON.parse(read(path));
 export const PRESET =
   'github>mister-guiiug/dev-pwa-config//renovate/default.json';
 
-test('le préréglage partagé : recommandé, tableau de bord, samedi matin, regroupements', () => {
+test('le préréglage partagé : recommandé, tableau de bord, le samedi, regroupements', () => {
   const preset = json('../renovate/default.json');
   assert.ok(preset.extends.includes('config:recommended'));
   assert.ok(preset.extends.includes(':dependencyDashboard'));
   assert.equal(preset.timezone, 'Europe/Paris');
-  assert.deepEqual(preset.schedule, ['before 7am on saturday']);
+  // Tout le samedi : le passage part en retard sur son cron (jusqu'à 7 h), et
+  // un créneau « avant 7 h » n'a laissé passer que le socle d'octobre à novembre.
+  assert.deepEqual(preset.schedule, ['on saturday']);
+  // Un ou deux passages par semaine : pas de plafond horaire.
+  assert.equal(preset.prHourlyLimit, 0);
   const groupes = preset.packageRules.map(rule => rule.groupName);
   assert.ok(groupes.includes('npm (mineur & patch)'));
   assert.ok(groupes.includes('github-actions'));
@@ -244,13 +248,19 @@ test('auto-hébergé : tous les dépôts du compte, jamais sans configuration', 
   );
 });
 
-test('renovate.yml : le samedi avant 7 h Paris, lançable à la main, et muet sans jeton', () => {
+test('renovate.yml : deux passages le samedi, lançable à la main, et muet sans jeton', () => {
   const yml = read('../.github/workflows/renovate.yml');
-  assert.match(
-    yml,
-    /cron: '0 4 \* \* 6'/,
-    'samedi 04:00 UTC — dans la fenêtre du préréglage'
-  );
+  const crons = [...yml.matchAll(/cron: '([^']+)'/g)].map(m => m[1]);
+  assert.ok(crons.length >= 1, 'au moins un passage planifié');
+  for (const cron of crons) {
+    const [minute, , , , jour] = cron.split(' ');
+    assert.equal(jour, '6', `${cron} : le samedi, seul jour du créneau`);
+    assert.notEqual(
+      minute,
+      '0',
+      `${cron} : pas à l'heure pile, que GitHub étale mal`
+    );
+  }
   assert.match(yml, /workflow_dispatch:/);
   assert.match(
     yml,
