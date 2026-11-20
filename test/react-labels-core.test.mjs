@@ -74,7 +74,8 @@ test('LE GARDE DU DÉCOUPAGE : aucun composant n’atteint les sept langues', ()
       nom.endsWith('.js') &&
       !nom.startsWith('labels') &&
       // `i18n` monte le provider complet, et c'est documenté : il reçoit la
-      // locale de l'app et doit la résoudre pour de bon.
+      // locale de l'app et doit la résoudre pour de bon. `i18n-lite`, lui,
+      // reste sous ce garde — et sous celui, transitif, de i18n-lite.test.mjs.
       nom !== 'i18n.js' &&
       // Le barrel réexporte la surface publique, `LABELS` compris ; ce qu'une
       // app n'en utilise pas, l'élagage le retire.

@@ -405,6 +405,10 @@
       "types": "./react/i18n.d.ts",
       "default": "./react/i18n.js"
     },
+    "./react/i18n-lite": {
+      "types": "./react/i18n-lite.d.ts",
+      "default": "./react/i18n-lite.js"
+    },
     "./react/icons-context": {
       "types": "./react/icons-context.d.ts",
       "default": "./react/icons-context.js"

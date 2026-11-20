@@ -664,8 +664,52 @@ import { LabelsProvider } from '@mister-guiiug/dev-pwa-config/react/labels-core'
 Le noyau ne résout que le français : lui passer `locale="es"` sans `dictionary`
 rend le français **et le dit en développement** — le repli silencieux est le
 défaut que la version à sept langues avait fermé, il n'est pas rouvert par la
-petite porte. `createI18n`, lui, monte le provider complet : il reçoit la locale
-de l'app et doit la résoudre pour de bon.
+petite porte. `createI18n` de `react/i18n`, lui, monte le provider complet : il
+reçoit la locale de l'app et la résout contre les sept langues.
+
+**Ce que coûtait ce provider complet (6.37.0).** `react/i18n` importe
+`react/labels` statiquement : les sept dictionnaires partent dans l'accueil de
+chaque app qui appelle `createI18n`, quelles que soient ses `locales` — et
+**même avec `labels: false`**, car un bundler ne retire pas ce qu'une branche
+pourrait atteindre. Mesuré le 20/11/2026 sur `mister-uwh-tactic`, app fr et en :
+environ 48 kB bruts de libellés dans un morceau `i18n` de 83.
+
+`react/i18n-lite` porte la même `createI18n`, au même contrat (détection, `t`,
+`fmt`, `<html lang dir>`, robots), sans cet import. Le français est toujours là ;
+on y ajoute, une ligne par langue, celles qu'on parle :
+
+```ts
+import { createI18n } from '@mister-guiiug/dev-pwa-config/react/i18n-lite';
+import en from '@mister-guiiug/dev-pwa-config/react/labels-en';
+
+export const { I18nProvider, useI18n } = createI18n({
+  messages,
+  locales: ['fr', 'en'],
+  fallbackLocale: 'fr',
+  labels: { en },
+});
+```
+
+Les dictionnaires sont **passés, pas chargés à la demande**, pour trois
+raisons :
+
+1. **Les libellés d'un bouton ne peuvent pas arriver après lui.** Un `import()`
+   impose soit un écran qui part en français puis bascule, soit un premier
+   rendu suspendu — et chaque test jsdom d'une app, où `navigator.language`
+   vaut `en-US`, rendrait un conteneur vide là où il attend un écran.
+2. **Un `import()` ne retire rien au téléchargement.** Le service worker
+   précache chaque morceau émis, et `totalGzipKb` les compte tous. Seul un
+   dictionnaire jamais importé disparaît vraiment.
+3. **Une langue de libellés pèse 1 à 2 kB gzip** : pas de quoi payer un aller
+   et retour réseau pour l'éviter.
+
+Une locale déclarée sans dictionnaire rend le français et le dit en
+développement, avec le geste à faire (`labels: { es }`). Une étiquette
+régionale (`pt-BR`) retombe sur sa langue, comme `labelsFor`. `react/i18n`
+accepte aussi la forme objet, et s'y tient ; mais ses sept langues restent alors
+dans le bundle — c'est l'entrée qui change ce qu'on paie, pas l'option.
+`react/i18n` s'appuie sur `react/i18n-lite` : une seule implémentation, deux
+jeux de libellés.
 
 Pour l'accord en nombre, `plural` (exporté par `react/i18n`) s'appuie sur
 `Intl.PluralRules` — le ternaire `n > 1` des apps donne « 0 éléments » en
