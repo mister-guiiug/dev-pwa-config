@@ -133,3 +133,24 @@ test('extractVersionTemplate garde les versions npm, publiées sans « v »', ()
     }
   }
 });
+
+// LE CLI 3 VISE LA BASE LOCALE PAR DÉFAUT, ET DEMANDE `--yes` HORS TERMINAL.
+// Le 21/11/2026, la 3.2.0 devenue le défaut, miss-carbook a cherché
+// 127.0.0.1:54322 au lieu de son projet (rien d'appliqué, déploiement sauté),
+// et mister-doc s'est arrêté sur « Confirmation required … Nothing was
+// changed ». Ces deux tests tiennent les options qui visent le projet lié.
+test('les migrations visent le projet lié sous le CLI 3, et passent sous le CLI 2', () => {
+  const action = lire('.github/actions/supabase-migrate/action.yml');
+  assert.match(
+    action,
+    /supabase db push --remote --password "\$SUPABASE_DB_PASSWORD" --yes/u
+  );
+  // Le CLI 2 ne connaît pas `--remote` : la branche de repli reste la commande
+  // d'avant, qui vise le projet lié par défaut.
+  assert.match(action, /-ge 3 \]; then[\s\S]*?else\s+supabase db push\s+fi/u);
+});
+
+test('le déploiement des Edge Functions confirme sans terminal', () => {
+  const wf = lire('.github/workflows/pwa-supabase-migrate.yml');
+  assert.match(wf, /supabase functions deploy [^\n]*--yes/u);
+});
