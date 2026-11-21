@@ -101,8 +101,10 @@ export interface InitAnalyticsOptions {
    * extensions passent à `init` par `__extensionClasses` (option INTERNE de
    * posthog-js), avec `capture_exceptions` = `OPTIONS_SUIVI_ERREURS`, et
    * chaque `$exception` est nettoyé par `nettoieException` (voir
-   * `analytics-erreurs`, chargé à l'accord avec lui). Sans lui, rien ne
-   * change. Coût : un morceau d'environ 57 kB gzip (posthog-js 1.438.2).
+   * `analytics-erreurs`, chargé à l'accord avec lui). Sans lui — ou si ses
+   * extensions n'arrivent pas —, `init` reçoit `capture_exceptions: false` :
+   * le réglage serveur ne peut pas allumer une capture sans nettoyage. Coût :
+   * un morceau d'environ 57 kB gzip (posthog-js 1.438.2).
    */
   errorTrackingLoader?: () => Promise<unknown>;
 }

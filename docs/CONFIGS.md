@@ -603,19 +603,38 @@ Ce que le socle en fait :
   texte est ce que l'app journalise. Le chargeur peut rendre le module entier ;
   un `AllExtensions` passé par mégarde n'allumerait pas l'enregistrement de
   session.
+- **Sans le chargeur, la capture est éteinte — explicitement.** Le projet
+  PostHog a la capture des exceptions allumée côté serveur, et posthog-js la
+  suit quand `capture_exceptions` est absente. Inerte avec `module.slim.js`,
+  qui n'a pas la classe ; mais une app passée à la build complète capterait ses
+  erreurs sans nettoyage. Le socle passe donc `capture_exceptions: false` à
+  `init` quand `errorTrackingLoader` manque, ou quand ses extensions
+  n'arrivent pas. Seul l'observateur des exceptions lit cette option : rien
+  d'autre ne change.
 - **Chaque `$exception` part nettoyé** par `nettoieException`, posée en
   `before_send` avec les extensions — la capture n'est jamais allumée sans
   elle. Le nettoyage vit dans `analytics-erreurs.js`, qu'`analytics.js`
-  n'importe que dynamiquement, à l'accord, si le chargeur est fourni. Dans les
-  messages (`$exception_list[].value`, causes chaînées comprises,
-  `$exception_values`, `$exception_message`) et dans `$current_url` :
-  adresse → `[email]`, quatre chiffres ou plus (ou huit séparés : téléphone,
-  carte, date) → `[nombre]`, requête d'URL → `?[requête]`, fragment →
-  `#[fragment]` (la route d'un `HashRouter` reste, sans sa requête), UUID →
-  `[uuid]`, JWT / hexadécimal / base64 long → `[jeton]`, texte entre guillemets
-  qui porte une espace ou dépasse quarante caractères → `[texte]`
-  (`"jean dupont" is not valid JSON`). Le message est tronqué à cinq cents
-  caractères. Le **type** d'erreur et les **cadres de pile** (fichier du
+  n'importe que dynamiquement, à l'accord, si le chargeur est fourni. Il porte
+  sur les messages (`$exception_list[].value`, causes chaînées comprises,
+  `$exception_values`, `$exception_message`) et sur **toute propriété
+  d'adresse** — clé finissant par `_url`, `referrer` ou `pathname` :
+  `$current_url`, `$referrer`, `$pathname`, les propriétés d'entrée de session
+  que posthog-js joint à chaque événement (`$session_entry_url`,
+  `$session_entry_referrer`, `$session_entry_pathname`) et les `$initial_*`,
+  y compris dans `$set` et `$set_once`. `$session_entry_url` est l'adresse
+  complète au début de la session : sans ce nettoyage, les jetons d'un retour
+  d'auth Supabase y restaient toute la session, alors même que `$current_url`
+  partait propre. Les remplacements : adresse → `[email]`, quatre chiffres ou
+  plus (ou huit séparés : téléphone, carte, date) → `[nombre]`, requête d'URL
+  → `?[requête]`, fragment → `#[fragment]` (la route d'un `HashRouter` reste,
+  jusqu'au premier `?`, `#`, `&` ou `=` : le second fragment que Supabase
+  ajoute à `#/reset#access_token=…` part aussi), UUID → `[uuid]`, JWT /
+  hexadécimal / base64 long → `[jeton]`, texte entre guillemets qui porte une
+  espace ou dépasse quarante caractères → `[texte]`
+  (`"jean dupont" is not valid JSON`). L'entrée est coupée à deux mille
+  caractères avant les motifs — posthog-js ne tronque pas les `$exception`, et
+  le nettoyage tourne dans le gestionnaire d'erreur —, le message tronqué à
+  cinq cents. Le **type** d'erreur et les **cadres de pile** (fichier du
   bundle, fonction, ligne, colonne) restent : ils disent où, pas quoi. Les
   `$exception_steps`, du texte libre par construction, sont retirés.
 - **`app_version`** devient une super-propriété quand `versionPlugin` a posé la

@@ -406,7 +406,16 @@ async function importeEtInitialise() {
     api_host: state.hote,
     // Les extensions, la capture des exceptions et leur `before_send`, ensemble
     // ou pas du tout.
-    ...suivi?.options,
+    //
+    // Et SANS ELLES, `capture_exceptions: false` — explicitement. Le projet
+    // PostHog du parc a la capture des exceptions allumée côté serveur, et
+    // posthog-js la suit quand l'option est absente (`_requiredConfig` de
+    // `ExceptionObserver`). Inerte avec `module.slim.js`, qui n'a pas la
+    // classe ; mais une app passée à la build complète capterait alors ses
+    // erreurs SANS `before_send`, donc sans nettoyage. Seul `ExceptionObserver`
+    // lit l'option (relevé sur posthog-js 1.438.2 et 1.453.2) : rien d'autre ne
+    // change.
+    ...(suivi?.options ?? { capture_exceptions: false }),
   });
   state.client = posthog;
   state.loaded = true;

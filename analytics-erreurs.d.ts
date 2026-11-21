@@ -17,19 +17,22 @@ export declare const OPTIONS_SUIVI_ERREURS: Readonly<{
 
 /**
  * Nettoie un texte libre — message d'erreur, URL — avant qu'il parte : requête
- * et fragment d'URL (la route d'un `HashRouter` reste), adresses électroniques,
- * UUID, jetons (JWT, hexadécimal, base64), texte entre guillemets qui porte une
- * espace ou dépasse quarante caractères, suites de quatre chiffres ou plus. Ce
- * qui est retiré devient un marqueur (`[email]`, `[nombre]`, `[jeton]`,
- * `[uuid]`, `?[requête]`, `#[fragment]`, `[texte]`…). Tronqué à cinq cents
- * caractères.
+ * et fragment d'URL (la route d'un `HashRouter` reste, jusqu'au premier `?`,
+ * `#`, `&` ou `=`), adresses électroniques, UUID, jetons (JWT, hexadécimal,
+ * base64), texte entre guillemets qui porte une espace ou dépasse quarante
+ * caractères, suites de quatre chiffres ou plus. Ce qui est retiré devient un
+ * marqueur (`[email]`, `[nombre]`, `[jeton]`, `[uuid]`, `?[requête]`,
+ * `#[fragment]`, `[texte]`…). L'entrée est coupée à deux mille caractères
+ * avant les motifs, la sortie tronquée à cinq cents.
  */
 export declare function nettoieTexteLibre(texte: string): string;
 
 /**
  * Le `before_send` posé par `prepareSuiviErreurs`. Sur un `$exception`, rend une
  * copie dont `$exception_list[].value`, `$exception_values`,
- * `$exception_message`, `$current_url` et `$referrer` sont passés par
+ * `$exception_message` et toute propriété d'adresse (clé finissant par `_url`,
+ * `referrer` ou `pathname` : `$current_url`, `$referrer`, `$session_entry_*`,
+ * `$initial_*`, y compris dans `$set` et `$set_once`) sont passés par
  * `nettoieTexteLibre`, sans `$exception_steps` ; le type et les cadres de pile
  * restent. Tout autre événement est rendu tel quel.
  */

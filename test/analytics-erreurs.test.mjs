@@ -169,6 +169,65 @@ test('la route d’un HashRouter reste, sa requête non', () => {
   );
 });
 
+test('un SECOND fragment après la route part aussi — le retour implicite de Supabase', () => {
+  // Supabase AJOUTE son fragment à l'adresse de retour : une app en HashRouter
+  // reçoit `#/reset#access_token=…`. Un jeton de rafraîchissement sans chiffre
+  // échappait aux règles des jetons : seule la coupe de la route le retire.
+  assert.equal(
+    nettoieTexteLibre(
+      'https://x.github.io/app/#/reset#access_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln&refresh_token=kqzmwbrtyplx&type=recovery'
+    ),
+    'https://x.github.io/app/#/reset#[fragment]'
+  );
+  assert.equal(
+    nettoieTexteLibre('https://x.github.io/app/#/carte#nom=Jean%20Dupont'),
+    'https://x.github.io/app/#/carte#[fragment]'
+  );
+  // Requête de la route ET second fragment : les deux marqueurs, dans l'ordre.
+  assert.equal(
+    nettoieTexteLibre('https://x.github.io/app/#/reset?code=abc#suite'),
+    'https://x.github.io/app/#/reset?[requête]#[fragment]'
+  );
+  // Une route qui enchaîne des paramètres sans `?` les perd aussi.
+  assert.equal(
+    nettoieTexteLibre('https://x.github.io/app/#/invite&nom=dupont'),
+    'https://x.github.io/app/#/invite?[requête]'
+  );
+});
+
+test('une entrée de deux cent mille caractères est nettoyée vite', () => {
+  // La règle des adresses électroniques, non bornée, prenait un temps
+  // QUADRATIQUE sur une suite sans espace : 26 s pour deux cent mille
+  // caractères, dans le gestionnaire d'erreur. La borne est large exprès —
+  // une machine de CI lente ne doit pas la franchir, une régression si.
+  const entrees = [
+    'a'.repeat(200_000),
+    'Ab_9-'.repeat(40_000),
+    `x@${'a'.repeat(200_000)}`,
+    `https://x.fr/${')'.repeat(200_000)}x`,
+  ];
+  for (const entree of entrees) {
+    const debut = performance.now();
+    const propre = nettoieTexteLibre(entree);
+    const duree = performance.now() - debut;
+    assert.ok(
+      duree < 1000,
+      `${duree.toFixed(0)} ms pour ${entree.slice(0, 8)}…`
+    );
+    assert.ok(propre.length <= 501, `tronqué : ${propre.length}`);
+  }
+  // LE MOT QUE LA COUPE TRANCHE PART AVEC ELLE. Coupée en `jean.dupont@exe`,
+  // une adresse n'est plus reconnue — et des jetons remplacés par `[jeton]`
+  // raccourcissent assez le texte pour que ce bout ressorte sous les cinq
+  // cents caractères.
+  const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJlc2lnbmF0dXJl';
+  const n = Math.floor(1985 / (jwt.length + 1));
+  const avant = `${`${jwt} `.repeat(n)}${' '.repeat(1985 - n * (jwt.length + 1))}`;
+  const propre = nettoieTexteLibre(`${avant}jean.dupont@exemple.fr`);
+  assert.ok(propre.length < 500, 'le bout coupé serait visible');
+  assert.equal(propre.includes('jean'), false, propre.slice(-40));
+});
+
 test('les identifiants d’une URL et une URL data: disparaissent', () => {
   assert.equal(
     nettoieTexteLibre('fetch https://jean:secret@api.exemple.fr/v1 failed'),
@@ -332,6 +391,50 @@ test('le type et les cadres de pile restent — seule leur requête part', () =>
   assert.equal(propre.uuid, '0190-uuid');
 });
 
+test('les propriétés d’entrée de session et de personne partent nettoyées', () => {
+  // Les noms RÉELS que posthog-js pose (relevés sur 1.438.2, 1.445.4 et
+  // 1.453.2) : `$current_url` partait propre, `$session_entry_url` portait
+  // encore les jetons du retour d'auth, toute la session durant.
+  const retour =
+    'https://mister-guiiug.github.io/miss-x/?code=0f8e7d6c-5b4a-4321-9876-abcdef012345#/reset#access_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2ln&refresh_token=kqzmwbrtyplx';
+  const referent = 'https://mister-guiiug.github.io/miss-a/?user=jean@x.fr';
+  const brut = exception();
+  brut.properties = {
+    ...brut.properties,
+    $referrer: referent,
+    $pathname: '/miss-x/dossier/jean.dupont@x.fr',
+    $session_entry_url: retour,
+    $session_entry_referrer: referent,
+    $session_entry_pathname: '/miss-x/',
+    $session_entry_referring_domain: 'mister-guiiug.github.io',
+    $set: { $current_url: retour },
+  };
+  const avecPersonne = {
+    ...brut,
+    $set_once: { $initial_current_url: retour, $initial_referrer: referent },
+  };
+  const propre = nettoieException(avecPersonne);
+  const p = propre.properties;
+  const attendu =
+    'https://mister-guiiug.github.io/miss-x/?[requête]#/reset#[fragment]';
+  const referentPropre = 'https://mister-guiiug.github.io/miss-a/?[requête]';
+  assert.equal(p.$session_entry_url, attendu);
+  assert.equal(p.$session_entry_referrer, referentPropre);
+  assert.equal(p.$referrer, referentPropre);
+  assert.equal(p.$pathname, '/miss-x/dossier/[email]');
+  assert.equal(p.$session_entry_pathname, '/miss-x/');
+  // Un domaine n'est pas une adresse : il reste, comme `app_name`.
+  assert.equal(p.$session_entry_referring_domain, 'mister-guiiug.github.io');
+  assert.equal(p.$set.$current_url, attendu);
+  assert.equal(propre.$set_once.$initial_current_url, attendu);
+  assert.equal(propre.$set_once.$initial_referrer, referentPropre);
+  // Aucun jeton, aucune adresse, nulle part dans l'événement.
+  const tout = JSON.stringify(propre);
+  for (const fuite of ['eyJ', 'kqzmwbrtyplx', '0f8e7d6c', 'jean']) {
+    assert.equal(tout.includes(fuite), false, `${fuite} a fui`);
+  }
+});
+
 test('l’événement d’origine n’est pas modifié', () => {
   const brut = exception();
   const copie = structuredClone(brut);
@@ -350,7 +453,7 @@ test('tout autre événement est rendu TEL QUEL, même objet', () => {
 
 /* ── Le chargement ────────────────────────────────────────────────────── */
 
-test('SANS le chargeur, rien ne change : ni extension, ni capture, ni before_send', async () => {
+test('SANS le chargeur, la capture est ÉTEINTE, et rien d’autre ne change', async () => {
   const dom = setupDom();
   try {
     resetAnalytics();
@@ -362,13 +465,17 @@ test('SANS le chargeur, rien ne change : ni extension, ni capture, ni before_sen
     });
     await laisseCharger();
     const { options } = faux.appels.init[0];
-    // Exactement les options d'avant, et rien de plus : le module du suivi des
-    // erreurs n'est même pas chargé.
-    assert.deepEqual(
-      Object.keys(options).sort(),
-      [...Object.keys(OPTIONS_VIE_PRIVEE), 'api_host'].sort()
-    );
+    // Les options d'avant, plus UNE : `capture_exceptions: false`. Le projet
+    // PostHog a la capture allumée côté serveur, et posthog-js la suit quand
+    // l'option est absente — une app passée à la build complète capterait ses
+    // erreurs sans `before_send`. Ni extension, ni nettoyage, ni rien d'autre.
+    assert.deepEqual(options, {
+      ...OPTIONS_VIE_PRIVEE,
+      api_host: 'https://eu.i.posthog.com',
+      capture_exceptions: false,
+    });
     assert.equal('before_send' in OPTIONS_VIE_PRIVEE, false);
+    assert.equal('capture_exceptions' in OPTIONS_VIE_PRIVEE, false);
   } finally {
     resetAnalytics();
     dom.restore();
@@ -554,7 +661,8 @@ test('un chargeur qui rend autre chose que les extensions le dit', async () => {
     assert.match(avertis.recus[0], /ErrorTrackingExtensions/u);
     const { options } = faux.appels.init[0];
     assert.equal('__extensionClasses' in options, false);
-    assert.equal('capture_exceptions' in options, false);
+    // Sans nettoyage, pas de capture — pas même celle que le serveur allume.
+    assert.equal(options.capture_exceptions, false);
     assert.equal('before_send' in options, false);
   } finally {
     resetAnalytics();
@@ -586,7 +694,8 @@ test('un import des extensions qui échoue n’empêche pas la mesure', async ()
     assert.equal(faux.appels.init.length, 1);
     const { options } = faux.appels.init[0];
     assert.equal('__extensionClasses' in options, false);
-    assert.equal('capture_exceptions' in options, false);
+    assert.equal(options.capture_exceptions, false);
+    assert.equal('before_send' in options, false);
   } finally {
     resetAnalytics();
     dom.restore();

@@ -71,14 +71,30 @@ const MARQUE = Object.freeze({
 /** Au-delà, un message est tronqué : un message long porte des données. */
 const MESSAGE_MAX = 500;
 
+/**
+ * Au-delà, l'ENTRÉE est coupée avant les motifs. posthog-js capte les
+ * `$exception` sans troncature (`_noTruncate`) : un message de deux cent mille
+ * caractères arriverait entier ici, et le nettoyage tourne dans le
+ * gestionnaire d'erreur, sur le fil principal. Quatre fois la sortie suffit :
+ * les marqueurs raccourcissent le texte, ils ne l'allongent pas.
+ */
+const ENTREE_MAX = 4 * MESSAGE_MAX;
+
 /** Une URL absolue, jusqu'au premier blanc ou guillemet. */
 const URL_ABSOLUE = /\b(?:blob:)?(?:https?|wss?|file):\/\/[^\s"'`<>]+/giu;
 /** Une URL `data:` — son contenu est la donnée elle-même. */
 const URL_DATA = /\bdata:[\w.+-]+\/[\w.+-]+[^\s"'`<>]*/giu;
 /** Une requête hors d'une URL absolue (`/rest/v1/table?email=eq.…`). */
 const REQUETE_RELATIVE = /\?[\w.%[\]-]+=[^\s#"'`<>]*/gu;
+/**
+ * BORNÉE, et ce n'est pas du style. Sans bornes, `[…]+@` repartait de chaque
+ * caractère d'une longue suite sans `@` jusqu'au bout de la suite : un temps
+ * QUADRATIQUE, mesuré à 0,9 s pour cinquante mille caractères et 26 s pour
+ * deux cent mille. Les bornes sont celles des adresses réelles : soixante-
+ * quatre caractères avant l'`@`, soixante-trois par libellé de domaine.
+ */
 const EMAIL =
-  /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.\p{L}{2,}/gu;
+  /[\p{L}\p{N}._%+-]{1,64}@[\p{L}\p{N}-]{1,63}(?:\.[\p{L}\p{N}-]{1,63}){0,8}\.\p{L}{2,63}/gu;
 const UUID =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 const JWT = /\beyJ[\w-]{4,}\.[\w-]{4,}(?:\.[\w-]*)?/gu;
@@ -120,6 +136,11 @@ function estUnJeton(candidat) {
  * d'un `HashRouter` : `#/depenses` EST l'écran où l'erreur s'est produite. Sa
  * requête à elle disparaît, et ses identifiants passent ensuite par les règles
  * des nombres et des jetons.
+ *
+ * LA ROUTE S'ARRÊTE AU PREMIER `?`, `#`, `&` OU `=`. Supabase, en flux
+ * implicite, AJOUTE son fragment à l'adresse de retour : une app en
+ * `HashRouter` reçoit `#/reset#access_token=…&refresh_token=…`. Une route
+ * prise jusqu'au `?` gardait ce second fragment entier.
  */
 function nettoieUrl(url) {
   const propre = url.replace(
@@ -132,11 +153,15 @@ function nettoieUrl(url) {
   const point = avant.indexOf('?');
   let out = point < 0 ? avant : `${avant.slice(0, point)}?${MARQUE.requete}`;
   if (apres) {
-    const route = /^\/[^?]*/u.exec(apres);
+    const route = /^\/[^?#&=]*/u.exec(apres);
     if (!route) out += `#${MARQUE.fragment}`;
     else {
       out += `#${route[0]}`;
-      if (apres.length > route[0].length) out += `?${MARQUE.requete}`;
+      const reste = apres.slice(route[0].length);
+      const second = reste.indexOf('#');
+      const requete = second < 0 ? reste : reste.slice(0, second);
+      if (requete) out += `?${MARQUE.requete}`;
+      if (second >= 0) out += `#${MARQUE.fragment}`;
     }
   }
   return out;
@@ -170,8 +195,10 @@ function nettoieUrlDansTexte(url) {
  *   - quatre chiffres ou plus, ou huit séparés (téléphone, carte, date) →
  *     `[nombre]`.
  *
- * Puis le résultat est tronqué à cinq cents caractères. Le TYPE d'erreur et les
- * cadres de pile ne passent pas par ici : ils disent où, pas quoi.
+ * L'entrée est d'abord coupée à deux mille caractères (`ENTREE_MAX`), sans le
+ * mot que la coupe tranche : un demi-jeton échapperait aux motifs. Puis le
+ * résultat est tronqué à cinq cents. Le TYPE d'erreur et les cadres de pile ne
+ * passent pas par ici : ils disent où, pas quoi.
  *
  * CE QU'IL NE PEUT PAS FAIRE : reconnaître un nom propre ou une phrase saisie
  * qu'un message citerait SANS guillemets. Il réduit le risque, il ne le supprime
@@ -183,7 +210,11 @@ function nettoieUrlDansTexte(url) {
  */
 export function nettoieTexteLibre(texte) {
   if (typeof texte !== 'string' || texte === '') return texte;
-  let out = texte
+  const entree =
+    texte.length > ENTREE_MAX
+      ? `${texte.slice(0, ENTREE_MAX).replace(/\S+$/u, '')}…`
+      : texte;
+  let out = entree
     .replace(URL_DATA, `data:${MARQUE.donnees}`)
     .replace(URL_ABSOLUE, nettoieUrlDansTexte)
     .replace(REQUETE_RELATIVE, `?${MARQUE.requete}`)
@@ -231,13 +262,46 @@ function nettoieEntree(entree) {
 }
 
 /**
+ * UNE PROPRIÉTÉ QUI PORTE UNE ADRESSE, quel que soit son préfixe.
+ *
+ * POURQUOI UN MOTIF, ET PAS LA LISTE `$current_url`, `$referrer`. posthog-js
+ * joint à CHAQUE événement les propriétés d'entrée de session
+ * (`$session_entry_url`, `$session_entry_referrer`, `$session_entry_pathname`)
+ * : l'adresse complète au début de la session, fragment compris, jusqu'à mille
+ * caractères. Relevé le 21/11/2026 sur posthog-js 1.438.2, 1.445.4 et
+ * 1.453.2 : après un retour d'auth Supabase (`?code=…`, ou
+ * `#/reset#access_token=…`), `$current_url` partait propre et
+ * `$session_entry_url` portait encore les jetons, toute la session durant. Les
+ * propriétés de personne (`$initial_current_url`, `$initial_referrer`, dans
+ * `$set_once`) ont la même forme. Le motif couvre les trois familles, et celles
+ * qu'une version suivante ajouterait sous le même nom.
+ */
+const CLE_D_ADRESSE = /(?:_url|referrer|pathname)$/u;
+
+/** Une copie de l'objet, ses propriétés d'adresse passées au nettoyage. */
+function nettoieAdresses(objet) {
+  if (!objet || typeof objet !== 'object' || Array.isArray(objet)) return objet;
+  const out = { ...objet };
+  for (const [cle, valeur] of Object.entries(out)) {
+    if (typeof valeur === 'string' && CLE_D_ADRESSE.test(cle))
+      out[cle] = nettoieTexteLibre(valeur);
+  }
+  return out;
+}
+
+/** Les propriétés de personne, là où posthog-js peut les poser. */
+const PROPRIETES_DE_PERSONNE = ['$set', '$set_once'];
+
+/**
  * LE `before_send` DES EXCEPTIONS — posé par `prepareSuiviErreurs`.
  *
  * Sur un `$exception`, rend une COPIE dont les messages sont passés par
  * `nettoieTexteLibre` : `$exception_list[].value` (chaque cause chaînée
- * comprise), `$exception_values`, `$exception_message`, ainsi que
- * `$current_url` et `$referrer`. Les cadres de pile gardent fichier, fonction,
- * ligne et colonne ; seule une requête dans leur nom de fichier disparaît. Les
+ * comprise), `$exception_values`, `$exception_message`, ainsi que toute
+ * propriété d'adresse (`CLE_D_ADRESSE`) — `$current_url`, `$referrer`,
+ * `$pathname`, les `$session_entry_*` et les `$initial_*` —, y compris dans
+ * `$set` et `$set_once`. Les cadres de pile gardent fichier, fonction, ligne
+ * et colonne ; seule une requête dans leur nom de fichier disparaît. Les
  * `$exception_steps` — un fil d'Ariane en texte libre par construction, que le
  * socle n'active jamais — sont retirés.
  *
@@ -252,7 +316,7 @@ export function nettoieException(evenement) {
   if (!brut || brut.event !== '$exception') return evenement;
   const source = brut.properties;
   if (!source || typeof source !== 'object') return evenement;
-  const props = { ...source };
+  const props = nettoieAdresses(source);
   if (Array.isArray(props.$exception_list)) {
     props.$exception_list = props.$exception_list.map(nettoieEntree);
   }
@@ -261,12 +325,18 @@ export function nettoieException(evenement) {
       typeof v === 'string' ? nettoieTexteLibre(v) : v
     );
   }
-  for (const cle of ['$exception_message', '$current_url', '$referrer']) {
-    if (typeof props[cle] === 'string')
-      props[cle] = nettoieTexteLibre(props[cle]);
-  }
+  if (typeof props.$exception_message === 'string')
+    props.$exception_message = nettoieTexteLibre(props.$exception_message);
   delete props.$exception_steps;
-  return /** @type {T} */ ({ ...brut, properties: props });
+  const out = { ...brut, properties: props };
+  // Dans les propriétés (`properties.$set`) comme à côté (`$set_once`, où
+  // posthog-js range les `$initial_*`).
+  for (const cible of [props, out]) {
+    for (const cle of PROPRIETES_DE_PERSONNE) {
+      if (cible[cle] !== undefined) cible[cle] = nettoieAdresses(cible[cle]);
+    }
+  }
+  return /** @type {T} */ (out);
 }
 
 /**
