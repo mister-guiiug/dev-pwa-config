@@ -79,8 +79,8 @@ test('applyFix pose .editorconfig et .nvmrc', () => {
   const root = mkdtempSync(join(tmpdir(), 'dwc-fix-'));
   try {
     assert.equal(applyFix(root, 'editorconfig'), '.editorconfig');
-    assert.equal(applyFix(root, 'nvmrc', { nodeVersion: '26.13.0' }), '.nvmrc');
-    assert.match(readFileSync(join(root, '.nvmrc'), 'utf8'), /26\.13\.0/);
+    assert.equal(applyFix(root, 'nvmrc', { nodeVersion: '26.13.1' }), '.nvmrc');
+    assert.match(readFileSync(join(root, '.nvmrc'), 'utf8'), /26\.13\.1/);
     assert.match(
       readFileSync(join(root, '.editorconfig'), 'utf8'),
       /root = true/
