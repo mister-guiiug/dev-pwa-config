@@ -96,6 +96,7 @@ import {
   contentPageFiles,
   parseContentPage,
 } from '../vite-pwa-base.js';
+import { isOnDemandSocleModule } from '../vite-pwa.js';
 
 export const PRESET =
   'github>mister-guiiug/dev-pwa-config//renovate/default.json';
@@ -265,10 +266,27 @@ function precacheDuBuild(root, prefixe) {
  * @returns {Array<{ fichier: string, chaine: string[] }>}
  */
 function demarrageHorsPrecache(root, racines, precache, prefixe) {
+  const { file, chaine } = fermetureDuDemarrage(root, racines, prefixe);
+  return file
+    .filter(rel => !precache.has(basename(rel)))
+    .map(rel => ({ fichier: rel, chaine: chaine(rel) }));
+}
+
+/**
+ * Les fichiers du build que la page charge POUR DÉMARRER : la fermeture des
+ * imports STATIQUES depuis ses racines, dans l'ordre de découverte, avec la
+ * chaîne la plus courte qui mène à chacun.
+ *
+ * @param {string} root
+ * @param {string[]} racines
+ * @param {string} prefixe
+ * @returns {{ file: string[], chaine: (rel: string) => string[] }}
+ */
+function fermetureDuDemarrage(root, racines, prefixe) {
   const parent = new Map();
   const file = [];
   // Un lien qui ne désigne pas un FICHIER du build n'est pas suivi : ce
-  // contrôle juge ce qui manque au précache, pas ce qui manque au build.
+  // contrôle juge ce que le démarrage charge, pas ce qui manque au build.
   const estFichier = rel => {
     try {
       return statSync(join(root, 'dist', rel)).isFile();
@@ -294,9 +312,46 @@ function demarrageHorsPrecache(root, racines, precache, prefixe) {
     for (let r = rel; r; r = parent.get(r)) out.unshift(basename(r));
     return ['index.html', ...out];
   };
-  return file
-    .filter(rel => !precache.has(basename(rel)))
-    .map(rel => ({ fichier: rel, chaine: chaine(rel) }));
+  return { file, chaine };
+}
+
+/**
+ * Les modules du socle CHARGÉS À LA DEMANDE qu'un regroupement a pourtant
+ * rangés dans un morceau du démarrage.
+ *
+ * Lu dans les CARTES DE SOURCE des morceaux de la fermeture statique : elles
+ * disent, sans analyseur ni signature fragile, quels modules un fichier
+ * porte. Un morceau sans carte n'est pas jugé — le contrôle se tait quand il
+ * ne sait pas.
+ *
+ * @param {string} root
+ * @param {string[]} racines
+ * @param {string} prefixe
+ * @returns {Array<{ module: string, fichier: string, chaine: string[] }>}
+ */
+export function aLaDemandeAuDemarrage(root, racines, prefixe) {
+  const { file, chaine } = fermetureDuDemarrage(root, racines, prefixe);
+  const trouves = [];
+  for (const rel of file) {
+    const texte = readText(root, join('dist', `${rel}.map`));
+    if (!texte) continue;
+    let sources;
+    try {
+      sources = JSON.parse(texte).sources;
+    } catch {
+      continue;
+    }
+    if (!Array.isArray(sources)) continue;
+    for (const source of sources) {
+      if (!isOnDemandSocleModule(String(source))) continue;
+      trouves.push({
+        module: basename(String(source)),
+        fichier: rel,
+        chaine: chaine(rel),
+      });
+    }
+  }
+  return trouves;
 }
 
 /** Les fichiers source sous `roots`, lus. */
@@ -2359,6 +2414,33 @@ export function reglesBuild(ctx, api) {
         );
       }
     }
+
+    /*
+     * UN MODULE CHARGÉ À LA DEMANDE NE DOIT PAS PARTIR AU PREMIER AFFICHAGE.
+     *
+     * Le socle importe certains de ses modules par `import()` seulement
+     * (`ON_DEMAND_SOCLE_MODULES`, `vite-pwa`). Le `manualChunks` de quinze
+     * apps range tout `node_modules` dans `vendor`, préchargé : à la sortie
+     * de 6.38.0, `analytics-erreurs.js` y est tombé partout, et trois montées
+     * ont dépassé leur budget le même soir (21/11/2026). Le budget ne dit
+     * que « trop lourd » ; ce contrôle dit QUOI, et pourquoi.
+     *
+     * Une dette, pas un défaut : rien ne casse, chaque visiteur télécharge
+     * seulement ce dont il n'a pas besoin.
+     */
+    const precharges = aLaDemandeAuDemarrage(root, m.scripts ?? [], prefix);
+    if (precharges.length) {
+      const liste = precharges
+        .slice(0, 3)
+        .map(({ module, chaine }) => `${module} (${chaine.join(' → ')})`)
+        .join(', ');
+      dette(
+        'module-a-la-demande-precharge',
+        `${precharges.length} module(s) du socle chargé(s) à la demande rangé(s) dans un morceau du démarrage : ${liste}${precharges.length > 3 ? ', …' : ''} — chaque visiteur le(s) télécharge au premier affichage`,
+        '`if (isOnDemandSocleModule(id)) return;` (vite-pwa) en tête de `manualChunks`, avant le fourre-tout'
+      );
+    }
+
     // `pwa-deploy.yml@<majeur>` copie `index.html` en `404.html` AU DÉPLOIEMENT :
     // un build local sans lui n'est pas un défaut pour une app qui déploie
     // par le réutilisable — c'est le cas de badminton, contraction, footcoach.
@@ -2481,6 +2563,7 @@ export const CATALOGUE = [
   { id: 'version-manifest', famille: 'build', niveau: 'dette' },
   { id: 'chunk-hors-precache', famille: 'build', niveau: 'défaut' },
   { id: 'entree-hors-precache', famille: 'build', niveau: 'défaut' },
+  { id: 'module-a-la-demande-precharge', famille: 'build', niveau: 'dette' },
   { id: 'spa-404', famille: 'build', niveau: 'défaut' },
 ];
 

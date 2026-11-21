@@ -41,7 +41,6 @@
  * demande : nettoyé avant de partir, et sans poids pour qui ne s'en sert pas.
  */
 
-import { nettoieUrlsEvenement } from './analytics-url.js';
 import { readBuildInfo } from './version.js';
 
 /** Le nuage EUROPÉEN. Jamais `us.i.posthog.com` — cf. `OPTIONS_VIE_PRIVEE`. */
@@ -383,6 +382,13 @@ async function importeModule() {
  * sera fourni —, donc compté par `totalGzipKb` et précaché, mais il ne pèse
  * pas sur le morceau principal ni sur le premier affichage.
  *
+ * SAUF SI L'APP L'Y RANGE ELLE-MÊME. Le `manualChunks` de quinze apps du parc
+ * envoie tout `node_modules` dans `vendor`, préchargé : à la sortie de 6.38.0,
+ * ce module y tombait, et trois montées ont dépassé leur budget
+ * (mister-cim10, miss-uwh, mister-footcoach, 21/11/2026). Le remède est
+ * `isOnDemandSocleModule` (`vite-pwa`) en tête de la fonction, et
+ * `pwa-doctor` le signale (`module-a-la-demande-precharge`).
+ *
  * Un échec (réseau coupé) rend `null` : sans nettoyage, pas de capture.
  */
 async function importeSuiviErreurs() {
@@ -414,15 +420,41 @@ function enchaine(...etapes) {
     fonctions.reduce((e, f) => (e == null ? e : f(e)), evenement);
 }
 
+/**
+ * Le nettoyage des URL (`analytics-url.js`), importé À L'ACCORD avec
+ * posthog-js, et nulle part statiquement.
+ *
+ * Il ne sert que dans le `before_send` passé à `init`, donc jamais avant que
+ * la bibliothèque soit chargée. Importé statiquement (6.38.0), il entrait dans
+ * le morceau principal de chaque app — et dans son `vendor` préchargé, par le
+ * `manualChunks` qui y range tout `node_modules` : 0,5 kB gzip au premier
+ * affichage, mesuré sur mister-cim10 le 21/11/2026, chez le visiteur qui
+ * refuse comme chez celui qui accepte.
+ *
+ * Un échec (réseau coupé) rend `null`, et `importeEtInitialise` n'initialise
+ * RIEN : sans lui, l'URL d'entrée de session partirait avec chaque événement,
+ * jetons d'un retour Supabase compris.
+ */
+async function importeNettoyageUrls() {
+  try {
+    return await import('./analytics-url.js');
+  } catch {
+    return null;
+  }
+}
+
 async function importeEtInitialise() {
   // Les imports partent ENSEMBLE : à l'accord, le visiteur n'attend qu'un
   // aller-retour, et l'un ne retarde pas l'autre.
-  const [mod, suivi] = await Promise.all([
+  const [mod, suivi, urls] = await Promise.all([
     importeModule(),
     importeSuiviErreurs(),
+    importeNettoyageUrls(),
   ]);
   const posthog = mod?.default ?? mod?.posthog ?? mod;
   if (!posthog || typeof posthog.init !== 'function') return;
+  // Sans le nettoyage des URL, rien ne part : la mesure se tait.
+  if (!urls) return;
 
   posthog.init(state.id, {
     ...OPTIONS_VIE_PRIVEE,
@@ -444,7 +476,10 @@ async function importeEtInitialise() {
     // `analytics-url.js`). Les URL d'abord, puis, si le suivi des erreurs est
     // là, le nettoyage de ses `$exception` : le second ne remplace pas le
     // premier, il le suit.
-    before_send: enchaine(nettoieUrlsEvenement, suivi?.options?.before_send),
+    before_send: enchaine(
+      urls.nettoieUrlsEvenement,
+      suivi?.options?.before_send
+    ),
   });
   state.client = posthog;
   state.loaded = true;

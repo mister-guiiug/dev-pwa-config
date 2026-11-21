@@ -82,7 +82,10 @@ seconde, sur un dépôt :
    un morceau hors précache ne porte pas d'empreinte (`chunk-hors-precache`),
    et aucun morceau que la page importe STATIQUEMENT, de proche en proche, ne
    manque au précache (`entree-hors-precache` : s'il manque, l'app ne démarre
-   plus hors ligne) ;
+   plus hors ligne). Enfin, aucun module du socle chargé à la demande
+   (`ON_DEMAND_SOCLE_MODULES`) ne se retrouve dans un morceau du démarrage
+   (`module-a-la-demande-precharge`, une dette : lu dans les cartes de
+   source, il se tait sans elles) ;
 4. **le seul réglage de dépôt qui se voit à l'écran** — une app qui affiche
    « Signaler un problème » (`<AppFooter … issues>`, ou `issueReportUrl` dans
    un pied de page maison) sur un dépôt dont les issues sont **désactivées** :
