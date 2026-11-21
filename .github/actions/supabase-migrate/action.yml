@@ -50,4 +50,18 @@ runs:
       env:
         SUPABASE_ACCESS_TOKEN: ${{ inputs.access-token }}
         SUPABASE_DB_PASSWORD: ${{ inputs.db-password }}
-      run: supabase db push
+      # LE CLI 3 VISE LA BASE LOCALE PAR DÉFAUT. `db push` y dit « Local by
+      # default. Pass --remote for the linked project », et refuse hors
+      # terminal tout changement hébergé sans `--yes`. Le 21/11/2026, sur
+      # 3.2.0, miss-carbook a cherché 127.0.0.1:54322 et n'a rien appliqué.
+      # Le CLI 2 (`cli-version: 2.x`) ne connaît pas `--remote` : il vise le
+      # projet lié par défaut, et lit le mot de passe dans l'environnement.
+      # `sed` lit toute la sortie : un `head` qui ferme le tube tôt ferait
+      # sortir `grep` en SIGPIPE, et `pipefail` arrêterait le pas.
+      run: |
+        majeur="$(supabase --version 2>/dev/null | sed -n '1s/[^0-9].*//p')"
+        if [ "${majeur:-0}" -ge 3 ]; then
+          supabase db push --remote --password "$SUPABASE_DB_PASSWORD" --yes
+        else
+          supabase db push
+        fi

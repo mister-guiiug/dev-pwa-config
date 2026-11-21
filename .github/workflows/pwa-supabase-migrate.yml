@@ -133,5 +133,8 @@ jobs:
             echo "::warning::deploy-functions demandé mais supabase/functions/ est absent — rien à déployer."
             exit 0
           fi
+          # `--yes` : hors terminal, le CLI 3 refuse tout changement hébergé sans
+          # lui (« Confirmation required … Nothing was changed », mister-doc le
+          # 21/11/2026). Le CLI 2 l'accepte aussi.
           # shellcheck disable=SC2086 — les options sont volontairement découpées.
-          supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" $FUNCTIONS_FLAGS
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" --yes $FUNCTIONS_FLAGS
