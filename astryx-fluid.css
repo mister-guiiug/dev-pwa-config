@@ -1,0 +1,46 @@
+/*
+ * L'échelle fluide du socle, ramenée sur les crans d'Astryx. OPT-IN, et avec
+ * `astryx.css`, dont elle lit les noms.
+ *
+ *   @import '@mister-guiiug/dev-pwa-config/components.css';
+ *   @import '@mister-guiiug/dev-pwa-config/astryx.css';
+ *   @import '@mister-guiiug/dev-pwa-config/astryx-fluid.css';   ← ce fichier
+ *
+ * POURQUOI. Les composants du socle dimensionnent leur texte avec
+ * `--text-fluid-*`, l'échelle du preset : des tailles qui glissent avec la
+ * largeur de la fenêtre (`clamp(0.8125rem, 1.9vw, 0.95rem)`…). À côté d'une
+ * interface écrite dans la grammaire d'Astryx, elles tombent entre les crans.
+ * L'audit de mister-uwh-tactic (ADR 0017, 18/11/2026) comptait onze tailles
+ * de texte sur un même écran, de 10,88 à 20 px ; l'échelle fluide en était
+ * l'une des trois causes. Ici, chaque nom fluide devient l'alias d'un style
+ * nommé : le texte des composants tombe sur les crans, et passe à 16 px au
+ * doigt avec le reste.
+ *
+ * À PART, ET NON DANS `astryx.css`. Celui-ci ne change rien à l'écran tant que
+ * l'app ne se sert pas de ses noms ; celui-là change le texte de TOUS les
+ * composants du socle. C'est une décision de l'app, qui se prend en une ligne
+ * et se défait de même. mister-uwh-tactic la prenait, dans sa propre feuille ;
+ * mister-cim10 non (11/2026).
+ *
+ * LA CORRESPONDANCE est celle de mister-uwh-tactic : les deux plus petites
+ * tailles sur `supporting` (12 px, le plancher), `sm` et `base` sur `body`,
+ * puis `heading-3`, `heading-2`, `heading-1`. Le preset ne déclare pas
+ * `--text-fluid-2xs`, mais le badge le lit : il est couvert aussi.
+ *
+ * SANS `astryx.css`, ces alias ne valent rien : chaque composant retombe sur
+ * le repli écrit dans `components.css` (rien ne casse), mais une classe
+ * Tailwind `text-fluid-*` de l'app hériterait de la taille de son parent.
+ *
+ * PRIORITÉ. Hors `@layer` : l'emporte sur le `@theme` du preset, et cède à
+ * une règle `:root` de l'app écrite après l'import.
+ */
+
+:root {
+  --text-fluid-2xs: var(--text-supporting-size);
+  --text-fluid-xs: var(--text-supporting-size);
+  --text-fluid-sm: var(--text-body-size);
+  --text-fluid-base: var(--text-body-size);
+  --text-fluid-lg: var(--text-heading-3-size);
+  --text-fluid-xl: var(--text-heading-2-size);
+  --text-fluid-2xl: var(--text-heading-1-size);
+}

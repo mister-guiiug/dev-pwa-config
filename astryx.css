@@ -1,0 +1,294 @@
+/*
+ * La grammaire d'Astryx, posée sur le contrat `--dwc-*` du socle. OPT-IN.
+ *
+ *   @import 'tailwindcss';
+ *   @import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
+ *   @import '@mister-guiiug/dev-pwa-config/tokens.css';   (si l'app n'a pas sa palette)
+ *   @import '@mister-guiiug/dev-pwa-config/components.css';
+ *   @import '@mister-guiiug/dev-pwa-config/astryx.css';         ← ce fichier
+ *   @import '@mister-guiiug/dev-pwa-config/astryx-fluid.css';   (facultatif)
+ *
+ * PROMU, PAS INVENTÉ (11/2026). Astryx est le design system open source de
+ * Meta (MIT, `@astryxdesign/core`, <https://astryx.atmeta.com/>). Il nomme
+ * chaque décision visuelle par son usage : `--color-<élément>-<rôle>`,
+ * `--spacing-<cran>`, `--text-<style>-size`, `--radius-<rôle>`,
+ * `--shadow-<niveau>`. Deux apps du parc ont pris cette grammaire chacune de
+ * son côté, sans le paquet — StyleX y est une dépendance obligatoire, et une
+ * seconde bibliothèque de composants à côté de celle du socle est ce que la
+ * règle 3 du parc refuse : mister-uwh-tactic (`src/index.css`, ADR 0017) et
+ * mister-cim10 (`src/astryx.css`). Ce fichier reprend ce qu'elles ont EN
+ * COMMUN ; ce qui ne vit que dans l'une reste dans l'app (liste en fin
+ * d'en-tête).
+ *
+ * LES COULEURS SONT DES ALIAS. Chaque `--color-*` lit un rôle `--dwc-*` : il
+ * n'y a toujours qu'une source, celle que l'app peint déjà (ou `tokens.css`),
+ * et les composants du socle la suivent. Aucun bloc de thème pour elles :
+ * elles changent avec les `--dwc-*` que l'app peint sur `:root` (`html`) —
+ * attribut, classe ou `ThemeProvider`. Les alias sont calculés sur `:root` :
+ * un `--dwc-*` repeint sur un sous-arbre n'est pas suivi.
+ *
+ * TREIZE RÔLES LUS, DIX REQUIS. Trois ont un repli tiré du contrat :
+ * `--dwc-bg` (la surface), `--dwc-primary-soft` (un mélange de la primaire)
+ * et `--dwc-border-strong` (le filet, comme dans `components.css`). Les dix
+ * autres n'en ont pas : une app qui n'importe pas `tokens.css` peint
+ * `--dwc-primary`, `-primary-contrast`, `-surface`, `-surface-2`, `-text`,
+ * `-text-soft`, `-border`, `-success`, `-warning` et `-danger`, sans quoi les
+ * alias correspondants ne valent rien.
+ *
+ * Les mélanges (fonds pâles, survol, appui) sont ceux de mister-uwh-tactic,
+ * la seule des deux qui les écrivait déjà sur les `--dwc-*` ; mister-cim10
+ * est à deux points près. Astryx met 20 % dans ses fonds pâles : les deux
+ * apps sont descendues entre 10 et 15 %.
+ *
+ * LES ÉCHELLES SONT CELLES D'ASTRYX, relevées dans
+ * `packages/core/src/theme/tokens.stylex.ts` le 21/11/2026 : texte en base
+ * 14 px au rapport 1,2, espacement au pas de 4 px, rayons, ombres, durées,
+ * courbes. Seuls les crans que les deux apps emploient sont déclarés — plus
+ * `--text-code-*` et la graisse `bold`, que seule cim10 déclare et qui
+ * complètent leur famille : pas de texte sous 12 px (les crans `xs` à `4xs`),
+ * pas de `display-*`, pas d'espacement 7, 9 ni 11.
+ *
+ * TROIS ÉCARTS ASSUMÉS, les mêmes dans les deux apps :
+ *   1. `--size-element-lg` vaut 44 px. Astryx s'arrête à 36 et ne publie pas
+ *      de taille de cible ; le parc exige 44 au doigt (WCAG 2.5.5, et
+ *      l'utilitaire `touch-target` du preset).
+ *   2. `--color-border-emphasized` est `--dwc-border-strong`, que `tokens.css`
+ *      garantit à 3:1 (WCAG 1.4.11). Le #CCD3DB d'Astryx tient 1,5:1 sur
+ *      blanc : le pourtour d'un champ disparaît. Si l'app ne peint pas ce
+ *      rôle, le repli est `--dwc-border`, celui de `components.css` : un
+ *      contour moins contrasté, mais un contour.
+ *   3. La marque garde son accent et sa police. L'accent est `--dwc-primary` ;
+ *      aucune `--font-family-*` n'est déclarée (cim10 garde IBM Plex, uwh la
+ *      pile système).
+ *
+ * AU DOIGT, 16 PX. Sous `pointer: coarse`, le corps, les libellés, le code et
+ * `heading-4` passent de 14 à 16 px : sous ce seuil, iOS agrandit la page au
+ * focus d'un champ, et 14 px se lit mal sur un téléphone tenu à bout de bras.
+ * Astryx va plus loin — son profil mobile recalcule toute l'échelle, et
+ * seulement sous 1 024 px de large ; aucune des deux apps ne l'a suivi, le
+ * socle non plus.
+ *
+ * MOUVEMENT RÉDUIT : les durées tombent à 0,01 ms, pas à 0. Une transition
+ * de durée nulle n'émet pas `transitionend`, dont dépendent des fermetures de
+ * panneau — la même raison que dans `tokens.css`.
+ *
+ * IMPORTER NE CHANGE RIEN À L'ÉCRAN. La feuille ne pose que des custom
+ * properties sur `:root`, et aucun de ses noms n'est lu par `components.css`,
+ * `tokens.css` ou le preset : elle ajoute un vocabulaire, les pixels ne
+ * bougent que là où l'app s'en sert (`test/astryx-css.test.mjs`). Une seule
+ * rencontre : `--font-weight-*` existe aussi dans le thème par défaut de
+ * Tailwind 4, aux mêmes valeurs.
+ *
+ * L'ÉCHELLE FLUIDE DU SOCLE N'EST PAS TOUCHÉE. Les composants dimensionnent
+ * leur texte avec `--text-fluid-*`, qui glisse avec la fenêtre. Les ramener
+ * sur les crans d'Astryx change le rendu de tous les composants : c'est
+ * `astryx-fluid.css`, une seconde ligne d'import, que l'app ajoute ou non.
+ *
+ * SANS TAILWIND. Ni `@theme` ni `@apply` : un `@import` suffit. Le pont vers
+ * des classes (`text-body`, `text-supporting`…) reste à l'app, qui choisit
+ * ses noms.
+ *
+ * PRIORITÉ. Rien n'est dans `@layer`, comme `tokens.css`, et chaque règle
+ * garde la spécificité de `:root` — les blocs sombres passent par `:where()`.
+ * Une règle de l'app écrite APRÈS l'import l'emporte donc dans tous les
+ * thèmes, qu'elle vise `:root`, `[data-theme='dark']` ou
+ * `html[data-theme='dark']`. Ce sont des valeurs par défaut. Une ombre
+ * redéclarée sur `:root` vaut alors aussi en sombre : redéclarer les deux.
+ *
+ * UNE SURCHARGE SE RÉPÈTE DANS SON MÉDIA. Un `--duration-*` ou un
+ * `--text-*-size|leading` redéclaré après l'import l'emporte aussi sous
+ * `prefers-reduced-motion` et sous `pointer: coarse` : le mouvement réduit ou
+ * les 16 px au doigt disparaissent pour ce nom. Le répéter dans le même
+ * `@media`, après l'import.
+ *
+ * CE QUI RESTE DANS L'APP, parce qu'une seule l'a écrit, ou chacune à sa
+ * façon : l'ordre des calques (`--layer-*`, qu'Astryx ne publie pas), les
+ * tailles d'icône, `--radius-page`, `display-3`, la police, les couleurs hors
+ * contrat (`--color-text-disabled`, `-background-inverted`, `-track`, les
+ * textes d'état, l'ombre en deux teintes de cim10), le palier de 13 px au
+ * doigt de cim10, et le pont Tailwind d'uwh.
+ */
+
+:root {
+  /* ── Couleur : les rôles d'Astryx, en alias du contrat ─────────────────── */
+  --color-accent: var(--dwc-primary);
+  /* `tokens.css` peint un fond teinté de marque : il sert d'abord. */
+  --color-accent-muted: var(
+    --dwc-primary-soft,
+    color-mix(in srgb, var(--dwc-primary) 14%, transparent)
+  );
+  --color-on-accent: var(--dwc-primary-contrast);
+
+  /* `--dwc-bg` est peint par le squelette, pas par `tokens.css` : à défaut,
+     la page prend la surface — un fond plat, jamais un contraste non
+     vérifié. */
+  --color-background-body: var(--dwc-bg, var(--dwc-surface));
+  --color-background-surface: var(--dwc-surface);
+  --color-background-card: var(--dwc-surface);
+  --color-background-popover: var(--dwc-surface);
+  --color-background-muted: var(--dwc-surface-2);
+
+  --color-text-primary: var(--dwc-text);
+  --color-text-secondary: var(--dwc-text-soft);
+  --color-text-accent: var(--dwc-primary);
+  --color-icon-primary: var(--dwc-text);
+  --color-icon-secondary: var(--dwc-text-soft);
+
+  --color-border: var(--dwc-border);
+  /* ÉCART 2 : le contour d'un contrôle, 3:1 — pas le #CCD3DB d'Astryx. Le
+     repli est celui de `components.css`, pour une app qui ne le peint pas. */
+  --color-border-emphasized: var(--dwc-border-strong, var(--dwc-border));
+
+  /* Les couches d'état : survol et appui, sur n'importe quel contrôle. */
+  --color-overlay-hover: color-mix(in srgb, var(--dwc-text) 7%, transparent);
+  --color-overlay-pressed: color-mix(in srgb, var(--dwc-text) 12%, transparent);
+
+  --color-success: var(--dwc-success);
+  --color-warning: var(--dwc-warning);
+  --color-warning-muted: color-mix(
+    in srgb,
+    var(--dwc-warning) 14%,
+    transparent
+  );
+  --color-error: var(--dwc-danger);
+  --color-error-muted: color-mix(in srgb, var(--dwc-danger) 12%, transparent);
+
+  /* ── Texte : base 14 px, rapport 1,2, 12 px au plancher ────────────────── */
+  --font-size-sm: 0.75rem; /* 12 */
+  --font-size-base: 0.875rem; /* 14 */
+  --font-size-lg: 1.0625rem; /* 17 */
+  --font-size-xl: 1.25rem; /* 20 */
+  --font-size-2xl: 1.5rem; /* 24 */
+  --font-size-3xl: 1.8125rem; /* 29 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Les styles nommés. Interlignage sans unité, calé sur la grille de 4 px :
+     24 → 32, 20 → 28, 17 → 24, 14 → 20, 12 → 20. */
+  --text-heading-1-size: var(--font-size-2xl);
+  --text-heading-1-weight: var(--font-weight-semibold);
+  --text-heading-1-leading: 1.3333;
+  --text-heading-2-size: var(--font-size-xl);
+  --text-heading-2-weight: var(--font-weight-semibold);
+  --text-heading-2-leading: 1.4;
+  --text-heading-3-size: var(--font-size-lg);
+  --text-heading-3-weight: var(--font-weight-semibold);
+  --text-heading-3-leading: 1.4118;
+  --text-heading-4-size: var(--font-size-base);
+  --text-heading-4-weight: var(--font-weight-semibold);
+  --text-heading-4-leading: 1.4286;
+  --text-body-size: var(--font-size-base);
+  --text-body-weight: var(--font-weight-normal);
+  --text-body-leading: 1.4286;
+  --text-label-size: var(--font-size-base);
+  --text-label-weight: var(--font-weight-medium);
+  --text-label-leading: 1.4286;
+  --text-code-size: var(--font-size-base);
+  --text-code-weight: var(--font-weight-normal);
+  --text-code-leading: 1.4286;
+  --text-supporting-size: var(--font-size-sm);
+  --text-supporting-weight: var(--font-weight-normal);
+  --text-supporting-leading: 1.6667;
+
+  /* ── Espacement : le pas de 4 px, en rem ───────────────────────────────── */
+  --spacing-0: 0rem;
+  --spacing-0-5: 0.125rem;
+  --spacing-1: 0.25rem;
+  --spacing-1-5: 0.375rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+
+  /* ── Forme ─────────────────────────────────────────────────────────────── */
+  --radius-inner: 4px;
+  --radius-element: 8px;
+  --radius-container: 12px;
+  --radius-full: 9999px;
+
+  /* ── Élévation, du plus bas au plus haut ───────────────────────────────── */
+  /* La seule couleur littérale de la feuille : du noir translucide. Une ombre
+     n'a pas de teinte de thème, seulement une densité, plus forte en sombre
+     (plus bas). */
+  --shadow-low: 0 1px 1px rgb(0 0 0 / 0.1), 0 2px 8px rgb(0 0 0 / 0.1);
+  --shadow-med: 0 1px 2px rgb(0 0 0 / 0.1), 0 2px 12px rgb(0 0 0 / 0.1);
+  --shadow-high: 0 2px 2px rgb(0 0 0 / 0.1), 0 8px 24px rgb(0 0 0 / 0.1);
+
+  /* ── Mouvement ─────────────────────────────────────────────────────────── */
+  --duration-fast-min: 130ms;
+  --duration-fast: 175ms;
+  --duration-fast-max: 230ms;
+  --duration-medium: 410ms;
+  --duration-exit: var(--duration-fast);
+  --ease-standard: cubic-bezier(0.24, 1, 0.4, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.6, 0.6);
+
+  /* ── Tailles de contrôle, en rem comme `touch-target` du preset ───────── */
+  --size-element-sm: 1.75rem; /* 28 */
+  --size-element-md: 2rem; /* 32 */
+  /* ÉCART 1 : Astryx s'arrête à 36 px ; le parc exige 44 au doigt. */
+  --size-element-lg: 2.75rem; /* 44 */
+
+  /* ── Focus : un anneau, que l'app pose sous `:focus-visible` ──────────── */
+  --focus-outline-width: 2px;
+  --focus-outline-style: solid;
+  --focus-outline-color: var(--color-accent);
+  --focus-outline-offset: 3px;
+}
+
+/*
+ * Les ombres en sombre. Les trois états de thème du socle, comme `tokens.css` :
+ * le réglage « système » ne pose aucun attribut et ne se lit que dans
+ * `prefers-color-scheme` ; un choix explicite (`data-theme` ou la classe) passe
+ * derrière et l'emporte. Les deux blocs restent jumeaux (vérifié).
+ *
+ * `:where()` LES GARDE À LA SPÉCIFICITÉ DE `:root`. Écrits en
+ * `:root[data-theme='dark']` (0,2,0) et `:root:not(…):not(…)` (0,3,0), ils
+ * battaient une surcharge de l'app placée après l'import — un
+ * `[data-theme='dark'] { --shadow-low: … }`, celui de mister-uwh-tactic,
+ * perdait en sombre. Ici, ils l'emportent sur le bloc de base par leur ordre,
+ * et cèdent à ce qui vient après.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light']):not(.light)) {
+    --shadow-low: 0 1px 1px rgb(0 0 0 / 0.2), 0 2px 8px rgb(0 0 0 / 0.2);
+    --shadow-med: 0 1px 2px rgb(0 0 0 / 0.2), 0 2px 12px rgb(0 0 0 / 0.2);
+    --shadow-high: 0 2px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.3);
+  }
+}
+
+:root:where([data-theme='dark'], .dark) {
+  --shadow-low: 0 1px 1px rgb(0 0 0 / 0.2), 0 2px 8px rgb(0 0 0 / 0.2);
+  --shadow-med: 0 1px 2px rgb(0 0 0 / 0.2), 0 2px 12px rgb(0 0 0 / 0.2);
+  --shadow-high: 0 2px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.3);
+}
+
+/* Au doigt, le texte courant passe à 16 px (voir l'en-tête). */
+@media (pointer: coarse) {
+  :root {
+    --text-body-size: 1rem;
+    --text-body-leading: 1.5;
+    --text-label-size: 1rem;
+    --text-label-leading: 1.5;
+    --text-code-size: 1rem;
+    --text-code-leading: 1.5;
+    --text-heading-4-size: 1rem;
+    --text-heading-4-leading: 1.5;
+  }
+}
+
+/* `--duration-exit` suit `--duration-fast`. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast-min: 0.01ms;
+    --duration-fast: 0.01ms;
+    --duration-fast-max: 0.01ms;
+    --duration-medium: 0.01ms;
+  }
+}

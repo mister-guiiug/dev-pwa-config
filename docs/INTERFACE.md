@@ -168,6 +168,181 @@ prévenir. Le fichier les traite ; les tests empêchent la récidive.
 Aucun `forced-color-adjust: none` — figer nos teintes reviendrait à passer outre
 le réglage de l'utilisateur. Un test le vérifie.
 
+### La grammaire d'Astryx (`astryx.css`, opt-in)
+
+_Promu de `mister-uwh-tactic` et `mister-cim10`, 11/2026._
+
+[Astryx](https://astryx.atmeta.com/) est le design system open source de Meta
+(MIT, `@astryxdesign/core`). Il nomme chaque décision visuelle par son usage :
+`--color-<élément>-<rôle>`, `--spacing-<cran>`, `--text-<style>-size`,
+`--radius-<rôle>`, `--shadow-<niveau>`. Deux apps du parc ont pris cette
+grammaire chacune de son côté, **sans son paquet** — StyleX y est une
+dépendance obligatoire, et une seconde bibliothèque de composants à côté de
+celle du socle est ce que la règle 3 du parc refuse :
+`mister-uwh-tactic` (`src/index.css`, ADR 0017) et `mister-cim10`
+(`src/astryx.css`). Le socle en reprend ce qu'elles ont en commun.
+
+```css
+@import 'tailwindcss';
+@import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
+@import '@mister-guiiug/dev-pwa-config/tokens.css'; /* si l'app ne peint pas les dix rôles requis */
+@import '@mister-guiiug/dev-pwa-config/components.css';
+@import '@mister-guiiug/dev-pwa-config/astryx.css'; /* ← la grammaire */
+@import '@mister-guiiug/dev-pwa-config/astryx-fluid.css'; /* ← facultatif, voir plus bas */
+
+/* Puis la palette de l'app (ses --dwc-*), et ses surcharges éventuelles. */
+```
+
+**Importer ne change rien à l'écran.** La feuille ne pose que des custom
+properties sur `:root`, et aucun de ses noms n'est lu par `components.css`,
+`tokens.css` ou le preset : elle ajoute un vocabulaire, les pixels ne bougent
+que là où l'app s'en sert. Une seule rencontre : `--font-weight-*` existe aussi
+dans le thème par défaut de Tailwind 4, aux mêmes valeurs. Ni `@theme` ni
+`@apply` : elle s'importe aussi sans Tailwind, et le pont vers des classes
+(`text-body`…) reste à l'app. Rien n'est dans `@layer`, comme `tokens.css`, et
+chaque règle garde la spécificité de `:root` (les blocs sombres passent par
+`:where()`) : une règle de l'app écrite **après** l'import l'emporte dans tous
+les thèmes, qu'elle vise `:root`, `[data-theme='dark']` ou
+`html[data-theme='dark']`.
+
+**Les couleurs sont des alias du contrat.** Une seule source : l'app continue de
+peindre ses `--dwc-*` sur `:root` (`html` : attribut, classe ou `ThemeProvider`)
+ou prend `tokens.css`, et les composants du socle et les noms d'Astryx suivent
+ensemble, dans tous les thèmes. Les alias sont calculés sur `:root` : un
+`--dwc-*` repeint sur un sous-arbre n'est pas suivi.
+
+**La feuille lit treize rôles, dont dix requis.** Trois ont un repli tiré du
+contrat : `--dwc-bg`, `--dwc-primary-soft` et `--dwc-border-strong`. Les dix
+autres n'en ont pas : une app qui n'importe pas `tokens.css` peint
+`--dwc-primary`, `-primary-contrast`, `-surface`, `-surface-2`, `-text`,
+`-text-soft`, `-border`, `-success`, `-warning` et `-danger`, sans quoi les
+alias correspondants ne valent rien (le test tient cette liste).
+
+| Astryx                                                                 | Contrat du socle                                                    |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `--color-accent`, `--color-text-accent`                                | `--dwc-primary`                                                     |
+| `--color-on-accent`                                                    | `--dwc-primary-contrast`                                            |
+| `--color-accent-muted`                                                 | `--dwc-primary-soft`, à défaut 14 % de `--dwc-primary`              |
+| `--color-background-body`                                              | `--dwc-bg`, à défaut `--dwc-surface` (`tokens.css` ne peint pas bg) |
+| `--color-background-surface`, `-card`, `-popover`                      | `--dwc-surface`                                                     |
+| `--color-background-muted`                                             | `--dwc-surface-2`                                                   |
+| `--color-text-primary`, `--color-icon-primary`                         | `--dwc-text`                                                        |
+| `--color-text-secondary`, `--color-icon-secondary`                     | `--dwc-text-soft`                                                   |
+| `--color-border`                                                       | `--dwc-border`                                                      |
+| `--color-border-emphasized`                                            | `--dwc-border-strong` (3:1), à défaut `--dwc-border`                |
+| `--color-overlay-hover`, `-pressed`                                    | 7 % et 12 % de `--dwc-text`                                         |
+| `--color-success`, `--color-warning`, `--color-error`                  | `--dwc-success`, `--dwc-warning`, `--dwc-danger`                    |
+| `--color-warning-muted`, `--color-error-muted`                         | 14 % et 12 % du rôle                                                |
+| `--focus-outline-color` (avec `-width` 2 px, `-style`, `-offset` 3 px) | `--color-accent`                                                    |
+
+Les mélanges sont ceux de `mister-uwh-tactic`, la seule des deux qui les
+écrivait déjà sur les `--dwc-*` ; `mister-cim10` est à deux points près. Astryx
+met 20 % dans ses fonds pâles : les deux apps sont descendues entre 10 et 15 %.
+
+**Les échelles sont celles d'Astryx** (`packages/core/src/theme/tokens.stylex.ts`,
+relevé le 21/11/2026), réduites aux crans que les deux apps emploient — plus
+`--text-code-*` et la graisse `bold`, que seule `mister-cim10` déclare et qui
+complètent leur famille :
+
+- texte : `--font-size-sm` à `-3xl` (12 · 14 · 17 · 20 · 24 · 29 px, base 14 au
+  rapport 1,2), `--font-weight-normal|medium|semibold|bold`, et huit styles
+  nommés, chacun en `-size`, `-weight`, `-leading` : `--text-heading-1` à `-4`,
+  `--text-body`, `--text-label`, `--text-code`, `--text-supporting` ;
+- espacement : `--spacing-0` à `--spacing-12` au pas de 4 px, en rem (sans 7, 9
+  ni 11, qu'aucune n'emploie) ;
+- forme : `--radius-inner|element|container|full` (4 · 8 · 12 px · pilule) ;
+- élévation : `--shadow-low|med|high`, plus denses en sombre — les trois états
+  de thème du socle, comme `tokens.css` ; une ombre est la seule couleur
+  littérale de la feuille, du noir translucide ;
+- mouvement : `--duration-fast-min|fast|fast-max|medium|exit`,
+  `--ease-standard|exit` ;
+- contrôles : `--size-element-sm|md|lg` (28 · 32 · 44 px, en rem).
+
+**Trois écarts assumés**, les mêmes dans les deux apps :
+
+1. **`--size-element-lg` vaut 44 px.** Astryx s'arrête à 36 et ne publie pas de
+   taille de cible ; le parc exige 44 au doigt, comme `touch-target`.
+2. **`--color-border-emphasized` est `--dwc-border-strong`**, garanti à 3:1 par
+   `test/tokens.test.mjs` (WCAG 1.4.11). Le `#CCD3DB` d'Astryx tient 1,5:1 sur
+   blanc : le pourtour d'un champ disparaît. Si l'app ne peint pas ce rôle, le
+   repli est `--dwc-border`, comme dans `components.css` : moins contrasté,
+   mais toujours un contour.
+3. **La marque garde son accent et sa police.** L'accent est `--dwc-primary` ;
+   aucune `--font-family-*` n'est déclarée.
+
+**Au doigt** (`pointer: coarse`), le corps, les libellés, le code et `heading-4`
+passent de 14 à 16 px : sous ce seuil, iOS agrandit la page au focus d'un champ.
+Astryx va plus loin — son profil mobile recalcule toute l'échelle, et seulement
+sous 1 024 px de large ; aucune des deux apps ne l'a suivi. **Mouvement réduit** :
+les durées tombent à 0,01 ms, pas à 0 — une transition nulle n'émet pas
+`transitionend`, même raison que dans `tokens.css`.
+
+**Ce qui reste dans l'app**, parce qu'une seule l'a écrit ou chacune à sa façon :
+l'ordre des calques (`--layer-*`, qu'Astryx ne publie pas), les tailles
+d'icône, `--radius-page`, `display-3`, la police, les couleurs hors contrat
+(`--color-text-disabled`, `-background-inverted`, `-track`, les textes d'état),
+le palier de 13 px au doigt de `mister-cim10`, le pont Tailwind de
+`mister-uwh-tactic`. Une app qui veut une autre valeur la redéclare après
+l'import, sur `:root` ou sur son sélecteur de thème. Une ombre redéclarée sur
+`:root` seul vaut alors aussi en sombre : redéclarer les deux.
+
+**Une surcharge se répète dans son média.** Un `--duration-*` ou un
+`--text-*-size|leading` redéclaré après l'import l'emporte aussi sous
+`prefers-reduced-motion` et sous `pointer: coarse` : le mouvement réduit, ou les
+16 px au doigt, disparaissent pour ce nom. Le répéter dans le même `@media` :
+
+```css
+@import '@mister-guiiug/dev-pwa-config/astryx.css';
+
+:root {
+  --duration-medium: 310ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-medium: 0.01ms;
+  }
+}
+```
+
+> **Ne pas brancher le contrat dans l'autre sens.** `--dwc-surface:
+var(--color-background-surface)` en même temps que la feuille fait un cycle :
+> les deux variables deviennent invalides, et toutes les couleurs avec. Une app
+> qui peignait ses `--color-*` en valeurs (comme `mister-cim10`) peint désormais
+> ses `--dwc-*`.
+
+`test/astryx-css.test.mjs` tient ces promesses : la feuille se parse
+(lightningcss), déclare exactement la liste de noms attendue, ne pose que des
+custom properties sur `:root`, à sa seule spécificité, ne partage aucun nom avec
+les autres feuilles du socle, n'écrit aucune couleur en dur (chaque `--color-*`
+est un `var(--dwc-…)`, au plus mélangé à `transparent`), ne lit que des rôles
+que `ThemeProvider` sait peindre, dont les dix requis listés plus haut, et garde
+les trois écarts.
+
+#### Les composants du socle sur les crans (`astryx-fluid.css`, opt-in)
+
+Les composants dimensionnent leur texte avec `--text-fluid-*`, l'échelle du
+preset, qui glisse avec la largeur de la fenêtre. À côté d'une interface écrite
+dans la grammaire, ces tailles tombent entre les crans : l'audit de
+`mister-uwh-tactic` comptait onze tailles de texte sur un même écran, l'échelle
+fluide en était l'une des trois causes. `astryx-fluid.css` fait de chaque nom
+fluide l'alias d'un style nommé — et le texte des composants passe à 16 px au
+doigt avec le reste :
+
+| `--text-fluid-*` | Style d'Astryx       |
+| ---------------- | -------------------- |
+| `2xs`, `xs`      | `supporting` (12 px) |
+| `sm`, `base`     | `body` (14, ou 16)   |
+| `lg`             | `heading-3` (17)     |
+| `xl`             | `heading-2` (20)     |
+| `2xl`            | `heading-1` (24)     |
+
+**À part, et non dans `astryx.css`** : celui-ci ne change rien tant que l'app ne
+s'en sert pas, celui-là change le texte de **tous** les composants du socle.
+C'est une décision de l'app, qui se prend en une ligne et se défait de même.
+`mister-uwh-tactic` la prenait (dans sa propre feuille) ; `mister-cim10` non.
+Il s'importe avec `astryx.css`, dont il lit les noms : seul, ses alias ne valent
+rien, et chaque composant retombe sur le repli écrit dans `components.css`.
+
 ### Helpers React (`@mister-guiiug/dev-pwa-config/react`)
 
 Hooks et composants PWA partagés (auparavant recopiés app par app). Livrés en

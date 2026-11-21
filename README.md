@@ -19,7 +19,7 @@ et rien n'y a été résumé, seulement déplacé.
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | [`docs/EXPORTS.md`](docs/EXPORTS.md)       | **La table des sous-chemins publiés** — le point d'entrée quand on cherche « est-ce que le socle sait déjà faire ça ? » |
 | [`docs/CONFIGS.md`](docs/CONFIGS.md)       | ESLint, Prettier, TypeScript, Vitest, Playwright, Vite (PWA, CSP, SEO), commitlint, lint-staged, icônes                 |
-| [`docs/INTERFACE.md`](docs/INTERFACE.md)   | Composants React, habillage `components.css`, primitives, catalogue famille, Rive, accessibilité                        |
+| [`docs/INTERFACE.md`](docs/INTERFACE.md)   | Composants React, `components.css`, grammaire `astryx.css`, primitives, catalogue famille, Rive, accessibilité          |
 | [`docs/DONNEES.md`](docs/DONNEES.md)       | Persistance, magasin versionné, coffre chiffré, Supabase, file hors-ligne, temps réel, carte, auth, PDF/Excel/iCal      |
 | [`docs/BINS.md`](docs/BINS.md)             | Binaires `pwa-*` : `doctor`, `bundle-budget`, `icons`, `pgtap`, `screenshots`, `og-image`, `bindings`, `typecheck-7`    |
 | [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md) | Ce qu'a demandé chaque majeure                                                                                          |
