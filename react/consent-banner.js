@@ -222,6 +222,8 @@ export function clearConsentChoice(scope) {
  * ailleurs que dans le bandeau.
  *
  * @param {{ posthogKey?: string, posthogHost?: string,
+ *   loader?: () => Promise<unknown>,
+ *   errorTrackingLoader?: () => Promise<unknown>,
  *   appName?: string, scope?: string }} [options]
  * @returns {{ choice: 'granted'|'denied'|null, configured: boolean,
  *   needed: boolean, recalled: number, accept: () => void,
@@ -272,6 +274,7 @@ export function useConsentChoice(options = {}) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     appName,
     scope,
     maxAgeDays,
@@ -327,7 +330,13 @@ export function useConsentChoice(options = {}) {
     const deja = getAnalyticsId();
     const id =
       deja ??
-      initAnalytics({ posthogKey, posthogHost, appName, loader }).id ??
+      initAnalytics({
+        posthogKey,
+        posthogHost,
+        appName,
+        loader,
+        errorTrackingLoader,
+      }).id ??
       null;
     setConfigured(Boolean(id));
     if (!id) return;
@@ -344,6 +353,7 @@ export function useConsentChoice(options = {}) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     appName,
     scope,
     maxAgeDays,
@@ -431,6 +441,7 @@ export function ConsentBanner(props) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     appName,
     scope,
     maxAgeDays,
@@ -452,6 +463,7 @@ export function ConsentBanner(props) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     appName,
     scope,
     maxAgeDays,
@@ -581,6 +593,7 @@ export function ConsentSettings(props = {}) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     scope,
     maxAgeDays,
     purposeVersion,
@@ -595,6 +608,7 @@ export function ConsentSettings(props = {}) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     scope,
     maxAgeDays,
     purposeVersion,

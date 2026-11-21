@@ -90,6 +90,21 @@ export interface InitAnalyticsOptions {
    * que la pair optionnelle n'est pas installée.
    */
   loader?: () => Promise<unknown>;
+  /**
+   * Le suivi des erreurs, EN OPTION. La build `slim` de posthog-js ne
+   * l'embarque pas ; ce chargeur fournit ses classes :
+   *
+   *     () => import('posthog-js/dist/extension-bundles.js')
+   *       .then(m => m.ErrorTrackingExtensions)
+   *
+   * Appelé à l'accord, en même temps que `loader` — jamais avant. Les
+   * extensions passent à `init` par `__extensionClasses` (option INTERNE de
+   * posthog-js), avec `capture_exceptions` = `OPTIONS_SUIVI_ERREURS`, et
+   * chaque `$exception` est nettoyé par `nettoieException` (voir
+   * `analytics-erreurs`, chargé à l'accord avec lui). Sans lui, rien ne
+   * change. Coût : un morceau d'environ 57 kB gzip (posthog-js 1.438.2).
+   */
+  errorTrackingLoader?: () => Promise<unknown>;
 }
 
 export interface AnalyticsState {

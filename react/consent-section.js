@@ -58,7 +58,9 @@ import { useConsentChoice } from './consent-banner.js';
  * SANS IDENTIFIANT DE MESURE, RIEN — titre compris. Il n'y a rien à mesurer,
  * donc rien à régler : même règle que le bandeau.
  *
- * `posthogKey` ET `loader` SONT À PASSER, LES MÊMES QU'AU BANDEAU. Le hook
+ * `posthogKey` ET `loader` SONT À PASSER, LES MÊMES QU'AU BANDEAU — et
+ * `errorTrackingLoader` aussi, si l'app suit les erreurs : celui des deux qui
+ * initialise la mesure le premier décide de ce qui est chargé. Le hook
  * initialise la mesure si personne ne l'a fait, et l'ordre des effets entre
  * deux branches de l'arbre n'est pas une garantie : sans `loader`, un visiteur
  * arrivé directement sur les réglages ferait charger un spécificateur que le
@@ -79,7 +81,9 @@ import { useConsentChoice } from './consent-banner.js';
  * `[data-dwc="consent-section"]`.
  *
  * @param {{ posthogKey?: string, posthogHost?: string,
- *   loader?: () => Promise<unknown>, appName?: string, scope?: string,
+ *   loader?: () => Promise<unknown>,
+ *   errorTrackingLoader?: () => Promise<unknown>,
+ *   appName?: string, scope?: string,
  *   maxAgeDays?: number, purposeVersion?: number, className?: string,
  *   titleClassName?: string, actionClassName?: string,
  *   headingLevel?: 2|3|4|5|6, title?: import('react').ReactNode,
@@ -91,6 +95,7 @@ export function ConsentSection(props = {}) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     appName,
     scope,
     maxAgeDays,
@@ -110,6 +115,7 @@ export function ConsentSection(props = {}) {
     posthogKey,
     posthogHost,
     loader,
+    errorTrackingLoader,
     appName,
     scope,
     maxAgeDays,

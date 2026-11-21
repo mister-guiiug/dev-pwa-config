@@ -19,6 +19,13 @@ export interface AppelsPosthog {
 /** Le double de `posthog-js` : il enregistre au lieu d'envoyer. */
 export interface FauxPosthog {
   appels: AppelsPosthog;
+  /**
+   * Posée par `init` quand `__extensionClasses.exceptions` est fourni, comme
+   * la vraie — sans instancier la classe.
+   */
+  exceptions: unknown;
+  /** Idem, pour `__extensionClasses.exceptionObserver`. */
+  exceptionObserver: unknown;
   init(cle: string, options?: Record<string, unknown>): void;
   capture(event: string, params?: Record<string, unknown>): void;
   register(props: Record<string, unknown>): void;

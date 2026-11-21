@@ -60,8 +60,22 @@ export function fauxPosthog(reglages = {}) {
   let retire = reglages.retire === true;
   return {
     appels,
+    /**
+     * Comme la vraie : les classes passées par `__extensionClasses` deviennent
+     * des propriétés de l'instance — c'est à elles que le socle vérifie que le
+     * suivi des erreurs a été pris. Le double ne les INSTANCIE pas : la vraie
+     * classe attend une vraie instance de posthog-js.
+     * @type {unknown}
+     */
+    exceptions: undefined,
+    /** @type {unknown} */
+    exceptionObserver: undefined,
     init(cle, options) {
       appels.init.push({ cle, options });
+      const ext = /** @type {any} */ (options)?.__extensionClasses;
+      if (ext?.exceptions) this.exceptions = { classe: ext.exceptions };
+      if (ext?.exceptionObserver)
+        this.exceptionObserver = { classe: ext.exceptionObserver };
     },
     capture(event, params) {
       // Comme la vraie : une bibliothèque qui se croit retirée n'envoie rien.

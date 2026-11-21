@@ -64,6 +64,8 @@ export interface PrivacyNoticeProps {
   posthogKey?: string;
   posthogHost?: string;
   loader?: () => Promise<unknown>;
+  /** Relayé à `ConsentSettings`, comme `loader`. */
+  errorTrackingLoader?: () => Promise<unknown>;
   /** Portée du consentement ; sinon le chemin de base de l'app. */
   scope?: string;
   /**

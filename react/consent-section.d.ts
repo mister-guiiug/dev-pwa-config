@@ -13,6 +13,11 @@ export interface ConsentSectionProps {
    * ferait charger un spécificateur que le navigateur ne résout pas.
    */
   loader?: () => Promise<unknown>;
+  /**
+   * Le MÊME `errorTrackingLoader` qu'au bandeau, si l'app suit les erreurs —
+   * voir `InitAnalyticsOptions` de `analytics`.
+   */
+  errorTrackingLoader?: () => Promise<unknown>;
   /** Nom d'app joint aux événements ; sinon le chemin de base. */
   appName?: string;
   /** Portée du consentement ; sinon le chemin de base de l'app. */
