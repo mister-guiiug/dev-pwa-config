@@ -60,7 +60,7 @@ on:
         # limite de débit de l'API GitHub du temps de setup-cli v1). Même
         # version partout.
         # renovate: datasource=npm depName=supabase
-        default: '2.119.0'
+        default: '2.122.1'
       deploy-functions:
         description: 'Déployer aussi supabase/functions/ (Edge Functions) après les migrations'
         type: boolean
