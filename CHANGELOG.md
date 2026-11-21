@@ -1,5 +1,41 @@
 # Changelog
 
+## 6.38.0
+
+### Minor Changes
+
+- b8b973c: `astryx.css` : la grammaire d'Astryx, le design system open source de Meta, posée sur le contrat `--dwc-*`. Les noms d'Astryx (`--color-<élément>-<rôle>`, `--text-heading-1..4-*`, `--text-body|label|code|supporting-*`, `--font-size-*`, `--spacing-*` au pas de 4 px, `--radius-inner|element|container|full`, `--shadow-low|med|high`, `--duration-*`, `--ease-*`, `--size-element-sm|md|lg`, `--focus-outline-*`) : les couleurs en alias des `--dwc-*` (une seule source, l'app continue de peindre sa palette), les échelles aux valeurs d'Astryx. Au doigt (`pointer: coarse`), le texte courant passe à 16 px ; sous `prefers-reduced-motion`, les durées tombent à 0,01 ms. Trois écarts assumés, ceux des deux apps : 44 px pour `--size-element-lg` (Astryx s'arrête à 36), `--color-border-emphasized` sur `--dwc-border-strong` à 3:1, avec le repli `--dwc-border` de `components.css` (le #CCD3DB d'Astryx tient 1,5:1), et ni police ni accent imposés.
+  
+  Promu de mister-uwh-tactic (ADR 0017) et mister-cim10, qui avaient écrit chacune cette couche de leur côté sans installer le paquet d'Astryx (StyleX obligatoire). La feuille ne reprend que ce qu'elles ont en commun.
+  
+  Importer `astryx.css` ne change rien à l'écran : elle ne pose que des custom properties sur `:root`, et aucun de ses noms n'est lu par `components.css`, `tokens.css` ou le preset. `astryx-fluid.css`, à importer en plus et seulement si l'app le veut, ramène les `--text-fluid-*` que lisent les composants du socle sur les crans d'Astryx — et change donc le texte de tous les composants. Les apps qui n'importent ni l'une ni l'autre ne voient aucune différence.
+  
+  Migration : facultative. mister-uwh-tactic et mister-cim10 pourront retirer de leur feuille ce que le socle déclare désormais (le détail est dans la PR) ; mister-cim10 devra d'abord peindre ses `--dwc-*` au lieu de les brancher sur ses `--color-*`, sans quoi les deux alias se répondent en cycle. Une valeur que l'app garde se redéclare après l'import, ombres sombres comprises ; une durée ou une taille de texte se répète aussi dans son `@media`, sans quoi le mouvement réduit ou les 16 px au doigt disparaissent pour ce nom. Une app sans `tokens.css` peint les dix rôles que la feuille lit sans repli (liste dans `docs/INTERFACE.md`).
+- 770a299: `analytics` : le suivi des erreurs PostHog, en option, par `errorTrackingLoader`. Le projet PostHog du parc a la capture des exceptions activée côté serveur et n'a reçu aucun `$exception` en soixante jours : les applications chargent `posthog-js/dist/module.slim.js`, qui n'embarque pas les classes du suivi des erreurs. Le nouveau chargeur les fournit (`() => import('posthog-js/dist/extension-bundles.js').then(m => m.ErrorTrackingExtensions)`) ; `ConsentBanner`, `ConsentSettings`, `ConsentSection`, `PrivacyNotice` et `useConsentChoice` le relaient comme `loader`. Il est appelé à l'accord, jamais avant ; le socle n'en garde que `exceptions` et `exceptionObserver`, les passe à `init` par `__extensionClasses` (option interne de posthog-js, vérifiée après `init` : la console le dit si elle n'est pas prise) et capte les erreurs non rattrapées et les promesses rejetées, jamais les `console.error`.
+  
+  Chaque `$exception` part nettoyé par `nettoieException`, posée en `before_send` avec les extensions — jamais de capture sans elle : dans les messages et dans toute propriété d'adresse (`$current_url`, `$referrer`, `$pathname`, les propriétés d'entrée de session `$session_entry_url` / `$session_entry_referrer` que posthog-js joint à chaque événement, les `$initial_*`, y compris dans `$set` et `$set_once`), adresses, suites de quatre chiffres ou plus, requêtes et fragments d'URL (le second fragment d'un retour Supabase `#/reset#access_token=…` compris), UUID, jetons et texte cité qui porte une espace sont remplacés par des marqueurs (`nettoieTexteLibre`, entrée coupée à deux mille caractères avant les motifs). Le type et les cadres de pile restent. Sans le chargeur, ou si ses extensions n'arrivent pas, `init` reçoit `capture_exceptions: false` : le réglage serveur ne peut pas allumer une capture sans nettoyage, même avec la build complète de posthog-js. Les autres événements ne passent que par le nettoyage des URL, commun à tous (voir les correctifs ci-dessous), qui précède celui-ci. Ce nettoyage vit dans un nouveau module, `analytics-erreurs.js`, qu'`analytics.js` n'importe que dynamiquement, à l'accord, quand le chargeur est fourni. `app_version` rejoint `app_name` en super-propriété quand `versionPlugin` a posé la version dans la page.
+  
+  Coût pour une app qui l'active : un morceau `extension-bundles` de 57,1 kB gzip avec posthog-js 1.438.2 (70,9 kB avec 1.445.4), non élagable, compté par `totalGzipKb` et rangé dans le précache. Pour toutes les apps, même sans l'option : 0,3 kB gzip de plus au morceau principal, et le morceau `analytics-erreurs` (1,8 kB gzip) émis à part, jamais exécuté sans le chargeur. `OPTIONS_VIE_PRIVEE` ne change pas ; `init` reçoit une option de plus, `capture_exceptions: false`, que seul l'observateur des exceptions lit.
+  
+  Migration : facultative. Une app qui veut ses erreurs passe le même `errorTrackingLoader` au bandeau et à la section, vérifie son budget, et complète sa mention de confidentialité (finalité « erreurs », sous le même accord que la mesure d'audience) — voir `docs/CONFIGS.md`.
+
+### Patch Changes
+
+- a82b044: `analytics` : les URL que PostHog joint de lui-même à chaque événement sont nettoyées avant de
+  partir. posthog-js ajoute à tout ce qui part `$session_entry_url` et `$session_entry_referrer`,
+  relevées au début de la session, fragment compris : après une redirection Supabase
+  (`?code=…`, `#access_token=…&refresh_token=…`), les jetons partaient avec chaque vue et chaque
+  geste de la session, même une fois la barre d'adresse nettoyée. Un `before_send` posé dans tous
+  les cas (`analytics-url.js`) ne laisse partir, pour toute clé d'URL ou de référent
+  (`$current_url`, `$referrer`, `$session_entry_*`, `$initial_*`, dans les propriétés, `$set` et
+  `$set_once`), que l'origine, le chemin et la route d'un `HashRouter` ; requête et fragment
+  deviennent `?[requête]` et `#[fragment]`. Rien à changer dans les apps.
+- Workflows réutilisables : nouvelles valeurs par défaut, que les apps reçoivent par l'étiquette `v6`.
+  
+  - **CLI Supabase 3.2.0** par défaut (était 2.119.0) dans l'action `supabase-migrate`, `pwa-supabase-migrate` et `pwa-supabase-test` : une **majeure**, que la CI du socle ne joue contre aucune base réelle. Une app qui veut rester en 2.x passe son entrée `cli-version`.
+  - **Playwright 1.65.1** par défaut dans `pwa-deploy` (était 1.64.1).
+  - Actions tierces : `supabase/setup-cli` 3.2.0, `vice` 3.5.0, `renovatebot/github-action` 46.3.14, toujours épinglées par empreinte ; `actions/upload-artifact` v7 (rapports de `pwa-ci`, `pwa-deploy`, `pwa-supabase-backup`), `github/codeql-action` v4, `actions/dependency-review-action` v5.0.1.
+
 ## 6.37.1
 
 ### Patch Changes
