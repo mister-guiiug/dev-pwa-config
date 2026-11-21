@@ -54,6 +54,15 @@ test('la route d’un HashRouter reste, et s’arrête au second #', () => {
     nettoieUrl(`${ORIGINE}/#/carte#nom=Jean%20Dupont`),
     `${ORIGINE}/#/carte#${MARQUES_URL.fragment}`
   );
+  // La route s'arrête aussi à `&` et `=` : un paramètre collé sans `?`.
+  assert.equal(
+    nettoieUrl(`${ORIGINE}/#/invite&nom=Jean%20Dupont`),
+    `${ORIGINE}/#/invite?${MARQUES_URL.requete}`
+  );
+  assert.equal(
+    nettoieUrl(`${ORIGINE}/#/recherche?q=jean#suite`),
+    `${ORIGINE}/#/recherche?${MARQUES_URL.requete}#${MARQUES_URL.fragment}`
+  );
 });
 
 test('une valeur qui n’est pas une URL passe telle quelle', () => {

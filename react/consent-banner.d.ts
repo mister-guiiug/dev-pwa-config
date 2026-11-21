@@ -87,6 +87,12 @@ export declare function useConsentChoice(options?: {
   posthogHost?: string;
   loader?: () => Promise<unknown>;
   /**
+   * Le suivi des erreurs, en option — voir `InitAnalyticsOptions` de
+   * `analytics`. À passer IDENTIQUE au bandeau et à la section : celui qui
+   * initialise la mesure le premier décide de ce qui est chargé.
+   */
+  errorTrackingLoader?: () => Promise<unknown>;
+  /**
    * @deprecated IGNORÉE depuis la 6.0.0 — la mesure est passée à PostHog
    * (ADR 0012). Acceptée UNE version pour que les consommateurs compilent
    * pendant la migration, avec un avertissement en console : un `G-…` n'est
@@ -108,6 +114,12 @@ export interface ConsentBannerProps {
   posthogKey?: string;
   posthogHost?: string;
   loader?: () => Promise<unknown>;
+  /**
+   * Le suivi des erreurs, en option — voir `InitAnalyticsOptions` de
+   * `analytics`. À passer IDENTIQUE au bandeau et à la section : celui qui
+   * initialise la mesure le premier décide de ce qui est chargé.
+   */
+  errorTrackingLoader?: () => Promise<unknown>;
   /**
    * @deprecated IGNORÉE depuis la 6.0.0 — la mesure est passée à PostHog
    * (ADR 0012). Acceptée UNE version pour que les consommateurs compilent
@@ -158,6 +170,12 @@ export interface ConsentSettingsProps {
   posthogKey?: string;
   posthogHost?: string;
   loader?: () => Promise<unknown>;
+  /**
+   * Le suivi des erreurs, en option — voir `InitAnalyticsOptions` de
+   * `analytics`. À passer IDENTIQUE au bandeau et à la section : celui qui
+   * initialise la mesure le premier décide de ce qui est chargé.
+   */
+  errorTrackingLoader?: () => Promise<unknown>;
   /**
    * @deprecated IGNORÉE depuis la 6.0.0 — la mesure est passée à PostHog
    * (ADR 0012). Acceptée UNE version pour que les consommateurs compilent

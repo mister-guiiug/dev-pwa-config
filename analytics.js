@@ -35,9 +35,14 @@
  * SANS DÉPENDANCE OBLIGATOIRE. `posthog-js` est une pair OPTIONNELLE, chargée
  * par `loader` comme `@sentry/react` : une application qui ne mesure pas n'en
  * paie pas le poids.
+ *
+ * LES ERREURS, EN OPTION (`errorTrackingLoader`). Le suivi des erreurs vit
+ * dans `analytics-erreurs.js`, chargé à l'accord et seulement si l'app le
+ * demande : nettoyé avant de partir, et sans poids pour qui ne s'en sert pas.
  */
 
 import { nettoieUrlsEvenement } from './analytics-url.js';
+import { readBuildInfo } from './version.js';
 
 /** Le nuage EUROPÉEN. Jamais `us.i.posthog.com` — cf. `OPTIONS_VIE_PRIVEE`. */
 export const HOTE_PAR_DEFAUT = 'https://eu.i.posthog.com';
@@ -182,6 +187,9 @@ const state = {
 
 /** Le `loader` fourni à `initAnalytics`, rappelé au moment de l'accord. */
 let chargeur = null;
+
+/** L'`errorTrackingLoader` fourni à `initAnalytics`, appelé avec `chargeur`, à l'accord. */
+let chargeurErreurs = null;
 
 /**
  * LE CHARGEMENT EN COURS, pour qu'il n'y en ait qu'un.
@@ -347,8 +355,7 @@ function aligneApresChargement(client) {
   }
 }
 
-async function importeEtInitialise() {
-  let mod;
+async function importeModule() {
   try {
     // AVEC `loader`, l'import est ANALYSABLE par Vite : le morceau est émis et
     // rangé où le `manualChunks` de l'app le décide. Sans lui, on retombe sur
@@ -356,33 +363,108 @@ async function importeEtInitialise() {
     // pair optionnelle n'est pas installée, sans quoi le build échouerait à
     // résoudre un paquet absent. Même motif que `react/observability`.
     const specificateur = ['posthog', 'js'].join('-');
-    mod = chargeur
+    return chargeur
       ? await chargeur()
       : await import(/* @vite-ignore */ specificateur);
   } catch {
     // `posthog-js` absent ou réseau coupé : la mesure se tait, l'app continue.
-    return;
+    return undefined;
   }
+}
+
+/**
+ * Le suivi des erreurs, quand l'app l'a demandé : les options à ajouter à
+ * `init`, et la vérification qui la suit — ou `null`, et rien ne change.
+ *
+ * `analytics-erreurs.js` est importé ICI, dynamiquement, et nulle part
+ * statiquement : Vite en fait un morceau à part (1,8 kB gzip, mesuré le
+ * 21/11/2026), que seule une app qui fournit `errorTrackingLoader` importe et
+ * exécute. Il reste émis partout — Vite ne sait pas au build si le chargeur
+ * sera fourni —, donc compté par `totalGzipKb` et précaché, mais il ne pèse
+ * pas sur le morceau principal ni sur le premier affichage.
+ *
+ * Un échec (réseau coupé) rend `null` : sans nettoyage, pas de capture.
+ */
+async function importeSuiviErreurs() {
+  const chargeurDeLApp = chargeurErreurs;
+  if (!chargeurDeLApp) return null;
+  try {
+    const erreurs = await import('./analytics-erreurs.js');
+    const options = await erreurs.prepareSuiviErreurs(chargeurDeLApp);
+    return options ? { options, verifie: erreurs.verifieSuiviErreurs } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Des `before_send` mis bout à bout : chacun reçoit ce que rend le précédent,
+ * et un `null` (événement écarté) arrête la chaîne. Ceux qui ne sont pas des
+ * fonctions sont ignorés.
+ *
+ * @param {...unknown} etapes
+ * @returns {(evenement: any) => any}
+ */
+function enchaine(...etapes) {
+  const fonctions = /** @type {Array<(e: any) => any>} */ (
+    etapes.filter(f => typeof f === 'function')
+  );
+  if (fonctions.length === 1) return fonctions[0];
+  return evenement =>
+    fonctions.reduce((e, f) => (e == null ? e : f(e)), evenement);
+}
+
+async function importeEtInitialise() {
+  // Les imports partent ENSEMBLE : à l'accord, le visiteur n'attend qu'un
+  // aller-retour, et l'un ne retarde pas l'autre.
+  const [mod, suivi] = await Promise.all([
+    importeModule(),
+    importeSuiviErreurs(),
+  ]);
   const posthog = mod?.default ?? mod?.posthog ?? mod;
   if (!posthog || typeof posthog.init !== 'function') return;
 
   posthog.init(state.id, {
     ...OPTIONS_VIE_PRIVEE,
     api_host: state.hote,
+    // Les extensions, la capture des exceptions et leur `before_send`, ensemble
+    // ou pas du tout.
+    //
+    // Et SANS ELLES, `capture_exceptions: false` — explicitement. Le projet
+    // PostHog du parc a la capture des exceptions allumée côté serveur, et
+    // posthog-js la suit quand l'option est absente (`_requiredConfig` de
+    // `ExceptionObserver`). Inerte avec `module.slim.js`, qui n'a pas la
+    // classe ; mais une app passée à la build complète capterait alors ses
+    // erreurs SANS `before_send`, donc sans nettoyage. Seul `ExceptionObserver`
+    // lit l'option (relevé sur posthog-js 1.438.2 et 1.453.2) : rien d'autre ne
+    // change.
+    ...(suivi?.options ?? { capture_exceptions: false }),
     // Sur TOUS les événements, ceux que la bibliothèque compose elle-même
     // compris : c'est elle qui joint `$session_entry_url` (voir
-    // `analytics-url.js`).
-    before_send: nettoieUrlsEvenement,
+    // `analytics-url.js`). Les URL d'abord, puis, si le suivi des erreurs est
+    // là, le nettoyage de ses `$exception` : le second ne remplace pas le
+    // premier, il le suit.
+    before_send: enchaine(nettoieUrlsEvenement, suivi?.options?.before_send),
   });
   state.client = posthog;
   state.loaded = true;
+  suivi?.verifie(posthog);
 
-  // SUPER-PROPRIÉTÉ, et non un paramètre recopié à chaque appel : PostHog la
-  // joint alors à tout ce qui part, y compris à ce que la bibliothèque envoie
-  // d'elle-même.
-  if (state.appName && typeof posthog.register === 'function') {
-    posthog.register({ app_name: state.appName });
-  }
+  // SUPER-PROPRIÉTÉS, et non des paramètres recopiés à chaque appel : PostHog
+  // les joint alors à tout ce qui part, y compris à ce que la bibliothèque
+  // envoie d'elle-même — un `$exception` compris.
+  //
+  // `app_version` vient de `readBuildInfo()`, que `versionPlugin` pose dans la
+  // page : sans lui, il n'y a pas de version connue, et la propriété est
+  // OMISE plutôt que vide. C'est elle qui dit si une erreur est née avec une
+  // version, ou si elle a survécu à un correctif.
+  /** @type {Record<string, string>} */
+  const supers = {};
+  if (state.appName) supers.app_name = state.appName;
+  const version = readBuildInfo().version;
+  if (version) supers.app_version = version;
+  if (Object.keys(supers).length > 0 && typeof posthog.register === 'function')
+    posthog.register(supers);
 
   aligneApresChargement(posthog);
 }
@@ -396,6 +478,7 @@ async function importeEtInitialise() {
  *   consent?: 'granted'|'denied'|Record<string, boolean|'granted'|'denied'>,
  *   requireConsent?: boolean,
  *   loader?: () => Promise<unknown>,
+ *   errorTrackingLoader?: () => Promise<unknown>,
  * }} [options]
  * @returns {{ id: string|null, loaded: boolean }}
  */
@@ -407,6 +490,7 @@ export function initAnalytics(options = {}) {
     consent,
     requireConsent = true,
     loader,
+    errorTrackingLoader,
   } = options;
 
   // Explicite d'abord, chemin de base ensuite : une application servie à la
@@ -415,6 +499,8 @@ export function initAnalytics(options = {}) {
   state.id = parsePosthogKey(posthogKey);
   state.hote = posthogHost || HOTE_PAR_DEFAUT;
   chargeur = loader ?? null;
+  chargeurErreurs =
+    typeof errorTrackingLoader === 'function' ? errorTrackingLoader : null;
 
   if (!state.id || typeof window === 'undefined') {
     return { id: state.id, loaded: false };
@@ -735,6 +821,7 @@ export function resetAnalytics() {
   state.appName = null;
   state.client = null;
   chargeur = null;
+  chargeurErreurs = null;
   chargement = null;
   // Sans cette ligne, la vue mise de côté par un test fuiterait dans le
   // suivant — et y partirait au premier accord.

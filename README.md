@@ -823,7 +823,7 @@ rien ne prévient : la table dit ce qui est éprouvé.
 | `lucide-react`                    | `^1.0.0`                            | les icônes que l’app passe aux composants                                                                |
 | `maplibre-gl`                     | `^6.0.0`                            | `map/maplibre`                                                                                           |
 | `playwright`                      | `^1.49.0`                           | `pwa-screenshots`, `pwa-og-image`, à défaut de `@playwright/test`                                        |
-| `posthog-js`                      | `^1.434.7`                          | `react/consent-banner`, par son `loader`                                                                 |
+| `posthog-js`                      | `^1.434.7`                          | `react/consent-banner`, par son `loader` (et son `errorTrackingLoader` pour les erreurs)                 |
 | `qr-scanner`                      | `^1.4.0`                            | `react/use-qr-scanner`                                                                                   |
 | `react`                           | `^19.0.0`                           | `react/*`                                                                                                |
 | `sharp`                           | `>=0.33.0`                          | le bin `pwa-icons`                                                                                       |

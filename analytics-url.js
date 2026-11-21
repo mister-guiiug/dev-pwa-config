@@ -33,9 +33,12 @@ export const MARQUES_URL = Object.freeze({
 
 /**
  * Une URL sans ses identifiants, sa requête ni son fragment — SAUF la route
- * d'un `HashRouter`, qui s'arrête au premier `?` ou au SECOND `#` : dans
- * `#/reset#access_token=…`, la route est `/reset` et le reste est un
- * fragment comme un autre.
+ * d'un `HashRouter`, qui s'arrête au premier `?`, `&` ou `=`, ou au SECOND
+ * `#` : dans `#/reset#access_token=…`, la route est `/reset` et le reste est
+ * un fragment comme un autre ; dans `#/invite&nom=…`, une requête.
+ *
+ * Partagée avec `analytics-erreurs.js`, qui l'applique aux URL citées dans un
+ * message d'erreur.
  *
  * Une valeur qui n'est pas une URL (`$direct`, une chaîne vide) est rendue
  * telle quelle : elle n'a ni requête ni fragment.
@@ -54,13 +57,15 @@ export function nettoieUrl(url) {
   const point = avant.indexOf('?');
   let out =
     point < 0 ? avant : `${avant.slice(0, point)}?${MARQUES_URL.requete}`;
-  if (diese < 0) return out;
-  const route = /^\/[^?#]*/u.exec(apres);
+  if (!apres) return out;
+  const route = /^\/[^?#&=]*/u.exec(apres);
   if (!route) return `${out}#${MARQUES_URL.fragment}`;
   out += `#${route[0]}`;
   const reste = apres.slice(route[0].length);
-  if (reste.startsWith('?')) out += `?${MARQUES_URL.requete}`;
-  else if (reste) out += `#${MARQUES_URL.fragment}`;
+  const second = reste.indexOf('#');
+  const requete = second < 0 ? reste : reste.slice(0, second);
+  if (requete) out += `?${MARQUES_URL.requete}`;
+  if (second >= 0) out += `#${MARQUES_URL.fragment}`;
   return out;
 }
 

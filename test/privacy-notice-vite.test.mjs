@@ -64,11 +64,17 @@ async function rendreDansUnBundle(env) {
         },
       },
     });
-    const fichier = join(racine, 'sortie.mjs');
-    writeFileSync(
-      fichier,
-      (Array.isArray(sortie) ? sortie[0] : sortie).output[0].code
-    );
+    // TOUS les morceaux sont écrits, pas seulement l'entrée : en mode
+    // bibliothèque, un module partagé par l'entrée et un import dynamique
+    // (`analytics-url.js`, lu par `analytics.js` et `analytics-erreurs.js`)
+    // sort dans son propre morceau, que l'entrée importe.
+    const morceaux = (Array.isArray(sortie) ? sortie[0] : sortie).output;
+    for (const morceau of morceaux) {
+      if (morceau.type === 'chunk')
+        writeFileSync(join(racine, morceau.fileName), morceau.code);
+    }
+    const entree = morceaux.find(m => m.type === 'chunk' && m.isEntry);
+    const fichier = join(racine, entree.fileName);
     const enfant = spawnSync(
       process.execPath,
       [

@@ -566,6 +566,151 @@ Quatre règles que le module tient à votre place :
 `posthog-js` charge sa configuration distante à chaque `init`. Aucun script en
 ligne à hacher.
 
+#### Le suivi des erreurs, en option (`errorTrackingLoader`)
+
+Le projet PostHog du parc a la capture des exceptions activée côté serveur, et
+n'a reçu **aucun** `$exception` en soixante jours (relevé du 21/11/2026). Les
+applications chargent `posthog-js/dist/module.slim.js`, qui n'embarque pas le
+suivi des erreurs : le réglage distant allumait une fonction absente du code.
+`errorTrackingLoader` fournit les classes qui manquent. Une app l'active en le
+passant **au bandeau ET à la section** (et à `PrivacyNotice` si elle le monte),
+comme `loader` — celui des composants qui initialise la mesure le premier
+décide de ce qui est chargé :
+
+```tsx
+// Au niveau du module : une référence stable, la même partout.
+const posthog = () => import('posthog-js/dist/module.slim.js');
+const posthogErreurs = () =>
+  import('posthog-js/dist/extension-bundles.js').then(
+    m => m.ErrorTrackingExtensions
+  );
+
+<ConsentBanner
+  posthogKey={import.meta.env.VITE_POSTHOG_KEY}
+  loader={posthog}
+  errorTrackingLoader={posthogErreurs}
+/>;
+// …et dans l'écran de réglages :
+<ConsentSection
+  posthogKey={import.meta.env.VITE_POSTHOG_KEY}
+  loader={posthog}
+  errorTrackingLoader={posthogErreurs}
+/>;
+```
+
+Ce que le socle en fait :
+
+- **Rien avant l'accord.** Le chargeur est appelé à l'accord, en même temps que
+  `loader` — jamais avant, jamais après un refus. Un retrait coupe les
+  `$exception` comme le reste : ils passent par `capture`, que
+  `opt_out_capturing` ferme (vérifié sur posthog-js 1.438.2 et 1.445.4 réels).
+- **Deux classes, pas plus.** Le socle garde `exceptions` et
+  `exceptionObserver`, et les passe à `init` par `__extensionClasses`, avec
+  `capture_exceptions` = `OPTIONS_SUIVI_ERREURS` : erreurs non rattrapées et
+  promesses rejetées sans `catch`. **Jamais les `console.error`**, dont le
+  texte est ce que l'app journalise. Le chargeur peut rendre le module entier ;
+  un `AllExtensions` passé par mégarde n'allumerait pas l'enregistrement de
+  session.
+- **Sans le chargeur, la capture est éteinte — explicitement.** Le projet
+  PostHog a la capture des exceptions allumée côté serveur, et posthog-js la
+  suit quand `capture_exceptions` est absente. Inerte avec `module.slim.js`,
+  qui n'a pas la classe ; mais une app passée à la build complète capterait ses
+  erreurs sans nettoyage. Le socle passe donc `capture_exceptions: false` à
+  `init` quand `errorTrackingLoader` manque, ou quand ses extensions
+  n'arrivent pas. Seul l'observateur des exceptions lit cette option : rien
+  d'autre ne change.
+- **Chaque `$exception` part nettoyé** par `nettoieException`, posée en
+  `before_send` avec les extensions — la capture n'est jamais allumée sans
+  elle. Le nettoyage vit dans `analytics-erreurs.js`, qu'`analytics.js`
+  n'importe que dynamiquement, à l'accord, si le chargeur est fourni. Il porte
+  sur les messages (`$exception_list[].value`, causes chaînées comprises,
+  `$exception_values`, `$exception_message`) et sur **toute propriété
+  d'adresse** — clé finissant par `_url`, `referrer` ou `pathname` :
+  `$current_url`, `$referrer`, `$pathname`, les propriétés d'entrée de session
+  que posthog-js joint à chaque événement (`$session_entry_url`,
+  `$session_entry_referrer`, `$session_entry_pathname`) et les `$initial_*`,
+  y compris dans `$set` et `$set_once`. `$session_entry_url` est l'adresse
+  complète au début de la session : sans ce nettoyage, les jetons d'un retour
+  d'auth Supabase y restaient toute la session, alors même que `$current_url`
+  partait propre. Les remplacements : adresse → `[email]`, quatre chiffres ou
+  plus (ou huit séparés : téléphone, carte, date) → `[nombre]`, requête d'URL
+  → `?[requête]`, fragment → `#[fragment]` (la route d'un `HashRouter` reste,
+  jusqu'au premier `?`, `#`, `&` ou `=` : le second fragment que Supabase
+  ajoute à `#/reset#access_token=…` part aussi), UUID → `[uuid]`, JWT /
+  hexadécimal / base64 long → `[jeton]`, texte entre guillemets qui porte une
+  espace ou dépasse quarante caractères → `[texte]`
+  (`"jean dupont" is not valid JSON`). L'entrée est coupée à deux mille
+  caractères avant les motifs — posthog-js ne tronque pas les `$exception`, et
+  le nettoyage tourne dans le gestionnaire d'erreur —, le message tronqué à
+  cinq cents. Le **type** d'erreur et les **cadres de pile** (fichier du
+  bundle, fonction, ligne, colonne) restent : ils disent où, pas quoi. Les
+  `$exception_steps`, du texte libre par construction, sont retirés.
+- **`app_version`** devient une super-propriété quand `versionPlugin` a posé la
+  version dans la page (`readBuildInfo()`) — sur tous les événements, pas
+  seulement les erreurs. Sans lui, la propriété est omise.
+
+⚠️ **Le nettoyage réduit le risque, il ne le supprime pas.** Un nom ou une
+phrase saisie qu'un message citerait sans guillemets passe. Une app qui active
+les erreurs **complète sa mention de confidentialité** : une finalité de plus
+(« erreurs »), sous le même accord que la mesure d'audience. Les libellés du
+bandeau et de `ConsentSection` (« mesurer sa fréquentation », « ce que vous
+saisissez n'est jamais envoyé ») ne la nomment pas : c'est à l'app de les
+remplacer (`message`, `description`) et, si elle veut redemander l'accord à
+ceux qui l'ont déjà donné, de monter son `purposeVersion`. Une app qui envoie
+aussi ses erreurs à Sentry les recevra deux fois.
+
+**Le poids.** Mesuré le 21/11/2026 (Vite 8, build isolée, gzip) :
+
+| Morceau                                                                 | posthog-js 1.438.2 | 1.445.4 |
+| ----------------------------------------------------------------------- | -----------------: | ------: |
+| `module.slim.js` (déjà payé)                                            |            51,3 kB | 51,8 kB |
+| `extension-bundles.js` — **le coût de l'option**                        |            57,1 kB | 70,9 kB |
+| `exception-autocapture.js` embarqué (facultatif, voir ci-dessous)       |             6,2 kB |  6,3 kB |
+| pour comparaison : `posthog-js` complet, à la place de `module.slim.js` |           102,2 kB |       — |
+
+`extension-bundles.js` est un fichier **précompilé d'un seul tenant** : n'en
+importer que `ErrorTrackingExtensions` (y compris par une réexportation)
+emporte le code de toutes les extensions — mesuré, même taille. Le morceau
+compte dans `totalGzipKb` (tout le JS émis), et `globPatterns` le range dans le
+précache : chaque visiteur le **télécharge** à l'installation du service
+worker ; il n'est **exécuté** qu'après l'accord. Vérifier le budget avant
+d'activer.
+
+**Et pour les apps qui n'activent rien ?** Le morceau principal prend 0,3 kB
+gzip (le chargement conditionnel et `app_version`). Le nettoyage, lui, est émis
+à part — `analytics-erreurs-<empreinte>.js`, 1,8 kB gzip — dans **toutes** les
+apps, puisque Vite ne peut pas savoir au build si le chargeur sera fourni : il
+compte dans `totalGzipKb` et le précache, mais n'est ni préchargé ni exécuté.
+Mesuré dans une entrée qui avait déjà un `import()`, comme les apps du parc à
+routes paresseuses ; sans aucun, l'aide de Vite aux imports dynamiques ajoute
+0,65 kB au morceau principal.
+
+Les fonctions qui enrobent `window.onerror` arrivent à part : posthog-js les
+charge depuis `https://eu-assets.i.posthog.com/static/<version>/exception-autocapture.js`,
+hôte déjà autorisé par `cspPlugin({ analytics: true })`. Pour ne dépendre
+d'aucun script distant (+6,2 kB gzip), les embarquer dans le même chargeur :
+
+```ts
+const posthogErreurs = () =>
+  Promise.all([
+    import('posthog-js/dist/extension-bundles.js'),
+    import('posthog-js/dist/exception-autocapture.js'),
+  ]).then(([m]) => m.ErrorTrackingExtensions);
+```
+
+⚠️ **`__extensionClasses` est une option INTERNE de posthog-js** (`@internal`
+dans ses types depuis la 1.438). Si elle changeait de nom, `init` l'ignorerait
+sans rien dire. Le socle vérifie après `init` que l'instance a bien pris
+`exceptions` et `exceptionObserver`, et **le dit en console** sinon — garde
+tenue par `test/analytics-erreurs.test.mjs` (« LE GARDIEN DE
+`__extensionClasses` »). Le socle n'installant pas posthog-js, ce test simule le
+renommage avec le double : il prouve que le socle le remarquerait, pas que la
+version installée par une app a gardé l'option. Un chargeur qui rend autre
+chose que les deux classes est signalé de la même façon. Dans les tests d'app,
+`fauxPosthog()` pose `exceptions` et `exceptionObserver` comme la vraie ; y
+remplacer aussi `posthog-js/dist/extension-bundles.js` par un `vi.mock` évite
+de charger le vrai fichier.
+
 #### Les gestes communs sont DÉJÀ instrumentés
 
 Trois gestes partent du socle, sans une ligne dans l'application : l'invite
