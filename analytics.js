@@ -20,6 +20,11 @@
  *  3. **La maille application.** `app_name`, déduit du chemin de base, est
  *     enregistré en SUPER-PROPRIÉTÉ : il accompagne chaque événement sans que
  *     personne y pense.
+ *  4. **Les URL nettoyées avant de partir.** PostHog joint de lui-même à chaque
+ *     événement l'URL courante, le référent et l'URL d'ENTRÉE de session, qui
+ *     garde une requête ou un fragment (jetons d'une redirection Supabase)
+ *     toute la session durant. Le `before_send` de `analytics-url.js` ne
+ *     laisse partir que l'origine, le chemin et la route.
  *
  * L'API PUBLIQUE N'A PAS CHANGÉ en passant de GA4 à PostHog — `initAnalytics`,
  * `trackEvent`, `trackPageView`, `setAnalyticsConsent`, `usePageViews`,
@@ -31,6 +36,8 @@
  * par `loader` comme `@sentry/react` : une application qui ne mesure pas n'en
  * paie pas le poids.
  */
+
+import { nettoieUrlsEvenement } from './analytics-url.js';
 
 /** Le nuage EUROPÉEN. Jamais `us.i.posthog.com` — cf. `OPTIONS_VIE_PRIVEE`. */
 export const HOTE_PAR_DEFAUT = 'https://eu.i.posthog.com';
@@ -362,6 +369,10 @@ async function importeEtInitialise() {
   posthog.init(state.id, {
     ...OPTIONS_VIE_PRIVEE,
     api_host: state.hote,
+    // Sur TOUS les événements, ceux que la bibliothèque compose elle-même
+    // compris : c'est elle qui joint `$session_entry_url` (voir
+    // `analytics-url.js`).
+    before_send: nettoieUrlsEvenement,
   });
   state.client = posthog;
   state.loaded = true;
