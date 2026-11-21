@@ -455,3 +455,83 @@ test('`googleFonts: false` retire les polices des défauts', () => {
   const cacheNames = workbox.runtimeCaching.map(rule => rule.options.cacheName);
   assert.deepEqual(cacheNames, ['dwc-images']);
 });
+
+/* ── Les modules du socle chargés à la demande ───────────────────────────── */
+
+test('isOnDemandSocleModule reconnaît les modules de la liste, sous toutes leurs formes', async () => {
+  const { isOnDemandSocleModule, ON_DEMAND_SOCLE_MODULES } =
+    await import('../vite-pwa.js');
+  assert.ok(Object.isFrozen(ON_DEMAND_SOCLE_MODULES));
+  for (const module of ON_DEMAND_SOCLE_MODULES) {
+    // Le chemin de `node_modules`, celui de Windows, et un suffixe de Vite.
+    assert.equal(
+      isOnDemandSocleModule(
+        `/app/node_modules/@mister-guiiug/dev-pwa-config/${module}`
+      ),
+      true,
+      module
+    );
+    assert.equal(
+      isOnDemandSocleModule(
+        `C:\\app\\node_modules\\@mister-guiiug\\dev-pwa-config\\${module}`
+      ),
+      true,
+      module
+    );
+    assert.equal(
+      isOnDemandSocleModule(
+        `/app/node_modules/@mister-guiiug/dev-pwa-config/${module}?v=1a2b`
+      ),
+      true,
+      module
+    );
+  }
+  for (const autre of [
+    '/app/node_modules/@mister-guiiug/dev-pwa-config/analytics.js',
+    '/app/node_modules/@mister-guiiug/dev-pwa-config/analytics-erreurs.d.ts',
+    '/app/node_modules/autre-paquet/analytics-erreurs.js',
+    '/app/node_modules/@mister-guiiug/dev-pwa-config/analytics-erreursXjs',
+    '/app/src/analytics-url.js',
+  ]) {
+    assert.equal(isOnDemandSocleModule(autre), false, autre);
+  }
+  assert.equal(isOnDemandSocleModule(undefined), false);
+});
+
+test('LE GARDIEN DE LA LISTE : un module chargé à la demande n’est jamais importé statiquement hors d’elle', async () => {
+  // Une importation statique — une réexportation suffit — depuis un module
+  // chargé au démarrage le ferait entrer dans le morceau principal de chaque
+  // app : la liste mentirait, et `isOnDemandSocleModule` ne servirait à rien.
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const { ON_DEMAND_SOCLE_MODULES } = await import('../vite-pwa.js');
+  const pkg = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+  );
+  const racine = new URL('../', import.meta.url);
+  const sources = [
+    ...readdirSync(racine).filter(f => f.endsWith('.js')),
+    ...readdirSync(new URL('react/', racine)).map(f => `react/${f}`),
+  ].filter(f => f.endsWith('.js'));
+  for (const module of ON_DEMAND_SOCLE_MODULES) {
+    // Publié, sinon `import()` échoue chez l'app.
+    assert.ok(pkg.files.includes(module), `${module} absent de « files »`);
+    const echappe = module.replaceAll('.', String.raw`\.`);
+    const statique = new RegExp(
+      String.raw`^\s*(?:import|export)\b[^;]*?from\s+['"](?:\.{1,2}/)+${echappe}['"]`,
+      'mu'
+    );
+    for (const fichier of sources) {
+      if (ON_DEMAND_SOCLE_MODULES.includes(fichier)) continue;
+      const texte = readFileSync(new URL(fichier, racine), 'utf8');
+      assert.doesNotMatch(
+        texte,
+        statique,
+        `${fichier} importe ${module} statiquement`
+      );
+    }
+  }
+  // Et `analytics.js` les charge bien, par `import()`.
+  const analytics = readFileSync(new URL('analytics.js', racine), 'utf8');
+  assert.match(analytics, /import\('\.\/analytics-url\.js'\)/u);
+  assert.match(analytics, /import\('\.\/analytics-erreurs\.js'\)/u);
+});

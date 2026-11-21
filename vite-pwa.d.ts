@@ -107,6 +107,17 @@ export declare function sentryChunkGroups(): Array<{
   priority?: number;
 }>;
 /**
+ * Les modules du socle chargés à la demande (`import()` seulement) : un
+ * `manualChunks` qui range tout `node_modules` dans un morceau préchargé ne
+ * doit pas les y mettre.
+ */
+export declare const ON_DEMAND_SOCLE_MODULES: readonly string[];
+/**
+ * `true` pour un module du socle chargé à la demande. En tête de
+ * `manualChunks` : `if (isOnDemandSocleModule(id)) return;`.
+ */
+export declare function isOnDemandSocleModule(id: string): boolean;
+/**
  * Les deux règles Workbox des polices Google (feuille en
  * `StaleWhileRevalidate`, fichiers en `CacheFirst` un an). Règles neuves, à
  * étaler dans `workbox.runtimeCaching`.

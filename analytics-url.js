@@ -20,8 +20,13 @@
  * CE QUI RESTE : l'origine et le chemin, et la ROUTE d'un `HashRouter`
  * (`#/depenses` est l'écran où l'on était). La requête devient
  * `?[requête]`, le fragment `#[fragment]`, les identifiants d'une URL
- * `[identifiants]@`. Ce module est petit et chargé avec `analytics.js` : le
- * nettoyage vaut pour tout ce qui part, pas seulement pour les erreurs.
+ * `[identifiants]@`. Le nettoyage vaut pour tout ce qui part, pas seulement
+ * pour les erreurs.
+ *
+ * CHARGÉ À LA DEMANDE (6.39.0) : `analytics.js` l'importe à l'accord, avec
+ * posthog-js, et n'initialise rien s'il manque. Une app dont le
+ * `manualChunks` range tout `node_modules` dans un morceau préchargé l'en
+ * garde par `isOnDemandSocleModule` (`vite-pwa`).
  */
 
 /** Les marqueurs qui remplacent ce qui est retiré. */

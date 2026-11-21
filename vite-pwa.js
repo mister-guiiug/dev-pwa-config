@@ -401,6 +401,64 @@ export function sentryChunkGroups() {
 }
 
 /**
+ * LES MODULES DU SOCLE CHARGÉS À LA DEMANDE, qu'un morceau nommé ne doit pas
+ * avaler.
+ *
+ * Le socle importe certains de ses modules par `import()` seulement, pour
+ * qu'ils ne pèsent pas sur le premier affichage : le nettoyage des URL et le
+ * suivi des erreurs de PostHog ne servent qu'à l'accord. Mais le
+ * `manualChunks` de quinze apps du parc range TOUT `node_modules` non
+ * reconnu dans `vendor`, qui est préchargé par la page : un module rangé là
+ * part au premier affichage, chez le visiteur qui refuse comme chez celui qui
+ * accepte. À la sortie de 6.38.0, `analytics-erreurs.js` (1,8 kB gzip) y est
+ * tombé partout, et trois montées ont dépassé leur budget (mister-cim10,
+ * miss-uwh, mister-footcoach, 21/11/2026) ; les trois s'en sont sorties par
+ * la même ligne, écrite chacune de son côté.
+ *
+ * La liste vit ICI, et non dans chaque app : le prochain module chargé à la
+ * demande s'y ajoute, et les apps qui appellent la fonction n'ont rien à
+ * changer. À placer EN TÊTE de `manualChunks`, avant tout fourre-tout :
+ *
+ * ```ts
+ * manualChunks(id) {
+ *   if (isOnDemandSocleModule(id)) return;
+ *   …
+ *   return 'vendor';
+ * }
+ * ```
+ *
+ * Rendre `undefined` ne crée pas de morceau : Rolldown range le module selon
+ * ses imports — à part, puisqu'il n'est atteint que par `import()`.
+ * `pwa-doctor` signale celui qu'un regroupement a quand même rangé dans un
+ * morceau préchargé (`module-a-la-demande-precharge`).
+ */
+export const ON_DEMAND_SOCLE_MODULES = Object.freeze([
+  'analytics-erreurs.js',
+  'analytics-url.js',
+]);
+
+// Les noms ne portent que des lettres, des tirets et le point de `.js` :
+// seul le point est à échapper.
+const ON_DEMAND_SOCLE_RE = new RegExp(
+  String.raw`[\\/]dev-pwa-config[\\/](?:` +
+    ON_DEMAND_SOCLE_MODULES.map(m => m.replaceAll('.', String.raw`\.`)).join(
+      '|'
+    ) +
+    String.raw`)(?:[?#].*)?$`
+);
+
+/**
+ * Le module `id` est-il un module du socle chargé à la demande ? Accepte les
+ * séparateurs Windows et un suffixe de requête Vite (`?v=…`).
+ *
+ * @param {string} id
+ * @returns {boolean}
+ */
+export function isOnDemandSocleModule(id) {
+  return typeof id === 'string' && ON_DEMAND_SOCLE_RE.test(id);
+}
+
+/**
  * LES POLICES GOOGLE, HORS LIGNE AUSSI. PROMU DE SIX APPS (miss-contraction,
  * miss-genius, miss-uwh, mister-cim10, mister-qowa, mister-settle), dont les
  * copies divergeaient déjà — mister-cim10 portait le nom de cache de qowa.

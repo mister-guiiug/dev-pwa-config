@@ -824,6 +824,34 @@ Une app qui découpe par `manualChunks` garde sa fonction : elle y range React
 à part (`react-vendor`) et rend `SENTRY_CHUNK` pour `@sentry/`.
 `pwa-doctor` tient l'invariant (`entree-hors-precache`).
 
+#### Les modules du socle chargés à la demande
+
+Le socle importe certains de ses modules par `import()` seulement : le
+nettoyage des URL et le suivi des erreurs de PostHog (`analytics-url.js`,
+`analytics-erreurs.js`), qui ne servent qu'à l'accord. Un `manualChunks` qui
+range tout `node_modules` dans un morceau préchargé (`vendor`) les y avale, et
+chaque visiteur les télécharge au premier affichage — 2,3 kB gzip sur
+mister-cim10, mesurés le 21/11/2026. La liste vit dans le socle
+(`ON_DEMAND_SOCLE_MODULES`) ; l'app n'écrit qu'une ligne, en tête :
+
+```ts
+import { isOnDemandSocleModule } from '@mister-guiiug/dev-pwa-config/vite-pwa';
+
+manualChunks(id) {
+  if (isOnDemandSocleModule(id)) return; // avant tout fourre-tout
+  if (!id.includes('node_modules')) return;
+  // …
+  return 'vendor';
+}
+```
+
+Rendre `undefined` ne crée pas de morceau : Rolldown range le module selon
+ses imports, donc à part. Le prochain module chargé à la demande entre dans la
+liste du socle, et l'app n'a rien à changer. `pwa-doctor` signale celui qu'un
+regroupement a quand même rangé au démarrage (`module-a-la-demande-precharge`).
+Une app découpée par `codeSplitting.groups` sans fourre-tout n'est pas
+concernée.
+
 Une app qui écrit son `VitePWA()` sans `pwaBaseOptions` pose la règle
 elle-même, en tête de sa propre liste :
 
