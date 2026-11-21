@@ -81,7 +81,7 @@ jobs:
           persist-credentials: false
 
       - id: vice
-        uses: Webba-Creative-Technologies/vice@6c43b9386bdac20e012f9e0f31da8ec75eab8b1b # v3.4.1
+        uses: Webba-Creative-Technologies/vice@640e6ca11dc50dda58437f3a656291e3c1003fff # v3.5.0
         with:
           path: ${{ inputs.path }}
           fail-on-score: 'false'
