@@ -141,7 +141,7 @@ on:
         type: string
         required: false
         # renovate: datasource=npm depName=playwright
-        default: '1.64.1'
+        default: '1.65.1'
     secrets:
       FIREBASE_SERVICE_ACCOUNT_KEY:
         description: 'JSON du service account Firebase (requis si firebase-project est défini)'
