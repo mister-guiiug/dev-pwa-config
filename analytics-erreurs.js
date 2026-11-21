@@ -49,6 +49,8 @@
  * formulaire, réponses de serveur. Une erreur levée a un type et une pile ; un
  * journal n'a que du texte.
  */
+import { nettoieUrl } from './analytics-url.js';
+
 export const OPTIONS_SUIVI_ERREURS = Object.freeze({
   capture_unhandled_errors: true,
   capture_unhandled_rejections: true,
@@ -131,41 +133,15 @@ function estUnJeton(candidat) {
     );
 }
 
-/**
- * Une URL sans ses identifiants, sa requête ni son fragment — SAUF la route
- * d'un `HashRouter` : `#/depenses` EST l'écran où l'erreur s'est produite. Sa
- * requête à elle disparaît, et ses identifiants passent ensuite par les règles
- * des nombres et des jetons.
- *
- * LA ROUTE S'ARRÊTE AU PREMIER `?`, `#`, `&` OU `=`. Supabase, en flux
- * implicite, AJOUTE son fragment à l'adresse de retour : une app en
- * `HashRouter` reçoit `#/reset#access_token=…&refresh_token=…`. Une route
- * prise jusqu'au `?` gardait ce second fragment entier.
+/*
+ * `nettoieUrl` vient d'`analytics-url.js`, qui nettoie aussi les URL de tous
+ * les événements : une URL sans ses identifiants, sa requête ni son fragment,
+ * SAUF la route d'un `HashRouter` (`#/depenses` EST l'écran où l'erreur s'est
+ * produite), arrêtée au premier `?`, `&` ou `=`, ou au second `#` — Supabase,
+ * en flux implicite, AJOUTE son fragment à l'adresse de retour
+ * (`#/reset#access_token=…`). Les identifiants restés dans la route passent
+ * ensuite par les règles des nombres et des jetons.
  */
-function nettoieUrl(url) {
-  const propre = url.replace(
-    /^((?:blob:)?[a-z][\w+.-]*:\/\/)[^/?#@]*@/iu,
-    `$1${MARQUE.identifiants}@`
-  );
-  const diese = propre.indexOf('#');
-  const avant = diese < 0 ? propre : propre.slice(0, diese);
-  const apres = diese < 0 ? '' : propre.slice(diese + 1);
-  const point = avant.indexOf('?');
-  let out = point < 0 ? avant : `${avant.slice(0, point)}?${MARQUE.requete}`;
-  if (apres) {
-    const route = /^\/[^?#&=]*/u.exec(apres);
-    if (!route) out += `#${MARQUE.fragment}`;
-    else {
-      out += `#${route[0]}`;
-      const reste = apres.slice(route[0].length);
-      const second = reste.indexOf('#');
-      const requete = second < 0 ? reste : reste.slice(0, second);
-      if (requete) out += `?${MARQUE.requete}`;
-      if (second >= 0) out += `#${MARQUE.fragment}`;
-    }
-  }
-  return out;
-}
 
 /** Une URL absolue, privée de la ponctuation qui la suit dans une phrase. */
 function nettoieUrlDansTexte(url) {

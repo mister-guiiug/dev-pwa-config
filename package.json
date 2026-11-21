@@ -1,6 +1,6 @@
 {
   "name": "@mister-guiiug/dev-pwa-config",
-  "version": "6.37.0",
+  "version": "6.37.1",
   "private": false,
   "engines": {
     "node": ">=22"
@@ -698,6 +698,8 @@
     "./tokens.css": "./tokens.css",
     "./components.css": "./components.css",
     "./components/*.css": "./components/*.css",
+    "./astryx.css": "./astryx.css",
+    "./astryx-fluid.css": "./astryx-fluid.css",
     "./issue-report": {
       "types": "./issue-report.d.ts",
       "default": "./issue-report.js"
@@ -741,6 +743,8 @@
     "analytics.d.ts",
     "analytics-erreurs.js",
     "analytics-erreurs.d.ts",
+    "analytics-url.js",
+    "analytics-url.d.ts",
     "format.js",
     "format.d.ts",
     "security.js",
@@ -796,6 +800,8 @@
     "tokens.css",
     "components.css",
     "components",
+    "astryx.css",
+    "astryx-fluid.css",
     "scripts/generate-pwa-icons.mjs",
     "scripts/check-bundle-budget.mjs",
     "storage.js",
@@ -923,7 +929,7 @@
     "eslint": "^10.14.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.7",
+    "eslint-plugin-react-refresh": "^0.5.8",
     "fake-indexeddb": "^6.2.7",
     "globals": "^17.14.0",
     "jsdom": "^30.1.3",

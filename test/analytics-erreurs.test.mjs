@@ -35,6 +35,7 @@ import {
   nettoieException,
   nettoieTexteLibre,
 } from '../analytics-erreurs.js';
+import { nettoieUrlsEvenement } from '../analytics-url.js';
 import { ConsentBanner, writeConsentChoice } from '../react/consent-banner.js';
 import { ConsentSection } from '../react/consent-section.js';
 import { mount, setupDom } from './helpers/dom.mjs';
@@ -465,14 +466,17 @@ test('SANS le chargeur, la capture est ÉTEINTE, et rien d’autre ne change', a
     });
     await laisseCharger();
     const { options } = faux.appels.init[0];
-    // Les options d'avant, plus UNE : `capture_exceptions: false`. Le projet
+    // Les options d'avant, plus `capture_exceptions: false`. Le projet
     // PostHog a la capture allumée côté serveur, et posthog-js la suit quand
     // l'option est absente — une app passée à la build complète capterait ses
-    // erreurs sans `before_send`. Ni extension, ni nettoyage, ni rien d'autre.
+    // erreurs sans `before_send`. Le `before_send` reste celui de toutes les
+    // apps, les URL seules (`analytics-url.js`) : ni extension, ni nettoyage
+    // des exceptions, ni rien d'autre.
     assert.deepEqual(options, {
       ...OPTIONS_VIE_PRIVEE,
       api_host: 'https://eu.i.posthog.com',
       capture_exceptions: false,
+      before_send: nettoieUrlsEvenement,
     });
     assert.equal('before_send' in OPTIONS_VIE_PRIVEE, false);
     assert.equal('capture_exceptions' in OPTIONS_VIE_PRIVEE, false);
@@ -536,7 +540,22 @@ test('à l’accord, les extensions et la capture des exceptions sont passées �
     assert.deepEqual(options.capture_exceptions, { ...OPTIONS_SUIVI_ERREURS });
     // Jamais les `console.error` : leur texte est ce que l'app journalise.
     assert.equal(options.capture_exceptions.capture_console_errors, false);
-    assert.equal(options.before_send, nettoieException);
+    // Les deux nettoyages, bout à bout : les URL de tout événement, puis le
+    // message d'un `$exception`.
+    const net = options.before_send({
+      event: '$exception',
+      properties: {
+        $exception_message: 'Échec pour jean.dupont@exemple.fr',
+        $session_entry_url:
+          'https://h.io/miss-x/?code=abc#/reset#access_token=eyJabc.def.ghi',
+      },
+    });
+    assert.doesNotMatch(JSON.stringify(net), /jean.dupont|eyJabc|code=abc/u);
+    assert.equal(
+      options.before_send({ event: '$pageview', properties: {} }).event,
+      '$pageview'
+    );
+    assert.equal(nettoieException(null), null);
     // Les réglages de vie privée sont toujours là.
     assert.equal(options.autocapture, false);
     assert.equal(options.disable_session_recording, true);
@@ -663,7 +682,7 @@ test('un chargeur qui rend autre chose que les extensions le dit', async () => {
     assert.equal('__extensionClasses' in options, false);
     // Sans nettoyage, pas de capture — pas même celle que le serveur allume.
     assert.equal(options.capture_exceptions, false);
-    assert.equal('before_send' in options, false);
+    assert.equal(options.before_send, nettoieUrlsEvenement);
   } finally {
     resetAnalytics();
     dom.restore();
@@ -695,7 +714,7 @@ test('un import des extensions qui échoue n’empêche pas la mesure', async ()
     const { options } = faux.appels.init[0];
     assert.equal('__extensionClasses' in options, false);
     assert.equal(options.capture_exceptions, false);
-    assert.equal('before_send' in options, false);
+    assert.equal(options.before_send, nettoieUrlsEvenement);
   } finally {
     resetAnalytics();
     dom.restore();

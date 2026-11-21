@@ -163,6 +163,38 @@ test('LES RÉGLAGES DE VIE PRIVÉE sont réellement passés à init', async () =
   }
 });
 
+test('LES URL QUE POSTHOG JOINT DE LUI-MÊME sont nettoyées sur tous les événements', async () => {
+  // posthog-js ajoute `$session_entry_url` à chaque événement : après une
+  // redirection Supabase, elle garde les jetons toute la session. Le
+  // `before_send` passé à init les retire, quel que soit l'événement.
+  const dom = setupDom();
+  try {
+    resetAnalytics();
+    const faux = await avecAccord();
+    const { before_send } = faux.appels.init[0].options;
+    assert.equal(typeof before_send, 'function', 'aucun before_send passé');
+    const sortie = before_send({
+      event: '$pageview',
+      properties: {
+        $current_url: 'https://h.io/miss-x/#/reglages',
+        $session_entry_url:
+          'https://h.io/miss-x/?code=abc#/reset#access_token=eyJabc.def.ghi&refresh_token=kqzmwbrtyplx',
+      },
+    });
+    assert.equal(
+      sortie.properties.$session_entry_url,
+      'https://h.io/miss-x/?[requête]#/reset#[fragment]'
+    );
+    assert.equal(
+      sortie.properties.$current_url,
+      'https://h.io/miss-x/#/reglages'
+    );
+  } finally {
+    resetAnalytics();
+    dom.restore();
+  }
+});
+
 test('le nom d’app se déduit du chemin de base, et rien à la racine', () => {
   assert.equal(nomDApp('/mister-cim10/'), 'mister-cim10');
   assert.equal(nomDApp('/miss-dice/'), 'miss-dice');

@@ -540,7 +540,7 @@ usePageViews(useLocation().pathname);
 trackEvent('partie_terminee', { score, duree_s });
 ```
 
-Trois règles que le module tient à votre place :
+Quatre règles que le module tient à votre place :
 
 - **Rien avant l'accord.** `trackEvent` et `trackPageView` renvoient `false`
   tant que `analytics_storage` n'est pas accordé, et le `<script>` n'est même
@@ -552,6 +552,14 @@ Trois règles que le module tient à votre place :
 - **Une seule vue par navigation.** PostHog est configuré avec
   `capture_pageview: false`, pour que la page d'entrée passe par le même chemin
   que les autres au lieu d'être comptée deux fois.
+- **Les URL partent nettoyées.** PostHog joint de lui-même à chaque événement
+  `$current_url`, `$referrer` et l'URL d'entrée de session
+  (`$session_entry_url`, `$session_entry_referrer`), relevée au premier
+  événement, fragment compris : les jetons d'une redirection Supabase y restaient
+  toute la session. Un `before_send` (`analytics-url.js`) ne garde que
+  l'origine, le chemin et la route d'un `HashRouter` ; requête et fragment
+  deviennent `?[requête]` et `#[fragment]`, dans les propriétés comme dans
+  `$set` et `$set_once`.
 
 `cspPlugin({ analytics: true })` autorise déjà les hôtes nécessaires :
 `eu.i.posthog.com` pour l'ingestion, et `eu-assets.i.posthog.com` d'où

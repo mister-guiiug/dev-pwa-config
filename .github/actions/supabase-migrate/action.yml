@@ -24,7 +24,7 @@ inputs:
     # la propose à jour depuis npm, la source même de l'installation
     # (`customManagers` de renovate.json, d'après la ligne ci-dessous).
     # renovate: datasource=npm depName=supabase
-    default: '2.119.0'
+    default: '2.122.1'
 
 runs:
   using: 'composite'
@@ -33,7 +33,7 @@ runs:
     # v3 : action composite qui installe le CLI par npm (Node 20+ et npm requis,
     # ceux du runner, sinon elle pose Node 24). La v1 tournait sur Node 20,
     # que GitHub déclare obsolète. Même SHA dans `pwa-supabase-test.yml`.
-    - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+    - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
       with:
         version: ${{ inputs.cli-version }}
 

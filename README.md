@@ -19,7 +19,7 @@ et rien n'y a été résumé, seulement déplacé.
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | [`docs/EXPORTS.md`](docs/EXPORTS.md)       | **La table des sous-chemins publiés** — le point d'entrée quand on cherche « est-ce que le socle sait déjà faire ça ? » |
 | [`docs/CONFIGS.md`](docs/CONFIGS.md)       | ESLint, Prettier, TypeScript, Vitest, Playwright, Vite (PWA, CSP, SEO), commitlint, lint-staged, icônes                 |
-| [`docs/INTERFACE.md`](docs/INTERFACE.md)   | Composants React, habillage `components.css`, primitives, catalogue famille, Rive, accessibilité                        |
+| [`docs/INTERFACE.md`](docs/INTERFACE.md)   | Composants React, `components.css`, grammaire `astryx.css`, primitives, catalogue famille, Rive, accessibilité          |
 | [`docs/DONNEES.md`](docs/DONNEES.md)       | Persistance, magasin versionné, coffre chiffré, Supabase, file hors-ligne, temps réel, carte, auth, PDF/Excel/iCal      |
 | [`docs/BINS.md`](docs/BINS.md)             | Binaires `pwa-*` : `doctor`, `bundle-budget`, `icons`, `pgtap`, `screenshots`, `og-image`, `bindings`, `typecheck-7`    |
 | [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md) | Ce qu'a demandé chaque majeure                                                                                          |
@@ -556,7 +556,7 @@ ne la prenne pour celle du jour.
 Les configs imposent / supposent les versions suivantes côté projet consommateur :
 
 ```
-Node ≥22 promis par engines ; le parc épingle 26.13.0 (.nvmrc, setup-pwa, réutilisables) ; CI du socle éprouvée sur 22 ET 26.13.0
+Node ≥22 promis par engines ; le parc épingle 26.13.1 (.nvmrc, setup-pwa, réutilisables) ; CI du socle éprouvée sur 22 ET 26.13.1
 TypeScript ~6.0.3 strict + verbatimModuleSyntax + noUncheckedIndexedAccess, cible ES2025 + lib ES2025
 ESLint 9 OU 10 (flat config) + typescript-eslint 8.58 — la 10 demande trois gestes côté app (ESLINT-10.md)
 eslint-plugin-react-hooks 7.0 (configs.flat.recommended) + eslint-plugin-react-refresh 0.5
@@ -774,7 +774,7 @@ Le `secrets.GITHUB_TOKEN` automatique d'Actions suffit à lire le paquet, à con
 ```yaml
 - uses: actions/setup-node@v7
   with:
-    node-version: '26.13.0'
+    node-version: '26.13.1'
     cache: npm
     registry-url: 'https://npm.pkg.github.com'
     scope: '@mister-guiiug'
@@ -976,7 +976,7 @@ Restent deux gestes, volontairement hors du générateur :
 ## Checklist — à la main, ou pour comprendre ce que fait le générateur
 
 1. **`.npmrc`** (copier [`templates/.npmrc`](./templates/.npmrc)) + **`.nvmrc`**
-   (`26.13.0`, l'épingle du parc ; `engines` promet `>=22`).
+   (`26.13.1`, l'épingle du parc ; `engines` promet `>=22`).
 2. **Dépendance** : `npm i -D @mister-guiiug/dev-pwa-config@^6` + les peers utilisés
    (cf. `peerDependencies` du [`package.json`](./package.json) : `eslint`, `@eslint/js`,
    `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`,
@@ -1173,7 +1173,7 @@ jobs:
 
 | Action                                                             | Rôle                                                                                                                                                        |
 | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6`        | Setup Node 26.13.0 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages)                                                                               |
+| `mister-guiiug/dev-pwa-config/.github/actions/setup-pwa@v6`        | Setup Node 26.13.1 + scope `@mister-guiiug` + `npm ci` (auth GitHub Packages)                                                                               |
 | `mister-guiiug/dev-pwa-config/.github/actions/supabase-migrate@v6` | Setup CLI Supabase + `link` + `db push` (déploiements custom)                                                                                               |
 | `mister-guiiug/dev-pwa-config/.github/actions/firebase-deploy@v6`  | `firebase deploy` ciblé (rules database/firestore, indexes) ; auth `service-account-key` (recommandé) ou `token` (déprécié), firebase-tools épinglé via npx |
 
@@ -1194,7 +1194,7 @@ composition d'une app (CI, `index.html`, Vite) vient du squelette
 | [`templates/husky/pre-commit`](./templates/husky/pre-commit)                       | `<projet>/.husky/pre-commit`            | Aucune                                                                                  |
 | [`templates/husky/commit-msg`](./templates/husky/commit-msg)                       | `<projet>/.husky/commit-msg`            | Aucune                                                                                  |
 | [`templates/.editorconfig`](./templates/.editorconfig)                             | `<projet>/.editorconfig`                | Ou `pwa-doctor --fix`                                                                   |
-| [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | `26.13.0` (épingle du parc)                                                             |
+| [`templates/.nvmrc`](./templates/.nvmrc)                                           | `<projet>/.nvmrc`                       | `26.13.1` (épingle du parc)                                                             |
 | [`templates/.npmrc`](./templates/.npmrc)                                           | `<projet>/.npmrc`                       | Aucune (registre scope + `include=optional` — bindings natifs Vite 8)                   |
 | [`templates/FUNDING.yml`](./templates/FUNDING.yml)                                 | `<projet>/.github/FUNDING.yml`          | Aucune (handle sponsor famille `mister.guiiug`)                                         |
 | [`templates/.lighthouserc.json`](./templates/.lighthouserc.json)                   | `<projet>/.lighthouserc.json`           | Ajuster les seuils (`minScore`) par catégorie                                           |
