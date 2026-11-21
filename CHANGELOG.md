@@ -1,5 +1,13 @@
 # Changelog
 
+## 6.37.1
+
+### Patch Changes
+
+- 29ca3d8: Node 26.13.1 (version de sécurité du 10/11/2026, npm 11.20.0 comme la 26.13.0) partout où le parc épinglait 26.13.0 : action `setup-pwa`, les cinq réutilisables (`pwa-ci`, `pwa-deploy`, `pwa-lighthouse`, `pwa-worker-deploy`, `npm-publish`), gabarit `templates/.nvmrc`, conseil `nvmrc` de `pwa-doctor` et `doctor-fix`.
+  
+  Migration : aucune pour une app qui n'écrit pas `node-version` : ses workflows passent en 26.13.1 dès que l'étiquette `v6` avance. Son `.nvmrc` monte par la PR de Renovate.
+
 ## 6.37.0
 
 ### Minor Changes
