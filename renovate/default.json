@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Préréglage Renovate de la famille mister-guiiug. Les apps l'étendent : github>mister-guiiug/dev-pwa-config//renovate/default.json. Créneau : tout le samedi (heure de Paris), et non « before 7am » : le passage auto-hébergé part avec 4 à 7 h de retard sur son cron, et du 05/10 au 14/11/2026 il est arrivé chaque fois après 7 h, n'ouvrant que le socle (« at any time »). prHourlyLimit 0 : il n'y a qu'un ou deux passages par semaine, la limite par défaut (2 PR par heure et par dépôt) en aurait laissé une partie au samedi suivant ; prConcurrentLimit borne déjà le nombre de PR ouvertes.",
+  "description": "Préréglage Renovate de la famille mister-guiiug. Les apps l'étendent : github>mister-guiiug/dev-pwa-config//renovate/default.json. Créneau : tout le samedi (heure de Paris), et non « before 7am » : le passage auto-hébergé part avec 4 à 7 h de retard sur son cron, et du 05/10 au 14/11/2026 il est arrivé chaque fois après 7 h, n'ouvrant que le socle (« at any time »). prHourlyLimit 0 : il n'y a qu'un ou deux passages par semaine, la limite par défaut (2 PR par heure et par dépôt) en aurait laissé une partie au samedi suivant ; prConcurrentLimit borne déjà le nombre de PR ouvertes. constraints.npm 11.20.0 : le npm qu'embarque Node 26.13.x, celui de la CI (« Lockfile in sync »). Sans contrainte, l'image de Renovate installe le dernier npm, le 12, dont allow-remote vaut none : il refuse l'archive de @tailwindcss/oxide-wasm32-wasi (EALLOWREMOTE), et le 21/11/2026 25 groupes « npm (mineur & patch) » sur 28 sont sortis sans lockfile, donc rouges. À relever avec l'épingle de Node du parc.",
   "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
   "timezone": "Europe/Paris",
   "schedule": ["on saturday"],
@@ -8,6 +8,7 @@
   "rangeStrategy": "bump",
   "prConcurrentLimit": 4,
   "prHourlyLimit": 0,
+  "constraints": { "npm": "11.20.0" },
   "packageRules": [
     {
       "description": "Le socle : une PR à lui seul, dès qu'il sort, jamais groupé avec le reste.",

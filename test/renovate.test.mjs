@@ -55,6 +55,23 @@ test('le préréglage partagé : recommandé, tableau de bord, le samedi, regrou
 });
 
 /*
+ * LE VERROU S'ÉCRIT AVEC LE NPM DE LA CI.
+ *
+ * Le 21/11/2026, 25 groupes « npm (mineur & patch) » sur 28 sont sortis
+ * rouges : sans contrainte, l'image de Renovate installe le dernier npm, le
+ * 12, dont `allow-remote` vaut `none` ; il refuse l'archive de
+ * `@tailwindcss/oxide-wasm32-wasi` (EALLOWREMOTE) et laisse la PR sans
+ * lockfile. La CI tourne sur le npm qu'embarque l'épingle de Node du parc.
+ */
+test('Renovate écrit les verrous avec le npm de la CI, pas le dernier npm', () => {
+  const preset = json('../renovate/default.json');
+  const npm = preset.constraints?.npm ?? '';
+  assert.match(npm, /^11\.\d+\.\d+$/, 'npm 11, épinglé exact');
+  // Node 26.13.x embarque npm 11.20.0 : les deux bougent ensemble.
+  assert.equal(read('../.nvmrc').trim().split('.')[0], '26');
+});
+
+/*
  * LE PLAFOND SUR TYPESCRIPT, ET LA RAISON DE SON EXCEPTION.
  *
  * Dix-sept PR « update dependency typescript to v7 » étaient ouvertes le
