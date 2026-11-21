@@ -741,6 +741,8 @@
     "apps-seo.d.ts",
     "analytics.js",
     "analytics.d.ts",
+    "analytics-url.js",
+    "analytics-url.d.ts",
     "format.js",
     "format.d.ts",
     "security.js",
