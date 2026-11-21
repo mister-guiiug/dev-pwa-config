@@ -1,0 +1,11 @@
+---
+'@mister-guiiug/dev-pwa-config': minor
+---
+
+`astryx.css` : la grammaire d'Astryx, le design system open source de Meta, posée sur le contrat `--dwc-*`. Les noms d'Astryx (`--color-<élément>-<rôle>`, `--text-heading-1..4-*`, `--text-body|label|code|supporting-*`, `--font-size-*`, `--spacing-*` au pas de 4 px, `--radius-inner|element|container|full`, `--shadow-low|med|high`, `--duration-*`, `--ease-*`, `--size-element-sm|md|lg`, `--focus-outline-*`) : les couleurs en alias des `--dwc-*` (une seule source, l'app continue de peindre sa palette), les échelles aux valeurs d'Astryx. Au doigt (`pointer: coarse`), le texte courant passe à 16 px ; sous `prefers-reduced-motion`, les durées tombent à 0,01 ms. Trois écarts assumés, ceux des deux apps : 44 px pour `--size-element-lg` (Astryx s'arrête à 36), `--color-border-emphasized` sur `--dwc-border-strong` à 3:1 (le #CCD3DB d'Astryx tient 1,5:1), et ni police ni accent imposés.
+
+Promu de mister-uwh-tactic (ADR 0017) et mister-cim10, qui avaient écrit chacune cette couche de leur côté sans installer le paquet d'Astryx (StyleX obligatoire). La feuille ne reprend que ce qu'elles ont en commun.
+
+Importer `astryx.css` ne change rien à l'écran : elle ne pose que des custom properties sur `:root`, et aucun de ses noms n'est lu par `components.css`, `tokens.css` ou le preset. `astryx-fluid.css`, à importer en plus et seulement si l'app le veut, ramène les `--text-fluid-*` que lisent les composants du socle sur les crans d'Astryx — et change donc le texte de tous les composants. Les apps qui n'importent ni l'une ni l'autre ne voient aucune différence.
+
+Migration : facultative. mister-uwh-tactic et mister-cim10 pourront retirer de leur feuille ce que le socle déclare désormais (le détail est dans la PR) ; mister-cim10 devra d'abord peindre ses `--dwc-*` au lieu de les brancher sur ses `--color-*`, sans quoi les deux alias se répondent en cycle.

@@ -698,6 +698,8 @@
     "./tokens.css": "./tokens.css",
     "./components.css": "./components.css",
     "./components/*.css": "./components/*.css",
+    "./astryx.css": "./astryx.css",
+    "./astryx-fluid.css": "./astryx-fluid.css",
     "./issue-report": {
       "types": "./issue-report.d.ts",
       "default": "./issue-report.js"
@@ -794,6 +796,8 @@
     "tokens.css",
     "components.css",
     "components",
+    "astryx.css",
+    "astryx-fluid.css",
     "scripts/generate-pwa-icons.mjs",
     "scripts/check-bundle-budget.mjs",
     "storage.js",
