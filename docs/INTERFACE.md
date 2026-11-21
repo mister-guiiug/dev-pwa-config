@@ -185,7 +185,7 @@ celle du socle est ce que la règle 3 du parc refuse :
 ```css
 @import 'tailwindcss';
 @import '@mister-guiiug/dev-pwa-config/tailwind-preset.css';
-@import '@mister-guiiug/dev-pwa-config/tokens.css'; /* si l'app n'a pas sa palette */
+@import '@mister-guiiug/dev-pwa-config/tokens.css'; /* si l'app ne peint pas les dix rôles requis */
 @import '@mister-guiiug/dev-pwa-config/components.css';
 @import '@mister-guiiug/dev-pwa-config/astryx.css'; /* ← la grammaire */
 @import '@mister-guiiug/dev-pwa-config/astryx-fluid.css'; /* ← facultatif, voir plus bas */
@@ -199,12 +199,24 @@ properties sur `:root`, et aucun de ses noms n'est lu par `components.css`,
 que là où l'app s'en sert. Une seule rencontre : `--font-weight-*` existe aussi
 dans le thème par défaut de Tailwind 4, aux mêmes valeurs. Ni `@theme` ni
 `@apply` : elle s'importe aussi sans Tailwind, et le pont vers des classes
-(`text-body`…) reste à l'app. Rien n'est dans `@layer`, comme `tokens.css` : une
-règle `:root` de l'app écrite **après** l'import l'emporte.
+(`text-body`…) reste à l'app. Rien n'est dans `@layer`, comme `tokens.css`, et
+chaque règle garde la spécificité de `:root` (les blocs sombres passent par
+`:where()`) : une règle de l'app écrite **après** l'import l'emporte dans tous
+les thèmes, qu'elle vise `:root`, `[data-theme='dark']` ou
+`html[data-theme='dark']`.
 
 **Les couleurs sont des alias du contrat.** Une seule source : l'app continue de
-peindre ses `--dwc-*` (ou prend `tokens.css`), les composants du socle et les
-noms d'Astryx suivent ensemble, dans tous les thèmes.
+peindre ses `--dwc-*` sur `:root` (`html` : attribut, classe ou `ThemeProvider`)
+ou prend `tokens.css`, et les composants du socle et les noms d'Astryx suivent
+ensemble, dans tous les thèmes. Les alias sont calculés sur `:root` : un
+`--dwc-*` repeint sur un sous-arbre n'est pas suivi.
+
+**La feuille lit treize rôles, dont dix requis.** Trois ont un repli tiré du
+contrat : `--dwc-bg`, `--dwc-primary-soft` et `--dwc-border-strong`. Les dix
+autres n'en ont pas : une app qui n'importe pas `tokens.css` peint
+`--dwc-primary`, `-primary-contrast`, `-surface`, `-surface-2`, `-text`,
+`-text-soft`, `-border`, `-success`, `-warning` et `-danger`, sans quoi les
+alias correspondants ne valent rien (le test tient cette liste).
 
 | Astryx                                                                 | Contrat du socle                                                    |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -217,7 +229,7 @@ noms d'Astryx suivent ensemble, dans tous les thèmes.
 | `--color-text-primary`, `--color-icon-primary`                         | `--dwc-text`                                                        |
 | `--color-text-secondary`, `--color-icon-secondary`                     | `--dwc-text-soft`                                                   |
 | `--color-border`                                                       | `--dwc-border`                                                      |
-| `--color-border-emphasized`                                            | `--dwc-border-strong` (3:1)                                         |
+| `--color-border-emphasized`                                            | `--dwc-border-strong` (3:1), à défaut `--dwc-border`                |
 | `--color-overlay-hover`, `-pressed`                                    | 7 % et 12 % de `--dwc-text`                                         |
 | `--color-success`, `--color-warning`, `--color-error`                  | `--dwc-success`, `--dwc-warning`, `--dwc-danger`                    |
 | `--color-warning-muted`, `--color-error-muted`                         | 14 % et 12 % du rôle                                                |
@@ -252,7 +264,9 @@ complètent leur famille :
    taille de cible ; le parc exige 44 au doigt, comme `touch-target`.
 2. **`--color-border-emphasized` est `--dwc-border-strong`**, garanti à 3:1 par
    `test/tokens.test.mjs` (WCAG 1.4.11). Le `#CCD3DB` d'Astryx tient 1,5:1 sur
-   blanc : le pourtour d'un champ disparaît.
+   blanc : le pourtour d'un champ disparaît. Si l'app ne peint pas ce rôle, le
+   repli est `--dwc-border`, comme dans `components.css` : moins contrasté,
+   mais toujours un contour.
 3. **La marque garde son accent et sa police.** L'accent est `--dwc-primary` ;
    aucune `--font-family-*` n'est déclarée.
 
@@ -269,8 +283,26 @@ d'icône, `--radius-page`, `display-3`, la police, les couleurs hors contrat
 (`--color-text-disabled`, `-background-inverted`, `-track`, les textes d'état),
 le palier de 13 px au doigt de `mister-cim10`, le pont Tailwind de
 `mister-uwh-tactic`. Une app qui veut une autre valeur la redéclare après
-l'import — `html[data-theme='dark'] { --color-… }` l'emporte aussi, par sa
-spécificité.
+l'import, sur `:root` ou sur son sélecteur de thème. Une ombre redéclarée sur
+`:root` seul vaut alors aussi en sombre : redéclarer les deux.
+
+**Une surcharge se répète dans son média.** Un `--duration-*` ou un
+`--text-*-size|leading` redéclaré après l'import l'emporte aussi sous
+`prefers-reduced-motion` et sous `pointer: coarse` : le mouvement réduit, ou les
+16 px au doigt, disparaissent pour ce nom. Le répéter dans le même `@media` :
+
+```css
+@import '@mister-guiiug/dev-pwa-config/astryx.css';
+
+:root {
+  --duration-medium: 310ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-medium: 0.01ms;
+  }
+}
+```
 
 > **Ne pas brancher le contrat dans l'autre sens.** `--dwc-surface:
 var(--color-background-surface)` en même temps que la feuille fait un cycle :
@@ -280,10 +312,11 @@ var(--color-background-surface)` en même temps que la feuille fait un cycle :
 
 `test/astryx-css.test.mjs` tient ces promesses : la feuille se parse
 (lightningcss), déclare exactement la liste de noms attendue, ne pose que des
-custom properties sur `:root`, ne partage aucun nom avec les autres feuilles du
-socle, n'écrit aucune couleur en dur (chaque `--color-*` est un `var(--dwc-…)`,
-au plus mélangé à `transparent`), ne lit que des rôles que `ThemeProvider` sait
-peindre, et garde les trois écarts.
+custom properties sur `:root`, à sa seule spécificité, ne partage aucun nom avec
+les autres feuilles du socle, n'écrit aucune couleur en dur (chaque `--color-*`
+est un `var(--dwc-…)`, au plus mélangé à `transparent`), ne lit que des rôles
+que `ThemeProvider` sait peindre, dont les dix requis listés plus haut, et garde
+les trois écarts.
 
 #### Les composants du socle sur les crans (`astryx-fluid.css`, opt-in)
 

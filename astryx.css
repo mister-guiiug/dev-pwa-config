@@ -23,7 +23,18 @@
  * LES COULEURS SONT DES ALIAS. Chaque `--color-*` lit un rôle `--dwc-*` : il
  * n'y a toujours qu'une source, celle que l'app peint déjà (ou `tokens.css`),
  * et les composants du socle la suivent. Aucun bloc de thème pour elles :
- * elles changent avec les `--dwc-*`, quel que soit le mécanisme de l'app.
+ * elles changent avec les `--dwc-*` que l'app peint sur `:root` (`html`) —
+ * attribut, classe ou `ThemeProvider`. Les alias sont calculés sur `:root` :
+ * un `--dwc-*` repeint sur un sous-arbre n'est pas suivi.
+ *
+ * TREIZE RÔLES LUS, DIX REQUIS. Trois ont un repli tiré du contrat :
+ * `--dwc-bg` (la surface), `--dwc-primary-soft` (un mélange de la primaire)
+ * et `--dwc-border-strong` (le filet, comme dans `components.css`). Les dix
+ * autres n'en ont pas : une app qui n'importe pas `tokens.css` peint
+ * `--dwc-primary`, `-primary-contrast`, `-surface`, `-surface-2`, `-text`,
+ * `-text-soft`, `-border`, `-success`, `-warning` et `-danger`, sans quoi les
+ * alias correspondants ne valent rien.
+ *
  * Les mélanges (fonds pâles, survol, appui) sont ceux de mister-uwh-tactic,
  * la seule des deux qui les écrivait déjà sur les `--dwc-*` ; mister-cim10
  * est à deux points près. Astryx met 20 % dans ses fonds pâles : les deux
@@ -43,7 +54,9 @@
  *      l'utilitaire `touch-target` du preset).
  *   2. `--color-border-emphasized` est `--dwc-border-strong`, que `tokens.css`
  *      garantit à 3:1 (WCAG 1.4.11). Le #CCD3DB d'Astryx tient 1,5:1 sur
- *      blanc : le pourtour d'un champ disparaît.
+ *      blanc : le pourtour d'un champ disparaît. Si l'app ne peint pas ce
+ *      rôle, le repli est `--dwc-border`, celui de `components.css` : un
+ *      contour moins contrasté, mais un contour.
  *   3. La marque garde son accent et sa police. L'accent est `--dwc-primary` ;
  *      aucune `--font-family-*` n'est déclarée (cim10 garde IBM Plex, uwh la
  *      pile système).
@@ -75,9 +88,18 @@
  * des classes (`text-body`, `text-supporting`…) reste à l'app, qui choisit
  * ses noms.
  *
- * PRIORITÉ. Rien n'est dans `@layer`, comme `tokens.css` : une règle `:root`
- * de l'app écrite APRÈS l'import l'emporte, et un sélecteur plus précis
- * (`html[data-theme='dark']`) aussi. Ce sont des valeurs par défaut.
+ * PRIORITÉ. Rien n'est dans `@layer`, comme `tokens.css`, et chaque règle
+ * garde la spécificité de `:root` — les blocs sombres passent par `:where()`.
+ * Une règle de l'app écrite APRÈS l'import l'emporte donc dans tous les
+ * thèmes, qu'elle vise `:root`, `[data-theme='dark']` ou
+ * `html[data-theme='dark']`. Ce sont des valeurs par défaut. Une ombre
+ * redéclarée sur `:root` vaut alors aussi en sombre : redéclarer les deux.
+ *
+ * UNE SURCHARGE SE RÉPÈTE DANS SON MÉDIA. Un `--duration-*` ou un
+ * `--text-*-size|leading` redéclaré après l'import l'emporte aussi sous
+ * `prefers-reduced-motion` et sous `pointer: coarse` : le mouvement réduit ou
+ * les 16 px au doigt disparaissent pour ce nom. Le répéter dans le même
+ * `@media`, après l'import.
  *
  * CE QUI RESTE DANS L'APP, parce qu'une seule l'a écrit, ou chacune à sa
  * façon : l'ordre des calques (`--layer-*`, qu'Astryx ne publie pas), les
@@ -113,8 +135,9 @@
   --color-icon-secondary: var(--dwc-text-soft);
 
   --color-border: var(--dwc-border);
-  /* ÉCART 2 : le contour d'un contrôle, 3:1 — pas le #CCD3DB d'Astryx. */
-  --color-border-emphasized: var(--dwc-border-strong);
+  /* ÉCART 2 : le contour d'un contrôle, 3:1 — pas le #CCD3DB d'Astryx. Le
+     repli est celui de `components.css`, pour une app qui ne le peint pas. */
+  --color-border-emphasized: var(--dwc-border-strong, var(--dwc-border));
 
   /* Les couches d'état : survol et appui, sur n'importe quel contrôle. */
   --color-overlay-hover: color-mix(in srgb, var(--dwc-text) 7%, transparent);
@@ -224,17 +247,23 @@
  * le réglage « système » ne pose aucun attribut et ne se lit que dans
  * `prefers-color-scheme` ; un choix explicite (`data-theme` ou la classe) passe
  * derrière et l'emporte. Les deux blocs restent jumeaux (vérifié).
+ *
+ * `:where()` LES GARDE À LA SPÉCIFICITÉ DE `:root`. Écrits en
+ * `:root[data-theme='dark']` (0,2,0) et `:root:not(…):not(…)` (0,3,0), ils
+ * battaient une surcharge de l'app placée après l'import — un
+ * `[data-theme='dark'] { --shadow-low: … }`, celui de mister-uwh-tactic,
+ * perdait en sombre. Ici, ils l'emportent sur le bloc de base par leur ordre,
+ * et cèdent à ce qui vient après.
  */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']):not(.light) {
+  :root:where(:not([data-theme='light']):not(.light)) {
     --shadow-low: 0 1px 1px rgb(0 0 0 / 0.2), 0 2px 8px rgb(0 0 0 / 0.2);
     --shadow-med: 0 1px 2px rgb(0 0 0 / 0.2), 0 2px 12px rgb(0 0 0 / 0.2);
     --shadow-high: 0 2px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.3);
   }
 }
 
-:root[data-theme='dark'],
-:root.dark {
+:root:where([data-theme='dark'], .dark) {
   --shadow-low: 0 1px 1px rgb(0 0 0 / 0.2), 0 2px 8px rgb(0 0 0 / 0.2);
   --shadow-med: 0 1px 2px rgb(0 0 0 / 0.2), 0 2px 12px rgb(0 0 0 / 0.2);
   --shadow-high: 0 2px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.3);

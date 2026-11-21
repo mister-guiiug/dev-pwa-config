@@ -35,6 +35,23 @@ const aplatir = valeur =>
     .replace(/\s+\)/g, ')')
     .trim();
 
+/** Découpe sur `separateur`, hors parenthèses : `:where(a, b)` reste entier. */
+function horsParentheses(texte, separateur) {
+  const morceaux = [];
+  let profondeur = 0;
+  let debut = 0;
+  for (let i = 0; i < texte.length; i += 1) {
+    if (texte[i] === '(') profondeur += 1;
+    else if (texte[i] === ')') profondeur -= 1;
+    else if (texte[i] === separateur && profondeur === 0) {
+      morceaux.push(texte.slice(debut, i));
+      debut = i + 1;
+    }
+  }
+  morceaux.push(texte.slice(debut));
+  return morceaux;
+}
+
 /** Les déclarations d'un corps de règle, découpé sur `;` hors parenthèses. */
 function declarations(corps) {
   /** @type {Array<[string, string]>} */
@@ -115,9 +132,9 @@ const RACINE = regle(null, ':root');
 const VALEURS = new Map(RACINE.declarations);
 const SOMBRE_SYSTEME = regle(
   '@media (prefers-color-scheme: dark)',
-  ":root:not([data-theme='light']):not(.light)"
+  ":root:where(:not([data-theme='light']):not(.light))"
 );
-const SOMBRE_CHOISI = regle(null, ":root[data-theme='dark'], :root.dark");
+const SOMBRE_CHOISI = regle(null, ":root:where([data-theme='dark'], .dark)");
 const AU_DOIGT = regle('@media (pointer: coarse)', ':root');
 const MOUVEMENT_REDUIT = regle(
   '@media (prefers-reduced-motion: reduce)',
@@ -226,7 +243,7 @@ test('astryx.css ne pose que des custom properties, et seulement sur :root', () 
   // Pas un `body`, pas un `h1`, pas une classe : la feuille ne peut styler
   // aucun élément, elle ne fait que nommer.
   for (const r of REGLES) {
-    for (const selecteur of r.selecteur.split(',')) {
+    for (const selecteur of horsParentheses(r.selecteur, ',')) {
       assert.match(selecteur.trim(), /^:root\b/, `sélecteur « ${selecteur} »`);
     }
     for (const [nom] of r.declarations) {
@@ -238,6 +255,19 @@ test('astryx.css ne pose que des custom properties, et seulement sur :root', () 
     /@(?:theme|apply|tailwind|layer|import)\b/,
     'la feuille doit rester importable sans Tailwind, et hors couche'
   );
+});
+
+test('chaque règle garde la spécificité de :root, pour qu’une surcharge de l’app gagne', () => {
+  // `:root[data-theme='dark']` (0,2,0) battait le `[data-theme='dark']` que
+  // mister-uwh-tactic écrit APRÈS l'import : ses ombres sombres perdaient.
+  // `:where()` ne compte pas ; tout bloc reste à (0,1,0), et l'ordre décide.
+  for (const r of REGLES) {
+    assert.match(
+      r.selecteur,
+      /^:root(?::where\(.*\))?$/,
+      `« ${r.selecteur} » dépasse la spécificité de :root`
+    );
+  }
 });
 
 test('aucun nom de la grammaire n’est lu ni déclaré par les autres feuilles du socle', () => {
@@ -324,6 +354,36 @@ test('les --dwc-* lus sont des rôles que ThemeProvider sait peindre', () => {
   assert.deepEqual(inconnus, [], `rôles inconnus : ${inconnus.join(', ')}`);
 });
 
+test('dix rôles requis, trois avec un repli tiré du contrat — comme le dit l’en-tête', () => {
+  // L'en-tête et docs/INTERFACE.md listent ce qu'une app sans `tokens.css`
+  // doit peindre. Un alias ajouté sans repli allonge cette liste : le test
+  // oblige à la réécrire au même endroit.
+  const valeurs = RACINE.declarations.map(([, valeur]) => valeur).join(' ');
+  const requis = new Set(
+    [...valeurs.matchAll(/var\((--dwc-[a-z0-9-]+)\)/g)].map(m => m[1])
+  );
+  const avecRepli = new Set(
+    [...valeurs.matchAll(/var\((--dwc-[a-z0-9-]+),/g)].map(m => m[1])
+  );
+  assert.deepEqual([...avecRepli].sort(), [
+    '--dwc-bg',
+    '--dwc-border-strong',
+    '--dwc-primary-soft',
+  ]);
+  assert.deepEqual([...requis].filter(nom => !avecRepli.has(nom)).sort(), [
+    '--dwc-border',
+    '--dwc-danger',
+    '--dwc-primary',
+    '--dwc-primary-contrast',
+    '--dwc-success',
+    '--dwc-surface',
+    '--dwc-surface-2',
+    '--dwc-text',
+    '--dwc-text-soft',
+    '--dwc-warning',
+  ]);
+});
+
 test('aucune couleur écrite en dur : seule une ombre porte du noir translucide', () => {
   const NOIR = String.raw`rgb\(0 0 0 / 0\.\d+\)`;
   const COUCHE = String.raw`0 \d+px \d+px ${NOIR}`;
@@ -375,10 +435,13 @@ test('écart 1 : la grande taille de contrôle tient la cible tactile de 44 px',
 
 test('écart 2 : le contour d’un contrôle est --dwc-border-strong, à 3:1', () => {
   // `tokens.test.mjs` garantit 3:1 à `--dwc-border-strong`, pas au filet
-  // discret ; le #CCD3DB d'Astryx tient 1,5:1 sur blanc.
+  // discret ; le #CCD3DB d'Astryx tient 1,5:1 sur blanc. Le repli est celui
+  // de `components.css` : sans lui, une app qui ne peint pas ce rôle (24
+  // palettes sur 26 de `themes.js` n'ont pas `borderStrong`) perdait tout
+  // contour — `border: 1px solid var(…)` invalide rend `border-style: none`.
   assert.equal(
     VALEURS.get('--color-border-emphasized'),
-    'var(--dwc-border-strong)'
+    'var(--dwc-border-strong, var(--dwc-border))'
   );
 });
 
