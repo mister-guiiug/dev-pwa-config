@@ -363,6 +363,17 @@ export const APP_SEO = Object.freeze(
           'Décisions partagées sans quitter le carnet',
         ],
       },
+      'miss-bonus-quest': {
+        languages: ['fr', 'en'],
+        features: [
+          'Déclarations d’actes perso et collectifs par les enfants',
+          'Validation parent avec points, minutes et streaks',
+          'Solde de temps d’écran gagné, crédit et consommation',
+          'Codes d’invitation enfant et co-parent',
+          'Sync multi-appareils optionnelle via Supabase',
+          'Fonctionne hors ligne en mode local, installable en PWA',
+        ],
+      },
     }).map(([id, s]) => [id, gele(s)])
   )
 );

@@ -1233,6 +1233,50 @@ export const FAMILY_THEMES = [
       danger: '#f2b8b5',
     },
   },
+  {
+    id: 'miss-bonus-quest',
+    name: 'Miss Bonus Quest',
+    tagline:
+      'Teal bonus et minutes d’écran : actes validés, streaks, solde gagné.',
+    schemes: ['light', 'dark'],
+    attribute: 'data-theme',
+    fontDisplay: null,
+    // Relevée dans son `src/index.css` le 22/11/2026. Accent = primaire :
+    // une seule teinte de marque. `info` n’est pas peint — repli des jetons.
+    radius: '0.875rem',
+    light: {
+      bg: '#f3faf8',
+      surface: '#ffffff',
+      surface2: '#e4f1ed',
+      text: '#10221e',
+      textSoft: '#4d635c',
+      border: '#c5d9d3',
+      primary: '#0d7377',
+      primaryContrast: '#ffffff',
+      primarySoft: '#d7efec',
+      accent: '#0d7377',
+      info: '#1a5fb4',
+      success: '#1b6b3a',
+      warning: '#8a5a00',
+      danger: '#b3261e',
+    },
+    dark: {
+      bg: '#0b1413',
+      surface: '#13201e',
+      surface2: '#1a2a27',
+      text: '#e6f3ef',
+      textSoft: '#9bb5ae',
+      border: '#2a3a36',
+      primary: '#5ecfc6',
+      primaryContrast: '#0b1413',
+      primarySoft: '#1a3331',
+      accent: '#5ecfc6',
+      info: '#86b6f0',
+      success: '#7fd6a0',
+      warning: '#e8c07d',
+      danger: '#f2b8b5',
+    },
+  },
 ];
 
 /** Thème d'une app par son identifiant de dépôt. */
