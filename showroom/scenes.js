@@ -27,8 +27,8 @@ import {
   setInspect,
   setSectionFocus,
   syncSchemeInputs,
-} from './habillage.js?v=5ef14c3dbd';
-import { renderGenerated } from './rendu.js?v=c06986c0fb';
+} from './habillage.js?v=6266da2297';
+import { renderGenerated } from './rendu.js?v=af061ef7a4';
 
 etat.activeSceneId = '';
 

@@ -834,7 +834,8 @@ export const FAMILY_THEMES = [
   {
     id: 'mister-no-noise',
     name: 'Sans bruit',
-    tagline: 'Violet Firefox et cartes lavande — extension, clair et sombre système.',
+    tagline:
+      'Violet Firefox et cartes lavande — extension, clair et sombre système.',
     // Relevé dans `src/popup/popup.css` : `--primary` #7c3aed / #9a6bff,
     // `--card` #f6f6fb / #26252e, `--ok` #0a7d32, `--err` #c02626.
     schemes: ['light', 'dark'],

@@ -13,7 +13,7 @@ import { t } from './langue.js?v=d92afbcf3f';
 import { ROLES } from './communs.js?v=0f95ffd5f1';
 import { focusDestination } from './navigation.js?v=1ee0f765a8';
 import { catalogueItems } from './fiches.js?v=7a128b2142';
-import { APPS, renderAppGrid, renderViewChip } from './vitrine.js?v=661d9e4132';
+import { APPS, renderAppGrid, renderViewChip } from './vitrine.js?v=7e802c2c7b';
 
 /* Recherche unifiée. Ctrl+K (⌘K) et « / » y amènent le curseur.
    Sections, composants, apps — et filtre de la vitrine Apps. */

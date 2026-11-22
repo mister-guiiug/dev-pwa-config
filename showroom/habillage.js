@@ -34,7 +34,7 @@ import {
   readGenericPalettes,
 } from './palettes.js?v=039110034f';
 import { labelTableCells } from './tableaux.js?v=ab72120a8e';
-import { APPS, syncAppGrid } from './vitrine.js?v=661d9e4132';
+import { APPS, syncAppGrid } from './vitrine.js?v=7e802c2c7b';
 import {
   renderCompare,
   renderPairCompare,

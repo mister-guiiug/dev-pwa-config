@@ -206,10 +206,10 @@ test('chaque app a un domaine ; la plateforme vaut `web` par défaut', () => {
     ['mister-quota']
   );
   const extensions = FAMILY_APPS.filter(a => a.platform === 'extension');
-  assert.deepEqual(
-    extensions.map(a => a.id).sort(),
-    ['mister-no-noise', 'mister-no-prices']
-  );
+  assert.deepEqual(extensions.map(a => a.id).sort(), [
+    'mister-no-noise',
+    'mister-no-prices',
+  ]);
 });
 
 test('la persistance non relevée reste vide plutôt qu’inventée', () => {

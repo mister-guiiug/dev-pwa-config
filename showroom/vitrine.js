@@ -114,7 +114,11 @@ var CATEGORY_FR = {
   outils: 'Outils',
   dev: 'Développement',
 };
-var PLATFORM_FR = { web: 'Web', desktop: 'Desktop', extension: 'Extension Firefox' };
+var PLATFORM_FR = {
+  web: 'Web',
+  desktop: 'Desktop',
+  extension: 'Extension Firefox',
+};
 var SORT_FR = {
   curated: 'Ordre du catalogue',
   maturity: 'Maturité',
