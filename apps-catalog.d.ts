@@ -140,6 +140,9 @@ export declare function repoUrl(id: string): string;
 /** URL GitHub Pages d'une app à partir de son id (base path inclus). */
 export declare function pagesUrl(id: string): string;
 
+/** Fiche Modules Firefox à partir de l'id AMO (`…@mister-guiiug`). */
+export declare function amoUrl(addonId: string): string;
+
 /** Port réservé au squelette `pwa-starter-kit`, absent du catalogue : 5240. */
 export declare const STARTER_KIT_DEV_PORT: number;
 

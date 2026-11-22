@@ -9,6 +9,7 @@ import {
   otherApps,
   repoUrl,
   pagesUrl,
+  amoUrl,
   SPONSOR_URL,
   GITHUB_OWNER,
   CATEGORIES,
@@ -131,6 +132,10 @@ test('helpers d’URL et constantes famille', () => {
   assert.equal(
     pagesUrl('miss-dice'),
     'https://mister-guiiug.github.io/miss-dice/'
+  );
+  assert.equal(
+    amoUrl('mister-no-noise@mister-guiiug'),
+    'https://addons.mozilla.org/firefox/addon/mister-no-noise@mister-guiiug/'
   );
 });
 

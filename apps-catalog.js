@@ -1062,6 +1062,17 @@ export function pagesUrl(id) {
   return `${FAMILY_ORIGIN}/${id}/`;
 }
 
+/**
+ * Fiche Modules Firefox d'une extension, à partir de son id AMO
+ * (`mister-no-noise@mister-guiiug`, …). Via `URL` plutôt qu'une chaîne
+ * littérale : CodeQL `js/incomplete-hostname-regexp` prenait sinon
+ * `addons.mozilla.org/…` pour un motif d'hôte à points non échappés.
+ */
+export function amoUrl(addonId) {
+  return new URL(`/firefox/addon/${addonId}/`, 'https://addons.mozilla.org')
+    .href;
+}
+
 // Fabrique une entrée de catalogue. `appUrl` par défaut = GitHub Pages.
 // `iconUrl` par défaut = `${appUrl}favicon.svg` (présent à la racine pour la
 // plupart des apps de la famille, SVG net à toute taille). Surcharges :
@@ -1451,8 +1462,7 @@ export const FAMILY_APPS = [
     {
       descriptionEn:
         'Firefox extension that removes recurring noise from browsing history, entirely local.',
-      appUrl:
-        'https://addons.mozilla.org/firefox/addon/mister-no-noise@mister-guiiug/',
+      appUrl: amoUrl('mister-no-noise@mister-guiiug'),
       iconUrl:
         'https://raw.githubusercontent.com/mister-guiiug/mister-no-noise/main/icons/icon.svg',
       category: 'outils',
@@ -1470,8 +1480,7 @@ export const FAMILY_APPS = [
     {
       descriptionEn:
         'Firefox extension that hides prices on stores and classifieds, so gift ideas can be browsed without seeing costs.',
-      appUrl:
-        'https://addons.mozilla.org/firefox/addon/mister-no-price@mister-guiiug/',
+      appUrl: amoUrl('mister-no-price@mister-guiiug'),
       iconUrl:
         'https://raw.githubusercontent.com/mister-guiiug/mister-no-prices/main/extension/icons/icone.svg',
       category: 'outils',
