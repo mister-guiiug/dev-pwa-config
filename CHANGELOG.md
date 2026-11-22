@@ -1,5 +1,35 @@
 # Changelog
 
+## 6.39.0
+
+### Minor Changes
+
+- 5c8ab70: `apps-catalog` : **Sans prix** (`mister-no-prices`) et **Sans bruit** (`mister-no-noise`) rejoignent `FAMILY_APPS`. Nouvelle valeur de `platform` : `extension` (avec `web` et `desktop`). Liens vers leurs fiches Modules Firefox, icônes du dépôt, catégorie `outils`, backend `local`, maturité `stable`. Palettes relevées dans leurs CSS, données SEO, prose Stack à 11 apps local-first, miroirs du showroom.
+  
+  Aucune rupture pour les apps consommatrices : `platform === 'web'` reste le filtre des PWA ; les extensions apparaissent dans la grille « Nos autres applications » à la prochaine publication.
+- a798f16: `vite-pwa` : `isOnDemandSocleModule(id)` et `ON_DEMAND_SOCLE_MODULES`, les modules du socle chargés à la demande, qu'un morceau nommé ne doit pas avaler. À la sortie de 6.38.0, `analytics-erreurs.js` (1,8 kB gzip), importé par `import()` seulement, est tombé dans le `vendor` préchargé des quinze apps dont le `manualChunks` y range tout `node_modules` : chaque visiteur le téléchargeait au premier affichage, option activée ou non, et trois montées ont dépassé leur budget le même soir (mister-cim10, miss-uwh, mister-footcoach, 21/11/2026). Les trois s'en sont sorties par la même ligne, écrite chacune de son côté ; la liste vit désormais dans le socle, et le prochain module chargé à la demande y entre sans que les apps aient à changer.
+  
+  `analytics` : le nettoyage des URL (`analytics-url.js`) est importé à l'accord, avec posthog-js, et plus statiquement : il ne sert que dans le `before_send` passé à `init`. Sans lui, rien n'est initialisé — l'URL d'entrée de session ne part jamais sans nettoyage. Gain mesuré sur mister-cim10 avec la ligne ci-dessous : 0,5 kB gzip de moins au `vendor` préchargé, en plus des 1,8 kB d'`analytics-erreurs.js`.
+  
+  `pwa-doctor` : nouvelle dette `module-a-la-demande-precharge`, un module de `ON_DEMAND_SOCLE_MODULES` qu'un regroupement a rangé dans un morceau du démarrage (fermeture des imports statiques depuis la page). Lue dans les cartes de source : sans elles, le contrôle se tait.
+  
+  Migration : une ligne, en tête du `manualChunks` des apps qui ont un fourre-tout (`return 'vendor'`), à la place de l'exclusion d'`analytics-erreurs` écrite à la main :
+  
+  ```ts
+  import { isOnDemandSocleModule } from '@mister-guiiug/dev-pwa-config/vite-pwa';
+  
+  manualChunks(id) {
+    if (isOnDemandSocleModule(id)) return;
+    // …
+  }
+  ```
+  
+  Sans elle, rien ne casse : `pwa-doctor` signale la dette, et le budget du préchargé la paie. Les apps découpées par `codeSplitting.groups` sans fourre-tout ne sont pas concernées.
+
+### Patch Changes
+
+- 22747fa: `supabase-migrate` et `pwa-supabase-migrate` sous la CLI Supabase 3 : `db push` visait la base **locale**, la cible par défaut de la 3, et hors terminal la CLI refusait tout changement hébergé sans `--yes`. Le 21/11/2026, avec la 3.2.0 devenue le défaut en 6.38.0, miss-carbook a cherché `127.0.0.1:54322` (rien d'appliqué, déploiement sauté) et le déploiement des Edge Functions de mister-doc s'est arrêté sur « Confirmation required ». L'action lit le majeur de la CLI : en 3, `supabase db push --remote --password … --yes` ; en 2 (`cli-version: 2.x`), la commande d'avant. `supabase functions deploy` passe `--yes`, que la 2 accepte aussi. Rien à changer dans les apps.
+
 ## 6.38.0
 
 ### Minor Changes
