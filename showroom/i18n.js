@@ -217,6 +217,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.apps.all': 'All',
     'ui.apps.open': 'Open the app',
     'ui.apps.releases': 'Downloads',
+    'ui.apps.addons': 'Firefox Add-ons',
     'ui.apps.repo': 'Repository',
     'ui.apps.theme': 'Dress the page',
     'ui.apps.total': '{n} applications',
@@ -267,6 +268,7 @@ globalThis.SHOWROOM_I18N = {
     'ui.category.dev': 'Development',
     'ui.platform.web': 'Web',
     'ui.platform.desktop': 'Desktop',
+    'ui.platform.extension': 'Firefox extension',
 
     /* ── Catalogue ────────────────────────────────────────────────────── */
     'catalogue.h21': 'Catalogue',
@@ -560,7 +562,7 @@ globalThis.SHOWROOM_I18N = {
       'Realtime Database for low-latency live data (puzzle, qowa), Firestore for structured data (miss-ticket, qowa), Auth, Storage, Cloud Functions.',
     'stack.db.local.name': 'Local-first',
     'stack.db.local.apps':
-      '9 apps — badminton, contraction, devises, dice, genius, cim10, arcade, contrib, uwh-tactic',
+      '11 apps — badminton, contraction, devises, dice, genius, cim10, arcade, contrib, uwh-tactic, no-noise, no-prices',
     'stack.db.local.features':
       '<code>localStorage</code> / IndexedDB only. No account, no data leaving the phone — often the right call, and the best GDPR answer.',
     'stack.db.notes':

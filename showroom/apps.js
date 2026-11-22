@@ -23,7 +23,7 @@ globalThis.SHOWROOM_APPS = {
     'dev',
   ],
   backends: ['supabase', 'firebase', 'local', 'api'],
-  platforms: ['web', 'desktop'],
+  platforms: ['web', 'desktop', 'extension'],
   configSubpaths: [
     'analytics',
     'apps-catalog',
@@ -1070,6 +1070,44 @@ globalThis.SHOWROOM_APPS = {
       appUrl: 'https://mister-guiiug.github.io/mister-miss-koh/',
       iconUrl: 'https://mister-guiiug.github.io/mister-miss-koh/favicon.svg',
       devPort: 5236,
+    },
+    {
+      id: 'mister-no-noise',
+      name: 'Sans bruit',
+      description:
+        'Extension Firefox qui retire le bruit récurrent de l’historique de navigation, entièrement en local.',
+      descriptionEn:
+        'Firefox extension that removes recurring noise from browsing history, entirely local.',
+      maturity: 'stable',
+      category: 'outils',
+      backend: 'local',
+      platform: 'extension',
+      configs: [],
+      repoUrl: 'https://github.com/mister-guiiug/mister-no-noise',
+      appUrl:
+        'https://addons.mozilla.org/firefox/addon/mister-no-noise@mister-guiiug/',
+      iconUrl:
+        'https://raw.githubusercontent.com/mister-guiiug/mister-no-noise/main/icons/icon.svg',
+      devPort: 5223,
+    },
+    {
+      id: 'mister-no-prices',
+      name: 'Sans prix',
+      description:
+        'Extension Firefox qui masque les prix des boutiques et petites annonces, pour parcourir des idées de cadeaux sans voir les coûts.',
+      descriptionEn:
+        'Firefox extension that hides prices on stores and classifieds, so gift ideas can be browsed without seeing costs.',
+      maturity: 'stable',
+      category: 'outils',
+      backend: 'local',
+      platform: 'extension',
+      configs: [],
+      repoUrl: 'https://github.com/mister-guiiug/mister-no-prices',
+      appUrl:
+        'https://addons.mozilla.org/firefox/addon/mister-no-price@mister-guiiug/',
+      iconUrl:
+        'https://raw.githubusercontent.com/mister-guiiug/mister-no-prices/main/extension/icons/icone.svg',
+      devPort: 5224,
     },
     {
       id: 'mister-quota',

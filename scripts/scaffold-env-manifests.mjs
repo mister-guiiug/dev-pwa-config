@@ -358,7 +358,7 @@ function buildManifest(appId, appDir) {
 }
 
 const targets = [
-  ...FAMILY_APPS.filter(a => a.platform !== 'desktop').map(a => a.id),
+  ...FAMILY_APPS.filter(a => a.platform === 'web').map(a => a.id),
   'pwa-starter-kit',
 ];
 

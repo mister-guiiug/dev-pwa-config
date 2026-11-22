@@ -139,7 +139,12 @@ const BACKEND_FR = {
 export function consumersTable(apps = FAMILY_APPS) {
   const rows = apps.map(a => {
     const persistance = a.backend ? BACKEND_FR[a.backend] : '— (non relevé)';
-    const plateforme = a.platform === 'desktop' ? ' · desktop' : '';
+    const plateforme =
+      a.platform === 'desktop'
+        ? ' · desktop'
+        : a.platform === 'extension'
+          ? ' · extension'
+          : '';
     const configs = a.configs.length
       ? `${a.configs.map(c => `\`${c}\``).join(', ')} — **${a.configs.length}**`
       : '**aucun** — ce dépôt ne consomme pas le paquet';

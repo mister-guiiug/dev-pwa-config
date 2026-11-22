@@ -114,7 +114,7 @@ var CATEGORY_FR = {
   outils: 'Outils',
   dev: 'Développement',
 };
-var PLATFORM_FR = { web: 'Web', desktop: 'Desktop' };
+var PLATFORM_FR = { web: 'Web', desktop: 'Desktop', extension: 'Extension Firefox' };
 var SORT_FR = {
   curated: 'Ordre du catalogue',
   maturity: 'Maturité',
@@ -818,12 +818,13 @@ function appCard(item) {
   open.href = item.appUrl;
   open.target = '_blank';
   open.rel = 'noopener noreferrer';
-  // L'app desktop n'a pas de page publique : son « ouvrir » mène aux
-  // releases du dépôt, et le libellé le dit.
+  // Hors PWA : le libellé dit où mène le lien (releases, Modules Firefox).
   var openLabel =
     item.platform === 'desktop'
       ? t('ui.apps.releases', 'Téléchargements')
-      : t('ui.apps.open', 'Ouvrir l’app');
+      : item.platform === 'extension'
+        ? t('ui.apps.addons', 'Modules Firefox')
+        : t('ui.apps.open', 'Ouvrir l’app');
   open.textContent = openLabel;
   open.setAttribute(
     'aria-label',

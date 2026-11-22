@@ -169,6 +169,8 @@ const KNOWN_BELOW_AA = new Set([
   'miss-carbook/dark/textSoft-surface2',
   'mister-doc/light/textSoft-surface2',
   'mister-molkky/light/textSoft-surface2',
+  // Relevé : `--muted` #6b7280 sur `--card` #f6f6fb (popup.css).
+  'mister-no-noise/light/textSoft-surface2',
 ]);
 
 test('le texte tient AA partout, sauf la dette explicitement listée', () => {
