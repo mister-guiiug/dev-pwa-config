@@ -254,6 +254,13 @@ const CHECKS = {
     'Tests, lint et paquet',
     "Commits et fichiers sans signature d'assistant",
   ],
+  // Sœur de mister-no-prices (nettoyeur d'historique). Même forme : CI +
+  // garde des signatures. À appliquer seulement après que no-ai-attribution.yml
+  // a tourné sur main (sinon le ruleset gèle toutes les PR).
+  'mister-no-noise': [
+    'Tests, lint et paquet',
+    "Commits et fichiers sans signature d'assistant",
+  ],
 
   /**
    * LES TROIS DÉPÔTS SANS APPLICATION EXIGENT LA GARDE « SIGNATURES IA ».
