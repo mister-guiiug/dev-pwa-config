@@ -9,6 +9,7 @@ import {
   otherApps,
   repoUrl,
   pagesUrl,
+  amoUrl,
   SPONSOR_URL,
   GITHUB_OWNER,
   CATEGORIES,
@@ -132,6 +133,10 @@ test('helpers d’URL et constantes famille', () => {
     pagesUrl('miss-dice'),
     'https://mister-guiiug.github.io/miss-dice/'
   );
+  assert.equal(
+    amoUrl('mister-no-noise@mister-guiiug'),
+    'https://addons.mozilla.org/firefox/addon/mister-no-noise@mister-guiiug/'
+  );
 });
 
 const byId = id => FAMILY_APPS.find(a => a.id === id);
@@ -199,12 +204,17 @@ test('chaque app a un domaine ; la plateforme vaut `web` par défaut', () => {
     assert.ok(a.category, `${a.id}: domaine manquant`);
   }
   assert.equal(byId('miss-carbook').platform, 'web');
-  // Seule exception connue : l'app Electron, sans PWA hébergée.
+  // Hors PWA : l'app Electron et les deux extensions Firefox (AMO).
   const desktop = FAMILY_APPS.filter(a => a.platform === 'desktop');
   assert.deepEqual(
     desktop.map(a => a.id),
     ['mister-quota']
   );
+  const extensions = FAMILY_APPS.filter(a => a.platform === 'extension');
+  assert.deepEqual(extensions.map(a => a.id).sort(), [
+    'mister-no-noise',
+    'mister-no-prices',
+  ]);
 });
 
 test('la persistance non relevée reste vide plutôt qu’inventée', () => {
@@ -320,6 +330,7 @@ test('countBy regroupe les valeurs absentes sous la clé vide', () => {
   );
   assert.equal(parBackend[''], 1, 'la persistance non relevée est comptée');
   assert.equal(countBy('platform').desktop, 1);
+  assert.equal(countBy('platform').extension, 2);
 });
 
 /* ── Miroir du showroom ────────────────────────────────────────────────── */

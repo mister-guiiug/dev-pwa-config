@@ -34,7 +34,7 @@ import {
   readGenericPalettes,
 } from './palettes.js?v=039110034f';
 import { labelTableCells } from './tableaux.js?v=ab72120a8e';
-import { APPS, syncAppGrid } from './vitrine.js?v=54052755aa';
+import { APPS, syncAppGrid } from './vitrine.js?v=7e802c2c7b';
 import {
   renderCompare,
   renderPairCompare,
@@ -191,7 +191,9 @@ function paintOpenApp(theme) {
     openLabel =
       item.platform === 'desktop'
         ? t('ui.apps.releases', 'Téléchargements')
-        : t('ui.apps.open', 'Ouvrir l’app');
+        : item.platform === 'extension'
+          ? t('ui.apps.addons', 'Modules Firefox')
+          : t('ui.apps.open', 'Ouvrir l’app');
   }
   links.forEach(function (link) {
     if (!link) return;

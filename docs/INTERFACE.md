@@ -1179,7 +1179,7 @@ c'est la distinction qui rend le catalogue utilisable comme donnée :
 | `maturity` | éditorial, obligatoire  | `alpha \| beta \| stable`                              |
 | `category` | éditorial, obligatoire  | `sante \| sport \| jeux \| education \| outils \| dev` |
 | `backend`  | **relevé** dans le code | `supabase \| firebase \| local \| api`, ou absent      |
-| `platform` | fait                    | `web` (défaut) \| `desktop`                            |
+| `platform` | fait                    | `web` (défaut) \| `desktop` \| `extension`             |
 
 `backend` est **laissé absent** quand la persistance n'a pas été relevée (une
 seule app aujourd'hui, l'app Electron) : un filtre qui affiche « non relevé »

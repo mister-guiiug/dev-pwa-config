@@ -9,7 +9,7 @@ export type Category =
 export type Backend = 'supabase' | 'firebase' | 'local' | 'api';
 
 /** Plateforme de livraison. */
-export type Platform = 'web' | 'desktop';
+export type Platform = 'web' | 'desktop' | 'extension';
 
 /** Champs du catalogue sur lesquels on sait compter et filtrer. */
 export type FacetKey = 'maturity' | 'category' | 'backend' | 'platform';
@@ -54,9 +54,9 @@ export interface FamilyApp {
   configs: string[];
   /** URL du dépôt GitHub. */
   repoUrl: string;
-  /** URL publique de l'app (GitHub Pages, ou dépôt pour une app desktop). */
+  /** URL publique de l'app (Pages, dépôt, ou fiche AMO pour une extension). */
   appUrl: string;
-  /** Icône de l'app ; `null` si aucune (ex. app desktop). */
+  /** Icône de l'app ; `null` si aucune (ex. app desktop sans icône web). */
   iconUrl: string | null;
   /**
    * Port de développement, UNIQUE dans la famille (plage 5201–5299 ; 1420 pour
@@ -139,6 +139,9 @@ export declare function repoUrl(id: string): string;
 
 /** URL GitHub Pages d'une app à partir de son id (base path inclus). */
 export declare function pagesUrl(id: string): string;
+
+/** Fiche Modules Firefox à partir de l'id AMO (`…@mister-guiiug`). */
+export declare function amoUrl(addonId: string): string;
 
 /** Port réservé au squelette `pwa-starter-kit`, absent du catalogue : 5240. */
 export declare const STARTER_KIT_DEV_PORT: number;

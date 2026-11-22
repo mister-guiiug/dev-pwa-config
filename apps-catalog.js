@@ -11,7 +11,8 @@
 //   - `backend` est RELEVÉ dans le code des apps (section « Stack » du
 //     showroom). Il est absent quand il n'a pas été relevé — mieux vaut un
 //     filtre qui affiche « non relevé » qu'une donnée inventée ;
-//   - `platform` distingue les PWA hébergées de l'application desktop.
+//   - `platform` distingue les PWA hébergées, l'application desktop et les
+//     extensions Firefox.
 //
 // `category` et `backend` sont des identifiants ASCII stables : les libellés
 // affichés vivent côté présentation, ce qui les rend traduisibles. Le `name` et
@@ -130,7 +131,7 @@ export const CATEGORIES = [
 export const BACKENDS = ['supabase', 'firebase', 'local', 'api'];
 
 /** Plateformes de livraison. */
-export const PLATFORMS = ['web', 'desktop'];
+export const PLATFORMS = ['web', 'desktop', 'extension'];
 
 /**
  * Sous-chemins du paquet effectivement importés par chaque dépôt.
@@ -1061,6 +1062,17 @@ export function pagesUrl(id) {
   return `${FAMILY_ORIGIN}/${id}/`;
 }
 
+/**
+ * Fiche Modules Firefox d'une extension, à partir de son id AMO
+ * (`mister-no-noise@mister-guiiug`, …). Via `URL` plutôt qu'une chaîne
+ * littérale : CodeQL `js/incomplete-hostname-regexp` prenait sinon
+ * `addons.mozilla.org/…` pour un motif d'hôte à points non échappés.
+ */
+export function amoUrl(addonId) {
+  return new URL(`/firefox/addon/${addonId}/`, 'https://addons.mozilla.org')
+    .href;
+}
+
 // Fabrique une entrée de catalogue. `appUrl` par défaut = GitHub Pages.
 // `iconUrl` par défaut = `${appUrl}favicon.svg` (présent à la racine pour la
 // plupart des apps de la famille, SVG net à toute taille). Surcharges :
@@ -1100,6 +1112,8 @@ const DEV_PORTS = {
   'miss-arcade': 5220,
   'mister-contrib': 5221,
   'mister-uwh-tactic': 5222,
+  'mister-no-noise': 5223,
+  'mister-no-prices': 5224,
   'miss-holi-voyage': 5219,
   'miss-lookhouse': 5214,
   'mister-molkky': 5215,
@@ -1438,13 +1452,50 @@ export const FAMILY_APPS = [
     }
   ),
   app(
+    'mister-no-noise',
+    'Sans bruit',
+    'Extension Firefox qui retire le bruit récurrent de l’historique de navigation, entièrement en local.',
+    'stable',
+    // Extension Firefox (AMO) : pas de PWA. `appUrl` mène à la fiche Modules
+    // Firefox ; l’icône est celle du dépôt. `local` : règles et réglages dans
+    // `storage.local`, aucune requête réseau propre à l’extension.
+    {
+      descriptionEn:
+        'Firefox extension that removes recurring noise from browsing history, entirely local.',
+      appUrl: amoUrl('mister-no-noise@mister-guiiug'),
+      iconUrl:
+        'https://raw.githubusercontent.com/mister-guiiug/mister-no-noise/main/icons/icon.svg',
+      category: 'outils',
+      backend: 'local',
+      platform: 'extension',
+    }
+  ),
+  app(
+    'mister-no-prices',
+    'Sans prix',
+    'Extension Firefox qui masque les prix des boutiques et petites annonces, pour parcourir des idées de cadeaux sans voir les coûts.',
+    'stable',
+    // Extension Firefox (AMO) : pas de PWA. `appUrl` mène à la fiche Modules
+    // Firefox. `local` : réglages dans `storage.sync` / liste d’envies locale.
+    {
+      descriptionEn:
+        'Firefox extension that hides prices on stores and classifieds, so gift ideas can be browsed without seeing costs.',
+      appUrl: amoUrl('mister-no-price@mister-guiiug'),
+      iconUrl:
+        'https://raw.githubusercontent.com/mister-guiiug/mister-no-prices/main/extension/icons/icone.svg',
+      category: 'outils',
+      backend: 'local',
+      platform: 'extension',
+    }
+  ),
+  app(
     'mister-quota',
     'Mister Quota',
     'Suivi de consommation des services IA (application desktop).',
     'alpha',
     // App Electron : pas de PWA hébergée → on pointe vers le dépôt (releases),
     // et pas d'icône web. `backend` volontairement absent : la section
-    // « Stack » ne relève la persistance que des quinze apps web.
+    // « Stack » ne relève la persistance que des apps web.
     {
       descriptionEn: 'AI service usage tracker (desktop app).',
       appUrl: repoUrl('mister-quota'),

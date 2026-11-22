@@ -39,7 +39,7 @@ import {
   renderAppSort,
   renderAppViewToggle,
   renderMetricsDate,
-} from './vitrine.js?v=54052755aa';
+} from './vitrine.js?v=7e802c2c7b';
 import { renderPlayground } from './bac-a-sable.js?v=7c50e94346';
 import { renderForcedColors } from './contraste-force.js?v=3b736cf205';
 import { setupPairCompare } from './comparaison.js?v=2363526b8e';
@@ -55,7 +55,7 @@ import {
   renderRecent,
   renderThemeDependents,
   renderThemeGrid,
-} from './habillage.js?v=e4fa1699ed';
+} from './habillage.js?v=6266da2297';
 import { renderChecklist } from './checklist.js?v=b999ff683c';
 import { renderFamilyApps } from './famille.js?v=ee51f606b4';
 
