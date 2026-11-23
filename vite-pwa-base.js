@@ -43,7 +43,7 @@ import {
   SITE_ID,
 } from './apps-catalog.js';
 // Lu au build seulement : hors du catalogue, qui part dans le bundle.
-import { appSeo } from './apps-seo.js';
+import { appSeo, guidesDe } from './apps-seo.js';
 
 import { createHash } from 'node:crypto';
 import {
@@ -192,6 +192,21 @@ function langue2(tag) {
 function ficheDe(homeUrl) {
   const id = new URL(homeUrl).pathname.split('/').find(Boolean);
   return FAMILY_APPS.find(a => a.id === id && a.platform === 'web');
+}
+
+/**
+ * Les guides d'une app sœur, en liens, pour « Dans la même catégorie » : sous
+ * une page française seulement (titres en français). Voir `APP_GUIDES`.
+ *
+ * @param {{ id?: string, appUrl: string }} a
+ * @param {(s: string) => string} e
+ */
+function liensGuidesSoeur(a, e) {
+  const guides = a.id ? guidesDe(a.id) : [];
+  if (!guides.length) return '';
+  return ` Guides : ${guides
+    .map(g => `<a href="${e(`${a.appUrl}${g.chemin}`)}">${e(g.titre)}</a>`)
+    .join(', ')}.`;
 }
 
 /** Au plus quatre sœurs ; en dessous de deux, la liste est complétée. */
@@ -817,7 +832,7 @@ export function injectServedContent(html, opts = {}) {
         `<ul>${soeurs
           .map(
             a =>
-              `<li><a href="${e(a.appUrl)}">${e(a.name)}</a>${enFrancais && a.description ? ` — ${e(a.description)}` : ''}</li>`
+              `<li><a href="${e(a.appUrl)}">${e(a.name)}</a>${enFrancais && a.description ? ` — ${e(a.description)}` : ''}${enFrancais ? liensGuidesSoeur(a, e) : ''}</li>`
           )
           .join('')}</ul>`
       : '') +
@@ -1899,7 +1914,7 @@ ${article}
       <aside aria-labelledby="dwc-voisines">
         <h2 id="dwc-voisines">${e(voisines.memeCategorie ? t.memeCategorie : t.voisines)}</h2>
         <ul>
-          ${voisines.apps.map(a => `<li><a href="${e(a.appUrl)}">${e(a.name)}</a>${anglais ? '' : ` — ${e(a.description)}`}</li>`).join('\n          ')}
+          ${voisines.apps.map(a => `<li><a href="${e(a.appUrl)}">${e(a.name)}</a>${anglais ? '' : ` — ${e(a.description)}${liensGuidesSoeur(a, e)}`}</li>`).join('\n          ')}
         </ul>
       </aside>`
           : ''

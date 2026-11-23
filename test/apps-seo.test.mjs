@@ -11,7 +11,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FAMILY_APPS } from '../apps-catalog.js';
-import { APP_SEO, appSeo } from '../apps-seo.js';
+import { APP_GUIDES, APP_SEO, appSeo, guidesDe } from '../apps-seo.js';
 
 const RACINE = fileURLToPath(new URL('..', import.meta.url));
 
@@ -114,4 +114,21 @@ test('features : trois à six fonctions, courtes, sans point final ni doublon', 
       id
     );
   }
+});
+
+test('guides : apps du catalogue, au plus deux, chemins relatifs en .html, titres courts', () => {
+  const ids = FAMILY_APPS.map(a => a.id);
+  for (const [id, guides] of Object.entries(APP_GUIDES)) {
+    assert.ok(ids.includes(id), `${id} n’est pas une app du catalogue`);
+    assert.ok(guides.length >= 1 && guides.length <= 2, `${id} : 1 ou 2 guides`);
+    for (const g of guides) {
+      assert.match(g.chemin, /^[a-z0-9-]+\.html$/, `${id} : ${g.chemin}`);
+      assert.ok(g.titre.length >= 10 && g.titre.length <= 70, `${id} : titre « ${g.titre} »`);
+      assert.doesNotMatch(g.titre, /[<>"]|\.$/);
+    }
+    assert.equal(new Set(guides.map(g => g.chemin)).size, guides.length);
+  }
+  assert.deepEqual(guidesDe('inconnue'), []);
+  assert.deepEqual(guidesDe('toString'), []);
+  assert.ok(Object.isFrozen(APP_GUIDES));
 });
