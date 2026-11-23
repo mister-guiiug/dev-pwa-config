@@ -198,8 +198,9 @@ jobs:
 ```
 
 `supabase-keepalive.yml` — les slots `secrets:` nourris par les `vars` (aucun
-secret à poser), et **la table `keep_alive` appliquée au projet** : sans elle,
-le ping répond 404 en silence et le projet Free s'endort au bout de sept jours.
+secret à poser), et **la table `keep_alive` appliquée au projet**, en migration
+(le squelette l'a en `0006_keep_alive.sql`) : sans elle, le ping répond 404 en
+silence et le projet Free s'endort au bout de sept jours.
 
 `ci.yml` — des valeurs **factices** dans `build-env` quand le build exige des
 clés (Firebase, ou un module qui valide l'environnement au chargement). Jamais
