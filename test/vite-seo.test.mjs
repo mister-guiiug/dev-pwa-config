@@ -20,6 +20,7 @@ import {
   ogLocale,
   pwaSeoPlugin,
   relatedApps,
+  titreSurUneLigne,
   renderServedHome,
   routePageHtml,
   SCHEMA_APPLICATION_CATEGORIES,
@@ -944,4 +945,17 @@ test('withNoindex : la balise posée, les contraires retirés, une seule passe u
   assert.doesNotMatch(out, /index, follow|canonical/);
   assert.doesNotMatch(out, /\n\s*\n\s*\n/, 'aucune ligne vide laissée');
   assert.equal(withNoindex(out), out, 'idempotent');
+});
+
+test('titreSurUneLigne : le titre coupé par Prettier tient sur une ligne', () => {
+  const html =
+    '<head>\n    <title>\n      Miss Supaboss — piloter (pause, quotas,\n      démos)\n    </title>\n</head>';
+  assert.equal(
+    titreSurUneLigne(html),
+    '<head>\n    <title>Miss Supaboss — piloter (pause, quotas, démos)</title>\n</head>'
+  );
+  const net = '<title>Miss Dice &amp; co</title>';
+  assert.equal(titreSurUneLigne(net), net);
+  assert.equal(titreSurUneLigne('<p>sans titre</p>'), '<p>sans titre</p>');
+  assert.equal(titreSurUneLigne('<title>ouvert'), '<title>ouvert');
 });

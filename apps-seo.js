@@ -387,3 +387,240 @@ export const APP_SEO = Object.freeze(
 export function appSeo(id) {
   return Object.hasOwn(APP_SEO, id) ? APP_SEO[id] : undefined;
 }
+
+/**
+ * LES GUIDES DE CHAQUE APP — ce que « Dans la même catégorie » lie EN PLUS de
+ * l'accueil des apps sœurs, sur les pages de contenu françaises et dans le
+ * contenu servi des accueils.
+ *
+ * Relevé du 23/11/2026 : les pages de contenu ne liaient que l'ACCUEIL des
+ * apps sœurs, et 0 ou 1 guide d'une autre app (0,2 en moyenne). Or Google ne
+ * lit pas les plans de site du parc et découvre par les liens : la page qu'il
+ * relit le plus (les règles de Koh-Lanta) ne menait à aucun guide d'une autre
+ * app. Chemins relatifs à l'accueil de l'app, titres courts en français, au
+ * plus deux par app. À tenir à jour quand une app publie ou retire un guide :
+ * `test/apps-seo.test.mjs` vérifie la forme, la publication ne se vérifie
+ * qu'en ligne (le hub relit les plans de site de chaque app).
+ *
+ * Lu au BUILD seulement, comme le reste de ce module.
+ *
+ * @type {Readonly<Record<string, readonly { chemin: string, titre: string }[]>>}
+ */
+export const APP_GUIDES = Object.freeze({
+  'miss-arcade': [
+    {
+      chemin: 'installer-une-borne-de-jeu-sur-tablette.html',
+      titre: 'Installer une borne de jeu sur tablette',
+    },
+    {
+      chemin: 'organiser-un-jeu-concours-sur-un-stand.html',
+      titre: 'Organiser un jeu concours sur un stand',
+    },
+  ],
+  'miss-badminton': [
+    {
+      chemin: 'compter-les-points-au-badminton.html',
+      titre: 'Compter les points au badminton',
+    },
+    {
+      chemin: 'regles-du-service-au-badminton.html',
+      titre: 'Règles du service au badminton',
+    },
+  ],
+  'miss-bonus-quest': [
+    {
+      chemin: 'comment-ca-marche.html',
+      titre: 'Transformer les gestes du foyer en temps d’écran',
+    },
+  ],
+  'miss-carbook': [
+    {
+      chemin: 'comment-choisir-sa-voiture.html',
+      titre: 'Comment choisir sa voiture',
+    },
+    {
+      chemin: 'cout-total-de-possession-voiture.html',
+      titre: "Coût total d'une voiture (TCO)",
+    },
+  ],
+  'miss-contraction': [
+    {
+      chemin: 'chronometrer-ses-contractions.html',
+      titre: 'Chronométrer ses contractions',
+    },
+    {
+      chemin: 'quand-partir-a-la-maternite.html',
+      titre: 'Quand partir à la maternité',
+    },
+  ],
+  'miss-devises': [
+    {
+      chemin: 'taux-de-change-bce-marche-bureau-de-change.html',
+      titre: 'Taux de change de la BCE, de marché et du bureau de change',
+    },
+  ],
+  'miss-dice': [
+    { chemin: 'regles-du-421.html', titre: 'Règles du 421' },
+    { chemin: 'regles-du-yahtzee.html', titre: 'Règles du Yahtzee' },
+  ],
+  'miss-genius': [
+    {
+      chemin: 'calculer-sa-moyenne-au-bac.html',
+      titre: 'Calculer sa moyenne au bac',
+    },
+    {
+      chemin: 'calculer-sa-moyenne-avec-coefficients.html',
+      titre: 'Calculer sa moyenne avec coefficients',
+    },
+  ],
+  'miss-holi-voyage': [
+    {
+      chemin: 'base-fixe-ou-roadtrip-en-famille.html',
+      titre: 'Base fixe ou roadtrip en famille',
+    },
+    {
+      chemin: 'preparer-un-voyage-en-famille.html',
+      titre: 'Préparer un voyage en famille',
+    },
+  ],
+  'miss-lookhouse': [
+    {
+      chemin: 'suivre-les-annonces-immobilieres.html',
+      titre: 'Suivre les annonces immobilières',
+    },
+    {
+      chemin: 'verifier-une-annonce-immobiliere.html',
+      titre: 'Vérifier une annonce immobilière',
+    },
+  ],
+  'miss-supaboss': [
+    {
+      chemin: 'limites-plan-gratuit-supabase.html',
+      titre: 'Limites du plan gratuit Supabase',
+    },
+    {
+      chemin: 'projet-supabase-en-pause.html',
+      titre: 'Projet Supabase en pause',
+    },
+  ],
+  'miss-supatool': [
+    {
+      chemin: 'migrer-un-projet-supabase.html',
+      titre: 'Migrer un projet Supabase',
+    },
+    {
+      chemin: 'sauvegarder-restaurer-base-supabase.html',
+      titre: 'Sauvegarder et restaurer une base Supabase',
+    },
+  ],
+  'miss-ticket-pwa': [
+    {
+      chemin: 'telecommander-miss-ticket.html',
+      titre: 'Télécommander Miss Ticket depuis le téléphone',
+    },
+  ],
+  'miss-uwh': [
+    {
+      chemin: 'bilan-comptable-association-sportive.html',
+      titre: "Bilan comptable d'une association sportive",
+    },
+    {
+      chemin: 'cotisations-club-sportif.html',
+      titre: "Cotisations d'un club sportif",
+    },
+  ],
+  'mister-cim10': [
+    {
+      chemin: 'cim-10-et-cim-11-differences.html',
+      titre: 'CIM-10 et CIM-11 : les différences',
+    },
+    { chemin: 'trouver-un-code-cim-10.html', titre: 'Trouver un code CIM-10' },
+  ],
+  'mister-doc': [
+    {
+      chemin: 'planning-de-gardes-medecins.html',
+      titre: 'Planning de gardes des médecins',
+    },
+    {
+      chemin: 'repos-de-securite-apres-une-garde.html',
+      titre: 'Repos de sécurité après une garde',
+    },
+  ],
+  'mister-family-map': [
+    {
+      chemin: 'idees-de-sorties-en-famille.html',
+      titre: 'Idées de sorties en famille',
+    },
+    {
+      chemin: 'sorties-gratuites-en-famille.html',
+      titre: 'Sorties gratuites en famille',
+    },
+  ],
+  'mister-footcoach': [
+    {
+      chemin: 'composer-une-equipe-de-foot-a-8.html',
+      titre: 'Composer une équipe de foot à 8',
+    },
+    {
+      chemin: 'suivre-les-presences-entrainement-foot.html',
+      titre: "Suivre les présences à l'entraînement",
+    },
+  ],
+  'mister-miss-koh': [
+    { chemin: 'regles-de-koh-lanta.html', titre: 'Les règles de Koh-Lanta' },
+    {
+      chemin: 'suivre-koh-lanta-sans-spoiler.html',
+      titre: 'Suivre Koh-Lanta sans spoiler',
+    },
+  ],
+  'mister-molkky': [
+    { chemin: 'regles-du-molkky.html', titre: 'Règles du Mölkky' },
+    { chemin: 'strategie-au-molkky.html', titre: 'Stratégie au Mölkky' },
+  ],
+  'mister-puzzle': [
+    {
+      chemin: 'faire-un-puzzle-de-1000-pieces.html',
+      titre: 'Faire un puzzle de 1000 pièces',
+    },
+    {
+      chemin: 'trier-les-pieces-d-un-puzzle.html',
+      titre: "Trier les pièces d'un puzzle",
+    },
+  ],
+  'mister-qowa': [
+    {
+      chemin: 'creer-un-quiz-interactif.html',
+      titre: 'Créer un quiz interactif',
+    },
+    {
+      chemin: 'idees-de-questions-pour-un-quiz.html',
+      titre: 'Idées de questions pour un quiz',
+    },
+  ],
+  'mister-settle': [
+    {
+      chemin: 'partager-les-depenses-entre-amis.html',
+      titre: 'Partager les dépenses entre amis',
+    },
+    {
+      chemin: 'partager-les-frais-colocation.html',
+      titre: "Partager les frais d'une colocation",
+    },
+  ],
+  'mister-uwh-tactic': [
+    {
+      chemin: 'expliquer-une-phase-de-jeu-au-hockey-subaquatique.html',
+      titre: 'Expliquer une phase de jeu au hockey subaquatique',
+    },
+  ],
+});
+
+/**
+ * Les guides d'une app du catalogue (au plus deux), ou une liste vide.
+ *
+ * @param {string} id
+ * @returns {readonly { chemin: string, titre: string }[]}
+ */
+export function guidesDe(id) {
+  return Object.hasOwn(APP_GUIDES, id) ? APP_GUIDES[id] : [];
+}

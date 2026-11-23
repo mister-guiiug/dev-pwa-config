@@ -10,6 +10,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { guidesDe } from '../apps-seo.js';
 import { join } from 'node:path';
 
 import {
@@ -339,6 +340,20 @@ test('la page est autonome : SEO complet, CSP, aucune exécution', () => {
       `${a.id} absent`
     );
   assert.ok(html.indexOf('dwc-voisines') < html.indexOf('<footer>'));
+  // Et les guides de chaque sœur qui en publie : Google découvre par les liens.
+  const sœurAvecGuide = relatedApps('mister-molkky').apps.find(
+    a => guidesDe(a.id).length
+  );
+  assert.ok(sœurAvecGuide, 'aucune sœur de mister-molkky ne publie de guide');
+  for (const g of guidesDe(sœurAvecGuide.id))
+    assert.ok(
+      html.includes(`<a href="${sœurAvecGuide.appUrl}${g.chemin}">`),
+      `${g.chemin} absent`
+    );
+  assert.match(
+    html,
+    / Guides : <a href="https:\/\/mister-guiiug\.github\.io\//
+  );
 });
 
 test('answer : « En bref. » sous le titre, et abstract ; updated : « Mis à jour le »', () => {
@@ -476,6 +491,8 @@ test('traduction : hreflang RÉCIPROQUES, x-default vers la française, lien vis
     assert.match(htmlEn, /<nav aria-label="Breadcrumb">/);
     assert.match(htmlEn, /<h2 id="dwc-voisines">In the same category<\/h2>/);
     assert.doesNotMatch(htmlEn, /Dans la même catégorie| — Suivi/);
+    // Les titres des guides sont en français : rien sous une page anglaise.
+    assert.doesNotMatch(htmlEn, / Guides : /);
     assert.match(
       htmlEn,
       /<p class="langue" lang="fr"><a href="[^"]*regles-du-molkky\.html" hreflang="fr">Lire en français<\/a><\/p>/

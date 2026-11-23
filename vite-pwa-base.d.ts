@@ -257,6 +257,9 @@ export const SERVED_HOME_FILE: string;
  */
 export function renderServedHome(texte: string, fichier?: string): string;
 
+/** Le `<title>` sur une seule ligne, espaces réduits (Prettier coupe les titres longs). */
+export function titreSurUneLigne(html: string): string;
+
 /**
  * Les apps sœurs : même catégorie, web seulement, quatre au plus ; complétées
  * par rotation dans le catalogue sous deux (`memeCategorie` vaut alors
