@@ -1219,6 +1219,21 @@ export function freeDevPort(pris = []) {
   return null;
 }
 
+/**
+ * L'ICÔNE D'UNE EXTENSION FIREFOX, SERVIE PAR LE HUB. Une extension n'a pas de
+ * site Pages ; son icône était désignée sur raw.githubusercontent.com, que la
+ * CSP des apps n'admet pas en `img-src` (seule l'origine de la famille y
+ * entre, `vite-csp.js`). Relevé le 23/11/2026 : « Nos autres applications »
+ * montrait les deux icônes cassées dans toutes les apps, et la vérification en
+ * ligne de mister-puzzle échouait. Le hub (`mister-guiiug.github.io`) en sert
+ * une copie sous `/icones/<id>.svg`.
+ *
+ * @param {string} id
+ */
+function iconeExtension(id) {
+  return `${FAMILY_ORIGIN}/icones/${id}.svg`;
+}
+
 function app(id, name, description, maturity, overrides = {}) {
   const appUrl = overrides.appUrl ?? pagesUrl(id);
   let iconUrl;
@@ -1518,14 +1533,14 @@ export const FAMILY_APPS = [
     'Extension Firefox qui retire le bruit récurrent de l’historique de navigation, entièrement en local.',
     'stable',
     // Extension Firefox (AMO) : pas de PWA. `appUrl` mène à la fiche Modules
-    // Firefox ; l’icône est celle du dépôt. `local` : règles et réglages dans
-    // `storage.local`, aucune requête réseau propre à l’extension.
+    // Firefox ; l’icône est servie par le hub (voir `ICONE_EXTENSION`).
+    // `local` : règles et réglages dans `storage.local`, aucune requête
+    // réseau propre à l’extension.
     {
       descriptionEn:
         'Firefox extension that removes recurring noise from browsing history, entirely local.',
       appUrl: amoUrl('mister-no-noise@mister-guiiug'),
-      iconUrl:
-        'https://raw.githubusercontent.com/mister-guiiug/mister-no-noise/main/icons/icon.svg',
+      iconUrl: iconeExtension('mister-no-noise'),
       category: 'outils',
       backend: 'local',
       platform: 'extension',
@@ -1542,8 +1557,7 @@ export const FAMILY_APPS = [
       descriptionEn:
         'Firefox extension that hides prices on stores and classifieds, so gift ideas can be browsed without seeing costs.',
       appUrl: amoUrl('mister-no-price@mister-guiiug'),
-      iconUrl:
-        'https://raw.githubusercontent.com/mister-guiiug/mister-no-prices/main/extension/icons/icone.svg',
+      iconUrl: iconeExtension('mister-no-prices'),
       category: 'outils',
       backend: 'local',
       platform: 'extension',

@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   FAMILY_APPS,
+  FAMILY_ORIGIN,
   otherApps,
   repoUrl,
   pagesUrl,
@@ -530,4 +531,24 @@ test('PUBLISHER : UN nœud Organization, gelé, que le hub déclare sous #org', 
   assert.equal(SITE_ID, `${FAMILY_ORIGIN}/#site`);
   // La clé PUBLIQUE que le hub sert à la racine de l'origine.
   assert.match(INDEXNOW_KEY, /^[0-9a-f]{32}$/);
+});
+
+// LA CSP DES APPS N'ADMET EN `img-src` QUE L'ORIGINE DE LA FAMILLE
+// (`vite-csp.js`). Une icône désignée ailleurs s'affiche cassée dans
+// « Nos autres applications » de toutes les apps : relevé le 23/11/2026 avec
+// les deux extensions Firefox, dont les icônes venaient de
+// raw.githubusercontent.com (et la vérification en ligne de mister-puzzle a
+// échoué). Ce test tient la règle pour toute entrée à venir.
+test('toute icône est servie par l’origine de la famille, que la CSP des apps admet', () => {
+  for (const a of FAMILY_APPS) {
+    if (a.iconUrl === null) continue;
+    assert.ok(
+      a.iconUrl.startsWith(`${FAMILY_ORIGIN}/`),
+      `${a.id} : ${a.iconUrl} hors de ${FAMILY_ORIGIN}`
+    );
+  }
+  assert.equal(
+    byId('mister-no-noise').iconUrl,
+    `${FAMILY_ORIGIN}/icones/mister-no-noise.svg`
+  );
 });

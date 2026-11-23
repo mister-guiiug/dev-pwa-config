@@ -1090,8 +1090,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-no-noise',
       appUrl:
         'https://addons.mozilla.org/firefox/addon/mister-no-noise@mister-guiiug/',
-      iconUrl:
-        'https://raw.githubusercontent.com/mister-guiiug/mister-no-noise/main/icons/icon.svg',
+      iconUrl: 'https://mister-guiiug.github.io/icones/mister-no-noise.svg',
       devPort: 5223,
     },
     {
@@ -1109,8 +1108,7 @@ globalThis.SHOWROOM_APPS = {
       repoUrl: 'https://github.com/mister-guiiug/mister-no-prices',
       appUrl:
         'https://addons.mozilla.org/firefox/addon/mister-no-price@mister-guiiug/',
-      iconUrl:
-        'https://raw.githubusercontent.com/mister-guiiug/mister-no-prices/main/extension/icons/icone.svg',
+      iconUrl: 'https://mister-guiiug.github.io/icones/mister-no-prices.svg',
       devPort: 5224,
     },
     {
