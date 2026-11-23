@@ -948,7 +948,8 @@ test('withNoindex : la balise posée, les contraires retirés, une seule passe u
 });
 
 test('titreSurUneLigne : le titre coupé par Prettier tient sur une ligne', () => {
-  const html = '<head>\n    <title>\n      Miss Supaboss — piloter (pause, quotas,\n      démos)\n    </title>\n</head>';
+  const html =
+    '<head>\n    <title>\n      Miss Supaboss — piloter (pause, quotas,\n      démos)\n    </title>\n</head>';
   assert.equal(
     titreSurUneLigne(html),
     '<head>\n    <title>Miss Supaboss — piloter (pause, quotas, démos)</title>\n</head>'

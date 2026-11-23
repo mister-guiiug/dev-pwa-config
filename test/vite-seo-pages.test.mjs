@@ -341,11 +341,19 @@ test('la page est autonome : SEO complet, CSP, aucune exécution', () => {
     );
   assert.ok(html.indexOf('dwc-voisines') < html.indexOf('<footer>'));
   // Et les guides de chaque sœur qui en publie : Google découvre par les liens.
-  const sœurAvecGuide = relatedApps('mister-molkky').apps.find(a => guidesDe(a.id).length);
+  const sœurAvecGuide = relatedApps('mister-molkky').apps.find(
+    a => guidesDe(a.id).length
+  );
   assert.ok(sœurAvecGuide, 'aucune sœur de mister-molkky ne publie de guide');
   for (const g of guidesDe(sœurAvecGuide.id))
-    assert.ok(html.includes(`<a href="${sœurAvecGuide.appUrl}${g.chemin}">`), `${g.chemin} absent`);
-  assert.match(html, / Guides : <a href="https:\/\/mister-guiiug\.github\.io\//);
+    assert.ok(
+      html.includes(`<a href="${sœurAvecGuide.appUrl}${g.chemin}">`),
+      `${g.chemin} absent`
+    );
+  assert.match(
+    html,
+    / Guides : <a href="https:\/\/mister-guiiug\.github\.io\//
+  );
 });
 
 test('answer : « En bref. » sous le titre, et abstract ; updated : « Mis à jour le »', () => {
