@@ -1284,8 +1284,12 @@ compteur d'inactivité réinitialisé.
 
 Mise en place (**un caller par projet Supabase**) :
 
-1. Appliquer [`templates/supabase/keep-alive.sql`](./templates/supabase/keep-alive.sql)
-   au projet (SQL editor ou migration) — crée `public.keep_alive` + policy `anon`.
+1. Poser [`templates/supabase/keep-alive.sql`](./templates/supabase/keep-alive.sql)
+   **en migration** (`supabase/migrations/NNNN_keep_alive.sql`) — crée
+   `public.keep_alive`, sa policy `anon` et le seul privilège `select`. Pas à la
+   main dans l'éditeur SQL : un script « à appliquer une fois » s'oublie, et
+   miss-bonus-quest l'a oublié (404 au premier ping, 23/11/2026). Une
+   application née du squelette l'a déjà, en `0006_keep_alive.sql`.
 2. Copier
    [`templates/github-workflows/supabase-keepalive.yml`](./templates/github-workflows/supabase-keepalive.yml)
    dans `<projet>/.github/workflows/` (décaler le `cron` entre dépôts).
@@ -1298,7 +1302,8 @@ Mise en place (**un caller par projet Supabase**) :
    `vite-en-secret`.
 
 **L'étape 1 conditionne les deux autres, et c'est le piège.** Un caller posé
-sans la table répond `HTTP 404` : le ping échoue, le projet continue de
+sans la table répond `HTTP 404` (sans le `grant`, sur un projet né après le
+30/10/2026 : `HTTP 401`) : le ping échoue, le projet continue de
 s'endormir, et rien ne distingue ce cas d'une panne réseau. Le 02/09/2026, deux
 dépôts avaient le caller et les secrets sans la table — le garde-fou ne gardait
 rien. **Vérifier après la mise en place**, sans attendre le cron :

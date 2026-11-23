@@ -2,7 +2,7 @@
 # Copier dans <projet>/.github/workflows/supabase-keepalive.yml (UN par projet
 # Supabase ; décaler le `cron` entre dépôts). Requiert les secrets
 # VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY et la table keep_alive
-# (cf. templates/supabase/keep-alive.sql).
+# (cf. templates/supabase/keep-alive.sql, à poser EN MIGRATION).
 name: Supabase keep-alive
 
 on:

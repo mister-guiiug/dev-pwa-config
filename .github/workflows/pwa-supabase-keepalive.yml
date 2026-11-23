@@ -18,7 +18,8 @@
 #       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 #
 # Prérequis : secrets VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY dans le dépôt,
-# et la table `keep_alive` appliquée au projet (cf. templates/supabase/keep-alive.sql).
+# et la table `keep_alive` appliquée au projet, en migration (cf.
+# templates/supabase/keep-alive.sql ; le squelette l'a en 0006_keep_alive.sql).
 #
 # LA SONDE ANONYME (07/11/2026, optionnelle). Le ping ne lit que `keep_alive`,
 # une table faite pour répondre. Pendant trois jours, le jeu public de
