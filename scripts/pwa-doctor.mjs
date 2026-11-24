@@ -68,6 +68,7 @@
  * ni ce que l'hébergeur sert vraiment (c'est `scripts/probe-sites.mjs`, sur
  * le site publié) : il lit le dépôt et son build en une seconde.
  */
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve, sep } from 'node:path';
 import { estPointDEntree } from './entree.mjs';
@@ -1289,6 +1290,115 @@ export function journal(pkg, options = {}) {
  * d'un bloc de six cents lignes, et c'est la seule raison de ce découpage.
  */
 
+/**
+ * LES FICHIERS QUE L'APP A REÇUS DU SQUELETTE ET N'A PAS ENCORE REMPLACÉS.
+ *
+ * Le générateur recopie l'arbre du squelette, visuels compris : favicon,
+ * icônes, captures du manifeste, image de partage. Ils sont à refaire par
+ * l'app, et rien ne le rappelait. Relevé du 24/11/2026 : miss-arcade,
+ * miss-bonus-quest et miss-holi-voyage servaient l'image de partage du
+ * squelette (« PWA Starter Kit » sur la carte du hub et dans tout aperçu de
+ * lien), miss-bonus-quest et mister-contrib ses captures — des semaines après
+ * leur naissance.
+ *
+ * LES EMPREINTES VIENNENT DE LA NAISSANCE, PAS D'ICI. Le générateur écrit dans
+ * `pwaDoctor.heritage` l'empreinte SHA-256 de chaque visuel recopié, celle du
+ * squelette dont l'app est née. Une liste tenue dans le socle vieillirait à
+ * chaque image refaite dans le squelette, et ne saurait rien des apps nées
+ * d'une étiquette plus ancienne ; celle-ci est exacte par construction.
+ *
+ *   "pwaDoctor": { "heritage": { "public/og-image.jpg": "<sha256>" } }
+ *
+ * Une entrée mal formée (chemin hors du dépôt, empreinte qui n'en est pas une)
+ * est ignorée, et un fichier absent n'est plus hérité : le dépôt l'a retiré.
+ *
+ * @param {string} root
+ * @param {unknown} heritage  `pwaDoctor.heritage` du package.json.
+ * @returns {string[]} les chemins encore identiques à la naissance, triés.
+ */
+export function fichiersHerites(root, heritage) {
+  if (!heritage || typeof heritage !== 'object' || Array.isArray(heritage)) {
+    return [];
+  }
+  const base = resolve(root);
+  const restes = [];
+  for (const [chemin, empreinte] of Object.entries(heritage)) {
+    if (typeof empreinte !== 'string' || !/^[0-9a-f]{64}$/.test(empreinte)) {
+      continue;
+    }
+    const abs = resolve(base, chemin);
+    if (!abs.startsWith(base + sep)) continue;
+    let octets;
+    try {
+      octets = readFileSync(abs);
+    } catch {
+      continue;
+    }
+    if (createHash('sha256').update(octets).digest('hex') === empreinte) {
+      restes.push(chemin);
+    }
+  }
+  return restes.sort();
+}
+
+/**
+ * Les chemins hérités, lisibles : un dossier qui en porte plusieurs est cité
+ * une fois, avec leur nombre — les neuf icônes du squelette font une entrée,
+ * pas neuf.
+ *
+ * @param {string[]} restes  triés.
+ * @returns {string}
+ */
+export function resumeHeritage(restes) {
+  const dossierDe = chemin =>
+    chemin.includes('/') ? chemin.slice(0, chemin.lastIndexOf('/') + 1) : '';
+  const nombre = new Map();
+  for (const chemin of restes) {
+    const dossier = dossierDe(chemin);
+    nombre.set(dossier, (nombre.get(dossier) ?? 0) + 1);
+  }
+  // Dans l'ordre des chemins : un dossier résumé prend la place de son premier.
+  const sortie = [];
+  const cites = new Set();
+  for (const chemin of restes) {
+    const dossier = dossierDe(chemin);
+    if (nombre.get(dossier) > 1 && dossier && dossier !== 'public/') {
+      if (!cites.has(dossier))
+        sortie.push(`${dossier} (${nombre.get(dossier)})`);
+      cites.add(dossier);
+    } else {
+      sortie.push(chemin);
+    }
+  }
+  return sortie.join(', ');
+}
+
+/**
+ * Le geste qui remplace chaque visuel hérité, dans l'ordre où les faire : les
+ * icônes partent du favicon, et l'image de partage montre la capture `narrow`.
+ *
+ * @param {string[]} restes
+ */
+function gestesHeritage(restes) {
+  const gestes = [];
+  if (restes.some(c => /favicon|(^|\/)icons?\//.test(c))) {
+    gestes.push('dessiner public/favicon.svg, puis npm run icons');
+  }
+  if (restes.some(c => /screenshots\//.test(c))) {
+    gestes.push('npm run screenshots (l’app réelle, pwa-screenshots)');
+  }
+  if (restes.some(c => /og-image\./.test(c))) {
+    gestes.push('npx pwa-og-image, après les captures');
+  }
+  if (
+    restes.some(c => !/favicon|(^|\/)icons?\/|screenshots\/|og-image\./.test(c))
+  ) {
+    gestes.push('remplacer les autres');
+  }
+  gestes.push('puis retirer leur ligne de pwaDoctor.heritage');
+  return gestes.join(' ; ');
+}
+
 /** Famille « dépôt » : les fichiers que tout dépôt du parc doit porter. */
 export function reglesDepot(ctx, api) {
   const { root, pkg, viteConfig, specs, playwright } = ctx;
@@ -1426,6 +1536,26 @@ export function reglesDepot(ctx, api) {
         'dev-port',
         `port de développement ${ecarts.map(([ou, port]) => `${port} (${ou})`).join(', ')} ; le catalogue lui donne ${fiche.devPort}`,
         `server: { port: devPortOf('${pkg.name}') } dans vite.config.ts (apps-catalog) — deux apps côte à côte sans collision`
+      );
+    }
+  }
+  // Les visuels reçus du squelette et pas encore refaits : voir
+  // `fichiersHerites`. À la naissance, le générateur pose un refus motivé sur
+  // ce contrôle ; il le garde visible à chaque build, fichier par fichier, et
+  // se signale périmé (`refus-perime-…`) quand le dernier est remplacé.
+  if (pkg.pwaDoctor?.heritage !== undefined) {
+    const restes = fichiersHerites(root, pkg.pwaDoctor.heritage);
+    if (restes.length) {
+      dette(
+        'herite-du-squelette',
+        `${restes.length} fichier(s) encore identique(s) à ceux du squelette : ${resumeHeritage(restes)}`,
+        gestesHeritage(restes)
+      );
+    } else {
+      info(
+        'heritage-solde',
+        'pwaDoctor.heritage ne désigne plus aucun fichier du squelette',
+        'retirer pwaDoctor.heritage de package.json'
       );
     }
   }
@@ -2498,6 +2628,8 @@ export const CATALOGUE = [
   { id: 'bundle-budget', famille: 'dépôt', niveau: 'dette' },
   { id: 'engines', famille: 'dépôt', niveau: 'info' },
   { id: 'dev-port', famille: 'dépôt', niveau: 'info' },
+  { id: 'herite-du-squelette', famille: 'dépôt', niveau: 'dette' },
+  { id: 'heritage-solde', famille: 'dépôt', niveau: 'info' },
   { id: 'workflows', famille: 'workflows', niveau: 'dette' },
   { id: 'wf-lighthouse', famille: 'workflows', niveau: 'dette' },
   { id: 'wf-cleanup', famille: 'workflows', niveau: 'dette' },
