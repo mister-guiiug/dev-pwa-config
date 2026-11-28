@@ -24,7 +24,7 @@ inputs:
     # la propose à jour depuis npm, la source même de l'installation
     # (`customManagers` de renovate.json, d'après la ligne ci-dessous).
     # renovate: datasource=npm depName=supabase
-    default: '3.2.0'
+    default: '3.4.0'
 
 runs:
   using: 'composite'
